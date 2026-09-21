@@ -28,11 +28,16 @@ def required(name: str) -> str:
 APP_URL = required("APP_URL").rstrip("/")
 SUPABASE_URL = required("NEXT_PUBLIC_SUPABASE_URL").rstrip("/")
 ANON_KEY = required("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-TEST_EMAIL = required("TEST_EMAIL_1").lower()
 IMAP_HOST = required("IMAP_HOST")
 IMAP_PORT = int(required("IMAP_PORT"))
-IMAP_USER = required("IMAP_USER_1")
-IMAP_PASSWORD = required("IMAP_PASSWORD_1")
+MAILBOXES = tuple(
+    (
+        required(f"TEST_EMAIL_{index}").lower(),
+        required(f"IMAP_USER_{index}"),
+        required(f"IMAP_PASSWORD_{index}"),
+    )
+    for index in (1, 2)
+)
 RUN_ID = f"DPH-{uuid.uuid4().hex[:12]}"
 
 
@@ -52,37 +57,39 @@ def http_json(url: str, body: dict, headers: dict[str, str]) -> tuple[int, dict]
         raise RuntimeError(f"Staging request failed at {urllib.parse.urlparse(url).path} with HTTP {error.code}.") from error
 
 
-def connect() -> imaplib.IMAP4:
+def connect() -> tuple[imaplib.IMAP4, str]:
     secure = required("IMAP_SECURE").lower() in {"1", "true", "yes", "ssl"}
     last_error: Exception | None = None
-    for attempt in range(1, 7):
-        client: imaplib.IMAP4 | None = None
-        try:
-            if secure:
-                client = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ssl.create_default_context())
-            else:
-                client = imaplib.IMAP4(IMAP_HOST, IMAP_PORT)
-                client.starttls(ssl_context=ssl.create_default_context())
-            client.login(IMAP_USER, IMAP_PASSWORD)
-            status, _ = client.select("INBOX")
-            if status != "OK":
-                raise imaplib.IMAP4.error("Mailbox selection failed")
-            return client
-        except (imaplib.IMAP4.abort, imaplib.IMAP4.error, OSError) as error:
-            last_error = error
-            retryable = not isinstance(error, imaplib.IMAP4.error) or any(
-                marker in str(error).lower() for marker in ("unavailable", "temporarily", "timeout")
-            )
-            if client is not None:
-                try:
-                    client.logout()
-                except Exception:
-                    pass
-            if not retryable:
-                raise RuntimeError("The staging mailbox rejected the configured IMAP login.") from error
-            if attempt < 6:
-                time.sleep(5)
-    raise RuntimeError("The staging mailbox remained temporarily unavailable after bounded retries.") from last_error
+    saw_retryable_error = False
+    for attempt in range(1, 4):
+        for test_email, imap_user, imap_password in MAILBOXES:
+            client: imaplib.IMAP4 | None = None
+            try:
+                if secure:
+                    client = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ssl.create_default_context())
+                else:
+                    client = imaplib.IMAP4(IMAP_HOST, IMAP_PORT)
+                    client.starttls(ssl_context=ssl.create_default_context())
+                client.login(imap_user, imap_password)
+                status, _ = client.select("INBOX")
+                if status != "OK":
+                    raise imaplib.IMAP4.error("Mailbox selection failed")
+                return client, test_email
+            except (imaplib.IMAP4.abort, imaplib.IMAP4.error, OSError) as error:
+                last_error = error
+                saw_retryable_error = saw_retryable_error or not isinstance(error, imaplib.IMAP4.error) or any(
+                    marker in str(error).lower() for marker in ("unavailable", "temporarily", "timeout")
+                )
+                if client is not None:
+                    try:
+                        client.logout()
+                    except Exception:
+                        pass
+        if attempt < 3:
+            time.sleep(5)
+    if saw_retryable_error:
+        raise RuntimeError("Both staging mailboxes remained temporarily unavailable after bounded retries.") from last_error
+    raise RuntimeError("Both staging mailboxes rejected the configured IMAP login.") from last_error
 
 
 def max_uid(client: imaplib.IMAP4) -> int:
@@ -127,7 +134,7 @@ def wait_for(client: imaplib.IMAP4, after_uid: int, subject: str, contains: str 
     raise RuntimeError(f"No matching staging message arrived for acceptance run {RUN_ID}.")
 
 
-imap = connect()
+imap, TEST_EMAIL = connect()
 try:
     before_otp = max_uid(imap)
     http_json(
