@@ -16,7 +16,7 @@ const sendgridHeaders = { Authorization: `Bearer ${process.env.SENDGRID_API}` };
 const recipient = process.env.TEST_EMAIL_2.toLowerCase();
 
 async function sendgrid(path) {
-  const response = await fetch(`${sendgridBaseUrl}${path}`, { headers: sendgridHeaders });
+  const response = await fetch(`${sendgridBaseUrl}${path}`, { headers: sendgridHeaders, signal: AbortSignal.timeout(10_000) });
   if (response.status === 401) throw new Error("SendGrid rejected the configured API key.");
   if (response.status === 403) return { available: false, body: null };
   if (response.status === 404) return { available: true, body: null };
@@ -69,12 +69,14 @@ if (!verifiedSenders.available && !authenticatedDomains.available) {
 }
 
 const hookSecret = process.env.SEND_EMAIL_HOOK_SECRET.replace(/^v1,whsec_/, "");
+const probeId = randomUUID().slice(-12);
+const probeSubject = `Staging mailprovidercontrole ${probeId}`;
 const payload = JSON.stringify({
   user: { email: recipient },
   email_data: {
     token: "000000",
-    token_hash: "staging-provider-verification",
-    email_action_type: "signup",
+    token_hash: probeId,
+    email_action_type: "staging_provider_probe",
     redirect_to: process.env.NEXT_PUBLIC_SUPABASE_URL,
     site_url: process.env.NEXT_PUBLIC_SUPABASE_URL,
   },
@@ -91,15 +93,17 @@ const hookResponse = await fetch(`${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL
     "webhook-signature": signature,
   },
   body: payload,
+  signal: AbortSignal.timeout(10_000),
 });
 if (!hookResponse.ok) {
   await hookResponse.body?.cancel();
   throw new Error(`The signed Auth email hook verification failed with status ${hookResponse.status}.`);
 }
 
-const activityQuery = encodeURIComponent(`to_email="${recipient}" AND subject="Je zescijferige inlogcode"`);
+const activityQuery = encodeURIComponent(`to_email="${recipient}" AND subject="${probeSubject}"`);
 let activityAvailable = true;
 let deliveryStatus;
+let deliveryMessage;
 for (let attempt = 1; attempt <= 5; attempt += 1) {
   if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, 5_000));
   const activity = await sendgrid(`/messages?limit=1&query=${activityQuery}`);
@@ -107,10 +111,23 @@ for (let attempt = 1; attempt <= 5; attempt += 1) {
     activityAvailable = false;
     break;
   }
-  deliveryStatus = activity.body?.messages?.[0]?.status;
+  deliveryMessage = activity.body?.messages?.[0];
+  deliveryStatus = deliveryMessage?.status;
   if (deliveryStatus === "delivered" || deliveryStatus === "not_delivered") break;
 }
-if (deliveryStatus === "not_delivered") throw new Error("SendGrid reports the signed Auth-hook test message as not delivered.");
+if (deliveryStatus === "not_delivered") {
+  const details = deliveryMessage?.msg_id ? await sendgrid(`/messages/${encodeURIComponent(deliveryMessage.msg_id)}`) : null;
+  const reason = details?.body?.events?.map((event) => event.reason).find(Boolean);
+  if (reason) {
+    const redactedReason = reason
+      .replaceAll(recipient, "[test-recipient]")
+      .replaceAll(process.env.SENDGRID_FROM_EMAIL.toLowerCase(), "[configured-sender]")
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")
+      .slice(0, 600);
+    console.log(`::error title=SendGrid non-delivery reason::${redactedReason}`);
+  }
+  throw new Error("SendGrid reports the signed Auth-hook test message as not delivered.");
+}
 if (!activityAvailable) {
   console.log("::warning title=SendGrid activity read unavailable::Provider acceptance is verified, but this plan/key cannot query final delivery.");
 } else if (deliveryStatus !== "delivered") {

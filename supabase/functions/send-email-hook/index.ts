@@ -39,6 +39,9 @@ Deno.serve(async (request) => {
   if (emails.length === 0) return new Response("invalid payload", { status: 422 });
   const allowlist = new Set((Deno.env.get("MAIL_ALLOWED_RECIPIENTS") ?? "").split(",").map((email) => email.trim().toLowerCase()).filter(Boolean));
   if (mailMode === "disabled" || (mailMode === "allowlist" && emails.some(({ email }) => !allowlist.has(email.toLowerCase())))) return new Response("recipient disabled", { status: 403 });
+  const providerProbe = payload.email_data.email_action_type === "staging_provider_probe";
+  const providerProbeId = (payload.email_data.token_hash ?? "probe").replace(/[^a-zA-Z0-9-]/g, "").slice(-12);
+  const subject = providerProbe ? `Staging mailprovidercontrole ${providerProbeId}` : "Je zescijferige inlogcode";
   const responses = await Promise.all(emails.map(({ email, token }) => fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -46,11 +49,16 @@ Deno.serve(async (request) => {
     body: JSON.stringify({
       personalizations: [{ to: [{ email }] }],
       from: { email: from, name: Deno.env.get("SENDGRID_FROM_NAME") ?? "De Duindorpse Poorten van Halloween" },
-      subject: "Je zescijferige inlogcode",
-      content: [
-        { type: "text/plain", value: `Je code is ${token}. De code verloopt over 10 minuten.` },
-        { type: "text/html", value: `<div style="background:#060b13;color:#eee9de;padding:36px;font:16px Arial"><h1 style="font:32px Georgia">Je inlogcode</h1><p>Vul deze code in om veilig verder te gaan:</p><p style="font-size:34px;letter-spacing:.25em"><strong>${htmlEscape(token)}</strong></p><p>De code verloopt over 10 minuten.</p></div>` },
-      ],
+      subject,
+      content: providerProbe
+        ? [
+          { type: "text/plain", value: "Dit is de geautomatiseerde stagingcontrole van de transactionele mailprovider." },
+          { type: "text/html", value: "<p>Dit is de geautomatiseerde stagingcontrole van de transactionele mailprovider.</p>" },
+        ]
+        : [
+          { type: "text/plain", value: `Je code is ${token}. De code verloopt over 10 minuten.` },
+          { type: "text/html", value: `<div style="background:#060b13;color:#eee9de;padding:36px;font:16px Arial"><h1 style="font:32px Georgia">Je inlogcode</h1><p>Vul deze code in om veilig verder te gaan:</p><p style="font-size:34px;letter-spacing:.25em"><strong>${htmlEscape(token)}</strong></p><p>De code verloopt over 10 minuten.</p></div>` },
+        ],
       mail_settings: mailMode === "sandbox" ? { sandbox_mode: { enable: true } } : undefined,
     }),
   })));
