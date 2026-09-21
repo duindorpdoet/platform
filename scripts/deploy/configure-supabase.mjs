@@ -34,10 +34,28 @@ async function request(url, init) {
   return response.status === 204 ? null : response.json();
 }
 
+async function rpcRequest(url, init) {
+  for (let attempt = 1; attempt <= 10; attempt += 1) {
+    const response = await fetch(url, init);
+    if (response.ok) return response.status === 204 ? null : response.json();
+    if (![404, 406, 503].includes(response.status) || attempt === 10) {
+      throw new Error(`Deployment RPC request failed (${response.status}) at ${new URL(url).pathname}.`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+  }
+  throw new Error("Deployment RPC did not become available.");
+}
+
 const managementHeaders = {
   Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,
   "Content-Type": "application/json",
 };
+
+await request(`https://api.supabase.com/v1/projects/${projectRef}/postgrest`, {
+  method: "PATCH",
+  headers: managementHeaders,
+  body: JSON.stringify({ db_schema: "api", db_extra_search_path: "api,extensions", max_rows: 1000 }),
+});
 
 await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, {
   method: "PATCH",
@@ -57,16 +75,18 @@ const serviceHeaders = {
   apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
   "Content-Type": "application/json",
+  "Content-Profile": "api",
+  "Accept-Profile": "api",
 };
 
 const releaseMode = process.env.REGISTRATION_MODE === "staging_test" ? "staging_test_open" : "production_closed";
-const release = await request(`${supabaseUrl.origin}/rest/v1/rpc/configure_release_mode`, {
+const release = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/configure_release_mode`, {
   method: "POST",
   headers: serviceHeaders,
   body: JSON.stringify({ _event_slug: process.env.EVENT_SLUG, _mode: releaseMode }),
 });
 
-const mailWorker = await request(`${supabaseUrl.origin}/rest/v1/rpc/configure_mail_worker`, {
+const mailWorker = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/configure_mail_worker`, {
   method: "POST",
   headers: serviceHeaders,
   body: JSON.stringify({
