@@ -1,6 +1,6 @@
 import { appendFile } from "node:fs/promises";
 
-for (const name of ["APP_ENVIRONMENT", "APP_URL", "SENDGRID_API", "GITHUB_ENV", "EVENT_WEBHOOK_REQUIRED"]) {
+for (const name of ["APP_ENVIRONMENT", "APP_URL", "SENDGRID_API", "GITHUB_ENV", "EVENT_WEBHOOK_REQUIRED", "DG_RUNTIME_ENV_KEYS"]) {
   if (!process.env[name]) throw new Error(`Missing required SendGrid deployment variable: ${name}`);
 }
 
@@ -50,7 +50,14 @@ if (!webhook && webhooks.length >= Number(current.max_allowed ?? 1)) {
   const message = "No free SendGrid Event Webhook slot is available; existing non-application webhooks were left untouched.";
   if (webhookRequired) throw new Error(message);
 
-  await appendFile(process.env.GITHUB_ENV, "SENDGRID_EVENT_WEBHOOK_AVAILABLE=false\n", { mode: 0o600 });
+  const runtimeKeys = process.env.DG_RUNTIME_ENV_KEYS.split(/\s+/)
+    .filter((key) => key && key !== "SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY")
+    .join(" ");
+  await appendFile(
+    process.env.GITHUB_ENV,
+    `SENDGRID_EVENT_WEBHOOK_AVAILABLE=false\nDG_RUNTIME_ENV_KEYS=${runtimeKeys}\n`,
+    { mode: 0o600 },
+  );
   console.log(`::warning title=SendGrid delivery tracking unavailable::${message}`);
   process.exit(0);
 }
