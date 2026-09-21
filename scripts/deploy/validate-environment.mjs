@@ -28,6 +28,12 @@ for (const name of required) {
   if (!process.env[name]) throw new Error(`Missing required ${target} variable: ${name}`);
 }
 
+const hookKey = process.env.SEND_EMAIL_HOOK_SECRET.replace(/^v1,whsec_/, "");
+const decodedHookKey = Buffer.from(hookKey, "base64");
+if (!/^[A-Za-z0-9+/]+={0,2}$/.test(hookKey) || decodedHookKey.byteLength < 32 || decodedHookKey.toString("base64") !== hookKey) {
+  throw new Error("SEND_EMAIL_HOOK_SECRET does not have the required Standard Webhooks base64 format.");
+}
+
 if (process.env.APP_ENVIRONMENT !== target) throw new Error("APP_ENVIRONMENT does not match the deployment target.");
 if (!/^[a-f0-9]{40}$/.test(process.env.APP_REVISION)) throw new Error("APP_REVISION must be an exact Git commit.");
 if (new URL(process.env.APP_URL).origin !== new URL(process.env.NEXT_PUBLIC_SITE_URL).origin) {

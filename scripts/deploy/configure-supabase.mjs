@@ -22,7 +22,9 @@ if (supabaseUrl.hostname !== `${projectRef}.supabase.co`) {
 
 const rawHookSecret = process.env.SEND_EMAIL_HOOK_SECRET;
 const hookSecret = rawHookSecret.startsWith("v1,whsec_") ? rawHookSecret : `v1,whsec_${rawHookSecret}`;
-if (!/^v1,whsec_[A-Za-z0-9+/=_-]{32,}$/.test(hookSecret)) {
+const hookKey = hookSecret.replace(/^v1,whsec_/, "");
+const decodedHookKey = Buffer.from(hookKey, "base64");
+if (!/^[A-Za-z0-9+/]+={0,2}$/.test(hookKey) || decodedHookKey.byteLength < 32 || decodedHookKey.toString("base64") !== hookKey) {
   throw new Error("SEND_EMAIL_HOOK_SECRET does not have the required Standard Webhooks format.");
 }
 
