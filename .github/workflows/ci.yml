@@ -1,0 +1,74 @@
+name: Continuous integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - staging
+      - production
+      - build/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: Application and browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      APP_ENVIRONMENT: test
+      REGISTRATION_MODE: closed
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pnpm
+        run: npm install --global pnpm@11.25.0
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint, typecheck, test and build
+        run: pnpm verify
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Browser acceptance tests
+        run: pnpm test:e2e
+
+  database:
+    name: Database migrations, contracts and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pnpm
+        run: npm install --global pnpm@11.25.0
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Start local Supabase
+        run: pnpm exec supabase start
+      - name: Rebuild database from migrations
+        run: pnpm exec supabase db reset
+      - name: Run pgTAP contracts
+        run: pnpm exec supabase test db
+      - name: Lint database schemas
+        run: pnpm exec supabase db lint --level warning
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup

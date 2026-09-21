@@ -1,0 +1,129 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - production
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+
+concurrency:
+  group: production-duindorphalloween
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Promote exact staging release
+    if: github.ref == 'refs/heads/production'
+    environment:
+      name: production
+      url: https://halloween.duindorpdoet.nl
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+      - dg-sites
+      - production
+      - duindorphalloweenprod
+    timeout-minutes: 40
+    env:
+      APP_ENVIRONMENT: production
+      APP_REVISION: ${{ github.sha }}
+      APP_URL: https://halloween.duindorpdoet.nl
+      NEXT_PUBLIC_SITE_URL: https://halloween.duindorpdoet.nl
+      ALLOWED_ORIGINS: https://halloween.duindorpdoet.nl
+      AUTH_SITE_URL: https://halloween.duindorpdoet.nl
+      EVENT_SLUG: duindorp-halloween-2026
+      EVENT_TIMEZONE: Europe/Amsterdam
+      REGISTRATION_MODE: closed
+      MAIL_MODE: live
+      MAIL_ALLOWED_RECIPIENTS: halloween@duindorpdoet.nl
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SENDGRID_API: ${{ secrets.SENDGRID_API }}
+      SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+      SENDGRID_FROM_NAME: De Duindorpse Poorten van Halloween
+      SENDGRID_REPLY_TO: halloween@duindorpdoet.nl
+      SEND_EMAIL_HOOK_SECRET: ${{ secrets.SEND_EMAIL_HOOK_SECRET }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      PORTAL_CODE_PEPPER: ${{ secrets.PORTAL_CODE_PEPPER }}
+      ABUSE_HASH_SECRET: ${{ secrets.ABUSE_HASH_SECRET }}
+      ORGANIZATION_SUPPORT_EMAIL: halloween@duindorpdoet.nl
+      ORGANIZATION_EVENT_PHONE: 0659019035
+      GITHUB_TOKEN: ${{ github.token }}
+      DG_RUNTIME_ENV_KEYS: >-
+        APP_ENVIRONMENT APP_REVISION APP_URL NEXT_PUBLIC_SITE_URL ALLOWED_ORIGINS AUTH_SITE_URL
+        EVENT_SLUG EVENT_TIMEZONE REGISTRATION_MODE MAIL_MODE MAIL_ALLOWED_RECIPIENTS
+        NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
+        SENDGRID_API SENDGRID_FROM_EMAIL SENDGRID_FROM_NAME SENDGRID_REPLY_TO SEND_EMAIL_HOOK_SECRET
+        SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY
+        CRON_SECRET PORTAL_CODE_PEPPER ABUSE_HASH_SECRET ORGANIZATION_SUPPORT_EMAIL ORGANIZATION_EVENT_PHONE
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Verify dedicated runner boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = "duindorphalloweenprod"
+          test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenprod-01"
+          [[ "${GITHUB_WORKSPACE}" == /srv/sites/duindorphalloweenprod/actions-runner/_work/* ]]
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pnpm
+        run: npm install --global pnpm@11.25.0
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Require exact successful staging revision
+        run: node scripts/deploy/require-staging-success.mjs
+      - name: Validate production configuration
+        run: node scripts/deploy/validate-environment.mjs production
+      - name: Validate application
+        run: pnpm verify
+      - name: Link and migrate production database
+        run: |
+          set -euo pipefail
+          pnpm exec supabase link --project-ref "${SUPABASE_PROJECT_REF}" --password "${SUPABASE_DB_PASSWORD}"
+          pnpm exec supabase db push --linked --include-all --yes
+      - name: Deploy SendGrid Auth hook
+        run: |
+          set -euo pipefail
+          pnpm exec supabase secrets set --project-ref "${SUPABASE_PROJECT_REF}" \
+            "SENDGRID_API_KEY=${SENDGRID_API}" \
+            "SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}" \
+            "SENDGRID_FROM_NAME=${SENDGRID_FROM_NAME}" \
+            "SEND_EMAIL_HOOK_SECRET=${SEND_EMAIL_HOOK_SECRET}" \
+            "MAIL_MODE=${MAIL_MODE}" \
+            "MAIL_ALLOWED_RECIPIENTS=${MAIL_ALLOWED_RECIPIENTS}"
+          pnpm exec supabase functions deploy send-email-hook --project-ref "${SUPABASE_PROJECT_REF}" --no-verify-jwt --use-api
+      - name: Configure signed SendGrid Event Webhook
+        run: node scripts/deploy/configure-sendgrid-webhook.mjs
+      - name: Deploy through the Sites VPS interface
+        run: |
+          /usr/local/bin/dg-site-deploy \
+            duindorphalloweenprod \
+            "${GITHUB_WORKSPACE}" \
+            "${GITHUB_SHA}" \
+            "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+      - name: Configure closed release, Auth and scheduler
+        run: node scripts/deploy/configure-supabase.mjs
+      - name: Check Supabase security advisors
+        run: node scripts/deploy/check-security-advisors.mjs
+      - name: Verify deployed production release
+        run: node scripts/deploy/verify-deployment.mjs production "${APP_URL}"
+      - name: Exercise signed SendGrid Event Webhook
+        run: node scripts/deploy/test-sendgrid-webhook.mjs

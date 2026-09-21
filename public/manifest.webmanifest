@@ -1,0 +1,12 @@
+{
+  "name": "De Duindorpse Poorten van Halloween",
+  "short_name": "De Poorten",
+  "description": "Veilige avondloop door Duindorp op 31 oktober 2026.",
+  "lang": "nl-NL",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#060b13",
+  "theme_color": "#060b13",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

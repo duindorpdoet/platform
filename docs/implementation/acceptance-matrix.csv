@@ -1,0 +1,144 @@
+id,priority,area,scenario,expected_result,required_evidence,result,evidence_reference
+SRC-01,P0,Bron,Nieuwe homepagebron aanwezig,Commit en assets van afgesproken ontwerpversie bevestigd,Git/assetmanifest,pass,package-verifier + local:e2e
+SRC-02,P0,Bron,Geen demoauth in productie,Code 311026 en rollenknop werken niet in productie,Buildinspectie + E2E,pass,source inspection + local:e2e
+SRC-03,P0,Bron,Geen voorbeelddeelnemers in productie,Productieseed bevat geen fictieve accounts of betaalde inschrijvingen,Seedinspectie + DB,pass,remote deploy excludes seed; source inspection
+SRC-04,P1,Bron,Alle bestaande routes overgenomen,Publieke en portaalroutes werken of hebben passende redirect,E2E routematrix,pass,local:e2e + production build
+AUTH-01,P0,Auth,Echte OTP ontvangen en gebruikt,SendGrid-mail ontvangen en Supabase-sessie geverifieerd,Echte stagingmail + E2E,not-run,
+AUTH-02,P0,Auth,Verkeerde/verlopen OTP,Geen sessie en herstelbare foutmelding,Auth-integratietest,not-run,
+AUTH-03,P0,Auth,Code hergebruiken,Eenmaligheid volgens providerbeleid gerespecteerd,Auth-integratietest,not-run,
+AUTH-04,P0,Auth,Resendlimiet en spam,Serverlimiet en zichtbare cooldown; geen onbeperkte verzending,Rate-limit-test,not-run,
+AUTH-05,P0,Auth,Valse sessiecookie,Beschermde data blijft onbereikbaar,Negatieve serverauthtest,not-run,
+AUTH-06,P0,Auth,Gebruiker past eigen metadata naar admin aan,Geen extra capability of inzage,DB/API autorisatietest,not-run,
+AUTH-07,P0,Auth,Account kan open ouderregistratie doen,Accountaanmaak toegestaan maar geen admin/leiderrechten,E2E signup,not-run,
+AUTH-08,P0,Auth,Uitnodiging voor ander emailadres,Acceptatie geweigerd zonder passend geverifieerd adres,Integratietest,not-run,
+AUTH-09,P0,Auth,Ingetrokken/verlopen uitnodiging,Geen gezinstoegang of roltoekenning,Integratietest,not-run,
+AUTH-10,P1,Auth,Refresh en sessieverlenging,Juiste gebruiker blijft ingelogd; cookies correct doorgegeven,E2E refresh,not-run,
+AUTH-11,P0,Auth,Logout en accountwissel,Privécache en realtimecontext van vorige gebruiker gewist,Browser/IndexedDB inspectie,not-run,
+AUTH-12,P0,Auth,Bootstrap admin,Alleen geconfigureerde geverifieerde account krijgt capability,CLI/DB test,pass,local:db-004
+REG-01,P1,Registratie,Wizard met meerdere kinderen,Alle kindrecords en contactgegevens persistent,E2E + DB,not-run,
+REG-02,P1,Registratie,Refresh halverwege wizard,Concept wordt hervat zonder dataverlies,E2E,not-run,
+REG-03,P0,Registratie,Bedrag client manipuleren,Server berekent aantal maal actuele prijs in centen,API test,not-run,
+REG-04,P0,Registratie,Twee submits tegelijk,Eén inschrijving en één logisch betaalverzoek/mailtaak,Parallelle integratietest,not-run,
+REG-05,P0,Registratie,Kind van ander gezin toevoegen,Geweigerd ook bij bekende UUID,RLS/API test,not-run,
+REG-06,P1,Registratie,Wijzigen na deadline,Alleen verzoek/correctieproces; geen stille wijziging,Tijdgestuurde test,not-run,
+REG-07,P1,Registratie,Kind verwijderen na betaling,Revisie en expliciete financiële correctie; historiek behouden,DB/E2E,not-run,
+REG-08,P1,Registratie,Voorwaarden en marketing,Versie/tijd vastgelegd; marketing niet vooraf aangevinkt,E2E + DB,not-run,
+REG-09,P1,Registratie,Annuleren,Status en financieel vervolg consistent; geen dataverlies,Domeintest,not-run,
+FAM-01,P0,Gezin,Samenloopcode gebruiken,Samenlooplidmaatschap zonder gezinsrechten van anderen,RLS/API test,not-run,
+FAM-02,P1,Gezin,Samenloopgezelschap verlaten,Eigen voorkeur aangepast; anderen intact,E2E,not-run,
+FAM-03,P0,Gezin,Tweede gezinsvolwassene intrekken,Nieuwe verzoeken verliezen direct inzage/mutatierecht,API met bestaande sessie,not-run,
+FAM-04,P1,Gezin,Samenloopcluster te groot,Conflict zichtbaar; geen stille splitsing/overboeking,Plannerfixture,not-run,
+PAY-01,P0,Betaling,Tikkie-link klikken,Betaalstatus blijft open tot controle,E2E + DB,not-run,
+PAY-02,P0,Betaling,Ouder meldt betaald,Alleen reported; geen confirmed,API autorisatietest,not-run,
+PAY-03,P0,Betaling,Organisatie bevestigt bedrag,Bevoegdheid plus ledger/audit; één effect bij retry,Integratietest,not-run,
+PAY-04,P1,Betaling,Verlopen/ontbrekende link,Betaallink volgt/herstelactie; geen verzonnen URL,E2E,not-run,
+PAY-05,P1,Betaling,Deelbetaling/overbetaling,Afwijking zichtbaar en gecontroleerde correctie,Domeintest,not-run,
+PAY-06,P0,Betaling,Terugbetaling registreren,Geen claim dat Tikkie automatisch geld terugstuurt,UI/API review,not-run,
+HOUSE-01,P1,Huizen,Onvoltooide huiswizard bewaren,Adres/vensters/flags persistent vóór portal bestaat,E2E + DB,not-run,
+HOUSE-02,P0,Huizen,Dubbele goedkeuring,Exact één portal plus eigenaar en publicatiegegevens,Parallelle integratietest,not-run,
+HOUSE-03,P0,Huizen,Bewoner wijzigt ander huis,Geweigerd zonder privédata te lekken,RLS/API test,not-run,
+HOUSE-04,P1,Huizen,Locatie nog niet gecontroleerd,Niet publiceerbaar in echte route,Planner/API test,not-run,
+HOUSE-05,P0,Huizen,Exact adres niet openbaar toegestaan,Geen exacte marker/adres in publieke projectie,Netwerk + kaartinspectie,pass,local:e2e public map
+HOUSE-06,P1,Huizen,Ongeldig bestand uploaden,MIME/grootte/inhoud afgewezen; geen executable public content,Uploadtest,not-run,
+HOUSE-07,P0,Huizen,QR intrekken en vervangen,Oud token ongeldig; nieuw alleen bevoegde download,Scan/storage test,not-run,
+HOUSE-08,P1,Huizen,Bewonerdashboard,Eigen groepen als code/aantallen; geen namen kinderen,Snapshotcontract,pass,local:db-004
+PLAN-01,P1,Planning,Identieke input en seed,Identiek voorstel en reproduceerbare score,Unit/integratietest,pass,local:unit route-planner
+PLAN-02,P0,Planning,Gezin past niet meer,Geen deelsplit zonder expliciete beleidswijziging,Plannerfixture,pass,local:unit route-planner
+PLAN-03,P0,Planning,Poortcapaciteit overschreden,Voorstel conflict; publicatie geweigerd,Interval/capaciteitstest,not-run,
+PLAN-04,P0,Planning,Geen veilige verbinding,Geen rechte lijn als echte looproute gepubliceerd,Plannerfixture,not-run,
+PLAN-05,P1,Planning,Startvoorkeur niet haalbaar,Alternatief/conflict zichtbaar; geen valse bevestiging,Plannerfixture,pass,local:unit route-planner
+PLAN-06,P0,Planning,Twee admins laatste groepsplaats,Eén geldige plaatsing; andere conflict,Parallelle DB test,not-run,
+PLAN-07,P0,Planning,Concept wijzigen,Bestaande gepubliceerde route blijft intact,Versietest,not-run,
+PLAN-08,P0,Planning,Publiceren stale voorstel,Hercontrole/invalidation; geen oude input overschrijven,Parallelle API test,not-run,
+PLAN-09,P0,Planning,Route na start wijzigen,Historische stop-FKs/uitkomsten blijven intact,Reroute-integratietest,not-run,
+PLAN-10,P1,Planning,Andere aantallen poorten/werelden,Geen hardcoded 30/5/6 bezoeken per groep,Variabele fixtures,not-run,
+RUN-01,P0,Live,Groepen met 1/5/7/10 kinderen,Afronding op echte snapshot; nooit exact-zeven-check,Geparametriseerde DB test,pass,local:unit journey
+RUN-02,P0,Live,Lege groep starten of afronden,Geweigerd of stopped volgens contract,Domein/DB test,pass,local:db-002
+RUN-03,P0,Live,Ontbrekende/dubbele statusrij,Geen onvolledige afronding,Constraint + commandtest,not-run,
+RUN-04,P0,Live,Ouder start/scant/complete,Alle commando’s geweigerd,Directe API test,not-run,
+RUN-05,P0,Live,Leider bedient andere groep,Geweigerd ook bij bekend run-ID,Directe API test,pass,local:db-002
+RUN-06,P0,Live,Ouder skipt ander kind,Geweigerd; zelfde groep/samenloop maakt geen verschil,Directe API test,pass,local:unit + local:db-003
+RUN-07,P0,Live,Eigen kind skip en terugnemen,Alleen huidige stop en juiste versie; andere kinderen intact,DB/E2E,pass,local:db-003
+RUN-08,P0,Live,Leider markeert visited zonder scan,Geweigerd,DB commandtest,pass,local:db-003
+RUN-09,P0,Live,Scan verkeerde/ingetrokken QR,Geen evidence en geen advance,Scanintegratietest,not-run,
+RUN-10,P0,Live,Gemengd visited/skipped,Geldige scan vereist; correcte individuele uitkomsten,DB/E2E,not-run,
+RUN-11,P0,Live,Iedereen skipped zonder bevestiging,Afronding geweigerd,DB/E2E,pass,local:unit journey
+RUN-12,P0,Live,Iedereen skipped met bevestiging,Eén advance; geen fictieve scan/bezoekstatus,DB/E2E,pass,local:unit journey
+RUN-13,P0,Live,Bevestiging voor vorige stop hergebruiken,Geweigerd door stop/versiebinding,Directe API test,pass,local:db-003
+RUN-14,P0,Live,Nog één pending deelnemer,Afronding geweigerd,DB/E2E,pass,local:unit journey
+RUN-15,P0,Live,Bulk resterende kinderen,Alleen pending wijzigt; visited/skipped blijven intact,DB commandtest,not-run,
+RUN-16,P0,Live,Laatste stop,Run completed; geen nieuwe of eerste poort,DB/E2E,not-run,
+RUN-17,P1,Live,Zegel na skip,Zegel aanwezig met juiste skipuitkomst,DB/UI test,not-run,
+RUN-18,P0,Live,Pauze/stop mutatieblokkade,Geen ongeautoriseerde scan/advance,Toestandstest,not-run,
+RUN-19,P0,Live,Leiderwissel met open oude telefoon,Oude leider verliest direct mutatierecht,Twee sessies,not-run,
+RUN-20,P0,Live,Kind vertrekt tijdens tocht,Gecontroleerde actuele snapshotwijziging; historie intact,Roster-integratietest,not-run,
+RUN-21,P0,Live,Laatste kind vertrekt,Groep stopped; geen automatische succesvolle finish,Roster-integratietest,not-run,
+RUN-22,P0,Live,Systemskip gesloten poort,Bevoegdheid/reden/confirm; één advance; historie intact,DB/E2E,not-run,
+RUN-23,P0,Live,Systemskip terwijl al visited,Normale mixed-flow; bestaande scan/bezoeken niet gewist,DB test,not-run,
+RUN-24,P0,Live,Oude pauzejob na sluiting,Poort blijft gesloten,Jobversietest,not-run,
+RACE-01,P0,Concurrency,Zelfde key gelijktijdig complete,Eén effect en consistente receipt,Parallelle DB/API test,not-run,
+RACE-02,P0,Concurrency,Andere keys zelfde oude stop,Hoogstens één advance,Parallelle DB/API test,not-run,
+RACE-03,P0,Concurrency,Key hergebruiken andere payload,Conflict zonder effect,API test,pass,local:db-002
+RACE-04,P0,Concurrency,Timeout na commit,Retry zelfde key geeft bevestigde uitkomst,Fault injection,not-run,
+RACE-05,P0,Concurrency,Ouder skip versus leider visited,Geen stille overschrijving; conflict en refresh,Parallelle DB test,not-run,
+RACE-06,P0,Concurrency,Complete versus laatste beslissing,Consistente volledige set vereist,Parallelle DB test,not-run,
+RACE-07,P0,Concurrency,Verzoek oude stop na advance,Kan huidige nieuwe stop niet muteren,API test,pass,local:db-003
+PRIV-01,P0,Privacy,Inspecteer HTML/RSC/bundles/prefetch,Geen geheime toekomstige groepsbestemmingen,Geautomatiseerde payloadscan,not-run,
+PRIV-02,P0,Privacy,REST/RPC/joins/GraphQL testen,Geen bypass naar private tabellen/routeplannen,Negatieve API matrix,pass,local:db-001
+PRIV-03,P0,Privacy,Vreemd realtimekanaal,Abonnement/payloadtoegang geweigerd,Realtime test,not-run,
+PRIV-04,P0,Privacy,Bekende UUID ander event,Geen cross-event data of mutatie,Constraint/RLS test,pass,local:db-002/004
+PRIV-05,P0,Privacy,Privéresponse via gedeelde cache,Geen data van gebruiker A aan B,Cachetest met twee sessies,pass,local:e2e security headers
+PRIV-06,P0,Privacy,Outbox/audit/clientgrant,Geen onbevoegde inzage of wijziging,SQL grant/RLS test,pass,local:db-001
+PRIV-07,P0,Privacy,Storage vreemde upload/QR,Geen download/overschrijving zonder eigendom,Storagepolicytest,not-run,
+PRIV-08,P0,Privacy,Logging/secrets inspecteren,Geen OTP/API key/QR-token/onnodige kindgegevens,Log/build secret scan,not-run,
+MAIL-01,P0,Mail,Auth-hook ongeldige signature,Geen SendGrid-call; request geweigerd,Hookcontracttest,not-run,
+MAIL-02,P0,Mail,Auth-hook onbekend actiontype,Gecontroleerde fout; geen verkeerde loginmail,Hookfixturetest,not-run,
+MAIL-03,P0,Mail,Auth-hook SendGrid-timeout,Geen vals succes; beperkt tijdsbudget; generieke herstelmelding,Fault injection,not-run,
+MAIL-04,P0,Mail,Staging verboden ontvanger,Geen verzending en geen OTP-omleiding,Serverallowlisttest,not-run,
+MAIL-05,P0,Mail,Mail Send-key beperkte scope,Verzenden werkt zonder onnodig accountbeheer,Providerconfig + echte test,not-run,
+MAIL-06,P1,Mail,Templates ontbreken bij provider,Geteste versioned HTML/text via API werkt,Render + allowlisted mail,not-run,
+MAIL-07,P0,Mail,Dubbele businessmutatie,Eén logische outboxtaak per event/recipient/type,DB dedupetest,not-run,
+MAIL-08,P0,Mail,SendGrid 202,Status accepted; niet delivered,Adaptercontracttest,not-run,
+MAIL-09,P0,Mail,Workercrash na provideracceptatie,Unknown/herstel; geen blind eindeloos herhalen,Fault injection,not-run,
+MAIL-10,P0,Mail,Webhook rawbody/signature/timestamp,Manipulatie geweigerd; geldige body geaccepteerd,Signed fixturetest,not-run,
+MAIL-11,P0,Mail,Dubbel provider-event,Eén effect; dubbele geldige event geeft 2xx,Webhook/DB test,not-run,
+MAIL-12,P0,Mail,Event buiten volgorde,Geen terugval van delivered naar processed,Webhooktest,pass,local:unit mail status
+MAIL-13,P1,Mail,Webhookopslag tijdelijk stuk,Geen vroeg 2xx; retry kan herstellen,Fault injection,not-run,
+MAIL-14,P1,Mail,429/configuratiefout/bounce,Begrensde backoff of passende stop; beheer ziet oorzaak,Adapter/worker test,not-run,
+MAIL-15,P0,Mail,Bestaande SendGrid-consumer,Andere appwebhook/template blijft intact,Configuratie-diff review,not-run,
+MAIL-16,P0,Mail,Echte bezorgingsproef,From/Reply-To/code en mailauth gecontroleerd,Ontvangen testmail + headers,not-run,
+MAIL-17,P0,Mail,Beveiligde emailwijziging indien aan,Beide adressen/tokens correct; geen accountovername,Auth E2E,not-run,
+MAIL-18,P1,Mail,Scheduler/herhaalde leaseclaim,Geen dubbele worker op actieve lease,Jobintegratietest,pass,local:db-005
+PWA-01,P1,PWA,Manifest en echte service worker,Installeerbare shell en juist scope/cachebeleid,Browserinspectie,pass,local:e2e service worker
+PWA-02,P0,PWA,Offline huidige stop,Duidelijk stale en alleen eerder vrijgegeven data,Browser offline test,not-run,
+PWA-03,P0,PWA,Offline complete/skip,Geen vals succes of nieuwe bestemming,Browser offline test,pass,local:e2e network-only private paths
+PWA-04,P0,PWA,Reconnect met gemiste events,Nieuwe bevoegde snapshot herstelt juiste versie,Netwerkonderbreking,not-run,
+PWA-05,P0,PWA,Offlinecache TTL/accountwissel,Privédata verloopt of wordt gewist volgens contract,IndexedDB/testklok,not-run,
+PWA-06,P1,PWA,Service-worker update tijdens invoer,Geen geforceerd verlies van actieve stap,Update E2E,not-run,
+QR-01,P1,Camera,Camera geweigerd/niet aanwezig,Handmatige code blijft bruikbaar,Browserpermissiontest,not-run,
+QR-02,P1,Camera,Scanner sluiten/route verlaten,Camerastream stopt,Browser/media inspectie,not-run,
+QR-03,P0,Camera,Willekeurige QR-URL,Niet automatisch openen of vertrouwen,QR-parsertest,not-run,
+MAP-01,P1,Kaart,Werkelijke providerstijl en attributie,Kaart werkt binnen keyrestricties en bronvermelding,Staging browsercheck,blocked,blocked:B-004
+MAP-02,P0,Kaart,Publieke marker privéhuis,Geen exacte locatie zonder toestemming,Payload/kaarttest,pass,local:e2e public map
+MAP-03,P0,Kaart,Groepskaart cache/prefetch,Geen toekomstige stoplocaties,Netwerk/SW-inspectie,pass,local:e2e cache/privacy
+UX-01,P1,UX,Homepage versie4,Exact logo/avondbeelden/verhaal behouden,Visuele vergelijking,pass,local:e2e screenshot
+UX-02,P1,UX,Alle schermen op smalle telefoon,Geen clipping; primaire acties bereikbaar,Viewportmatrix,not-run,
+UX-03,P1,UX,200 procent tekst en toetsenbord,Leesbaar en volledig bedienbaar,A11y handmatige check,not-run,
+UX-04,P1,UX,Reduced motion/audio uit,Geen verplichte animatie of geluid,Mediaquery/E2E,pass,local:e2e reduced motion
+UX-05,P1,UX,Wizardfout en stapwissel,Fout/stapfocus correct; ingevoerde data behouden,E2E,not-run,
+UX-06,P1,UX,Routeadvance focus,Nieuwe poort duidelijk aangekondigd en zichtbaar,E2E/a11y,not-run,
+CMS-01,P1,Beheer,Content/sponsor concept publiceren,Alleen goedgekeurde versie publiek; audit aanwezig,E2E,not-run,
+CMS-02,P0,Beheer,Contact bij provideruitval,Bericht opgeslagen; outbox wacht; geen dataverlies,Integratietest,not-run,
+OPS-01,P0,Release,Nieuwe installatie en schema-upgrade,Beide migratiepaden slagen,DB CI,pass,local db reset + 51 pgTAP
+OPS-02,P0,Release,Staging/productie secrets gescheiden,Geen productiesleutel in preview of browser,Config/buildinspectie,pass,GitHub environment inventory + workflow validation
+OPS-03,P0,Release,Productietarget/permissions,Geen deployment naar onbekend/ongeautoriseerd project,Preflightbewijs,not-run,
+OPS-04,P0,Release,Ontbrekende echte tijden/routes,Event blijft concept; code kan wel klaar zijn,Activationgatetest,pass,production_closed release control
+OPS-05,P1,Release,Rollbackprocedure,Compatibele approllback en DBherstelpad beschreven,geteste stagingprocedure,pass,docs/operations/ROLLBACK.md
+OPS-06,P1,Release,Retention dry-run,Geen echte verwijdering zonder vastgesteld beleid,Jobtest + rapport,pass,local:db-005
+OPS-07,P1,Praktijk,Echte avondproef met telefoons,Scan/skip/allskip/sluiting/slecht bereik doorlopen,Getekend testverslag,blocked,blocked:B-003
+OPS-08,P2,Prestatie,200 gelijktijdige testclients,Geen ongeldige toestand of ongecontroleerde fouttoename,Belastingrapport met werkelijke latency,not-run,
+OPS-09,P0,Overdracht,Eindrapport,Code/integratie/deployment/operationele status afzonderlijk,Documentcontrole,not-run,
+RUN-25,P0,Live,Visited kind vertrekt; ander kind skipt,Mixed-uitkomst en originele scan/bezoek blijven behouden,Roster/complete DB test,not-run,
+SEC-01,P0,Websecurity,Cross-origin cookiegeauthenticeerde mutatie,Geweigerd zonder effect; providerwebhook gebruikt eigen signaturepad,CSRF/origintest,not-run,
+SEC-02,P0,Misbruik,Contact/sponsor/invite herhaald naar willekeurig doel,Duurzame serverlimiet en dedupe; geen onbeperkte mailrelay,Rate-limit/outboxtest,not-run,
+MAIL-19,P0,Mail,Productiedeploy zonder mailactivatiebevoegdheid,MAIL_MODE blijft disabled/afgesproken testmodus; geen echte bulk,Releaseconfig test,not-run,
