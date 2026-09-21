@@ -52,11 +52,12 @@ jobs:
       SENDGRID_FROM_NAME: De Duindorpse Poorten van Halloween
       SENDGRID_REPLY_TO: halloween@duindorpdoet.nl
       SEND_EMAIL_HOOK_SECRET: ${{ secrets.SEND_EMAIL_HOOK_SECRET }}
+      EVENT_WEBHOOK_REQUIRED: "false"
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
       PORTAL_CODE_PEPPER: ${{ secrets.PORTAL_CODE_PEPPER }}
       ABUSE_HASH_SECRET: ${{ secrets.ABUSE_HASH_SECRET }}
       ORGANIZATION_SUPPORT_EMAIL: halloween@duindorpdoet.nl
-      ORGANIZATION_EVENT_PHONE: 0659019035
+      ORGANIZATION_EVENT_PHONE: "0659019035"
       TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
       TEST_EMAIL_2: ${{ vars.TEST_EMAIL_2 }}
       IMAP_HOST: ${{ vars.IMAP_HOST }}
@@ -130,6 +131,10 @@ jobs:
       - name: Verify deployed staging release
         run: node scripts/deploy/verify-deployment.mjs staging "${APP_URL}"
       - name: Exercise signed SendGrid Event Webhook
+        if: env.SENDGRID_EVENT_WEBHOOK_AVAILABLE == 'true'
         run: node scripts/deploy/test-sendgrid-webhook.mjs
+      - name: Report unavailable SendGrid delivery tracking
+        if: env.SENDGRID_EVENT_WEBHOOK_AVAILABLE != 'true'
+        run: echo "::warning title=Staging delivery tracking skipped::The shared SendGrid account has no free application webhook slot; no existing webhook was changed."
       - name: Verify real OTP and transactional mail
         run: python3 scripts/acceptance/staging_mail.py
