@@ -10,8 +10,8 @@ Statuswaarden: `pass`, `fail`, `blocked`, `not-run`. Alleen daadwerkelijk uitgev
 | Applicatiekwaliteit | pass | `pnpm lint`, `pnpm typecheck`, 42 Vitest-tests en `pnpm build`. |
 | Browserbasismatrix | pass | 18 Playwright-tests: desktop + Pixel 7, publieke routes, OTP-UI, redirects, headers, PWA, motion en kaartprivacy. |
 | Databasebasis | pass | Zeven migraties vanaf nul; 218 pgTAP-tests; `supabase db lint --level warning` zonder bevindingen. |
-| Provideracceptatie | blocked | Stagingruns `35632060402` en `35637286177`: beide toegestane ontvangers hebben een bestaande SendGrid `block`-suppression; bestaande gedeelde resources mogen niet worden gewijzigd. |
-| Remote security advisors | pass | Stagingrun `35637286177`: Supabase security-advisors en gedeployde HTTP-smoke waren groen vóór de bekende mailgate. |
+| Provideracceptatie | blocked | Stagingrun `35643888861`: beide toegestane ontvangers hebben een bestaande SendGrid `block`-suppression; bestaande gedeelde resources mogen niet worden gewijzigd. |
+| Remote security advisors | pass | Stagingrun `35643888861`: Supabase security-advisors en gedeployde HTTP-smoke voor `c66798c` waren groen vóór de bekende mailgate. |
 | Echte route-/avondproef | blocked | Operationele data en fysieke iOS/Android-avondproef ontbreken. |
 | Productie | not-run | Alleen toegestaan na succesvolle stagingdeployment van exact dezelfde commit. |
 

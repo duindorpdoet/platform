@@ -20,7 +20,7 @@ Er is geen goedgekeurde MapLibre-style-URL/key aangeleverd. De publieke app toon
 
 ### B-005 — Beide toegestane testontvangers staan op de SendGrid-blocklijst
 
-De ondertekende Supabase Auth-hook en SendGrid-API-configuratie zijn gedeployd, maar de providercontrole in stagingrun `35632060402` toont voor beide vooraf geautoriseerde testontvangers een bestaande `block`-suppression. De run-config verbiedt wijziging van bestaande gedeelde SendGrid-resources. Daardoor kan de echte OTP-/IMAP-bezorgingsproef niet slagen totdat een bevoegde accountbeheerder die twee suppressions beoordeelt en zo nodig verwijdert. De applicatie maskeert dit niet als succes.
+De ondertekende Supabase Auth-hook en SendGrid-API-configuratie zijn gedeployd, maar de providercontrole in stagingrun `35643888861` toont voor beide vooraf geautoriseerde testontvangers een bestaande `block`-suppression. De run-config verbiedt wijziging van bestaande gedeelde SendGrid-resources. Daardoor kan de echte OTP-/IMAP-bezorgingsproef niet slagen totdat een bevoegde accountbeheerder die twee suppressions beoordeelt en zo nodig verwijdert. De applicatie maskeert dit niet als succes.
 
 ### B-006 — Geen vrij SendGrid Event Webhook-slot
 

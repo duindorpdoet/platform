@@ -91,7 +91,7 @@ PRIV-05,P0,Privacy,Privéresponse via gedeelde cache,Geen data van gebruiker A a
 PRIV-06,P0,Privacy,Outbox/audit/clientgrant,Geen onbevoegde inzage of wijziging,SQL grant/RLS test,pass,local:db-001
 PRIV-07,P0,Privacy,Storage vreemde upload/QR,Geen download/overschrijving zonder eigendom,Storagepolicytest,pass,local:db-010 exact private bucket policy helpers own/foreign objects
 PRIV-08,P0,Privacy,Logging/secrets inspecteren,Geen OTP/API key/QR-token/onnodige kindgegevens,Log/build secret scan,not-run,
-MAIL-01,P0,Mail,Auth-hook ongeldige signature,Geen SendGrid-call; request geweigerd,Hookcontracttest,not-run,
+MAIL-01,P0,Mail,Auth-hook ongeldige signature,Geen SendGrid-call; request geweigerd,Hookcontracttest,pass,staging:c66798c direct invalid-signature probe returned 401
 MAIL-02,P0,Mail,Auth-hook onbekend actiontype,Gecontroleerde fout; geen verkeerde loginmail,Hookfixturetest,pass,local:unit Auth hook action contract
 MAIL-03,P0,Mail,Auth-hook SendGrid-timeout,Geen vals succes; beperkt tijdsbudget; generieke herstelmelding,Fault injection,not-run,
 MAIL-04,P0,Mail,Staging verboden ontvanger,Geen verzending en geen OTP-omleiding,Serverallowlisttest,pass,local:unit provider adapter blocks before fetch
@@ -105,8 +105,8 @@ MAIL-11,P0,Mail,Dubbel provider-event,Eén effect; dubbele geldige event geeft 2
 MAIL-12,P0,Mail,Event buiten volgorde,Geen terugval van delivered naar processed,Webhooktest,pass,local:unit mail status
 MAIL-13,P1,Mail,Webhookopslag tijdelijk stuk,Geen vroeg 2xx; retry kan herstellen,Fault injection,pass,local:unit storage failure returns retryable 503
 MAIL-14,P1,Mail,429/configuratiefout/bounce,Begrensde backoff of passende stop; beheer ziet oorzaak,Adapter/worker test,not-run,
-MAIL-15,P0,Mail,Bestaande SendGrid-consumer,Andere appwebhook/template blijft intact,Configuratie-diff review,pass,workflow:staging 35632060402 preserved occupied shared webhook
-MAIL-16,P0,Mail,Echte bezorgingsproef,From/Reply-To/code en mailauth gecontroleerd,Ontvangen testmail + headers,blocked,workflow:staging 35632060402 both authorized recipients on SendGrid block suppression
+MAIL-15,P0,Mail,Bestaande SendGrid-consumer,Andere appwebhook/template blijft intact,Configuratie-diff review,pass,workflow:staging 35643888861 preserved occupied shared webhook
+MAIL-16,P0,Mail,Echte bezorgingsproef,From/Reply-To/code en mailauth gecontroleerd,Ontvangen testmail + headers,blocked,workflow:staging 35643888861 both authorized recipients on SendGrid block suppression
 MAIL-17,P0,Mail,Beveiligde emailwijziging indien aan,Beide adressen/tokens correct; geen accountovername,Auth E2E,not-run,
 MAIL-18,P1,Mail,Scheduler/herhaalde leaseclaim,Geen dubbele worker op actieve lease,Jobintegratietest,pass,local:db-005
 PWA-01,P1,PWA,Manifest en echte service worker,Installeerbare shell en juist scope/cachebeleid,Browserinspectie,pass,local:e2e service worker
@@ -129,7 +129,7 @@ UX-05,P1,UX,Wizardfout en stapwissel,Fout/stapfocus correct; ingevoerde data beh
 UX-06,P1,UX,Routeadvance focus,Nieuwe poort duidelijk aangekondigd en zichtbaar,E2E/a11y,not-run,
 CMS-01,P1,Beheer,Content/sponsor concept publiceren,Alleen goedgekeurde versie publiek; audit aanwezig,E2E,not-run,
 CMS-02,P0,Beheer,Contact bij provideruitval,Bericht opgeslagen; outbox wacht; geen dataverlies,Integratietest,not-run,
-OPS-01,P0,Release,Nieuwe installatie en schema-upgrade,Beide migratiepaden slagen,DB CI,pass,local db reset + 218 pgTAP; staged upgrade workflow pending exact revision
+OPS-01,P0,Release,Nieuwe installatie en schema-upgrade,Beide migratiepaden slagen,DB CI,pass,local db reset + 218 pgTAP; staged upgrade workflow 35643888861
 OPS-02,P0,Release,Staging/productie secrets gescheiden,Geen productiesleutel in preview of browser,Config/buildinspectie,pass,GitHub environment inventory + workflow validation
 OPS-03,P0,Release,Productietarget/permissions,Geen deployment naar onbekend/ongeautoriseerd project,Preflightbewijs,pass,run-config + dedicated runner boundary in workflow:staging
 OPS-04,P0,Release,Ontbrekende echte tijden/routes,Event blijft concept; code kan wel klaar zijn,Activationgatetest,pass,production_closed release control

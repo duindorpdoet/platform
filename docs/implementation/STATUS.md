@@ -4,7 +4,7 @@ Laatst bijgewerkt: 2026-09-21 (Europe/Amsterdam)
 
 ## Huidig checkpoint
 
-- Werkbranch: `build/duindorp-productie`; laatste gedeelde checkpoint vóór deze wijziging: `79d5ab3` op `main` en `staging`.
+- Werkbranch: `build/duindorp-productie`; codecheckpoint `c66798c` staat op `main` en `staging` en is op staging gedeployd.
 - Ontwerpbron: pakket 1.3, prototypeversie 4, ontwerpcommit `612b4cc4d4273c4ed9759ec53653c894229250f8`.
 - Pakketcontrole: geslaagd; 170 bestanden en prototypeversie 4 geverifieerd.
 - Lokale appverificatie: lint, strict TypeScript, 42 unit-tests, productiebuild en 18 Playwright-tests op desktop/mobiel geslaagd.
@@ -24,7 +24,7 @@ Laatst bijgewerkt: 2026-09-21 (Europe/Amsterdam)
 | Mail en jobs | lokaal groen | SendGrid Auth-hook met bekende-actielijst, vaste organisatiedoelen voor publieke formulieren, outboxworker, pg_cron, retries, signed Event Webhook en monotone statusafleiding. |
 | PWA/realtime/privacy | lokaal groen | Network-only privéflows, begrensde gebruikerssnapshot, private channels/buckets en no-store headers. |
 | CI/CD | actief | CI plus afgebakende staging- en production-workflows met exacte-commitgate en provideracceptatie. |
-| Staging | gedeployd, releasegate rood | VPS-deployment, remote migraties en Supabase-configuratie werken; beide toegestane testmailboxen staan op de gedeelde SendGrid-blocklijst en het Event Webhook-slot is bezet. |
+| Staging | `c66798c` gedeployd, releasegate rood | Workflow `35643888861`: remote upgrade, Auth-hook, VPS, advisors en HTTP-smoke groen; beide testmailboxen staan op de gedeelde SendGrid-blocklijst en het Event Webhook-slot is bezet. |
 | Productie | gate gesloten | Geen promotie zolang staging niet volledig groen is; registratie blijft gesloten. |
 
 ## Niet als operationeel gereed aangemerkt
