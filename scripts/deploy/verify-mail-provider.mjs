@@ -68,9 +68,7 @@ if (!verifiedSenders.available && !authenticatedDomains.available) {
   console.log("::warning title=SendGrid sender-auth read unavailable::The restricted API key cannot inspect sender authentication.");
 }
 
-const hookSecret = process.env.SEND_EMAIL_HOOK_SECRET.startsWith("v1,whsec_")
-  ? process.env.SEND_EMAIL_HOOK_SECRET
-  : `v1,whsec_${process.env.SEND_EMAIL_HOOK_SECRET}`;
+const hookSecret = process.env.SEND_EMAIL_HOOK_SECRET.replace(/^v1,whsec_/, "");
 const payload = JSON.stringify({
   user: { email: recipient },
   email_data: {
