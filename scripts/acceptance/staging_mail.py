@@ -54,14 +54,35 @@ def http_json(url: str, body: dict, headers: dict[str, str]) -> tuple[int, dict]
 
 def connect() -> imaplib.IMAP4:
     secure = required("IMAP_SECURE").lower() in {"1", "true", "yes", "ssl"}
-    if secure:
-        client: imaplib.IMAP4 = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ssl.create_default_context())
-    else:
-        client = imaplib.IMAP4(IMAP_HOST, IMAP_PORT)
-        client.starttls(ssl_context=ssl.create_default_context())
-    client.login(IMAP_USER, IMAP_PASSWORD)
-    client.select("INBOX")
-    return client
+    last_error: Exception | None = None
+    for attempt in range(1, 7):
+        client: imaplib.IMAP4 | None = None
+        try:
+            if secure:
+                client = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ssl.create_default_context())
+            else:
+                client = imaplib.IMAP4(IMAP_HOST, IMAP_PORT)
+                client.starttls(ssl_context=ssl.create_default_context())
+            client.login(IMAP_USER, IMAP_PASSWORD)
+            status, _ = client.select("INBOX")
+            if status != "OK":
+                raise imaplib.IMAP4.error("Mailbox selection failed")
+            return client
+        except (imaplib.IMAP4.abort, imaplib.IMAP4.error, OSError) as error:
+            last_error = error
+            retryable = not isinstance(error, imaplib.IMAP4.error) or any(
+                marker in str(error).lower() for marker in ("unavailable", "temporarily", "timeout")
+            )
+            if client is not None:
+                try:
+                    client.logout()
+                except Exception:
+                    pass
+            if not retryable:
+                raise RuntimeError("The staging mailbox rejected the configured IMAP login.") from error
+            if attempt < 6:
+                time.sleep(5)
+    raise RuntimeError("The staging mailbox remained temporarily unavailable after bounded retries.") from last_error
 
 
 def max_uid(client: imaplib.IMAP4) -> int:
