@@ -35,7 +35,7 @@ let suppressionReadAvailable = false;
 for (const [kind, path] of suppressionChecks) {
   const result = await sendgrid(path);
   suppressionReadAvailable ||= result.available;
-  if (result.body) suppressions.push(kind);
+  if (Array.isArray(result.body) && result.body.length > 0) suppressions.push(kind);
 }
 const globalSuppression = await sendgrid(`/asm/suppressions/global/${encodeURIComponent(recipient)}`);
 suppressionReadAvailable ||= globalSuppression.available;
