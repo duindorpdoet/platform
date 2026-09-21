@@ -34,4 +34,23 @@ describe("transactional mail templates", () => {
     expect(invitation.text).not.toContain("attacker.invalid");
     expect(invitation.text).toContain("https://halloween.duindorpdoet.nl");
   });
+
+  it("escapes public-form fields in organization notifications", () => {
+    const notification = renderTransactionalMail({
+      messageType: "contact_notification",
+      payload: {
+        ticketReference: "ticket-1",
+        contactName: "<img src=x onerror=alert(1)>",
+        contactEmail: "sender@example.invalid",
+        subject: "Vraag <script>alert(1)</script>",
+        message: "Hallo & welkom",
+      },
+    });
+
+    expect(notification.subject).toBe("Nieuw contactbericht");
+    expect(notification.text).toContain("sender@example.invalid");
+    expect(notification.html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(notification.html).not.toContain("<script>");
+    expect(notification.html).toContain("Hallo &amp; welkom");
+  });
 });

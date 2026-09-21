@@ -67,7 +67,7 @@ begin
     on conflict (portal_id) do nothing;
     insert into app_private.portal_owners(portal_id, user_id) values (v_portal_id, v_owner) on conflict do nothing;
     insert into app_private.portal_windows(portal_id, opens_at, closes_at, visit_minutes, buffer_minutes, max_concurrent_groups, max_children_per_visit)
-    values (v_portal_id, timestamptz '2026-10-31 18:00:00+01', timestamptz '2026-10-31 22:00:00+01', 5, 2, 2, 12)
+    values (v_portal_id, timestamptz '2026-10-31 18:00:00+01', timestamptz '2026-10-31 22:00:00+01', 5, 2, 10, 12)
     on conflict do nothing;
     insert into app_private.portal_flags(portal_id, flag_key, value)
     values (v_portal_id, 'fixture', true) on conflict do nothing;
@@ -95,6 +95,7 @@ end $$;
 do $$
 declare
   v_event_id uuid;
+  v_admin uuid := 'f0000000-0000-0000-0000-000000000001';
   v_slot_id uuid := '20000000-0000-0000-0000-000000000001';
   v_household_id uuid;
   v_registration_id uuid;
@@ -111,6 +112,12 @@ begin
   insert into app_private.start_slots(id, event_id, external_id, name, location_name, private_address, latitude, longitude, location_verified_at, starts_at, max_groups, max_children)
   values (v_slot_id, v_event_id, 'fixture-start-1', 'Teststart 1', 'Fictieve testlocatie', 'NIET-BESTAAND TESTADRES', 52.1, 4.27, now(), timestamptz '2026-10-31 18:30:00+01', 10, 100)
   on conflict (id) do nothing;
+  insert into app_private.walking_nodes(id, event_id, external_id, kind, coordinate, verified_at, verified_by)
+  values ('13000000-0000-0000-0000-000000000999', v_event_id, 'fixture-start-1', 'start', point(4.27, 52.1), now(), v_admin)
+  on conflict (id) do nothing;
+  insert into app_private.walking_edges(event_id, external_id, from_node_id, to_node_id, distance_m, duration_seconds, wheelchair_accessible, approved_at, approved_by)
+  values (v_event_id, 'fixture-edge-start-1', '13000000-0000-0000-0000-000000000999', '13000000-0000-0000-0000-000000000001', 80, 60, true, now(), v_admin)
+  on conflict (event_id, external_id) do nothing;
 
   foreach v_size in array sizes loop
     group_index := group_index + 1;

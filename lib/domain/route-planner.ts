@@ -59,10 +59,14 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   }
 
   const startLoads = new Map(starts.map((start) => [start.id, { groups: 0, children: 0 }]));
-  const portalLoads = new Map<string, number>();
+  const portalReservations = new Map<string, Array<{ startsAt: number; endsAt: number }>>();
   const groups: PlannedGroup[] = [];
   for (const [index, group] of draftGroups.entries()) {
     const requestedIds = [...new Set(group.parties.map((party) => party.requestedStartId).filter(Boolean))] as string[];
+    if (requestedIds.length > 1) {
+      conflicts.push({ code: "START_PREFERENCE_CONFLICT", subjectId: group.key, message: `Gekoppelde inschrijvingen in ${group.key} hebben verschillende startvoorkeuren.` });
+      continue;
+    }
     const candidates = stable(starts.filter((start) => requestedIds.length === 0 || requestedIds.includes(start.id)));
     const selected = candidates.find((start) => {
       const load = startLoads.get(start.id)!;
@@ -72,23 +76,22 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
       conflicts.push({ code: "START_CAPACITY_EXCEEDED", subjectId: group.key, message: `Geen passend startmoment voor ${group.key}.` });
       continue;
     }
-    const load = startLoads.get(selected.id)!;
-    load.groups += 1;
-    load.children += group.childCount;
     const portalIds: string[] = [];
+    const pendingReservations: Array<{ portalId: string; startsAt: number; endsAt: number }> = [];
     const usedWorlds = new Set<string>();
     const startAt = new Date(selected.startsAt).getTime();
     for (let offset = 0; offset < input.stopsPerGroup; offset += 1) {
       const arrival = startAt + offset * 8 * 60_000;
       const candidatesForStop = Array.from({ length: portals.length }, (_, portalOffset) => portals[(index + offset + portalOffset) % portals.length]);
       const selectedPortal = candidatesForStop.find((portal) => {
-        const loadKey = `${portal.id}:${arrival}`;
+        const departure = arrival + portal.visitMinutes * 60_000;
+        const overlapping = (portalReservations.get(portal.id) ?? []).filter((reservation) => arrival < reservation.endsAt && departure > reservation.startsAt).length;
         return !portalIds.includes(portal.id)
           && !usedWorlds.has(portal.worldId)
           && group.childCount <= portal.maxChildren
           && arrival >= new Date(portal.opensAt).getTime()
-          && arrival + portal.visitMinutes * 60_000 <= new Date(portal.closesAt).getTime()
-          && (portalLoads.get(loadKey) ?? 0) < portal.maxConcurrentGroups;
+          && departure <= new Date(portal.closesAt).getTime()
+          && overlapping < portal.maxConcurrentGroups;
       });
       if (!selectedPortal) {
         conflicts.push({ code: "PORTAL_CAPACITY_EXCEEDED", subjectId: group.key, message: `Geen veilige poortcapaciteit voor stop ${offset + 1} van ${group.key}.` });
@@ -96,10 +99,15 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
       }
       portalIds.push(selectedPortal.id);
       usedWorlds.add(selectedPortal.worldId);
-      const loadKey = `${selectedPortal.id}:${arrival}`;
-      portalLoads.set(loadKey, (portalLoads.get(loadKey) ?? 0) + 1);
+      pendingReservations.push({ portalId: selectedPortal.id, startsAt: arrival, endsAt: arrival + selectedPortal.visitMinutes * 60_000 });
     }
     if (portalIds.length !== input.stopsPerGroup) continue;
+    const load = startLoads.get(selected.id)!;
+    load.groups += 1;
+    load.children += group.childCount;
+    for (const reservation of pendingReservations) {
+      portalReservations.set(reservation.portalId, [...(portalReservations.get(reservation.portalId) ?? []), reservation]);
+    }
     groups.push({ key: group.key, partyIds: group.parties.map((party) => party.id).sort(), childCount: group.childCount, startId: selected.id, portalIds });
   }
   return { groups: conflicts.length ? [] : groups, conflicts };

@@ -10,7 +10,13 @@ export class ApiError extends Error {
 
 export function assertTrustedOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  if (!origin || !allowedOrigins().has(new URL(origin).origin)) {
+  let normalizedOrigin: string | null = null;
+  try {
+    normalizedOrigin = origin ? new URL(origin).origin : null;
+  } catch {
+    normalizedOrigin = null;
+  }
+  if (!normalizedOrigin || !allowedOrigins().has(normalizedOrigin)) {
     throw new ApiError(403, "ORIGIN_NOT_ALLOWED", "Dit verzoek komt niet van een toegestane omgeving.");
   }
 }

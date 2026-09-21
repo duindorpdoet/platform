@@ -1,9 +1,5 @@
 import { Webhook } from "npm:standardwebhooks@1.1.1";
-
-type HookPayload = {
-  user: { email?: string; new_email?: string };
-  email_data: { token?: string; token_new?: string; token_hash?: string; token_hash_new?: string; email_action_type?: string };
-};
+import { deliveriesForPayload, type HookPayload } from "./payload.ts";
 
 function htmlEscape(value: string) {
   return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]!);
@@ -25,17 +21,8 @@ Deno.serve(async (request) => {
   } catch {
     return new Response("invalid signature", { status: 401 });
   }
-  const emails: Array<{ email: string; token: string }> = [];
-  if (payload.email_data.email_action_type === "email_change" && payload.user.new_email) {
-    if (payload.email_data.token && payload.email_data.token_hash_new && payload.user.email) emails.push({ email: payload.user.email, token: payload.email_data.token });
-    if (payload.email_data.token_new && payload.email_data.token_hash) emails.push({ email: payload.user.new_email, token: payload.email_data.token_new });
-    if (emails.length === 0) {
-      const fallbackToken = payload.email_data.token_new ?? payload.email_data.token;
-      if (fallbackToken) emails.push({ email: payload.user.new_email, token: fallbackToken });
-    }
-  } else if (payload.user.email && payload.email_data.token) {
-    emails.push({ email: payload.user.email, token: payload.email_data.token });
-  }
+  const { deliveries: emails, supported } = deliveriesForPayload(payload);
+  if (!supported) return new Response("unsupported action", { status: 422 });
   if (emails.length === 0) return new Response("invalid payload", { status: 422 });
   const allowlist = new Set((Deno.env.get("MAIL_ALLOWED_RECIPIENTS") ?? "").split(",").map((email) => email.trim().toLowerCase()).filter(Boolean));
   if (mailMode === "disabled" || (mailMode === "allowlist" && emails.some(({ email }) => !allowlist.has(email.toLowerCase())))) return new Response("recipient disabled", { status: 403 });

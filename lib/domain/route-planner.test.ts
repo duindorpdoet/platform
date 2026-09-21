@@ -26,4 +26,53 @@ describe("deterministic planner", () => {
     expect(result.groups).toEqual([]);
     expect(result.conflicts.some((conflict) => conflict.code === "START_CAPACITY_EXCEEDED")).toBe(true);
   });
+
+  it("rejects a together bundle that cannot fit without silently splitting it", () => {
+    const result = proposePlan({
+      ...base,
+      parties: [{ id: "a", childCount: 6, togetherKey: "same" }, { id: "b", childCount: 5, togetherKey: "same" }],
+    });
+
+    expect(result.groups).toEqual([]);
+    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "TOGETHER_PARTY_TOO_LARGE" }));
+  });
+
+  it("counts overlapping visit intervals instead of only identical timestamps", () => {
+    const result = proposePlan({
+      parties: [
+        { id: "a", childCount: 1, requestedStartId: "start-a" },
+        { id: "b", childCount: 1, requestedStartId: "start-b" },
+      ],
+      starts: [
+        { id: "start-a", startsAt: "2026-10-31T18:30:00+01:00", maxGroups: 1, maxChildren: 10 },
+        { id: "start-b", startsAt: "2026-10-31T18:31:00+01:00", maxGroups: 1, maxChildren: 10 },
+      ],
+      portals: [{ id: "portal", worldId: "world", opensAt: "2026-10-31T18:00:00+01:00", closesAt: "2026-10-31T22:00:00+01:00", visitMinutes: 5, maxConcurrentGroups: 1, maxChildren: 10 }],
+      targetGroupSize: 1,
+      maxGroupSize: 1,
+      stopsPerGroup: 1,
+    });
+
+    expect(result.groups).toEqual([]);
+    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "PORTAL_CAPACITY_EXCEEDED" }));
+  });
+
+  it("supports a non-hardcoded number of portals and stops", () => {
+    const result = proposePlan({ ...base, portals: base.portals.slice(0, 4), stopsPerGroup: 4 });
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups.every((group) => group.portalIds.length === 4)).toBe(true);
+  });
+
+  it("surfaces incompatible start preferences inside one together bundle", () => {
+    const result = proposePlan({
+      ...base,
+      starts: [...base.starts, { ...base.starts[0], id: "start-b" }],
+      parties: [
+        { id: "a", childCount: 2, togetherKey: "same", requestedStartId: "start-a" },
+        { id: "b", childCount: 2, togetherKey: "same", requestedStartId: "start-b" },
+      ],
+    });
+    expect(result.groups).toEqual([]);
+    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "START_PREFERENCE_CONFLICT" }));
+  });
 });
