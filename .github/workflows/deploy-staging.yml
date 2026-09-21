@@ -58,15 +58,6 @@ jobs:
       ABUSE_HASH_SECRET: ${{ secrets.ABUSE_HASH_SECRET }}
       ORGANIZATION_SUPPORT_EMAIL: halloween@duindorpdoet.nl
       ORGANIZATION_EVENT_PHONE: "0659019035"
-      TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
-      TEST_EMAIL_2: ${{ vars.TEST_EMAIL_2 }}
-      IMAP_HOST: ${{ vars.IMAP_HOST }}
-      IMAP_PORT: ${{ vars.IMAP_PORT }}
-      IMAP_SECURE: ${{ vars.IMAP_SECURE }}
-      IMAP_USER_1: ${{ secrets.IMAP_USER_1 }}
-      IMAP_PASSWORD_1: ${{ secrets.IMAP_PASSWORD_1 }}
-      IMAP_USER_2: ${{ secrets.IMAP_USER_2 }}
-      IMAP_PASSWORD_2: ${{ secrets.IMAP_PASSWORD_2 }}
       DG_RUNTIME_ENV_KEYS: >-
         APP_ENVIRONMENT APP_REVISION APP_URL NEXT_PUBLIC_SITE_URL ALLOWED_ORIGINS AUTH_SITE_URL
         EVENT_SLUG EVENT_TIMEZONE REGISTRATION_MODE MAIL_MODE MAIL_ALLOWED_RECIPIENTS
@@ -138,5 +129,37 @@ jobs:
       - name: Report unavailable SendGrid delivery tracking
         if: env.SENDGRID_EVENT_WEBHOOK_AVAILABLE != 'true'
         run: echo "::warning title=Staging delivery tracking skipped::The shared SendGrid account has no free application webhook slot; no existing webhook was changed."
-      - name: Verify real OTP and transactional mail
+
+  mail-acceptance:
+    name: Verify real OTP and transactional mail
+    needs: deploy
+    if: github.ref == 'refs/heads/staging'
+    environment:
+      name: staging
+      url: https://staging-halloween.duindorpdoet.nl
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_URL: https://staging-halloween.duindorpdoet.nl
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
+      TEST_EMAIL_2: ${{ vars.TEST_EMAIL_2 }}
+      IMAP_HOST: ${{ vars.IMAP_HOST }}
+      IMAP_PORT: ${{ vars.IMAP_PORT }}
+      IMAP_SECURE: ${{ vars.IMAP_SECURE }}
+      IMAP_USER_1: ${{ secrets.IMAP_USER_1 }}
+      IMAP_PASSWORD_1: ${{ secrets.IMAP_PASSWORD_1 }}
+      IMAP_USER_2: ${{ secrets.IMAP_USER_2 }}
+      IMAP_PASSWORD_2: ${{ secrets.IMAP_PASSWORD_2 }}
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Verify exact revision
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - name: Verify allowed-mailbox OTP and transaction delivery
         run: python3 scripts/acceptance/staging_mail.py
