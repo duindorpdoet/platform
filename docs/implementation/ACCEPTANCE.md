@@ -7,10 +7,10 @@ Statuswaarden: `pass`, `fail`, `blocked`, `not-run`. Alleen daadwerkelijk uitgev
 | Gebied | Status | Bewijs |
 |---|---|---|
 | Bronintegriteit en ontwerpport | pass | Meegeleverde packageverifier: 170 bestanden; versie 4. Playwright desktop/mobiel controleert merk, routes en afwezigheid van demoauth. |
-| Applicatiekwaliteit | pass | `pnpm lint`, `pnpm typecheck`, 14 Vitest-tests en `pnpm build`. |
+| Applicatiekwaliteit | pass | `pnpm lint`, `pnpm typecheck`, 16 Vitest-tests en `pnpm build`. |
 | Browserbasismatrix | pass | 18 Playwright-tests: desktop + Pixel 7, publieke routes, OTP-UI, redirects, headers, PWA, motion en kaartprivacy. |
-| Databasebasis | pass | Vijf migraties vanaf nul; 51 pgTAP-tests; `supabase db lint --level warning` zonder bevindingen. |
-| Provideracceptatie | not-run | Wordt door `deploy-staging.yml` uitgevoerd tegen echte Supabase, SendGrid en IMAP-testmailbox. |
+| Databasebasis | pass | Zes migraties vanaf nul; 116 pgTAP-tests; `supabase db lint --level warning` zonder bevindingen. |
+| Provideracceptatie | blocked | Stagingrun `35632060402`: beide toegestane ontvangers hebben een bestaande SendGrid `block`-suppression; bestaande gedeelde resources mogen niet worden gewijzigd. |
 | Remote security advisors | not-run | Staging- en productieworkflows falen op Supabase advisor-errors. |
 | Echte route-/avondproef | blocked | Operationele data en fysieke iOS/Android-avondproef ontbreken. |
 | Productie | not-run | Alleen toegestaan na succesvolle stagingdeployment van exact dezelfde commit. |

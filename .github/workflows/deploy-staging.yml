@@ -121,12 +121,12 @@ jobs:
             "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
       - name: Configure release controls, Auth and scheduler
         run: node scripts/deploy/configure-supabase.mjs
-      - name: Verify signed Auth email hook and mail provider
-        run: node scripts/deploy/verify-mail-provider.mjs
       - name: Check Supabase security advisors
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed staging release
         run: node scripts/deploy/verify-deployment.mjs staging "${APP_URL}"
+      - name: Verify signed Auth email hook and mail provider
+        run: node scripts/deploy/verify-mail-provider.mjs
       - name: Exercise signed SendGrid Event Webhook
         if: env.SENDGRID_EVENT_WEBHOOK_AVAILABLE == 'true'
         run: node scripts/deploy/test-sendgrid-webhook.mjs

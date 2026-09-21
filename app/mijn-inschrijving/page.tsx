@@ -6,8 +6,13 @@ import { serverEnv } from "@/lib/config/server-env";
 
 export const dynamic = "force-dynamic";
 
-export default async function MyRegistrationPage() {
+export default async function MyRegistrationPage({ searchParams }: { searchParams: Promise<{ uitnodiging?: string }> }) {
+  const inviteToken = (await searchParams).uitnodiging;
+  const safeInviteToken = inviteToken && /^[a-f0-9]{64}$/.test(inviteToken) ? inviteToken : undefined;
   const actor = await getActor();
-  if (!actor) redirect("/inloggen?next=/mijn-inschrijving");
-  return <div className="page wrap"><div className="app-heading row-between"><div><p className="kicker">Persoonlijke omgeving</p><h1>Mijn inschrijving</h1></div><SignOutButton /></div><RegistrationDashboard eventSlug={serverEnv().EVENT_SLUG} /></div>;
+  if (!actor) {
+    const destination = safeInviteToken ? `/mijn-inschrijving?uitnodiging=${safeInviteToken}` : "/mijn-inschrijving";
+    redirect(`/inloggen?next=${encodeURIComponent(destination)}`);
+  }
+  return <div className="page wrap"><div className="app-heading row-between"><div><p className="kicker">Persoonlijke omgeving</p><h1>Mijn inschrijving</h1></div><SignOutButton /></div><RegistrationDashboard eventSlug={serverEnv().EVENT_SLUG} inviteToken={safeInviteToken} /></div>;
 }
