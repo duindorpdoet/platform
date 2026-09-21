@@ -6,6 +6,7 @@ for (const name of [
   "SEND_EMAIL_HOOK_SECRET",
   "SENDGRID_API",
   "SENDGRID_FROM_EMAIL",
+  "TEST_EMAIL_1",
   "TEST_EMAIL_2",
 ]) {
   if (!process.env[name]) throw new Error(`Missing required mail-provider verification variable: ${name}`);
@@ -13,7 +14,7 @@ for (const name of [
 
 const sendgridBaseUrl = process.env.SENDGRID_API_BASE_URL ?? "https://api.sendgrid.com/v3";
 const sendgridHeaders = { Authorization: `Bearer ${process.env.SENDGRID_API}` };
-const recipient = process.env.TEST_EMAIL_2.toLowerCase();
+const recipientCandidates = [...new Set([process.env.TEST_EMAIL_1, process.env.TEST_EMAIL_2].map((email) => email.toLowerCase()))];
 
 async function sendgrid(path) {
   const response = await fetch(`${sendgridBaseUrl}${path}`, { headers: sendgridHeaders, signal: AbortSignal.timeout(10_000) });
@@ -24,24 +25,37 @@ async function sendgrid(path) {
   return { available: true, body: await response.json() };
 }
 
-const suppressionChecks = [
-  ["bounce", `/suppression/bounces/${encodeURIComponent(recipient)}`],
-  ["block", `/suppression/blocks/${encodeURIComponent(recipient)}`],
-  ["invalid", `/suppression/invalid_emails/${encodeURIComponent(recipient)}`],
-  ["spam", `/suppression/spam_reports/${encodeURIComponent(recipient)}`],
-];
-const suppressions = [];
 let suppressionReadAvailable = false;
-for (const [kind, path] of suppressionChecks) {
-  const result = await sendgrid(path);
-  suppressionReadAvailable ||= result.available;
-  if (Array.isArray(result.body) && result.body.length > 0) suppressions.push(kind);
+const recipientChecks = [];
+for (const candidate of recipientCandidates) {
+  const suppressionChecks = [
+    ["bounce", `/suppression/bounces/${encodeURIComponent(candidate)}`],
+    ["block", `/suppression/blocks/${encodeURIComponent(candidate)}`],
+    ["invalid", `/suppression/invalid_emails/${encodeURIComponent(candidate)}`],
+    ["spam", `/suppression/spam_reports/${encodeURIComponent(candidate)}`],
+  ];
+  const suppressions = [];
+  for (const [kind, path] of suppressionChecks) {
+    const result = await sendgrid(path);
+    suppressionReadAvailable ||= result.available;
+    if (Array.isArray(result.body) && result.body.length > 0) suppressions.push(kind);
+  }
+  const globalSuppression = await sendgrid(`/asm/suppressions/global/${encodeURIComponent(candidate)}`);
+  suppressionReadAvailable ||= globalSuppression.available;
+  if (globalSuppression.body?.recipient_email) suppressions.push("global");
+  recipientChecks.push({ recipient: candidate, suppressions });
 }
-const globalSuppression = await sendgrid(`/asm/suppressions/global/${encodeURIComponent(recipient)}`);
-suppressionReadAvailable ||= globalSuppression.available;
-if (globalSuppression.body?.recipient_email) suppressions.push("global");
-if (suppressions.length > 0) {
-  throw new Error(`The authorized staging recipient is suppressed by SendGrid (${suppressions.join(", ")}).`);
+const usableRecipient = recipientChecks.find((check) => check.suppressions.length === 0);
+if (!usableRecipient) {
+  const summary = recipientChecks.map((check, index) => `recipient ${index + 1}: ${check.suppressions.join(", ")}`).join("; ");
+  throw new Error(`All authorized staging recipients are suppressed by SendGrid (${summary}).`);
+}
+const recipient = usableRecipient.recipient;
+const suppressedRecipientCount = recipientChecks.filter((check) => check.suppressions.length > 0).length;
+if (suppressedRecipientCount > 0) {
+  console.log(
+    `::warning title=SendGrid recipient suppression::${suppressedRecipientCount} authorized test recipient(s) are suppressed; using an unsuppressed authorized recipient.`,
+  );
 }
 if (!suppressionReadAvailable) {
   console.log("::warning title=SendGrid suppression read unavailable::The restricted API key cannot inspect suppression lists.");
