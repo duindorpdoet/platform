@@ -54,6 +54,7 @@ Deno.serve(async (request) => {
       mail_settings: mailMode === "sandbox" ? { sandbox_mode: { enable: true } } : undefined,
     }),
   })));
+  console.log(JSON.stringify({ event: "auth_email_provider_response", statuses: responses.map((response) => response.status) }));
   if (responses.some((response) => response.status !== 202)) return new Response("provider rejected", { status: 502 });
   return new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } });
 });
