@@ -129,6 +129,7 @@ jobs:
         run: node scripts/deploy/verify-mail-provider.mjs
       - name: Diagnose SendGrid delivery on deployment failure
         if: failure()
+        continue-on-error: true
         run: node scripts/deploy/diagnose-mail-delivery.mjs
       - name: Exercise signed SendGrid Event Webhook
         if: env.SENDGRID_EVENT_WEBHOOK_AVAILABLE == 'true'
@@ -172,6 +173,7 @@ jobs:
         run: python3 scripts/acceptance/staging_mail.py
       - name: Diagnose failed mail delivery
         if: failure()
+        continue-on-error: true
         env:
           SENDGRID_API: ${{ secrets.SENDGRID_API }}
         run: node scripts/deploy/diagnose-mail-delivery.mjs
