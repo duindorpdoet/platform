@@ -174,7 +174,9 @@ try:
         {"email": TEST_EMAIL, "create_user": True},
         {"apikey": ANON_KEY, "Authorization": f"Bearer {ANON_KEY}"},
     )
+    print("OTP request submitted.")
     otp_uid, otp_message, otp_text = wait_for(imap, before_otp, "Je zescijferige inlogcode")
+    print("Matching OTP message received.")
     otp_match = re.search(r"(?<!\d)(\d{6})(?!\d)", otp_text)
     if not otp_match:
         raise RuntimeError("The received staging OTP message did not contain a six-digit code.")
@@ -188,6 +190,7 @@ try:
     )
     if status != 200 or not verification.get("access_token"):
         raise RuntimeError("The received OTP could not be verified against staging Supabase Auth.")
+    print("OTP verified against staging Auth.")
 
     before_contact = max(before_otp, otp_uid, max_uid(imap))
     http_json(
@@ -202,6 +205,7 @@ try:
         },
         {"Origin": APP_URL, "X-Request-ID": RUN_ID},
     )
+    print("Transactional contact request accepted; waiting for outbox delivery.")
     _, contact_message, contact_text = wait_for(imap, before_contact, "Je bericht is ontvangen", RUN_ID)
     if "halloween@duindorpdoet.nl" not in decoded_header(contact_message.get("From")).lower() or APP_URL not in contact_text:
         raise RuntimeError("The staging transactional message has an unexpected sender or environment URL.")

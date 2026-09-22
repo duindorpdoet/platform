@@ -48,6 +48,53 @@ async function rpcRequest(url, init) {
   throw new Error("Deployment RPC did not become available.");
 }
 
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+function safeProbeError(value) {
+  return String(value ?? "")
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")
+    .replace(/(?:bearer|token|secret|key)[=: ]+[^\s,;]+/gi, "$1=[redacted]")
+    .replace(/[\r\n]/g, " ")
+    .slice(0, 500);
+}
+
+async function verifyMailWorkerProbe() {
+  const requestId = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/dispatch_mail_worker_probe`, {
+    method: "POST",
+    headers: serviceHeaders,
+    body: "{}",
+  });
+  if (!Number.isInteger(requestId)) {
+    throw new Error("Mail worker probe could not be queued because no active worker request was created.");
+  }
+
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    const result = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/mail_worker_probe_result`, {
+      method: "POST",
+      headers: serviceHeaders,
+      body: JSON.stringify({ _request_id: requestId }),
+    });
+    if (!result?.found) {
+      await sleep(750);
+      continue;
+    }
+    if (result.timedOut === true) {
+      throw new Error("Supabase pg_net timed out while reaching the deployed mail worker.");
+    }
+    if (result.error) {
+      throw new Error(`Supabase pg_net could not reach the deployed mail worker: ${safeProbeError(result.error)}`);
+    }
+    const statusCode = result.statusCode;
+    if (statusCode >= 200 && statusCode < 300) return;
+    if (statusCode === 401) throw new Error("Mail worker probe reached the application but CRON authentication was rejected.");
+    if (statusCode === 404) throw new Error("Mail worker endpoint was not available on the deployed staging release.");
+    if (statusCode >= 500 && statusCode < 600) throw new Error("Mail worker endpoint returned an application error.");
+    throw new Error(`Mail worker probe reached the application but returned HTTP ${statusCode ?? "an invalid status"}.`);
+  }
+  throw new Error("Mail worker probe did not receive a pg_net response within 20 seconds.");
+}
+
 const managementHeaders = {
   Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,
   "Content-Type": "application/json",
@@ -128,6 +175,10 @@ if (releaseMode === "staging_test_open" && (release?.phase !== "registration_ope
 }
 if (process.env.MAIL_MODE !== "disabled" && mailWorker?.active !== true) {
   throw new Error("The durable mail worker was not activated.");
+}
+if (process.env.MAIL_MODE !== "disabled") {
+  await verifyMailWorkerProbe();
+  console.log("Supabase pg_net mail worker probe passed.");
 }
 
 console.log(`Supabase release controls configured for ${process.env.APP_ENVIRONMENT}.`);
