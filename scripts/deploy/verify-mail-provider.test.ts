@@ -39,7 +39,7 @@ describe("deployment mail acceptance", () => {
     expect(result.stdout).toContain("HOOK_PROBE_SENT");
     expect(result.stdout).toContain("550 old rejection for [redacted-email]");
     expect(result.stdout).not.toContain("test-one@example.invalid");
-    expect(result.stdout).toContain("passed (delivered)");
+    expect(result.stdout).toContain("Signed Auth email hook and SendGrid provider acceptance passed");
   });
   for (const suppression of ["bounces", "invalid_emails", "spam_reports"]) {
     it(`still stops before sending for ${suppression}`, () => {

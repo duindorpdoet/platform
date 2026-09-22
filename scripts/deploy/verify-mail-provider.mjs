@@ -122,18 +122,20 @@ if (!hookResponse.ok) {
   throw new Error(`The signed Auth email hook verification failed with status ${hookResponse.status}.`);
 }
 
-const activityQuery = encodeURIComponent(`to_email="${recipient}" AND subject="${probeSubject}"`);
+// SendGrid's activity endpoint accepts this simple, provider-supported query.
+// Correlate the probe subject locally rather than composing unsupported filters.
+const activityQuery = encodeURIComponent(`to_email="${recipient}"`);
 let activityAvailable = true;
 let deliveryStatus;
 let deliveryMessage;
 for (let attempt = 1; attempt <= 5; attempt += 1) {
   if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, 5_000));
-  const activity = await sendgrid(`/messages?limit=1&query=${activityQuery}`);
+  const activity = await sendgrid(`/messages?limit=10&query=${activityQuery}`);
   if (!activity.available) {
     activityAvailable = false;
     break;
   }
-  deliveryMessage = activity.body?.messages?.[0];
+  deliveryMessage = activity.body?.messages?.find((message) => message.subject === probeSubject);
   deliveryStatus = deliveryMessage?.status;
   if (deliveryStatus === "delivered" || deliveryStatus === "not_delivered") break;
 }
