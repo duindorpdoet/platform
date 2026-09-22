@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { ArrowUpRight, ChevronLeft, ChevronRight, DoorOpen, Flame, ShieldCheck } from "lucide-react";
 import { worlds } from "@/features/content/public-content";
 
@@ -9,14 +9,39 @@ type Props = { onNavigate: (path: string) => void };
 export function WorldExplorer({ onNavigate }: Props) {
   const [selected, setSelected] = useState(4);
   const world = worlds[selected];
+  const selectors = useRef<HTMLDivElement>(null);
+  const tabs = useRef<Array<HTMLButtonElement | null>>([]);
+  useEffect(() => {
+    const strip = selectors.current;
+    const tab = tabs.current[selected];
+    if (!strip || !tab) return;
+    const left = tab.offsetLeft - strip.offsetLeft;
+    if (left < strip.scrollLeft || left + tab.offsetWidth > strip.scrollLeft + strip.clientWidth) {
+      strip.scrollTo({ left: left - (strip.clientWidth - tab.offsetWidth) / 2, behavior: "instant" });
+    }
+  }, [selected]);
+  function navigateTabs(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const next = event.key === "ArrowRight" ? (index + 1) % worlds.length
+      : event.key === "ArrowLeft" ? (index + worlds.length - 1) % worlds.length
+      : event.key === "Home" ? 0 : event.key === "End" ? worlds.length - 1 : null;
+    if (next === null) return;
+    event.preventDefault();
+    setSelected(next);
+    tabs.current[next]?.focus({ preventScroll: true });
+  }
 
   return (
     <div className="world-explorer" style={{ "--world": world.color } as React.CSSProperties}>
-      <div className="explorer-selectors" role="tablist" aria-label="Kies een wereld">
+      <div ref={selectors} className="explorer-selectors" role="tablist" aria-label="Kies een wereld">
         {worlds.map((item, index) => (
           <button
             key={item.slug}
             type="button"
+            ref={(element) => { tabs.current[index] = element; }}
+            id={`world-tab-${item.slug}`}
+            aria-controls="world-panel"
+            tabIndex={selected === index ? 0 : -1}
+            onKeyDown={(event) => navigateTabs(event, index)}
             role="tab"
             aria-selected={selected === index}
             className="explorer-selector"
@@ -32,8 +57,8 @@ export function WorldExplorer({ onNavigate }: Props) {
           </button>
         ))}
       </div>
-      <section className="explorer-stage" role="tabpanel" aria-label={world.name}>
-        <div className="explorer-scene" style={{ "--world": world.color } as React.CSSProperties}>
+      <section id="world-panel" className="explorer-stage" role="tabpanel" aria-labelledby={`world-tab-${world.slug}`} tabIndex={0}>
+        <div key={world.slug} className="explorer-scene" style={{ "--world": world.color } as React.CSSProperties}>
           <div className="explorer-art">
             <img src={`/images/world-${selected}.webp`} alt={world.name} />
             <span className="explorer-aura" />

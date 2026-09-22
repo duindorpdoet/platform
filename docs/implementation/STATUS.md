@@ -41,3 +41,9 @@ Aanvullend afgerond: echte service-workerupdate tijdens onopgeslagen invoer; cam
 De 200-clientproef slaagt met 800 requests zonder fouten en precies één routeadvance: p95 305–430 ms voor snapshots en 434 ms voor identieke afrondingsverzoeken. Zie `load-acceptance-20260922.json`. Dit is lokaal bewijs met één gedeelde bevoegde identiteit, geen productielastmeting met 200 huishoudens. De proef is opgenomen in CI.
 
 Nog open: volledige handmatige toegankelijkheidscontrole (UX-03), fysieke telefoon-/avondproef en externe releasevoorwaarden in `BLOCKERS.md`. Geautomatiseerde 200-procent-tekst- en basistoetsenbordchecks slagen, maar vervangen die handmatige controle niet.
+
+## Correctie wereldenblok en mailcheck
+
+De live homepage had geladen afbeeldingen die door ontbrekende CSS-regels achter de achtergrond verdwenen. De component gebruikt geen oude tabs-wrapper meer; de stylesheet is daarop aangepast. De grote wereldafbeelding, zes fototegels en actieve selectie zijn hersteld, met pijltjes-/Home-/End-bediening en horizontale selectie op mobiel. Nieuwe browserchecks doorlopen alle zes werelden, afbeeldinggeometrie, navigatie en detailkoppeling; desktop- en mobiele screenshots zijn visueel gecontroleerd.
+
+De SendGrid-check classificeerde historische blocks onjuist als permanente suppressions. Die controlefout is hersteld en afwijsredenen worden geredigeerd gelogd. Zie de gecorrigeerde B-005; eerdere meldingen over een verplichte verwijdering van beide blocks waren niet juist. Lokale verificatie: 54 unit-tests en 20 homepage/publieke browserchecks geslaagd, plus lint, TypeScript en productiebuild.

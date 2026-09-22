@@ -18,7 +18,7 @@ Applicatie-, browser-, database-, lokale Auth-, samenloop- en bundelchecks zijn 
 | Lokale 200-clientproef | pass | `load-acceptance-20260922.json`: 800 requests zonder fouten; p95 snapshots 305–430 ms en afronden 434 ms; één testidentiteit; één routeadvance. Geen productiecapaciteitsclaim. |
 | Handmatige toegankelijkheid | not-run | Automatische smalle-scherm-/200-procent-tekstchecks en basistoetsenbordbediening slagen; volledige handmatige UX-03-controle blijft open. |
 | Browserbundels | pass | `pnpm test:artifacts`: 587 productiebestanden gescand. |
-| Provideracceptatie | blocked | Stagingrun `35643888861`: beide toegestane ontvangers hebben een bestaande SendGrid `block`-suppression; bestaande gedeelde resources mogen niet worden gewijzigd. |
+| Provideracceptatie | blocked | Stagingrun `35700649499` stopte door onjuiste classificatie van historische blocks als permanente suppressions. Check gecorrigeerd; echte bezorging opnieuw te verifiëren (B-005). |
 | Remote security advisors | pass | Stagingrun `35643888861`: Supabase security-advisors en gedeployde HTTP-smoke voor `c66798c` waren groen vóór de bekende mailgate. |
 | Echte route-/avondproef | blocked | Operationele data en fysieke iOS/Android-avondproef ontbreken. |
 | Productie | not-run | Alleen toegestaan na succesvolle stagingdeployment van exact dezelfde commit. |

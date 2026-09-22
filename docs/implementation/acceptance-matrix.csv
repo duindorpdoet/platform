@@ -106,7 +106,7 @@ MAIL-12,P0,Mail,Event buiten volgorde,Geen terugval van delivered naar processed
 MAIL-13,P1,Mail,Webhookopslag tijdelijk stuk,Geen vroeg 2xx; retry kan herstellen,Fault injection,pass,local:unit storage failure returns retryable 503
 MAIL-14,P1,Mail,429/configuratiefout/bounce,Begrensde backoff of passende stop; beheer ziet oorzaak,Adapter/worker test,pass,local:unit 429 rejection and bounded retry + local:db-013 bounce state
 MAIL-15,P0,Mail,Bestaande SendGrid-consumer,Andere appwebhook/template blijft intact,Configuratie-diff review,pass,workflow:staging 35643888861 preserved occupied shared webhook
-MAIL-16,P0,Mail,Echte bezorgingsproef,From/Reply-To/code en mailauth gecontroleerd,Ontvangen testmail + headers,blocked,workflow:staging 35643888861 both authorized recipients on SendGrid block suppression
+MAIL-16,P0,Mail,Echte bezorgingsproef,From/Reply-To/code en mailauth gecontroleerd,Ontvangen testmail + headers,blocked,workflow:staging 35700649499 incorrectly treated historical blocks as suppression; corrected check awaits real delivery
 MAIL-17,P0,Mail,Beveiligde emailwijziging indien aan,Beide adressen/tokens correct; geen accountovername,Auth E2E,pass,local:auth distinct old and new address tokens dual-confirmed and replay rejected
 MAIL-18,P1,Mail,Scheduler/herhaalde leaseclaim,Geen dubbele worker op actieve lease,Jobintegratietest,pass,local:db-005
 PWA-01,P1,PWA,Manifest en echte service worker,Installeerbare shell en juist scope/cachebeleid,Browserinspectie,pass,local:e2e service worker
