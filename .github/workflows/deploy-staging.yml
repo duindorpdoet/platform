@@ -167,3 +167,8 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - name: Verify allowed-mailbox OTP and transaction delivery
         run: python3 scripts/acceptance/staging_mail.py
+      - name: Diagnose failed mail delivery
+        if: failure()
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+        run: node scripts/deploy/diagnose-mail-delivery.mjs
