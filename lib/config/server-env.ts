@@ -8,6 +8,7 @@ const schema = z.object({
   APP_REVISION: z.string().regex(/^[a-f0-9]{40}$/).optional(),
   APP_URL: optionalUrl.default("http://localhost:3000"),
   NEXT_PUBLIC_SITE_URL: optionalUrl.optional(),
+  NEXT_PUBLIC_SUPABASE_URL: optionalUrl.optional(),
   ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
   EVENT_SLUG: z.string().default("duindorp-halloween-2026"),
   EVENT_TIMEZONE: z.string().default("Europe/Amsterdam"),

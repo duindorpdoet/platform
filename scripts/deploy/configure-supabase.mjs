@@ -58,6 +58,46 @@ function safeProbeError(value) {
     .slice(0, 500);
 }
 
+async function verifyRuntimeMailGateway() {
+  let response;
+  try {
+    response = await fetch(`${appUrl}/api/jobs/mail`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.CRON_SECRET}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ probe: "transactional_gateway" }),
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    throw new Error("The deployed application could not complete the transactional mail gateway runtime probe.");
+  }
+
+  if (response.ok) return;
+
+  let detail = "";
+  try {
+    detail = safeProbeError(await response.text());
+  } catch {
+    detail = "";
+  }
+
+  if (response.status === 401) {
+    throw new Error("Transactional mail gateway runtime probe was rejected by CRON authentication.");
+  }
+  if (response.status === 403) {
+    throw new Error("Transactional mail gateway runtime probe was rejected by the staging recipient allowlist.");
+  }
+  if (response.status === 503) {
+    throw new Error("Transactional mail gateway runtime configuration is unavailable or disabled.");
+  }
+  if (response.status === 502 || response.status === 504) {
+    throw new Error(`Transactional mail gateway could not reach or was rejected by the mail provider${detail ? `: ${detail}` : "."}`);
+  }
+  throw new Error(`Transactional mail gateway runtime probe returned HTTP ${response.status}${detail ? `: ${detail}` : "."}`);
+}
+
 async function verifyMailWorkerProbe() {
   const requestId = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/dispatch_mail_worker_probe`, {
     method: "POST",
@@ -179,6 +219,8 @@ if (process.env.MAIL_MODE !== "disabled" && mailWorker?.active !== true) {
 if (process.env.MAIL_MODE !== "disabled") {
   await verifyMailWorkerProbe();
   console.log("Supabase pg_net mail worker probe passed.");
+  await verifyRuntimeMailGateway();
+  console.log("Transactional mail gateway runtime probe passed.");
 }
 
 console.log(`Supabase release controls configured for ${process.env.APP_ENVIRONMENT}.`);
