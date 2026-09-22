@@ -74,6 +74,9 @@ def connect() -> tuple[imaplib.IMAP4, str]:
                 status, _ = client.select("INBOX")
                 if status != "OK":
                     raise imaplib.IMAP4.error("Mailbox selection failed")
+                if imap_user.lower() != test_email:
+                    raise imaplib.IMAP4.error("IMAP login must match the configured test recipient")
+                print("Mailbox login succeeded for the configured test recipient.", flush=True)
                 return client, test_email
             except (imaplib.IMAP4.abort, imaplib.IMAP4.error, OSError) as error:
                 last_error = error
@@ -131,6 +134,35 @@ def wait_for(client: imaplib.IMAP4, after_uid: int, subject: str, contains: str 
                 if decoded_header(message.get("Subject")) == subject and TEST_EMAIL in decoded_header(message.get("To")).lower() and (contains is None or contains in text):
                     return uid, message, text
         time.sleep(5)
+    # Diagnose delivery without logging OTPs, addresses or message contents.
+    status, folders = client.list()
+    matching_folders = 0
+    if status == "OK":
+        for folder in folders or []:
+            if not folder:
+                continue
+            match = re.match(rb'\([^)]*\) "[^"]*" (.+)', folder)
+            if not match or b"\\Noselect" in folder:
+                continue
+            try:
+                status, _ = client.select(match.group(1).decode(), readonly=True)
+                if status != "OK":
+                    continue
+                status, data = client.uid("search", None, "SUBJECT", '"' + subject + '"')
+                ids = data[0].split() if status == "OK" and data and data[0] else []
+                if ids:
+                    matching_folders += 1
+                    print(f"Mail diagnostic: expected subject found in {'INBOX' if b'INBOX' in match.group(1).upper() else 'another folder'} ({len(ids)} message(s)).", flush=True)
+                    for uid in ids[-3:]:
+                        _, headers = client.uid("fetch", uid, "(BODY.PEEK[HEADER.FIELDS (TO FROM AUTHENTICATION-RESULTS)])")
+                        if headers and isinstance(headers[0], tuple):
+                            message = email.message_from_bytes(headers[0][1])
+                            auth = " ".join(message.get_all("Authentication-Results", []))
+                            outcomes = re.findall(r"(?:spf|dkim|dmarc)=[a-z]+", auth, re.I)
+                            print(f"Mail diagnostic: recipient matches={TEST_EMAIL in decoded_header(message.get('To')).lower()}, authentication={outcomes}.", flush=True)
+            except (imaplib.IMAP4.error, OSError):
+                print("Mail diagnostic: folder could not be inspected.", flush=True)
+    print(f"Mail diagnostic: expected subject present in {matching_folders} folder(s).", flush=True)
     raise RuntimeError(f"No matching staging message arrived for acceptance run {RUN_ID}.")
 
 
