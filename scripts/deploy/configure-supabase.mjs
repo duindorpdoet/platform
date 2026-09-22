@@ -70,6 +70,7 @@ await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, 
     mailer_secure_email_change_enabled: true,
     mailer_otp_exp: 600,
     mailer_otp_length: 6,
+    ...(process.env.APP_ENVIRONMENT === "staging" ? { rate_limit_email_sent: 30 } : {}),
     hook_send_email_enabled: true,
     hook_send_email_uri: `${supabaseUrl.origin}/functions/v1/send-email-hook`,
     hook_send_email_secrets: hookSecret,
@@ -79,6 +80,13 @@ await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, 
 const authConfig = await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, {
   headers: managementHeaders,
 });
+if (authConfig.hook_send_email_enabled !== true || authConfig.hook_send_email_uri !== `${supabaseUrl.origin}/functions/v1/send-email-hook`) {
+  throw new Error("Supabase Auth did not retain the configured Send Email hook.");
+}
+if (process.env.APP_ENVIRONMENT === "staging" && authConfig.rate_limit_email_sent !== 30) {
+  throw new Error("Supabase Auth did not retain the bounded staging email rate limit.");
+}
+
 if (authConfig.mailer_autoconfirm !== false
     || authConfig.mailer_allow_unverified_email_sign_ins !== false
     || authConfig.mailer_secure_email_change_enabled !== true
