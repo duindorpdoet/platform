@@ -193,7 +193,7 @@ try:
     print("OTP verified against staging Auth.")
 
     before_contact = max(before_otp, otp_uid, max_uid(imap))
-    http_json(
+    contact_status, contact_result = http_json(
         f"{APP_URL}/api/public/contact",
         {
             "name": "Geautomatiseerde stagingacceptatie",
@@ -205,7 +205,9 @@ try:
         },
         {"Origin": APP_URL, "X-Request-ID": RUN_ID},
     )
-    print("Transactional contact request accepted; waiting for outbox delivery.")
+    if contact_status != 201 or contact_result.get("data", {}).get("stored") is not True:
+        raise RuntimeError("The staging contact request did not create a durable transactional outbox entry.")
+    print("Transactional contact request stored; waiting for outbox delivery.")
     _, contact_message, contact_text = wait_for(imap, before_contact, "Je bericht is ontvangen", RUN_ID)
     if "halloween@duindorpdoet.nl" not in decoded_header(contact_message.get("From")).lower() or APP_URL not in contact_text:
         raise RuntimeError("The staging transactional message has an unexpected sender or environment URL.")
