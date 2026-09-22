@@ -1,11 +1,18 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
-function configure(probeResult: object) {
+function configure(probeResult: object, runtimeStatus = 200) {
   const code = `
     globalThis.fetch = async (input, init = {}) => {
       const url = new URL(String(input));
       let body = {};
+
+      if (url.origin === 'https://staging.example.invalid' && url.pathname === '/api/jobs/mail') {
+        return new Response(
+          runtimeStatus === 200 ? JSON.stringify({ probe: 'transactional_gateway', accepted: true }) : 'runtime probe failed',
+          { status: runtimeStatus, headers: { 'content-type': 'application/json' } },
+        );
+      }
 
       if (url.pathname.endsWith('/config/auth') && init.method !== 'PATCH') {
         body = {
@@ -49,6 +56,7 @@ function configure(probeResult: object) {
       });
     };
 
+    globalThis.runtimeStatus = ${runtimeStatus};
     await import('./scripts/deploy/configure-supabase.mjs');
   `;
 
@@ -73,7 +81,7 @@ function configure(probeResult: object) {
 }
 
 describe("mail worker deployment probe", () => {
-  it("requires a successful pg_net response", () => {
+  it("requires successful pg_net reachability and runtime mail gateway validation", () => {
     const result = configure({
       found: true,
       statusCode: 204,
@@ -83,6 +91,7 @@ describe("mail worker deployment probe", () => {
 
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain("Supabase pg_net mail worker probe passed.");
+    expect(result.stdout).toContain("Transactional mail gateway runtime probe passed.");
   });
 
   it("reports rejected CRON authentication precisely", () => {
@@ -95,5 +104,17 @@ describe("mail worker deployment probe", () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("CRON authentication was rejected");
+  });
+
+  it("fails before acceptance when the deployed runtime mail gateway is unavailable", () => {
+    const result = configure({
+      found: true,
+      statusCode: 204,
+      timedOut: false,
+      error: null,
+    }, 503);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("runtime configuration is unavailable or disabled");
   });
 });
