@@ -44,12 +44,19 @@ describe("deployment mail acceptance", () => {
   });
   it.each([
     ["/send-email-hook", "signed Supabase Auth email hook"],
-    ["/messages", "SendGrid activity lookup"],
+    ["/verified_senders", "SendGrid /verified_senders"],
   ])("identifies a timeout at %s without leaking provider details", (path, label) => {
     const result = verify("blocks", path);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain(`${label} timed out after 10 seconds`);
     expect(result.stderr).not.toContain("secret provider detail");
+  });
+  it("continues to required mailbox acceptance when only activity lookup times out", () => {
+    const result = verify("blocks", "/messages");
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain("HOOK_PROBE_SENT");
+    expect(result.stdout).toContain("Real mailbox acceptance remains required");
+    expect(result.stdout).not.toContain("passed (delivered)");
   });
   for (const suppression of ["bounces", "invalid_emails", "spam_reports"]) {
     it(`still stops before sending for ${suppression}`, () => {

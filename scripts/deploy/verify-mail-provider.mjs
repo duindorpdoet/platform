@@ -25,7 +25,7 @@ async function timedRequest(label, url, init) {
     return response;
   } catch (error) {
     const kind = error?.name === "TimeoutError" ? "timed out after 10 seconds" : "failed before an HTTP response";
-    throw new Error(`Mail verification: ${label} ${kind}.`);
+    throw Object.assign(new Error(`Mail verification: ${label} ${kind}.`), { code: "MAIL_NETWORK_ERROR" });
   }
 }
 
@@ -142,7 +142,17 @@ let deliveryStatus;
 let deliveryMessage;
 for (let attempt = 1; attempt <= 5; attempt += 1) {
   if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, 5_000));
-  const activity = await sendgrid(`/messages?limit=1&query=${activityQuery}`);
+  let activity;
+  try {
+    activity = await sendgrid(`/messages?limit=1&query=${activityQuery}`);
+  } catch (error) {
+    // Status lookup is supplemental: the next workflow job must still prove
+    // real OTP and transactional delivery through IMAP before promotion.
+    if (error?.code !== "MAIL_NETWORK_ERROR") throw error;
+    console.log(`::warning title=SendGrid activity network failure::${error.message} Real mailbox acceptance remains required.`);
+    activityAvailable = false;
+    break;
+  }
   if (!activity.available) {
     activityAvailable = false;
     break;
@@ -165,7 +175,7 @@ if (deliveryStatus === "not_delivered") {
   throw new Error("SendGrid reports the signed Auth-hook test message as not delivered.");
 }
 if (!activityAvailable) {
-  console.log("::warning title=SendGrid activity read unavailable::Provider acceptance is verified, but this plan/key cannot query final delivery.");
+  console.log("::warning title=SendGrid activity read unavailable::Provider acceptance is verified, but the activity API is unavailable. Real mailbox acceptance remains required.");
 } else if (deliveryStatus !== "delivered") {
   console.log("::warning title=SendGrid delivery still processing::The signed Auth-hook message was accepted but has no final status yet.");
 }
