@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { assertReadableLayout } from "./helpers/layout";
 
 test("premium homepage keeps the supplied identity and closed participation path", async ({ page }, testInfo) => {
   await page.goto("/");
@@ -54,4 +55,64 @@ test("service worker is a real script with private network-only rules", async ({
   expect(body).toContain("CLEAR_PRIVATE_CACHE");
   expect(body).toContain('"/mijn-"');
   expect(body).toContain('cache: "no-store"');
+});
+
+for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText: false }, { width: 390, doubleText: true }]) {
+  test(`public pages fit ${size.width}px with ${size.doubleText ? "200%" : "100%"} text`, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: size.width, height: 844 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    for (const path of ["/", "/verhaal", "/werelden", "/werelden/heksenrijk", "/werelden/dodenrijk", "/werelden/circuswereld", "/werelden/besmette-zone", "/werelden/geestenwereld", "/werelden/vampierrijk", "/kaart", "/faq", "/sponsoren", "/contact", "/privacy", "/voorwaarden", "/toegankelijkheid", "/inloggen"]) {
+      await page.goto(path);
+      await assertReadableLayout(page, size.doubleText);
+    }
+    await page.getByLabel("E-mailadres").focus();
+    await page.keyboard.type("keyboard@example.invalid");
+    await expect(page.getByLabel("E-mailadres")).toHaveValue("keyboard@example.invalid");
+    await page.keyboard.press("Tab");
+    await expect(page.locator(":focus")).toBeVisible();
+  });
+}
+
+test("world explorer displays its artwork and supports all six worlds and keyboard navigation", async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const explorer = page.locator(".world-explorer");
+  await explorer.scrollIntoViewIfNeeded();
+  const tabs = explorer.getByRole("tab");
+  await expect(tabs).toHaveCount(6);
+  for (let index = 0; index < 6; index += 1) {
+    const tab = tabs.nth(index);
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-selected", "true");
+    const name = await tab.locator("strong").innerText();
+    await expect(explorer.getByRole("heading", { name, exact: true })).toBeVisible();
+    const image = explorer.locator(".explorer-art img");
+    await expect(image).toHaveAttribute("src", `/images/world-${index}.webp`);
+    await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+    await expect(explorer.locator(".explorer-scene")).toHaveCSS("isolation", "isolate");
+    const geometry = await tab.evaluate((element) => {
+      const card = element.getBoundingClientRect();
+      const photo = element.querySelector("img")!.getBoundingClientRect();
+      return { cardWidth: card.width, photoWidth: photo.width, cardHeight: card.height, photoHeight: photo.height };
+    });
+    expect(geometry.cardHeight).toBeGreaterThanOrEqual(125);
+    expect(geometry.photoWidth).toBeLessThan(geometry.cardWidth * 1.1);
+    expect(geometry.photoHeight).toBeLessThan(geometry.cardHeight * 1.1);
+  }
+  await tabs.last().focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(tabs.first()).toBeFocused();
+  await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("End");
+  await expect(tabs.last()).toBeFocused();
+  await page.keyboard.press("Home");
+  await expect(tabs.first()).toBeFocused();
+  await explorer.getByRole("button", { name: "Vorige wereld", exact: true }).click();
+  await expect(tabs.last()).toHaveAttribute("aria-selected", "true");
+  await explorer.getByRole("button", { name: "Volgende wereld", exact: true }).click();
+  await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
+  await explorer.screenshot({ path: testInfo.outputPath("world-explorer.png") });
+  await explorer.getByRole("button", { name: "Betreed deze wereld" }).click();
+  await expect(page).toHaveURL(/\/werelden\/heksenrijk$/);
 });

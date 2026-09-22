@@ -3,11 +3,14 @@
 
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+  raw_app_meta_data, raw_user_meta_data, confirmation_token, recovery_token,
+  email_change_token_new, email_change, phone_change_token, email_change_token_current,
+  reauthentication_token, created_at, updated_at
 )
 select fixture.id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', fixture.email,
        crypt('local-test-only', gen_salt('bf')), now(),
-       '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()
+       '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+       '', '', '', '', '', '', '', now(), now()
 from (values
   ('a0000000-0000-0000-0000-000000000001'::uuid, 'parent-a@example.invalid'),
   ('b0000000-0000-0000-0000-000000000001'::uuid, 'parent-b@example.invalid'),
@@ -21,6 +24,20 @@ from (values
   ('a0000000-0000-0000-0000-000000000010'::uuid, 'parent-size-10@example.invalid')
 ) fixture(id, email)
 on conflict (id) do nothing;
+
+insert into auth.identities(id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+select
+  users.id,
+  users.id::text,
+  users.id,
+  jsonb_build_object('sub', users.id::text, 'email', users.email, 'email_verified', true),
+  'email',
+  now(),
+  users.created_at,
+  users.updated_at
+from auth.users users
+where users.email like '%@example.invalid'
+on conflict (provider_id, provider) do nothing;
 
 update app_private.events
 set phase = 'registration_open',
@@ -148,8 +165,8 @@ begin
     insert into app_private.group_leaders(group_id, user_id, active_from, revision, assigned_by)
     values (v_group_id, 'c0000000-0000-0000-0000-000000000001', timestamptz '2026-01-01 00:00:00+01', 1, 'f0000000-0000-0000-0000-000000000001')
     on conflict do nothing;
-    insert into app_private.route_plan_versions(id, group_id, revision, state, generated_by, published_at, input_hash)
-    values (v_plan_id, v_group_id, 1, 'published', 'f0000000-0000-0000-0000-000000000001', now(), 'fixture-' || v_size)
+    insert into app_private.route_plan_versions(id, group_id, revision, state, generated_by, input_hash)
+    values (v_plan_id, v_group_id, 1, 'valid', 'f0000000-0000-0000-0000-000000000001', 'fixture-' || v_size)
     on conflict (id) do nothing;
     insert into app_private.route_plan_stops(plan_version_id, position, portal_id, planned_arrival_at, planned_departure_at)
     select v_plan_id, portal_number,
@@ -158,6 +175,7 @@ begin
       timestamptz '2026-10-31 18:35:00+01' + make_interval(mins => (portal_number - 1) * 8)
     from generate_series(1, 6) portal_number
     on conflict do nothing;
+    update app_private.route_plan_versions set state = 'published', published_at = now() where id = v_plan_id and state = 'valid';
     update app_private.walking_groups set current_plan_version_id = v_plan_id where id = v_group_id;
   end loop;
 

@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { deliveriesForPayload } from "./payload";
+import { sendHookDeliveries } from "./send";
 
 describe("Auth email hook payload contract", () => {
   it("rejects an unknown action instead of sending a login-like mail", () => {
@@ -40,5 +41,24 @@ describe("Auth email hook payload contract", () => {
       deliveries: [],
       supported: true,
     });
+  });
+
+  it("bounds a stalled SendGrid request instead of reporting false Auth-hook success", async () => {
+    const stalledFetch = vi.fn((_url: string | URL | Request, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+    }));
+
+    await expect(sendHookDeliveries({
+      deliveries: [{ email: "halloweentest1@duindorpdoet.nl", token: "123456" }],
+      apiKey: "test-only",
+      from: "halloween@duindorpdoet.nl",
+      fromName: "Halloween test",
+      subject: "Test",
+      providerProbe: false,
+      sandbox: false,
+      timeoutMs: 10,
+      fetcher: stalledFetch,
+    })).rejects.toBeTruthy();
+    expect(stalledFetch).toHaveBeenCalledOnce();
   });
 });

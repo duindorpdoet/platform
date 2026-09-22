@@ -1,0 +1,52 @@
+{
+  "environment": "local",
+  "clients": 200,
+  "identityCount": 1,
+  "phases": [
+    {
+      "name": "snapshot-1",
+      "requests": 200,
+      "failures": 0,
+      "elapsedMs": 434,
+      "p50Ms": 332,
+      "p95Ms": 430,
+      "p99Ms": 432,
+      "maxMs": 432
+    },
+    {
+      "name": "snapshot-2",
+      "requests": 200,
+      "failures": 0,
+      "elapsedMs": 374,
+      "p50Ms": 207,
+      "p95Ms": 370,
+      "p99Ms": 372,
+      "maxMs": 372
+    },
+    {
+      "name": "snapshot-3",
+      "requests": 200,
+      "failures": 0,
+      "elapsedMs": 310,
+      "p50Ms": 185,
+      "p95Ms": 305,
+      "p99Ms": 308,
+      "maxMs": 309
+    },
+    {
+      "name": "same-key-completion",
+      "requests": 200,
+      "failures": 0,
+      "elapsedMs": 440,
+      "p50Ms": 245,
+      "p95Ms": 434,
+      "p99Ms": 437,
+      "maxMs": 439
+    }
+  ],
+  "status": "pass",
+  "checks": [
+    "OPS-08"
+  ],
+  "invariant": "200 concurrent completion requests return one receipt and advance exactly one stop"
+}

@@ -14,9 +14,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:artifacts": "node scripts/acceptance/scan-client-artifacts.mjs",
     "test:db": "supabase test db",
     "db:reset": "supabase db reset",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:artifacts"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

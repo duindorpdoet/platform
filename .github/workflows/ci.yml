@@ -62,11 +62,47 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Start local Supabase
-        run: pnpm exec supabase start
+        run: pnpm exec supabase start >/tmp/duindorp-supabase-start.log 2>&1
       - name: Rebuild database from migrations
         run: pnpm exec supabase db reset
       - name: Run pgTAP contracts
         run: pnpm exec supabase test db
+      - name: Run local Auth one-time-code acceptance
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          SUPABASE_URL="$API_URL" SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" MAILPIT_URL="$MAILPIT_URL" node scripts/acceptance/local-auth.mjs
+      - name: Run true parallel transaction acceptance
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          SUPABASE_URL="$API_URL" SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" node scripts/acceptance/concurrency.mjs
+      - name: Rebuild fixtures for local load acceptance
+        run: pnpm exec supabase db reset
+      - name: Run 200-client local load acceptance
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          SUPABASE_URL="$API_URL" SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" node scripts/acceptance/load.mjs
+      - name: Rebuild fixtures for authenticated browser acceptance
+        run: pnpm exec supabase db reset
+      - name: Build application against local Auth and API
+        env:
+          APP_ENVIRONMENT: test
+          REGISTRATION_MODE: staging_test
+          APP_URL: http://127.0.0.1:3100
+          ALLOWED_ORIGINS: http://127.0.0.1:3100
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm build
+      - name: Install Chromium for authenticated browser acceptance
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run offline, reconnect and private-payload browser acceptance
+        env:
+          APP_ENVIRONMENT: test
+          REGISTRATION_MODE: staging_test
+          APP_URL: http://127.0.0.1:3100
+          ALLOWED_ORIGINS: http://127.0.0.1:3100
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts --project=desktop-chromium
       - name: Lint database schemas
         run: pnpm exec supabase db lint --level warning
       - name: Stop local Supabase

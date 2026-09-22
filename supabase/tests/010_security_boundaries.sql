@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(31);
 
 create temporary table security_values(party jsonb) on commit drop;
 insert into security_values values (null);
@@ -44,7 +44,21 @@ select is(
   '21000000-0000-0000-0000-000000000002',
   'joined parent still receives only their own household projection'
 );
+select lives_ok(
+  $$ select api.together_leave('22000000-0000-0000-0000-000000000002', 'Eigen samenloopwens verlaten') $$,
+  'a household can leave its own unlocked together preference'
+);
+set local role postgres;
+select ok(
+  not exists (select 1 from app_private.together_memberships where registration_id = '22000000-0000-0000-0000-000000000002' and left_at is null),
+  'leaving removes only the caller registration from the active preference'
+);
+select ok(
+  exists (select 1 from app_private.together_memberships where registration_id = '22000000-0000-0000-0000-000000000001' and left_at is null),
+  'the other household membership remains intact'
+);
 
+set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select throws_ok(
   $$ select api.portal_set_operational_state('12000000-0000-0000-0000-000000000001', 'paused', 1, 'Onbevoegde statuswijziging') $$,
@@ -85,6 +99,18 @@ select ok(
 select ok(
   not app_private.can_access_portal_document('12000000-0000-0000-0000-000000000001/qr.png'),
   'ordinary parent cannot resolve another resident QR document path'
+);
+
+select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select ok(
+  app_private.can_access_application_asset('e0000000-0000-0000-0000-000000000001/11000000-0000-0000-0000-000000000001/photo.webp'),
+  'portal reviewer can open an applicant private image through a short-lived signed URL'
+);
+set local role postgres;
+select is(
+  (select count(*)::integer from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname in ('application owners upload private images', 'application owners update private images')),
+  0,
+  'browsers cannot bypass server-side image signature validation with a direct storage write'
 );
 
 set local role service_role;
