@@ -16,8 +16,23 @@ const sendgridBaseUrl = process.env.SENDGRID_API_BASE_URL ?? "https://api.sendgr
 const sendgridHeaders = { Authorization: `Bearer ${process.env.SENDGRID_API}` };
 const recipientCandidates = [...new Set([process.env.TEST_EMAIL_1, process.env.TEST_EMAIL_2].map((email) => email.toLowerCase()))];
 
+async function timedRequest(label, url, init) {
+  const started = Date.now();
+  console.log(`Mail verification: ${label} started.`);
+  try {
+    const response = await fetch(url, { ...init, signal: AbortSignal.timeout(10_000) });
+    console.log(`Mail verification: ${label} returned HTTP ${response.status} after ${Date.now() - started}ms.`);
+    return response;
+  } catch (error) {
+    const kind = error?.name === "TimeoutError" ? "timed out after 10 seconds" : "failed before an HTTP response";
+    throw new Error(`Mail verification: ${label} ${kind}.`);
+  }
+}
+
 async function sendgrid(path) {
-  const response = await fetch(`${sendgridBaseUrl}${path}`, { headers: sendgridHeaders, signal: AbortSignal.timeout(10_000) });
+  // Do not log recipient addresses, message identifiers or query strings.
+  const label = path.startsWith("/messages") ? "SendGrid activity lookup" : `SendGrid ${path.split("?")[0].split("/").slice(0, 3).join("/")}`;
+  const response = await timedRequest(label, `${sendgridBaseUrl}${path}`, { headers: sendgridHeaders });
   if (response.status === 401) throw new Error("SendGrid rejected the configured API key.");
   if (response.status === 403) return { available: false, body: null };
   if (response.status === 404) return { available: true, body: null };
@@ -106,7 +121,7 @@ const payload = JSON.stringify({
 const messageId = `msg_${randomUUID()}`;
 const timestamp = new Date();
 const signature = new Webhook(hookSecret).sign(messageId, timestamp, payload);
-const hookResponse = await fetch(`${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin}/functions/v1/send-email-hook`, {
+const hookResponse = await timedRequest("signed Supabase Auth email hook", `${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin}/functions/v1/send-email-hook`, {
   method: "POST",
   headers: {
     "content-type": "application/json",
@@ -115,7 +130,6 @@ const hookResponse = await fetch(`${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL
     "webhook-signature": signature,
   },
   body: payload,
-  signal: AbortSignal.timeout(10_000),
 });
 if (!hookResponse.ok) {
   await hookResponse.body?.cancel();

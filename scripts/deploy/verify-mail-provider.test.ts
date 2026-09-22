@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
-function verify(suppression: string) {
+function verify(suppression: string, timeoutAt = "") {
   const code = `
     globalThis.fetch = async (input) => {
       const url = new URL(String(input));
+      if (${JSON.stringify(timeoutAt)} && url.pathname.includes(${JSON.stringify(timeoutAt)})) throw new DOMException("secret provider detail", "TimeoutError");
       let body = [];
       if (url.pathname.includes('/blocks/')) body = [{reason:'550 old rejection for test-one@example.invalid'}];
       if (url.pathname.includes('/${suppression}/') && ${JSON.stringify(suppression)} !== 'blocks') body = [{reason:'active suppression'}];
@@ -40,6 +41,15 @@ describe("deployment mail acceptance", () => {
     expect(result.stdout).toContain("550 old rejection for [redacted-email]");
     expect(result.stdout).not.toContain("test-one@example.invalid");
     expect(result.stdout).toContain("passed (delivered)");
+  });
+  it.each([
+    ["/send-email-hook", "signed Supabase Auth email hook"],
+    ["/messages", "SendGrid activity lookup"],
+  ])("identifies a timeout at %s without leaking provider details", (path, label) => {
+    const result = verify("blocks", path);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(`${label} timed out after 10 seconds`);
+    expect(result.stderr).not.toContain("secret provider detail");
   });
   for (const suppression of ["bounces", "invalid_emails", "spam_reports"]) {
     it(`still stops before sending for ${suppression}`, () => {
