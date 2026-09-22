@@ -15,6 +15,10 @@ for (const name of [
 const sendgridBaseUrl = process.env.SENDGRID_API_BASE_URL ?? "https://api.sendgrid.com/v3";
 const sendgridHeaders = { Authorization: `Bearer ${process.env.SENDGRID_API}` };
 const recipientCandidates = [...new Set([process.env.TEST_EMAIL_1, process.env.TEST_EMAIL_2].map((email) => email.toLowerCase()))];
+const activityPollIntervalMs = Number(process.env.SENDGRID_ACTIVITY_POLL_INTERVAL_MS ?? 5_000);
+if (!Number.isSafeInteger(activityPollIntervalMs) || activityPollIntervalMs < 0) {
+  throw new Error("SENDGRID_ACTIVITY_POLL_INTERVAL_MS must be a non-negative integer.");
+}
 
 async function sendgrid(path) {
   const response = await fetch(`${sendgridBaseUrl}${path}`, { headers: sendgridHeaders, signal: AbortSignal.timeout(10_000) });
@@ -129,7 +133,7 @@ let activityAvailable = true;
 let deliveryStatus;
 let deliveryMessage;
 for (let attempt = 1; attempt <= 5; attempt += 1) {
-  if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, 5_000));
+  if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, activityPollIntervalMs));
   const activity = await sendgrid(`/messages?limit=10&query=${activityQuery}`);
   if (!activity.available) {
     activityAvailable = false;

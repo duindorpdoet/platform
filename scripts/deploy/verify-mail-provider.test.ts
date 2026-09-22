@@ -24,6 +24,7 @@ function verify(suppression: string) {
       SEND_EMAIL_HOOK_SECRET: Buffer.from("test-hook-secret-never-used-remotely").toString("base64"),
       SENDGRID_API: "test-key-never-sent",
       SENDGRID_API_BASE_URL: "https://sendgrid.example.invalid/v3",
+      SENDGRID_ACTIVITY_POLL_INTERVAL_MS: "1",
       SENDGRID_FROM_EMAIL: "sender@example.invalid",
       TEST_EMAIL_1: "test-one@example.invalid",
       TEST_EMAIL_2: "test-two@example.invalid",
