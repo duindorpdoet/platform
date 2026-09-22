@@ -57,6 +57,18 @@ describe("deterministic planner", () => {
     expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "PORTAL_CAPACITY_EXCEEDED" }));
   });
 
+  it("respects each portal's total child capacity across the complete proposal", () => {
+    const result = proposePlan({
+      ...base,
+      targetGroupSize: 5,
+      maxGroupSize: 7,
+      portals: base.portals.map((portal) => ({ ...portal, maxTotalChildren: 8 })),
+    });
+
+    expect(result.groups).toEqual([]);
+    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "PORTAL_CAPACITY_EXCEEDED" }));
+  });
+
   it("supports a non-hardcoded number of portals and stops", () => {
     const result = proposePlan({ ...base, portals: base.portals.slice(0, 4), stopsPerGroup: 4 });
     expect(result.conflicts).toEqual([]);

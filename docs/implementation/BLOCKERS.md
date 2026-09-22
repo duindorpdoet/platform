@@ -26,6 +26,10 @@ De ondertekende Supabase Auth-hook en SendGrid-API-configuratie zijn gedeployd, 
 
 Het bestaande gedeelde SendGrid-account heeft één Event Webhook-slot en dat is al in gebruik door een andere consumer. Staging laat de bestaande webhook aantoonbaar ongemoeid en meldt een waarschuwing. Productie vereist de app-specifieke ondertekende webhook hard en blijft daarom gesloten totdat de accountbeheerder een vrij slot of een geïsoleerde subuser beschikbaar stelt.
 
+### B-007 — Beperkte SendGrid-sleutelscope nog niet aangetoond
+
+MAIL-05 vereist bewijs dat de verzendsleutel uitsluitend de benodigde mailrechten heeft en daarmee echt kan verzenden. In het huidige acceptatiedossier ontbreekt dat scopebewijs; deze lokale hervatting heeft de providerrechten niet onderzocht. Een bevoegde accountbeheerder moet de rechten controleren en de bezorgingsproef moet na oplossing van B-005 worden afgerond.
+
 ## Releasevoorwaarden
 
 - Staging moet de remote migraties, Supabase security advisors, Sites-VPS-rooktest, signed SendGrid Event Webhook en echte OTP/IMAP-proef groen afronden. B-005 en B-006 verhinderen dit momenteel.

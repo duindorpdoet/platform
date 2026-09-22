@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(21);
 
 select ok(has_function_privilege('authenticated', 'api.run_system_skip(uuid,uuid,integer,text,text,text)', 'execute'), 'authenticated actors can call the capability-checked system-skip command');
 
@@ -125,6 +125,17 @@ select lives_ok(
   $$ select api.portal_set_operational_state('12000000-0000-0000-0000-000000000001', 'closed', 5, 'Poort sluit na geregistreerd bezoek') $$,
   'portal can close after a visit was already recorded'
 );
+select throws_ok(
+  $$ select api.portal_set_operational_state('12000000-0000-0000-0000-000000000001', 'paused', 5, 'Vertraagde pauzejob met oude versie') $$,
+  '40001', 'STALE_VERSION', 'a delayed pause command cannot overwrite the newer closed state'
+);
+set local role postgres;
+select is(
+  (select operation_status::text from app_private.portals where id = '12000000-0000-0000-0000-000000000001'),
+  'closed',
+  'the portal remains closed after the stale pause job'
+);
+set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select throws_ok(
   $$ select api.run_system_skip((select run_five_id from system_skip_values), (select stop_five_id from system_skip_values), (select run_five_version from system_skip_values), 'Poort sloot na geregistreerd bezoek', 'system-skip-five', 'system-skip-five-hash') $$,

@@ -1,9 +1,6 @@
 import { Webhook } from "npm:standardwebhooks@1.1.1";
 import { deliveriesForPayload, type HookPayload } from "./payload.ts";
-
-function htmlEscape(value: string) {
-  return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]!);
-}
+import { sendHookDeliveries } from "./send.ts";
 
 Deno.serve(async (request) => {
   const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET")?.replace(/^v1,whsec_/, "");
@@ -29,26 +26,20 @@ Deno.serve(async (request) => {
   const providerProbe = payload.email_data.email_action_type === "staging_provider_probe";
   const providerProbeId = (payload.email_data.token_hash ?? "probe").replace(/[^a-zA-Z0-9-]/g, "").slice(-12);
   const subject = providerProbe ? `Staging mailprovidercontrole ${providerProbeId}` : "Je zescijferige inlogcode";
-  const responses = await Promise.all(emails.map(({ email, token }) => fetch("https://api.sendgrid.com/v3/mail/send", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    signal: AbortSignal.timeout(2_500),
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email }] }],
-      from: { email: from, name: Deno.env.get("SENDGRID_FROM_NAME") ?? "De Duindorpse Poorten van Halloween" },
+  let responses: Response[];
+  try {
+    responses = await sendHookDeliveries({
+      deliveries: emails,
+      apiKey,
+      from,
+      fromName: Deno.env.get("SENDGRID_FROM_NAME") ?? "De Duindorpse Poorten van Halloween",
       subject,
-      content: providerProbe
-        ? [
-          { type: "text/plain", value: "Dit is de geautomatiseerde stagingcontrole van de transactionele mailprovider." },
-          { type: "text/html", value: "<p>Dit is de geautomatiseerde stagingcontrole van de transactionele mailprovider.</p>" },
-        ]
-        : [
-          { type: "text/plain", value: `Je code is ${token}. De code verloopt over 10 minuten.` },
-          { type: "text/html", value: `<div style="background:#060b13;color:#eee9de;padding:36px;font:16px Arial"><h1 style="font:32px Georgia">Je inlogcode</h1><p>Vul deze code in om veilig verder te gaan:</p><p style="font-size:34px;letter-spacing:.25em"><strong>${htmlEscape(token)}</strong></p><p>De code verloopt over 10 minuten.</p></div>` },
-        ],
-      mail_settings: mailMode === "sandbox" ? { sandbox_mode: { enable: true } } : undefined,
-    }),
-  })));
+      providerProbe,
+      sandbox: mailMode === "sandbox",
+    });
+  } catch {
+    return new Response("provider timeout", { status: 504 });
+  }
   console.log(JSON.stringify({ event: "auth_email_provider_response", statuses: responses.map((response) => response.status) }));
   if (responses.some((response) => response.status !== 202)) return new Response("provider rejected", { status: 502 });
   return new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } });

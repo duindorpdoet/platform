@@ -20,6 +20,6 @@ test("deployment health contract exposes no secrets", async ({ request }) => {
   const response = await request.get("/api/health");
   expect(response.ok()).toBeTruthy();
   const health = await response.json();
-  expect(health).toMatchObject({ status: "ok", service: "duindorphalloween", registrationMode: "closed" });
+  expect(health).toMatchObject({ status: "ok", service: "duindorphalloween", registrationMode: process.env.REGISTRATION_MODE ?? "closed" });
   expect(JSON.stringify(health)).not.toMatch(/key|secret|token/i);
 });

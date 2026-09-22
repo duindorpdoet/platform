@@ -65,6 +65,9 @@ await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, 
   body: JSON.stringify({
     site_url: appUrl,
     uri_allow_list: `${appUrl}/auth/callback,${appUrl}/inloggen`,
+    mailer_autoconfirm: false,
+    mailer_allow_unverified_email_sign_ins: false,
+    mailer_secure_email_change_enabled: true,
     mailer_otp_exp: 600,
     mailer_otp_length: 6,
     hook_send_email_enabled: true,
@@ -72,6 +75,17 @@ await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, 
     hook_send_email_secrets: hookSecret,
   }),
 });
+
+const authConfig = await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, {
+  headers: managementHeaders,
+});
+if (authConfig.mailer_autoconfirm !== false
+    || authConfig.mailer_allow_unverified_email_sign_ins !== false
+    || authConfig.mailer_secure_email_change_enabled !== true
+    || authConfig.mailer_otp_exp !== 600
+    || authConfig.mailer_otp_length !== 6) {
+  throw new Error("Supabase Auth did not retain the required verified-email, secure-change and six-digit OTP contract.");
+}
 
 const serviceHeaders = {
   apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,

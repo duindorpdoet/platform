@@ -54,3 +54,8 @@ small{font-size:12px}.site-header nav a,.group-link,.header-signup,.field>span,.
 
 @media(max-width:1000px){.dashboard-stack{grid-template-columns:1fr}.admin-shell{grid-template-columns:1fr}.admin-nav{position:static;display:grid;grid-template-columns:repeat(3,1fr)}.admin-nav .kicker{grid-column:1/-1}.dashboard-metrics{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.admin-page{padding-inline:16px}.admin-nav{grid-template-columns:1fr}.admin-nav .kicker{grid-column:auto}.dashboard-metrics{grid-template-columns:1fr 1fr}.production-form{padding:20px}.scanner-overlay{padding:10px}.scan-panel .actions{display:grid}.app-heading.row-between{align-items:flex-start}.app-heading .btn{padding-inline:12px}.maplibre-host,.public-map-container{min-height:380px}}
+.form-fieldset{border:0;margin:0;padding:0;min-width:0}.form-fieldset>h3{margin-top:32px;margin-bottom:4px}.form-fieldset:disabled{opacity:.72}
+/* Keep enlarged text and primary admin actions inside narrow viewports. */
+.legal-copy{grid-template-columns:minmax(0,1fr);overflow-wrap:anywhere}
+.admin-content .app-heading{flex-wrap:wrap}.admin-content .app-heading>div{min-width:0;flex:1 1 240px;overflow-wrap:anywhere}
+.admin-content .row-between{flex-wrap:wrap}.admin-content .row-between>div,.admin-content .row-between>h2{min-width:0;overflow-wrap:anywhere}

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { assertReadableLayout } from "./helpers/layout";
 
 test("premium homepage keeps the supplied identity and closed participation path", async ({ page }, testInfo) => {
   await page.goto("/");
@@ -55,3 +56,20 @@ test("service worker is a real script with private network-only rules", async ({
   expect(body).toContain('"/mijn-"');
   expect(body).toContain('cache: "no-store"');
 });
+
+for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText: false }, { width: 390, doubleText: true }]) {
+  test(`public pages fit ${size.width}px with ${size.doubleText ? "200%" : "100%"} text`, async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: size.width, height: 844 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    for (const path of ["/", "/verhaal", "/werelden", "/werelden/heksenrijk", "/werelden/dodenrijk", "/werelden/circuswereld", "/werelden/besmette-zone", "/werelden/geestenwereld", "/werelden/vampierrijk", "/kaart", "/faq", "/sponsoren", "/contact", "/privacy", "/voorwaarden", "/toegankelijkheid", "/inloggen"]) {
+      await page.goto(path);
+      await assertReadableLayout(page, size.doubleText);
+    }
+    await page.getByLabel("E-mailadres").focus();
+    await page.keyboard.type("keyboard@example.invalid");
+    await expect(page.getByLabel("E-mailadres")).toHaveValue("keyboard@example.invalid");
+    await page.keyboard.press("Tab");
+    await expect(page.locator(":focus")).toBeVisible();
+  });
+}

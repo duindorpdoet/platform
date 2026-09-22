@@ -1,6 +1,6 @@
 export type PlanningParty = { id: string; childCount: number; requestedStartId?: string; togetherKey?: string };
 export type PlanningStart = { id: string; startsAt: string; maxGroups: number; maxChildren: number };
-export type PlanningPortal = { id: string; worldId: string; opensAt: string; closesAt: string; visitMinutes: number; maxConcurrentGroups: number; maxChildren: number };
+export type PlanningPortal = { id: string; worldId: string; opensAt: string; closesAt: string; visitMinutes: number; maxConcurrentGroups: number; maxChildren: number; maxTotalChildren?: number };
 export type PlanningConflict = { code: string; subjectId?: string; message: string };
 export type PlannedGroup = { key: string; partyIds: string[]; childCount: number; startId: string; portalIds: string[] };
 
@@ -60,6 +60,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
 
   const startLoads = new Map(starts.map((start) => [start.id, { groups: 0, children: 0 }]));
   const portalReservations = new Map<string, Array<{ startsAt: number; endsAt: number }>>();
+  const portalChildTotals = new Map<string, number>();
   const groups: PlannedGroup[] = [];
   for (const [index, group] of draftGroups.entries()) {
     const requestedIds = [...new Set(group.parties.map((party) => party.requestedStartId).filter(Boolean))] as string[];
@@ -89,6 +90,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
         return !portalIds.includes(portal.id)
           && !usedWorlds.has(portal.worldId)
           && group.childCount <= portal.maxChildren
+          && (portalChildTotals.get(portal.id) ?? 0) + group.childCount <= (portal.maxTotalChildren ?? Number.MAX_SAFE_INTEGER)
           && arrival >= new Date(portal.opensAt).getTime()
           && departure <= new Date(portal.closesAt).getTime()
           && overlapping < portal.maxConcurrentGroups;
@@ -107,6 +109,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     load.children += group.childCount;
     for (const reservation of pendingReservations) {
       portalReservations.set(reservation.portalId, [...(portalReservations.get(reservation.portalId) ?? []), reservation]);
+      portalChildTotals.set(reservation.portalId, (portalChildTotals.get(reservation.portalId) ?? 0) + group.childCount);
     }
     groups.push({ key: group.key, partyIds: group.parties.map((party) => party.id).sort(), childCount: group.childCount, startId: selected.id, portalIds });
   }

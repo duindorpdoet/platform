@@ -15,6 +15,7 @@ export async function sendSendGrid(message: Message) {
   const response = await fetch(`${env.SENDGRID_API_BASE_URL}/mail/send`, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(5_000),
     body: JSON.stringify({
       personalizations: [{ to: [{ email: recipient }], custom_args: message.outboxId ? { outbox_id: message.outboxId } : undefined }],
       from: { email: env.SENDGRID_FROM_EMAIL, name: env.SENDGRID_FROM_NAME },
