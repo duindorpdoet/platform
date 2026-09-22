@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 function configure(probeResult: object, runtimeStatus = 200) {
   const code = `
+    const runtimeStatus = ${runtimeStatus};
     globalThis.fetch = async (input, init = {}) => {
       const url = new URL(String(input));
       let body = {};
@@ -56,7 +57,6 @@ function configure(probeResult: object, runtimeStatus = 200) {
       });
     };
 
-    globalThis.runtimeStatus = ${runtimeStatus};
     await import('./scripts/deploy/configure-supabase.mjs');
   `;
 
