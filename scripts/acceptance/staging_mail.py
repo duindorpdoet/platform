@@ -74,6 +74,7 @@ def connect() -> tuple[imaplib.IMAP4, str]:
                 status, _ = client.select("INBOX")
                 if status != "OK":
                     raise imaplib.IMAP4.error("Mailbox selection failed")
+                print(f"Mailbox login succeeded; login address matches recipient={imap_user.lower() == test_email}.", flush=True)
                 return client, test_email
             except (imaplib.IMAP4.abort, imaplib.IMAP4.error, OSError) as error:
                 last_error = error
