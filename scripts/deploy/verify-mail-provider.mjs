@@ -30,10 +30,18 @@ const recipientChecks = [];
 for (const candidate of recipientCandidates) {
   const suppressionChecks = [
     ["bounce", `/suppression/bounces/${encodeURIComponent(candidate)}`],
-    ["block", `/suppression/blocks/${encodeURIComponent(candidate)}`],
     ["invalid", `/suppression/invalid_emails/${encodeURIComponent(candidate)}`],
     ["spam", `/suppression/spam_reports/${encodeURIComponent(candidate)}`],
   ];
+  // Blocks describe historical message rejections, not ongoing address suppression.
+  // https://www.twilio.com/docs/sendgrid/api-reference/blocks-api
+  const blocks = await sendgrid(`/suppression/blocks/${encodeURIComponent(candidate)}`);
+  if (Array.isArray(blocks.body) && blocks.body.length > 0) {
+    const reasons = blocks.body.map((block) => String(block.reason ?? "No reason supplied")
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")
+      .replace(/[\r\n]/g, " ").slice(0, 600));
+    console.log(`Historical SendGrid block for test recipient ${recipientChecks.length + 1} (does not prevent a fresh probe): ${JSON.stringify(reasons)}`);
+  }
   const suppressions = [];
   for (const [kind, path] of suppressionChecks) {
     const result = await sendgrid(path);
