@@ -10,6 +10,7 @@ import {
   House,
   LifeBuoy,
   MapPinned,
+  MessageSquare,
   RefreshCw,
   ShieldCheck,
   Upload,
@@ -20,6 +21,7 @@ import {
 import { AdminAccessManagement } from "@/components/admin/admin-access-management";
 import { PortalReviews } from "@/components/admin/portal-reviews";
 import { ContentManagement } from "@/components/admin/content-management";
+import { SupportTickets } from "@/components/admin/support-tickets";
 import { createClient } from "@/lib/supabase/client";
 import { proposePlan, type PlanningInput } from "@/lib/domain/route-planner";
 
@@ -31,6 +33,7 @@ type Dashboard = {
     settingsVersion: number;
     groupRegistrationOpen: boolean;
     portalRegistrationOpen: boolean;
+    maxGroupSize: number;
   };
   counts: Record<string, number>;
   imports: Array<{
@@ -91,6 +94,19 @@ type RegistrationChange = {
   childName?: string | null;
   requestedAfterDeadline: boolean;
 };
+type TogetherRequest = {
+  id: string;
+  version: number;
+  status: "pending" | "accepted" | "rejected";
+  requestedCode: string;
+  registrationReference: string;
+  sourceChildren: number;
+  targetChildren: number;
+  projectedChildren: number;
+  maxGroupSize: number;
+  limitOverridden: boolean;
+  createdAt: string;
+};
 type PlanningSnapshot = Omit<
   PlanningInput,
   "targetGroupSize" | "maxGroupSize" | "stopsPerGroup"
@@ -118,6 +134,8 @@ const labels: Record<string, string> = {
   liveGroups: "Live groepen",
   openSupportCases: "Open incidenten",
   unconfirmedPayments: "Te controleren betalingen",
+  pendingTogetherRequests: "Samenloopverzoeken",
+  openTickets: "Open tickets",
 };
 const paymentStatusLabels: Record<string, string> = {
   awaiting_link: "Wacht op Tikkie",
@@ -149,6 +167,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "content"
     | "access"
     | "live"
+    | "tickets"
   >("overview");
   const [importKind, setImportKind] = useState("portals");
   const [importResult, setImportResult] = useState<{
@@ -168,6 +187,8 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   const [registrationChanges, setRegistrationChanges] = useState<
     RegistrationChange[]
   >([]);
+  const [togetherRequests, setTogetherRequests] = useState<TogetherRequest[]>([]);
+  const [groupSizeLimit, setGroupSizeLimit] = useState(10);
   const [planningGroups, setPlanningGroups] = useState<PlanningGroup[]>([]);
   const [supportReason, setSupportReason] = useState("");
   const load = useCallback(async () => {
@@ -176,7 +197,9 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     const { data } = await client
       .schema("api")
       .rpc("admin_dashboard", { _event_slug: eventSlug });
-    setDashboard(data as Dashboard);
+    const next = data as Dashboard;
+    setDashboard(next);
+    setGroupSizeLimit(next.event.maxGroupSize);
   }, [eventSlug]);
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
@@ -249,8 +272,8 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
       parties: snapshot.parties,
       starts: snapshot.starts,
       portals: snapshot.portals,
-      targetGroupSize: 7,
-      maxGroupSize: 10,
+      targetGroupSize: Math.min(7, dashboard?.event.maxGroupSize ?? 10),
+      maxGroupSize: dashboard?.event.maxGroupSize ?? 10,
       stopsPerGroup: 6,
     });
     setPlan(result);
@@ -390,6 +413,93 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         "Wijzigingsverzoeken zijn alleen beschikbaar voor inschrijvingsbeheer.",
       );
     setRegistrationChanges(data as RegistrationChange[]);
+  }
+
+  async function loadTogetherRequests() {
+    const client = createClient();
+    if (!client) return;
+    const { data, error } = await client
+      .schema("api")
+      .rpc("admin_together_requests_snapshot", { _event_slug: eventSlug });
+    if (error)
+      return setNotice(
+        "Samenloopverzoeken zijn niet toegankelijk voor dit account.",
+      );
+    setTogetherRequests(data as TogetherRequest[]);
+  }
+
+  async function saveGroupSizeLimit() {
+    if (!dashboard || groupSizeLimit < 2 || groupSizeLimit > 50)
+      return setNotice("Kies een maximum tussen 2 en 50 kinderen.");
+    const reason = window
+      .prompt(
+        "Waarom wijzig je de maximale groepsgrootte? (minimaal 10 tekens)",
+      )
+      ?.trim();
+    if (!reason || reason.length < 10)
+      return setNotice("Een auditreden van minimaal tien tekens is verplicht.");
+    const client = createClient();
+    if (!client) return;
+    const { error } = await client
+      .schema("api")
+      .rpc("admin_set_group_size_limit", {
+        _event_slug: eventSlug,
+        _max_group_size: groupSizeLimit,
+        _expected_settings_version: dashboard.event.settingsVersion,
+        _reason: reason,
+      });
+    setNotice(
+      error
+        ? error.message.includes("GROUP_SIZE_LIMIT_BELOW_ACTIVE_PARTY")
+          ? "Er bestaat al een grotere samenloopgroep. Verhoog de limiet of laat de bestaande groepsgrens staan."
+          : "De limiet kon niet worden gewijzigd; de actuele instellingen zijn opgehaald."
+        : `De maximale groepsgrootte is nu ${groupSizeLimit} kinderen.`,
+    );
+    await Promise.all([load(), loadTogetherRequests()]);
+  }
+
+  async function decideTogetherRequest(
+    request: TogetherRequest,
+    decision: "accept" | "reject",
+  ) {
+    const override =
+      decision === "accept" &&
+      request.projectedChildren > request.maxGroupSize;
+    const reason = window
+      .prompt(
+        override
+          ? `Deze groep wordt ${request.projectedChildren} kinderen, boven de limiet van ${request.maxGroupSize}. Leg de veiligheidsafweging vast:`
+          : "Leg de beslissing vast (minimaal 10 tekens):",
+      )
+      ?.trim();
+    if (!reason || reason.length < 10)
+      return setNotice("Een auditreden van minimaal tien tekens is verplicht.");
+    if (
+      override &&
+      !window.confirm(
+        `Limiet bewust overschrijden en ${request.projectedChildren} kinderen samen indelen? Start- en locatiecapaciteit blijven wel blokkeren.`,
+      )
+    )
+      return;
+    const client = createClient();
+    if (!client) return;
+    const { error } = await client
+      .schema("api")
+      .rpc("admin_decide_together_request", {
+        _request_id: request.id,
+        _expected_version: request.version,
+        _decision: decision,
+        _override_limit: override,
+        _reason: reason,
+      });
+    setNotice(
+      error
+        ? `Samenloopbesluit geweigerd: ${error.message}`
+        : decision === "accept"
+          ? "Samenloopverzoek geaccepteerd en geaudit."
+          : "Samenloopverzoek afgewezen en geaudit.",
+    );
+    await Promise.all([loadTogetherRequests(), load()]);
   }
 
   async function setRegistrationChannel(
@@ -672,12 +782,26 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           className={section === "registrations" ? "active" : ""}
           onClick={() => {
             setSection("registrations");
-            void loadRegistrationChanges();
+            void Promise.all([
+              loadRegistrationChanges(),
+              loadTogetherRequests(),
+            ]);
           }}
         >
           <UsersRound />
           Inschrijvingen
         </button>
+        {(capabilities.includes("event_admin") ||
+          capabilities.includes("groups_manage") ||
+          capabilities.includes("live_support")) && (
+          <button
+            className={section === "tickets" ? "active" : ""}
+            onClick={() => setSection("tickets")}
+          >
+            <MessageSquare />
+            Tickets
+          </button>
+        )}
         <button
           className={section === "payments" ? "active" : ""}
           onClick={() => {
@@ -788,6 +912,40 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                     {dashboard.event.portalRegistrationOpen ? "Open · klik om te sluiten" : "Gesloten · klik om te openen"}
                   </button>
                 </article>
+                {(capabilities.includes("event_admin") ||
+                  capabilities.includes("groups_manage")) && (
+                  <article className="panel registration-channel group-limit-control">
+                    <UsersRound />
+                    <div>
+                      <h3>Maximale groepsgrootte</h3>
+                      <p>
+                        Geldt voor het totaal aantal kinderen dat via een
+                        samenloopcode wordt verbonden én voor de routeplanner.
+                      </p>
+                    </div>
+                    <label className="field">
+                      <span>Aantal kinderen</span>
+                      <input
+                        type="number"
+                        min={2}
+                        max={50}
+                        value={groupSizeLimit}
+                        onChange={(event) =>
+                          setGroupSizeLimit(Number(event.target.value))
+                        }
+                      />
+                    </label>
+                    <button
+                      className="btn outline"
+                      disabled={
+                        groupSizeLimit === dashboard.event.maxGroupSize
+                      }
+                      onClick={() => void saveGroupSizeLimit()}
+                    >
+                      Limiet opslaan
+                    </button>
+                  </article>
+                )}
               </div>
             </section>
             <div className="dashboard-metrics">
@@ -943,6 +1101,57 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         )}
         {section === "registrations" && (
           <section className="panel">
+            <p className="kicker">Samenloopcode & capaciteit</p>
+            <h2>Verzoeken boven de groepslimiet</h2>
+            <p>
+              Onder de limiet worden inschrijvingen automatisch gekoppeld.
+              Alleen verzoeken die de ingestelde grens overschrijden wachten
+              hier op een besluit. Een uitzondering vraagt altijd een
+              vastgelegde veiligheidsafweging.
+            </p>
+            {togetherRequests.filter((request) => request.status === "pending")
+              .length === 0 ? (
+              <p>Geen samenloopverzoeken die op controle wachten.</p>
+            ) : (
+              togetherRequests
+                .filter((request) => request.status === "pending")
+                .map((request) => (
+                  <div className="incident-row" key={request.id}>
+                    <div>
+                      <strong>
+                        {request.registrationReference} wil bij code {request.requestedCode}
+                      </strong>
+                      <small>
+                        {request.sourceChildren} + {request.targetChildren} = {request.projectedChildren} kinderen · limiet {request.maxGroupSize}
+                      </small>
+                    </div>
+                    <div className="actions">
+                      <button
+                        className="btn"
+                        onClick={() =>
+                          void decideTogetherRequest(request, "accept")
+                        }
+                      >
+                        {request.projectedChildren > request.maxGroupSize
+                          ? "Accepteren met uitzondering"
+                          : "Accepteren"}
+                      </button>
+                      <button
+                        className="text-link"
+                        onClick={() =>
+                          void decideTogetherRequest(request, "reject")
+                        }
+                      >
+                        Afwijzen
+                      </button>
+                    </div>
+                  </div>
+                ))
+            )}
+          </section>
+        )}
+        {section === "registrations" && (
+          <section className="panel">
             <p className="kicker">Gecontroleerde wijzigingen</p>
             <h2>Correcties en annuleringen</h2>
             <p>
@@ -997,6 +1206,12 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             )}
           </section>
         )}
+        {section === "tickets" &&
+          (capabilities.includes("event_admin") ||
+            capabilities.includes("groups_manage") ||
+            capabilities.includes("live_support")) && (
+            <SupportTickets eventSlug={eventSlug} />
+          )}
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}

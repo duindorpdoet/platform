@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Snapshot = {
-  event?: { changeDeadline?: string | null; changesOpen: boolean };
+  event?: { changeDeadline?: string | null; changesOpen: boolean; maxGroupSize: number };
   registration?: {
     id: string;
     reference: string;
@@ -12,6 +12,15 @@ type Snapshot = {
     priceCents: number;
     togetherCode: string;
     togetherCount: number;
+    togetherRequest?: {
+      id: string;
+      status: "pending" | "accepted" | "rejected";
+      requestedCode: string;
+      projectedChildren: number;
+      maxGroupSize: number;
+      limitOverridden: boolean;
+      updatedAt: string;
+    } | null;
     version: number;
     children: Array<{
       id: string;
@@ -471,6 +480,24 @@ export function RegistrationDashboard({
             ? `${registration.togetherCount} inschrijvingen zijn met deze samenloopgroep verbonden. De routeplanner probeert jullie bij elkaar te houden; capaciteit en veiligheid blijven leidend.`
             : "Nog niemand heeft zich met jullie code gekoppeld. De routeplanner probeert gekoppelde inschrijvingen bij elkaar te houden; capaciteit en veiligheid blijven leidend."}
         </p>
+        <p className="note">
+          De ingestelde groepsgrens is maximaal {snapshot.event?.maxGroupSize ?? 10} kinderen. Onder die grens wordt een geldige code meteen gekoppeld.
+        </p>
+        {registration.togetherRequest?.status === "pending" && (
+          <div className="form-warning">
+            Jullie wens om bij code {registration.togetherRequest.requestedCode} te lopen komt uit op {registration.togetherRequest.projectedChildren} kinderen. De organisatie beoordeelt daarom eerst of een veilige uitzondering mogelijk is.
+          </div>
+        )}
+        {registration.togetherRequest?.status === "rejected" && (
+          <div className="form-notice">
+            De gevraagde samenvoeging met code {registration.togetherRequest.requestedCode} past niet binnen de veilige groepsgrootte. Jullie eigen inschrijving blijft gewoon geldig.
+          </div>
+        )}
+        {registration.togetherRequest?.status === "accepted" && registration.togetherRequest.limitOverridden && (
+          <div className="form-notice">
+            De organisatie heeft jullie samenloopwens als gecontroleerde uitzondering geaccepteerd.
+          </div>
+        )}
         {notice && (
           <p className="form-notice" role="status">
             {notice}

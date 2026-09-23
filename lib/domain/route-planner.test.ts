@@ -37,6 +37,23 @@ describe("deterministic planner", () => {
     expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "TOGETHER_PARTY_TOO_LARGE" }));
   });
 
+  it("keeps an explicitly approved oversized together bundle intact and isolated", () => {
+    const result = proposePlan({
+      ...base,
+      parties: [
+        { id: "a", childCount: 6, togetherKey: "same", togetherOverride: true },
+        { id: "b", childCount: 5, togetherKey: "same", togetherOverride: true },
+        { id: "c", childCount: 1 },
+      ],
+      starts: [{ ...base.starts[0], maxChildren: 20 }],
+      portals: base.portals.map((portal) => ({ ...portal, maxChildren: 12 })),
+    });
+
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups).toHaveLength(2);
+    expect(result.groups.find((group) => group.partyIds.includes("a"))?.partyIds).toEqual(["a", "b"]);
+  });
+
   it("counts overlapping visit intervals instead of only identical timestamps", () => {
     const result = proposePlan({
       parties: [

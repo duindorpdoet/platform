@@ -43,7 +43,7 @@ update app_private.events
 set phase = 'registration_open',
     registration_open_at = timestamptz '2026-09-01 00:00:00+02',
     registration_close_at = timestamptz '2026-10-25 23:59:00+01',
-    settings = settings || '{"fixture":true,"termsVersion":"test-v1","privacyVersion":"test-v1","groupRegistrationOpen":true,"portalRegistrationOpen":true}'::jsonb
+    settings = settings || '{"fixture":true,"termsVersion":"test-v1","privacyVersion":"test-v1","groupRegistrationOpen":true,"portalRegistrationOpen":true,"maxGroupSize":10}'::jsonb
 where slug = 'duindorp-halloween-2026';
 
 do $$
@@ -149,7 +149,6 @@ begin
     insert into app_private.registrations(id, event_id, household_id, status, reference, submitted_at, terms_version, terms_accepted_at, privacy_version, price_snapshot_cents)
     values (v_registration_id, v_event_id, v_household_id, 'submitted', 'FIXTURE-' || v_size, now(), 'test-v1', now(), 'test-v1', v_size * 200)
     on conflict (id) do nothing;
-    perform app_private.attach_registration_to_together_party(v_registration_id, null);
     for child_index in 1..v_size loop
       v_child_id := ('2500' || lpad(group_index::text, 4, '0') || '-0000-0000-0000-' || lpad(child_index::text, 12, '0'))::uuid;
       insert into app_private.children(id, household_id, first_name, age_at_event)
@@ -157,6 +156,7 @@ begin
       insert into app_private.registration_children(event_id, registration_id, child_id, unit_price_cents)
       values (v_event_id, v_registration_id, v_child_id, 200) on conflict do nothing;
     end loop;
+    perform app_private.attach_registration_to_together_party(v_registration_id, null);
     insert into app_private.payment_requests(registration_id, purpose, amount_cents, reference, status)
     values (v_registration_id, 'event_registration', v_size * 200, 'PAY-FIXTURE-' || v_size, 'confirmed') on conflict (reference) do nothing;
     insert into app_private.walking_groups(id, event_id, code, status, start_slot_id)

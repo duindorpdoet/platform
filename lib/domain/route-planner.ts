@@ -1,4 +1,4 @@
-export type PlanningParty = { id: string; childCount: number; requestedStartId?: string; togetherKey?: string };
+export type PlanningParty = { id: string; childCount: number; requestedStartId?: string; togetherKey?: string; togetherOverride?: boolean };
 export type PlanningStart = { id: string; startsAt: string; maxGroups: number; maxChildren: number };
 export type PlanningPortal = { id: string; worldId: string; opensAt: string; closesAt: string; visitMinutes: number; maxConcurrentGroups: number; maxChildren: number; maxTotalChildren?: number };
 export type PlanningConflict = { code: string; subjectId?: string; message: string };
@@ -36,25 +36,26 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     key,
     parties,
     size: parties.reduce((sum, party) => sum + party.childCount, 0),
+    capacityOverride: parties.some((party) => party.togetherOverride),
   })).sort((a, b) => b.size - a.size || a.key.localeCompare(b.key));
 
-  if (bundles.some((bundle) => bundle.size > input.maxGroupSize)) {
-    for (const bundle of bundles.filter((item) => item.size > input.maxGroupSize)) {
+  if (bundles.some((bundle) => bundle.size > input.maxGroupSize && !bundle.capacityOverride)) {
+    for (const bundle of bundles.filter((item) => item.size > input.maxGroupSize && !item.capacityOverride)) {
       conflicts.push({ code: "TOGETHER_PARTY_TOO_LARGE", subjectId: bundle.key, message: `${bundle.key} bevat ${bundle.size} kinderen; maximaal ${input.maxGroupSize}.` });
     }
     return { groups: [], conflicts };
   }
 
-  const draftGroups: Array<{ key: string; parties: PlanningParty[]; childCount: number }> = [];
+  const draftGroups: Array<{ key: string; parties: PlanningParty[]; childCount: number; capacityOverride: boolean }> = [];
   for (const bundle of bundles) {
     const preferred = draftGroups
-      .filter((group) => group.childCount + bundle.size <= input.maxGroupSize)
+      .filter((group) => !bundle.capacityOverride && !group.capacityOverride && group.childCount + bundle.size <= input.maxGroupSize)
       .sort((a, b) => a.childCount - b.childCount || a.key.localeCompare(b.key))[0];
     if (preferred && preferred.childCount < input.targetGroupSize) {
       preferred.parties.push(...bundle.parties);
       preferred.childCount += bundle.size;
     } else {
-      draftGroups.push({ key: `group-${String(draftGroups.length + 1).padStart(3, "0")}`, parties: [...bundle.parties], childCount: bundle.size });
+      draftGroups.push({ key: `group-${String(draftGroups.length + 1).padStart(3, "0")}`, parties: [...bundle.parties], childCount: bundle.size, capacityOverride: bundle.capacityOverride });
     }
   }
 

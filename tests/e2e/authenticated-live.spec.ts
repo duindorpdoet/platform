@@ -307,6 +307,44 @@ test("an event administrator can grant and revoke narrowly scoped access", async
   await expect(member).toHaveCount(0);
 });
 
+test("a group leader and organizer can exchange a private ticket with read status", async ({ context, page }, testInfo) => {
+  requireLocalAuth();
+  const suffix = testInfo.project.name === "mobile-chromium" ? "mobiel" : "desktop";
+  const subject = `Routevraag ${suffix}`;
+  const leaderMessage = `Kunnen jullie het startmoment voor ${suffix} bevestigen?`;
+  const organizerReply = `Ja, het startmoment voor ${suffix} staat definitief vast.`;
+
+  await authenticate(context, "leader-a@example.invalid");
+  await page.goto("/mijn-groep");
+  await expect(page.getByRole("heading", { name: "Hulp & tickets" })).toBeVisible();
+  await page.getByRole("button", { name: "Nieuw ticket" }).click();
+  await page.getByLabel("Waar gaat het over?").selectOption("planning");
+  await page.getByLabel("Onderwerp").fill(subject);
+  await page.getByLabel("Bericht").fill(leaderMessage);
+  await page.getByRole("button", { name: "Versturen" }).click();
+  await expect(page.getByRole("status")).toContainText(/e-mailmelding/i);
+  await expect(page.locator(".ticket-thread")).toContainText(leaderMessage);
+  await assertReadableLayout(page);
+
+  await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Tickets", exact: true }).click();
+  const ticketButton = page.locator(".ticket-list button").filter({ hasText: subject });
+  await expect(ticketButton).toBeVisible();
+  await ticketButton.click();
+  await page.getByLabel("Reactie namens de organisatie").fill(organizerReply);
+  await page.getByRole("button", { name: "Versturen" }).click();
+  await expect(page.getByRole("status")).toContainText(/beide kanten/i);
+  await expect(page.locator(".ticket-thread")).toContainText(organizerReply);
+  await assertReadableLayout(page);
+
+  await authenticate(context, "leader-a@example.invalid");
+  await page.goto("/mijn-groep");
+  await page.locator(".ticket-list button").filter({ hasText: subject }).click();
+  await expect(page.locator(".ticket-thread")).toContainText(organizerReply);
+  await expect(page.locator(".ticket-message.mine").filter({ hasText: leaderMessage })).toContainText("gelezen");
+});
+
 test("a portal draft survives refresh and rejects disguised executable upload content", async ({ context, page }, testInfo) => {
   requireLocalAuth();
   const email = testInfo.project.name === "mobile-chromium" ? "parent-size-7@example.invalid" : "leader-b@example.invalid";
@@ -353,7 +391,7 @@ for (const doubleText of [false, true]) {
         await assertReadableLayout(page, doubleText);
         if (path === "/admin") {
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
-          for (const section of ["Imports", "Inschrijvingen", "Betalingen", "Poortaanvragen", "Routeplanner", "Content & sponsors", "Beheerders", "Avondhulp"]) {
+          for (const section of ["Imports", "Inschrijvingen", "Tickets", "Betalingen", "Poortaanvragen", "Routeplanner", "Content & sponsors", "Beheerders", "Avondhulp"]) {
             await page.goto("/admin");
             await page.locator(".admin-nav").getByRole("button", { name: section, exact: true }).click();
             await expect(page.locator(".admin-nav").getByRole("button", { name: section, exact: true })).toHaveClass("active");

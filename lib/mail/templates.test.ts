@@ -67,4 +67,27 @@ describe("transactional mail templates", () => {
     expect(notification.html).not.toContain("<script>");
     expect(notification.html).toContain("Hallo &amp; welkom");
   });
+
+  it.each([
+    ["group_ticket_message_organization", "/admin", "Nieuw bericht in een groepsticket"],
+    ["group_ticket_message_leader", "/mijn-groep", "Nieuw bericht over jouw groep"],
+  ])("renders private ticket notification %s", (messageType, actionPath, subject) => {
+    process.env.APP_URL = "https://staging-halloween.duindorpdoet.nl";
+    const notification = renderTransactionalMail({
+      messageType,
+      payload: {
+        ticketReference: "TCK-000042",
+        subject: "Route <wijziging>",
+        message: "Kunnen jullie & helpen?",
+        senderLabel: "Groepsleider",
+        actionPath,
+      },
+    });
+
+    expect(notification.subject).toBe(subject);
+    expect(notification.text).toContain(`https://staging-halloween.duindorpdoet.nl${actionPath}`);
+    expect(notification.html).toContain("Route &lt;wijziging&gt;");
+    expect(notification.html).toContain("Kunnen jullie &amp; helpen?");
+    expect(notification.text).toContain("Van: Groepsleider");
+  });
 });

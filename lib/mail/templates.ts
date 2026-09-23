@@ -11,6 +11,7 @@ export function renderTransactionalMail({ messageType, payload }: TemplateInput)
     payload.contactName ? `Naam: ${String(payload.contactName)}` : "",
     payload.contactEmail ? `E-mail: ${String(payload.contactEmail)}` : "",
     payload.contributionType ? `Bijdrage: ${String(payload.contributionType)}` : "",
+    payload.senderLabel ? `Van: ${String(payload.senderLabel)}` : "",
     typeof payload.proposedAmountCents === "number" ? `Voorgesteld bedrag: € ${(payload.proposedAmountCents / 100).toFixed(2)}` : "",
     payload.message ? `Bericht: ${String(payload.message)}` : "",
   ].filter(Boolean);
@@ -28,6 +29,8 @@ export function renderTransactionalMail({ messageType, payload }: TemplateInput)
     sponsor_notification: { subject: "Nieuw sponsorvoorstel", heading: "Nieuw sponsorvoorstel ontvangen", body: "Een bezoeker heeft het openbare sponsorformulier ingestuurd." },
     payment_reported: { subject: "Betaling gemeld", heading: "Je betaalmelding is ontvangen", body: "De organisatie controleert de betaling handmatig. Dit is nog geen betalingsbevestiging." },
     household_invite: { subject: "Uitnodiging voor gezinstoegang", heading: "Je bent uitgenodigd als tweede volwassene", body: "Log in met precies dit e-mailadres en accepteer de eenmalige uitnodiging. Deel de link niet met anderen." },
+    group_ticket_message_organization: { subject: "Nieuw bericht in een groepsticket", heading: "Er staat een ticketbericht klaar", body: "Open het beheerscherm om het gesprek te lezen en namens de organisatie te reageren." },
+    group_ticket_message_leader: { subject: "Nieuw bericht over jouw groep", heading: "Er staat een ticketbericht klaar", body: "Open Mijn groep om het gesprek te lezen en te reageren." },
   };
   const content = definitions[messageType] ?? { subject: "Update over Halloween in Duindorp", heading: "Er is een update", body: "Bekijk je persoonlijke omgeving voor de actuele informatie." };
   const destination = actionUrl || siteUrl;
