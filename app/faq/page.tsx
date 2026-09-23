@@ -9,7 +9,7 @@ export const metadata = { title: "Veelgestelde vragen · De Duindorpse Poorten" 
 export default function FaqPage() {
   return (
     <div className="wrap page">
-      <PageHeading eyebrow="WE HELPEN JE OP WEG" title="Een antwoord op je vragen." intro="Praktische informatie voor kinderen, begeleiders en bewoners." />
+      <PageHeading eyebrow="WE HELPEN JE OP WEG" title="Alles voor een fijne avond." intro="Heldere antwoorden voor kinderen, ouders, begeleiders, bewoners en ondernemers." />
       <div className="contact-grid">
         <Accordion type="single" collapsible className="faq panel">
           {faq.map(([question, answer], index) => <AccordionItem value={String(index)} key={question}><AccordionTrigger>{question}</AccordionTrigger><AccordionContent>{answer}</AccordionContent></AccordionItem>)}

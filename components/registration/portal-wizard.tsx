@@ -98,7 +98,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
         client.schema("api").rpc("event_public_snapshot", { _event_slug: eventSlug }),
       ]);
       if (!active) return;
-      if (portalResult.error || eventResult.error) { setNotice("Je huisgegevens konden niet worden opgehaald. Vernieuw de pagina om opnieuw te proberen."); return; }
+      if (portalResult.error || eventResult.error) { setNotice("Jullie gegevens konden niet worden opgehaald. Vernieuw de pagina om opnieuw te proberen."); return; }
       setLoaded(true);
       const availableWorlds = ((eventResult.data as { worlds?: Array<{ slug: string; name: string }> } | null)?.worlds ?? []);
       setWorlds(availableWorlds);
@@ -112,7 +112,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
       setReviewFeedback(application.reviewFeedback ?? null);
       setPayload(restoredPayload(application.draft ?? {}, availableWorlds[0]?.slug ?? ""));
       if (application.status === "changes_requested") setNotice("De organisatie vraagt om een aanpassing. Pas je concept aan en dien het opnieuw in.");
-      if (application.status === "submitted") setNotice("Je huis is ingediend en wacht op beoordeling.");
+      if (application.status === "submitted") setNotice("Jullie plek is ingediend en wacht op beoordeling.");
       if (application.status === "approved") setNotice("Je poort is goedgekeurd. Operationele informatie staat in je poortdashboard.");
       if (application.status === "rejected") setNotice("Deze aanvraag is afgewezen.");
     }
@@ -142,9 +142,9 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     setBusy(true); setNotice("");
     const { data, error } = await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: payload, _expected_version: saved?.version ?? null });
     setBusy(false);
-    if (error) { setNotice(error.message.includes("STALE_VERSION") ? "Jullie huisgegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
+    if (error) { setNotice(error.message.includes("STALE_VERSION") ? "Jullie gegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
     const result = data as { id: string; version: number };
-    setSaved(result); setStatus("draft"); setNotice("Jullie huisgegevens zijn bewaard. Je kunt later verdergaan."); return result;
+    setSaved(result); setStatus("draft"); setNotice("Jullie gegevens zijn bewaard. Je kunt later verdergaan."); return result;
   }
 
   async function submit() {
@@ -157,7 +157,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     setBusy(false);
     if (error) return setNotice("Indienen is niet gelukt. Controleer de gegevens en probeer opnieuw.");
     const result = data as { version: number };
-    setSaved({ ...current, version: result.version }); setStatus("submitted"); setReviewFeedback(null); setNotice("Je huis is ingediend voor beoordeling.");
+    setSaved({ ...current, version: result.version }); setStatus("submitted"); setReviewFeedback(null); setNotice("Jullie plek is ingediend voor beoordeling.");
   }
 
   async function uploadAsset(file: File) {
@@ -180,9 +180,9 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     const client = createClient();
     const linked = client ? await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: nextPayload, _expected_version: application.version }) : null;
     setBusy(false);
-    if (!linked || linked.error) return setNotice("De foto is ontvangen, maar nog niet aan jullie huis gekoppeld. Probeer het nog eens.");
+    if (!linked || linked.error) return setNotice("De foto is ontvangen, maar nog niet aan jullie aanmelding gekoppeld. Probeer het nog eens.");
     const result = linked.data as { id: string; version: number };
-    setPayload(nextPayload); setSaved(result); setStatus("draft"); setNotice("De foto staat bij jullie huis. Jullie kunnen later verdergaan.");
+    setPayload(nextPayload); setSaved(result); setStatus("draft"); setNotice("De foto staat bij jullie aanmelding. Jullie kunnen later verdergaan.");
   }
 
   function setWarning(key: WarningKey, value: boolean) {
@@ -190,8 +190,8 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
   }
 
   return <div className="panel production-form">
-    <h2>Vul je huisdetails aan</h2>
-    <p>Je adres delen we alleen met de organisatie. Zo kunnen we jullie huis goed voorbereiden en kinderen veilig ontvangen.</p>
+    <h2>Werk jullie poort uit</h2>
+    <p>Je adres delen we alleen met de organisatie. Zo kunnen we jullie plek goed voorbereiden en kinderen veilig ontvangen.</p>
     {reviewFeedback && <div className="form-warning"><strong>Terugkoppeling van de organisatie:</strong> {reviewFeedback}</div>}
     <fieldset className="form-fieldset" disabled={busy || !editable}>
       <h3>Contact en locatie</h3>

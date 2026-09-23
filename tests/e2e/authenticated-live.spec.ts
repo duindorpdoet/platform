@@ -272,8 +272,8 @@ test("a portal draft survives refresh and rejects disguised executable upload co
   await page.getByLabel("Straat *").fill("NIET-BESTAANDE TESTSTRAAT");
   await page.getByLabel("Huisnummer *").fill("12");
   await page.getByLabel("Postcode *").fill("2584AB");
-  await page.getByRole("button", { name: "Verder naar huisdetails" }).click();
-  await expect(page.getByRole("heading", { name: "Vul je huisdetails aan" })).toBeVisible();
+  await page.getByRole("button", { name: "Verder met jullie idee" }).click();
+  await expect(page.getByRole("heading", { name: "Werk jullie poort uit" })).toBeVisible();
   await expect(page.getByText(`E-mailadres: ${email} (bevestigd)`)).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Browser testbewoner");
@@ -348,7 +348,7 @@ test("house details unlock only after successful email confirmation", async ({ p
   await page.locator('input[autocomplete="one-time-code"]').fill("");
   await page.locator('input[autocomplete="one-time-code"]').fill("123456");
   await page.getByRole("button", { name: "Bevestigen en verder" }).click();
-  await expect(page.getByRole("heading", { name: "Vul je huisdetails aan" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Werk jullie poort uit" })).toBeVisible();
   await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Nieuwe testbewoner");
   await expect(page.getByLabel("Straat *")).toHaveValue("FICTIEVE STRAAT");
   await page.goto("/mijn-huis");

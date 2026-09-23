@@ -79,8 +79,8 @@ export function EmailOtpForm({ nextPath, children, onVerified }: { nextPath?: st
     return (
       <form className="panel auth-form" onSubmit={requestCode}>
         <Mail size={32} />
-        <h2>{children ? "Meld je huis aan" : "Ontvang je inlogcode."}</h2>
-        <p>{children ? "Vul je contactgegevens en adres in. Bevestig daarna je e-mailadres met een code; vervolgens kun je de details van je huis toevoegen." : "We sturen een eenmalige code via e-mail. Er is geen wachtwoord en er bestaat geen universele democode."}</p>
+        <h2>{children ? "Meld jullie plek aan" : "Ontvang je inlogcode."}</h2>
+        <p>{children ? "Vul je contactgegevens en adres in. Bevestig daarna je e-mailadres met een code; vervolgens kun je jullie idee verder uitwerken." : "We sturen een eenmalige code via e-mail. Je hebt geen wachtwoord nodig."}</p>
         <label className="field"><span>E-mailadres</span><input type="email" disabled={busy} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
         {children}
         {message && <p className="form-error" role="alert">{message}</p>}

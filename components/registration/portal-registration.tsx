@@ -32,7 +32,7 @@ export function PortalRegistration({ eventSlug, email, hasApplication }: { event
       }
       setReady(true);
     } catch {
-      setNotice("Je e-mailadres is bevestigd, maar je huis kon niet worden opgeslagen. Je gegevens staan nog hieronder. Probeer opnieuw.");
+      setNotice("Je e-mailadres is bevestigd, maar de plek kon niet worden opgeslagen. Je gegevens staan nog hieronder. Probeer opnieuw.");
     } finally { setBusy(false); }
   }
 
@@ -48,10 +48,10 @@ export function PortalRegistration({ eventSlug, email, hasApplication }: { event
 
   if (!confirmed) return <EmailOtpForm onVerified={register}>{fields}</EmailOtpForm>;
   return <form className="panel production-form" onSubmit={(event) => { event.preventDefault(); void register(); }}>
-    <h2>Meld je huis aan</h2>
+    <h2>Meld jullie plek aan</h2>
     <p>Je e-mailadres is bevestigd{email ? `: ${email}` : ""}. Vul je naam, telefoonnummer en adres in om verder te gaan.</p>
     {fields}
     {notice && <p className="form-error" role="alert">{notice}</p>}
-    <button className="btn full" disabled={busy}>{busy ? "Huis opslaan…" : "Verder naar huisdetails"}</button>
+    <button className="btn full" disabled={busy}>{busy ? "Plek opslaan…" : "Verder met jullie idee"}</button>
   </form>;
 }

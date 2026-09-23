@@ -8,7 +8,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { next } = await searchParams;
   return (
     <div className="wrap page auth-page">
-      <PageHeading eyebrow="VEILIG TERUG NAAR JOUW AVOND" title="Inloggen met e-mail." intro="Je identiteit wordt door Supabase gecontroleerd; rechten komen uit de database, niet uit een rollenknop." />
+      <PageHeading eyebrow="VEILIG TERUG NAAR JOUW AVOND" title="Inloggen met e-mail." intro="Vul je e-mailadres in en ontvang een eenmalige code. Zo kom je zonder wachtwoord bij je inschrijving, groep of aangemelde plek." />
       <EmailOtpForm nextPath={safeReturnPath(next)} />
     </div>
   );

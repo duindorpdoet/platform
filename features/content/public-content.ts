@@ -68,7 +68,7 @@ export const worlds: World[] = [
 export const faq = [
   [
     "Hoe werkt de Halloween-tocht?",
-    "Je schrijft je kinderen in en wij maken kleine loopgroepen. Samen met een volwassene wandelen jullie van deur naar deur door Duindorp. Bij elke poort wacht een nieuwe verrassing en natuurlijk iets lekkers.",
+    "Je schrijft je kinderen in en wij maken kleine loopgroepen. Samen met een volwassene wandelen jullie langs versierde huizen, portieken en andere deelnemende plekken in Duindorp. Bij elke poort wacht een nieuwe verrassing en iets lekkers.",
   ],
   [
     "Voor welke leeftijd is de tocht?",
@@ -91,12 +91,16 @@ export const faq = [
     "Zodra de groepen klaar zijn, zie je in jullie persoonlijke omgeving hoe laat en waar jullie starten. We sturen ook een duidelijke herinnering voor de avond.",
   ],
   [
-    "Hoe meld ik mijn huis aan?",
-    "Meld je huis aan met je e-mailadres, telefoonnummer, naam en adres. Na de bevestiging kun je vertellen welk thema jullie leuk vinden, hoeveel kinderen welkom zijn en hoe jullie poort eruitziet. Wij nemen daarna contact op.",
+    "Wat nemen we mee?",
+    "Kom in kleding waarin je kind prettig kan lopen en neem een snoepemmertje of tas mee. Een volwassene blijft de hele tocht bij de kinderen. Houd rekening met het weer en kies vooral wat voor jullie comfortabel voelt.",
   ],
   [
-    "Wat als de QR-code niet werkt?",
-    "Geen probleem. De groepsleider kan ook een korte code gebruiken. Lukt iets niet, dan helpt de organisatie jullie verder bij de poort.",
+    "Kan een huis, portiek of bedrijf ook meedoen?",
+    "Ja. Een woning, gezamenlijke entree, winkel of andere plek in de wijk kan een poort worden. Meld jullie plek aan en vertel welk idee jullie hebben; de organisatie neemt daarna contact op om de mogelijkheden te bespreken.",
+  ],
+  [
+    "Hoe kan ik de avond steunen?",
+    "Je kunt helpen met materiaal, vakkennis of een financiële bijdrage. Ook lokale bedrijven zijn van harte welkom. Laat via de sponsorpagina weten wat je wilt bijdragen, dan neemt de organisatie contact met je op.",
   ],
 ] as const;
 

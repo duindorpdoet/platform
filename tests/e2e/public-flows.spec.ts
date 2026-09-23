@@ -30,7 +30,7 @@ test("authentication uses a six-digit email OTP without a role picker", async ({
   await page.goto("/inloggen");
   await expect(page.getByRole("heading", { name: /Inloggen met e-mail/i })).toBeVisible();
   await expect(page.getByLabel("E-mailadres")).toBeVisible();
-  await expect(page.locator("body")).toContainText("geen universele democode");
+  await expect(page.locator("body")).toContainText("geen wachtwoord nodig");
   await expect(page.locator("body")).not.toContainText("Kies een rol");
 });
 
@@ -62,7 +62,7 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
     test.setTimeout(90_000);
     await page.setViewportSize({ width: size.width, height: 844 });
     await page.emulateMedia({ reducedMotion: "reduce" });
-    for (const path of ["/", "/verhaal", "/werelden", "/werelden/heksenrijk", "/werelden/dodenrijk", "/werelden/circuswereld", "/werelden/besmette-zone", "/werelden/geestenwereld", "/werelden/vampierrijk", "/kaart", "/faq", "/sponsoren", "/contact", "/privacy", "/voorwaarden", "/toegankelijkheid", "/inloggen"]) {
+    for (const path of ["/", "/verhaal", "/werelden", "/werelden/heksenrijk", "/werelden/dodenrijk", "/werelden/circuswereld", "/werelden/besmette-zone", "/werelden/geestenwereld", "/werelden/vampierrijk", "/kaart", "/meelopen", "/huis-aanmelden", "/faq", "/sponsoren", "/contact", "/privacy", "/voorwaarden", "/toegankelijkheid", "/inloggen"]) {
       await page.goto(path);
       await assertReadableLayout(page, size.doubleText);
     }
@@ -125,4 +125,24 @@ test("house registration starts with contact details and address before confirma
   await expect(page.getByLabel("Beschrijving *", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Stuur eenmalige code" })).toBeDisabled();
   await assertReadableLayout(page, false);
+});
+
+test("the Halloween image package is connected to every intended public role", async ({ page }) => {
+  await page.goto("/");
+  for (const stem of ["01-home-hero-duindorp-bij-avond", "02-home-de-avond-straat", "03-home-de-poorten-gevels", "04-home-iets-lekkers-steeg"]) {
+    await expect(page.locator(`img[src*="${stem}"]`).first()).toHaveAttribute("src", new RegExp(stem));
+  }
+  for (const [id, stem] of [["de-avond", "02-home-de-avond-straat"], ["de-poorten", "03-home-de-poorten-gevels"], ["iets-lekkers", "04-home-iets-lekkers-steeg"]] as const) {
+    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
+    const images = page.locator(`img[src*="${stem}"]`);
+    await expect.poll(() => images.evaluateAll((elements: HTMLImageElement[]) => elements.some((element) => element.complete && element.naturalWidth > 0))).toBe(true);
+  }
+  for (const [route, hook, stem] of [["/meelopen", "meelopen", "05-meelopen-samen-op-pad"], ["/huis-aanmelden", "huis-aanmelden", "06-huis-aanmelden-jouw-deur"], ["/sponsoren", "sponsoren", "08-sponsoren-de-wijk-maakt-het"]] as const) {
+    await page.goto(route);
+    const image = page.locator(`[data-halloween-photo="${hook}"] img`);
+    await expect(image).toHaveAttribute("src", new RegExp(stem));
+    await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+  }
+  await page.goto("/verhaal");
+  await expect(page.locator(".story-hero img")).toHaveAttribute("src", /07-verhaal-wereld-achter-de-deur/);
 });

@@ -40,7 +40,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             <summary className="menu-btn" aria-label="Menu openen"><Menu /></summary>
             <div className="mobile-navigation-panel">
               {navigation.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
-              <Link href="/huis-aanmelden">Huis aanmelden</Link>
+              <Link href="/huis-aanmelden">Plek aanmelden</Link>
               <Link href="/sponsoren">Sponsoren</Link>
               <Link href="/mijn-groep">Mijn groep</Link>
             </div>
@@ -54,7 +54,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             <Link className="brand" href="/"><img src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" width="190" height="80" /></Link>
             <p>Eén avond. Eén wijk.<br /><em>Talloze werelden.</em></p>
             <div>
-              <Link href="/huis-aanmelden">Huis aanmelden</Link>
+              <Link href="/huis-aanmelden">Plek aanmelden</Link>
               <Link href="/sponsoren">Sponsoren & doneren</Link>
               <Link href="/contact">Contact</Link>
             </div>
@@ -64,6 +64,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             <span>© 2026 De Duindorpse Poorten van Halloween</span>
             <span><Link href="/privacy">Privacy</Link> · <Link href="/voorwaarden">Voorwaarden</Link> · <Link href="/toegankelijkheid">Toegankelijkheid</Link></span>
           </div>
+          <p className="wrap image-disclosure">AI-bewerkte sfeerbeelden op basis van Duindorpse locaties. Afgebeelde personen zijn fictief; getoonde woningen zijn niet automatisch deelnemende adressen.</p>
         </footer>
       )}
       <MotionToggle />
