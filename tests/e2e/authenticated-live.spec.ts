@@ -83,7 +83,7 @@ test("forged cookies fail and offline group state reveals only the current stop 
   });
   await page.goto("/mijn-groep");
   await expect(page.getByRole("heading", { name: "Testpoort 01" })).toBeVisible();
-  await expect(page.getByText(/volgende bestemming verborgen/i)).toBeVisible();
+  await expect(page.getByText(/volgende stop blijft nog een verrassing/i)).toBeVisible();
 
   const initialDocument = await page.content();
   const initialStorage = await page.evaluate(() => JSON.stringify(Array.from({ length: localStorage.length }, (_, index) => localStorage.getItem(localStorage.key(index)!))));
@@ -283,7 +283,7 @@ test("a portal draft survives refresh and rejects disguised executable upload co
   await chooser.setInputFiles({ name: "misleidend.png", mimeType: "image/png", buffer: Buffer.from("<svg><script>alert(1)</script></svg>") });
   await expect(page.getByRole("status")).toContainText(/geen geldige/i);
   await chooser.setInputFiles({ name: "poort.png", mimeType: "image/png", buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) });
-  await expect(page.getByRole("status")).toContainText(/foto staat bij jullie huis/i);
+  await expect(page.getByRole("status")).toContainText(/foto staat bij jullie aanmelding/i);
   await expect(page.getByText(/1 afbeelding.*veilig/i)).toBeVisible();
   await page.reload();
   await expect(page.getByText(/1 afbeelding.*veilig/i)).toBeVisible();
@@ -352,6 +352,6 @@ test("house details unlock only after successful email confirmation", async ({ p
   await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Nieuwe testbewoner");
   await expect(page.getByLabel("Straat *")).toHaveValue("FICTIEVE STRAAT");
   await page.goto("/mijn-huis");
-  await page.getByRole("link", { name: "Huisdetails aanvullen" }).click();
+  await page.getByRole("link", { name: "Aanmelding aanvullen" }).click();
   await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Nieuwe testbewoner");
 });
