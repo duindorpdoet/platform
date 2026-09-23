@@ -8,7 +8,7 @@ PR #8 is samengevoegd; stagingcommit `0163690` doorloopt CI succesvol (run `3580
 
 De resterende mailfout is een verouderd acceptatiecontract: publieke contactformulieren maken sinds de beveiligingsmigratie alleen `contact_notification` voor het vaste organisatiedoel aan. De test wachtte op `contact_received` voor de bezoeker. Het vaste organisatiedoel was bovendien niet toegestaan door de stagingallowlist. De vervolgfix configureert het vaste stagingdoel als `TEST_EMAIL_1` en controleert de echte organisatie-notificatie. Productie gebruikt `ORGANIZATION_SUPPORT_EMAIL`. Alleen de deploymentrol kan dit doel configureren; acht databasecontracttests controleren die grens. Echte transactionele bezorging moet na deployment van deze fix nog slagen.
 
-Onderstaande oudere checkpoints blijven historisch bewijs. Operationele vrijgavevoorwaarden en het gedeelde SendGrid-webhookslot zijn nog open.
+Onderstaande oudere checkpoints blijven historisch bewijs. Operationele vrijgavevoorwaarden zijn nog open. Het eerder geblokkeerde SendGrid-webhookslot is beschikbaar: run `35806175214` configureert en test de signed webhook succesvol.
 
 ## Huidig checkpoint
 

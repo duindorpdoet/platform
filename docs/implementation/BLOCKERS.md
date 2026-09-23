@@ -18,13 +18,13 @@ Camera, netwerkovergang, twee gelijktijdige telefoons, iOS/Android-PWA-update en
 
 Er is geen goedgekeurde MapLibre-style-URL/key aangeleverd. De publieke app toont daarom bewust alleen een lokale privacyveilige sfeerkaart zonder adressen; een echte providerstijl en attributie blijven geblokkeerd.
 
-### B-005 — Echte mailbezorging opnieuw verifiëren na correctie van de releasecheck
+### B-005 — Transactionele organisatie-notificatie opnieuw verifiëren
 
-Stagingrun `35700649499` stopte vóór een nieuwe mailpoging: de check behandelde historische SendGrid-`blocks` ten onrechte als blijvende suppressions. Volgens de [SendGrid Blocks API](https://www.twilio.com/docs/sendgrid/api-reference/blocks-api) blokkeren die registraties nieuwe berichten standaard niet. De check is gecorrigeerd en toont voortaan de geredigeerde historische afwijsreden. Bounces, ongeldige adressen, spamklachten en globale uitschrijvingen blijven de probe tegenhouden. Er worden geen gedeelde providergegevens verwijderd. Echte OTP-/IMAP-bezorging moet opnieuw worden aangetoond; de eerdere claim dat beide adressen permanent geblokkeerd waren is ingetrokken.
+Stagingrun `35806175214` bewijst echte OTP-ontvangst en succesvolle verificatie tegen Supabase Auth. De transactionele proef faalde doordat de test op de oude bezoekersbevestiging wachtte, terwijl de beveiligde contactflow uitsluitend het vaste organisatiedoel mailt. De vervolgfix configureert op staging `TEST_EMAIL_1` als vast doel en controleert `Nieuw contactbericht`. De echte bezorgingsproef na deze fix staat nog open. Historische SendGrid-blockregistraties zijn geen permanente suppressions.
 
-### B-006 — Geen vrij SendGrid Event Webhook-slot
+### B-006 — Opgelost: signed SendGrid Event Webhook beschikbaar
 
-Het bestaande gedeelde SendGrid-account heeft één Event Webhook-slot en dat is al in gebruik door een andere consumer. Staging laat de bestaande webhook aantoonbaar ongemoeid en meldt een waarschuwing. Productie vereist de app-specifieke ondertekende webhook hard en blijft daarom gesloten totdat de accountbeheerder een vrij slot of een geïsoleerde subuser beschikbaar stelt.
+Stagingrun `35806175214` configureert de app-specifieke signed webhook en accepteert de provider-testrequest. De oudere melding over een bezet slot is niet meer actueel. Productie blijft de ondertekende webhook verplicht controleren tijdens promotie.
 
 ### B-007 — Beperkte SendGrid-sleutelscope nog niet aangetoond
 
@@ -32,7 +32,7 @@ MAIL-05 vereist bewijs dat de verzendsleutel uitsluitend de benodigde mailrechte
 
 ## Releasevoorwaarden
 
-- Staging moet de remote migraties, Supabase security advisors, Sites-VPS-rooktest, signed SendGrid Event Webhook en echte OTP/IMAP-proef groen afronden. B-005 en B-006 verhinderen dit momenteel.
+- Staging moet de remote migraties, Supabase security advisors, Sites-VPS-rooktest, signed SendGrid Event Webhook en echte OTP/IMAP-proef groen afronden. B-005 verhindert de volledige stagingacceptatie momenteel.
 - Productie accepteert uitsluitend exact die succesvolle stagingcommit.
 - Productie-inschrijving blijft gesloten totdat B-001 en B-002 expliciet zijn opgelost; deze implementatie verandert dat niet automatisch.
 - Bulkmail, DNS-wijzigingen en het verwijderen van productiegegevens blijven buiten scope.
