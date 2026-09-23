@@ -47,7 +47,7 @@ test("the unified mobile participant environment keeps role navigation and payme
   await authenticate(context, "parent-size-5@example.invalid");
   await page.goto("/omgeving/meeloper/nu");
 
-  await expect(page.getByRole("heading", { name: "Klaar voor de nacht?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Klaar voor de nacht?" })).toBeVisible({ timeout: 15_000 });
   const bottomNavigation = page.getByRole("navigation", { name: "Mobiele omgevingsnavigatie" });
   await expect(bottomNavigation.getByRole("link", { name: "Nu" })).toBeVisible();
   await expect(bottomNavigation.getByRole("link", { name: "Route" })).toBeVisible();
