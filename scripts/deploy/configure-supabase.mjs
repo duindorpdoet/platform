@@ -197,6 +197,21 @@ const release = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/configure_re
   body: JSON.stringify({ _event_slug: process.env.EVENT_SLUG, _mode: releaseMode }),
 });
 
+// Public forms send only to a deployment-controlled organization mailbox.
+// Staging uses the primary authorized acceptance mailbox as that destination.
+const notificationRecipient = (process.env.APP_ENVIRONMENT === "staging"
+  ? process.env.TEST_EMAIL_1
+  : process.env.ORGANIZATION_SUPPORT_EMAIL)?.trim().toLowerCase();
+if (!notificationRecipient || (process.env.APP_ENVIRONMENT === "staging"
+    && !new Set((process.env.MAIL_ALLOWED_RECIPIENTS ?? "").split(",").map((value) => value.trim().toLowerCase())).has(notificationRecipient))) {
+  throw new Error("The fixed notification recipient must be configured and allowlisted on staging.");
+}
+await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/configure_notification_recipient`, {
+  method: "POST",
+  headers: serviceHeaders,
+  body: JSON.stringify({ _event_slug: process.env.EVENT_SLUG, _email: notificationRecipient }),
+});
+
 const mailWorker = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/configure_mail_worker`, {
   method: "POST",
   headers: serviceHeaders,

@@ -1,0 +1,14 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(8);
+select ok(not has_function_privilege('anon', 'api.configure_notification_recipient(text,text)', 'EXECUTE'), 'anonymous visitors cannot change notification destination');
+select ok(not has_function_privilege('authenticated', 'api.configure_notification_recipient(text,text)', 'EXECUTE'), 'signed-in visitors cannot change notification destination');
+select ok(has_function_privilege('service_role', 'api.configure_notification_recipient(text,text)', 'EXECUTE'), 'deployment can configure notification destination');
+select throws_ok($$select api.configure_notification_recipient('duindorp-halloween-2026', 'bad address')$$, '22023', 'INVALID_NOTIFICATION_RECIPIENT', 'invalid mailbox rejected');
+select throws_ok($$select api.configure_notification_recipient('missing-event', 'test@example.nl')$$, 'P0002', 'EVENT_NOT_FOUND', 'unknown event rejected');
+select is(api.configure_notification_recipient('duindorp-halloween-2026', ' Test@Example.nl ')->>'configured', 'true', 'deployment configures normalized mailbox');
+select api.submit_public_contact('duindorp-halloween-2026', 'Acceptance', 'visitor@example.nl', 'Notification contract', 'A durable test message', 'notification-contract-test');
+select is((select recipient_email from app_private.email_outbox where payload->>'subject' = 'Notification contract'), 'test@example.nl', 'contact goes to fixed configured mailbox rather than visitor');
+select is((select message_type from app_private.email_outbox where payload->>'subject' = 'Notification contract'), 'contact_notification', 'contact emits the organization notification contract');
+select * from finish();
+rollback;

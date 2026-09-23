@@ -36,7 +36,7 @@ MAILBOXES = tuple(
         required(f"IMAP_USER_{index}"),
         required(f"IMAP_PASSWORD_{index}"),
     )
-    for index in (1, 2)
+    for index in (1,)
 )
 RUN_ID = f"DPH-{uuid.uuid4().hex[:12]}"
 
@@ -91,8 +91,8 @@ def connect() -> tuple[imaplib.IMAP4, str]:
         if attempt < 3:
             time.sleep(5)
     if saw_retryable_error:
-        raise RuntimeError("Both staging mailboxes remained temporarily unavailable after bounded retries.") from last_error
-    raise RuntimeError("Both staging mailboxes rejected the configured IMAP login.") from last_error
+        raise RuntimeError("The staging notification mailbox remained temporarily unavailable after bounded retries.") from last_error
+    raise RuntimeError("The staging notification mailbox rejected the configured IMAP login.") from last_error
 
 
 def max_uid(client: imaplib.IMAP4) -> int:
@@ -126,6 +126,8 @@ def wait_for(client: imaplib.IMAP4, after_uid: int, subject: str, contains: str 
         if status == "OK" and data and data[0]:
             for raw_uid in reversed(data[0].split()):
                 uid = int(raw_uid)
+                if uid <= after_uid:
+                    continue
                 status, fetched = client.uid("fetch", raw_uid, "(RFC822)")
                 if status != "OK" or not fetched or not isinstance(fetched[0], tuple):
                     continue
@@ -208,7 +210,7 @@ try:
     if contact_status != 201 or contact_result.get("data", {}).get("stored") is not True:
         raise RuntimeError("The staging contact request did not create a durable transactional outbox entry.")
     print("Transactional contact request stored; waiting for outbox delivery.")
-    _, contact_message, contact_text = wait_for(imap, before_contact, "Je bericht is ontvangen", RUN_ID)
+    _, contact_message, contact_text = wait_for(imap, before_contact, "Nieuw contactbericht", RUN_ID)
     if "halloween@duindorpdoet.nl" not in decoded_header(contact_message.get("From")).lower() or APP_URL not in contact_text:
         raise RuntimeError("The staging transactional message has an unexpected sender or environment URL.")
 

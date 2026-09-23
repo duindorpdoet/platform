@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
-function configure(probeResult: object, runtimeStatus = 200) {
+function configure(probeResult: object, runtimeStatus = 200, environment: Record<string, string> = {}) {
   const code = `
     const runtimeStatus = ${runtimeStatus};
     globalThis.fetch = async (input, init = {}) => {
@@ -33,6 +33,14 @@ function configure(probeResult: object, runtimeStatus = 200) {
           phase: 'registration_open',
           registrationPublished: true,
         };
+      }
+
+      if (url.pathname.endsWith('/configure_notification_recipient')) {
+        const payload = JSON.parse(init.body);
+        if (payload._email !== 'test@example.nl' || payload._event_slug !== 'event') {
+          throw new Error('Incorrect fixed notification recipient');
+        }
+        console.log('Fixed staging notification recipient configured.');
       }
 
       if (url.pathname.endsWith('/configure_mail_worker')) {
@@ -76,11 +84,20 @@ function configure(probeResult: object, runtimeStatus = 200) {
       APP_ENVIRONMENT: "staging",
       REGISTRATION_MODE: "staging_test",
       MAIL_MODE: "allowlist",
+      TEST_EMAIL_1: "test@example.nl",
+      MAIL_ALLOWED_RECIPIENTS: "test@example.nl,second@example.nl",
+      ...environment,
     },
   });
 }
 
 describe("mail worker deployment probe", () => {
+  it("rejects a staging notification recipient outside the allowlist", () => {
+    const result = configure({}, 200, { TEST_EMAIL_1: "outside@example.nl" });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("must be configured and allowlisted on staging");
+  });
+
   it("requires successful pg_net reachability and runtime mail gateway validation", () => {
     const result = configure({
       found: true,
@@ -90,6 +107,7 @@ describe("mail worker deployment probe", () => {
     });
 
     expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain("Fixed staging notification recipient configured.");
     expect(result.stdout).toContain("Supabase pg_net mail worker probe passed.");
     expect(result.stdout).toContain("Transactional mail gateway runtime probe passed.");
   });
