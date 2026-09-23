@@ -13,9 +13,11 @@ import {
   RefreshCw,
   ShieldCheck,
   Upload,
+  UserCog,
   UsersRound,
   WalletCards,
 } from "lucide-react";
+import { AdminAccessManagement } from "@/components/admin/admin-access-management";
 import { PortalReviews } from "@/components/admin/portal-reviews";
 import { ContentManagement } from "@/components/admin/content-management";
 import { createClient } from "@/lib/supabase/client";
@@ -125,7 +127,7 @@ const requiredColumns: Record<string, string[]> = {
   starts: ["name", "starts_at", "max_children"],
 };
 
-export function AdminConsole({ eventSlug }: { eventSlug: string }) {
+export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; capabilities: string[] }) {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [section, setSection] = useState<
     | "overview"
@@ -135,6 +137,7 @@ export function AdminConsole({ eventSlug }: { eventSlug: string }) {
     | "portals"
     | "planner"
     | "content"
+    | "access"
     | "live"
   >("overview");
   const [importKind, setImportKind] = useState("portals");
@@ -696,6 +699,15 @@ export function AdminConsole({ eventSlug }: { eventSlug: string }) {
           <FileText />
           Content & sponsors
         </button>
+        {capabilities.includes("event_admin") && (
+          <button
+            className={section === "access" ? "active" : ""}
+            onClick={() => setSection("access")}
+          >
+            <UserCog />
+            Beheerders
+          </button>
+        )}
         <button
           className={section === "live" ? "active" : ""}
           onClick={() => {
@@ -977,6 +989,7 @@ export function AdminConsole({ eventSlug }: { eventSlug: string }) {
         )}
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
+        {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
         {section === "planner" && (
           <section className="panel">
             <p className="kicker">Deterministisch · versieerbaar</p>

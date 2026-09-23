@@ -264,6 +264,40 @@ test("a multi-child registration draft survives refresh and submits once", async
   await expect(page.getByText("open", { exact: true })).toBeVisible();
 });
 
+test("an event administrator can grant and revoke narrowly scoped access", async ({ context, page }) => {
+  requireLocalAuth();
+  await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Beheerders", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Beheerders en rechten" })).toBeVisible();
+
+  await page.getByLabel("E-mailadres").fill("parent-a@example.invalid");
+  for (const name of [
+    "Hoofdbeheer",
+    "Inschrijvingen",
+    "Betalingen",
+    "Groepen en routes",
+    "Avondondersteuning",
+    "Content en sponsors",
+  ]) {
+    await page.getByRole("checkbox", { name: new RegExp(`^${name}`) }).uncheck();
+  }
+  await page.getByLabel("Reden voor deze wijziging").fill("Helpt met het beoordelen van aangemelde locaties.");
+  await page.getByRole("button", { name: "Beheerder toevoegen" }).click();
+  await expect(page.getByRole("status")).toContainText(/rechten.*bijgewerkt/i);
+
+  const member = page.locator(".admin-access-member").filter({ hasText: "parent-a@example.invalid" });
+  await expect(member).toContainText("Locaties");
+  await member.getByRole("button", { name: "Bewerken" }).click();
+  await expect(page.getByLabel("E-mailadres")).toHaveAttribute("readonly", "");
+  await page.getByRole("checkbox", { name: /^Locaties/ }).uncheck();
+  await page.getByLabel("Reden voor deze wijziging").fill("De tijdelijke locatiebeoordeling is afgerond.");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Rechten opslaan" }).click();
+  await expect(page.getByRole("status")).toContainText(/rechten.*bijgewerkt/i);
+  await expect(member).toHaveCount(0);
+});
+
 test("a portal draft survives refresh and rejects disguised executable upload content", async ({ context, page }, testInfo) => {
   requireLocalAuth();
   const email = testInfo.project.name === "mobile-chromium" ? "parent-size-7@example.invalid" : "leader-b@example.invalid";
@@ -310,7 +344,7 @@ for (const doubleText of [false, true]) {
         await assertReadableLayout(page, doubleText);
         if (path === "/admin") {
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
-          for (const section of ["Imports", "Inschrijvingen", "Betalingen", "Poortaanvragen", "Routeplanner", "Content & sponsors", "Avondhulp"]) {
+          for (const section of ["Imports", "Inschrijvingen", "Betalingen", "Poortaanvragen", "Routeplanner", "Content & sponsors", "Beheerders", "Avondhulp"]) {
             await page.goto("/admin");
             await page.locator(".admin-nav").getByRole("button", { name: section, exact: true }).click();
             await expect(page.locator(".admin-nav").getByRole("button", { name: section, exact: true })).toHaveClass("active");
