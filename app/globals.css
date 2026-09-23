@@ -78,6 +78,7 @@ small{font-size:12px}.site-header nav a,.group-link,.header-signup,.field>span,.
 .form-fieldset{border:0;margin:0;padding:0;min-width:0}.form-fieldset>h3{margin-top:32px;margin-bottom:4px}.form-fieldset:disabled{opacity:.72}
 /* Keep enlarged text and primary admin actions inside narrow viewports. */
 .legal-copy{grid-template-columns:minmax(0,1fr);overflow-wrap:anywhere}
+.auth-required h2{max-width:100%;overflow-wrap:anywhere}
 .admin-content .app-heading{flex-wrap:wrap}.admin-content .app-heading>div{min-width:0;flex:1 1 240px;overflow-wrap:anywhere}
 .admin-content .row-between{flex-wrap:wrap}.admin-content .row-between>div,.admin-content .row-between>h2{min-width:0;overflow-wrap:anywhere}
 
