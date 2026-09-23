@@ -20,7 +20,7 @@ test("premium homepage keeps the supplied identity and closed participation path
 
 test("public map never exposes exact route data", async ({ page }) => {
   await page.goto("/kaart");
-  await expect(page.getByRole("heading", { name: /sfeerkaart/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /waar begint jullie avontuur/i })).toBeVisible();
   await expect(page.getByText(/deelnemende huizen en verrassingen houden we geheim/i)).toBeVisible();
   await expect(page.locator("body")).not.toContainText("NIET-BESTAAND TESTADRES");
   await expect(page.locator("body")).not.toContainText("Testpoort 01");
