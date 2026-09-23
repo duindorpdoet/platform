@@ -184,6 +184,9 @@ test("a multi-child registration draft survives refresh and submits once", async
   requireLocalAuth();
   await page.setViewportSize({ width: 320, height: 844 });
   const client = await authenticate(context, "parent-b@example.invalid");
+  const source = await fixtureClient("parent-a@example.invalid");
+  const sourceSnapshot = await rpc(source.client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as { registration: { togetherCode: string } };
+  const sharedTogetherCode = sourceSnapshot.registration.togetherCode;
   await page.goto("/meelopen");
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.locator(".wizard").getByRole("alert")).toBeFocused();
@@ -219,7 +222,8 @@ test("a multi-child registration draft survives refresh and submits once", async
   await page.getByRole("button", { name: "Nog een kind" }).click();
   await page.getByLabel("Voornaam kind 2").fill("Tweede testkind");
   await page.getByLabel("Leeftijd op 31 oktober").nth(1).fill("10");
-  await page.getByLabel("Met wie zouden jullie graag samenlopen? (optioneel)").fill("Samira de Vries");
+  await page.getByLabel("Samenloopcode (optioneel)").fill(sharedTogetherCode.toLowerCase());
+  await expect(page.getByLabel("Samenloopcode (optioneel)")).toHaveValue(sharedTogetherCode);
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.getByRole("heading", { name: "Controleren" })).toBeVisible();
 
@@ -229,7 +233,7 @@ test("a multi-child registration draft survives refresh and submits once", async
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.getByLabel("Voornaam kind 1")).toHaveValue("Eerste testkind");
   await expect(page.getByLabel("Voornaam kind 2")).toHaveValue("Tweede testkind");
-  await expect(page.getByLabel("Met wie zouden jullie graag samenlopen? (optioneel)")).toHaveValue("Samira de Vries");
+  await expect(page.getByLabel("Samenloopcode (optioneel)")).toHaveValue(sharedTogetherCode);
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await page.getByRole("checkbox", { name: /ik ga akkoord/i }).check();
   let submitCalls = 0;
@@ -250,18 +254,23 @@ test("a multi-child registration draft survives refresh and submits once", async
   await page.getByRole("button", { name: "Definitief inschrijven" }).click();
   await expect(page.getByRole("heading", { name: "Welkom bij de poorten!" })).toBeVisible();
 
-  const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as { registration: { id: string; priceCents: number } };
+  const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as { registration: { id: string; priceCents: number; togetherCode: string; togetherCount: number } };
   expect(snapshot.registration.id).toBeTruthy();
   expect(snapshot.registration.priceCents).toBe(400);
+  expect(snapshot.registration.togetherCode).toMatch(/^[A-HJ-NP-Z2-9]{4}$/);
+  expect(snapshot.registration.togetherCount).toBe(2);
 
   await page.goto("/mijn-inschrijving");
   await expect(page.getByText("Eerste testkind")).toBeVisible();
+  await expect(page.getByText("Wacht op Tikkie", { exact: true })).toBeVisible();
+  await expect(page.getByText(snapshot.registration.togetherCode, { exact: true })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("awaiting_link");
   page.once("dialog", (dialog) => dialog.accept("Dit kind kan op de avond helaas niet meelopen."));
   await page.getByRole("button", { name: "Verwijdering aanvragen" }).first().click();
   await expect(page.getByRole("status")).toContainText(/verzoek is opgeslagen/i);
   await page.reload();
   await expect(page.getByText(/Dit kind kan op de avond helaas niet meelopen/i)).toBeVisible();
-  await expect(page.getByText("open", { exact: true })).toBeVisible();
+  await expect(page.getByText("In behandeling", { exact: true })).toBeVisible();
 });
 
 test("an event administrator can grant and revoke narrowly scoped access", async ({ context, page }) => {
@@ -377,6 +386,10 @@ test("house details unlock only after successful email confirmation", async ({ p
   await page.getByLabel("Postcode *").fill("2584AB");
   await page.getByRole("button", { name: "Stuur eenmalige code" }).click();
   await expect(page.getByRole("heading", { name: "Vul de zes cijfers in." })).toBeVisible();
+  await assertReadableLayout(page);
+  const otpWidth = await page.locator('[data-slot="input-otp-group"]').evaluate((element) => element.getBoundingClientRect().width);
+  const formWidth = await page.locator(".auth-form").evaluate((element) => element.getBoundingClientRect().width);
+  expect(otpWidth).toBeGreaterThan(formWidth * 0.75);
   expect(await rpc(client, "portal_snapshot", { _event_slug: "duindorp-halloween-2026" })).toBeNull();
   await page.locator('input[autocomplete="one-time-code"]').fill("000000");
   await page.getByRole("button", { name: "Bevestigen en verder" }).click();

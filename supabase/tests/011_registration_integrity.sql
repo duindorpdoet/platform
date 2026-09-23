@@ -68,9 +68,9 @@ select ok(
   'visitor-authored household labels are not retained in the private draft'
 );
 select is(
-  (select payload ->> 'togetherPreference' from app_private.registration_drafts where household_id = (select household_id from registration_values)),
-  'Samira de Vries',
-  'a together preference preserves a person name without uppercasing it'
+  (select payload ->> 'togetherCode' from app_private.registration_drafts where household_id = (select household_id from registration_values)),
+  '',
+  'a legacy free-text together preference is discarded instead of retaining a person name'
 );
 
 set local role authenticated;

@@ -119,6 +119,16 @@ const labels: Record<string, string> = {
   openSupportCases: "Open incidenten",
   unconfirmedPayments: "Te controleren betalingen",
 };
+const paymentStatusLabels: Record<string, string> = {
+  awaiting_link: "Wacht op Tikkie",
+  awaiting_payment: "Wacht op betaling",
+  reported: "Betaling gemeld",
+  confirmed: "Betaald",
+  partial: "Deels betaald",
+  refund_due: "Terugbetaling nodig",
+  refunded: "Terugbetaald",
+  waived: "Geen betaling nodig",
+};
 const requiredColumns: Record<string, string[]> = {
   portals: ["street", "house_number", "postal_code"],
   registrations: ["email", "child_name"],
@@ -886,7 +896,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                       {payment.reference} · {payment.registrationReference}
                     </strong>
                     <small>
-                      {payment.status} · ontvangen €{" "}
+                      {paymentStatusLabels[payment.status] ?? payment.status} · ontvangen €{" "}
                       {(payment.netCollectedCents / 100)
                         .toFixed(2)
                         .replace(".", ",")}{" "}
@@ -995,7 +1005,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             <p className="kicker">Deterministisch · versieerbaar</p>
             <h2>Indelingsvoorstel</h2>
             <p>
-              De planner houdt samenloopwensen intact, respecteert groeps- en
+              De planner houdt inschrijvingen met dezelfde viertekencode bij elkaar, respecteert groeps- en
               startcapaciteit, controleert tijdvensters en verdeelt zes
               verschillende werelden. Conflicten blokkeren opslag.
             </p>

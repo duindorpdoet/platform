@@ -2,10 +2,6 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(31);
 
-create temporary table security_values(party jsonb) on commit drop;
-insert into security_values values (null);
-grant select, update on security_values to authenticated;
-
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -23,39 +19,38 @@ select throws_ok(
 );
 
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-select lives_ok(
-  $$ update security_values set party = api.together_create('22000000-0000-0000-0000-000000000001', 'Samen maar gescheiden') $$,
-  'first household creates a together party'
-);
-select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}', true);
-select lives_ok(
-  $$ select api.together_join('22000000-0000-0000-0000-000000000002', (select party->>'inviteCode' from security_values)) $$,
-  'second household joins by together code'
+select matches(
+  api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,togetherCode}',
+  '^[A-HJ-NP-Z2-9]{4}$',
+  'a participant receives only a four-character non-personal together code'
 );
 set local role postgres;
 select ok(
-  not app_private.is_household_member('21000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000005'),
-  'together membership grants no access to the other household'
-);
-set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}', true);
-select is(
-  api.household_access_snapshot('duindorp-halloween-2026')->>'id',
-  '21000000-0000-0000-0000-000000000002',
-  'joined parent still receives only their own household projection'
-);
-select lives_ok(
-  $$ select api.together_leave('22000000-0000-0000-0000-000000000002', 'Eigen samenloopwens verlaten') $$,
-  'a household can leave its own unlocked together preference'
-);
-set local role postgres;
-select ok(
-  not exists (select 1 from app_private.together_memberships where registration_id = '22000000-0000-0000-0000-000000000002' and left_at is null),
-  'leaving removes only the caller registration from the active preference'
+  (select count(*) = count(distinct together_code) from app_private.registrations),
+  'together codes are unique across every registration'
 );
 select ok(
-  exists (select 1 from app_private.together_memberships where registration_id = '22000000-0000-0000-0000-000000000001' and left_at is null),
-  'the other household membership remains intact'
+  to_regprocedure('api.together_snapshot(text)') is null,
+  'the old post-registration together snapshot is retired'
+);
+select ok(
+  to_regprocedure('api.together_create(uuid,text)') is null,
+  'visitors can no longer create a free-text together group'
+);
+select ok(
+  to_regprocedure('api.together_join(uuid,text)') is null,
+  'visitors can no longer replace the code chosen during signup'
+);
+select ok(
+  to_regprocedure('api.together_leave(uuid,text)') is null,
+  'visitors can no longer silently leave a planned code group'
+);
+select ok(
+  not exists (
+    select 1 from app_private.together_parties
+    where public_label !~ '^Samenloop(code)? [A-Z0-9]{4,6}$'
+  ),
+  'planner parties retain no visitor-authored names'
 );
 
 set local role authenticated;

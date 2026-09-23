@@ -99,8 +99,10 @@ export function EmailOtpForm({ nextPath, children, onVerified }: { nextPath?: st
       </InputOTP>
       {message && <p className={message.startsWith("Als") ? "note" : "form-error"} role="status">{message}</p>}
       <button className="btn full" type="submit" disabled={busy || otp.length !== 6}>{busy ? "Code controleren…" : onVerified ? "Bevestigen en verder" : "Inloggen"}<ArrowRight size={17} /></button>
-      <button className="text-link" type="button" disabled={cooldown > 0 || busy} onClick={() => void requestCode()}><RotateCcw size={15} />{cooldown ? `Nieuwe code over ${cooldown}s` : "Nieuwe code aanvragen"}</button>
-      <button className="text-link" type="button" disabled={busy} onClick={() => { setStage("email"); setOtp(""); setMessage(undefined); }}>Ander e-mailadres</button>
+      <div className="auth-code-actions">
+        <button className="text-link" type="button" disabled={cooldown > 0 || busy} onClick={() => void requestCode()}><RotateCcw size={15} />{cooldown ? `Nieuwe code over ${cooldown}s` : "Nieuwe code aanvragen"}</button>
+        <button className="text-link" type="button" disabled={busy} onClick={() => { setStage("email"); setOtp(""); setMessage(undefined); }}>Ander e-mailadres</button>
+      </div>
     </form>
   );
 }

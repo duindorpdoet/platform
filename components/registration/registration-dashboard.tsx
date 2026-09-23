@@ -10,6 +10,8 @@ type Snapshot = {
     reference: string;
     status: string;
     priceCents: number;
+    togetherCode: string;
+    togetherCount: number;
     version: number;
     children: Array<{
       id: string;
@@ -34,15 +36,6 @@ type Snapshot = {
     } | null;
   } | null;
 };
-type PartySnapshot = {
-  registrationId: string;
-  party: null | {
-    id: string;
-    label: string;
-    memberCount: number;
-    locked: boolean;
-  };
-};
 type HouseholdSnapshot = {
   id: string;
   label: string;
@@ -60,6 +53,41 @@ type HouseholdSnapshot = {
     expiresAt: string;
     createdAt: string;
   }>;
+};
+
+const registrationStatusLabels: Record<string, string> = {
+  draft: "Concept",
+  submitted: "Ingeschreven",
+  cancelled: "Geannuleerd",
+};
+
+const paymentStatusLabels: Record<string, string> = {
+  awaiting_link: "Wacht op Tikkie",
+  awaiting_payment: "Wacht op betaling",
+  reported: "Betaling gemeld",
+  confirmed: "Betaald",
+  partial: "Deels betaald",
+  refund_due: "Terugbetaling volgt",
+  refunded: "Terugbetaald",
+  waived: "Geen betaling nodig",
+};
+
+const childStatusLabels: Record<string, string> = {
+  active: "Aangemeld",
+  cancelled: "Afgezegd",
+};
+
+const changeKindLabels: Record<string, string> = {
+  correction: "Correctie",
+  remove_child: "Kind afmelden",
+  cancellation: "Annulering",
+};
+
+const changeStatusLabels: Record<string, string> = {
+  open: "In behandeling",
+  acknowledged: "Gezien",
+  resolved: "Afgerond",
+  rejected: "Afgewezen",
 };
 
 async function digest(value: unknown) {
@@ -80,11 +108,7 @@ export function RegistrationDashboard({
   inviteToken?: string;
 }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [party, setParty] = useState<PartySnapshot | null>(null);
   const [household, setHousehold] = useState<HouseholdSnapshot | null>(null);
-  const [label, setLabel] = useState("");
-  const [code, setCode] = useState("");
-  const [createdCode, setCreatedCode] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteProcessing, setInviteProcessing] = useState(
     Boolean(inviteToken),
@@ -94,21 +118,17 @@ export function RegistrationDashboard({
   const load = useCallback(async () => {
     const client = createClient();
     if (!client) return;
-    const [registrationResult, partyResult, householdResult] =
+    const [registrationResult, householdResult] =
       await Promise.all([
         client
           .schema("api")
           .rpc("registration_snapshot", { _event_slug: eventSlug }),
         client
           .schema("api")
-          .rpc("together_snapshot", { _event_slug: eventSlug }),
-        client
-          .schema("api")
           .rpc("household_access_snapshot", { _event_slug: eventSlug }),
       ]);
     if (!registrationResult.error)
       setSnapshot(registrationResult.data as Snapshot);
-    if (!partyResult.error) setParty(partyResult.data as PartySnapshot | null);
     if (!householdResult.error)
       setHousehold(householdResult.data as HouseholdSnapshot | null);
   }, [eventSlug]);
@@ -167,62 +187,6 @@ export function RegistrationDashboard({
         ? "De betaalmelding kon niet worden verwerkt."
         : "Je melding is opgeslagen. De organisatie controleert de betaling handmatig.",
     );
-    await load();
-  }
-  async function createParty() {
-    const client = createClient();
-    if (!client || !party?.registrationId) return;
-    const { data, error } = await client
-      .schema("api")
-      .rpc("together_create", {
-        _registration_id: party.registrationId,
-        _label: label,
-      });
-    if (error) return setNotice("Samenloopgroep maken is niet gelukt.");
-    setCreatedCode((data as { inviteCode: string }).inviteCode);
-    setNotice(
-      "De samenloopwens is opgeslagen. Deel de code veilig met het andere huishouden.",
-    );
-    await load();
-  }
-  async function joinParty() {
-    const client = createClient();
-    if (!client || !party?.registrationId) return;
-    const { error } = await client
-      .schema("api")
-      .rpc("together_join", {
-        _registration_id: party.registrationId,
-        _invite_code: code,
-      });
-    setNotice(
-      error
-        ? "De code is ongeldig, verlopen of al gebruikt voor jouw inschrijving."
-        : "Je samenloopwens is gekoppeld.",
-    );
-    await load();
-  }
-  async function leaveParty() {
-    const client = createClient();
-    if (!client || !party?.registrationId || !party.party || party.party.locked)
-      return;
-    if (
-      !window.confirm(
-        "Samenloopwens verlaten? De andere huishoudens blijven gekoppeld.",
-      )
-    )
-      return;
-    const { error } = await client
-      .schema("api")
-      .rpc("together_leave", {
-        _registration_id: party.registrationId,
-        _reason: "Door huishouden zelf verlaten",
-      });
-    setNotice(
-      error
-        ? "De samenloopwens kon niet worden verlaten; mogelijk is de indeling al vergrendeld."
-        : "Je inschrijving is uit de samenloopwens gehaald. Andere huishoudens zijn niet gewijzigd.",
-    );
-    if (!error) setCreatedCode("");
     await load();
   }
   async function requestRegistrationChange(
@@ -334,12 +298,12 @@ export function RegistrationDashboard({
   }
   return (
     <div className="dashboard-stack">
-      <section className="panel">
+      <section className="panel registration-overview-card">
         <p className="kicker">Referentie</p>
-        <h1>{registration.reference}</h1>
+        <h1 className="registration-reference">{registration.reference}</h1>
         <div className="summary-row">
           <span>Inschrijving</span>
-          <strong>{registration.status}</strong>
+          <strong>{registrationStatusLabels[registration.status] ?? registration.status}</strong>
         </div>
         <div className="summary-row">
           <span>Totaal</span>
@@ -349,7 +313,7 @@ export function RegistrationDashboard({
         </div>
         <div className="summary-row">
           <span>Betaling</span>
-          <strong>{registration.payment?.status ?? "wordt voorbereid"}</strong>
+          <strong>{registration.payment ? paymentStatusLabels[registration.payment.status] ?? registration.payment.status : "Wordt voorbereid"}</strong>
         </div>
         {registration.payment?.externalUrl && (
           <a
@@ -383,7 +347,7 @@ export function RegistrationDashboard({
         {registration.children.map((child) => (
           <div className="summary-row" key={child.id}>
             <span>
-              {child.firstName} · {child.status}
+              {child.firstName} · {childStatusLabels[child.status] ?? child.status}
             </span>
             {child.status === "active" &&
             registration.status === "submitted" ? (
@@ -396,7 +360,7 @@ export function RegistrationDashboard({
                 Verwijdering aanvragen
               </button>
             ) : (
-              <strong>{child.status}</strong>
+              <strong>{childStatusLabels[child.status] ?? child.status}</strong>
             )}
           </div>
         ))}
@@ -427,9 +391,9 @@ export function RegistrationDashboard({
         {registration.changeRequests.map((request) => (
           <div className="summary-row" key={request.id}>
             <span>
-              {request.kind.replaceAll("_", " ")} · {request.description}
+              {changeKindLabels[request.kind] ?? request.kind.replaceAll("_", " ")} · {request.description}
             </span>
-            <strong>{request.status}</strong>
+            <strong>{changeStatusLabels[request.status] ?? request.status}</strong>
           </div>
         ))}
       </section>
@@ -497,66 +461,16 @@ export function RegistrationDashboard({
           en vervalt automatisch.
         </p>
       </section>
-      <section className="panel">
+      <section className="panel together-code-card">
         <p className="kicker">Samen lopen</p>
-        <h2>Samenloopwens</h2>
-        {party?.party ? (
-          <>
-            <p>
-              Je bent gekoppeld aan <strong>{party.party.label}</strong> met{" "}
-              {party.party.memberCount} inschrijving(en).
-            </p>
-            {createdCode && (
-              <div className="registration-code">{createdCode}</div>
-            )}
-            <p className="note">
-              De routeplanner houdt de wens bij elkaar zolang capaciteit en
-              veiligheid dat toelaten.
-            </p>
-            <button
-              className="text-link"
-              disabled={party.party.locked}
-              onClick={() => void leaveParty()}
-            >
-              {party.party.locked
-                ? "Samenloopwens is vergrendeld"
-                : "Verlaat samenloopwens"}
-            </button>
-          </>
-        ) : (
-          <>
-            <label className="field">
-              <span>Nieuwe samenloopgroep</span>
-              <input
-                value={label}
-                onChange={(event) => setLabel(event.target.value)}
-                placeholder="Bijvoorbeeld: Familie aan zee"
-              />
-            </label>
-            <button
-              className="btn outline"
-              disabled={!label.trim()}
-              onClick={() => void createParty()}
-            >
-              Maak uitnodigingscode
-            </button>
-            <div className="separator" />
-            <label className="field">
-              <span>Ontvangen code</span>
-              <input
-                value={code}
-                onChange={(event) => setCode(event.target.value.toUpperCase())}
-              />
-            </label>
-            <button
-              className="btn outline"
-              disabled={!code.trim()}
-              onClick={() => void joinParty()}
-            >
-              Koppel samenloopwens
-            </button>
-          </>
-        )}
+        <h2>Jullie samenloopcode</h2>
+        <p>Deel deze code met bekenden die nog moeten inschrijven. Zij vullen hem tijdens hun inschrijving in.</p>
+        <div className="registration-code together-share-code" aria-label={`Samenloopcode ${registration.togetherCode}`}>{registration.togetherCode}</div>
+        <p className="note">
+          {registration.togetherCount > 1
+            ? `${registration.togetherCount} inschrijvingen zijn met deze samenloopgroep verbonden. De routeplanner probeert jullie bij elkaar te houden; capaciteit en veiligheid blijven leidend.`
+            : "Nog niemand heeft zich met jullie code gekoppeld. De routeplanner probeert gekoppelde inschrijvingen bij elkaar te houden; capaciteit en veiligheid blijven leidend."}
+        </p>
         {notice && (
           <p className="form-notice" role="status">
             {notice}

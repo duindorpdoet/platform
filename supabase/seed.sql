@@ -149,6 +149,7 @@ begin
     insert into app_private.registrations(id, event_id, household_id, status, reference, submitted_at, terms_version, terms_accepted_at, privacy_version, price_snapshot_cents)
     values (v_registration_id, v_event_id, v_household_id, 'submitted', 'FIXTURE-' || v_size, now(), 'test-v1', now(), 'test-v1', v_size * 200)
     on conflict (id) do nothing;
+    perform app_private.attach_registration_to_together_party(v_registration_id, null);
     for child_index in 1..v_size loop
       v_child_id := ('2500' || lpad(group_index::text, 4, '0') || '-0000-0000-0000-' || lpad(child_index::text, 12, '0'))::uuid;
       insert into app_private.children(id, household_id, first_name, age_at_event)

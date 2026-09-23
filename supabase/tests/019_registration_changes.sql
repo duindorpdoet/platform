@@ -29,13 +29,6 @@ from app_private.payment_requests payment
 join app_private.registrations registration on registration.id = payment.registration_id
 where registration.reference in ('FIXTURE-5', 'FIXTURE-7');
 
-insert into app_private.together_parties(id, event_id, public_label, creator_household_id, invite_token_hash, expires_at)
-select '42000000-0000-0000-0000-000000000001', registration.event_id, 'Te annuleren samenloop', registration.household_id,
-       extensions.digest(convert_to('registration-change-fixture', 'utf8'), 'sha256'), now() + interval '1 day'
-from app_private.registrations registration where registration.reference = 'FIXTURE-7';
-insert into app_private.together_memberships(party_id, registration_id)
-select '42000000-0000-0000-0000-000000000001', id from app_private.registrations where reference = 'FIXTURE-7';
-
 select ok(not has_function_privilege('anon', 'api.registration_request_change(uuid,text,text,uuid)', 'execute'), 'anonymous visitors cannot submit registration changes');
 select ok(not has_function_privilege('anon', 'api.admin_registration_changes_snapshot(text)', 'execute'), 'anonymous visitors cannot inspect registration requests');
 select ok(not has_function_privilege('anon', 'api.admin_decide_registration_change(uuid,integer,text,text)', 'execute'), 'anonymous visitors cannot decide registration requests');
