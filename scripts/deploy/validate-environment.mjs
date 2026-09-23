@@ -22,6 +22,7 @@ const required = [
   "EVENT_SLUG",
   "REGISTRATION_MODE",
   "MAIL_MODE",
+  "AUTH_MAIL_MODE",
 ];
 
 for (const name of required) {
@@ -42,6 +43,7 @@ if (new URL(process.env.APP_URL).origin !== new URL(process.env.NEXT_PUBLIC_SITE
 if (new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname !== `${process.env.SUPABASE_PROJECT_REF}.supabase.co`) {
   throw new Error("Supabase URL and project reference do not match.");
 }
+if (process.env.AUTH_MAIL_MODE !== "live") throw new Error("User-requested authentication codes must be deliverable to residents in both environments.");
 if (target === "staging") {
   if (process.env.REGISTRATION_MODE !== "staging_test") throw new Error("Staging must use staging_test registration mode.");
   if (process.env.MAIL_MODE !== "allowlist") throw new Error("Staging mail must use allowlist mode.");

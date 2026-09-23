@@ -44,6 +44,6 @@ Deze proef gebruikt één bevoegde testidentiteit en meet 600 snapshotrequests p
 - `staging`: exact te accepteren release; deployment naar `https://staging-halloween.duindorpdoet.nl`.
 - `production`: uitsluitend dezelfde commit die als succesvolle stagingdeployment is geregistreerd; deployment naar `https://halloween.duindorpdoet.nl`.
 
-De stagingworkflow opent alleen de testregistratie en beperkt alle mail tot de twee geautoriseerde testmailboxen. Productie blijft via zowel runtimeconfig als databasecontrol `closed`/`draft`; echte routeplannen worden alleen door een bevoegde beheerder gepubliceerd. De productie-mailmodus wordt pas bereikt na de exacte-staging-commitgate.
+De stagingworkflow opent alleen de testregistratie en beperkt transactionele mail tot de twee geautoriseerde testmailboxen. Aangevraagde inlogcodes worden ook op staging naar het eigen e-mailadres verstuurd. Productie blijft via zowel runtimeconfig als databasecontrol `closed`/`draft`; echte routeplannen worden alleen door een bevoegde beheerder gepubliceerd. De productie-mailmodus wordt pas bereikt na de exacte-staging-commitgate.
 
 Zie [RUNBOOK.md](docs/operations/RUNBOOK.md), [ROLLBACK.md](docs/operations/ROLLBACK.md), [STATUS.md](docs/implementation/STATUS.md) en [ACCEPTANCE.md](docs/implementation/ACCEPTANCE.md).

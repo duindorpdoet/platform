@@ -39,6 +39,7 @@ jobs:
       EVENT_SLUG: duindorp-halloween-2026
       EVENT_TIMEZONE: Europe/Amsterdam
       REGISTRATION_MODE: staging_test
+      AUTH_MAIL_MODE: live
       MAIL_MODE: allowlist
       MAIL_ALLOWED_RECIPIENTS: ${{ vars.TEST_EMAIL_1 }},${{ vars.TEST_EMAIL_2 }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
@@ -108,6 +109,7 @@ jobs:
             "SENDGRID_FROM_NAME=${SENDGRID_FROM_NAME}" \
             "SEND_EMAIL_HOOK_SECRET=${SEND_EMAIL_HOOK_SECRET}" \
             "MAIL_MODE=${MAIL_MODE}" \
+            "AUTH_MAIL_MODE=${AUTH_MAIL_MODE}" \
             "MAIL_ALLOWED_RECIPIENTS=${MAIL_ALLOWED_RECIPIENTS}"
           pnpm exec supabase functions deploy send-email-hook --project-ref "${SUPABASE_PROJECT_REF}" --no-verify-jwt --use-api
       - name: Configure signed SendGrid Event Webhook

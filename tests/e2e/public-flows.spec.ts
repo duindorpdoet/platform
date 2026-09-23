@@ -116,3 +116,13 @@ test("world explorer displays its artwork and supports all six worlds and keyboa
   await explorer.getByRole("button", { name: "Betreed deze wereld" }).click();
   await expect(page).toHaveURL(/\/werelden\/heksenrijk$/);
 });
+
+test("house registration starts with contact details and address before confirmation", async ({ page }) => {
+  await page.goto("/huis-aanmelden");
+  for (const name of ["E-mailadres", "Naam contactpersoon *", "Telefoonnummer *", "Straat *", "Huisnummer *", "Postcode *"]) {
+    await expect(page.getByLabel(name, { exact: true })).toBeVisible();
+  }
+  await expect(page.getByLabel("Beschrijving *", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Stuur eenmalige code" })).toBeDisabled();
+  await assertReadableLayout(page, false);
+});

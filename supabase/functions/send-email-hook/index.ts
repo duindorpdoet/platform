@@ -1,3 +1,4 @@
+import { recipientAllowed } from "./policy.ts";
 import { Webhook } from "npm:standardwebhooks@1.1.1";
 import { deliveriesForPayload, type HookPayload } from "./payload.ts";
 import { providerAccepted, sendHookDeliveries, sendTransactionalDelivery } from "./send.ts";
@@ -8,6 +9,7 @@ Deno.serve(async (request) => {
   const apiKey = Deno.env.get("SENDGRID_API_KEY") ?? Deno.env.get("SENDGRID_API");
   const from = Deno.env.get("SENDGRID_FROM_EMAIL");
   const mailMode = Deno.env.get("MAIL_MODE") ?? "disabled";
+  const authMailMode = Deno.env.get("AUTH_MAIL_MODE") ?? mailMode;
 
   if (!hookSecret || !apiKey || !from) return new Response("not configured", { status: 503 });
   if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
@@ -33,8 +35,7 @@ Deno.serve(async (request) => {
   const transactional = transactionalMessageForPayload(verifiedPayload);
   if (transactional) {
     if (
-      mailMode === "disabled" ||
-      (mailMode === "allowlist" && !allowlist.has(transactional.to))
+      !recipientAllowed(mailMode, transactional.to, allowlist)
     ) {
       return new Response("recipient disabled", { status: 403 });
     }
@@ -80,8 +81,7 @@ Deno.serve(async (request) => {
   if (emails.length === 0) return new Response("invalid payload", { status: 422 });
 
   if (
-    mailMode === "disabled" ||
-    (mailMode === "allowlist" && emails.some(({ email }) => !allowlist.has(email.toLowerCase())))
+    emails.some(({ email }) => !recipientAllowed(authMailMode, email, allowlist))
   ) {
     return new Response("recipient disabled", { status: 403 });
   }
@@ -89,7 +89,7 @@ Deno.serve(async (request) => {
   const providerProbe = payload.email_data.email_action_type === "staging_provider_probe";
   const providerProbeId = (payload.email_data.token_hash ?? "probe").replace(/[^a-zA-Z0-9-]/g, "").slice(-12);
   const subject = providerProbe ? `Staging mailprovidercontrole ${providerProbeId}` : "Je zescijferige inlogcode";
-  const sandbox = mailMode === "sandbox";
+  const sandbox = authMailMode === "sandbox";
 
   let responses: Response[];
   try {

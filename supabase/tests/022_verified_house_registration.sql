@@ -1,0 +1,17 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(5);
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}', true);
+select lives_ok($$select api.portal_application_save('duindorp-halloween-2026', '{"email":"forged@example.invalid","contactName":"Bewoner","phone":"0612345678","address":{"street":"Teststraat","houseNumber":"1","postalCode":"2584AB"}}', null)$$, 'confirmed resident can register basic details before supplying house details');
+select is(api.portal_snapshot('duindorp-halloween-2026') #>> '{application,draft,email}', 'parent-size-1@example.invalid', 'email is taken from the confirmed account');
+select is(api.portal_snapshot('duindorp-halloween-2026') #>> '{application,draft,phone}', '0612345678', 'basic details persist in the private draft');
+select set_config('request.jwt.claims', '{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select isnt(api.portal_snapshot('duindorp-halloween-2026') #>> '{application,draft,email}', 'parent-size-1@example.invalid', 'another resident cannot read the private draft');
+reset role;
+update auth.users set email_confirmed_at = null where id = 'a0000000-0000-0000-0000-000000000002';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}', true);
+select throws_ok($$select api.portal_application_save('duindorp-halloween-2026', '{}', null)$$, '42501', 'EMAIL_NOT_CONFIRMED', 'an unconfirmed account cannot save house details');
+select * from finish();
+rollback;

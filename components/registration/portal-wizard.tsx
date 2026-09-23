@@ -11,6 +11,7 @@ async function digest(value: unknown) {
 type ReviewStatus = "draft" | "changes_requested" | "submitted" | "approved" | "rejected" | "withdrawn";
 type WarningKey = "smoke" | "flashes" | "sound" | "actors" | "allergens";
 type PortalPayload = {
+  email: string;
   contactName: string;
   phone: string;
   address: { street: string; houseNumber: string; addition: string; postalCode: string };
@@ -35,6 +36,7 @@ type PortalPayload = {
 };
 
 const emptyPayload: PortalPayload = {
+  email: "",
   contactName: "",
   phone: "",
   address: { street: "", houseNumber: "", addition: "", postalCode: "" },
@@ -85,6 +87,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
   const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -95,6 +98,8 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
         client.schema("api").rpc("event_public_snapshot", { _event_slug: eventSlug }),
       ]);
       if (!active) return;
+      if (portalResult.error || eventResult.error) { setNotice("Je huisgegevens konden niet worden opgehaald. Vernieuw de pagina om opnieuw te proberen."); return; }
+      setLoaded(true);
       const availableWorlds = ((eventResult.data as { worlds?: Array<{ slug: string; name: string }> } | null)?.worlds ?? []);
       setWorlds(availableWorlds);
       const application = (portalResult.data as { application?: { id: string; status: ReviewStatus; version: number; draft: Partial<PortalPayload>; reviewFeedback?: string | null } } | null)?.application;
@@ -115,7 +120,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     return () => { active = false; };
   }, [eventSlug]);
 
-  const editable = status === null || status === "draft" || status === "changes_requested";
+  const editable = loaded && (status === null || status === "draft" || status === "changes_requested");
 
   function validateForSubmission() {
     const requiredText = [payload.contactName, payload.phone, payload.address.street, payload.address.houseNumber, payload.address.postalCode, payload.entrance, payload.requestedWorldSlug, payload.portalName, payload.description];
@@ -185,11 +190,12 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
   }
 
   return <div className="panel production-form">
-    <h2>Meld je poort aan</h2>
+    <h2>Vul je huisdetails aan</h2>
     <p>Je exacte adres blijft privé en wordt alleen gebruikt voor beoordeling en toegewezen routes.</p>
     {reviewFeedback && <div className="form-warning"><strong>Terugkoppeling van de organisatie:</strong> {reviewFeedback}</div>}
     <fieldset className="form-fieldset" disabled={busy || !editable}>
       <h3>Contact en locatie</h3>
+      {payload.email && <p>E-mailadres: {payload.email} (bevestigd)</p>}
       <label className="field"><span>Naam contactpersoon *</span><input required autoComplete="name" value={payload.contactName} onChange={(event) => setPayload({ ...payload, contactName: event.target.value })} /></label>
       <label className="field"><span>Telefoonnummer *</span><input required autoComplete="tel" value={payload.phone} onChange={(event) => setPayload({ ...payload, phone: event.target.value })} /></label>
       <div className="two-fields"><label className="field"><span>Straat *</span><input required autoComplete="address-line1" value={payload.address.street} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, street: event.target.value } })} /></label><label className="field"><span>Huisnummer *</span><input required value={payload.address.houseNumber} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, houseNumber: event.target.value } })} /></label></div>

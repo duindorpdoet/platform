@@ -262,17 +262,19 @@ test("a multi-child registration draft survives refresh and submits once", async
   await expect(page.getByText("open", { exact: true })).toBeVisible();
 });
 
-test("a portal draft survives refresh and rejects disguised executable upload content", async ({ context, page }) => {
+test("a portal draft survives refresh and rejects disguised executable upload content", async ({ context, page }, testInfo) => {
   requireLocalAuth();
-  await authenticate(context, "leader-b@example.invalid");
+  const email = testInfo.project.name === "mobile-chromium" ? "parent-size-7@example.invalid" : "leader-b@example.invalid";
+  await authenticate(context, email);
   await page.goto("/huis-aanmelden");
   await page.getByLabel("Naam contactpersoon *").fill("Browser testbewoner");
   await page.getByLabel("Telefoonnummer *").fill("0612345678");
   await page.getByLabel("Straat *").fill("NIET-BESTAANDE TESTSTRAAT");
   await page.getByLabel("Huisnummer *").fill("12");
   await page.getByLabel("Postcode *").fill("2584AB");
-  await page.getByRole("button", { name: "Concept opslaan" }).click();
-  await expect(page.getByRole("status")).toContainText("Concept opgeslagen");
+  await page.getByRole("button", { name: "Verder naar huisdetails" }).click();
+  await expect(page.getByRole("heading", { name: "Vul je huisdetails aan" })).toBeVisible();
+  await expect(page.getByText(`E-mailadres: ${email} (bevestigd)`)).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Browser testbewoner");
   await expect(page.getByLabel("Straat *")).toHaveValue("NIET-BESTAANDE TESTSTRAAT");
@@ -316,3 +318,40 @@ for (const doubleText of [false, true]) {
     }
   });
 }
+
+test("house details unlock only after successful email confirmation", async ({ page }, testInfo) => {
+  requireLocalAuth();
+  const email = testInfo.project.name === "mobile-chromium" ? "parent-size-10@example.invalid" : "parent-size-5@example.invalid";
+  const { client, session } = await fixtureClient(email);
+  // Simulate delivery and entering an OTP, then use a real local Auth session and database.
+  await page.route(`${supabaseUrl}/auth/v1/otp`, (route) => route.fulfill({ json: {} }));
+  await page.route(`${supabaseUrl}/auth/v1/verify`, (route) => {
+    const token = route.request().postDataJSON().token;
+    return token === "123456"
+      ? route.fulfill({ json: session })
+      : route.fulfill({ status: 403, json: { code: "otp_expired", msg: "Invalid code" } });
+  });
+  await page.goto("/huis-aanmelden");
+  await page.getByLabel("E-mailadres", { exact: true }).fill(email);
+  await page.getByLabel("Naam contactpersoon *").fill("Nieuwe testbewoner");
+  await page.getByLabel("Telefoonnummer *").fill("0612345678");
+  await page.getByLabel("Straat *").fill("FICTIEVE STRAAT");
+  await page.getByLabel("Huisnummer *").fill("15");
+  await page.getByLabel("Postcode *").fill("2584AB");
+  await page.getByRole("button", { name: "Stuur eenmalige code" }).click();
+  await expect(page.getByRole("heading", { name: "Vul de zes cijfers in." })).toBeVisible();
+  expect(await rpc(client, "portal_snapshot", { _event_slug: "duindorp-halloween-2026" })).toBeNull();
+  await page.locator('input[autocomplete="one-time-code"]').fill("000000");
+  await page.getByRole("button", { name: "Bevestigen en verder" }).click();
+  await expect(page.getByRole("status")).toContainText("onjuist of verlopen");
+  await expect(page.getByLabel("Beschrijving *", { exact: true })).toHaveCount(0);
+  await page.locator('input[autocomplete="one-time-code"]').fill("");
+  await page.locator('input[autocomplete="one-time-code"]').fill("123456");
+  await page.getByRole("button", { name: "Bevestigen en verder" }).click();
+  await expect(page.getByRole("heading", { name: "Vul je huisdetails aan" })).toBeVisible();
+  await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Nieuwe testbewoner");
+  await expect(page.getByLabel("Straat *")).toHaveValue("FICTIEVE STRAAT");
+  await page.goto("/mijn-huis");
+  await page.getByRole("link", { name: "Huisdetails aanvullen" }).click();
+  await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Nieuwe testbewoner");
+});
