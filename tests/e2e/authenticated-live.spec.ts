@@ -188,7 +188,6 @@ test("a multi-child registration draft survives refresh and submits once", async
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.locator(".wizard").getByRole("alert")).toBeFocused();
   await page.getByLabel("Naam verantwoordelijke volwassene").fill("Browser testouder");
-  await page.getByLabel("Naam van het huishouden").fill("Browser testgezin");
   await page.getByLabel("Telefoonnummer voor de avond").fill("0612345678");
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.getByRole("heading", { name: "Deelnemende kinderen" })).toBeFocused();
@@ -220,14 +219,17 @@ test("a multi-child registration draft survives refresh and submits once", async
   await page.getByRole("button", { name: "Nog een kind" }).click();
   await page.getByLabel("Voornaam kind 2").fill("Tweede testkind");
   await page.getByLabel("Leeftijd op 31 oktober").nth(1).fill("10");
+  await page.getByLabel("Met wie zouden jullie graag samenlopen? (optioneel)").fill("Samira de Vries");
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.getByRole("heading", { name: "Controleren" })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByLabel("Naam van het huishouden")).toHaveValue("Browser testgezin");
+  await expect(page.getByLabel("Naam van het huishouden")).toHaveCount(0);
+  await expect(page.getByLabel("Naam verantwoordelijke volwassene")).toHaveValue("Browser testouder");
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.getByLabel("Voornaam kind 1")).toHaveValue("Eerste testkind");
   await expect(page.getByLabel("Voornaam kind 2")).toHaveValue("Tweede testkind");
+  await expect(page.getByLabel("Met wie zouden jullie graag samenlopen? (optioneel)")).toHaveValue("Samira de Vries");
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await page.getByRole("checkbox", { name: /ik ga akkoord/i }).check();
   let submitCalls = 0;

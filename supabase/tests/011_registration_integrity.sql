@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(19);
 
 create temporary table registration_values(
   draft_result jsonb,
@@ -29,11 +29,12 @@ select lives_ok(
     set draft_result = api.registration_save_draft(
       'duindorp-halloween-2026',
       '{
-        "adult":{"name":"Nieuwe ouder","householdLabel":"Nieuw testgezin","phone":"0612345678"},
+        "adult":{"name":"Nieuwe ouder","householdLabel":"Door bezoeker gekozen naam","phone":"0612345678"},
         "children":[
           {"id":"25000001-0000-0000-0000-000000000001","name":"Eigen kind één","age":"8","amountCents":1},
           {"name":"Eigen kind twee","age":"10","unitPriceCents":1}
         ],
+        "togetherPreference":"Samira de Vries",
         "amountCents":1,
         "marketingConsent":false
       }'::jsonb,
@@ -56,6 +57,20 @@ select ok(
       and member.relation_role = 'owner' and member.revoked_at is null
   ),
   'draft creation establishes only an owned household for the authenticated parent'
+);
+select matches(
+  (select label from app_private.households where id = (select household_id from registration_values)),
+  '^Gezelschap [0-9A-F]{6}$',
+  'the server assigns a neutral household label without asking the visitor'
+);
+select ok(
+  not ((select payload -> 'adult' from app_private.registration_drafts where household_id = (select household_id from registration_values)) ? 'householdLabel'),
+  'visitor-authored household labels are not retained in the private draft'
+);
+select is(
+  (select payload ->> 'togetherPreference' from app_private.registration_drafts where household_id = (select household_id from registration_values)),
+  'Samira de Vries',
+  'a together preference preserves a person name without uppercasing it'
 );
 
 set local role authenticated;
