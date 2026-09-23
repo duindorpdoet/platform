@@ -29,8 +29,10 @@ export function renderTransactionalMail({ messageType, payload }: TemplateInput)
     sponsor_notification: { subject: "Nieuw sponsorvoorstel", heading: "Nieuw sponsorvoorstel ontvangen", body: "Een bezoeker heeft het openbare sponsorformulier ingestuurd." },
     payment_reported: { subject: "Betaling gemeld", heading: "Je betaalmelding is ontvangen", body: "De organisatie controleert de betaling handmatig. Dit is nog geen betalingsbevestiging." },
     household_invite: { subject: "Uitnodiging voor gezinstoegang", heading: "Je bent uitgenodigd als tweede volwassene", body: "Log in met precies dit e-mailadres en accepteer de eenmalige uitnodiging. Deel de link niet met anderen." },
-    group_ticket_message_organization: { subject: "Nieuw bericht in een groepsticket", heading: "Er staat een ticketbericht klaar", body: "Open het beheerscherm om het gesprek te lezen en namens de organisatie te reageren." },
-    group_ticket_message_leader: { subject: "Nieuw bericht over jouw groep", heading: "Er staat een ticketbericht klaar", body: "Open Mijn groep om het gesprek te lezen en te reageren." },
+    group_ticket_message_organization: { subject: "Nieuw bericht bij Hulp & contact", heading: "Er staat een nieuw bericht klaar", body: "Open Hulp & contact in het beheerscherm om het gesprek te lezen en namens de organisatie te reageren." },
+    group_ticket_message_leader: { subject: "Nieuw bericht over jouw groep", heading: "Er staat een nieuw bericht klaar", body: "Open Hulp & contact in de deelnemersomgeving om het gesprek te lezen en te reageren." },
+    group_viewer_invite: { subject: "Uitnodiging om een groep te volgen", heading: "Je mag veilig meekijken", body: "Deze persoonlijke toegang toont beperkte groepsvoortgang en relevante updates. Kindernamen, live GPS en toekomstige adressen blijven verborgen." },
+    participant_update: { subject: String(payload.title ?? "Nieuwe update voor jouw Halloweenavond"), heading: String(payload.title ?? "Er is een nieuwe update"), body: String(payload.message ?? "Open je persoonlijke omgeving voor de actuele informatie.") },
   };
   const content = definitions[messageType] ?? { subject: "Update over Halloween in Duindorp", heading: "Er is een update", body: "Bekijk je persoonlijke omgeving voor de actuele informatie." };
   const destination = actionUrl || siteUrl;

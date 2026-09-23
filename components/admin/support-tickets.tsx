@@ -26,7 +26,7 @@ export function SupportTickets({ eventSlug }: { eventSlug: string }) {
   const load = useCallback(async () => {
     const client = createClient(); if (!client) return;
     const { data, error } = await client.schema("api").rpc("admin_group_ticket_snapshot", { _event_slug: eventSlug });
-    if (error) return setNotice("Het ticketoverzicht is niet toegankelijk voor dit account.");
+    if (error) return setNotice("Hulp & contact is niet toegankelijk voor dit account.");
     const next = data as Ticket[]; setTickets(next);
     setSelectedId((current) => current && next.some((ticket) => ticket.id === current) ? current : next[0]?.id ?? null);
   }, [eventSlug]);
@@ -44,7 +44,7 @@ export function SupportTickets({ eventSlug }: { eventSlug: string }) {
     setBusy(true); const key = crypto.randomUUID(); const payload = { ticketId: selected.id, version: selected.version, body: reply.trim() };
     const { error } = await client.schema("api").rpc("group_ticket_reply", { _ticket_id: selected.id, _expected_version: selected.version, _body: payload.body, _idempotency_key: key, _request_hash: await digest(payload) });
     setBusy(false);
-    if (error) return setNotice("Het ticket is intussen gewijzigd. De actuele versie wordt opgehaald.");
+    if (error) return setNotice("Het gesprek is intussen gewijzigd. De actuele versie wordt opgehaald.");
     setReply(""); setNotice("Reactie verstuurd; beide kanten ontvangen de e-mailmelding."); await load();
   }
   async function setStatus(status: "open" | "resolved" | "closed") {
@@ -53,14 +53,14 @@ export function SupportTickets({ eventSlug }: { eventSlug: string }) {
     if (!reason || reason.length < 5) return setNotice("Een korte auditreden is verplicht.");
     const client = createClient(); if (!client) return;
     const { error } = await client.schema("api").rpc("group_ticket_set_status", { _ticket_id: selected.id, _expected_version: selected.version, _status: status, _reason: reason });
-    setNotice(error ? "De status kon niet worden aangepast." : "Ticketstatus bijgewerkt en geaudit."); await load();
+    setNotice(error ? "De status kon niet worden aangepast." : "Gespreksstatus bijgewerkt en geaudit."); await load();
   }
 
   return <section className="panel ticket-center admin-ticket-center">
-    <div className="row-between ticket-heading"><div><p className="kicker">Groepsleiders & organisatie</p><h2>Tickets</h2><p>Beantwoord vragen in één doorlopend gesprek. Gelezen-status en iedere statuswijziging blijven zichtbaar.</p></div><button className="btn outline" onClick={() => void load()}><RefreshCw size={17} />Vernieuwen</button></div>
+    <div className="row-between ticket-heading"><div><p className="kicker">Groepsleiders & organisatie</p><h2>Hulp & contact</h2><p>Beantwoord vragen in één doorlopend gesprek. Gelezen-status en iedere statuswijziging blijven zichtbaar.</p></div><button className="btn outline" onClick={() => void load()}><RefreshCw size={17} />Vernieuwen</button></div>
     {notice && <div className="form-notice" role="status">{notice}</div>}
     <div className="ticket-layout">
-      <div className="ticket-list">{tickets.length === 0 && <p>Er zijn nog geen tickets.</p>}{tickets.map((ticket) => <button key={ticket.id} className={ticket.id === selectedId ? "active" : ""} onClick={() => setSelectedId(ticket.id)}><span><strong>{ticket.subject}</strong><small>{ticket.reference} · groep {ticket.groupCode}</small><small>{statuses[ticket.status] ?? ticket.status}</small></span>{ticket.unreadCount > 0 && <b>{ticket.unreadCount}</b>}</button>)}</div>
+      <div className="ticket-list">{tickets.length === 0 && <p>Er zijn nog geen gesprekken.</p>}{tickets.map((ticket) => <button key={ticket.id} className={ticket.id === selectedId ? "active" : ""} onClick={() => setSelectedId(ticket.id)}><span><strong>{ticket.subject}</strong><small>{ticket.reference} · groep {ticket.groupCode}</small><small>{statuses[ticket.status] ?? ticket.status}</small></span>{ticket.unreadCount > 0 && <b>{ticket.unreadCount}</b>}</button>)}</div>
       {selected && <div className="ticket-thread"><div className="row-between"><div><h3>{selected.subject}</h3><small>{selected.reference} · groep {selected.groupCode} · {selected.leaderEmail ?? "geen leideradres"}</small></div><LifeBuoy /></div>
         <div className="ticket-messages">{selected.messages.map((message) => <article key={message.id} className={`ticket-message ${message.isMine ? "mine" : "theirs"}`}><strong>{message.isMine ? "Organisatie" : "Groepsleider"}</strong><p>{message.body}</p><small>{new Date(message.createdAt).toLocaleString("nl-NL")}{message.isMine && message.readAt ? <><CheckCheck size={14} /> gelezen</> : ""}</small></article>)}</div>
         {selected.status !== "closed" && <div className="ticket-reply"><label className="field"><span>Reactie namens de organisatie</span><textarea rows={4} maxLength={4000} value={reply} onChange={(event) => setReply(event.target.value)} /></label><button className="btn" disabled={busy || !reply.trim()} onClick={() => void sendReply()}><Send size={17} />Versturen</button></div>}

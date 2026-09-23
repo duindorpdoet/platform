@@ -41,6 +41,43 @@ async function rpc(client: Awaited<ReturnType<typeof fixtureClient>>["client"], 
   return result.data;
 }
 
+test("the unified mobile participant environment keeps role navigation and payment-gated Night Pass clear", async ({ context, page }) => {
+  requireLocalAuth();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await authenticate(context, "parent-size-5@example.invalid");
+  await page.goto("/omgeving/meeloper/nu");
+
+  await expect(page.getByRole("heading", { name: "Klaar voor de nacht?" })).toBeVisible();
+  const bottomNavigation = page.getByRole("navigation", { name: "Mobiele omgevingsnavigatie" });
+  await expect(bottomNavigation.getByRole("link", { name: "Nu" })).toBeVisible();
+  await expect(bottomNavigation.getByRole("link", { name: "Route" })).toBeVisible();
+  await expect(bottomNavigation.getByRole("link", { name: "Groep" })).toBeVisible();
+  await expect(bottomNavigation.getByRole("link", { name: "Nachtpas" })).toBeVisible();
+  await expect(bottomNavigation.getByRole("link", { name: "Meer" })).toBeVisible();
+  await assertReadableLayout(page);
+
+  await bottomNavigation.getByRole("link", { name: "Nachtpas" }).click();
+  await expect(page.getByRole("heading", { name: "Jullie Nachtpas" })).toBeVisible();
+  await expect(page.getByText("TOEGANG ACTIEF", { exact: true })).toBeVisible();
+  await expect(page.getByText(/geen aparte QR-controle/i)).toBeVisible();
+  await expect(page.locator('img[alt*="QR-code"]')).toHaveCount(0);
+  await assertReadableLayout(page);
+});
+
+test("the homeowner cockpit labels schedules as planned rather than live ETA", async ({ context, page }) => {
+  requireLocalAuth();
+  await authenticate(context, "owner@example.invalid");
+  await page.goto("/omgeving/huiseigenaar/mijn-poort");
+
+  await expect(page.getByText("Dit is een geplande aankomst, geen live ETA.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pauze", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gesloten" })).toBeVisible();
+  await expect(page.getByText("23 kinderen")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Veilig ontvangen" })).toBeVisible();
+  await assertReadableLayout(page);
+});
+
 test("forged cookies fail and offline group state reveals only the current stop before authoritative reconnect", async ({ context, page }) => {
   requireLocalAuth();
   await page.addInitScript(() => {
@@ -140,7 +177,7 @@ test("forged cookies fail and offline group state reveals only the current stop 
   await page.getByRole("button", { name: "QR scannen" }).click();
   await expect(page.getByRole("dialog", { name: "QR-scanner" })).toBeVisible();
   await expect(page.getByText(/camera niet beschikbaar/i)).toBeVisible();
-  await page.getByRole("button", { name: "Sluiten" }).click();
+  await page.getByRole("dialog", { name: "QR-scanner" }).getByRole("button", { name: "Sluiten", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "QR-scanner" })).toHaveCount(0);
   await expect(page.getByLabel("Korte poortcode")).toBeVisible();
 
@@ -161,13 +198,13 @@ test("forged cookies fail and offline group state reveals only the current stop 
   const trackStates = () => page.evaluate(() => (window as typeof window & { cameraStreams: MediaStream[] }).cameraStreams.map((stream) => stream.getTracks().map((track) => track.readyState)));
   await page.getByRole("button", { name: "QR scannen" }).click();
   await expect.poll(trackStates).toEqual([["live"]]);
-  await page.getByRole("button", { name: "Sluiten" }).click();
+  await page.getByRole("dialog", { name: "QR-scanner" }).getByRole("button", { name: "Sluiten", exact: true }).click();
   await expect.poll(trackStates).toEqual([["ended"]]);
 
   await page.evaluate(() => { (window as typeof window & { delayCamera: boolean }).delayCamera = true; });
   await page.getByRole("button", { name: "QR scannen" }).click();
   await expect.poll(trackStates).toEqual([["ended"], ["live"]]);
-  await page.getByRole("button", { name: "Sluiten" }).click();
+  await page.getByRole("dialog", { name: "QR-scanner" }).getByRole("button", { name: "Sluiten", exact: true }).click();
   await page.evaluate(() => { (window as typeof window & { releaseCamera: () => void }).releaseCamera(); });
   await expect.poll(trackStates).toEqual([["ended"], ["ended"]]);
 
@@ -316,8 +353,8 @@ test("a group leader and organizer can exchange a private ticket with read statu
 
   await authenticate(context, "leader-a@example.invalid");
   await page.goto("/mijn-groep");
-  await expect(page.getByRole("heading", { name: "Hulp & tickets" })).toBeVisible();
-  await page.getByRole("button", { name: "Nieuw ticket" }).click();
+  await expect(page.getByRole("heading", { name: "Hulp & contact" })).toBeVisible();
+  await page.getByRole("button", { name: "Nieuw gesprek" }).click();
   await page.getByLabel("Waar gaat het over?").selectOption("planning");
   await page.getByLabel("Onderwerp").fill(subject);
   await page.getByLabel("Bericht").fill(leaderMessage);
@@ -328,7 +365,7 @@ test("a group leader and organizer can exchange a private ticket with read statu
 
   await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
-  await page.getByRole("button", { name: "Tickets", exact: true }).click();
+  await page.getByRole("button", { name: "Hulp & contact", exact: true }).click();
   const ticketButton = page.locator(".ticket-list button").filter({ hasText: subject });
   await expect(ticketButton).toBeVisible();
   await ticketButton.click();
@@ -391,7 +428,7 @@ for (const doubleText of [false, true]) {
         await assertReadableLayout(page, doubleText);
         if (path === "/admin") {
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
-          for (const section of ["Imports", "Inschrijvingen", "Tickets", "Betalingen", "Poortaanvragen", "Routeplanner", "Content & sponsors", "Beheerders", "Avondhulp"]) {
+          for (const section of ["Imports", "Inschrijvingen", "Hulp & contact", "Deelnemersupdates", "Betalingen", "Poortaanvragen", "Routeplanner", "Content & sponsors", "Beheerders", "Avondhulp"]) {
             await page.goto("/admin");
             await page.locator(".admin-nav").getByRole("button", { name: section, exact: true }).click();
             await expect(page.locator(".admin-nav").getByRole("button", { name: section, exact: true })).toHaveClass("active");

@@ -95,10 +95,10 @@ export function GroupTickets({ groupId }: { groupId: string }) {
       _request_hash: await digest(payload),
     });
     setBusy(false);
-    if (error) return setNotice(error.message.includes("TOO_MANY_OPEN_TICKETS") ? "Er staan al tien tickets open. Rond eerst een gesprek af." : "Het ticket kon niet worden verstuurd.");
+    if (error) return setNotice(error.message.includes("TOO_MANY_OPEN_TICKETS") ? "Er staan al tien gesprekken open. Rond eerst een gesprek af." : "Het bericht kon niet worden verstuurd.");
     setSubject(""); setBody(""); setNewTicket(false);
     setSelectedId((data as { id: string }).id);
-    setNotice("Ticket verstuurd. De organisatie en jij ontvangen een e-mailmelding.");
+    setNotice("Gesprek gestart. De organisatie en jij ontvangen een e-mailmelding.");
     await load();
   }
 
@@ -123,21 +123,21 @@ export function GroupTickets({ groupId }: { groupId: string }) {
 
   async function setStatus(status: "open" | "closed") {
     if (!selected) return;
-    const reason = window.prompt(status === "closed" ? "Waarom sluit je dit ticket?" : "Waarom wil je dit ticket heropenen?")?.trim();
+    const reason = window.prompt(status === "closed" ? "Waarom sluit je dit gesprek?" : "Waarom wil je dit gesprek heropenen?")?.trim();
     if (!reason || reason.length < 5) return setNotice("Geef een korte reden van minimaal vijf tekens.");
     const client = createClient();
     if (!client) return;
     const { error } = await client.schema("api").rpc("group_ticket_set_status", {
       _ticket_id: selected.id, _expected_version: selected.version, _status: status, _reason: reason,
     });
-    setNotice(error ? "De status kon niet worden gewijzigd." : status === "closed" ? "Ticket gesloten." : "Ticket heropend.");
+    setNotice(error ? "De status kon niet worden gewijzigd." : status === "closed" ? "Gesprek gesloten." : "Gesprek heropend.");
     await load();
   }
 
   return <section className="panel ticket-center">
     <div className="row-between ticket-heading">
-      <div><p className="kicker">Contact met de organisatie</p><h2>Hulp & tickets</h2><p>Stel een vraag over jullie groep en houd alle reacties op één plek. Bij direct gevaar bel je 112.</p></div>
-      <button className="btn" onClick={() => setNewTicket((value) => !value)}><MessageSquarePlus size={18} />Nieuw ticket</button>
+      <div><p className="kicker">Contact met de organisatie</p><h2>Hulp & contact</h2><p>Stel een vraag over jullie groep en houd alle reacties op één plek. Bij direct gevaar bel je 112.</p></div>
+      <button className="btn" onClick={() => setNewTicket((value) => !value)}><MessageSquarePlus size={18} />Nieuw gesprek</button>
     </div>
     {notice && <div className="form-notice" role="status">{notice}</div>}
     {newTicket && <div className="ticket-new-form">
@@ -147,8 +147,8 @@ export function GroupTickets({ groupId }: { groupId: string }) {
       <button className="btn" disabled={busy} onClick={() => void createTicket()}><Send size={17} />Versturen</button>
     </div>}
     <div className="ticket-layout">
-      <div className="ticket-list" aria-label="Tickets">
-        {tickets.length === 0 && <p>Nog geen tickets. Start hierboven een gesprek als jullie hulp nodig hebben.</p>}
+      <div className="ticket-list" aria-label="Gesprekken">
+        {tickets.length === 0 && <p>Nog geen gesprekken. Start hierboven een gesprek als jullie hulp nodig hebben.</p>}
         {tickets.map((ticket) => <button key={ticket.id} className={ticket.id === selectedId ? "active" : ""} onClick={() => setSelectedId(ticket.id)}>
           <span><strong>{ticket.subject}</strong><small>{ticket.reference} · {statusLabels[ticket.status]}</small></span>
           {ticket.unreadCount > 0 && <b aria-label={`${ticket.unreadCount} ongelezen`}>{ticket.unreadCount}</b>}
@@ -160,7 +160,7 @@ export function GroupTickets({ groupId }: { groupId: string }) {
           {selected.messages.map((message) => <article key={message.id} className={`ticket-message ${message.isMine ? "mine" : "theirs"}`}><strong>{message.isMine ? "Jij" : "Organisatie"}</strong><p>{message.body}</p><small>{new Date(message.createdAt).toLocaleString("nl-NL")}{message.isMine && message.readAt ? <><CheckCheck size={14} /> gelezen</> : ""}</small></article>)}
         </div>
         {selected.status !== "closed" && <div className="ticket-reply"><label className="field"><span>Jouw reactie</span><textarea rows={4} maxLength={4000} value={reply} onChange={(event) => setReply(event.target.value)} /></label><button className="btn" disabled={busy || !reply.trim()} onClick={() => void sendReply()}><Send size={17} />Verstuur reactie</button></div>}
-        <button className="text-link" onClick={() => void setStatus(selected.status === "closed" ? "open" : "closed")}>{selected.status === "closed" ? "Ticket heropenen" : "Ticket sluiten"}</button>
+        <button className="text-link" onClick={() => void setStatus(selected.status === "closed" ? "open" : "closed")}>{selected.status === "closed" ? "Gesprek heropenen" : "Gesprek sluiten"}</button>
       </div>}
     </div>
   </section>;

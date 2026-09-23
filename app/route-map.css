@@ -1,0 +1,19 @@
+.participant-route-map{display:flex;flex-direction:column;gap:17px}
+.participant-route-map h3{font-size:28px}
+.route-constellation{position:relative;isolation:isolate;min-height:330px;overflow:hidden;border:1px solid #7890a326;border-radius:17px;background:radial-gradient(circle at 30% 18%,#27445836,transparent 35%),linear-gradient(145deg,#06111c,#0a1823)}
+.route-constellation:before{content:"DUINDORP";position:absolute;right:14px;bottom:10px;color:#a9becc0e;font:38px Georgia,serif;letter-spacing:.1em}
+.route-street{position:absolute;z-index:-1;width:145%;height:55px;border:1px solid #9bb0be22;border-inline:0;transform:rotate(-23deg);left:-20%;top:40%;background:#9eb8c407}
+.route-street.street-b{transform:rotate(39deg);top:48%}
+.route-map-stop{position:absolute;display:flex;align-items:center;gap:7px;color:#9eafba}
+.route-map-stop>svg{box-sizing:content-box;width:14px;height:14px;padding:7px;border-radius:50%;background:#07131d;border:1px solid #738897}
+.route-map-stop>span{display:grid;font-size:11px}
+.route-map-stop small{color:#728795}
+.route-map-stop.visited>svg{color:#07110e;background:#73bba2;border-color:#8fd2ba}
+.route-map-stop.current{color:#f0e4d3}
+.route-map-stop.current>svg{color:#16100a;background:#e8a46f;border-color:#ffd0ad;box-shadow:0 0 0 7px #e8a46f18,0 0 30px #e8a46f5c}
+.route-map-stop.locked>svg{color:#657785;background:#09141e}
+.route-map-stop.stop-1{left:9%;top:17%}.route-map-stop.stop-2{left:54%;top:12%}.route-map-stop.stop-3{left:67%;top:43%}.route-map-stop.stop-4{left:42%;top:71%}.route-map-stop.stop-5{left:10%;top:68%}.route-map-stop.stop-6{left:25%;top:42%}
+.route-instruction,.next-hidden{display:flex;align-items:flex-start;gap:11px;padding:13px;border:1px solid var(--role-line,#e8a46f55);border-radius:13px;background:var(--role-soft,#e8a46f1a);font-size:12px;color:#9eb0bc}
+.route-instruction svg,.next-hidden svg{width:17px;color:var(--role,#e8a46f);flex:0 0 auto}
+.route-instruction span,.next-hidden span{display:grid;gap:3px}
+.route-instruction strong,.next-hidden strong{color:#e4e8e8}

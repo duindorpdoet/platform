@@ -3,6 +3,7 @@ import "./globals.css";
 import "./cinematic.css";
 import "./experience.css";
 import "./home.css";
+import "./route-map.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { SiteChrome } from "@/components/brand/site-chrome";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";

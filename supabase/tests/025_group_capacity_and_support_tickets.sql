@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(35);
 
 select ok(
   (select relrowsecurity from pg_class where oid = 'app_private.together_join_requests'::regclass),
@@ -170,6 +170,11 @@ select is(
   (select count(*)::integer from app_private.email_outbox where dedupe_key like 'group-ticket:%'),
   2,
   'each message queues mail for both the organization and group leader'
+);
+select is(
+  (select payload ->> 'actionPath' from app_private.email_outbox where message_type = 'group_ticket_message_leader' order by created_at desc limit 1),
+  '/omgeving/meeloper/groep',
+  'leader notification opens Hulp & contact in the unified participant environment'
 );
 
 set local role authenticated;

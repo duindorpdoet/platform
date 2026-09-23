@@ -49,6 +49,29 @@ describe("transactional mail templates", () => {
     expect(invitation.text).toContain("https://halloween.duindorpdoet.nl");
   });
 
+  it("renders a privacy-safe viewer invitation into the unified environment", () => {
+    process.env.APP_URL = "https://staging-halloween.duindorpdoet.nl";
+    const invitation = renderTransactionalMail({
+      messageType: "group_viewer_invite",
+      payload: { actionPath: "/omgeving?meekijkuitnodiging=abc123" },
+    });
+
+    expect(invitation.subject).toBe("Uitnodiging om een groep te volgen");
+    expect(invitation.text).toContain("Kindernamen, live GPS en toekomstige adressen blijven verborgen.");
+    expect(invitation.text).toContain("https://staging-halloween.duindorpdoet.nl/omgeving?meekijkuitnodiging=abc123");
+  });
+
+  it("escapes custom role update copy", () => {
+    const update = renderTransactionalMail({
+      messageType: "participant_update",
+      payload: { title: "Route <pauze>", message: "Wacht & blijf samen." },
+    });
+
+    expect(update.subject).toBe("Route <pauze>");
+    expect(update.html).toContain("Route &lt;pauze&gt;");
+    expect(update.html).toContain("Wacht &amp; blijf samen.");
+  });
+
   it("escapes public-form fields in organization notifications", () => {
     const notification = renderTransactionalMail({
       messageType: "contact_notification",
@@ -69,8 +92,8 @@ describe("transactional mail templates", () => {
   });
 
   it.each([
-    ["group_ticket_message_organization", "/admin", "Nieuw bericht in een groepsticket"],
-    ["group_ticket_message_leader", "/mijn-groep", "Nieuw bericht over jouw groep"],
+    ["group_ticket_message_organization", "/admin", "Nieuw bericht bij Hulp & contact"],
+    ["group_ticket_message_leader", "/omgeving/meeloper/groep", "Nieuw bericht over jouw groep"],
   ])("renders private ticket notification %s", (messageType, actionPath, subject) => {
     process.env.APP_URL = "https://staging-halloween.duindorpdoet.nl";
     const notification = renderTransactionalMail({

@@ -26,7 +26,7 @@ pnpm exec supabase test db
 pnpm exec supabase db lint --level warning
 ```
 
-De testset omvat domein-unit-tests, browseracceptatie op desktop en mobiel, een volledig herbouwde lokale database, 449 pgTAP-contracttests en schemalint. De stagingworkflow voegt echte OTP-, mailbox-, SendGrid-webhook- en deploymenttests toe.
+De testset omvat domein-unit-tests, browseracceptatie op desktop en mobiel, een volledig herbouwde lokale database, 484 pgTAP-contracttests en schemalint. De stagingworkflow voegt echte OTP-, mailbox-, SendGrid-webhook- en deploymenttests toe.
 
 De lokale integratie- en browsertests wijzigen testfixtures. Voer pgTAP na een database-reset uit en reset opnieuw vóór de aangemelde browsertests. De CI-workflow bevat de volledige volgorde en lokale omgevingsvariabelen. De 200-clientproef draait uitsluitend tegen localhost:
 

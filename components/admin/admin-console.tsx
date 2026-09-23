@@ -9,6 +9,7 @@ import {
   FileText,
   House,
   LifeBuoy,
+  BellRing,
   MapPinned,
   MessageSquare,
   RefreshCw,
@@ -22,6 +23,7 @@ import { AdminAccessManagement } from "@/components/admin/admin-access-managemen
 import { PortalReviews } from "@/components/admin/portal-reviews";
 import { ContentManagement } from "@/components/admin/content-management";
 import { SupportTickets } from "@/components/admin/support-tickets";
+import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { createClient } from "@/lib/supabase/client";
 import { proposePlan, type PlanningInput } from "@/lib/domain/route-planner";
 
@@ -135,7 +137,7 @@ const labels: Record<string, string> = {
   openSupportCases: "Open incidenten",
   unconfirmedPayments: "Te controleren betalingen",
   pendingTogetherRequests: "Samenloopverzoeken",
-  openTickets: "Open tickets",
+  openTickets: "Open gesprekken",
 };
 const paymentStatusLabels: Record<string, string> = {
   awaiting_link: "Wacht op Tikkie",
@@ -168,6 +170,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "access"
     | "live"
     | "tickets"
+    | "updates"
   >("overview");
   const [importKind, setImportKind] = useState("portals");
   const [importResult, setImportResult] = useState<{
@@ -799,7 +802,18 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             onClick={() => setSection("tickets")}
           >
             <MessageSquare />
-            Tickets
+            Hulp & contact
+          </button>
+        )}
+        {(capabilities.includes("event_admin") ||
+          capabilities.includes("content_manage") ||
+          capabilities.includes("live_support")) && (
+          <button
+            className={section === "updates" ? "active" : ""}
+            onClick={() => setSection("updates")}
+          >
+            <BellRing />
+            Deelnemersupdates
           </button>
         )}
         <button
@@ -1211,6 +1225,12 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             capabilities.includes("groups_manage") ||
             capabilities.includes("live_support")) && (
             <SupportTickets eventSlug={eventSlug} />
+          )}
+        {section === "updates" &&
+          (capabilities.includes("event_admin") ||
+            capabilities.includes("content_manage") ||
+            capabilities.includes("live_support")) && (
+            <ParticipantUpdates eventSlug={eventSlug} />
           )}
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}

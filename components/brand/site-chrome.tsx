@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, CalendarDays, Menu, Users } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Menu, UserRound } from "lucide-react";
 import { MotionAtmosphere, MotionToggle } from "@/components/poorten-cinematic";
 
 const navigation = [
@@ -13,12 +13,22 @@ const navigation = [
   ["Vragen", "/faq"],
 ] as const;
 
-const protectedPrefixes = ["/mijn-groep", "/mijn-huis", "/mijn-inschrijving", "/admin"];
+const protectedPrefixes = ["/mijn-groep", "/mijn-huis", "/mijn-inschrijving", "/admin", "/omgeving"];
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isPortal = protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
+  const isParticipantEnvironment = pathname.startsWith("/omgeving");
+
+  if (isParticipantEnvironment) {
+    return <>
+      <a className="skip-link" href="#participant-content">Ga naar inhoud</a>
+      <MotionAtmosphere route={pathname} />
+      <main id="main-content" className="app-surface participant-surface">{children}</main>
+      <MotionToggle />
+    </>;
+  }
 
   return (
     <>
@@ -34,7 +44,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="header-actions">
-          <Link className="group-link" href="/mijn-groep"><Users size={16} /><span>Mijn groep</span></Link>
+          <Link className="group-link" href="/omgeving"><UserRound size={16} /><span>Mijn omgeving</span></Link>
           <Link className="btn header-signup" href="/meelopen">Bekijk deelname <ArrowUpRight size={16} /></Link>
           <details className="mobile-navigation">
             <summary className="menu-btn" aria-label="Menu openen"><Menu /></summary>
@@ -42,7 +52,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               {navigation.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
               <Link href="/huis-aanmelden">Plek aanmelden</Link>
               <Link href="/sponsoren">Sponsoren</Link>
-              <Link href="/mijn-groep">Mijn groep</Link>
+              <Link href="/omgeving">Mijn omgeving</Link>
             </div>
           </details>
         </div>
