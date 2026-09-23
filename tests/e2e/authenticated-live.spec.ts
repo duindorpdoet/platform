@@ -246,7 +246,7 @@ test("a multi-child registration draft survives refresh and submits once", async
   await expect(page.getByRole("heading", { name: "Controleren" })).toBeFocused();
   await assertReadableLayout(page);
   await page.getByRole("button", { name: "Definitief inschrijven" }).click();
-  await expect(page.getByRole("heading", { name: "Welkom bij de poorten." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welkom bij de poorten!" })).toBeVisible();
 
   const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as { registration: { id: string; priceCents: number } };
   expect(snapshot.registration.id).toBeTruthy();
