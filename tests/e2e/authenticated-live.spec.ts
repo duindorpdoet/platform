@@ -95,7 +95,7 @@ test("forged cookies fail and offline group state reveals only the current stop 
 
   await context.setOffline(true);
   await page.getByRole("button", { name: "Vernieuwen" }).click();
-  await expect(page.locator(".offline-banner")).toContainText(/offline kopie/i);
+  await expect(page.locator(".offline-banner")).toContainText(/even offline/i);
   await expect(page.getByRole("heading", { name: "Testpoort 01" })).toBeVisible();
   await expect(page.getByRole("button", { name: "QR scannen" })).toBeDisabled();
   await expect(page.getByRole("button", { name: /overslaan/i }).first()).toBeDisabled();
@@ -235,7 +235,7 @@ test("a multi-child registration draft survives refresh and submits once", async
   await page.route("**/rpc/registration_save_draft", (route) => route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ code: "P0001", message: "STALE_VERSION" }) }));
   await page.getByRole("button", { name: "Definitief inschrijven" }).click();
   await expect(page.locator(".wizard").getByRole("alert")).toBeFocused();
-  await expect(page.locator(".wizard").getByRole("alert")).toContainText("elders gewijzigd");
+  await expect(page.locator(".wizard").getByRole("alert")).toContainText("intussen veranderd");
   expect(submitCalls).toBe(0);
   await page.unroute("**/rpc/registration_save_draft");
   await page.getByRole("button", { name: "Vorige" }).click();
@@ -283,7 +283,7 @@ test("a portal draft survives refresh and rejects disguised executable upload co
   await chooser.setInputFiles({ name: "misleidend.png", mimeType: "image/png", buffer: Buffer.from("<svg><script>alert(1)</script></svg>") });
   await expect(page.getByRole("status")).toContainText(/geen geldige/i);
   await chooser.setInputFiles({ name: "poort.png", mimeType: "image/png", buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) });
-  await expect(page.getByRole("status")).toContainText(/privé opgeslagen/i);
+  await expect(page.getByRole("status")).toContainText(/foto staat bij jullie huis/i);
   await expect(page.getByText(/1 afbeelding.*veilig/i)).toBeVisible();
   await page.reload();
   await expect(page.getByText(/1 afbeelding.*veilig/i)).toBeVisible();
