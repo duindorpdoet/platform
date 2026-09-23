@@ -68,35 +68,35 @@ export const worlds: World[] = [
 export const faq = [
   [
     "Hoe werkt de Halloween-tocht?",
-    "Je schrijft je kinderen in en de organisatie maakt loopgroepen. Samen met volwassenen lopen jullie door Duindorp. Pas als iedereen klaar is, ziet de groep de volgende bestemming.",
+    "Je schrijft je kinderen in en wij maken kleine loopgroepen. Samen met een volwassene wandelen jullie van deur naar deur door Duindorp. Bij elke poort wacht een nieuwe verrassing en natuurlijk iets lekkers.",
   ],
   [
     "Voor welke leeftijd is de tocht?",
-    "De tocht is voor kinderen onder begeleiding van een volwassene. De werelden verschillen in spanning. De definitieve leeftijdsrichtlijn volgt vóór de inschrijving opent.",
+    "De tocht is voor kinderen die samen met een volwassene op pad gaan. Er zijn rustige werelden voor kleine avonturiers en spannende werelden voor kinderen die wel van een beetje kriebels houden. Een poort overslaan mag altijd.",
   ],
   [
     "Wat kost deelname?",
-    "De huidige prijs is €2 per kind. Na inschrijving volgt de echte betaalinstructie. Alleen de organisatie kan een betaling bevestigen.",
+    "Meedoen kost €2 per kind. Na de inschrijving krijg je rustig uitgelegd hoe je kunt betalen. Een volwassene loopt gratis mee.",
   ],
   [
     "Kunnen we samenlopen met vrienden?",
-    "Ja, je kunt een samenloopwens doorgeven. De organisatie houdt daar zo veel mogelijk rekening mee zonder de groepscapaciteit te overschrijden.",
+    "Ja, geef bij de inschrijving aan met welk gezin of welke vriendjes jullie graag samenlopen. Wij proberen jullie bij elkaar te zetten. De groepsleider zorgt ervoor dat iedereen prettig en veilig mee kan.",
   ],
   [
     "Kan mijn kind een poort overslaan?",
-    "Altijd. Een ouder kan dat voor het eigen kind aangeven. De groep blijft bij elkaar en overslaan wordt nooit als een bezoek of scan getoond.",
+    "Altijd. Is een poort te spannend, te donker of gewoon niet jullie ding? Dan slaan jullie die samen over. Je kind hoeft nooit iets te doen wat niet goed voelt.",
   ],
   [
     "Wanneer ontvangen we de starttijd?",
-    "Na publicatie van de groepsindeling vind je de toegewezen starttijd in je eigen omgeving. Tot die tijd blijft dit duidelijk een concept.",
+    "Zodra de groepen klaar zijn, zie je in jullie persoonlijke omgeving hoe laat en waar jullie starten. We sturen ook een duidelijke herinnering voor de avond.",
   ],
   [
     "Hoe meld ik mijn huis aan?",
-    "Via Huis aanmelden geef je thema, tijden, capaciteit en praktische kenmerken door. De organisatie beoordeelt de aanvraag voordat je huis een poort wordt.",
+    "Meld je huis aan met je e-mailadres, telefoonnummer, naam en adres. Na de bevestiging kun je vertellen welk thema jullie leuk vinden, hoeveel kinderen welkom zijn en hoe jullie poort eruitziet. Wij nemen daarna contact op.",
   ],
   [
     "Wat als de QR-code niet werkt?",
-    "De groepsleider kan de korte poortcode gebruiken. Beide routes krijgen dezelfde servercontrole en geven nooit vanzelf de volgende bestemming vrij.",
+    "Geen probleem. De groepsleider kan ook een korte code gebruiken. Lukt iets niet, dan helpt de organisatie jullie verder bij de poort.",
   ],
 ] as const;
 

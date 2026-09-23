@@ -69,7 +69,7 @@ export function WorldExplorer({ onNavigate }: Props) {
             <p>{world.story}</p>
             <div className="explorer-facts">
               <span><DoorOpen size={17} /> Meerdere unieke poorten</span>
-              <span><Flame size={17} /> Spanning {world.intensity} / 4</span>
+              <span><Flame size={17} /> Spanningsniveau {world.intensity} / 4</span>
             </div>
             <div className="explorer-warnings">
               {world.warnings.map((warning) => <span key={warning}>{warning}</span>)}
@@ -88,7 +88,7 @@ export function WorldExplorer({ onNavigate }: Props) {
       </section>
       <div className="explorer-footer">
         <span><ShieldCheck size={15} /> Overslaan mag altijd.</span>
-        <span>Zes themawerelden · aantallen poorten zijn configureerbaar</span>
+        <span>Zes themawerelden · kies wat bij jullie past</span>
       </div>
     </div>
   );

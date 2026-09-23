@@ -8,7 +8,7 @@ export const metadata = { title: "Werelden · De Duindorpse Poorten" };
 export default function WorldsPage() {
   return (
     <div className="wrap page">
-      <PageHeading eyebrow="ZES WERELDEN. TALLOZE POORTEN." title="Welke wereld durf jij te betreden?" intro="Een wereld is een thema. Iedere deelnemende woning is één eigen poort; aantallen blijven configureerbaar." />
+      <PageHeading eyebrow="ZES WERELDEN. TALLOZE POORTEN." title="Welke wereld durf jij te betreden?" intro="Van zachte magie tot spannende schaduwen: ontdek de zes thema’s en kies samen wat bij jullie past." />
       <div className="all-worlds">
         {worlds.map((world, index) => (
           <Link className="world-card" href={`/werelden/${world.slug}`} key={world.slug} style={{ "--world": world.color } as React.CSSProperties}>
@@ -19,7 +19,7 @@ export default function WorldsPage() {
           </Link>
         ))}
       </div>
-      <p className="note"><ShieldCheck size={17} /> Een poort overslaan mag altijd en telt nooit als bezoek.</p>
+      <p className="note"><ShieldCheck size={17} /> Te spannend? Overslaan mag altijd. Jullie plezier en gevoel van veiligheid komen eerst.</p>
     </div>
   );
 }

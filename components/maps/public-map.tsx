@@ -47,7 +47,7 @@ export function PublicMap() {
         <div className="map-fallback">
           {state === "unconfigured" ? <LockKeyhole size={38} /> : state === "failed" ? <MapPin size={38} /> : <Compass size={38} />}
           <h2>{state === "unconfigured" ? "De kaartdienst wordt nog ingericht." : state === "failed" ? "De kaart kon niet laden." : "Kaart laden…"}</h2>
-          <p>De exacte adressen en routevolgorde van groepen zijn nooit onderdeel van deze openbare kaart.</p>
+          <p>De deelnemende huizen en verrassingen houden we geheim tot jullie op pad gaan.</p>
         </div>
       )}
     </div>

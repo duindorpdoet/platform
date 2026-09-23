@@ -16,13 +16,13 @@ type Snapshot = {
 
 function explain(error: { message?: string } | null) {
   const value = error?.message ?? "";
-  if (value.includes("STALE_VERSION")) return "Iemand anders was je voor. De actuele stand is opnieuw opgehaald.";
+  if (value.includes("STALE_VERSION")) return "Deze stap is intussen veranderd. Kijk het scherm nog even na en probeer opnieuw.";
   if (value.includes("SCAN_REQUIRED")) return "Scan eerst de QR-code van deze poort.";
   if (value.includes("PENDING_PARTICIPANTS")) return "Geef voor ieder aanwezig kind aan: bezocht of overgeslagen.";
   if (value.includes("WRONG_PORTAL")) return "Deze code hoort niet bij de huidige poort of is verlopen.";
   if (value.includes("PORTAL_UNAVAILABLE")) return "Deze poort is gepauzeerd of gesloten; een nieuw bezoek kan niet worden vastgelegd.";
   if (value.includes("VISIT_ALREADY_RECORDED")) return "Er is al een bezoek vastgelegd; de poort kan niet meer als systeemskip worden overschreven.";
-  return "De wijziging is niet bevestigd door de server. Probeer opnieuw.";
+  return "Dat lukte nog niet. Controleer de poort en probeer opnieuw.";
 }
 
 export function GroupExperience({ groupId, userId }: { groupId: string; userId: string }) {
@@ -90,7 +90,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
 
   return <div className="group-app">
     <div className="app-heading row-between"><div><p className="kicker">Groep {snapshot.group.code}</p><h1>Mijn groep</h1></div><button className="btn outline" onClick={() => void load()}><RefreshCw size={16} />Vernieuwen</button></div>
-    {offline && <div className="offline-banner" role="alert"><CloudOff size={18} />Offline kopie. Mutaties en een volgende poort blijven vergrendeld tot de server opnieuw bevestigt.</div>}
+    {offline && <div className="offline-banner" role="alert"><CloudOff size={18} />Jullie zijn even offline. We bewaren jullie voortgang en gaan verder zodra de verbinding terug is.</div>}
     {notice && <div className="form-warning" role="status">{notice}</div>}
     {!run && <div className="pre-event"><div className="pre-art"><img src="/images/avondloop-hero.webp" alt="Verlichte Duindorpse straat in de avond" /><div><p className="kicker">Route nog vergrendeld</p><h2>{snapshot.group.start ? new Date(snapshot.group.start.startsAt).toLocaleString("nl-NL", { dateStyle: "long", timeStyle: "short" }) : "Starttijd volgt"}</h2><p>{snapshot.group.start?.locationName ?? "De organisatie publiceert de startlocatie later."}</p></div></div><div className="panel"><h2>Controleer aanwezigheid</h2>{snapshot.access.leader ? <>{roster.map((item) => <label className="checkfield" key={item.registrationChildId}><input type="checkbox" checked={present.has(item.registrationChildId)} onChange={(event) => setPresent((current) => { const next = new Set(current); if (event.target.checked) next.add(item.registrationChildId); else next.delete(item.registrationChildId); return next; })} />{item.firstName} <small>· {item.householdLabel}</small></label>)}<button className="btn full" disabled={busy || offline || present.size === 0} onClick={() => void command("run_start", { _group_id: groupId, _present_registration_child_ids: [...present], _expected_group_version: snapshot.group.version, _idempotency_key: crypto.randomUUID(), _request_hash: [...present].sort().join(":") })}>Start groep met {present.size} aanwezig</button></> : <p>Alleen de aangewezen groepsleider kan de route starten. Tot die tijd blijven adressen verborgen.</p>}</div></div>}
     {run?.status === "completed" && <div className="finish-screen"><Check size={54} /><p className="kicker">De cirkel is rond</p><h2>Jullie zijn gefinisht.</h2><p>Alle bezochte en overgeslagen poorten staan in het logboek. Een overslag levert geen bezochte zegel op.</p></div>}

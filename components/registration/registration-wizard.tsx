@@ -54,21 +54,21 @@ export function RegistrationWizard({ eventSlug, canSubmit }: { eventSlug: string
 
   async function save(nextStep?: number) {
     const client = createClient();
-    if (!client) return reportError("De veilige gegevensverbinding is niet geconfigureerd.");
-    if (!draft.adult.name.trim() || !draft.adult.householdLabel.trim()) return reportError("Vul je naam en huishoudnaam in.");
-    if (nextStep === 2 && draft.children.some((child) => !child.name.trim() || !/^\d{1,2}$/.test(child.age) || Number(child.age) > 20)) return reportError("Vul voor ieder kind een naam en geldige leeftijd van 0 tot en met 20 in.");
+    if (!client) return reportError("We kunnen je inschrijving nu niet openen. Probeer het zo nog eens.");
+    if (!draft.adult.name.trim() || !draft.adult.householdLabel.trim()) return reportError("Vul eerst de naam van de volwassene en jullie gezinsnaam in.");
+    if (nextStep === 2 && draft.children.some((child) => !child.name.trim() || !/^\d{1,2}$/.test(child.age) || Number(child.age) > 20)) return reportError("Vul voor ieder kind een naam en leeftijd in.");
     setBusy(true); setNotice(""); setNoticeIsError(false);
     const { data, error } = await client.schema("api").rpc("registration_save_draft", { _event_slug: eventSlug, _payload: draft, _expected_version: version });
     setBusy(false);
-    if (error) return reportError(error.message.includes("STALE_VERSION") ? "Deze inschrijving is elders gewijzigd. Vernieuw de pagina." : "Opslaan is niet gelukt. Controleer de velden.");
+    if (error) return reportError(error.message.includes("STALE_VERSION") ? "Deze inschrijving is intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Controleer de ingevulde gegevens.");
     setVersion((data as { version: number }).version);
-    setNotice("Concept opgeslagen.");
+    setNotice("Jullie gegevens zijn bewaard. Je kunt later verdergaan.");
     if (nextStep !== undefined) setStep(nextStep);
     return true;
   }
 
   async function submit() {
-    if (!canSubmit) return reportError("De inschrijving is nog niet geopend.");
+    if (!canSubmit) return reportError("De inschrijving opent zodra de avond en groepen definitief zijn.");
     if (draft.children.some((child) => !child.name.trim() || !/^\d{1,2}$/.test(child.age) || Number(child.age) > 20)) return reportError("Vul voor ieder kind een naam en geldige leeftijd in.");
     if (!await save()) return;
     const client = createClient();
@@ -78,12 +78,12 @@ export function RegistrationWizard({ eventSlug, canSubmit }: { eventSlug: string
     const request = { eventSlug, terms: "2026-1", privacy: "2026-1", draft };
     const { data, error } = await client.schema("api").rpc("registration_submit", { _event_slug: eventSlug, _terms_version: "2026-1", _privacy_version: "2026-1", _idempotency_key: key, _request_hash: await digest(request) });
     setBusy(false);
-    if (error) return reportError(error.message.includes("REGISTRATION_CLOSED") ? "De inschrijving is gesloten." : "Definitief inschrijven is niet gelukt.");
+    if (error) return reportError(error.message.includes("REGISTRATION_CLOSED") ? "De inschrijving is gesloten." : "Definitief inschrijven is niet gelukt. Probeer het nog eens.");
     setRegistration(data as Snapshot["registration"]);
     setStep(3);
   }
 
-  if (registration) return <div className="panel success-panel" role="status"><p className="kicker">Inschrijving ontvangen</p><h2 ref={heading} tabIndex={-1}>Welkom bij de poorten.</h2><p>Je referentie is:</p><div className="registration-code">{registration.reference}</div><p>Bedrag: € {(registration.priceCents / 100).toFixed(2).replace(".", ",")} · status: {registration.payment?.status ?? "betaallink volgt"}.</p><div className="actions"><Link className="btn" href="/mijn-inschrijving">Bekijk mijn inschrijving</Link></div></div>;
+  if (registration) return <div className="panel success-panel" role="status"><p className="kicker">Jullie avontuur begint</p><h2 ref={heading} tabIndex={-1}>Welkom bij de poorten!</h2><p>De inschrijving van jullie gezin is ontvangen. Bewaar deze code voor vragen aan de organisatie:</p><div className="registration-code">{registration.reference}</div><p>Deelname: € {(registration.priceCents / 100).toFixed(2).replace(".", ",")} per kind. We laten weten wat de volgende stap is.</p><div className="actions"><Link className="btn" href="/mijn-inschrijving">Bekijk jullie inschrijving</Link></div></div>;
 
   return <div className="wizard panel">
     <div className="stepper" aria-label={`Stap ${step + 1} van 3`}><div className={step === 0 ? "active" : ""}><span>1</span><small>Volwassene</small></div><div className={step === 1 ? "active" : ""}><span>2</span><small>Kinderen</small></div><div className={step === 2 ? "active" : ""}><span>3</span><small>Controleren</small></div></div>

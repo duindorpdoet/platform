@@ -27,7 +27,7 @@ export function PublicRequestForm({ mode }: { mode: Mode }) {
     }
   }
 
-  if (status === "done") return <div className="panel form-success" role="status"><h2>Ontvangen</h2><p>Dank je. We hebben je {mode === "contact" ? "bericht" : "voorstel"} veilig opgeslagen en sturen een ontvangstbevestiging.</p></div>;
+  if (status === "done") return <div className="panel form-success" role="status"><h2>Bedankt!</h2><p>We hebben je {mode === "contact" ? "bericht" : "voorstel"} ontvangen. We lezen het rustig na en nemen contact op als dat nodig is.</p></div>;
   return (
     <form className="panel production-form" action={submit} onFocusCapture={() => { startedAt.current ??= Date.now(); }}>
       <label className="field"><span>Naam</span><input name="name" required maxLength={120} autoComplete="name" /></label>

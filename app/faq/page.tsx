@@ -14,7 +14,7 @@ export default function FaqPage() {
         <Accordion type="single" collapsible className="faq panel">
           {faq.map(([question, answer], index) => <AccordionItem value={String(index)} key={question}><AccordionTrigger>{question}</AccordionTrigger><AccordionContent>{answer}</AccordionContent></AccordionItem>)}
         </Accordion>
-        <aside className="panel"><Mail size={30} /><h2>Nog iets vragen?</h2><p>Stuur de organisatie een bericht. Opslag lukt ook als de mailprovider tijdelijk niet beschikbaar is.</p><Link className="btn outline" href="/contact">Neem contact op</Link></aside>
+        <aside className="panel"><Mail size={30} /><h2>Nog iets vragen?</h2><p>Twijfel je over de leeftijd, spanning of praktische afspraken? Stuur ons gerust een bericht. We denken graag mee met jullie gezin.</p><Link className="btn outline" href="/contact">Stel je vraag</Link></aside>
       </div>
     </div>
   );

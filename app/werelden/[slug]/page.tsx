@@ -27,7 +27,7 @@ export default async function WorldPage({ params }: { params: Promise<{ slug: st
             <div className="threat"><Flame /> {world.intensity} / 4</div>
             <div className="warning-tags">{world.warnings.map((warning) => <span key={warning}><TriangleAlert size={14} />{warning}</span>)}</div>
           </div>
-          <p className="muted"><LockKeyhole size={17} /> Goedgekeurde teasers kunnen hier verschijnen. Exacte adressen en de route van een groep blijven afgeschermd.</p>
+          <p className="muted"><LockKeyhole size={17} /> De echte poorten en hun adressen blijven nog even geheim. Zo blijft de ontdekking op 31 oktober extra leuk.</p>
           <Link className="btn" href="/meelopen">Bekijk deelname <ArrowRight size={16} /></Link>
         </div>
       </div>

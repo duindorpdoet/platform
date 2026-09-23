@@ -142,9 +142,9 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     setBusy(true); setNotice("");
     const { data, error } = await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: payload, _expected_version: saved?.version ?? null });
     setBusy(false);
-    if (error) { setNotice(error.message.includes("STALE_VERSION") ? "Dit concept is elders gewijzigd. Vernieuw de pagina." : "Opslaan is niet gelukt."); return null; }
+    if (error) { setNotice(error.message.includes("STALE_VERSION") ? "Jullie huisgegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
     const result = data as { id: string; version: number };
-    setSaved(result); setStatus("draft"); setNotice("Concept opgeslagen."); return result;
+    setSaved(result); setStatus("draft"); setNotice("Jullie huisgegevens zijn bewaard. Je kunt later verdergaan."); return result;
   }
 
   async function submit() {
@@ -174,15 +174,15 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     const response = await fetch("/api/portal-assets", { method: "POST", body: form });
     const body = await response.json() as { data?: { path: string }; error?: { message?: string } };
     if (!response.ok || !body.data?.path) {
-      setBusy(false); setNotice(body.error?.message ?? "De afbeelding kon niet veilig worden opgeslagen."); return;
+      setBusy(false); setNotice(body.error?.message ?? "Deze foto kunnen we nu niet toevoegen. Probeer een andere foto."); return;
     }
     const nextPayload = { ...payload, assetPaths: [...new Set([...payload.assetPaths, body.data.path])] };
     const client = createClient();
     const linked = client ? await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: nextPayload, _expected_version: application.version }) : null;
     setBusy(false);
-    if (!linked || linked.error) return setNotice("De afbeelding is privé opgeslagen maar kon niet aan het concept worden gekoppeld. Vernieuw en probeer opnieuw.");
+    if (!linked || linked.error) return setNotice("De foto is ontvangen, maar nog niet aan jullie huis gekoppeld. Probeer het nog eens.");
     const result = linked.data as { id: string; version: number };
-    setPayload(nextPayload); setSaved(result); setStatus("draft"); setNotice("Afbeelding privé opgeslagen en aan je concept gekoppeld.");
+    setPayload(nextPayload); setSaved(result); setStatus("draft"); setNotice("De foto staat bij jullie huis. Jullie kunnen later verdergaan.");
   }
 
   function setWarning(key: WarningKey, value: boolean) {
@@ -191,7 +191,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
 
   return <div className="panel production-form">
     <h2>Vul je huisdetails aan</h2>
-    <p>Je exacte adres blijft privé en wordt alleen gebruikt voor beoordeling en toegewezen routes.</p>
+    <p>Je adres delen we alleen met de organisatie. Zo kunnen we jullie huis goed voorbereiden en kinderen veilig ontvangen.</p>
     {reviewFeedback && <div className="form-warning"><strong>Terugkoppeling van de organisatie:</strong> {reviewFeedback}</div>}
     <fieldset className="form-fieldset" disabled={busy || !editable}>
       <h3>Contact en locatie</h3>
@@ -216,7 +216,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
       <div className="two-fields"><label className="field"><span>Kinderen per bezoek *</span><input type="number" min={1} max={100} value={payload.maxChildrenPerVisit} onChange={(event) => setPayload({ ...payload, maxChildrenPerVisit: event.target.value })} /></label><label className="field"><span>Kinderen totaal *</span><input type="number" min={1} max={5000} value={payload.maxChildrenTotal} onChange={(event) => setPayload({ ...payload, maxChildrenTotal: event.target.value })} /></label></div>
       <label className="field"><span>Praktische toegankelijkheid *</span><select className="choice" value={payload.accessibility} onChange={(event) => setPayload({ ...payload, accessibility: event.target.value as PortalPayload["accessibility"] })}><option value="unknown">Nog te beoordelen</option><option value="step_free">Drempelvrij</option><option value="steps">Trappen of hoge drempels</option><option value="mixed">Gedeeltelijk toegankelijk</option></select></label>
       <label className="field"><span>Toelichting toegankelijkheid</span><textarea maxLength={500} value={payload.accessibilityNotes} onChange={(event) => setPayload({ ...payload, accessibilityNotes: event.target.value })} /></label>
-      <label className="field"><span>Foto van de opstelling (optioneel)</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAsset(file); event.currentTarget.value = ""; }} /><small>Alleen privé zichtbare JPG, PNG of WebP, maximaal 8 MB. De server controleert de werkelijke bestandsinhoud.</small></label>
+      <label className="field"><span>Foto van de opstelling (optioneel)</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAsset(file); event.currentTarget.value = ""; }} /><small>Een foto helpt ons alvast mee te denken. Kies een JPG, PNG of WebP van maximaal 8 MB.</small></label>
       {payload.assetPaths.length > 0 && <p className="note">{payload.assetPaths.length} afbeelding(en) veilig aan dit concept gekoppeld.</p>}
       <label className="checkfield"><input type="checkbox" checked={payload.availability} onChange={(event) => setPayload({ ...payload, availability: event.target.checked })} />Ik ben tijdens het opgegeven venster beschikbaar en meld wijzigingen tijdig.</label>
       <label className="checkfield"><input type="checkbox" checked={payload.locationConsent} onChange={(event) => setPayload({ ...payload, locationConsent: event.target.checked })} />Ik geef toestemming om dit adres besloten te verwerken voor beoordeling, planning en uitsluitend de actuele toegewezen groep. *</label>

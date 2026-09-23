@@ -15,5 +15,5 @@ export default async function MyGroupPage() {
   const client = await createClient();
   const { data } = client ? await client.schema("api").rpc("my_context", { _event_slug: serverEnv().EVENT_SLUG }) : { data: null };
   const groupIds = ((data as { groupIds?: string[] } | null)?.groupIds ?? []);
-  return <div className="page wrap">{groupIds[0] ? <GroupExperience groupId={groupIds[0]} userId={actor.userId} /> : <div className="panel empty-state"><Users size={36} /><h1>Nog geen groep gepubliceerd</h1><p>Je inschrijving kan al ontvangen zijn terwijl de indeling nog in concept staat. Er worden hier geen voorlopige adressen getoond.</p><div className="actions"><Link className="btn" href="/mijn-inschrijving">Bekijk inschrijving</Link><SignOutButton /></div></div>}</div>;
+  return <div className="page wrap">{groupIds[0] ? <GroupExperience groupId={groupIds[0]} userId={actor.userId} /> : <div className="panel empty-state"><Users size={36} /><h1>Jullie groep komt eraan</h1><p>We maken de groepen zorgvuldig. Zodra jullie starttijd en eerste halte klaarstaan, vind je die hier. Tot die tijd kun je de werelden alvast ontdekken.</p><div className="actions"><Link className="btn" href="/werelden">Ontdek de werelden</Link><Link className="btn outline" href="/mijn-inschrijving">Bekijk jullie inschrijving</Link><SignOutButton /></div></div>}</div>;
 }
