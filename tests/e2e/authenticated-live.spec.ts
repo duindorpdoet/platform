@@ -307,6 +307,7 @@ for (const doubleText of [false, true]) {
         await expect(page.locator(".loading-state")).toHaveCount(0);
         await assertReadableLayout(page, doubleText);
         if (path === "/admin") {
+          await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
           for (const section of ["Imports", "Inschrijvingen", "Betalingen", "Poortaanvragen", "Routeplanner", "Content & sponsors", "Avondhulp"]) {
             await page.goto("/admin");
             await page.locator(".admin-nav").getByRole("button", { name: section, exact: true }).click();

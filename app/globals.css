@@ -9,6 +9,23 @@
   .live-topbar>.text-link{grid-column:1/-1;justify-self:start;white-space:normal;text-align:left}
 }
 
+.registration-controls{margin-bottom:28px}
+.registration-controls-heading{align-items:flex-start;margin-bottom:22px}
+.registration-controls-heading>div{max-width:760px}
+.registration-controls-heading p{margin-top:10px;color:#91a5b7}
+.registration-channel{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:15px 18px}
+.registration-channel>svg{color:#d8b18d;margin-top:3px}
+.registration-channel>div{min-width:0}
+.registration-channel h3{font-size:24px}
+.registration-channel p{margin-top:8px}
+.registration-channel>.btn{grid-column:1/-1;width:100%}
+
+@media(max-width:700px){
+  .registration-controls{padding:23px}
+  .registration-channel{padding:20px}
+  .registration-channel h3{font-size:21px}
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
 

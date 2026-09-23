@@ -64,7 +64,7 @@ function EveningOpening({ go }: { go: (path: string) => void }) {
       <p className="evening-overline"><span/>31 OKTOBER 2026 <i/> HALLOWEEN AVONDLOOP</p>
       <h1 id="evening-title">Een gewone wijk.<br/><em>Een magische<br className="evening-title-break"/> avond.</em></h1>
       <p className="evening-opening-intro">Als de avond valt, gaan de poorten open.<br/>Loop samen door Duindorp, ontdek wat er achter de deuren wacht en verzamel onderweg de lekkerste snoepjes.</p>
-      <div className="evening-opening-actions"><button className="btn" onClick={() => go('/meelopen')}>Wij lopen mee <ArrowUpRight size={18}/></button><button className="evening-story-link" onClick={() => visitChapter('de-avond')}><span><ChevronDown size={17}/></span>Beleef de avond</button></div>
+      <div className="evening-opening-actions"><button className="btn" onClick={() => go('/huis-aanmelden')}><House size={18}/>Meld jouw plek aan <ArrowUpRight size={18}/></button><button className="btn outline" onClick={() => go('/meelopen')}>Wij lopen mee <ArrowUpRight size={18}/></button></div>
       <p className="evening-opening-note"><ShieldCheck size={15}/>€2 per kind · samen met een volwassene</p>
     </div>
     <div className="evening-location"><MapPin size={15}/><span>DUINDORP, DEN HAAG<small>Onze straten. Jullie avontuur.</small></span></div>

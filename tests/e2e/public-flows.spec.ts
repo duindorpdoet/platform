@@ -7,6 +7,11 @@ test("premium homepage keeps the supplied identity and closed participation path
   await expect(page.getByRole("img", { name: "De Duindorpse Poorten van Halloween" }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /Een gewone wijk/ })).toBeVisible();
   await expect(page.getByText("31 OKTOBER 2026").first()).toBeVisible();
+  const portalCta = page.getByRole("button", { name: /Meld jouw plek aan/i }).first();
+  await expect(portalCta).toBeVisible();
+  await portalCta.click();
+  await expect(page).toHaveURL(/\/huis-aanmelden$/);
+  await page.goBack();
   await expect(page.locator("body")).not.toContainText(/democode|demo-account|rollen kiezen/i);
   const reveals = page.locator(".reveal");
   for (let index = 0; index < await reveals.count(); index += 1) {

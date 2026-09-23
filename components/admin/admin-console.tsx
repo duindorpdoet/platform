@@ -27,6 +27,8 @@ type Dashboard = {
     phase: string;
     date: string;
     settingsVersion: number;
+    groupRegistrationOpen: boolean;
+    portalRegistrationOpen: boolean;
   };
   counts: Record<string, number>;
   imports: Array<{
@@ -377,6 +379,46 @@ export function AdminConsole({ eventSlug }: { eventSlug: string }) {
     setRegistrationChanges(data as RegistrationChange[]);
   }
 
+  async function setRegistrationChannel(
+    channel: "groups" | "portals",
+    open: boolean,
+  ) {
+    if (!dashboard) return;
+    const label = channel === "groups" ? "groepsinschrijvingen" : "locatieaanmeldingen";
+    const reason = window
+      .prompt(
+        `Waarom wil je de ${label} ${open ? "openzetten" : "sluiten"}? (minimaal 10 tekens)`,
+      )
+      ?.trim();
+    if (!reason || reason.length < 10)
+      return setNotice("Een auditreden van minimaal tien tekens is verplicht.");
+    if (
+      !window.confirm(
+        `${open ? "Open" : "Sluit"} de ${label}? Deze wijziging is direct zichtbaar voor bezoekers.`,
+      )
+    )
+      return;
+    const client = createClient();
+    if (!client) return;
+    const { error } = await client
+      .schema("api")
+      .rpc("admin_set_registration_channel", {
+        _event_slug: eventSlug,
+        _channel: channel,
+        _open: open,
+        _expected_settings_version: dashboard.event.settingsVersion,
+        _reason: reason,
+      });
+    setNotice(
+      error
+        ? error.message.includes("STALE_VERSION")
+          ? "De instellingen zijn intussen gewijzigd. Het overzicht is vernieuwd; probeer het nogmaals."
+          : `De ${label} konden niet worden gewijzigd.`
+        : `De ${label} staan nu ${open ? "open" : "gesloten"}.`,
+    );
+    await load();
+  }
+
   async function decideRegistrationChange(
     change: RegistrationChange,
     decision: "apply" | "close" | "reject",
@@ -685,6 +727,47 @@ export function AdminConsole({ eventSlug }: { eventSlug: string }) {
         )}
         {section === "overview" && (
           <>
+            <section className="panel registration-controls">
+              <p className="kicker">Aanmeldingen beheren</p>
+              <div className="row-between registration-controls-heading">
+                <div>
+                  <h2>Open ieder kanaal op het juiste moment.</h2>
+                  <p>Laat bijvoorbeeld eerst woningen, portieken en bedrijven aanmelden en open de groepsinschrijving pas later. Wijzigingen gelden direct en komen in de auditlog.</p>
+                </div>
+              </div>
+              <div className="settings-grid">
+                <article className="panel registration-channel">
+                  <UsersRound />
+                  <div>
+                    <h3>Groepsinschrijvingen</h3>
+                    <p>Voor ouders die kinderen willen inschrijven om mee te lopen.</p>
+                  </div>
+                  <button
+                    className={`btn ${dashboard.event.groupRegistrationOpen ? "outline" : ""}`}
+                    role="switch"
+                    aria-checked={dashboard.event.groupRegistrationOpen}
+                    onClick={() => void setRegistrationChannel("groups", !dashboard.event.groupRegistrationOpen)}
+                  >
+                    {dashboard.event.groupRegistrationOpen ? "Open · klik om te sluiten" : "Gesloten · klik om te openen"}
+                  </button>
+                </article>
+                <article className="panel registration-channel">
+                  <House />
+                  <div>
+                    <h3>Locatieaanmeldingen</h3>
+                    <p>Voor woningen, portieken, winkels en bedrijven die een poort willen worden.</p>
+                  </div>
+                  <button
+                    className={`btn ${dashboard.event.portalRegistrationOpen ? "outline" : ""}`}
+                    role="switch"
+                    aria-checked={dashboard.event.portalRegistrationOpen}
+                    onClick={() => void setRegistrationChannel("portals", !dashboard.event.portalRegistrationOpen)}
+                  >
+                    {dashboard.event.portalRegistrationOpen ? "Open · klik om te sluiten" : "Gesloten · klik om te openen"}
+                  </button>
+                </article>
+              </div>
+            </section>
             <div className="dashboard-metrics">
               {Object.entries(dashboard.counts).map(([key, value]) => (
                 <div className="metric" key={key}>

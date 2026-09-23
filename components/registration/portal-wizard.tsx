@@ -142,7 +142,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     setBusy(true); setNotice("");
     const { data, error } = await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: payload, _expected_version: saved?.version ?? null });
     setBusy(false);
-    if (error) { setNotice(error.message.includes("STALE_VERSION") ? "Jullie gegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
+    if (error) { setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie huidige concept blijft bewaard." : error.message.includes("STALE_VERSION") ? "Jullie gegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
     const result = data as { id: string; version: number };
     setSaved(result); setStatus("draft"); setNotice("Jullie gegevens zijn bewaard. Je kunt later verdergaan."); return result;
   }
@@ -155,7 +155,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     setBusy(true);
     const { data, error } = await client.schema("api").rpc("portal_application_submit", { _application_id: current.id, _expected_version: current.version, _idempotency_key: crypto.randomUUID(), _request_hash: await digest(payload) });
     setBusy(false);
-    if (error) return setNotice("Indienen is niet gelukt. Controleer de gegevens en probeer opnieuw.");
+    if (error) return setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie concept blijft bewaard." : "Indienen is niet gelukt. Controleer de gegevens en probeer opnieuw.");
     const result = data as { version: number };
     setSaved({ ...current, version: result.version }); setStatus("submitted"); setReviewFeedback(null); setNotice("Jullie plek is ingediend voor beoordeling.");
   }

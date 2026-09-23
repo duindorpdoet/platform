@@ -32,6 +32,8 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
         body = {
           phase: 'registration_open',
           registrationPublished: true,
+          groupRegistrationOpen: true,
+          portalRegistrationOpen: true,
         };
       }
 

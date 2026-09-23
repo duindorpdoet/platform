@@ -31,8 +31,10 @@ export function PortalRegistration({ eventSlug, email, hasApplication }: { event
         if (result.error) throw result.error;
       }
       setReady(true);
-    } catch {
-      setNotice("Je e-mailadres is bevestigd, maar de plek kon niet worden opgeslagen. Je gegevens staan nog hieronder. Probeer opnieuw.");
+    } catch (error) {
+      setNotice(error instanceof Error && error.message.includes("PORTAL_REGISTRATION_CLOSED")
+        ? "De organisatie heeft nieuwe locatieaanmeldingen zojuist gepauzeerd. Je gegevens staan nog hieronder."
+        : "Je e-mailadres is bevestigd, maar de plek kon niet worden opgeslagen. Je gegevens staan nog hieronder. Probeer opnieuw.");
     } finally { setBusy(false); }
   }
 

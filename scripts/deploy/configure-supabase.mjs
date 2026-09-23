@@ -225,7 +225,10 @@ const mailWorker = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/configure
 if (releaseMode === "production_closed" && (release?.phase !== "draft" || release?.registrationPublished !== false)) {
   throw new Error("Production release mode did not remain closed.");
 }
-if (releaseMode === "staging_test_open" && (release?.phase !== "registration_open" || release?.registrationPublished !== true)) {
+if (typeof release?.groupRegistrationOpen !== "boolean" || typeof release?.portalRegistrationOpen !== "boolean") {
+  throw new Error("Independent registration channel controls were not configured.");
+}
+if (releaseMode === "staging_test_open" && (release?.phase !== "registration_open" || release?.registrationPublished !== true || release?.groupRegistrationOpen !== true || release?.portalRegistrationOpen !== true)) {
   throw new Error("Staging test registration was not opened.");
 }
 if (process.env.MAIL_MODE !== "disabled" && mailWorker?.active !== true) {
