@@ -3,7 +3,7 @@ SRC-01,P0,Bron,Nieuwe homepagebron aanwezig,Commit en assets van afgesproken ont
 SRC-02,P0,Bron,Geen demoauth in productie,Code 311026 en rollenknop werken niet in productie,Buildinspectie + E2E,pass,source inspection + local:e2e
 SRC-03,P0,Bron,Geen voorbeelddeelnemers in productie,Productieseed bevat geen fictieve accounts of betaalde inschrijvingen,Seedinspectie + DB,pass,remote deploy excludes seed; source inspection
 SRC-04,P1,Bron,Alle bestaande routes overgenomen,Publieke en portaalroutes werken of hebben passende redirect,E2E routematrix,pass,local:e2e + production build
-AUTH-01,P0,Auth,Echte OTP ontvangen en gebruikt,SendGrid-mail ontvangen en Supabase-sessie geverifieerd,Echte stagingmail + E2E,blocked,blocked:B-005
+AUTH-01,P0,Auth,Echte OTP ontvangen en gebruikt,SendGrid-mail ontvangen en Supabase-sessie geverifieerd,Echte stagingmail + E2E,pass,workflow:staging 35806175214 real mailbox OTP received and verified by Supabase Auth
 AUTH-02,P0,Auth,Verkeerde/verlopen OTP,Geen sessie en herstelbare foutmelding,Auth-integratietest,pass,local:auth rejects wrong token and deploy config verifies 600 second expiry
 AUTH-03,P0,Auth,Code hergebruiken,Eenmaligheid volgens providerbeleid gerespecteerd,Auth-integratietest,pass,local:auth consumed token replay rejected
 AUTH-04,P0,Auth,Resendlimiet en spam,Serverlimiet en zichtbare cooldown; geen onbeperkte verzending,Rate-limit-test,pass,local:auth immediate resend rate limited + OTP UI cooldown

@@ -170,7 +170,7 @@ jobs:
       - name: Verify exact revision
         run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - name: Verify allowed-mailbox OTP and transaction delivery
-        run: python3 scripts/acceptance/staging_mail.py
+        run: python3 -u scripts/acceptance/staging_mail.py
       - name: Diagnose failed mail delivery
         if: failure()
         continue-on-error: true
