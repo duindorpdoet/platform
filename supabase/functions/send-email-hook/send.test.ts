@@ -29,6 +29,10 @@ describe("SendGrid Edge transport", () => {
     const [, init] = fetcher.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(String(init.body));
     expect(body.personalizations[0].custom_args).toEqual({ outbox_id: "outbox-1" });
+    expect(body.tracking_settings).toEqual({
+      click_tracking: { enable: false, enable_text: false },
+      open_tracking: { enable: false },
+    });
     expect(body.reply_to).toEqual({ email: "reply@example.nl" });
     expect(body.mail_settings).toEqual({ sandbox_mode: { enable: true } });
   });

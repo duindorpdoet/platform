@@ -211,8 +211,16 @@ try:
         raise RuntimeError("The staging contact request did not create a durable transactional outbox entry.")
     print("Transactional contact request stored; waiting for outbox delivery.")
     _, contact_message, contact_text = wait_for(imap, before_contact, "Nieuw contactbericht", RUN_ID)
-    if "halloween@duindorpdoet.nl" not in decoded_header(contact_message.get("From")).lower() or APP_URL not in contact_text:
-        raise RuntimeError("The staging transactional message has an unexpected sender or environment URL.")
+    if "halloween@duindorpdoet.nl" not in decoded_header(contact_message.get("From")).lower():
+        raise RuntimeError("The staging transactional message has an unexpected sender.")
+    if APP_URL not in contact_text:
+        raise RuntimeError("The staging transactional message does not contain the expected application URL.")
+    if "halloween@duindorpdoet.nl" not in decoded_header(contact_message.get("Reply-To")).lower():
+        raise RuntimeError("The staging transactional message has an unexpected reply address.")
+    for kind, received in (("OTP", otp_message), ("transactional", contact_message)):
+        authentication = " ".join(received.get_all("Authentication-Results", []))
+        outcomes = re.findall(r"(?:spf|dkim|dmarc)=[a-z]+", authentication, re.I)
+        print(f"{kind} mail authentication results: {outcomes}.", flush=True)
 
     imap.uid("store", str(otp_uid), "+FLAGS.SILENT", "(\\Seen)")
     print(f"Staging OTP and transactional mail acceptance passed ({RUN_ID}).")

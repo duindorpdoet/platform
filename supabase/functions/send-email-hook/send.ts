@@ -54,6 +54,10 @@ export async function sendHookDeliveries(options: HookSendOptions) {
           { type: "text/plain", value: `Je code is ${token}. De code verloopt over 10 minuten.` },
           { type: "text/html", value: `<div style="background:#060b13;color:#eee9de;padding:36px;font:16px Arial"><h1 style="font:32px Georgia">Je inlogcode</h1><p>Vul deze code in om veilig verder te gaan:</p><p style="font-size:34px;letter-spacing:.25em"><strong>${htmlEscape(token)}</strong></p><p>De code verloopt over 10 minuten.</p></div>` },
         ],
+      tracking_settings: {
+        click_tracking: { enable: false, enable_text: false },
+        open_tracking: { enable: false },
+      },
       mail_settings: options.sandbox ? { sandbox_mode: { enable: true } } : undefined,
     }),
   })));
@@ -77,6 +81,10 @@ export async function sendTransactionalDelivery(options: TransactionalSendOption
         { type: "text/plain", value: options.text },
         { type: "text/html", value: options.html },
       ],
+      tracking_settings: {
+        click_tracking: { enable: false, enable_text: false },
+        open_tracking: { enable: false },
+      },
       mail_settings: options.sandbox ? { sandbox_mode: { enable: true } } : undefined,
     }),
   });

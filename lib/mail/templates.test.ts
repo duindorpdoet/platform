@@ -4,15 +4,28 @@ vi.mock("server-only", () => ({}));
 
 import { renderTransactionalMail } from "./templates";
 
+const originalAppUrl = process.env.APP_URL;
 const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
 afterEach(() => {
+  if (originalAppUrl === undefined) delete process.env.APP_URL;
+  else process.env.APP_URL = originalAppUrl;
   if (originalSiteUrl === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
   else process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
 });
 
 describe("transactional mail templates", () => {
+  it("uses the runtime application URL when a build-time public URL differs", () => {
+    process.env.APP_URL = "https://staging-halloween.duindorpdoet.nl";
+    process.env.NEXT_PUBLIC_SITE_URL = "https://build.example.invalid";
+    const notification = renderTransactionalMail({ messageType: "contact_notification", payload: {} });
+    expect(notification.text).toContain(process.env.APP_URL);
+    expect(notification.html).toContain(`href="${process.env.APP_URL}"`);
+    expect(notification.text).not.toContain("build.example.invalid");
+  });
+
   it("renders a same-origin one-time household invitation link", () => {
+    delete process.env.APP_URL;
     process.env.NEXT_PUBLIC_SITE_URL = "https://staging-halloween.duindorpdoet.nl";
     const invitation = renderTransactionalMail({
       messageType: "household_invite",
@@ -25,6 +38,7 @@ describe("transactional mail templates", () => {
   });
 
   it("rejects an external or script-like action path", () => {
+    delete process.env.APP_URL;
     process.env.NEXT_PUBLIC_SITE_URL = "https://halloween.duindorpdoet.nl";
     const invitation = renderTransactionalMail({
       messageType: "household_invite",

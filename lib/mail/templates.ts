@@ -14,7 +14,8 @@ export function renderTransactionalMail({ messageType, payload }: TemplateInput)
     typeof payload.proposedAmountCents === "number" ? `Voorgesteld bedrag: € ${(payload.proposedAmountCents / 100).toFixed(2)}` : "",
     payload.message ? `Bericht: ${String(payload.message)}` : "",
   ].filter(Boolean);
-  const siteUrlRaw = /^https?:\/\//.test(process.env.NEXT_PUBLIC_SITE_URL ?? "") ? process.env.NEXT_PUBLIC_SITE_URL! : "";
+  const configuredSiteUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
+  const siteUrlRaw = /^https?:\/\//.test(configuredSiteUrl) ? configuredSiteUrl : "";
   const siteUrl = escapeHtml(siteUrlRaw);
   const actionPath = typeof payload.actionPath === "string" && /^\/[A-Za-z0-9/?=&._%-]+$/.test(payload.actionPath) ? payload.actionPath : "";
   const actionUrl = siteUrlRaw && actionPath ? escapeHtml(new URL(actionPath, siteUrlRaw).toString()) : "";
