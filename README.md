@@ -20,6 +20,8 @@ De lokale seed bevat uitsluitend technische fixtures en wordt nooit naar staging
 
 De homepage en `/kaart` tonen de Duindorpse wijk met MapLibre GL JS en een eigen nachtstijl in `public/maps/duindorp-night.json`. De vectorkaart, lettertekens en symbolen komen van de publieke OpenFreeMap-dienst; er is geen API-sleutel of `NEXT_PUBLIC_MAP_STYLE_URL` nodig. De bronvermelding blijft zichtbaar op de kaart. De stijl is afgeleid van OpenFreeMap Dark en kan als JSON worden aangepast; de oorspronkelijke licentie en auteurs staan in [`public/maps/STYLE-CREDITS.md`](public/maps/STYLE-CREDITS.md).
 
+Bij `pnpm dev` en `pnpm build` kopieert het voorbereidende script de MapLibre-worker en de bijbehorende gedeelde module vanuit de geïnstalleerde versie naar `public/maplibre/`. Next.js/Turbopack heeft beide bestanden op hetzelfde domein nodig om vectorpoorten te tekenen. Browsers zonder WebGL2 krijgen de tekstweergave.
+
 De openbare kaart toont uitsluitend Duindorp als gebied, zonder deelnemende huisadressen. In het afgeschermde beheer verschijnen alleen goedgekeurde poorten met geverifieerde coördinaten, elk in de kleur van hun wereld. De groepskaart toont slechts de op dat moment vrijgegeven poort uit de bestaande, beveiligde `group_snapshot`; toekomstige poorten blijven verborgen. Bij een netwerk- of kaartfout, of wanneer een pin nog niet is geverifieerd, blijft het vrijgegeven adres als tekst beschikbaar. De kaartlaag berekent zelf geen wandelroutes; daarvoor is later echte voetgangersdata nodig.
 
 ## Verificatie
