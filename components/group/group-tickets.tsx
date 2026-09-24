@@ -157,7 +157,7 @@ export function GroupTickets({ groupId }: { groupId: string }) {
       {selected && <div className="ticket-thread">
         <div className="row-between"><div><h3>{selected.subject}</h3><small>{selected.reference} · {statusLabels[selected.status]}</small></div><LifeBuoy /></div>
         <div className="ticket-messages">
-          {selected.messages.map((message) => <article key={message.id} className={`ticket-message ${message.isMine ? "mine" : "theirs"}`}><strong>{message.isMine ? "Jij" : "Organisatie"}</strong><p>{message.body}</p><small>{new Date(message.createdAt).toLocaleString("nl-NL")}{message.isMine && message.readAt ? <><CheckCheck size={14} /> gelezen</> : ""}</small></article>)}
+          {selected.messages.map((message) => <article key={message.id} className={`ticket-message ${message.isMine ? "mine" : "theirs"}`}><strong>{message.isMine ? "Jij" : "Organisatie"}</strong><p>{message.body}</p><small>{new Date(message.createdAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}{message.isMine && message.readAt ? <><CheckCheck size={14} /> gelezen</> : ""}</small></article>)}
         </div>
         {selected.status !== "closed" && <div className="ticket-reply"><label className="field"><span>Jouw reactie</span><textarea rows={4} maxLength={4000} value={reply} onChange={(event) => setReply(event.target.value)} /></label><button className="btn" disabled={busy || !reply.trim()} onClick={() => void sendReply()}><Send size={17} />Verstuur reactie</button></div>}
         <button className="text-link" onClick={() => void setStatus(selected.status === "closed" ? "open" : "closed")}>{selected.status === "closed" ? "Gesprek heropenen" : "Gesprek sluiten"}</button>

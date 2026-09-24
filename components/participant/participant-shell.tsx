@@ -512,5 +512,5 @@ function StampRail({ history, hideNames = false }: { history: Array<{ sequence: 
   return <section className="stamp-rail" aria-label="Verzamelde wereldstempels">{history.map((item, index) => <article key={`${item.sequence}-${item.completedAt}`} style={{ "--stamp-index": index } as React.CSSProperties}><span>{item.outcome === "system_skipped" || item.outcome === "all_skipped" ? <X /> : <Check />}</span><div><small>{formatTime(item.completedAt)}</small><h3>{item.world}</h3><p>{hideNames ? `Wereldstap ${item.sequence}` : item.portalName}</p></div></article>)}</section>;
 }
 
-function formatTime(value: string) { return new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }); }
-function formatDateTime(value: string) { return new Date(value).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
+function formatTime(value: string) { return new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }); }
+function formatDateTime(value: string) { return new Date(value).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }); }

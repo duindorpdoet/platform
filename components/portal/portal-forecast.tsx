@@ -26,7 +26,7 @@ type Forecast = {
   arrivals: Arrival[];
 };
 
-const time = (value?: string | null) => value ? new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "Nog niet berekend";
+const time = (value?: string | null) => value ? new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "Nog niet berekend";
 
 export function PortalForecast({ portalId, systemCode, name, operationStatus }: { portalId: string; systemCode?: string | null; name: string; operationStatus: string }) {
   const [snapshot, setSnapshot] = useState<Forecast | null>(null);
@@ -68,7 +68,7 @@ export function PortalForecast({ portalId, systemCode, name, operationStatus }: 
       </div>
       {assigned.length === 0 && forecast.length === 0 && <p className="empty-state">Er staan nu geen groepen in de actuele planning voor jullie poort.</p>}
       <p className="note">Toegewezen groepen hebben jullie poort al in hun serverbevestigde route. De prognose kan nog veranderen door tempo, pauzes, veiligheid en beschikbaarheid. Dit is geen live GPS.</p>
-      <small>Laatst door de server bijgewerkt: {snapshot?.updatedAt ? new Date(snapshot.updatedAt).toLocaleString("nl-NL") : "nog niet beschikbaar"}</small>
+      <small>Laatst door de server bijgewerkt: {snapshot?.updatedAt ? new Date(snapshot.updatedAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" }) : "nog niet beschikbaar"}</small>
     </>}
   </section>;
 }

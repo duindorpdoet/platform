@@ -965,7 +965,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                       <strong>{item.action}</strong>
                       <small>
                         {item.resourceType} ·{" "}
-                        {new Date(item.createdAt).toLocaleString("nl-NL")}
+                        {new Date(item.createdAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}
                       </small>
                     </div>
                   </div>
@@ -1024,7 +1024,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
               <div className="summary-row" key={item.id}>
                 <span>
                   {item.kind} ·{" "}
-                  {new Date(item.createdAt).toLocaleString("nl-NL")}
+                  {new Date(item.createdAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}
                 </span>
                 <strong>{item.status}</strong>
               </div>
@@ -1226,14 +1226,14 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             </section>
             <section className="panel">
               <p className="kicker">Meldingen op prioriteit</p><h2>Veiligheidssignalen</h2>
-              {liveAlerts.length === 0 ? <p>Geen open signalen.</p> : liveAlerts.map((alert) => <div className={`form-${alert.priority === "urgent" ? "warning" : "notice"}`} key={alert.id}><strong>{alert.code}</strong><p>{alert.message}</p><small>{new Date(alert.createdAt).toLocaleString("nl-NL")}</small></div>)}
+              {liveAlerts.length === 0 ? <p>Geen open signalen.</p> : liveAlerts.map((alert) => <div className={`form-${alert.priority === "urgent" ? "warning" : "notice"}`} key={alert.id}><strong>{alert.code}</strong><p>{alert.message}</p><small>{new Date(alert.createdAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}</small></div>)}
             </section>
             <section className="panel">
               <p className="kicker">Geaudit beheerpad</p><h2>Groepen</h2>
               <label className="field"><span>Verplichte reden voor een handmatige actie</span><textarea rows={3} value={supportReason} onChange={(event) => setSupportReason(event.target.value)} /></label>
               {liveRuns.length === 0 ? <p>Geen ingedeelde groepen.</p> : liveRuns.map((run) => (
                 <div className="incident-row" key={run.groupId}>
-                  <div><strong>{[run.systemCode || run.groupCode, run.displayName].filter(Boolean).join(" · ")} · {run.currentPortal ?? "geen actieve bestemming"}</strong><small>{run.runStatus ?? run.status} · {run.childCount} kinderen · laatst bevestigd {run.lastConfirmedAt ? new Date(run.lastConfirmedAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "nog niet gestart"}</small><small>Stopgrens {run.effectiveStopAt ? new Date(run.effectiveStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "–"} · finale {run.expectedFinaleArrivalAt ? new Date(run.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "–"}</small></div>
+                  <div><strong>{[run.systemCode || run.groupCode, run.displayName].filter(Boolean).join(" · ")} · {run.currentPortal ?? "geen actieve bestemming"}</strong><small>{run.runStatus ?? run.status} · {run.childCount} kinderen · laatst bevestigd {run.lastConfirmedAt ? new Date(run.lastConfirmedAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "nog niet gestart"}</small><small>Stopgrens {run.effectiveStopAt ? new Date(run.effectiveStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "–"} · finale {run.expectedFinaleArrivalAt ? new Date(run.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "–"}</small></div>
                   <button className="btn outline" onClick={() => void startMessage("group", run.groupId, [run.systemCode || run.groupCode, run.displayName].filter(Boolean).join(" · "))}><MessageSquare />Bericht sturen</button>
                   {run.runId && run.runVersion !== null && <div className="actions">
                     {run.currentStopId && <button className="btn outline" onClick={() => void liveCommand(run, "override")}>Scanoverride</button>}

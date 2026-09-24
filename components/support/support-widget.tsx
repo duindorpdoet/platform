@@ -248,7 +248,7 @@ export function SupportWidget({ eventSlug, role, groupId, portalId, viewerAccess
                     <strong>{message.isMine ? "Jij" : "Organisatie"}</strong>
                     <p>{message.body}</p>
                     <small>
-                      {new Date(message.createdAt).toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      {new Date(message.createdAt).toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}
                       {message.isMine && message.readAt && <><CheckCheck aria-hidden="true" /> gelezen</>}
                     </small>
                   </article>

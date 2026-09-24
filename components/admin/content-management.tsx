@@ -59,7 +59,7 @@ export function ContentManagement({ eventSlug }: { eventSlug: string }) {
       <label className="field"><span>Titel</span><input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
       <label className="field"><span>Tekst</span><textarea rows={7} value={body} onChange={(event) => setBody(event.target.value)} /></label>
       <button className="btn" onClick={() => void saveDraft()}>Sla nieuwe conceptversie op</button>
-      {snapshot.versions.map((version) => <div className="summary-row" key={version.id}><span>{version.pageKey} · v{version.version} · {version.status}</span>{version.status === "draft" ? <button className="text-link" onClick={() => void publishContent(version)}>Publiceer</button> : <strong>{version.publishedAt ? new Date(version.publishedAt).toLocaleString("nl-NL") : version.status}</strong>}</div>)}
+      {snapshot.versions.map((version) => <div className="summary-row" key={version.id}><span>{version.pageKey} · v{version.version} · {version.status}</span>{version.status === "draft" ? <button className="text-link" onClick={() => void publishContent(version)}>Publiceer</button> : <strong>{version.publishedAt ? new Date(version.publishedAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" }) : version.status}</strong>}</div>)}
     </section>
     <section className="panel">
       <p className="kicker">Goedkeuring</p><h2>Sponsoraanvragen</h2>
