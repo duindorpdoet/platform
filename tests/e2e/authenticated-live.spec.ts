@@ -233,7 +233,14 @@ test("a multi-child registration draft survives refresh and submits once", async
   await expect(page.locator(".wizard").getByRole("alert")).toBeFocused();
   await page.getByLabel("Naam verantwoordelijke volwassene").fill("Browser testouder");
   await page.getByLabel("Telefoonnummer voor de avond").fill("0612345678");
-  await page.getByLabel("Wanneer stoppen jullie met gewone poorten?", { exact: false }).selectOption({ label: "20:15" });
+  for (const label of ["Gewenste starttijd", "Wanneer stoppen jullie met gewone poorten?"]) {
+    const choices = await page.getByLabel(label, { exact: false }).locator("option").allTextContents();
+    const times = choices.filter((choice) => /^\d{2}:\d{2}$/.test(choice));
+    expect(times.length).toBeGreaterThan(1);
+    expect(times.every((time) => Number(time.slice(3)) % 10 === 0)).toBe(true);
+  }
+  await page.getByLabel("Gewenste starttijd", { exact: false }).selectOption({ label: "17:10" });
+  await page.getByLabel("Wanneer stoppen jullie met gewone poorten?", { exact: false }).selectOption({ label: "20:10" });
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.getByRole("heading", { name: "Deelnemende kinderen" })).toBeFocused();
   await assertReadableLayout(page);

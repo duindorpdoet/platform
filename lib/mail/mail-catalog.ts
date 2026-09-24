@@ -130,7 +130,7 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
   },
   group_schedule_published: {
     kind: "route", subject: "Jullie startpunt en starttijd zijn bekend", preheader: "Bekijk wanneer en waar jullie groep begint.", eyebrow: "Jullie avond", title: "De start staat vast.", hero: true,
-    paragraphs: (payload) => [`${greeting(payload)}de organisatie heeft de start van ${groupName(payload)} bevestigd. Kom pas vanaf de toegewezen tijd en meld jullie aanwezigheid in de app. Na de grens voor gewone poorten volgt nog de laatste poort en eindshow.`],
+    paragraphs: (payload) => [`${greeting(payload)}de organisatie heeft de start van ${groupName(payload)} bevestigd. Kom pas vanaf de toegewezen tijd en meld jullie aanwezigheid in de app. Na de grens voor gewone poorten volgt nog de laatste poort.`],
     action: { label: "Bekijk jullie start", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt deze e-mail omdat de startindeling van jouw groep is gepubliceerd.",
   },
   group_schedule_corrected: {

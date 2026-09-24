@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(36);
 
 select is((select system_code from app_private.portal_applications order by system_number limit 1), 'P-01', 'portal application codes start at P-01');
 select is((select max(system_code) from app_private.portal_applications where system_number = 30), 'P-30', 'portal application backfill is deterministic');
@@ -103,14 +103,25 @@ select lives_ok($$select api.registration_exact_preferences_save(
   timestamptz '2026-10-31 21:00+01', 1)$$, 'a household adult can save exact Amsterdam event-time preferences');
 select is(api.registration_preferences_snapshot('duindorp-halloween-2026') #>> '{preferredStartAt}', '2026-10-31T16:00:00+00:00',
   'the exact preferred start is stored as an unambiguous timestamp');
-select is(jsonb_array_length(api.registration_preferences_snapshot('duindorp-halloween-2026') #> '{event,allowedStartTimes}'), 6,
-  'the snapshot offers six configured start times from 17:00 through 19:30');
-select is(jsonb_array_length(api.registration_preferences_snapshot('duindorp-halloween-2026') #> '{event,allowedEndTimes}'), 13,
-  'the snapshot offers thirteen configured end times from 18:00 through 21:00');
+select is(jsonb_array_length(api.registration_preferences_snapshot('duindorp-halloween-2026') #> '{event,allowedStartTimes}'), 16,
+  'the snapshot offers sixteen configured start times from 17:00 through 19:30');
+select is(jsonb_array_length(api.registration_preferences_snapshot('duindorp-halloween-2026') #> '{event,allowedEndTimes}'), 19,
+  'the snapshot offers nineteen configured end times from 18:00 through 21:00');
 select throws_ok($$select api.registration_exact_preferences_save(
   '22000000-0000-0000-0000-000000000099', timestamptz '2026-10-31 17:15+01',
-  timestamptz '2026-10-31 20:15+01', 2)$$,
+  timestamptz '2026-10-31 20:10+01', 2)$$,
   '22023', 'INVALID_PREFERRED_START_AT', 'an off-step preferred start is rejected');
+
+select lives_ok($$select api.registration_exact_preferences_save(
+  '22000000-0000-0000-0000-000000000099', timestamptz '2026-10-31 17:10+01',
+  timestamptz '2026-10-31 20:10+01', 2)$$,
+  'ten-minute start and end preferences are accepted');
+select throws_ok($$select api.registration_exact_preferences_save(
+  '22000000-0000-0000-0000-000000000099', timestamptz '2026-10-31 17:10+01',
+  timestamptz '2026-10-31 20:15+01', 3)$$,
+  '22023', 'INVALID_DESIRED_END_AT', 'an off-step end preference is rejected');
+select is(api.registration_preferences_snapshot('duindorp-halloween-2026') #>> '{desiredEndAt}',
+  '2026-10-31T19:10:00+00:00', 'the chosen ten-minute end is preserved after an invalid update');
 
 set local role postgres;
 update app_private.start_slots set starts_at = timestamptz '2026-10-31 19:00+01'

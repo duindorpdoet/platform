@@ -68,7 +68,7 @@ export const worlds: World[] = [
 export const faq = [
   [
     "Hoe werkt de Halloween-tocht?",
-    "Je schrijft je kinderen in en geeft jullie voorkeuren door. De organisatie deelt jullie in een loopgroep in, met maximaal 20 kinderen. Samen met een verantwoordelijke volwassene wandelen jullie langs deelnemende huizen in Duindorp. In de app verschijnt steeds één volgende poort. Jullie sluiten af bij de laatste poort met de eindshow en iets lekkers.",
+    "Je schrijft je kinderen in en geeft jullie voorkeuren door. De organisatie deelt jullie in een loopgroep in, met maximaal 20 kinderen. Samen met een verantwoordelijke volwassene wandelen jullie langs deelnemende huizen in Duindorp. In de app verschijnt steeds één volgende poort. Jullie sluiten af bij de laatste poort, waar we voor iets lekkers zorgen.",
   ],
   [
     "Voor welke leeftijd is de tocht?",
@@ -88,11 +88,11 @@ export const faq = [
   ],
   [
     "Mogen we zelf een start- en eindtijd kiezen?",
-    "Bij de inschrijving geef je jullie gewenste starttijd en gewenste eindtijd voor gewone poorten door. Dit zijn voorkeuren; de organisatie bevestigt de gezamenlijke afspraak voor jullie groep. Je kunt je voorkeuren in Mijn inschrijving aanpassen zolang de indeling open is. Daarna vraag je een wijziging aan bij de organisatie. Jullie stopgrens betekent: vanaf dat moment geen nieuwe gewone poort meer. De wandeling naar de laatste poort en de eindshow volgen daarna. De app houdt ook rekening met de algemene grens en de beschikbare tijd voor de finale.",
+    "Bij de inschrijving geef je jullie gewenste starttijd en gewenste eindtijd voor gewone poorten door. Dit zijn voorkeuren; de organisatie bevestigt de gezamenlijke afspraak voor jullie groep. Je kunt je voorkeuren in Mijn inschrijving aanpassen zolang de indeling open is. Daarna vraag je een wijziging aan bij de organisatie. Jullie stopgrens betekent: vanaf dat moment geen nieuwe gewone poort meer. De wandeling naar en het bezoek aan de laatste poort volgen daarna. De app houdt ook rekening met de algemene grens en de beschikbare tijd voor de finale.",
   ],
   [
     "Hoeveel huizen bezoeken we?",
-    "De groepsleider kan vóór vertrek in Mijn groep een gewenst maximumaantal gewone huizen kiezen. Je kunt ook kiezen om door te lopen zolang er tijd is. Het gekozen aantal is een bovengrens, geen garantie: jullie starttijd, stopgrens en de beschikbare poorten bepalen wat haalbaar is. De laatste poort met de eindshow komt er altijd nog bij. Willen jullie onderweg eerder afronden, overleg dan via Messenger met de organisatie.",
+    "De groepsleider kan vóór vertrek in Mijn groep een gewenst maximumaantal gewone huizen kiezen. Je kunt ook kiezen om door te lopen zolang er tijd is. Het gekozen aantal is een bovengrens, geen garantie: jullie starttijd, stopgrens en de beschikbare poorten bepalen wat haalbaar is. De laatste poort komt er altijd nog bij. Willen jullie onderweg eerder afronden, overleg dan via Messenger met de organisatie.",
   ],
   [
     "Hoe bereiken we de organisatie via Messenger?",
