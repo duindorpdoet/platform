@@ -1,4 +1,15 @@
 export type MailState = "pending" | "processing" | "accepted" | "delivered" | "deferred" | "failed" | "unknown" | "suppressed" | "validated";
+export type MailWorkerResultState = "accepted" | "deferred" | "failed";
+
+export function summarizeMailWorkerResults(results: Array<{ status: MailWorkerResultState }>) {
+  return results.reduce(
+    (summary, result) => ({
+      ...summary,
+      [result.status]: summary[result.status] + 1,
+    }),
+    { accepted: 0, deferred: 0, failed: 0 },
+  );
+}
 
 export function statusForProviderEvent(current: MailState, event: string): MailState {
   if (current === "delivered" || current === "failed") return current;

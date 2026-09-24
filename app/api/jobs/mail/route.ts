@@ -4,7 +4,7 @@ import { ApiError } from "@/lib/http/api";
 import { createPrivilegedClient } from "@/lib/supabase/privileged";
 import { renderTransactionalMail, UnknownMailTemplateError } from "@/lib/mail/templates";
 import { sendSendGrid } from "@/lib/mail/sendgrid";
-import { nextRetry } from "@/lib/mail/status";
+import { nextRetry, summarizeMailWorkerResults } from "@/lib/mail/status";
 
 export const runtime = "nodejs";
 
@@ -125,9 +125,13 @@ export async function POST(request: Request) {
     }
   }
 
-  const hasFailure = results.some((result) => result.status !== "accepted");
-  return NextResponse.json(
-    { claimed: rows.length, results },
-    { status: hasFailure ? 503 : 200 },
-  );
+  // Every row outcome above is persisted in the outbox. A deferred or terminally
+  // failed message is a handled delivery result, not an outage of this worker.
+  // Returning 5xx here would make the scheduler retry the whole HTTP batch while
+  // the outbox already owns the retry policy and lease state.
+  return NextResponse.json({
+    claimed: rows.length,
+    ...summarizeMailWorkerResults(results),
+    results,
+  });
 }
