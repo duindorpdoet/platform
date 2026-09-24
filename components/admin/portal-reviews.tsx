@@ -42,10 +42,19 @@ type PortalOperation = {
   portalId: string;
   systemCode: string;
   name: string;
+  world: string;
+  worldSlug: string;
+  operationStatus: "scheduled" | "open" | "paused" | "closed";
+  version: number;
+  isFinal: boolean;
   contactName: string | null;
   phone: string | null;
   email: string | null;
-  formattedAddress: string;
+  formattedAddress: string | null;
+  locationVerified: boolean;
+  coordinate: [number, number] | null;
+  activeReservations: number;
+  expectedChildren: number;
   messageTarget: { kind: "portal"; portalId: string; userId: string; label: string };
 };
 
@@ -62,6 +71,7 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
   const [operations, setOperations] = useState<PortalOperation[]>([]);
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const incompleteOperations = operations.filter((portal) => !portal.contactName || !portal.formattedAddress || !portal.phone);
 
   const load = useCallback(async () => {
     const client = createClient();
@@ -77,16 +87,18 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
-  const verifiedPortals = useMemo(() => snapshot.applications
-    .filter((application) => application.status === "approved" && application.portal?.locationVerified)
-    .map((application) => ({
-      id: application.portal!.id,
-      name: application.portal!.name,
-      world: application.requestedWorldSlug ?? "Onbekende wereld",
-      coordinate: application.portal!.longitude !== null && application.portal!.latitude !== null
-        ? [application.portal!.longitude, application.portal!.latitude] as [number, number] : null,
-      address: `${application.draft.address?.street ?? ""} ${application.draft.address?.houseNumber ?? ""}${application.draft.address?.addition ? ` ${application.draft.address.addition}` : ""}, ${application.draft.address?.postalCode ?? ""} Den Haag`,
-    })), [snapshot.applications]);
+  const verifiedPortals = useMemo(() => operations.map((portal) => ({
+    id: portal.portalId,
+    code: portal.systemCode,
+    name: portal.name,
+    world: portal.world,
+    coordinate: portal.coordinate,
+    address: portal.formattedAddress ?? undefined,
+    contactName: portal.contactName ?? undefined,
+    phone: portal.phone ?? undefined,
+    status: portal.operationStatus,
+    isFinal: portal.isFinal,
+  })), [operations]);
 
   async function review(application: PortalApplication, decision: "approved" | "changes_requested" | "rejected") {
     const feedback = decision === "approved"
@@ -171,6 +183,26 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
     setNotice(error ? `Bericht kon niet worden verstuurd: ${error.message}` : "Bericht staat in het gesprek met deze poort.");
   }
 
+  async function setPortalState(portal: PortalOperation, state: "open" | "paused" | "closed") {
+    setBusyId(portal.portalId);
+    const client = createClient();
+    if (!client) return setBusyId(null);
+    const { error } = await client.schema("api").rpc("portal_set_operational_state", {
+      _portal_id: portal.portalId,
+      _state: state,
+      _expected_version: portal.version,
+      _reason: `Poortstatus ingesteld op ${state} via Nachtregie`,
+    });
+    setBusyId(null);
+    setNotice(error ? `Poortstatus kon niet worden gewijzigd: ${error.message}` : `${portal.systemCode} staat nu op ${state === "open" ? "open" : state === "paused" ? "pauze" : "gestopt"}.`);
+    if (!error) await load();
+  }
+
+  async function messageOperation(portal: PortalOperation) {
+    const application = snapshot.applications.find((candidate) => candidate.portal?.id === portal.portalId);
+    if (application) await sendMessage(application);
+  }
+
   async function openAsset(path: string) {
     const client = createClient(); if (!client) return;
     const { data, error } = await client.storage.from("portal-application-assets").createSignedUrl(path, 60);
@@ -180,11 +212,31 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
 
   return <section className="panel">
     <div className="row-between"><div><p className="kicker">Privé beoordeling</p><h2>Poortaanvragen</h2></div><button className="btn outline" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div>
-    <p>Exacte adressen zijn alleen hier zichtbaar. Een goedgekeurde maar nog niet fysiek geverifieerde locatie wordt niet aan de routeplanner aangeboden.</p>
-    <div className="admin-portal-map-heading"><h3>Goedgekeurde poorten op de nachtkaart</h3><span>{verifiedPortals.length} geverifieerd</span></div>
-    <NightMap variant="admin" portals={verifiedPortals} ariaLabel="Beheerkaart met geverifieerde poorten" />
+    <p>Exacte adressen zijn uitsluitend in de bevoegde beheeromgeving zichtbaar. Een goedgekeurde maar nog niet fysiek geverifieerde locatie wordt niet aan de routeplanner aangeboden.</p>
+    <div className="admin-portal-map-heading"><h3>Goedgekeurde poorten op de nachtkaart</h3><span>{verifiedPortals.filter((portal) => portal.coordinate).length} geverifieerd</span></div>
+    <NightMap variant="admin" portals={verifiedPortals} ariaLabel="Beheerkaart met geverifieerde poorten" onPortalSelect={(portal) => document.getElementById(`portal-${portal.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} />
     <p className="admin-portal-map-note">De markers krijgen de kleur van hun wereld. Aanvragen zonder gecontroleerde ingang staan nog niet op de kaart.</p>
     {notice && <div className="form-notice" role="status">{notice}</div>}
+    <div className="admin-portal-map-heading"><h3>Goedgekeurde poorten</h3><span>{operations.length} beschikbaar · {incompleteOperations.length} aan te vullen</span></div>
+    {operations.length === 0 ? <p>Er zijn nog geen goedgekeurde poorten.</p> : <div className="portal-operation-grid">
+      {operations.map((portal) => <article className={`portal-operation-tile status-${portal.operationStatus}${portal.isFinal ? " is-final" : ""}`} id={`portal-${portal.portalId}`} key={portal.portalId}>
+        <header><div><p className="kicker">{portal.systemCode} · {portal.world}</p><h3>{portal.name}</h3></div><span>{portal.operationStatus === "open" ? "Open" : portal.operationStatus === "paused" ? "Pauze" : portal.operationStatus === "closed" ? "Gestopt" : "Voorbereiding"}</span></header>
+        <dl>
+          <div><dt>Contactpersoon</dt><dd>{portal.contactName || "Niet ingevuld"}</dd></div>
+          <div><dt>Adres</dt><dd>{portal.formattedAddress || "Niet ingevuld"}</dd></div>
+          <div><dt>Telefoonnummer</dt><dd>{portal.phone ? <a href={`tel:${portal.phone.replace(/\s/g, "")}`}>{portal.phone}</a> : "Niet ingevuld"}</dd></div>
+          <div><dt>Bezoekindicatie</dt><dd>{portal.activeReservations} groepen · {portal.expectedChildren} kinderen</dd></div>
+        </dl>
+        {(!portal.contactName || !portal.formattedAddress || !portal.phone) && <button className="text-link" type="button" onClick={() => void messageOperation(portal)}>Vraag ontbrekende gegevens op →</button>}
+        <div className="portal-operation-actions" role="group" aria-label={`Status van ${portal.systemCode}`}>
+          <button type="button" className={portal.operationStatus === "open" ? "active" : ""} disabled={busyId === portal.portalId || portal.operationStatus === "open"} onClick={() => void setPortalState(portal, "open")}>Open</button>
+          <button type="button" className={portal.operationStatus === "paused" ? "active" : ""} disabled={busyId === portal.portalId || portal.operationStatus === "paused"} onClick={() => void setPortalState(portal, "paused")}>Pauze</button>
+          <button type="button" className={portal.operationStatus === "closed" ? "active" : ""} disabled={busyId === portal.portalId || portal.operationStatus === "closed"} onClick={() => void setPortalState(portal, "closed")}>Gestopt</button>
+        </div>
+      </article>)}
+    </div>}
+    <div className="separator" />
+    <div className="admin-portal-map-heading"><h3>Aanvragen en correcties</h3><span>{snapshot.applications.length}</span></div>
     {snapshot.applications.length === 0 ? <p>Er zijn nog geen ingediende aanvragen.</p> : snapshot.applications.map((application) => {
       const address = application.draft.address;
       const operation = operations.find((candidate) => candidate.portalId === application.portal?.id);

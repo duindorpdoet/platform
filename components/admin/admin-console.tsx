@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
 import { paymentAmount, type PaymentBatch } from "@/components/payments/payment-details";
 import {
@@ -34,6 +34,7 @@ import { ContentManagement } from "@/components/admin/content-management";
 import { MessengerInbox } from "@/components/admin/messenger-inbox";
 import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
+import { GroupCompositionBoard } from "@/components/admin/group-composition-board";
 import { NightMap } from "@/components/maps/night-map";
 import { createClient } from "@/lib/supabase/client";
 
@@ -83,7 +84,7 @@ type LiveRun = {
   childCount: number;
 };
 type LivePortal = { id: string; systemCode?: string; name: string; operationStatus: string; version: number; isFinal: boolean; activeReservations: number; expectedChildren: number };
-type PortalOperation = { portalId: string; systemCode: string; name: string; operationStatus: string; contactName?: string | null; phone?: string | null; email?: string | null; formattedAddress: string; activeReservations: number; expectedChildren: number };
+type PortalOperation = { portalId: string; systemCode: string; name: string; world: string; worldSlug: string; operationStatus: string; version: number; isFinal: boolean; contactName?: string | null; phone?: string | null; email?: string | null; formattedAddress: string | null; locationVerified: boolean; coordinate: [number, number] | null; activeReservations: number; expectedChildren: number };
 type LiveAlert = { id: string; priority: "urgent" | "warning" | "info"; code: string; message: string; groupId: string | null; portalId: string | null; createdAt: string };
 type PaymentRow = {
   registrationId: string;
@@ -205,6 +206,7 @@ const sectionMeta = {
   overview: { kicker: "De avond · voorbereiding", title: "De nacht in beeld.", description: "Alles wat nu aandacht vraagt, bij elkaar." },
   imports: { kicker: "Beheer · gegevens", title: "Imports", description: "Controleer bronbestanden voordat gegevens worden toegepast." },
   registrations: { kicker: "Deelnemers · groepen", title: "Inschrijvingen", description: "Iedere inschrijving direct in beeld, met groep en deelnemers." },
+  groups: { kicker: "Deelnemers · indeling", title: "Groepsindeling", description: "Maak wandelgroepen en zie direct hoeveel kinderen iedere groep telt." },
   payments: { kicker: "Deelnemers · betalingen", title: "Betalingen", description: "Tikkies, ontvangsten en uitzonderingen per kind." },
   portals: { kicker: "De avond · voorbereiding", title: "Poorten", description: "Beoordeel huizen en houd hun gegevens actueel." },
   planner: { kicker: "De avond · voorbereiding", title: "Startpuntregie", description: "Verdeel groepen veilig over de wijk en de beschikbare tijden." },
@@ -253,6 +255,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "overview"
     | "imports"
     | "registrations"
+    | "groups"
     | "payments"
     | "portals"
     | "planner"
@@ -322,7 +325,22 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   const [liveRuns, setLiveRuns] = useState<LiveRun[]>([]);
   const [livePortals, setLivePortals] = useState<LivePortal[]>([]);
   const [portalOperations, setPortalOperations] = useState<PortalOperation[]>([]);
+  const [portalRealtimeTopic, setPortalRealtimeTopic] = useState<string | null>(null);
+  const [liveConnection, setLiveConnection] = useState<"connecting" | "live" | "offline">("connecting");
+  const [liveConnectionRetry, setLiveConnectionRetry] = useState(0);
   const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
+  const portalMapPortals = useMemo(() => portalOperations.map((portal) => ({
+    id: portal.portalId,
+    code: portal.systemCode,
+    name: portal.name,
+    world: portal.world,
+    coordinate: portal.coordinate,
+    address: portal.formattedAddress ?? undefined,
+    contactName: portal.contactName ?? undefined,
+    phone: portal.phone ?? undefined,
+    status: portal.operationStatus,
+    isFinal: portal.isFinal,
+  })), [portalOperations]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [childPayments, setChildPayments] = useState<ChildPaymentRow[]>([]);
   const [paymentSearch, setPaymentSearch] = useState("");
@@ -374,12 +392,18 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
       client.schema("api").rpc("admin_evening_cockpit", { _event_slug: eventSlug }),
       client.schema("api").rpc("admin_portal_operations_snapshot", { _event_slug: eventSlug }),
     ]);
-    if (cockpitResult.error) return setNotice("Live-overzicht is alleen beschikbaar voor avondondersteuning.");
-    const cockpit = cockpitResult.data as { groups: LiveRun[]; portals: LivePortal[]; alerts: LiveAlert[] };
-    setLiveRuns(cockpit.groups);
-    setLivePortals(cockpit.portals);
-    setLiveAlerts(cockpit.alerts);
-    if (!portalResult.error) setPortalOperations(((portalResult.data as { portals?: PortalOperation[] } | null)?.portals ?? []));
+    if (!cockpitResult.error) {
+      const cockpit = cockpitResult.data as { groups: LiveRun[]; portals: LivePortal[]; alerts: LiveAlert[] };
+      setLiveRuns(cockpit.groups);
+      setLivePortals(cockpit.portals);
+      setLiveAlerts(cockpit.alerts);
+    }
+    if (!portalResult.error) {
+      const portalSnapshot = portalResult.data as { realtimeTopic?: string; portals?: PortalOperation[] } | null;
+      setPortalOperations(portalSnapshot?.portals ?? []);
+      setPortalRealtimeTopic(portalSnapshot?.realtimeTopic ?? null);
+    }
+    if (cockpitResult.error && portalResult.error) setNotice("Live-overzicht is alleen beschikbaar voor bevoegde avondbeheerders.");
   }, [eventSlug]);
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -394,6 +418,14 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
       window.clearInterval(poll);
     };
   }, [load, loadLive, section]);
+  useEffect(() => {
+    const client = createClient();
+    if (!client || !portalRealtimeTopic) return;
+    const channel = client.channel(portalRealtimeTopic, { config: { private: true } })
+      .on("broadcast", { event: "snapshot_changed" }, () => void loadLive())
+      .subscribe((status: string) => setLiveConnection(status === "SUBSCRIBED" ? "live" : status === "CHANNEL_ERROR" || status === "TIMED_OUT" ? "offline" : "connecting"));
+    return () => { void client.removeChannel(channel); };
+  }, [liveConnectionRetry, loadLive, portalRealtimeTopic]);
 
   async function dryRun(file: File) {
     const parsed = Papa.parse<Record<string, string>>(await file.text(), {
@@ -1065,6 +1097,16 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           <span>Inschrijvingen</span>
           {dashboard.counts.registrations > 0 && <b aria-hidden="true">{dashboard.counts.registrations}</b>}
         </button>
+        {(capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && (
+          <button
+            className={section === "groups" ? "active" : ""}
+            aria-current={section === "groups" ? "page" : undefined}
+            onClick={() => setSection("groups")}
+          >
+            <UsersRound />
+            Groepsindeling
+          </button>
+        )}
         {(capabilities.includes("event_admin") ||
           capabilities.includes("groups_manage") ||
           capabilities.includes("live_support")) && (
@@ -1281,45 +1323,47 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                 </div>
               ))}
             </div>
-            <section className="panel cockpit-action-panel">
-              <div className="row-between"><div><p className="kicker">Direct handelen</p><h2>Dit vraagt nu aandacht.</h2></div><span className="registration-total">{liveAlerts.length + (dashboard.counts.pendingTogetherRequests ?? 0)} open</span></div>
-              {liveAlerts.length === 0 && !(dashboard.counts.pendingTogetherRequests ?? 0) ? <p className="form-notice">Geen veiligheidsmeldingen of samenloopverzoeken die nu actie vragen.</p> : <>
-                {liveAlerts.slice(0, 4).map((alert) => <div className="cockpit-action-row" key={alert.id}><AlertTriangle /><div><strong>{alert.code}</strong><span>{alert.message}</span></div><button className="text-link" onClick={() => setSection("live")}>Open avond live <ArrowRight /></button></div>)}
-                {(dashboard.counts.pendingTogetherRequests ?? 0) > 0 && <div className="cockpit-action-row"><UsersRound /><div><strong>{dashboard.counts.pendingTogetherRequests} samenloopverzoek(en)</strong><span>Controleer groepsgrootte, tijden en gezamenlijke indeling.</span></div><button className="text-link" onClick={() => { setSection("registrations"); void Promise.all([loadRegistrations(), loadTogetherRequests(), loadRegistrationChanges()]); }}>Open inschrijvingen <ArrowRight /></button></div>}
-              </>}
-            </section>
+            <div className="cockpit-live-grid">
+              <section className="panel cockpit-map-panel">
+                <div className="row-between">
+                  <div><p className="kicker">Wijkregie · live</p><h2>Poorten van de nacht</h2></div>
+                  <div className="map-connection-actions">
+                    <span className={`live-connection ${liveConnection}`}><i />{liveConnection === "live" ? "Live" : liveConnection === "offline" ? "Verbinding verbroken" : "Verbinden…"}</span>
+                    {liveConnection === "offline" && <button className="text-link" type="button" onClick={() => { setLiveConnection("connecting"); setLiveConnectionRetry((value) => value + 1); void loadLive(); }}><RefreshCw />Verbinding herstellen</button>}
+                  </div>
+                </div>
+                <p>{portalOperations.filter((portal) => portal.coordinate).length} bevestigde bestemming(en) met een geverifieerde kaartpositie.</p>
+                <NightMap
+                  variant="admin"
+                  ariaLabel="Live beheerkaart met geverifieerde poorten"
+                  onPortalSelect={() => setSection("portals")}
+                  portals={portalMapPortals}
+                />
+              </section>
+              <div className="cockpit-side-stack">
+                <section className="panel cockpit-action-panel">
+                  <div className="row-between"><div><p className="kicker">Direct handelen</p><h2>Dit vraagt nu aandacht.</h2></div><span className="registration-total">{liveAlerts.length + (dashboard.counts.pendingTogetherRequests ?? 0)} open</span></div>
+                  {liveAlerts.length === 0 && !(dashboard.counts.pendingTogetherRequests ?? 0) ? <p className="form-notice">Geen veiligheidsmeldingen of samenloopverzoeken die nu actie vragen.</p> : <>
+                    {liveAlerts.slice(0, 3).map((alert) => <div className="cockpit-action-row" key={alert.id}><AlertTriangle /><div><strong>{alert.code}</strong><span>{alert.message}</span></div><button className="text-link" onClick={() => setSection("live")}>Bekijk <ArrowRight /></button></div>)}
+                    {(dashboard.counts.pendingTogetherRequests ?? 0) > 0 && <div className="cockpit-action-row"><UsersRound /><div><strong>{dashboard.counts.pendingTogetherRequests} samenloopverzoek(en)</strong><span>Controleer groepsgrootte en de gezamenlijke indeling.</span></div><button className="text-link" onClick={() => { setSection("registrations"); void Promise.all([loadRegistrations(), loadTogetherRequests(), loadRegistrationChanges()]); }}>Bekijk <ArrowRight /></button></div>}
+                  </>}
+                </section>
+                <section className="panel cockpit-live-log">
+                  <div className="row-between"><div><p className="kicker">Binnenkomend</p><h2>Live log</h2></div><button className="text-link" onClick={() => void Promise.all([load(), loadLive()])}>Vernieuwen <RefreshCw /></button></div>
+                  {dashboard.recentActivity.length ? dashboard.recentActivity.slice(0, 6).map((item, index) => <div className="activity-row" key={`${item.createdAt}-${index}`}><CheckCircle2 /><div><strong>{item.action}</strong><small>{item.resourceType} · {new Date(item.createdAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}</small></div></div>) : <p>Nog geen activiteit.</p>}
+                </section>
+              </div>
+            </div>
             <div className="cockpit-overview-grid">
               <section className="panel">
-                <div className="row-between"><div><p className="kicker">Wijkregie</p><h2>Poorten van de nacht</h2></div><button className="text-link" onClick={() => setSection("portals")}>Alle poorten <ArrowRight /></button></div>
-                <div className="cockpit-portal-grid">{livePortals.length === 0 ? <p>De operationele poortstatus wordt opgehaald.</p> : livePortals.slice(0, 8).map((portal) => <article className={"cockpit-portal-card " + portal.operationStatus} key={portal.id}><House /><strong>{portal.systemCode || portal.name}</strong><span>{portal.operationStatus === "open" ? "Open" : portal.operationStatus === "paused" ? "Pauze" : "Gesloten"}</span></article>)}</div>
+                <div className="row-between"><div><p className="kicker">Alle poorten</p><h2>Status en bereikbaarheid</h2></div><button className="text-link" onClick={() => setSection("portals")}>Open poorten <ArrowRight /></button></div>
+                <div className="cockpit-portal-grid">{portalOperations.length === 0 ? <p>Nog geen goedgekeurde poorten.</p> : portalOperations.slice(0, 8).map((portal) => <article className={`cockpit-portal-card ${portal.operationStatus}${portal.isFinal ? " final" : ""}`} key={portal.portalId}><House /><strong>{portal.systemCode}</strong><span>{portal.name}</span><small>{portal.operationStatus === "open" ? "Open" : portal.operationStatus === "paused" ? "Pauze" : portal.operationStatus === "closed" ? "Gestopt" : "Voorbereiding"}</small></article>)}</div>
               </section>
               <section className="panel">
                 <div className="row-between"><div><p className="kicker">Onderweg</p><h2>Groepen in beweging</h2></div><button className="text-link" onClick={() => setSection("live")}>Avond live <ArrowRight /></button></div>
-                <div className="cockpit-group-list">{liveRuns.length === 0 ? <p>Nog geen ingedeelde groepen actief.</p> : liveRuns.slice(0, 6).map((run) => <article key={run.groupId}><span>{run.systemCode || run.groupCode}</span><div><strong>{run.displayName || "Groep " + run.groupCode}</strong><small>{run.currentPortal || "Wacht op volgende bestemming"} · {run.childCount} kinderen</small></div><b>{run.runStatus || run.status}</b></article>)}</div>
+                <div className="cockpit-group-list">{liveRuns.length === 0 ? <p>Nog geen groepen onderweg.</p> : liveRuns.slice(0, 6).map((run) => <article key={run.groupId}><span>{run.systemCode || run.groupCode}</span><div><strong>{run.displayName || "Groep " + run.groupCode}</strong><small>{run.currentPortal || "Wacht op volgende bestemming"} · {run.childCount} kinderen</small></div><b>{run.runStatus || run.status}</b></article>)}</div>
               </section>
             </div>
-            <section className="panel activity">
-              <p className="kicker">Recente auditactiviteit</p>
-              {dashboard.recentActivity.length ? (
-                dashboard.recentActivity.map((item, index) => (
-                  <div
-                    className="activity-row"
-                    key={`${item.createdAt}-${index}`}
-                  >
-                    <CheckCircle2 />
-                    <div>
-                      <strong>{item.action}</strong>
-                      <small>
-                        {item.resourceType} ·{" "}
-                        {new Date(item.createdAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}
-                      </small>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p>Nog geen activiteit.</p>
-              )}
-            </section>
           </>
         )}
         {section === "simulation" && (
@@ -1630,13 +1674,14 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
+        {section === "groups" && (capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && <GroupCompositionBoard eventSlug={eventSlug} />}
         {section === "planner" && <StartScheduleBoard eventSlug={eventSlug} maxGroupSize={dashboard.event.maxGroupSize} />}
         {section === "live" && (
           <div className="admin-live-cockpit">
             <section className="panel">
               <div className="row-between"><div><p className="kicker">Actuele, bevestigde toestand</p><h2>Avondcockpit</h2></div><button className="btn outline" onClick={() => void loadLive()}><RefreshCw />Vernieuwen</button></div>
-              <p>De kaart toont alleen serverbevestigde bestemmingen. Alle handmatige acties gebruiken dezelfde route-, veiligheids- en capaciteitscontroles als de dispatcher.</p>
-              <NightMap variant="admin" ariaLabel="Cockpitkaart met actuele groepsbestemmingen" portals={liveRuns.filter((run) => run.currentCoordinate).map((run) => ({ id: run.groupId, name: `Groep ${run.groupCode}`, world: run.currentKind === "finale" ? "Laatste poort" : "Actuele poort", coordinate: run.currentCoordinate }))} />
+              <p>De kaart toont alle goedgekeurde poorten met een geverifieerde positie en werkt hun operationele status live bij. Adressen zonder bevestigde coördinaten worden niet op een plek geschat.</p>
+              <NightMap variant="admin" ariaLabel="Cockpitkaart met actuele, geverifieerde poorten" onPortalSelect={() => setSection("portals")} portals={portalOperations.map((portal) => ({ id: portal.portalId, code: portal.systemCode, name: portal.name, world: portal.world, coordinate: portal.coordinate, address: portal.formattedAddress ?? undefined, contactName: portal.contactName ?? undefined, phone: portal.phone ?? undefined, status: portal.operationStatus, isFinal: portal.isFinal }))} />
             </section>
             <section className="panel">
               <p className="kicker">Meldingen op prioriteit</p><h2>Veiligheidssignalen</h2>

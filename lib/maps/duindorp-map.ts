@@ -16,10 +16,15 @@ export function publicMapZoom(variant: PublicMapVariant, mobile: boolean) {
 
 export type NightMapPortal = {
   id: string;
+  code?: string;
   name: string;
   world: string;
   coordinate: [number, number] | null;
   address?: string;
+  contactName?: string;
+  phone?: string;
+  status?: "scheduled" | "open" | "paused" | "closed" | string;
+  isFinal?: boolean;
   color?: string;
 };
 

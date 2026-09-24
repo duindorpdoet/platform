@@ -208,6 +208,12 @@ type RegistrationSnapshot = {
     payment?: ParticipantPayment | null;
   } | null;
 };
+type RegistrationPreferences = {
+  preferredStartAt?: string | null;
+  desiredEndAt?: string | null;
+  ordinaryStopAt?: string | null;
+  editable?: boolean;
+};
 type GroupSnapshot = {
   group: {
     id: string;
@@ -248,23 +254,26 @@ const paymentLabels: Record<string, string> = {
 function WalkerSection({ context, eventSlug, userId, role, section }: { context: ParticipantContext; eventSlug: string; userId: string; role: ParticipantRole; section?: string }) {
   const [registration, setRegistration] = useState<RegistrationSnapshot | null>(null);
   const [group, setGroup] = useState<GroupSnapshot | null>(null);
+  const [preferences, setPreferences] = useState<RegistrationPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const load = useCallback(async () => {
     const client = createClient();
     if (!client) return;
-    const [registrationResult, groupResult] = await Promise.all([
+    const [registrationResult, groupResult, preferencesResult] = await Promise.all([
       client.schema("api").rpc("registration_snapshot", { _event_slug: eventSlug }),
       role.groupId ? client.schema("api").rpc("group_snapshot", { _group_id: role.groupId }) : Promise.resolve({ data: null, error: null }),
+      client.schema("api").rpc("registration_preferences_snapshot", { _event_slug: eventSlug }),
     ]);
     if (!registrationResult.error) setRegistration(registrationResult.data as RegistrationSnapshot);
     if (!groupResult.error && groupResult.data) setGroup(groupResult.data as GroupSnapshot);
+    if (!preferencesResult.error && preferencesResult.data) setPreferences(preferencesResult.data as RegistrationPreferences);
     setLoading(false);
   }, [eventSlug, role.groupId]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
   if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience groupId={role.groupId} userId={userId} /></ParticipantPageFrame>;
   if (loading) return <ParticipantLoading />;
-  if (section === "groep") return <WalkerGroup group={group} registration={registration} groupId={role.groupId ?? undefined} reload={load} />;
+  if (section === "groep") return <WalkerGroup group={group} registration={registration} preferences={preferences} groupId={role.groupId ?? undefined} reload={load} />;
   if (section === "nachtpas") return <NightPass context={context} snapshot={registration} group={group} reload={load} />;
   if (section === "meer" || section === "updates") return <MorePage context={context} eventSlug={eventSlug} role="walker" />;
   return <WalkerNow context={context} registration={registration} group={group} reload={load} />;
@@ -302,17 +311,26 @@ function WalkerNow({ context, registration, group, reload }: { context: Particip
   </ParticipantPageFrame>;
 }
 
-function WalkerGroup({ group, registration, groupId, reload }: { group: GroupSnapshot | null; registration: RegistrationSnapshot | null; groupId?: string; reload: () => Promise<void> }) {
+function WalkerGroup({ group, registration, preferences, groupId, reload }: { group: GroupSnapshot | null; registration: RegistrationSnapshot | null; preferences: RegistrationPreferences | null; groupId?: string; reload: () => Promise<void> }) {
   if (!group) return <ParticipantPageFrame eyebrow="Groepsindeling" title="Jullie groep komt eraan"><section className="participant-card"><Users /><h2>We delen zorgvuldig in</h2><p>Zodra starttijd en groep zijn gepubliceerd, verschijnt hier alleen de informatie die bij jouw inschrijving hoort.</p></section></ParticipantPageFrame>;
   const participants = group.run?.participants ?? [];
   const visibleChildren = participants.length ? participants : (registration?.registration?.children ?? []).map((child) => ({ id: child.id, firstName: child.firstName, attendance: "aangemeld", isOwnChild: true, status: null }));
   return <ParticipantPageFrame eyebrow={`Groep ${group.group.code}`} title={group.access.leader ? "Jij houdt het overzicht." : "Samen op pad."}>
     {groupId && <div className="participant-group-grid"><GroupIdentity groupId={groupId} systemCode={group.group.systemCode} displayName={group.group.displayName} version={group.group.version} canEdit={group.access.leader} onSaved={reload} /><GroupJourneyPreference groupId={groupId} onSaved={reload} /></div>}
+    <div className="participant-stat-grid group-preference-stats">
+      <StatusCard icon={Clock3} label="Voorkeur start" value={preferences?.preferredStartAt ? formatTime(preferences.preferredStartAt) : "Geen voorkeur"} />
+      <StatusCard icon={MoonStar} label="Gewenste laatste poort" value={preferences?.desiredEndAt ? formatTime(preferences.desiredEndAt) : "Geen voorkeur"} />
+      <StatusCard icon={Route} label="Voortgang" value={group.run ? `${group.run.history.length} bevestigd` : "Nog niet gestart"} />
+    </div>
     <section className="participant-card group-summary"><span className="group-summary-icon" aria-hidden="true"><Footprints /></span><div><p className="participant-eyebrow">Startmoment</p><h2>{group.group.start ? formatDateTime(group.group.start.startsAt) : "Wordt binnenkort gedeeld"}</h2><p>{group.group.start ? `${group.group.start.locationName}${group.group.start.address ? ` · ${group.group.start.address}` : ""}` : "De startplek blijft verborgen tot publicatie."}</p></div><span className="group-code">{group.group.code}</span></section>
     <section className="participant-card"><div className="section-title"><div><p className="participant-eyebrow">Gekoppelde deelnemers</p><h2>{group.access.leader ? "Aanwezigheid en veiligheid" : "Jouw kinderen"}</h2></div><ShieldCheck /></div>
       {visibleChildren.length === 0 && <p>De deelnemerslijst verschijnt zodra de route start.</p>}
       <div className="participant-list">{visibleChildren.map((child) => <div key={child.id}><span className="participant-avatar">{child.firstName.slice(0, 1)}</span><span><strong>{child.firstName}</strong><small>{child.attendance === "present" ? "Aanwezig" : child.attendance === "absent" ? "Afwezig" : "Aangemeld"}</small></span>{child.status && <em>{child.status === "visited" ? "Bezocht" : child.status === "skipped" ? "Overgeslagen" : "Wacht"}</em>}</div>)}</div>
       {group.access.leader ? <div className="participant-alert subtle"><ShieldCheck />Aanwezigheid, scans, pauzeren en veiligheidsacties staan bij Route. Andere volwassenen zien alleen hun eigen gekoppelde kinderen.</div> : <p className="privacy-note"><LockKeyhole /> Om kinderen te beschermen zie je geen namen of gegevens uit andere huishoudens.</p>}
+    </section>
+    <section className="participant-card group-passport"><div className="section-title"><div><p className="participant-eyebrow">Poortenpaspoort</p><h2>Een spoor door de nacht</h2></div><MoonStar /></div>
+      <p>{group.run ? "Iedere serverbevestigde poort laat hier een stempel achter. De volgende adressen blijven verborgen tot ze worden vrijgegeven." : "De stempels verschijnen tijdens de tocht. Toekomstige poorten en adressen blijven vooraf geheim."}</p>
+      {group.run?.history.length ? <StampRail history={group.run.history} /> : <div className="passport-placeholders" aria-label="Nog geen bevestigde poorten">{Array.from({ length: 6 }, (_, index) => <span key={index}><MoonStar /><small>Nog verborgen</small></span>)}</div>}
     </section>
     {group.access.leader && groupId && <ViewerAccessManager groupId={groupId} />}
   </ParticipantPageFrame>;

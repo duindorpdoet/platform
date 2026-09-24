@@ -409,6 +409,107 @@ test("an organizer sees portal identity and private contact details and can mess
   await assertReadableLayout(page);
 });
 
+test("the night cockpit exposes verified portals and the group board without leaking through public roles", async ({ context, page }) => {
+  requireLocalAuth();
+  test.setTimeout(60_000);
+  const admin = await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+
+  const mapPanel = page.locator(".cockpit-map-panel");
+  await expect(mapPanel).toContainText(/bevestigde bestemming/i);
+  await expect(mapPanel.getByRole("group", { name: "Filter poorten op status" })).toBeVisible({ timeout: 15_000 });
+  await expect(mapPanel.getByRole("button", { name: "Open", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.waitForTimeout(850); // Let the initial fit animation settle before verifying keyboard focus.
+  for (let attempt = 0; attempt < 4 && await mapPanel.locator(".night-map-portal-pin").count() === 0; attempt += 1) {
+    const cluster = mapPanel.locator(".night-map-cluster").first();
+    await expect(cluster).toBeVisible();
+    await cluster.focus();
+    await expect(cluster).toBeFocused();
+    await cluster.click();
+    await page.waitForTimeout(550);
+  }
+  const pins = mapPanel.locator(".night-map-portal-pin");
+  const interactivePinIndex = await pins.evaluateAll((elements) => {
+    const map = elements[0]?.closest(".maplibregl-map")?.getBoundingClientRect();
+    if (!map) return -1;
+    return elements.findIndex((element) => {
+      const rect = element.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return x > map.left && x < map.right && y > map.top && y < map.bottom && Boolean(hit && (hit === element || element.contains(hit)));
+    });
+  });
+  expect(interactivePinIndex).toBeGreaterThanOrEqual(0);
+  const pin = pins.nth(interactivePinIndex);
+  await expect(pin).toBeVisible();
+  await pin.hover();
+  const popup = mapPanel.locator(".night-map-popup").filter({ hasText: "Adres:" }).first();
+  await expect(popup).toContainText("Contact:");
+  await expect(popup).toContainText("Status:");
+  await expect(popup.getByRole("link", { name: /^Bel / })).toHaveAttribute("href", /^tel:/);
+  await pin.focus();
+  await expect(pin).toBeFocused();
+  await expect(popup.getByRole("button", { name: "Poort bekijken" })).toBeVisible();
+
+  type PortalOperations = { portals: Array<{ portalId: string; systemCode: string; operationStatus: "scheduled" | "open" | "paused" | "closed"; version: number }> };
+  const before = await rpc(admin, "admin_portal_operations_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PortalOperations;
+  const livePortal = before.portals.find((portal) => portal.systemCode === "P-01")!;
+  const nextStatus = livePortal.operationStatus === "paused" ? "open" : "paused";
+  await rpc(admin, "portal_set_operational_state", {
+    _portal_id: livePortal.portalId,
+    _state: nextStatus,
+    _expected_version: livePortal.version,
+    _reason: "Browseracceptatie live kaartstatus",
+  });
+  try {
+    await expect(page.locator(".cockpit-portal-card").filter({ hasText: "P-01" })).toContainText(nextStatus === "open" ? "Open" : "Pauze", { timeout: 25_000 });
+  } finally {
+    const changed = await rpc(admin, "admin_portal_operations_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PortalOperations;
+    const changedPortal = changed.portals.find((portal) => portal.portalId === livePortal.portalId)!;
+    await rpc(admin, "portal_set_operational_state", {
+      _portal_id: livePortal.portalId,
+      _state: livePortal.operationStatus,
+      _expected_version: changedPortal.version,
+      _reason: "Browseracceptatie kaartstatus hersteld",
+    });
+  }
+
+  await selectAdminSection(page, "Poortaanvragen");
+  const operation = page.locator(".portal-operation-tile").filter({ hasText: "P-01" });
+  await expect(operation).toContainText("NIET-BESTAAND TESTADRES 1, 0000AA Teststad");
+  await expect(operation).toContainText("Test contactpersoon");
+  await expect(operation.getByRole("link", { name: "0612345678" })).toHaveAttribute("href", "tel:0612345678");
+  await expect(operation.getByRole("button", { name: "Open", exact: true })).toBeVisible();
+
+  await selectAdminSection(page, "Groepsindeling");
+  await expect(page.getByRole("heading", { name: "Maak de wandelgroepen." })).toBeVisible();
+  await expect(page.locator(".group-composition-column").first()).toContainText(/kinderen/i);
+  await expect(page.getByRole("button", { name: "Groep maken" })).toBeVisible();
+  await assertReadableLayout(page);
+});
+
+test("the organizer map reports a style outage and can be reloaded", async ({ browser }, testInfo) => {
+  requireLocalAuth();
+  test.skip(testInfo.project.name !== "desktop-chromium", "The map outage path only needs one browser run.");
+  const isolated = await browser.newContext({ baseURL: "http://127.0.0.1:3100", serviceWorkers: "block" });
+  try {
+    const page = await isolated.newPage();
+    await page.route("**/maps/duindorp-night.json", (route) => route.fulfill({ status: 503, contentType: "application/json", body: "{}" }));
+    await authenticate(isolated, "admin@example.invalid");
+    await page.goto("/admin");
+    const map = page.locator(".cockpit-map-panel .night-map");
+    await expect(map.getByText("Kaart tijdelijk niet beschikbaar")).toBeVisible({ timeout: 15_000 });
+    await expect(map.getByRole("button", { name: "Kaart opnieuw laden" })).toBeVisible();
+    await page.unroute("**/maps/duindorp-night.json");
+    await map.getByRole("button", { name: "Kaart opnieuw laden" }).click();
+    await expect(map.locator(".maplibregl-canvas")).toBeVisible({ timeout: 15_000 });
+    await expect(map.getByText("Kaart tijdelijk niet beschikbaar")).toHaveCount(0);
+  } finally {
+    await isolated.close();
+  }
+});
+
 test("a group leader and organizer can exchange messages through the private support widget", async ({ context, page }, testInfo) => {
   requireLocalAuth();
   const suffix = testInfo.project.name === "mobile-chromium" ? "mobiel" : "desktop";
@@ -521,7 +622,7 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
         if (path === "/admin") {
           await selectAdminSection(page, "Instellingen");
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
-          for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Messenger", "Deelnemersupdates", "Betalingen", "Poortaanvragen", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
+          for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Groepsindeling", "Messenger", "Deelnemersupdates", "Betalingen", "Poortaanvragen", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
             await page.goto("/admin");
             await selectAdminSection(page, section);
             await expect(page.locator(".admin-nav button").filter({ hasText: section }).first()).toHaveClass("active");
