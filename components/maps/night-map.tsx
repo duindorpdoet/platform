@@ -37,6 +37,7 @@ export function NightMap({
     const timeout = window.setTimeout(() => { if (!disposed) { failed = true; setState("failed"); } }, 15000);
     void import("maplibre-gl").then((library) => {
       if (disposed || !container.current) return;
+      library.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
       libraryRef.current = library;
       const map = new library.Map({
         container: container.current,
@@ -54,7 +55,10 @@ export function NightMap({
         setState("ready");
       });
       map.on("error", () => { if (!disposed) { failed = true; setState("failed"); } });
-    }).catch(() => { if (!disposed) { failed = true; setState("failed"); } });
+    }).catch((error: unknown) => {
+      console.error("Nachtkaart kon MapLibre niet starten", error);
+      if (!disposed) { failed = true; setState("failed"); }
+    });
 
     return () => {
       disposed = true;

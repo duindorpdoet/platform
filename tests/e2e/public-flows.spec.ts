@@ -29,8 +29,19 @@ test("public map never exposes exact route data", async ({ page }) => {
   await expect(page.getByText(/de kaart laat de buurt zien, maar nog niet welke huizen meedoen/i)).toBeVisible();
   const style = await page.request.get("/maps/duindorp-night.json");
   expect(style.ok()).toBeTruthy();
+  for (const file of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"]) {
+    const response = await page.request.get(`/maplibre/${file}`);
+    expect(response.ok(), `${file} moet met de app worden gedeployd`).toBeTruthy();
+  }
   await expect(page.locator("body")).not.toContainText("NIET-BESTAAND TESTADRES");
   await expect(page.locator("body")).not.toContainText("Testpoort 01");
+});
+
+test("public map mounts a canvas in a WebGL2 browser", async ({ page }) => {
+  await page.goto("/kaart");
+  const webgl2 = await page.evaluate(() => Boolean(document.createElement("canvas").getContext("webgl2")));
+  test.skip(!webgl2, "Deze browser heeft geen WebGL2 en gebruikt de adresfallback.");
+  await expect(page.locator(".maplibregl-canvas")).toBeVisible({ timeout: 10_000 });
 });
 
 test("map outage shows a usable Duindorp text fallback", async ({ page }) => {
