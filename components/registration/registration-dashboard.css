@@ -6,6 +6,13 @@
 .registration-dashboard .summary-row>*{min-width:0;overflow-wrap:anywhere}
 .registration-dashboard .btn{max-width:100%;white-space:normal;text-align:center}
 .registration-dashboard .together-share-code{overflow-wrap:anywhere;word-break:normal;letter-spacing:.12em}
+.registration-child-form{display:grid;gap:4px;margin-top:24px;padding:22px;border:1px solid #7590a33d;border-radius:12px;background:linear-gradient(135deg,#142532a6,#0a151f)}
+.registration-child-form h3{font:600 clamp(23px,3vw,30px)/1.2 Georgia,serif;margin:5px 0 8px;color:#f1eee8}
+.registration-child-form .field{margin-block:12px}
+.registration-child-fields{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(130px,.7fr);gap:14px}
+.registration-child-form>.btn{justify-self:start;margin-top:8px}
+.registration-dashboard .danger-link{color:#f0a59d}
+.registration-dashboard .text-link:disabled{opacity:.55;cursor:wait}
 @media(max-width:760px){
   .registration-account-page{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
   .registration-account-page>.app-heading{flex-wrap:wrap;align-items:center;gap:16px}
@@ -19,6 +26,9 @@
   .registration-dashboard .summary-row>span{flex:1 1 150px}
   .registration-dashboard .summary-row>strong{text-align:left}
   .registration-dashboard .together-share-code{font-size:clamp(26px,7.5vw,36px);padding:17px 12px}
+  .registration-child-fields{grid-template-columns:minmax(0,1fr)}
+  .registration-child-form{padding:18px 15px}
+  .registration-child-form>.btn{width:100%}
 }
 @media(max-width:430px){
   .registration-dashboard>.panel>.btn{width:100%}

@@ -15,6 +15,8 @@ type Snapshot = {
     priceCents: number;
     togetherCode: string;
     togetherCount: number;
+    childrenEditable?: boolean;
+    childrenLockedReason?: "group_finalized" | "registration_not_active" | null;
     togetherRequest?: {
       id: string;
       status: "pending" | "accepted" | "rejected";
@@ -32,6 +34,7 @@ type Snapshot = {
       ageAtEvent?: number | null;
       status: string;
       unitPriceCents: number;
+      canRemove?: boolean;
       payment?: ChildPayment | null;
     }>;
     changeRequests: Array<{
@@ -135,6 +138,8 @@ export function RegistrationDashboard({
     Boolean(inviteToken),
   );
   const [notice, setNotice] = useState("");
+  const [childMutation, setChildMutation] = useState<string | null>(null);
+  const [newChild, setNewChild] = useState({ firstName: "", ageAtEvent: "", accessibilityNote: "" });
   const [preferences, setPreferences] = useState<PreferenceSnapshot | null>(null);
   const [preferenceDraft, setPreferenceDraft] = useState<{ preferredStartAt: string; desiredEndAt: string }>({ preferredStartAt: "", desiredEndAt: "" });
   const inviteAttempted = useRef(false);
@@ -266,6 +271,66 @@ export function RegistrationDashboard({
     );
     await load();
   }
+  function childMutationMessage(message: string) {
+    if (message.includes("STALE_VERSION")) return "De inschrijving is intussen gewijzigd. De actuele gegevens zijn opgehaald.";
+    if (message.includes("CHILDREN_LOCKED")) return "De groepen zijn definitief gekoppeld. Vraag de organisatie om deze wijziging.";
+    if (message.includes("CHILD_ALREADY_PAID")) return "Dit kind is al betaald of de betaling wordt gecontroleerd. Vraag de organisatie om de wijziging.";
+    if (message.includes("GROUP_SIZE_LIMIT_EXCEEDED")) return `Deze groep mag maximaal ${snapshot?.event?.maxGroupSize ?? 20} kinderen bevatten.`;
+    if (message.includes("EVENT_CAPACITY_REACHED")) return "Het maximale aantal deelnemers voor deze avond is bereikt.";
+    if (message.includes("LEGACY_PAYMENT_REQUIRES_ORGANIZER")) return "Door de bestaande betaling moet de organisatie dit kind toevoegen.";
+    return "De wijziging kon niet worden verwerkt. Probeer het opnieuw.";
+  }
+  async function addChild() {
+    const current = snapshot?.registration;
+    const age = Number(newChild.ageAtEvent);
+    if (!current || !current.childrenEditable || childMutation) return;
+    if (!newChild.firstName.trim() || !Number.isInteger(age) || age < 0 || age > 20) {
+      setNotice("Vul een voornaam en een leeftijd van 0 tot en met 20 jaar in.");
+      return;
+    }
+    const client = createClient();
+    if (!client) return;
+    setChildMutation("add");
+    setNotice("");
+    try {
+      const { error } = await client.schema("api").rpc("registration_child_add", {
+        _registration_id: current.id,
+        _expected_registration_version: current.version,
+        _first_name: newChild.firstName.trim(),
+        _age_at_event: age,
+        _accessibility_note: newChild.accessibilityNote.trim() || null,
+      });
+      setNotice(error ? childMutationMessage(error.message) : `${newChild.firstName.trim()} is aan de inschrijving toegevoegd.`);
+      if (!error) setNewChild({ firstName: "", ageAtEvent: "", accessibilityNote: "" });
+      await load();
+    } catch {
+      setNotice("De verbinding is onderbroken. Probeer het opnieuw.");
+    } finally {
+      setChildMutation(null);
+    }
+  }
+  async function removeChild(child: NonNullable<Snapshot["registration"]>["children"][number]) {
+    const current = snapshot?.registration;
+    if (!current || !child.canRemove || childMutation) return;
+    if (!window.confirm(`${child.firstName} uit deze inschrijving verwijderen?`)) return;
+    const client = createClient();
+    if (!client) return;
+    setChildMutation(child.id);
+    setNotice("");
+    try {
+      const { error } = await client.schema("api").rpc("registration_child_remove", {
+        _registration_child_id: child.id,
+        _expected_registration_version: current.version,
+        _expected_payment_version: child.payment?.version ?? 1,
+      });
+      setNotice(error ? childMutationMessage(error.message) : `${child.firstName} is uit de inschrijving verwijderd.`);
+      await load();
+    } catch {
+      setNotice("De verbinding is onderbroken. Probeer het opnieuw.");
+    } finally {
+      setChildMutation(null);
+    }
+  }
   async function createHouseholdInvite() {
     const client = createClient();
     if (!client || !household?.canManage) return;
@@ -365,9 +430,27 @@ export function RegistrationDashboard({
       <section className="panel">
         <p className="kicker">Deelname aanpassen</p>
         <h2>Kinderen en wijzigingen</h2>
-        <ChildPaymentRows items={registration.children} registrationId={registration.id} legacyPayment={registration.payment} reload={load} additionalAction={(child) => child.status === "active" && registration.status === "submitted"
-          ? <button className="text-link" onClick={() => void requestRegistrationChange("remove_child", child.id)}>Verwijdering aanvragen</button>
+        <ChildPaymentRows items={registration.children} registrationId={registration.id} legacyPayment={registration.payment} reload={load} additionalAction={(child) => child.status === "active" && child.canRemove
+          ? <button className="text-link danger-link" disabled={childMutation !== null} onClick={() => void removeChild(child)}>{childMutation === child.id ? "Verwijderen…" : "Verwijderen"}</button>
+          : child.status === "active" && registration.status === "submitted"
+          ? <button className="text-link" disabled={childMutation !== null} onClick={() => void requestRegistrationChange("remove_child", child.id)}>Verwijdering aanvragen</button>
           : <strong>{childStatusLabels[child.status] ?? child.status}</strong>} />
+        {registration.childrenEditable && (
+          <div className="registration-child-form">
+            <div>
+              <p className="kicker">Kind toevoegen</p>
+              <h3>Nog iemand aanmelden</h3>
+              <p className="note">Dit kan totdat de organisatie jullie definitief aan een groep koppelt. De bijdrage wordt automatisch bijgewerkt.</p>
+            </div>
+            <div className="registration-child-fields">
+              <label className="field"><span>Voornaam</span><input value={newChild.firstName} maxLength={80} autoComplete="off" onChange={(event) => setNewChild({ ...newChild, firstName: event.target.value })} /></label>
+              <label className="field"><span>Leeftijd op 31 oktober</span><input type="number" inputMode="numeric" min={0} max={20} value={newChild.ageAtEvent} onChange={(event) => setNewChild({ ...newChild, ageAtEvent: event.target.value })} /></label>
+            </div>
+            <label className="field"><span>Bijzonderheden voor begeleiding (optioneel)</span><textarea rows={3} maxLength={500} value={newChild.accessibilityNote} onChange={(event) => setNewChild({ ...newChild, accessibilityNote: event.target.value })} /></label>
+            <button className="btn" disabled={childMutation !== null || !newChild.firstName.trim() || newChild.ageAtEvent === ""} onClick={() => void addChild()}>{childMutation === "add" ? "Toevoegen…" : "Kind toevoegen"}</button>
+          </div>
+        )}
+        {!registration.childrenEditable && registration.childrenLockedReason === "group_finalized" && <p className="form-notice">De groepen zijn definitief gekoppeld. Voor een wijziging kun je hieronder een verzoek naar de organisatie sturen.</p>}
         {registration.status === "submitted" && (
           <div className="actions">
             <button
@@ -389,7 +472,7 @@ export function RegistrationDashboard({
             ? `Wijzigingsdeadline: ${new Date(snapshot.event.changeDeadline).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}. `
             : ""}
           {snapshot.event?.changesOpen
-            ? "Een ingediend verzoek wordt gecontroleerd voordat bedragen of deelnemers wijzigen."
+            ? "Onbetaalde kinderen kun je zelf verwijderen totdat de groep definitief is. Voor betaalde kinderen en latere wijzigingen controleert de organisatie ieder verzoek."
             : "De wijzigingsperiode is gesloten; iedere aanpassing loopt daarom via de organisatie."}
         </p>
         {registration.changeRequests.map((request) => (

@@ -25,6 +25,7 @@ export type PaymentChild = {
   firstName: string;
   status: string;
   unitPriceCents: number;
+  canRemove?: boolean;
   payment?: ChildPayment | null;
 };
 

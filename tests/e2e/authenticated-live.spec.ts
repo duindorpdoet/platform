@@ -323,12 +323,21 @@ test("a multi-child registration draft survives refresh and submits once", async
   await expect(page.getByText("Wacht op Tikkie", { exact: true })).toBeVisible();
   await expect(page.getByText(snapshot.registration.togetherCode, { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("awaiting_link");
-  page.once("dialog", (dialog) => dialog.accept("Dit kind kan op de avond helaas niet meelopen."));
-  await page.getByRole("button", { name: "Verwijdering aanvragen" }).first().click();
-  await expect(page.getByRole("status")).toContainText(/verzoek is opgeslagen/i);
-  await page.reload();
-  await expect(page.getByText(/Dit kind kan op de avond helaas niet meelopen/i)).toBeVisible();
-  await expect(page.getByText("In behandeling", { exact: true })).toBeVisible();
+  const addChild = page.locator(".registration-child-form");
+  await expect(addChild.getByRole("heading", { name: "Nog iemand aanmelden" })).toBeVisible();
+  await assertReadableLayout(page);
+  await addChild.getByLabel("Voornaam").fill("Derde browserkind");
+  await addChild.getByLabel("Leeftijd op 31 oktober").fill("7");
+  await addChild.getByRole("button", { name: "Kind toevoegen" }).click();
+  await expect(page.getByRole("status")).toContainText(/Derde browserkind is aan de inschrijving toegevoegd/i);
+  const addedChild = page.locator(".child-payment-row").filter({ hasText: "Derde browserkind" });
+  await assertReadableLayout(page);
+  await expect(addedChild).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await addedChild.getByRole("button", { name: "Verwijderen", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText(/Derde browserkind is uit de inschrijving verwijderd/i);
+  await expect(addedChild).toContainText("Afgezegd");
+  await expect(addedChild.getByRole("button", { name: "Verwijderen", exact: true })).toHaveCount(0);
 });
 
 test("submitted registrations appear immediately with group details in the backoffice", async ({ context, page }) => {
