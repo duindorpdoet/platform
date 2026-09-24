@@ -575,3 +575,68 @@ test("participant Messenger is opaque and account actions stay reachable on desk
     await assertReadableLayout(page);
   }
 });
+
+
+test("a walker awaiting a group can send and recover chat without realtime", async ({ context, page }, testInfo) => {
+  requireLocalAuth();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const client = await authenticate(context, "browser-chat-unassigned@example.invalid");
+  const participant = await rpc(client, "participant_context", { _event_slug: "duindorp-halloween-2026" }) as { roles: Array<{ key: string; groupId: string | null }> };
+  expect(participant.roles.find((role) => role.key === "walker")?.groupId).toBeNull();
+  // Polling and HTTP sends must keep working when the realtime socket cannot connect.
+  await page.routeWebSocket(/\/realtime\/v1\/websocket/, (socket) => socket.close());
+  let failContext = true;
+  await page.route("**/rest/v1/rpc/participant_messenger_context", async (route) => {
+    if (failContext) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Temporarily unavailable" }) });
+    } else await route.continue();
+  });
+  await page.goto("/omgeving/meeloper/nu");
+  await page.getByRole("button", { name: "Hulp van de organisatie" }).click();
+  const dialog = page.getByRole("dialog");
+  const input = dialog.getByLabel("Bericht", { exact: true });
+  const send = dialog.getByRole("button", { name: "Versturen", exact: true });
+  const body = `Browserbericht zonder groepsindeling ${testInfo.testId}`;
+  await input.fill(body);
+  await expect(dialog.getByText(/Berichten konden niet worden vernieuwd/)).toBeVisible();
+  await expect(send).toBeDisabled();
+  failContext = false;
+  await dialog.getByRole("button", { name: "Opnieuw verbinden" }).click();
+  await expect(send).toBeEnabled();
+  await expect(input).toHaveCSS("scrollbar-width", "thin");
+  await expect(input).toHaveCSS("resize", "none");
+
+  // Simulate a response lost after the server committed the message.
+  await page.route("**/rest/v1/rpc/participant_messenger_create", async (route) => {
+    const response = await route.fetch();
+    expect(response.ok()).toBe(true);
+    await route.abort("connectionreset");
+  }, { times: 1 });
+  await send.click();
+  await expect(dialog.getByText(/Verzenden is niet bevestigd/)).toBeVisible();
+  await expect(input).toHaveValue(body);
+  // A refresh may already discover the committed message before the user retries.
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(dialog.getByText(body, { exact: true })).toBeVisible();
+  await expect(send).toBeEnabled();
+  await send.click();
+  await expect(input).toHaveValue("");
+  await expect(dialog.getByText(body, { exact: true })).toHaveCount(1);
+  const snapshot = await rpc(client, "participant_messenger_context", { _event_slug: "duindorp-halloween-2026", _role: "user" }) as { conversation: { messages: Array<{ body: string }> } };
+  expect(snapshot.conversation.messages.filter((message) => message.body === body)).toHaveLength(1);
+
+  await page.reload();
+  await page.getByRole("button", { name: "Hulp van de organisatie" }).click();
+  await expect(dialog.getByText(body, { exact: true })).toBeVisible();
+  await input.fill("Deze reactie blijft staan bij verbindingsverlies.");
+  await context.setOffline(true);
+  await expect(dialog.getByText("Je bent offline", { exact: true })).toBeVisible();
+  await expect(send).toBeDisabled();
+  await context.setOffline(false);
+  await expect(send).toBeEnabled();
+  await expect(input).toHaveValue("Deze reactie blijft staan bij verbindingsverlies.");
+  await send.click();
+  await expect(input).toHaveValue("");
+  await expect(dialog.getByText("Deze reactie blijft staan bij verbindingsverlies.", { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("messenger-sent-mobile.png") });
+});

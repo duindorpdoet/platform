@@ -167,7 +167,7 @@ export function ParticipantShell({
       </main>
     </div>
     <ParticipantNavigation role={selectedRole.key} activeSection={activeSection} />
-    <SupportWidget eventSlug={eventSlug} role={selectedRole.key} groupId={selectedRole.groupId ?? undefined} portalId={selectedRole.portalId ?? undefined} viewerAccessId={selectedRole.accessId ?? undefined} />
+    <SupportWidget key={`${selectedRole.key}:${selectedRole.groupId ?? selectedRole.portalId ?? selectedRole.accessId ?? "personal"}`} eventSlug={eventSlug} role={selectedRole.key} groupId={selectedRole.groupId ?? undefined} portalId={selectedRole.portalId ?? undefined} viewerAccessId={selectedRole.accessId ?? undefined} />
   </div>;
 }
 

@@ -23,7 +23,8 @@ from (values
   ('a0000000-0000-0000-0000-000000000007'::uuid, 'parent-size-7@example.invalid'),
   ('a0000000-0000-0000-0000-000000000010'::uuid, 'parent-size-10@example.invalid'),
   ('a0000000-0000-0000-0000-000000000011'::uuid, 'browser-registration-desktop@example.invalid'),
-  ('a0000000-0000-0000-0000-000000000012'::uuid, 'browser-registration-mobile@example.invalid')
+  ('a0000000-0000-0000-0000-000000000012'::uuid, 'browser-registration-mobile@example.invalid'),
+  ('a0000000-0000-0000-0000-000000000013'::uuid, 'browser-chat-unassigned@example.invalid')
 ) fixture(id, email)
 on conflict (id) do nothing;
 
@@ -189,6 +190,14 @@ begin
     update app_private.route_plan_versions set state = 'published', published_at = now() where id = v_plan_id and state = 'valid';
     update app_private.walking_groups set current_plan_version_id = v_plan_id where id = v_group_id;
   end loop;
+
+  -- A registered participant can contact support before receiving a group.
+  insert into app_private.households(id, label, primary_contact_user_id)
+  values ('21000000-0000-0000-0000-000000000080', 'Chat testgezin zonder groep', 'a0000000-0000-0000-0000-000000000013') on conflict do nothing;
+  insert into app_private.household_members(household_id, user_id, relation_role)
+  values ('21000000-0000-0000-0000-000000000080', 'a0000000-0000-0000-0000-000000000013', 'owner') on conflict do nothing;
+  insert into app_private.registrations(id, event_id, household_id, status, reference)
+  values ('22000000-0000-0000-0000-000000000080', v_event_id, '21000000-0000-0000-0000-000000000080', 'submitted', 'FIXTURE-CHAT-UNASSIGNED') on conflict do nothing;
 
   -- Een lege groep bewijst dat starten niet op arraygedrag mag vertrouwen.
   insert into app_private.walking_groups(id, event_id, code, status, start_slot_id)
