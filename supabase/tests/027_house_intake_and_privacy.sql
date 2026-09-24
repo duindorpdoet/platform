@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(22);
 
 select ok(
   not has_function_privilege('anon', 'api.portal_registration_begin(text,text,text,text,text,text,text,text,text)', 'execute'),
@@ -19,7 +19,7 @@ set local role service_role;
 select lives_ok(
   $$ select api.portal_registration_begin(
     'duindorp-halloween-2026', 'parent-size-5@example.invalid', 'Nieuwe bewoner', '0612345678',
-    'FICTIEVE INTAKESTRAAT', '15', '', '2584AB', repeat('a', 64)
+    '', '', '', '', repeat('a', 64)
   ) $$,
   'the trusted endpoint stores the minimum house details before sending an OTP'
 );
@@ -31,9 +31,9 @@ select is(
   'one private concept intake is keyed by normalized email'
 );
 select is(
-  (select private_address ->> 'street' from app_private.portal_registration_intakes where normalized_email = 'parent-size-5@example.invalid'),
-  'FICTIEVE INTAKESTRAAT',
-  'the private address is retained for the verified-account claim'
+  (select private_address from app_private.portal_registration_intakes where normalized_email = 'parent-size-5@example.invalid'),
+  '{}'::jsonb,
+  'contact-only registration stores an empty private address object'
 );
 select is(
   (select count(*)::integer from app_private.portals portal
@@ -55,9 +55,45 @@ select is(
   'claiming creates a valid private draft without the additional profile fields'
 );
 select is(
-  api.portal_snapshot('duindorp-halloween-2026') #>> '{application,draft,address,street}',
-  'FICTIEVE INTAKESTRAAT',
-  'Mijn huis receives the minimum details entered before OTP'
+  api.portal_snapshot('duindorp-halloween-2026') #> '{application,draft,address}',
+  '{}'::jsonb,
+  'Mijn huis starts with optional address fields left empty'
+);
+select lives_ok(
+  $$ select api.portal_application_save(
+    'duindorp-halloween-2026',
+    api.portal_snapshot('duindorp-halloween-2026') #> '{application,draft}',
+    (api.portal_snapshot('duindorp-halloween-2026') #>> '{application,version}')::integer
+  ) $$,
+  'a contact-only house concept can be saved with server-side defaults'
+);
+select is(
+  api.portal_snapshot('duindorp-halloween-2026') #>> '{application,draft,requestedWorldSlug}',
+  'anders',
+  'the candy-only category is the default'
+);
+select is(
+  api.portal_snapshot('duindorp-halloween-2026') #>> '{application,draft,availableFrom}',
+  '17:00',
+  'house availability starts at 17:00 by default'
+);
+select is(
+  api.portal_snapshot('duindorp-halloween-2026') #>> '{application,draft,availableUntil}',
+  '21:00',
+  'house availability ends at 21:00 by default'
+);
+select lives_ok(
+  $$ select api.portal_application_submit(
+    (api.portal_snapshot('duindorp-halloween-2026') #>> '{application,id}')::uuid,
+    (api.portal_snapshot('duindorp-halloween-2026') #>> '{application,version}')::integer,
+    'contact-only-house-submit', 'contact-only-house-submit-hash'
+  ) $$,
+  'only verified email, contact name and phone are required for submission'
+);
+select is(
+  api.portal_snapshot('duindorp-halloween-2026') #>> '{application,status}',
+  'submitted',
+  'the minimal house application reaches the review queue'
 );
 select lives_ok(
   $$ select api.portal_registration_claim('duindorp-halloween-2026') $$,

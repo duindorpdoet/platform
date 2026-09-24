@@ -37,10 +37,10 @@ const emptyPayload: PortalPayload = {
   phone: "",
   address: { street: "", houseNumber: "", addition: "", postalCode: "" },
   entrance: "Zelfde ingang als het opgegeven adres",
-  requestedWorldSlug: "",
+  requestedWorldSlug: "anders",
   portalName: "",
   description: "",
-  intensity: "2",
+  intensity: "1",
   warnings: { smoke: false, flashes: false, sound: false, actors: false, allergens: false },
   warningNotes: "",
   availableFrom: "17:00",
@@ -64,7 +64,9 @@ function restoredPayload(draft: Partial<PortalPayload>, fallbackWorld: string): 
   return {
     ...emptyPayload,
     ...draft,
-    requestedWorldSlug: draft.requestedWorldSlug || fallbackWorld,
+    requestedWorldSlug: draft.requestedWorldSlug || fallbackWorld || "anders",
+    availableFrom: draft.availableFrom || "17:00",
+    availableUntil: draft.availableUntil || "21:00",
     address: { ...emptyPayload.address, ...draft.address },
     warnings: { ...emptyPayload.warnings, ...draft.warnings },
     assetPaths: Array.isArray(draft.assetPaths) ? draft.assetPaths.filter((path): path is string => typeof path === "string") : [],
@@ -96,13 +98,13 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
       setWorlds(availableWorlds);
       const application = (portalResult.data as { application?: { id: string; status: ReviewStatus; version: number; draft: Partial<PortalPayload>; reviewFeedback?: string | null } } | null)?.application;
       if (!application) {
-        setPayload((current) => ({ ...current, requestedWorldSlug: current.requestedWorldSlug || availableWorlds[0]?.slug || "" }));
+        setPayload((current) => ({ ...current, requestedWorldSlug: current.requestedWorldSlug || availableWorlds.find((world) => world.slug === "anders")?.slug || availableWorlds[0]?.slug || "anders" }));
         return;
       }
       setSaved({ id: application.id, version: application.version });
       setStatus(application.status);
       setReviewFeedback(application.reviewFeedback ?? null);
-      setPayload(restoredPayload(application.draft ?? {}, availableWorlds[0]?.slug ?? ""));
+      setPayload(restoredPayload(application.draft ?? {}, availableWorlds.find((world) => world.slug === "anders")?.slug ?? availableWorlds[0]?.slug ?? "anders"));
       if (application.status === "changes_requested") setNotice("De organisatie vraagt om een aanpassing. Pas je concept aan en dien het opnieuw in.");
       if (application.status === "submitted") setNotice("Jullie plek is ingediend en wacht op beoordeling.");
       if (application.status === "approved") setNotice("Je poort is goedgekeurd. Operationele informatie staat in je poortdashboard.");
@@ -115,11 +117,10 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
   const editable = loaded && status !== "rejected" && status !== "withdrawn";
 
   function validateForSubmission() {
-    const requiredText = [payload.contactName, payload.phone, payload.address.street, payload.address.houseNumber, payload.address.postalCode, payload.entrance, payload.requestedWorldSlug, payload.portalName, payload.description];
-    if (requiredText.some((value) => !value.trim()) || payload.description.trim().length < 10) return "Vul alle verplichte aanvraaggegevens volledig in.";
-    if (!/^\d{4}\s?[A-Z]{2}$/.test(payload.address.postalCode.trim().toUpperCase())) return "Vul een geldige Nederlandse postcode in.";
-    if (payload.availableUntil <= payload.availableFrom) return "De eindtijd moet na de begintijd liggen.";
-    if (!payload.availability || !payload.locationConsent) return "Bevestig beschikbaarheid en toestemming voor besloten locatieverwerking.";
+    const requiredText = [payload.email, payload.contactName, payload.phone];
+    if (requiredText.some((value) => !value.trim())) return "Vul je naam, telefoonnummer en het bevestigde e-mailadres in.";
+    if (payload.address.postalCode.trim() && !/^\d{4}\s?[A-Z]{2}$/.test(payload.address.postalCode.trim().toUpperCase())) return "Vul een geldige Nederlandse postcode in of laat het veld leeg.";
+    if (payload.availableFrom && payload.availableUntil && payload.availableUntil <= payload.availableFrom) return "De eindtijd moet na de begintijd liggen.";
     return null;
   }
 
@@ -182,29 +183,31 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     {reviewFeedback && <div className="form-warning"><strong>Terugkoppeling van de organisatie:</strong> {reviewFeedback}</div>}
     <fieldset className="form-fieldset" disabled={busy || !editable}>
       <h3>Contact en locatie</h3>
-      {payload.email && <p>E-mailadres: {payload.email} (bevestigd)</p>}
-      <label className="field"><span>Naam contactpersoon *</span><input required autoComplete="name" value={payload.contactName} onChange={(event) => setPayload({ ...payload, contactName: event.target.value })} /></label>
-      <label className="field"><span>Telefoonnummer *</span><input required autoComplete="tel" value={payload.phone} onChange={(event) => setPayload({ ...payload, phone: event.target.value })} /></label>
-      <div className="two-fields"><label className="field"><span>Straat *</span><input required autoComplete="address-line1" value={payload.address.street} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, street: event.target.value } })} /></label><label className="field"><span>Huisnummer *</span><input required value={payload.address.houseNumber} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, houseNumber: event.target.value } })} /></label></div>
-      <div className="two-fields"><label className="field"><span>Toevoeging</span><input value={payload.address.addition} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, addition: event.target.value } })} /></label><label className="field"><span>Postcode *</span><input required autoComplete="postal-code" value={payload.address.postalCode} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, postalCode: event.target.value.toUpperCase() } })} /></label></div>
-      <label className="field"><span>Ingang of route naar de deur *</span><input required value={payload.entrance} onChange={(event) => setPayload({ ...payload, entrance: event.target.value })} /></label>
+      <label className="field"><span>E-mailadres *</span><input type="email" value={payload.email} readOnly required autoComplete="email" /><small>Dit bevestigde adres is gekoppeld aan jullie aanmelding.</small></label>
+      <label className="field"><span>Naam contactpersoon *</span><input required minLength={2} maxLength={120} autoComplete="name" value={payload.contactName} onChange={(event) => setPayload({ ...payload, contactName: event.target.value })} /></label>
+      <label className="field"><span>Telefoonnummer *</span><input required type="tel" minLength={6} maxLength={32} autoComplete="tel" value={payload.phone} onChange={(event) => setPayload({ ...payload, phone: event.target.value })} /></label>
+      <div className="two-fields"><label className="field"><span>Straat</span><input maxLength={120} autoComplete="address-line1" value={payload.address.street} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, street: event.target.value } })} /></label><label className="field"><span>Huisnummer</span><input maxLength={12} value={payload.address.houseNumber} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, houseNumber: event.target.value } })} /></label></div>
+      <div className="two-fields"><label className="field"><span>Toevoeging</span><input value={payload.address.addition} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, addition: event.target.value } })} /></label><label className="field"><span>Postcode</span><input maxLength={7} autoComplete="postal-code" value={payload.address.postalCode} onChange={(event) => setPayload({ ...payload, address: { ...payload.address, postalCode: event.target.value.toUpperCase() } })} /></label></div>
+      <label className="field"><span>Ingang of route naar de deur</span><input maxLength={500} value={payload.entrance} onChange={(event) => setPayload({ ...payload, entrance: event.target.value })} /></label>
+      <p className="note">Alleen naam, telefoonnummer en het bevestigde e-mailadres zijn verplicht. Een volledig adres en toestemming zijn pas nodig voordat de organisatie deze plek als routepoort kan goedkeuren.</p>
 
       <h3>Beleving en veiligheid</h3>
-      <label className="field"><span>Gewenste wereld *</span><select className="choice" value={payload.requestedWorldSlug} onChange={(event) => setPayload({ ...payload, requestedWorldSlug: event.target.value })}>{worlds.map((world) => <option key={world.slug} value={world.slug}>{world.name}</option>)}</select></label>
-      <label className="field"><span>Naam van je poort *</span><input required value={payload.portalName} onChange={(event) => setPayload({ ...payload, portalName: event.target.value })} /></label>
-      <label className="field"><span>Beschrijving *</span><textarea required minLength={10} maxLength={1000} rows={5} value={payload.description} onChange={(event) => setPayload({ ...payload, description: event.target.value })} /></label>
-      <label className="field"><span>Spanningsniveau (1–4) *</span><input type="number" min={1} max={4} value={payload.intensity} onChange={(event) => setPayload({ ...payload, intensity: event.target.value })} /></label>
+      <label className="field"><span>Categorie of gewenste wereld</span><select className="choice" value={payload.requestedWorldSlug} onChange={(event) => { const requestedWorldSlug = event.target.value; setPayload({ ...payload, requestedWorldSlug, intensity: requestedWorldSlug === "anders" ? "1" : payload.intensity }); }}>{worlds.map((world) => <option key={world.slug} value={world.slug}>{world.name}</option>)}</select></label>
+      {payload.requestedWorldSlug === "anders" && <p className="note">Kies deze categorie als je zonder thema alleen snoep wilt uitdelen. Een poortnaam en uitgebreide beschrijving zijn dan niet nodig.</p>}
+      <label className="field"><span>Naam van je poort (optioneel)</span><input maxLength={120} value={payload.portalName} onChange={(event) => setPayload({ ...payload, portalName: event.target.value })} /></label>
+      <label className="field"><span>Beschrijving (optioneel)</span><textarea maxLength={1000} rows={5} value={payload.description} onChange={(event) => setPayload({ ...payload, description: event.target.value })} /></label>
+      <label className="field"><span>Spanningsniveau (1–4)</span><input type="number" min={1} max={4} value={payload.intensity} onChange={(event) => setPayload({ ...payload, intensity: event.target.value })} /></label>
       <div className="check-grid">{(Object.keys(warningLabels) as WarningKey[]).map((key) => <label className="checkfield" key={key}><input type="checkbox" checked={payload.warnings[key]} onChange={(event) => setWarning(key, event.target.checked)} />{warningLabels[key]}</label>)}</div>
       <label className="field"><span>Toelichting op waarschuwingen of allergenen</span><textarea maxLength={500} value={payload.warningNotes} onChange={(event) => setPayload({ ...payload, warningNotes: event.target.value })} /></label>
 
       <h3>Beschikbaarheid en bereikbaarheid</h3>
-      <div className="two-fields"><label className="field"><span>Beschikbaar vanaf *</span><input type="time" value={payload.availableFrom} onChange={(event) => setPayload({ ...payload, availableFrom: event.target.value })} /></label><label className="field"><span>Beschikbaar tot *</span><input type="time" value={payload.availableUntil} onChange={(event) => setPayload({ ...payload, availableUntil: event.target.value })} /></label></div>
+      <div className="two-fields"><label className="field"><span>Beschikbaar vanaf</span><input type="time" value={payload.availableFrom} onChange={(event) => setPayload({ ...payload, availableFrom: event.target.value })} /></label><label className="field"><span>Beschikbaar tot</span><input type="time" value={payload.availableUntil} onChange={(event) => setPayload({ ...payload, availableUntil: event.target.value })} /></label></div>
       <label className="field"><span>Praktische toegankelijkheid (optioneel)</span><select className="choice" value={payload.accessibility} onChange={(event) => setPayload({ ...payload, accessibility: event.target.value as PortalPayload["accessibility"] })}><option value="">Niet ingevuld</option><option value="unknown">Nog te beoordelen</option><option value="step_free">Drempelvrij</option><option value="steps">Trappen of hoge drempels</option><option value="mixed">Gedeeltelijk toegankelijk</option></select></label>
       <label className="field"><span>Toelichting toegankelijkheid</span><textarea maxLength={500} value={payload.accessibilityNotes} onChange={(event) => setPayload({ ...payload, accessibilityNotes: event.target.value })} /></label>
       <label className="field"><span>Foto van de opstelling (optioneel)</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAsset(file); event.currentTarget.value = ""; }} /><small>Een foto helpt ons alvast mee te denken. Kies een JPG, PNG of WebP van maximaal 8 MB.</small></label>
       {payload.assetPaths.length > 0 && <p className="note">{payload.assetPaths.length} afbeelding(en) veilig aan dit concept gekoppeld.</p>}
       <label className="checkfield"><input type="checkbox" checked={payload.availability} onChange={(event) => setPayload({ ...payload, availability: event.target.checked })} />Ik ben tijdens het opgegeven venster beschikbaar en meld wijzigingen tijdig.</label>
-      <label className="checkfield"><input type="checkbox" checked={payload.locationConsent} onChange={(event) => setPayload({ ...payload, locationConsent: event.target.checked })} />Ik geef toestemming om dit adres besloten te verwerken voor beoordeling, planning en uitsluitend de actuele toegewezen groep. *</label>
+      <label className="checkfield"><input type="checkbox" checked={payload.locationConsent} onChange={(event) => setPayload({ ...payload, locationConsent: event.target.checked })} />Ik geef toestemming om dit adres besloten te verwerken voor beoordeling, planning en uitsluitend de actuele toegewezen groep.</label>
     </fieldset>
     {notice && <p className="form-notice" role="status">{notice}</p>}
     <div className="actions"><button className="btn outline" disabled={busy || !editable} onClick={() => void save()}>Concept opslaan</button><button className="btn" disabled={busy || !editable} onClick={() => void submit()}>Indienen voor beoordeling</button></div>

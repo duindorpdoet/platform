@@ -426,20 +426,26 @@ test("a portal draft survives refresh and rejects disguised executable upload co
   await page.goto("/huis-aanmelden");
   await page.getByLabel("Naam contactpersoon *").fill("Browser testbewoner");
   await page.getByLabel("Telefoonnummer *").fill("0612345678");
-  await page.getByLabel("Straat *").fill("NIET-BESTAANDE TESTSTRAAT");
-  await page.getByLabel("Huisnummer *").fill("12");
-  await page.getByLabel("Postcode *").fill("2584AB");
   await page.getByRole("button", { name: "Plek aanmelden" }).click();
   await expect(page).toHaveURL(/\/mijn-huis$/);
   await expect(page.getByRole("heading", { name: "Werk jullie poort uit" })).toBeVisible();
-  await expect(page.getByText(`E-mailadres: ${email} (bevestigd)`)).toBeVisible();
+  await expect(page.getByLabel("E-mailadres *")).toHaveValue(email);
   for (const removed of ["Bezoekduur", "Groepen tegelijk", "Kinderen per bezoek", "Kinderen totaal"]) {
     await expect(page.getByLabel(removed, { exact: false })).toHaveCount(0);
   }
   await expect(page.getByLabel("Praktische toegankelijkheid (optioneel)")).toBeVisible();
+  await expect(page.getByLabel("Straat")).toHaveValue("");
+  await expect(page.getByLabel("Categorie of gewenste wereld")).toHaveValue("anders");
+  await expect(page.getByLabel("Beschikbaar vanaf")).toHaveValue("17:00");
+  await expect(page.getByLabel("Beschikbaar tot")).toHaveValue("21:00");
+  await page.getByLabel("Straat").fill("NIET-BESTAANDE TESTSTRAAT");
+  await page.getByLabel("Huisnummer").fill("12");
+  await page.getByLabel("Postcode").fill("2584AB");
+  await page.getByRole("button", { name: "Concept opslaan" }).click();
+  await expect(page.getByRole("status")).toContainText(/bewaard/i);
   await page.reload();
   await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Browser testbewoner");
-  await expect(page.getByLabel("Straat *")).toHaveValue("NIET-BESTAANDE TESTSTRAAT");
+  await expect(page.getByLabel("Straat")).toHaveValue("NIET-BESTAANDE TESTSTRAAT");
 
   const chooser = page.getByLabel("Foto van de opstelling (optioneel)");
   await chooser.setInputFiles({ name: "misleidend.png", mimeType: "image/png", buffer: Buffer.from("<svg><script>alert(1)</script></svg>") });
@@ -509,12 +515,9 @@ test("house details unlock only after successful email confirmation", async ({ p
       : route.fulfill({ status: 403, json: { code: "otp_expired", msg: "Invalid code" } });
   });
   await page.goto("/huis-aanmelden");
-  await page.getByLabel("E-mailadres", { exact: true }).fill(email);
+  await page.getByLabel("E-mailadres *", { exact: true }).fill(email);
   await page.getByLabel("Naam contactpersoon *").fill("Nieuwe testbewoner");
   await page.getByLabel("Telefoonnummer *").fill("0612345678");
-  await page.getByLabel("Straat *").fill("FICTIEVE STRAAT");
-  await page.getByLabel("Huisnummer *").fill("15");
-  await page.getByLabel("Postcode *").fill("2584AB");
   await page.getByRole("button", { name: "Stuur eenmalige code" }).click();
   await expect(page.getByRole("heading", { name: "Vul de zes cijfers in." })).toBeVisible();
   await assertReadableLayout(page);
@@ -525,20 +528,29 @@ test("house details unlock only after successful email confirmation", async ({ p
   await page.locator('input[autocomplete="one-time-code"]').fill("000000");
   await page.getByRole("button", { name: "Bevestigen en verder" }).click();
   await expect(page.getByRole("status")).toContainText("onjuist of verlopen");
-  await expect(page.getByLabel("Beschrijving *", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Beschrijving (optioneel)", { exact: true })).toHaveCount(0);
   await page.locator('input[autocomplete="one-time-code"]').fill("");
   await page.locator('input[autocomplete="one-time-code"]').fill("123456");
   await page.getByRole("button", { name: "Bevestigen en verder" }).click();
   await expect(page).toHaveURL(/\/mijn-huis$/);
   await expect(page.getByRole("heading", { name: "Werk jullie poort uit" })).toBeVisible();
   await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Nieuwe testbewoner");
-  await expect(page.getByLabel("Straat *")).toHaveValue("FICTIEVE STRAAT");
+  await expect(page.getByLabel("E-mailadres *")).toHaveValue(email);
+  await expect(page.getByLabel("Straat")).toHaveValue("");
+  await expect(page.getByLabel("Categorie of gewenste wereld")).toHaveValue("anders");
+  await expect(page.getByLabel("Beschikbaar vanaf")).toHaveValue("17:00");
+  await expect(page.getByLabel("Beschikbaar tot")).toHaveValue("21:00");
+  await page.getByLabel("Straat").fill("FICTIEVE STRAAT");
+  await page.getByLabel("Huisnummer").fill("15");
+  await page.getByLabel("Postcode").fill("2584AB");
+  await expect(page.getByLabel("Straat")).toHaveValue("FICTIEVE STRAAT");
   await page.getByLabel("Naam contactpersoon *").fill("Nieuwe testbewoner gewijzigd");
   await page.getByRole("button", { name: "Concept opslaan" }).click();
   await expect(page.getByRole("status")).toContainText(/bewaard/i);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Werk jullie poort uit" })).toBeVisible();
   await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Nieuwe testbewoner gewijzigd");
+  await expect(page.getByLabel("Straat")).toHaveValue("FICTIEVE STRAAT");
 });
 
 

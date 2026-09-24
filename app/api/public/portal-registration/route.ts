@@ -8,12 +8,6 @@ const schema = z.object({
   email: z.email().max(320),
   contactName: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(6).max(32),
-  address: z.object({
-    street: z.string().trim().min(2).max(120),
-    houseNumber: z.string().trim().min(1).max(12),
-    addition: z.string().trim().max(12),
-    postalCode: z.string().trim().regex(/^\d{4}\s?[A-Za-z]{2}$/),
-  }),
   website: z.string().max(0),
   startedAt: z.number().int(),
 });
@@ -38,10 +32,10 @@ export async function POST(request: Request) {
       _email: normalizedEmail,
       _contact_name: input.contactName,
       _phone: input.phone,
-      _street: input.address.street,
-      _house_number: input.address.houseNumber,
-      _addition: input.address.addition || null,
-      _postal_code: input.address.postalCode,
+      _street: "",
+      _house_number: "",
+      _addition: null,
+      _postal_code: "",
       // A caller can influence forwarded network headers. Keep the mutation
       // limit stable for the target account regardless of proxy or IP changes.
       _opaque_subject_hash: opaqueSubjectHash(env.ABUSE_HASH_SECRET, "portal-registration", normalizedEmail),

@@ -154,7 +154,7 @@ test("world explorer displays its artwork and supports all six worlds and keyboa
   await expect(page).toHaveURL(/\/werelden\/heksenrijk$/);
 });
 
-test("house registration respects the release mode and starts with only contact details and address", async ({ page }) => {
+test("house registration respects the release mode and starts with only the three required contact fields", async ({ page }) => {
   await page.goto("/huis-aanmelden");
   if (process.env.REGISTRATION_MODE === "closed") {
     await expect(page.getByRole("heading", { name: "Nieuwe plekken kunnen zich nu niet aanmelden." })).toBeVisible();
@@ -165,10 +165,11 @@ test("house registration respects the release mode and starts with only contact 
     await expect(page.getByRole("link", { name: "Start met inschrijven" })).toHaveCount(0);
     return;
   }
-  for (const name of ["E-mailadres", "Naam contactpersoon *", "Telefoonnummer *", "Straat *", "Huisnummer *", "Postcode *"]) {
+  for (const name of ["E-mailadres *", "Naam contactpersoon *", "Telefoonnummer *"]) {
     await expect(page.getByLabel(name, { exact: true })).toBeVisible();
   }
-  await expect(page.getByLabel("Beschrijving *", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Straat", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Beschrijving (optioneel)", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Stuur eenmalige code" })).toBeDisabled();
   await assertReadableLayout(page, false);
 });

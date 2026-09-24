@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export function PortalRegistration({ eventSlug, email, hasApplication }: { eventSlug: string; email?: string; hasApplication: boolean }) {
   const router = useRouter();
-  const [details, setDetails] = useState({ contactName: "", phone: "", address: { street: "", houseNumber: "", addition: "", postalCode: "" } });
+  const [details, setDetails] = useState({ contactName: "", phone: "" });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [startedAt] = useState(() => Date.now());
@@ -61,15 +61,13 @@ export function PortalRegistration({ eventSlug, email, hasApplication }: { event
   const fields = <fieldset className="form-fieldset" disabled={busy}>
     <label className="field"><span>Naam contactpersoon *</span><input required minLength={2} maxLength={120} autoComplete="name" value={details.contactName} onChange={(event) => setDetails({ ...details, contactName: event.target.value })} /></label>
     <label className="field"><span>Telefoonnummer *</span><input required type="tel" minLength={6} maxLength={30} autoComplete="tel" value={details.phone} onChange={(event) => setDetails({ ...details, phone: event.target.value })} /></label>
-    <div className="two-fields"><label className="field"><span>Straat *</span><input required maxLength={120} autoComplete="address-line1" value={details.address.street} onChange={(event) => setDetails({ ...details, address: { ...details.address, street: event.target.value } })} /></label><label className="field"><span>Huisnummer *</span><input required maxLength={12} value={details.address.houseNumber} onChange={(event) => setDetails({ ...details, address: { ...details.address, houseNumber: event.target.value } })} /></label></div>
-    <div className="two-fields"><label className="field"><span>Toevoeging</span><input maxLength={12} value={details.address.addition} onChange={(event) => setDetails({ ...details, address: { ...details.address, addition: event.target.value } })} /></label><label className="field"><span>Postcode *</span><input required pattern="[0-9]{4} ?[A-Za-z]{2}" autoComplete="postal-code" value={details.address.postalCode} onChange={(event) => setDetails({ ...details, address: { ...details.address, postalCode: event.target.value.toUpperCase() } })} /></label></div>
-    <p className="note">Je adres en contactgegevens zijn alleen beschikbaar voor de organisatie en je eigen aanmelding.</p>
+    <p className="note">Na bevestiging vul je in Mijn huis desgewenst het adres, de aankleding en andere praktische gegevens aan.</p>
   </fieldset>;
 
   if (!email) return <EmailOtpForm beforeRequestCode={saveIntake} onVerified={claimAfterVerification}>{fields}</EmailOtpForm>;
   return <form className="panel production-form" onSubmit={(event) => { event.preventDefault(); void saveConfirmedApplication(); }}>
     <h2>Meld jullie plek aan</h2>
-    <p>Je e-mailadres is bevestigd{email ? `: ${email}` : ""}. Vul je naam, telefoonnummer en adres in om verder te gaan.</p>
+    <p>Je e-mailadres is bevestigd{email ? `: ${email}` : ""}. Vul je naam en telefoonnummer in om verder te gaan.</p>
     {fields}
     {notice && <p className="form-error" role="alert">{notice}</p>}
     <button className="btn full" disabled={busy}>{busy ? "Plek opslaan…" : "Plek aanmelden"}</button>

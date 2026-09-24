@@ -24,7 +24,6 @@ function request(overrides: Record<string, unknown> = {}, forwardedFor = "127.0.
       email: "Bewoner@Example.invalid",
       contactName: "Testbewoner",
       phone: "0612345678",
-      address: { street: "Fictieve straat", houseNumber: "15", addition: "", postalCode: "2584 AB" },
       website: "",
       startedAt: Date.now() - 1000,
       ...overrides,
@@ -35,7 +34,7 @@ function request(overrides: Record<string, unknown> = {}, forwardedFor = "127.0.
 describe("pre-OTP house registration endpoint", () => {
   beforeEach(() => mocks.rpc.mockReset().mockResolvedValue({ data: { accepted: true, intakeId: "intake-1" }, error: null }));
 
-  it("durably stores only contact and address details before the OTP request continues", async () => {
+  it("durably stores only the required contact details before the OTP request continues", async () => {
     const response = await POST(request());
     expect(response.status).toBe(201);
     expect(mocks.rpc).toHaveBeenCalledOnce();
@@ -43,9 +42,10 @@ describe("pre-OTP house registration endpoint", () => {
       _event_slug: "duindorp-halloween-2026",
       _email: "bewoner@example.invalid",
       _contact_name: "Testbewoner",
-      _street: "Fictieve straat",
-      _house_number: "15",
-      _postal_code: "2584 AB",
+      _phone: "0612345678",
+      _street: "",
+      _house_number: "",
+      _postal_code: "",
       _opaque_subject_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
     }));
     expect(JSON.stringify(mocks.rpc.mock.calls[0])).not.toContain("portalName");
