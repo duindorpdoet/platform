@@ -122,7 +122,11 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
       _reason: reason,
     });
     setBusyId(null);
-    setNotice(error ? `Beoordeling geweigerd: ${error.message}` : `${statusLabels[decision]} en geaudit.`);
+    setNotice(error
+      ? error.message.includes("CONTACT_ADDRESS_REQUIRED")
+        ? "Goedkeuren kan zodra naam, bevestigd e-mailadres, telefoonnummer en het volledige adres zijn ingevuld."
+        : `Beoordeling geweigerd: ${error.message}`
+      : `${statusLabels[decision]} en geaudit.`);
     if (!error) await load();
   }
 
