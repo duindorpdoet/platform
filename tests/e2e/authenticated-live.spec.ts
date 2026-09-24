@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { assertReadableLayout } from "./helpers/layout";
 import { readFile, writeFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
@@ -33,6 +33,13 @@ async function authenticate(context: BrowserContext, email: string) {
   await context.clearCookies();
   await context.addCookies(sessionCookies(authenticated.session));
   return authenticated.client;
+}
+
+async function selectAdminSection(page: Page, name: string) {
+  await expect(page.locator(".admin-topbar")).toBeVisible();
+  const menu = page.getByRole("button", { name: "Organisatienavigatie openen" });
+  if (await menu.isVisible()) await menu.click();
+  await page.locator(".admin-nav").getByRole("button", { name, exact: true }).click();
 }
 
 async function rpc(client: Awaited<ReturnType<typeof fixtureClient>>["client"], name: string, args: Record<string, unknown>) {
@@ -345,7 +352,7 @@ test("an event administrator can grant and revoke narrowly scoped access", async
   requireLocalAuth();
   await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
-  await page.getByRole("button", { name: "Beheerders", exact: true }).click();
+  await selectAdminSection(page, "Beheerders");
   await expect(page.getByRole("heading", { name: "Beheerders en rechten" })).toBeVisible();
 
   await page.getByLabel("E-mailadres").fill("parent-a@example.invalid");
@@ -379,7 +386,7 @@ test("an organizer sees portal identity and private contact details and can mess
   requireLocalAuth();
   await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
-  await page.getByRole("button", { name: "Poortaanvragen", exact: true }).click();
+  await selectAdminSection(page, "Poortaanvragen");
   await expect(page.getByRole("heading", { name: "Poortaanvragen" })).toBeVisible();
 
   const portalCard = page.locator(".incident-row").filter({ hasText: "P-01" }).first();
@@ -416,7 +423,7 @@ test("a group leader and organizer can exchange messages through the private sup
 
   await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
-  await page.getByRole("button", { name: "Messenger", exact: true }).click();
+  await selectAdminSection(page, "Messenger");
   const conversationButton = page.locator(".ticket-list button").filter({ hasText: "G-01" }).first();
   await expect(conversationButton).toBeVisible();
   await conversationButton.click();
@@ -505,12 +512,12 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
         await expect(page.locator(".loading-state, .participant-loading")).toHaveCount(0);
         await assertReadableLayout(page, doubleText);
         if (path === "/admin") {
-          await page.locator(".admin-nav").getByRole("button", { name: "Instellingen", exact: true }).click();
+          await selectAdminSection(page, "Instellingen");
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
           for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Messenger", "Deelnemersupdates", "Betalingen", "Poortaanvragen", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
             await page.goto("/admin");
-            await page.locator(".admin-nav").getByRole("button", { name: section, exact: true }).click();
-            await expect(page.locator(".admin-nav").getByRole("button", { name: section, exact: true })).toHaveClass("active");
+            await selectAdminSection(page, section);
+            await expect(page.locator(".admin-nav button").filter({ hasText: section }).first()).toHaveClass("active");
             await assertReadableLayout(page, doubleText);
           }
         }
@@ -758,7 +765,7 @@ test("Tikkies select individual siblings and expose one payment action per linke
   expect(before.status).toBe("awaiting_link");
   expect(before.amountCents).toBe(250);
   await page.goto("/admin");
-  await page.getByRole("button", { name: "Betalingen", exact: true }).click();
+  await selectAdminSection(page, "Betalingen");
   await page.getByRole("searchbox", { name: "Zoek kind, ouder, e-mail, groep of referentie" }).fill("Kindbetaalouder Alfa");
   for (const index of [0, 1]) await page.getByTestId(`child-payment-${ids[index]}`).getByRole("checkbox").check();
   await expect(page.getByText(/2 kind\(eren\) geselecteerd/)).toContainText("5,00");
@@ -816,7 +823,7 @@ test("Tikkies select individual siblings and expose one payment action per linke
     await expect(rows[1].getByRole("button", { name: "In controle", exact: true })).toBeDisabled();
     await expect(rows[2].getByRole("link")).toHaveAttribute("href", singleUrl);
     await page.reload();
-    await page.getByRole("button", { name: "Betalingen", exact: true }).click();
+    await selectAdminSection(page, "Betalingen");
     await page.getByRole("searchbox", { name: "Zoek kind, ouder, e-mail, groep of referentie" }).fill("Kindbetaalouder Alfa");
     const answers = ["5,00", "BROWSER-CHILD-RECEIPT", "Ontvangst van beide geselecteerde kinderen gecontroleerd.", ""];
     const confirm = async (dialog: import("@playwright/test").Dialog) => { await dialog.accept(answers.shift()); };
@@ -836,3 +843,46 @@ test("Tikkies select individual siblings and expose one payment action per linke
     expect(registrationChildIds.map((id) => snapshot.registration.children.find((child) => child.id === id)!.payment.status)).toEqual(["confirmed", "confirmed", "awaiting_payment"]);
   } finally { await parentContext.close(); }
 });
+
+
+for (const width of [320, 375, 390, 430]) {
+  test(`organisation navigation is a keyboard accessible drawer at ${width}px`, async ({ context, page }) => {
+    requireLocalAuth();
+    await page.setViewportSize({ width, height: 844 });
+    await authenticate(context, "admin@example.invalid");
+    await page.goto("/admin");
+    const opener = page.getByRole("button", { name: "Organisatienavigatie openen" });
+    const navigation = page.locator("#admin-navigation");
+    await expect(opener).toBeVisible();
+    await expect(navigation).toBeHidden();
+    expect(await page.locator(".admin-topbar").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(90);
+    await assertReadableLayout(page);
+    await opener.click();
+    await expect(navigation).toHaveAttribute("aria-modal", "true");
+    await expect(page.getByRole("button", { name: "Menu sluiten", exact: true })).toBeFocused();
+    await expect(navigation.getByRole("button", { name: "Cockpit", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(navigation.locator("button b").first()).toBeVisible();
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe("hidden");
+    await page.keyboard.press("Shift+Tab");
+    await expect(navigation.getByRole("button", { name: "Instellingen", exact: true })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Menu sluiten", exact: true })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(navigation).toBeHidden();
+    await expect(opener).toBeFocused();
+    expect(await page.evaluate(() => document.body.style.overflow)).not.toBe("hidden");
+    await opener.click();
+    await navigation.getByRole("button", { name: "Instellingen", exact: true }).click();
+    await expect(navigation).toBeHidden();
+    await expect(page.locator(".admin-mobile-section")).toContainText("Instellingen");
+    await assertReadableLayout(page);
+    await opener.click();
+    await page.locator(".admin-nav-backdrop").click({ position: { x: width - 8, y: 100 } });
+    await expect(navigation).toBeHidden();
+    await opener.click();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(navigation).toBeVisible();
+    await expect(navigation).not.toHaveAttribute("aria-modal", "true");
+    expect(await page.evaluate(() => document.body.style.overflow)).not.toBe("hidden");
+  });
+}

@@ -19,6 +19,8 @@ import {
   SlidersHorizontal,
   MapPinned,
   MessageSquare,
+  Menu,
+  X,
   RefreshCw,
   ShieldCheck,
   Upload,
@@ -251,6 +253,50 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "simulation"
     | "settings"
   >("overview");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const navigationRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeMenuRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const menuButton = menuButtonRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeMenuRef.current?.focus();
+    const desktop = window.matchMedia("(min-width: 1101px)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) setMobileNavOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMobileNavOpen(false);
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(navigationRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex="0"]',
+      ) ?? []).filter((element) => element.getClientRects().length > 0);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      desktop.removeEventListener("change", closeOnDesktop);
+      document.removeEventListener("keydown", onKeyDown);
+      menuButton?.focus();
+    };
+  }, [mobileNavOpen]);
+
   const [importKind, setImportKind] = useState("portals");
   const [importResult, setImportResult] = useState<{
     status: string;
@@ -938,7 +984,22 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     );
   return (
     <div className="admin-shell">
-      <aside className="admin-nav">
+      {mobileNavOpen && <button className="admin-nav-backdrop" tabIndex={-1} aria-label="Navigatie sluiten" onClick={() => setMobileNavOpen(false)} />}
+      <aside
+        id="admin-navigation"
+        ref={navigationRef}
+        className={`admin-nav${mobileNavOpen ? " is-open" : ""}`}
+        role={mobileNavOpen ? "dialog" : undefined}
+        aria-modal={mobileNavOpen ? true : undefined}
+        aria-label="Organisatienavigatie"
+        onClick={(event) => {
+          if ((event.target as HTMLElement).closest("button, a")) setMobileNavOpen(false);
+        }}
+      >
+        <div className="admin-drawer-heading">
+          <span>Nachtregie</span>
+          <button ref={closeMenuRef} type="button" aria-label="Menu sluiten" onClick={() => setMobileNavOpen(false)}><X aria-hidden="true" /></button>
+        </div>
         <Link className="admin-brand" href="/">
           <Image src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" width={180} height={76} priority />
           <span>Nachtregie · organisatie</span>
@@ -946,6 +1007,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         <p className="admin-nav-label">Werkruimte</p>
         <button
           className={section === "overview" ? "active" : ""}
+          aria-current={section === "overview" ? "page" : undefined}
           onClick={() => setSection("overview")}
         >
           <ShieldCheck />
@@ -953,6 +1015,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </button>
         <button
           className={section === "imports" ? "active" : ""}
+          aria-current={section === "imports" ? "page" : undefined}
           onClick={() => setSection("imports")}
         >
           <Database />
@@ -960,6 +1023,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </button>
         <button
           className={section === "registrations" ? "active" : ""}
+          aria-current={section === "registrations" ? "page" : undefined}
           onClick={() => {
             setSection("registrations");
             void Promise.all([
@@ -978,6 +1042,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           capabilities.includes("live_support")) && (
           <button
             className={section === "tickets" ? "active" : ""}
+          aria-current={section === "tickets" ? "page" : undefined}
             onClick={() => setSection("tickets")}
           >
             <MessageSquare />
@@ -989,6 +1054,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           capabilities.includes("live_support")) && (
           <button
             className={section === "updates" ? "active" : ""}
+          aria-current={section === "updates" ? "page" : undefined}
             onClick={() => setSection("updates")}
           >
             <BellRing />
@@ -997,6 +1063,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         )}
         <button
           className={section === "payments" ? "active" : ""}
+          aria-current={section === "payments" ? "page" : undefined}
           onClick={() => {
             setSection("payments");
             void loadPayments();
@@ -1007,6 +1074,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </button>
         <button
           className={section === "portals" ? "active" : ""}
+          aria-current={section === "portals" ? "page" : undefined}
           onClick={() => setSection("portals")}
         >
           <House />
@@ -1014,6 +1082,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </button>
         <button
           className={section === "planner" ? "active" : ""}
+          aria-current={section === "planner" ? "page" : undefined}
           onClick={() => setSection("planner")}
         >
           <MapPinned />
@@ -1021,6 +1090,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </button>
         <button
           className={section === "content" ? "active" : ""}
+          aria-current={section === "content" ? "page" : undefined}
           onClick={() => setSection("content")}
         >
           <FileText />
@@ -1029,6 +1099,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         {capabilities.includes("event_admin") && (
           <button
             className={section === "access" ? "active" : ""}
+          aria-current={section === "access" ? "page" : undefined}
             onClick={() => setSection("access")}
           >
             <UserCog />
@@ -1037,6 +1108,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         )}
         <button
           className={section === "live" ? "active" : ""}
+          aria-current={section === "live" ? "page" : undefined}
           onClick={() => {
             setSection("live");
             void loadLive();
@@ -1047,6 +1119,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </button>
         <button
           className={section === "simulation" ? "active" : ""}
+          aria-current={section === "simulation" ? "page" : undefined}
           onClick={() => {
             setSection("simulation");
             void loadLive();
@@ -1057,15 +1130,21 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </button>
         <button
           className={section === "settings" ? "active" : ""}
+          aria-current={section === "settings" ? "page" : undefined}
           onClick={() => setSection("settings")}
         >
           <SlidersHorizontal />
           Instellingen
         </button>
       </aside>
-      <div className="admin-workspace">
+      <div className="admin-workspace" inert={mobileNavOpen}>
         <div className="admin-topbar">
-          <span>De Duindorpse Poorten <i>›</i> Nachtregie</span>
+          <button ref={menuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(true)}>
+            <Menu aria-hidden="true" />
+            <span>Menu</span>
+          </button>
+          <span className="admin-mobile-section">{sectionMeta[section].title}</span>
+          <span className="admin-desktop-crumb">De Duindorpse Poorten <i>›</i> Nachtregie</span>
           <span>{dashboard.event.date} <i>·</i> {dashboard.event.phase}</span>
         </div>
         <main className="admin-content">

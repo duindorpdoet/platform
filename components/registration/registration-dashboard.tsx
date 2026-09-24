@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import "./registration-dashboard.css";
 import type { ParticipantPayment } from "@/components/payments/payment-details";
 import { ChildPaymentRows, type ChildPayment } from "@/components/payments/child-payment-rows";
 import { createClient } from "@/lib/supabase/client";
@@ -330,10 +331,10 @@ export function RegistrationDashboard({
     await load();
   }
   return (
-    <div className="dashboard-stack">
+    <div className="dashboard-stack registration-dashboard">
       <section className="panel registration-overview-card">
         <p className="kicker">Referentie</p>
-        <h1 className="registration-reference">{registration.reference}</h1>
+        <h2 className="registration-reference">{registration.reference}</h2>
         <div className="summary-row">
           <span>Inschrijving</span>
           <strong>{registrationStatusLabels[registration.status] ?? registration.status}</strong>

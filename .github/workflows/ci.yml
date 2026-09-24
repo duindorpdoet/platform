@@ -104,7 +104,7 @@ jobs:
           ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
         run: |
           eval "$(pnpm exec supabase status -o env)"
-          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts --project=desktop-chromium
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts tests/e2e/homeowner-responsive.spec.ts tests/e2e/participant-mobile-polish.spec.ts --project=desktop-chromium
       - name: Lint database schemas
         run: pnpm exec supabase db lint --level warning
       - name: Stop local Supabase

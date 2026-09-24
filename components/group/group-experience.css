@@ -55,3 +55,30 @@
 .group-empty-state>svg{color:#edbd83}
 @media(max-width:1000px){.group-premium .group-pre-event,.group-premium .live-grid{grid-template-columns:minmax(0,1fr)}.group-premium .group-destination{min-height:420px}}
 @media(max-width:600px){.group-premium{gap:16px}.group-route-context{gap:10px;padding:12px}.group-route-phase{font-size:11px}.group-route-refresh{padding:8px}.group-route-refresh span{display:none}.group-premium .app-heading{align-items:flex-start;flex-direction:column}.group-premium .group-route-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.group-premium .group-route-metrics>span,.group-premium .group-route-metrics>.text-link{padding:12px;font-size:11px}.group-premium .pre-art,.group-premium .pre-art>div{min-height:300px}.group-premium .pre-art>div{padding:24px}.group-premium .group-route-history .summary-row{flex-direction:column;gap:4px}.group-premium .group-check-in .checkfield small{font-size:11px}}
+/* Keep the live route usable on narrow phones, including long private names. */
+.group-premium :is(.participant-field,.field,.actions,.participant-row,.group-name-editor){min-width:0}
+.group-premium :is(h1,h2,h3,p,.checkfield,.form-notice,.form-warning,.offline-banner){overflow-wrap:anywhere}
+.group-premium .btn{max-width:100%;white-space:normal;text-align:center}
+.group-premium .pre-art>div{inset:auto}
+.group-premium .participant-row>div{min-width:0;overflow-wrap:anywhere}
+@media(max-width:760px){
+  .standalone-group-page{padding-bottom:calc(115px + env(safe-area-inset-bottom))}
+  .group-premium :is(.participant-field,.field) :is(input,select,textarea),.group-premium .scan-panel input{min-width:0;max-width:100%;font-size:16px}
+  .group-premium :is(.btn,.group-route-refresh,.participant-actions button){min-height:44px}
+  .group-premium .group-route-refresh{min-width:44px;justify-content:center}
+  .group-premium .scan-panel .actions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+  .group-premium .scan-panel .actions :is(input,.btn){width:100%;min-width:0}
+  .group-premium .participant-panel>.row-between{flex-wrap:wrap;align-items:flex-start}
+  .group-premium .participant-actions{padding-left:0;gap:8px;justify-content:flex-start;flex-wrap:wrap}
+  .group-premium .participant-actions button{flex:1 1 95px;justify-content:center;white-space:normal}
+  .group-premium .group-check-in .checkfield{min-height:48px}
+  .group-premium .group-route-context{gap:10px}
+  .group-premium .group-route-phase{flex:1 1 120px;min-width:0}
+  .group-premium .active-portal-copy{padding:24px 18px}
+  .group-premium .group-destination-details>span{min-width:0;overflow-wrap:anywhere}
+}
+@media(max-width:390px){
+  .group-premium .panel,.group-premium .participant-card{padding:21px 16px}
+  .group-premium .pre-art>div{padding:23px 18px}
+  .group-premium .group-route-metrics{grid-template-columns:minmax(0,1fr)}
+}

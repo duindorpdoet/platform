@@ -1,0 +1,26 @@
+/* Private registration details: retain readable actions at small phone widths. */
+.registration-account-page,.registration-dashboard,.registration-dashboard>.panel{min-width:0}
+.registration-dashboard :is(h2,p,.field,.summary-row,.form-notice,.form-warning){overflow-wrap:anywhere}
+.registration-dashboard .field{min-width:0;margin-block:18px}
+.registration-dashboard .field :is(input,select,textarea){min-width:0;max-width:100%}
+.registration-dashboard .summary-row>*{min-width:0;overflow-wrap:anywhere}
+.registration-dashboard .btn{max-width:100%;white-space:normal;text-align:center}
+.registration-dashboard .together-share-code{overflow-wrap:anywhere;word-break:normal;letter-spacing:.12em}
+@media(max-width:760px){
+  .registration-account-page{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+  .registration-account-page>.app-heading{flex-wrap:wrap;align-items:center;gap:16px}
+  .registration-account-page>.app-heading>div{min-width:0;flex:1 1 200px}
+  .registration-account-page>.app-heading h1{font-size:clamp(29px,8vw,38px);overflow-wrap:anywhere}
+  .registration-account-page .account-signout{min-height:44px;flex-shrink:0}
+  .registration-dashboard .field :is(input,select,textarea){font-size:16px}
+  .registration-dashboard :is(.btn,.text-link){min-height:44px}
+  .registration-dashboard .text-link{white-space:normal;text-align:left}
+  .registration-dashboard .summary-row{align-items:flex-start;flex-wrap:wrap;gap:7px 16px}
+  .registration-dashboard .summary-row>span{flex:1 1 150px}
+  .registration-dashboard .summary-row>strong{text-align:left}
+  .registration-dashboard .together-share-code{font-size:clamp(26px,7.5vw,36px);padding:17px 12px}
+}
+@media(max-width:430px){
+  .registration-dashboard>.panel>.btn{width:100%}
+  .registration-dashboard .summary-row>strong{max-width:100%}
+}

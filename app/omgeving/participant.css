@@ -70,3 +70,34 @@ html[data-readable="true"] .participant-environment{background:#071019}html[data
 @media(max-width:760px){.participant-main{margin-left:0}.participant-topbar{min-height:65px;padding:11px 16px}.participant-topbar .participant-eyebrow{display:block;font-size:7px!important}.participant-topbar strong{font-size:11px}.participant-topbar-mark{width:30px;height:30px}.participant-content{padding:30px 16px 145px}.participant-page-head{gap:12px;margin-bottom:5px}.participant-page-head h1{font-size:37px;line-height:1.09}.participant-page-emblem{width:43px;height:43px;border-color:#8e714c55}.participant-page-emblem svg{width:20px;height:20px}.participant-card{padding:22px 20px;border-radius:13px}.participant-page{gap:17px}.participant-hero-card.countdown-card{padding:25px 23px;min-height:0}.participant-hero-card.countdown-card h2{font-size:29px}.countdown-grid strong{font-size:48px}.countdown-grid{gap:28px;margin:21px 0}.participant-stat-grid{gap:9px}.participant-stat-grid .status-card{padding:15px 11px;gap:9px}.status-card strong{font-size:12px}.status-card small{font-size:8px;letter-spacing:.08em}.status-card>span{width:30px;height:30px}.status-card>span svg{width:15px;height:15px}.participant-preparation-grid,.participant-group-grid{gap:17px}.group-summary{flex-direction:row;flex-wrap:wrap;align-items:flex-start;gap:13px}.group-summary-icon{width:37px;height:37px;flex-basis:37px;border-radius:9px}.group-summary>div{flex-basis:calc(100% - 52px)}.group-summary .group-code{font-size:29px;margin-left:50px}.participant-group-grid .group-code-panel{padding:15px;grid-template-columns:minmax(0,1fr) auto}.participant-bottomnav{background:#0c1720f7;border-color:#3b4e58;box-shadow:0 -8px 30px #0003}.participant-bottomnav a{font-size:10px;color:#9db1be}.participant-bottomnav a.active{color:#edc28a}.participant-bottomnav a.active:after{background:#dfb575;box-shadow:none}.night-pass{padding:27px 22px}.night-pass h2{font-size:34px;margin-block:27px}.night-pass-top{gap:12px}.night-pass-grid{gap:18px}.participant-contact-compact{padding:19px}.participant-account{gap:15px}}
 @media(max-width:390px){.participant-content{padding-inline:12px}.participant-page-head h1{font-size:32px}.participant-page-emblem{display:none}.participant-stat-grid{grid-template-columns:minmax(0,1fr)}.participant-stat-grid .status-card{flex-direction:row;align-items:center;padding:15px;gap:13px}.participant-card{padding:20px 17px}.countdown-grid strong{font-size:43px}.countdown-grid{gap:25px}.participant-group-grid .group-code-panel{grid-template-columns:minmax(0,1fr)}.participant-group-grid .group-code-panel>.btn{justify-self:start}.night-pass h2{font-size:29px}}
 html[data-readable="true"] .participant-page-emblem,html[data-readable="true"] .countdown-emblem,html[data-readable="true"] .hero-glow{display:none}
+/* Phone polish for walkers and viewers; the homeowner cockpit is independent. */
+.participant-environment:not(.role-homeowner) :is(.participant-topbar-identity,.participant-topbar-identity>div,.participant-field,.group-name-editor,.access-rows>div>span){min-width:0}
+.participant-environment:not(.role-homeowner) :is(.participant-field input,.participant-field select,.participant-field textarea){min-width:0;max-width:100%}
+.participant-environment:not(.role-homeowner) .access-rows>div>span{overflow-wrap:anywhere}
+@media(max-width:760px){
+  .participant-environment:not(.role-homeowner) .participant-topbar{gap:10px;flex-wrap:nowrap;min-height:64px;padding-inline:12px}
+  .participant-environment:not(.role-homeowner) .participant-topbar-identity{gap:8px;flex:1 1 auto}
+  .participant-environment:not(.role-homeowner) .participant-topbar-mark{flex:0 0 30px}
+  .participant-environment:not(.role-homeowner) .participant-topbar-identity strong{overflow-wrap:anywhere;line-height:1.45}
+  .participant-environment:not(.role-homeowner) .role-switcher{min-width:0;flex:0 1 128px}
+  .participant-environment:not(.role-homeowner) .role-switcher select{min-width:0;width:100%;max-width:128px;min-height:44px;font-size:12px;padding:8px 20px 8px 9px}
+  .participant-environment:not(.role-homeowner) .participant-content{padding-bottom:calc(164px + env(safe-area-inset-bottom))}
+  .participant-environment:not(.role-homeowner) .participant-bottomnav a{min-height:48px;position:relative}
+  .participant-environment:not(.role-homeowner) :is(.participant-field input,.participant-field select,.participant-field textarea){font-size:16px}
+  .participant-environment:not(.role-homeowner) :is(.btn,.text-link,.prep-list>button){min-height:44px;max-width:100%;white-space:normal}
+  .participant-environment:not(.role-homeowner) .participant-actions{width:auto;padding-left:0;justify-content:flex-start}
+  .participant-environment:not(.role-homeowner) .participant-contact-compact .participant-actions a{display:inline-flex;align-items:center;min-height:44px}
+  .participant-environment:not(.role-homeowner) .access-rows>div{flex-wrap:wrap;gap:6px 12px}
+  .participant-environment:not(.role-homeowner) .access-rows>div>span{flex:1 1 160px}
+  .participant-environment:not(.role-homeowner) .group-name-editor .actions{display:flex;flex-wrap:wrap;gap:10px}
+  .participant-environment:not(.role-homeowner) .group-name-editor .actions>.btn{flex:1 1 105px;justify-content:center}
+  .participant-environment:not(.role-homeowner) .stamp-rail{min-width:0;max-width:100%}
+}
+@media(max-width:390px){
+  .participant-environment:not(.role-homeowner) .participant-topbar .participant-eyebrow{letter-spacing:.08em;font-size:6px!important}
+  .participant-environment:not(.role-homeowner) .countdown-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .participant-environment:not(.role-homeowner) .countdown-grid strong{font-size:38px}
+  .participant-environment:not(.role-homeowner) .prep-list>button{grid-template-columns:27px minmax(0,1fr)}
+  .participant-environment:not(.role-homeowner) .prep-list>button>small{grid-column:2;text-align:left}
+  .participant-environment:not(.role-homeowner) .night-pass-grid{column-gap:12px}
+}
