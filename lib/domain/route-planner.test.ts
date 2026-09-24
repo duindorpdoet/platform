@@ -2,106 +2,98 @@ import { describe, expect, it } from "vitest";
 import { proposePlan, type PlanningInput } from "./route-planner";
 
 const base: PlanningInput = {
-  parties: [{ id: "a", childCount: 3 }, { id: "b", childCount: 4 }, { id: "c", childCount: 2 }],
-  starts: [{ id: "start-a", startsAt: "2026-10-31T18:30:00+01:00", maxGroups: 3, maxChildren: 20 }],
-  portals: Array.from({ length: 6 }, (_, index) => ({ id: `portal-${index}`, worldId: `world-${index}`, opensAt: "2026-10-31T18:00:00+01:00", closesAt: "2026-10-31T22:00:00+01:00", visitMinutes: 5, maxConcurrentGroups: 2, maxChildren: 12 })),
+  parties: [{ id: "a", childCount: 3, startPreference: "early", paymentEligible: true }, { id: "b", childCount: 4, paymentEligible: true }, { id: "c", childCount: 2, paymentEligible: true }],
+  starts: [
+    { id: "start-a", startPointId: "point-a", startsAt: "2026-10-31T17:30:00+01:00", maxGroups: 2, maxChildren: 20 },
+    { id: "start-b", startPointId: "point-b", startsAt: "2026-10-31T18:30:00+01:00", maxGroups: 2, maxChildren: 20 },
+  ],
   targetGroupSize: 7,
   maxGroupSize: 10,
-  stopsPerGroup: 6,
+  globalOrdinaryStopAt: "2026-10-31T20:30:00+01:00",
+  finaleOpensAt: "2026-10-31T19:00:00+01:00",
+  finaleLastArrivalAt: "2026-10-31T21:30:00+01:00",
+  finaleClosesAt: "2026-10-31T22:00:00+01:00",
+  finaleShowSeconds: 360,
+  finaleTurnoverSeconds: 0,
+  finalePlanningTransferSeconds: 600,
+  finaleMaxGroups: 2,
+  finaleMaxChildren: 20,
+  earlyPreferenceLatestAt: "2026-10-31T18:00:00+01:00",
+  laterPreferenceEarliestAt: "2026-10-31T18:15:00+01:00",
 };
 
-describe("deterministic planner", () => {
-  it("returns identical output for reordered input", () => {
-    expect(proposePlan(base)).toEqual(proposePlan({ ...base, parties: [...base.parties].reverse(), portals: [...base.portals].reverse() }));
+describe("group and finale planner", () => {
+  it("is deterministic for reordered input", () => {
+    expect(proposePlan(base)).toEqual(proposePlan({ ...base, parties: [...base.parties].reverse(), starts: [...base.starts].reverse() }));
   });
 
-  it("keeps together parties intact", () => {
-    const result = proposePlan({ ...base, parties: [{ id: "a", childCount: 3, togetherKey: "x" }, { id: "b", childCount: 4, togetherKey: "x" }] });
-    expect(result.groups).toHaveLength(1);
-    expect(result.groups[0].partyIds).toEqual(["a", "b"]);
-  });
-
-  it("reports capacity conflicts instead of overbooking", () => {
-    const result = proposePlan({ ...base, starts: [{ ...base.starts[0], maxGroups: 1, maxChildren: 5 }] });
-    expect(result.groups).toEqual([]);
-    expect(result.conflicts.some((conflict) => conflict.code === "START_CAPACITY_EXCEEDED")).toBe(true);
-  });
-
-  it("rejects a together bundle that cannot fit without silently splitting it", () => {
-    const result = proposePlan({
-      ...base,
-      parties: [{ id: "a", childCount: 6, togetherKey: "same" }, { id: "b", childCount: 5, togetherKey: "same" }],
-    });
-
-    expect(result.groups).toEqual([]);
-    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "TOGETHER_PARTY_TOO_LARGE" }));
-  });
-
-  it("keeps an explicitly approved oversized together bundle intact and isolated", () => {
-    const result = proposePlan({
-      ...base,
-      parties: [
-        { id: "a", childCount: 6, togetherKey: "same", togetherOverride: true },
-        { id: "b", childCount: 5, togetherKey: "same", togetherOverride: true },
-        { id: "c", childCount: 1 },
-      ],
-      starts: [{ ...base.starts[0], maxChildren: 20 }],
-      portals: base.portals.map((portal) => ({ ...portal, maxChildren: 12 })),
-    });
-
+  it("keeps linked households together and chooses their soft preference", () => {
+    const result = proposePlan({ ...base, parties: [
+      { id: "a", childCount: 3, togetherKey: "x", startPreference: "early", paymentEligible: true },
+      { id: "b", childCount: 4, togetherKey: "x", startPreference: "early", paymentEligible: true },
+    ] });
     expect(result.conflicts).toEqual([]);
-    expect(result.groups).toHaveLength(2);
-    expect(result.groups.find((group) => group.partyIds.includes("a"))?.partyIds).toEqual(["a", "b"]);
+    expect(result.groups[0]).toMatchObject({ partyIds: ["a", "b"], startId: "start-a", preferenceMatch: "good" });
   });
 
-  it("counts overlapping visit intervals instead of only identical timestamps", () => {
-    const result = proposePlan({
-      parties: [
-        { id: "a", childCount: 1, requestedStartId: "start-a" },
-        { id: "b", childCount: 1, requestedStartId: "start-b" },
-      ],
-      starts: [
-        { id: "start-a", startsAt: "2026-10-31T18:30:00+01:00", maxGroups: 1, maxChildren: 10 },
-        { id: "start-b", startsAt: "2026-10-31T18:31:00+01:00", maxGroups: 1, maxChildren: 10 },
-      ],
-      portals: [{ id: "portal", worldId: "world", opensAt: "2026-10-31T18:00:00+01:00", closesAt: "2026-10-31T22:00:00+01:00", visitMinutes: 5, maxConcurrentGroups: 1, maxChildren: 10 }],
-      targetGroupSize: 1,
-      maxGroupSize: 1,
-      stopsPerGroup: 1,
-    });
-
-    expect(result.groups).toEqual([]);
-    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "PORTAL_CAPACITY_EXCEEDED" }));
-  });
-
-  it("respects each portal's total child capacity across the complete proposal", () => {
-    const result = proposePlan({
-      ...base,
-      targetGroupSize: 5,
-      maxGroupSize: 7,
-      portals: base.portals.map((portal) => ({ ...portal, maxTotalChildren: 8 })),
-    });
-
-    expect(result.groups).toEqual([]);
-    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "PORTAL_CAPACITY_EXCEEDED" }));
-  });
-
-  it("supports a non-hardcoded number of portals and stops", () => {
-    const result = proposePlan({ ...base, portals: base.portals.slice(0, 4), stopsPerGroup: 4 });
-    expect(result.conflicts).toEqual([]);
-    expect(result.groups.every((group) => group.portalIds.length === 4)).toBe(true);
-  });
-
-  it("surfaces incompatible start preferences inside one together bundle", () => {
-    const result = proposePlan({
-      ...base,
-      starts: [...base.starts, { ...base.starts[0], id: "start-b" }],
-      parties: [
-        { id: "a", childCount: 2, togetherKey: "same", requestedStartId: "start-a" },
-        { id: "b", childCount: 2, togetherKey: "same", requestedStartId: "start-b" },
-      ],
-    });
+  it("reports conflicting preferences inside one linked party", () => {
+    const result = proposePlan({ ...base, parties: [
+      { id: "a", childCount: 2, togetherKey: "same", startPreference: "early" },
+      { id: "b", childCount: 2, togetherKey: "same", startPreference: "later" },
+    ] });
     expect(result.groups).toEqual([]);
     expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "START_PREFERENCE_CONFLICT" }));
+  });
+
+  it("uses the earliest personal or global stop without a fixed visit count", () => {
+    const result = proposePlan({ ...base, parties: [{ id: "a", childCount: 3, requestedStopAt: "2026-10-31T19:30:00+01:00", paymentEligible: true }] });
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups[0].effectiveStopAt).toBe("2026-10-31T18:30:00.000Z");
+    expect(result.groups[0]).not.toHaveProperty("portalIds");
+  });
+
+  it("blocks a finale peak that cannot be processed", () => {
+    const result = proposePlan({
+      ...base,
+      targetGroupSize: 1,
+      maxGroupSize: 1,
+      parties: Array.from({ length: 4 }, (_, index) => ({ id: `p-${index}`, childCount: 1, paymentEligible: true })),
+      starts: [{ ...base.starts[0], maxGroups: 10, maxChildren: 20 }],
+      finaleLastArrivalAt: "2026-10-31T20:41:00+01:00",
+      finaleMaxGroups: 1,
+    });
+    expect(result.groups).toEqual([]);
+    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "FINALE_CAPACITY_EXCEEDED" }));
+  });
+
+  it("retains unpaid applications in a concept estimate but marks them", () => {
+    const result = proposePlan({ ...base, parties: [{ id: "unpaid", childCount: 2, paymentEligible: false }] });
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups[0].warnings).toContain("PAYMENT_NOT_CONFIRMED");
+  });
+
+  it("spreads dozens of groups over fifteen physical start points at 17:30 and 18:30", () => {
+    const starts = Array.from({ length: 15 }, (_, index) => ({
+      id: `start-${String(index + 1).padStart(2, "0")}`,
+      startPointId: `point-${String(index + 1).padStart(2, "0")}`,
+      startsAt: index % 2 === 0 ? "2026-10-31T17:30:00+01:00" : "2026-10-31T18:30:00+01:00",
+      maxGroups: 5,
+      maxChildren: 5,
+    }));
+    const result = proposePlan({
+      ...base,
+      targetGroupSize: 1,
+      maxGroupSize: 1,
+      parties: Array.from({ length: 75 }, (_, index) => ({ id: `party-${String(index + 1).padStart(2, "0")}`, childCount: 1, paymentEligible: true })),
+      starts,
+      finaleShowSeconds: 60,
+      finaleMaxGroups: 10,
+      finaleMaxChildren: 100,
+    });
+
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups).toHaveLength(75);
+    expect(new Set(result.groups.map((group) => group.startId))).toEqual(new Set(starts.map((start) => start.id)));
+    expect(result.groups.every((group) => Date.parse(group.expectedFinaleArrivalAt) <= Date.parse(base.finaleLastArrivalAt))).toBe(true);
   });
 });

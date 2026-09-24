@@ -24,8 +24,9 @@ import { PortalReviews } from "@/components/admin/portal-reviews";
 import { ContentManagement } from "@/components/admin/content-management";
 import { SupportTickets } from "@/components/admin/support-tickets";
 import { ParticipantUpdates } from "@/components/admin/participant-updates";
+import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
+import { NightMap } from "@/components/maps/night-map";
 import { createClient } from "@/lib/supabase/client";
-import { proposePlan, type PlanningInput } from "@/lib/domain/route-planner";
 
 type Dashboard = {
   event: {
@@ -50,18 +51,28 @@ type Dashboard = {
     createdAt: string;
   }>;
 };
-type PlanResult = ReturnType<typeof proposePlan>;
 type LiveRun = {
   groupId: string;
   groupCode: string;
   groupVersion: number;
-  leaderEmail: string;
-  runId: string;
-  runStatus: "live" | "paused";
-  runVersion: number;
-  stopId: string;
-  portalName: string;
+  leaderEmail: string | null;
+  responsibleAdults: Array<{ userId: string; email: string }>;
+  status: string;
+  runId: string | null;
+  runStatus: "ready" | "live" | "paused" | null;
+  runVersion: number | null;
+  currentStopId: string | null;
+  currentPortal: string | null;
+  currentKind: "ordinary" | "finale" | null;
+  currentCoordinate: [number, number] | null;
+  lastConfirmedAt: string | null;
+  elapsedSeconds: number | null;
+  effectiveStopAt: string | null;
+  expectedFinaleArrivalAt: string | null;
+  childCount: number;
 };
+type LivePortal = { id: string; name: string; operationStatus: string; version: number; isFinal: boolean; activeReservations: number; expectedChildren: number };
+type LiveAlert = { id: string; priority: "urgent" | "warning" | "info"; code: string; message: string; groupId: string | null; portalId: string | null; createdAt: string };
 type PaymentRow = {
   id: string;
   reference: string;
@@ -73,15 +84,6 @@ type PaymentRow = {
   externalUrl?: string | null;
   reportedAt?: string | null;
   updatedAt: string;
-};
-type PlanningGroup = {
-  id: string;
-  code: string;
-  status: string;
-  planId: string;
-  revision: number;
-  planState: string;
-  portalIds: string[];
 };
 type RegistrationChange = {
   id: string;
@@ -109,11 +111,6 @@ type TogetherRequest = {
   limitOverridden: boolean;
   createdAt: string;
 };
-type PlanningSnapshot = Omit<
-  PlanningInput,
-  "targetGroupSize" | "maxGroupSize" | "stopsPerGroup"
-> & { groups: PlanningGroup[] };
-
 async function digest(value: unknown) {
   return [
     ...new Uint8Array(
@@ -182,17 +179,16 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
       message: string;
     }>;
   } | null>(null);
-  const [plan, setPlan] = useState<PlanResult | null>(null);
-  const [planIds, setPlanIds] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [liveRuns, setLiveRuns] = useState<LiveRun[]>([]);
+  const [livePortals, setLivePortals] = useState<LivePortal[]>([]);
+  const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [registrationChanges, setRegistrationChanges] = useState<
     RegistrationChange[]
   >([]);
   const [togetherRequests, setTogetherRequests] = useState<TogetherRequest[]>([]);
   const [groupSizeLimit, setGroupSizeLimit] = useState(10);
-  const [planningGroups, setPlanningGroups] = useState<PlanningGroup[]>([]);
   const [supportReason, setSupportReason] = useState("");
   const load = useCallback(async () => {
     const client = createClient();
@@ -262,134 +258,20 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     await load();
   }
 
-  async function calculatePlan() {
-    const client = createClient();
-    if (!client) return;
-    const { data, error } = await client
-      .schema("api")
-      .rpc("admin_planning_snapshot", { _event_slug: eventSlug });
-    if (error) return setNotice("Planningsinvoer is niet toegankelijk.");
-    const snapshot = data as PlanningSnapshot;
-    setPlanningGroups(snapshot.groups);
-    const result = proposePlan({
-      parties: snapshot.parties,
-      starts: snapshot.starts,
-      portals: snapshot.portals,
-      targetGroupSize: Math.min(7, dashboard?.event.maxGroupSize ?? 10),
-      maxGroupSize: dashboard?.event.maxGroupSize ?? 10,
-      stopsPerGroup: 6,
-    });
-    setPlan(result);
-    setPlanIds([]);
-    setNotice(
-      result.conflicts.length
-        ? "Het voorstel bevat blokkerende conflicten."
-        : "Deterministisch voorstel berekend. Er is nog niets gepubliceerd.",
-    );
-  }
-
-  async function savePlan() {
-    if (!plan || plan.conflicts.length || !plan.groups.length) return;
-    const client = createClient();
-    if (!client) return;
-    const inputHash = await digest(plan);
-    const key = crypto.randomUUID();
-    const { data, error } = await client.schema("api").rpc("admin_apply_plan", {
-      _event_slug: eventSlug,
-      _proposal: plan,
-      _input_hash: inputHash,
-      _idempotency_key: key,
-      _request_hash: await digest({ plan, key }),
-    });
-    if (error) return setNotice(`Voorstel opslaan mislukt: ${error.message}`);
-    setPlanIds((data as { planIds: string[] }).planIds);
-    setNotice(
-      "Voorstel als geldige routeversies opgeslagen. Publicatie is nog niet uitgevoerd.",
-    );
-    await load();
-  }
-
-  async function publishPlan() {
-    const client = createClient();
-    if (!client || !planIds.length) return;
-    if (
-      !window.confirm(
-        "Publiceer deze routeversies? Deelnemers zien nog steeds alleen hun huidige bestemming.",
-      )
-    )
-      return;
-    const { error } = await client.schema("api").rpc("admin_publish_plans", {
-      _event_slug: eventSlug,
-      _plan_ids: planIds,
-      _reason: "Expliciete publicatie na controle van het voorstel",
-    });
-    setNotice(
-      error
-        ? "Publicatie is geweigerd."
-        : "Routeversies zijn gepubliceerd en geaudit.",
-    );
-    if (!error) setPlanIds([]);
-    await load();
-  }
-
-  async function createPlanRevision(group: PlanningGroup) {
-    const portalInput = window
-      .prompt(
-        "Poort-ID's in de nieuwe volgorde, door komma's gescheiden:",
-        group.portalIds.join(", "),
-      )
-      ?.trim();
-    if (!portalInput) return;
-    const portalIds = portalInput
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean);
-    const reason = window
-      .prompt("Waarom is deze routecorrectie nodig? (minimaal 10 tekens)")
-      ?.trim();
-    if (!reason || reason.length < 10)
-      return setNotice("Een auditreden van minimaal tien tekens is verplicht.");
-    const client = createClient();
-    if (!client) return;
-    const { data, error } = await client
-      .schema("api")
-      .rpc("admin_create_plan_revision", {
-        _group_id: group.id,
-        _portal_ids: portalIds,
-        _reason: reason,
-      });
-    if (error) return setNotice(`Correctieversie geweigerd: ${error.message}`);
-    const revision = data as { planId: string; revision: number };
-    setPlanIds((current) => [...new Set([...current, revision.planId])]);
-    setPlanningGroups((current) =>
-      current.map((item) =>
-        item.id === group.id
-          ? {
-              ...item,
-              planId: revision.planId,
-              revision: revision.revision,
-              planState: "valid",
-              portalIds,
-            }
-          : item,
-      ),
-    );
-    setNotice(
-      `Routeversie ${revision.revision} opgeslagen als concept. De gepubliceerde route is niet gewijzigd.`,
-    );
-  }
-
   async function loadLive() {
     const client = createClient();
     if (!client) return;
     const { data, error } = await client
       .schema("api")
-      .rpc("admin_live_snapshot", { _event_slug: eventSlug });
+      .rpc("admin_evening_cockpit", { _event_slug: eventSlug });
     if (error)
       return setNotice(
         "Live-overzicht is alleen beschikbaar voor avondondersteuning.",
       );
-    setLiveRuns(data as LiveRun[]);
+    const cockpit = data as { groups: LiveRun[]; portals: LivePortal[]; alerts: LiveAlert[] };
+    setLiveRuns(cockpit.groups);
+    setLivePortals(cockpit.portals);
+    setLiveAlerts(cockpit.alerts);
   }
 
   async function loadPayments() {
@@ -689,16 +571,18 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     command: "override" | "paused" | "live" | "stopped",
   ) {
     const client = createClient();
-    if (!client) return;
+    if (!client || !run.runId || run.runVersion === null) return;
+    if (command === "override" && !run.currentStopId)
+      return setNotice("Deze groep heeft nu geen poort waarvoor een scanoverride nodig is.");
     if (supportReason.trim().length < 10)
       return setNotice(
         "Leg voor een noodhandeling minimaal tien tekens reden vast.",
       );
     const result =
-      command === "override"
+      command === "override" && run.currentStopId
         ? await client.schema("api").rpc("run_support_override", {
             _run_id: run.runId,
-            _stop_id: run.stopId,
+            _stop_id: run.currentStopId,
             _expected_run_version: run.runVersion,
             _reason: supportReason,
           })
@@ -725,7 +609,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     const email = window
       .prompt(
         "Geverifieerd accountadres van de nieuwe groepsleider:",
-        run.leaderEmail,
+        run.leaderEmail ?? "",
       )
       ?.trim()
       .toLowerCase();
@@ -752,6 +636,83 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         ? `Leiderwissel geweigerd: ${error.message}`
         : "Leider vervangen; de vorige leider heeft direct geen mutatierecht meer.",
     );
+    if (!error) setSupportReason("");
+    await loadLive();
+  }
+
+  async function redirectGroup(run: LiveRun, target: "ordinary" | "finale") {
+    if (!run.runId || run.runVersion === null) return;
+    if (supportReason.trim().length < 10)
+      return setNotice("Leg voor een omleiding minimaal tien tekens reden vast.");
+    let portalId: string | null = null;
+    if (target === "ordinary") {
+      const choices = livePortals.filter((portal) => !portal.isFinal && portal.operationStatus === "open");
+      portalId = window.prompt(`ID van de gewenste gewone poort:\n${choices.map((portal) => `${portal.name}: ${portal.id}`).join("\n")}`)?.trim() ?? null;
+      if (!portalId || !choices.some((portal) => portal.id === portalId))
+        return setNotice("Kies een open, goedgekeurde gewone poort uit de lijst.");
+    }
+    const client = createClient();
+    if (!client) return;
+    const { error } = await client.schema("api").rpc("admin_redirect_group", {
+      _run_id: run.runId,
+      _target: target,
+      _preferred_portal_id: portalId,
+      _expected_run_version: run.runVersion,
+      _reason: supportReason,
+    });
+    setNotice(error ? `Omleiding geweigerd: ${error.message}` : target === "finale" ? "De laatste poort is veilig gereserveerd en gepubliceerd." : "De gekozen volgende gewone poort is gereserveerd en gepubliceerd.");
+    if (!error) setSupportReason("");
+    await loadLive();
+  }
+
+  async function safeWithdraw(run: LiveRun) {
+    if (!run.runId || run.runVersion === null) return;
+    if (supportReason.trim().length < 10)
+      return setNotice("Leg voor een veilige afmelding minimaal tien tekens reden vast.");
+    const email = window.prompt(`Welke verantwoordelijke volwassene neemt de groep mee?\n${run.responsibleAdults.map((adult) => adult.email).join("\n")}`)?.trim().toLowerCase();
+    const adult = run.responsibleAdults.find((candidate) => candidate.email.toLowerCase() === email);
+    if (!adult) return setNotice("Kies een geregistreerde volwassene uit deze groep.");
+    const client = createClient();
+    if (!client) return;
+    const { error } = await client.schema("api").rpc("admin_safe_withdraw_group", {
+      _run_id: run.runId,
+      _responsible_adult_user_id: adult.userId,
+      _expected_run_version: run.runVersion,
+      _reason: supportReason,
+    });
+    setNotice(error ? `Afmelding geweigerd: ${error.message}` : "De veilige afmelding en verantwoordelijke volwassene zijn vastgelegd.");
+    if (!error) setSupportReason("");
+    await loadLive();
+  }
+
+  async function activateEmergencyClosure() {
+    if (supportReason.trim().length < 10)
+      return setNotice("Leg voor de noodafsluiting minimaal tien tekens reden vast.");
+    if (!window.confirm("De voorbereide noodafsluiting activeren voor alle actieve groepen?")) return;
+    const client = createClient();
+    if (!client) return;
+    const { data, error } = await client.schema("api").rpc("admin_activate_emergency_closure", {
+      _event_slug: eventSlug,
+      _reason: supportReason,
+    });
+    const result = data as { affectedGroups?: number } | null;
+    setNotice(error ? `Noodafsluiting geweigerd: ${error.message}` : `Noodafsluiting geactiveerd voor ${result?.affectedGroups ?? 0} groepen.`);
+    if (!error) setSupportReason("");
+    await loadLive();
+  }
+
+  async function setPortalState(portal: LivePortal, state: "open" | "paused" | "closed") {
+    if (supportReason.trim().length < 10 && state !== "open")
+      return setNotice("Leg voor pauzeren of sluiten minimaal tien tekens reden vast.");
+    const client = createClient();
+    if (!client) return;
+    const { error } = await client.schema("api").rpc("portal_set_operational_state", {
+      _portal_id: portal.id,
+      _state: state,
+      _expected_version: portal.version,
+      _reason: state === "open" ? "Opnieuw geopend vanuit avondcockpit" : supportReason,
+    });
+    setNotice(error ? `Poortstatus geweigerd: ${error.message}` : `${portal.name} staat nu op ${state}.`);
     if (!error) setSupportReason("");
     await loadLive();
   }
@@ -838,7 +799,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           onClick={() => setSection("planner")}
         >
           <MapPinned />
-          Routeplanner
+          Startpunten en indeling
         </button>
         <button
           className={section === "content" ? "active" : ""}
@@ -864,7 +825,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           }}
         >
           <LifeBuoy />
-          Avondhulp
+          Avondcockpit
         </button>
       </aside>
       <div className="admin-content">
@@ -1235,151 +1196,38 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
-        {section === "planner" && (
-          <section className="panel">
-            <p className="kicker">Deterministisch · versieerbaar</p>
-            <h2>Indelingsvoorstel</h2>
-            <p>
-              De planner houdt inschrijvingen met dezelfde viertekencode bij elkaar, respecteert groeps- en
-              startcapaciteit, controleert tijdvensters en verdeelt zes
-              verschillende werelden. Conflicten blokkeren opslag.
-            </p>
-            <div className="actions">
-              <button className="btn" onClick={() => void calculatePlan()}>
-                Bereken voorstel
-              </button>
-              <button
-                className="btn outline"
-                disabled={!plan?.groups.length || !!plan.conflicts.length}
-                onClick={() => void savePlan()}
-              >
-                Sla als conceptversies op
-              </button>
-              <button
-                className="btn outline"
-                disabled={!planIds.length}
-                onClick={() => void publishPlan()}
-              >
-                Publiceer expliciet
-              </button>
-            </div>
-            {plan && (
-              <div className="planner-result">
-                {plan.conflicts.map((conflict) => (
-                  <div
-                    className="form-warning"
-                    key={`${conflict.code}-${conflict.subjectId}`}
-                  >
-                    <AlertTriangle />
-                    {conflict.code}: {conflict.message}
-                  </div>
-                ))}
-                {plan.groups.map((group) => (
-                  <div className="summary-row" key={group.key}>
-                    <span>
-                      {group.key}: {group.childCount} kinderen,{" "}
-                      {group.portalIds.length} poorten
-                    </span>
-                    <strong>{group.partyIds.length} inschrijving(en)</strong>
-                  </div>
-                ))}
-              </div>
-            )}
-            {planningGroups.length > 0 && (
-              <div className="planner-result">
-                <div className="separator" />
-                <h3>Bestaande routeversies</h3>
-                <p>
-                  Een correctie maakt altijd een nieuwe conceptversie. De
-                  huidige publicatie en reeds gestarte runs blijven intact.
-                </p>
-                {planningGroups.map((group) => (
-                  <div className="summary-row" key={group.id}>
-                    <span>
-                      {group.code} · versie {group.revision} · {group.planState}{" "}
-                      · {group.portalIds.length} poorten
-                    </span>
-                    <button
-                      className="text-link"
-                      onClick={() => void createPlanRevision(group)}
-                    >
-                      Maak correctieversie
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
+        {section === "planner" && <StartScheduleBoard eventSlug={eventSlug} maxGroupSize={dashboard.event.maxGroupSize} />}
         {section === "live" && (
-          <section className="panel">
-            <p className="kicker">Geaudit noodpad</p>
-            <h2>Avondondersteuning</h2>
-            <p>
-              Een override vervangt alleen de fysieke scan van de huidige poort;
-              deelnemersstatussen en afronding blijven apart verplicht. Stoppen
-              is onomkeerbaar.
-            </p>
-            <label className="field">
-              <span>Verplichte reden</span>
-              <textarea
-                rows={3}
-                value={supportReason}
-                onChange={(event) => setSupportReason(event.target.value)}
-              />
-            </label>
-            {liveRuns.length === 0 ? (
-              <p>Geen live of gepauzeerde groepen.</p>
-            ) : (
-              liveRuns.map((run) => (
-                <div className="incident-row" key={run.runId}>
-                  <div>
-                    <strong>
-                      {run.groupCode} · {run.portalName}
-                    </strong>
-                    <small>
-                      {run.runStatus} · versie {run.runVersion} · leider{" "}
-                      {run.leaderEmail}
-                    </small>
-                  </div>
-                  <div className="actions">
-                    <button
-                      className="btn outline"
-                      onClick={() => void liveCommand(run, "override")}
-                    >
-                      Scanoverride
-                    </button>
-                    <button
-                      className="btn outline"
-                      onClick={() =>
-                        void liveCommand(
-                          run,
-                          run.runStatus === "paused" ? "live" : "paused",
-                        )
-                      }
-                    >
-                      {run.runStatus === "paused" ? "Hervatten" : "Pauzeren"}
-                    </button>
-                    <button
-                      className="btn outline"
-                      onClick={() => void reassignLeader(run)}
-                    >
-                      Leider vervangen
-                    </button>
-                    <button
-                      className="btn outline"
-                      onClick={() => {
-                        if (window.confirm("Groep definitief stoppen?"))
-                          void liveCommand(run, "stopped");
-                      }}
-                    >
-                      Stoppen
-                    </button>
-                  </div>
+          <div className="admin-live-cockpit">
+            <section className="panel">
+              <div className="row-between"><div><p className="kicker">Actuele, bevestigde toestand</p><h2>Avondcockpit</h2></div><button className="btn outline" onClick={() => void loadLive()}><RefreshCw />Vernieuwen</button></div>
+              <p>De kaart toont alleen serverbevestigde bestemmingen. Alle handmatige acties gebruiken dezelfde route-, veiligheids- en capaciteitscontroles als de dispatcher.</p>
+              <NightMap variant="admin" ariaLabel="Cockpitkaart met actuele groepsbestemmingen" portals={liveRuns.filter((run) => run.currentCoordinate).map((run) => ({ id: run.groupId, name: `Groep ${run.groupCode}`, world: run.currentKind === "finale" ? "Laatste poort" : "Actuele poort", coordinate: run.currentCoordinate }))} />
+            </section>
+            <section className="panel">
+              <p className="kicker">Meldingen op prioriteit</p><h2>Veiligheidssignalen</h2>
+              {liveAlerts.length === 0 ? <p>Geen open signalen.</p> : liveAlerts.map((alert) => <div className={`form-${alert.priority === "urgent" ? "warning" : "notice"}`} key={alert.id}><strong>{alert.code}</strong><p>{alert.message}</p><small>{new Date(alert.createdAt).toLocaleString("nl-NL")}</small></div>)}
+            </section>
+            <section className="panel">
+              <p className="kicker">Geaudit beheerpad</p><h2>Groepen</h2>
+              <label className="field"><span>Verplichte reden voor een handmatige actie</span><textarea rows={3} value={supportReason} onChange={(event) => setSupportReason(event.target.value)} /></label>
+              {liveRuns.length === 0 ? <p>Geen ingedeelde groepen.</p> : liveRuns.map((run) => (
+                <div className="incident-row" key={run.groupId}>
+                  <div><strong>{run.groupCode} · {run.currentPortal ?? "geen actieve bestemming"}</strong><small>{run.runStatus ?? run.status} · {run.childCount} kinderen · laatst bevestigd {run.lastConfirmedAt ? new Date(run.lastConfirmedAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "nog niet gestart"}</small><small>Stopgrens {run.effectiveStopAt ? new Date(run.effectiveStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "–"} · finale {run.expectedFinaleArrivalAt ? new Date(run.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "–"}</small></div>
+                  {run.runId && run.runVersion !== null && <div className="actions">
+                    {run.currentStopId && <button className="btn outline" onClick={() => void liveCommand(run, "override")}>Scanoverride</button>}
+                    <button className="btn outline" onClick={() => void liveCommand(run, run.runStatus === "paused" ? "live" : "paused")}>{run.runStatus === "paused" ? "Hervatten" : "Pauzeren"}</button>
+                    {run.runStatus === "live" && run.currentKind !== "finale" && <button className="btn outline" onClick={() => void redirectGroup(run, "ordinary")}>Andere gewone poort</button>}
+                    {run.runStatus === "live" && run.currentKind !== "finale" && <button className="btn outline" onClick={() => void redirectGroup(run, "finale")}>Nu naar laatste poort</button>}
+                    <button className="btn outline" onClick={() => void reassignLeader(run)}>Leider vervangen</button>
+                    <button className="btn outline" onClick={() => void safeWithdraw(run)}>Veilig afmelden</button>
+                  </div>}
                 </div>
-              ))
-            )}
-          </section>
+              ))}
+            </section>
+            <section className="panel"><p className="kicker">Poorten en finale-instroom</p><h2>Capaciteit per poort</h2>{livePortals.map((portal) => <div className="incident-row" key={portal.id}><div><strong>{portal.name}{portal.isFinal ? " · laatste poort" : ""}</strong><small>{portal.operationStatus} · {portal.activeReservations} groepen · {portal.expectedChildren} kinderen verwacht</small></div><div className="actions"><button className="btn outline" disabled={portal.operationStatus === "open"} onClick={() => void setPortalState(portal, "open")}>Open</button><button className="btn outline" disabled={portal.operationStatus === "paused"} onClick={() => void setPortalState(portal, "paused")}>Na huidige groep pauzeren</button><button className="btn outline" disabled={portal.operationStatus === "closed"} onClick={() => void setPortalState(portal, "closed")}>Direct sluiten</button></div></div>)}</section>
+            <section className="panel emergency"><AlertTriangle /><div><p className="kicker">Alleen bij uitval van de laatste poort</p><h2>Voorbereide noodafsluiting</h2><p>Deze actie sluit de eindpoort, trekt reserveringen in, stopt de actieve routes en publiceert uitsluitend de vooraf ingestelde veilige verzamelinstructie.</p></div><button className="btn outline" onClick={() => void activateEmergencyClosure()}>Noodafsluiting activeren</button></section>
+          </div>
         )}
       </div>
     </div>

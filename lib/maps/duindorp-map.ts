@@ -1,7 +1,18 @@
 import { worlds } from "@/features/content/public-content";
 
-export const DUINDORP_CENTER: [number, number] = [4.273, 52.104];
+// OpenStreetMap way 7497292 (Tesselseplein), verified through Nominatim on
+// 2026-09-24. Keep the source with the coordinate so this never becomes an
+// unexplained, hand-estimated map point.
+export const DUINDORP_CENTER: [number, number] = [4.2579563, 52.0899891];
+export const DUINDORP_CENTER_SOURCE = "https://www.openstreetmap.org/way/7497292";
 export const DUINDORP_NIGHT_STYLE = "/maps/duindorp-night.json";
+
+export type PublicMapVariant = "preview" | "public";
+
+export function publicMapZoom(variant: PublicMapVariant, mobile: boolean) {
+  if (variant === "preview") return mobile ? 14.45 : 14.9;
+  return mobile ? 14.65 : 15.15;
+}
 
 export type NightMapPortal = {
   id: string;

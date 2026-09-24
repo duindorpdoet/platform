@@ -35,6 +35,18 @@ test("public map never exposes exact route data", async ({ page }) => {
   }
   await expect(page.locator("body")).not.toContainText("NIET-BESTAAND TESTADRES");
   await expect(page.locator("body")).not.toContainText("Testpoort 01");
+  await expect(page.locator('[data-map-center="4.2579563,52.0899891"]')).toHaveAttribute("data-map-privacy", "area-only");
+});
+
+test("homepage and full map share the verified Tesselseplein centre without house markers", async ({ page }) => {
+  for (const path of ["/", "/kaart"]) {
+    await page.goto(path);
+    const map = page.locator('[data-map-center="4.2579563,52.0899891"]').first();
+    await expect(map).toBeVisible();
+    await expect(map).toHaveAttribute("data-map-privacy", "area-only");
+    await expect(map.locator(".night-map-portal-pin")).toHaveCount(0);
+    await expect(page.locator("body")).not.toContainText("NIET-BESTAAND TESTADRES");
+  }
 });
 
 test("public map mounts a canvas in a WebGL2 browser", async ({ page }) => {

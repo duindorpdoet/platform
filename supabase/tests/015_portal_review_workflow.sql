@@ -22,10 +22,6 @@ select
     'warnings', jsonb_build_object('smoke', true, 'flashes', false, 'sound', false, 'actors', true, 'allergens', false),
     'availableFrom', '18:15',
     'availableUntil', '21:45',
-    'visitMinutes', '6',
-    'maxConcurrentGroups', '2',
-    'maxChildrenPerVisit', '14',
-    'maxChildrenTotal', '140',
     'accessibility', 'mixed',
     'availability', true,
     'locationConsent', true

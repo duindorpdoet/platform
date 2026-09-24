@@ -204,14 +204,24 @@ type RegistrationSnapshot = {
   } | null;
 };
 type GroupSnapshot = {
-  group: { id: string; code: string; status: string; version: number; start?: { name: string; locationName: string; startsAt: string } | null };
+  group: {
+    id: string;
+    code: string;
+    status: string;
+    version: number;
+    effectiveOrdinaryStopAt?: string | null;
+    expectedFinaleArrivalAt?: string | null;
+    start?: { name: string; locationName: string; address?: string; startsAt: string } | null;
+  };
   access: { leader: boolean; support: boolean };
   run: null | {
     id: string;
     status: string;
     version: number;
-    remainingStopCount: number;
-    currentStop: null | { id: string; sequence: number; scanAccepted: boolean; portal: { name: string; world: string; address: string; postalCode: string; intensity: number; operationStatus: string } };
+    elapsedSeconds?: number;
+    waitingInstruction?: boolean;
+    remainingStopCount: number | null;
+    currentStop: null | { id: string; sequence: number; kind?: "ordinary" | "finale"; scanAccepted: boolean; portal: { name: string; world: string; address: string; postalCode: string; intensity: number; operationStatus: string } };
     participants: Array<{ id: string; firstName: string; attendance: string; isOwnChild: boolean; status?: string | null }>;
     history: Array<{ sequence: number; outcome: string; completedAt: string; portalName: string; world: string }>;
   };
@@ -263,9 +273,12 @@ function WalkerNow({ context, registration, group }: { context: ParticipantConte
 
   if (run && ["live", "paused"].includes(run.status)) {
     const stop = run.currentStop;
+    const isFinale = stop?.kind === "finale";
     return <ParticipantPageFrame eyebrow="De tocht is begonnen" title={run.status === "paused" ? "Even stilstaan." : "Dit is jullie volgende poort."}>
       {run.status === "paused" && <div className="participant-alert"><Pause />De groepsleider heeft de route gepauzeerd. Wacht samen op de volgende instructie.</div>}
-      {stop && <section className="participant-hero-card live"><img src="/images/pluvierstraat.webp" alt="Nachtelijk verlichte Duindorpse poort" /><div className="participant-hero-overlay"><p className="participant-eyebrow">Vrijgegeven · {stop.portal.world}</p><h2>{stop.portal.name}</h2><p>{stop.portal.address}, {stop.portal.postalCode}</p><div className="participant-progress"><span style={{ width: `${Math.max(8, 100 - run.remainingStopCount * 10)}%` }} /></div><small>Stop {stop.sequence} · nog {run.remainingStopCount} te gaan</small><Link className="btn participant-primary-action" href="/omgeving/meeloper/route">{group?.access.leader ? stop.scanAccepted ? "Bezoek afronden" : "Poort bevestigen" : "Bekijk route-instructie"}<ChevronRight /></Link></div></section>}
+      {stop && <section className="participant-hero-card live"><img src="/images/pluvierstraat.webp" alt="Nachtelijk verlichte Duindorpse poort" /><div className="participant-hero-overlay"><p className="participant-eyebrow">{isFinale ? "Laatste poort · eindshow" : `Vrijgegeven · ${stop.portal.world}`}</p><h2>{stop.portal.name}</h2><p>{stop.portal.address}, {stop.portal.postalCode}</p><small>{Math.floor((run.elapsedSeconds ?? 0) / 60)} minuten onderweg · {isFinale ? "hierna is de tocht afgerond" : "de volgende poort volgt na bevestiging"}</small><Link className="btn participant-primary-action" href="/omgeving/meeloper/route">{group?.access.leader ? stop.scanAccepted ? isFinale ? "Eindshow afronden" : "Bezoek afronden" : "Poort bevestigen" : "Bekijk route-instructie"}<ChevronRight /></Link></div></section>}
+      {!stop && <section className="participant-card calm-card"><Clock3 /><div><h3>Wacht op de volgende veilige opdracht</h3><p>De server beoordeelt opnieuw welke poort en welk aankomstvenster beschikbaar zijn. Er wordt geen adres voorspeld.</p></div></section>}
+      <section className="participant-card"><div className="summary-row"><span>Geen nieuwe gewone poorten vanaf</span><strong>{group?.group.effectiveOrdinaryStopAt ? formatTime(group.group.effectiveOrdinaryStopAt) : "Wordt berekend"}</strong></div><div className="summary-row"><span>Verwachte aankomst laatste poort</span><strong>{group?.group.expectedFinaleArrivalAt ? formatTime(group.group.expectedFinaleArrivalAt) : "Wordt berekend"}</strong></div></section>
       <section className="participant-card calm-card"><ShieldCheck /><div><h3>Rustig en samen</h3><p>Blijf als groep bij elkaar. Alleen de vrijgegeven poort is zichtbaar; een volgend adres verschijnt pas na afronding.</p></div></section>
     </ParticipantPageFrame>;
   }
@@ -286,7 +299,7 @@ function WalkerGroup({ group, registration, groupId }: { group: GroupSnapshot | 
   const participants = group.run?.participants ?? [];
   const visibleChildren = participants.length ? participants : (registration?.registration?.children ?? []).map((child) => ({ id: child.id, firstName: child.firstName, attendance: "aangemeld", isOwnChild: true, status: null }));
   return <ParticipantPageFrame eyebrow={`Groep ${group.group.code}`} title={group.access.leader ? "Jij houdt het overzicht." : "Samen op pad."}>
-    <section className="participant-card group-summary"><div><p className="participant-eyebrow">Startmoment</p><h2>{group.group.start ? formatDateTime(group.group.start.startsAt) : "Wordt binnenkort gedeeld"}</h2><p>{group.group.start?.locationName ?? "De startplek blijft verborgen tot publicatie."}</p></div><span className="group-code">{group.group.code}</span></section>
+    <section className="participant-card group-summary"><div><p className="participant-eyebrow">Startmoment</p><h2>{group.group.start ? formatDateTime(group.group.start.startsAt) : "Wordt binnenkort gedeeld"}</h2><p>{group.group.start ? `${group.group.start.locationName}${group.group.start.address ? ` · ${group.group.start.address}` : ""}` : "De startplek blijft verborgen tot publicatie."}</p></div><span className="group-code">{group.group.code}</span></section>
     <section className="participant-card"><div className="section-title"><div><p className="participant-eyebrow">Gekoppelde deelnemers</p><h2>{group.access.leader ? "Aanwezigheid en veiligheid" : "Jouw kinderen"}</h2></div><ShieldCheck /></div>
       {visibleChildren.length === 0 && <p>De deelnemerslijst verschijnt zodra de route start.</p>}
       <div className="participant-list">{visibleChildren.map((child) => <div key={child.id}><span className="participant-avatar">{child.firstName.slice(0, 1)}</span><span><strong>{child.firstName}</strong><small>{child.attendance === "present" ? "Aanwezig" : child.attendance === "absent" ? "Afwezig" : "Aangemeld"}</small></span>{child.status && <em>{child.status === "visited" ? "Bezocht" : child.status === "skipped" ? "Overgeslagen" : "Wacht"}</em>}</div>)}</div>
@@ -315,7 +328,7 @@ function NightPass({ context, snapshot, group, reload }: { context: ParticipantC
   </ParticipantPageFrame>;
 }
 
-type ViewerSnapshot = { group: { code: string; status: string; start?: { name: string; startsAt: string } | null }; progress: { status: string; completed: number; total: number; lastUpdatedAt: string }; history: Array<{ sequence: number; world: string; outcome: string; completedAt: string }> };
+type ViewerSnapshot = { group: { code: string; status: string; start?: { name: string; startsAt: string } | null }; progress: { status: string; completed: number; lastUpdatedAt: string }; history: Array<{ sequence: number; world: string; outcome: string; completedAt: string }> };
 
 function ViewerSection({ context, eventSlug, role, section }: { context: ParticipantContext; eventSlug: string; role: ParticipantRole; section?: string }) {
   const [snapshot, setSnapshot] = useState<ViewerSnapshot | null>(null);
@@ -331,9 +344,8 @@ function ViewerSection({ context, eventSlug, role, section }: { context: Partici
   if (section === "meer") return <MorePage context={context} eventSlug={eventSlug} role="viewer" accessId={role.accessId ?? undefined} />;
   if (!snapshot) return <ParticipantLoading />;
   if (section === "groep") return <ParticipantPageFrame eyebrow="Bewust beperkt" title={`Groep ${snapshot.group.code}`}><section className="participant-card"><ShieldCheck /><h2>Meekijken zonder mee te lopen</h2><p>Je ziet de status, het geplande startmoment en de afgeronde wereldstappen. Kindernamen, live GPS, toekomstige adressen en andere groepen blijven altijd verborgen.</p><div className="summary-row"><span>Startmoment</span><strong>{snapshot.group.start ? formatDateTime(snapshot.group.start.startsAt) : "Volgt"}</strong></div><div className="summary-row"><span>Toegang</span><strong>{role.expiresAt ? `tot ${formatDateTime(role.expiresAt)}` : "tot intrekking"}</strong></div></section></ParticipantPageFrame>;
-  const percentage = snapshot.progress.total ? Math.round((snapshot.progress.completed / snapshot.progress.total) * 100) : 0;
   return <ParticipantPageFrame eyebrow="Alleen wat je nodig hebt" title={snapshot.progress.status === "completed" ? "De groep is veilig klaar." : snapshot.progress.status === "live" ? "Ze zijn onderweg." : "De avond moet nog beginnen."}>
-    <section className="participant-hero-card viewer"><div className="hero-glow cyan" /><Eye /><div><p className="participant-eyebrow">Groep {snapshot.group.code}</p><h2>{snapshot.progress.completed} van {snapshot.progress.total || "–"} wereldstappen afgerond</h2><div className="participant-progress"><span style={{ width: `${percentage}%` }} /></div><p>Laatst veilig bijgewerkt: {formatDateTime(snapshot.progress.lastUpdatedAt)}</p></div></section>
+    <section className="participant-hero-card viewer"><div className="hero-glow cyan" /><Eye /><div><p className="participant-eyebrow">Groep {snapshot.group.code}</p><h2>{snapshot.progress.completed} bevestigde {snapshot.progress.completed === 1 ? "poort" : "poorten"}</h2><p>Het resterende aantal ligt niet vooraf vast.</p><p>Laatst veilig bijgewerkt: {formatDateTime(snapshot.progress.lastUpdatedAt)}</p></div></section>
     <StampRail history={snapshot.history.map((item) => ({ ...item, portalName: item.world }))} hideNames />
     <div className="participant-alert subtle"><LockKeyhole />Dit is bewust geen live locatie. De voortgang ververst na bevestigde poortacties.</div>
   </ParticipantPageFrame>;

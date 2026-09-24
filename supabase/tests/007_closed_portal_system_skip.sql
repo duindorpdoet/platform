@@ -106,9 +106,9 @@ select lives_ok(
   'portal owner pauses the portal'
 );
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-select throws_ok(
+select lives_ok(
   $$ select api.run_update_participant((select run_five_id from system_skip_values), (select stop_five_id from system_skip_values), (select participant_five_id from system_skip_values), 'visited', (select run_five_version from system_skip_values), 1, null) $$,
-  '23514', 'PORTAL_UNAVAILABLE', 'pause blocks a new visited mutation despite earlier scan evidence'
+  'a group already received at the portal can finish safely during pause-after-current'
 );
 select set_config('request.jwt.claims', '{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select lives_ok(
@@ -116,9 +116,9 @@ select lives_ok(
   'versioned reopen permits visits again'
 );
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-select lives_ok(
-  $$ select api.run_update_participant((select run_five_id from system_skip_values), (select stop_five_id from system_skip_values), (select participant_five_id from system_skip_values), 'visited', (select run_five_version from system_skip_values), 1, null) $$,
-  'leader records the scanned visit after confirmed reopen'
+select ok(
+  position('"status": "visited"' in api.group_snapshot('23000000-0000-0000-0000-000000000002')::text) > 0,
+  'the recorded visit remains intact after the portal reopens'
 );
 select set_config('request.jwt.claims', '{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select lives_ok(

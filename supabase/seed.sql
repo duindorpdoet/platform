@@ -21,7 +21,9 @@ from (values
   ('a0000000-0000-0000-0000-000000000002'::uuid, 'parent-size-1@example.invalid'),
   ('a0000000-0000-0000-0000-000000000005'::uuid, 'parent-size-5@example.invalid'),
   ('a0000000-0000-0000-0000-000000000007'::uuid, 'parent-size-7@example.invalid'),
-  ('a0000000-0000-0000-0000-000000000010'::uuid, 'parent-size-10@example.invalid')
+  ('a0000000-0000-0000-0000-000000000010'::uuid, 'parent-size-10@example.invalid'),
+  ('a0000000-0000-0000-0000-000000000011'::uuid, 'browser-registration-desktop@example.invalid'),
+  ('a0000000-0000-0000-0000-000000000012'::uuid, 'browser-registration-mobile@example.invalid')
 ) fixture(id, email)
 on conflict (id) do nothing;
 
@@ -132,6 +134,14 @@ begin
   insert into app_private.walking_nodes(id, event_id, external_id, kind, coordinate, verified_at, verified_by)
   values ('13000000-0000-0000-0000-000000000999', v_event_id, 'fixture-start-1', 'start', point(4.27, 52.1), now(), v_admin)
   on conflict (id) do nothing;
+  insert into app_private.start_points(
+    id, event_id, name, private_address, latitude, longitude, walking_node_id,
+    max_gathering_groups, max_gathering_children, verified_at, verified_by
+  ) values (
+    v_slot_id, v_event_id, 'Teststart 1', 'NIET-BESTAAND TESTADRES', 52.1, 4.27,
+    '13000000-0000-0000-0000-000000000999', 10, 100, now(), v_admin
+  ) on conflict (id) do nothing;
+  update app_private.start_slots set start_point_id = v_slot_id where id = v_slot_id;
   insert into app_private.walking_edges(event_id, external_id, from_node_id, to_node_id, distance_m, duration_seconds, wheelchair_accessible, approved_at, approved_by)
   values (v_event_id, 'fixture-edge-start-1', '13000000-0000-0000-0000-000000000999', '13000000-0000-0000-0000-000000000001', 80, 60, true, now(), v_admin)
   on conflict (event_id, external_id) do nothing;

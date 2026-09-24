@@ -113,4 +113,27 @@ describe("transactional mail templates", () => {
     expect(notification.html).toContain("Kunnen jullie &amp; helpen?");
     expect(notification.text).toContain("Van: Groepsleider");
   });
+
+  it.each([
+    ["group_schedule_published", "Startpunt en starttijd bevestigd"],
+    ["group_schedule_corrected", "Correctie van jullie groepsstart"],
+  ])("renders private, versioned schedule message %s", (messageType, subject) => {
+    process.env.APP_URL = "https://staging-halloween.duindorpdoet.nl";
+    const notification = renderTransactionalMail({
+      messageType,
+      payload: {
+        startPoint: "Verzamelplek Zuid",
+        startAddress: "Besloten startadres 1",
+        startsAt: "2026-10-31T17:30:00+01:00",
+        ordinaryStopAt: "2026-10-31T19:30:00+01:00",
+        actionPath: "/omgeving/meeloper/nu",
+      },
+    });
+
+    expect(notification.subject).toBe(subject);
+    expect(notification.text).toContain("Verzamelplek Zuid");
+    expect(notification.text).toContain("31 oktober 2026 om 17:30");
+    expect(notification.text).toContain("Geen nieuwe gewone poorten vanaf: 31 oktober 2026 om 19:30");
+    expect(notification.text).not.toContain("Testpoort");
+  });
 });

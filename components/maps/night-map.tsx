@@ -6,6 +6,7 @@ import {
   DUINDORP_CENTER,
   DUINDORP_NIGHT_STYLE,
   portalColor,
+  publicMapZoom,
   validCoordinate,
   type NightMapPortal,
 } from "@/lib/maps/duindorp-map";
@@ -39,11 +40,14 @@ export function NightMap({
       if (disposed || !container.current) return;
       library.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
       libraryRef.current = library;
+      const mobile = window.matchMedia("(max-width: 700px)").matches;
       const map = new library.Map({
         container: container.current,
         style: DUINDORP_NIGHT_STYLE,
         center: DUINDORP_CENTER,
-        zoom: variant === "preview" ? 13.5 : 14.1,
+        zoom: variant === "preview" || variant === "public"
+          ? publicMapZoom(variant, mobile)
+          : 14.8,
         attributionControl: { compact: false },
         cooperativeGestures: variant === "preview",
       });
@@ -129,7 +133,11 @@ export function NightMap({
     };
   }, [state, mappable, variant]);
 
-  return <div className={`night-map night-map--${variant}`}>
+  return <div
+    className={`night-map night-map--${variant}`}
+    data-map-center={`${DUINDORP_CENTER[0]},${DUINDORP_CENTER[1]}`}
+    data-map-privacy={variant === "preview" || variant === "public" ? "area-only" : "authorized-destinations"}
+  >
     <div ref={container} className="night-map-canvas" aria-label={ariaLabel} />
     {state !== "ready" && <div className="night-map-fallback" role={state === "failed" ? "status" : undefined}>
       {state === "failed" ? <MapPin size={27} /> : <Compass size={27} className="night-map-loading-icon" />}

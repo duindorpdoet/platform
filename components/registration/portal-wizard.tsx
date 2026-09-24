@@ -24,11 +24,7 @@ type PortalPayload = {
   warningNotes: string;
   availableFrom: string;
   availableUntil: string;
-  visitMinutes: string;
-  maxConcurrentGroups: string;
-  maxChildrenPerVisit: string;
-  maxChildrenTotal: string;
-  accessibility: "step_free" | "steps" | "mixed" | "unknown";
+  accessibility: "" | "step_free" | "steps" | "mixed" | "unknown";
   accessibilityNotes: string;
   assetPaths: string[];
   availability: boolean;
@@ -49,11 +45,7 @@ const emptyPayload: PortalPayload = {
   warningNotes: "",
   availableFrom: "18:00",
   availableUntil: "22:00",
-  visitMinutes: "5",
-  maxConcurrentGroups: "1",
-  maxChildrenPerVisit: "12",
-  maxChildrenTotal: "120",
-  accessibility: "unknown",
+  accessibility: "",
   accessibilityNotes: "",
   assetPaths: [],
   availability: true,
@@ -120,18 +112,13 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     return () => { active = false; };
   }, [eventSlug]);
 
-  const editable = loaded && (status === null || status === "draft" || status === "changes_requested");
+  const editable = loaded && status !== "rejected" && status !== "withdrawn";
 
   function validateForSubmission() {
     const requiredText = [payload.contactName, payload.phone, payload.address.street, payload.address.houseNumber, payload.address.postalCode, payload.entrance, payload.requestedWorldSlug, payload.portalName, payload.description];
     if (requiredText.some((value) => !value.trim()) || payload.description.trim().length < 10) return "Vul alle verplichte aanvraaggegevens volledig in.";
     if (!/^\d{4}\s?[A-Z]{2}$/.test(payload.address.postalCode.trim().toUpperCase())) return "Vul een geldige Nederlandse postcode in.";
     if (payload.availableUntil <= payload.availableFrom) return "De eindtijd moet na de begintijd liggen.";
-    const visitMinutes = Number(payload.visitMinutes);
-    const concurrent = Number(payload.maxConcurrentGroups);
-    const perVisit = Number(payload.maxChildrenPerVisit);
-    const total = Number(payload.maxChildrenTotal);
-    if (!Number.isInteger(visitMinutes) || visitMinutes < 1 || visitMinutes > 30 || !Number.isInteger(concurrent) || concurrent < 1 || concurrent > 20 || !Number.isInteger(perVisit) || perVisit < 1 || perVisit > 100 || !Number.isInteger(total) || total < perVisit || total > 5000) return "Controleer bezoekduur en capaciteitsgrenzen.";
     if (!payload.availability || !payload.locationConsent) return "Bevestig beschikbaarheid en toestemming voor besloten locatieverwerking.";
     return null;
   }
@@ -143,8 +130,8 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     const { data, error } = await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: payload, _expected_version: saved?.version ?? null });
     setBusy(false);
     if (error) { setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie huidige concept blijft bewaard." : error.message.includes("STALE_VERSION") ? "Jullie gegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
-    const result = data as { id: string; version: number };
-    setSaved(result); setStatus("draft"); setNotice("Jullie gegevens zijn bewaard. Je kunt later verdergaan."); return result;
+    const result = data as { id: string; version: number; status: ReviewStatus };
+    setSaved(result); setStatus(result.status); setNotice(result.status === "changes_requested" ? "Jullie wijzigingen zijn bewaard en kunnen opnieuw worden ingediend." : "Jullie gegevens zijn bewaard. Je kunt later verdergaan."); return result;
   }
 
   async function submit() {
@@ -181,8 +168,8 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     const linked = client ? await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: nextPayload, _expected_version: application.version }) : null;
     setBusy(false);
     if (!linked || linked.error) return setNotice("De foto is ontvangen, maar nog niet aan jullie aanmelding gekoppeld. Probeer het nog eens.");
-    const result = linked.data as { id: string; version: number };
-    setPayload(nextPayload); setSaved(result); setStatus("draft"); setNotice("De foto staat bij jullie aanmelding. Jullie kunnen later verdergaan.");
+    const result = linked.data as { id: string; version: number; status: ReviewStatus };
+    setPayload(nextPayload); setSaved(result); setStatus(result.status); setNotice("De foto staat bij jullie aanmelding. Jullie kunnen later verdergaan.");
   }
 
   function setWarning(key: WarningKey, value: boolean) {
@@ -210,11 +197,9 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
       <div className="check-grid">{(Object.keys(warningLabels) as WarningKey[]).map((key) => <label className="checkfield" key={key}><input type="checkbox" checked={payload.warnings[key]} onChange={(event) => setWarning(key, event.target.checked)} />{warningLabels[key]}</label>)}</div>
       <label className="field"><span>Toelichting op waarschuwingen of allergenen</span><textarea maxLength={500} value={payload.warningNotes} onChange={(event) => setPayload({ ...payload, warningNotes: event.target.value })} /></label>
 
-      <h3>Venster en capaciteit</h3>
+      <h3>Beschikbaarheid en bereikbaarheid</h3>
       <div className="two-fields"><label className="field"><span>Beschikbaar vanaf *</span><input type="time" value={payload.availableFrom} onChange={(event) => setPayload({ ...payload, availableFrom: event.target.value })} /></label><label className="field"><span>Beschikbaar tot *</span><input type="time" value={payload.availableUntil} onChange={(event) => setPayload({ ...payload, availableUntil: event.target.value })} /></label></div>
-      <div className="two-fields"><label className="field"><span>Bezoekduur in minuten *</span><input type="number" min={1} max={30} value={payload.visitMinutes} onChange={(event) => setPayload({ ...payload, visitMinutes: event.target.value })} /></label><label className="field"><span>Groepen tegelijk *</span><input type="number" min={1} max={20} value={payload.maxConcurrentGroups} onChange={(event) => setPayload({ ...payload, maxConcurrentGroups: event.target.value })} /></label></div>
-      <div className="two-fields"><label className="field"><span>Kinderen per bezoek *</span><input type="number" min={1} max={100} value={payload.maxChildrenPerVisit} onChange={(event) => setPayload({ ...payload, maxChildrenPerVisit: event.target.value })} /></label><label className="field"><span>Kinderen totaal *</span><input type="number" min={1} max={5000} value={payload.maxChildrenTotal} onChange={(event) => setPayload({ ...payload, maxChildrenTotal: event.target.value })} /></label></div>
-      <label className="field"><span>Praktische toegankelijkheid *</span><select className="choice" value={payload.accessibility} onChange={(event) => setPayload({ ...payload, accessibility: event.target.value as PortalPayload["accessibility"] })}><option value="unknown">Nog te beoordelen</option><option value="step_free">Drempelvrij</option><option value="steps">Trappen of hoge drempels</option><option value="mixed">Gedeeltelijk toegankelijk</option></select></label>
+      <label className="field"><span>Praktische toegankelijkheid (optioneel)</span><select className="choice" value={payload.accessibility} onChange={(event) => setPayload({ ...payload, accessibility: event.target.value as PortalPayload["accessibility"] })}><option value="">Niet ingevuld</option><option value="unknown">Nog te beoordelen</option><option value="step_free">Drempelvrij</option><option value="steps">Trappen of hoge drempels</option><option value="mixed">Gedeeltelijk toegankelijk</option></select></label>
       <label className="field"><span>Toelichting toegankelijkheid</span><textarea maxLength={500} value={payload.accessibilityNotes} onChange={(event) => setPayload({ ...payload, accessibilityNotes: event.target.value })} /></label>
       <label className="field"><span>Foto van de opstelling (optioneel)</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAsset(file); event.currentTarget.value = ""; }} /><small>Een foto helpt ons alvast mee te denken. Kies een JPG, PNG of WebP van maximaal 8 MB.</small></label>
       {payload.assetPaths.length > 0 && <p className="note">{payload.assetPaths.length} afbeelding(en) veilig aan dit concept gekoppeld.</p>}

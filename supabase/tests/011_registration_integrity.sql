@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(22);
 
 create temporary table registration_values(
   draft_result jsonb,
@@ -16,6 +16,11 @@ select is(
   0,
   'new authenticated parent starts without implicit household or elevated role'
 );
+
+update app_private.event_route_settings set
+  global_ordinary_stop_at = timestamptz '2026-10-31 20:30:00+01',
+  allowed_personal_stop_times = array[timestamptz '2026-10-31 19:30:00+01']
+where event_id = (select id from app_private.events where slug = 'duindorp-halloween-2026');
 
 set local role authenticated;
 select set_config(
@@ -35,6 +40,8 @@ select lives_ok(
           {"name":"Eigen kind twee","age":"10","unitPriceCents":1}
         ],
         "togetherPreference":"Samira de Vries",
+        "startPreference":"early",
+        "ordinaryStopAt":"2026-10-31T19:30:00+01:00",
         "amountCents":1,
         "marketingConsent":false
       }'::jsonb,
@@ -91,6 +98,16 @@ select is(
   (select count(*)::integer from app_private.registrations where household_id = (select household_id from registration_values) and status = 'submitted'),
   1,
   'submission creates exactly one active registration'
+);
+select is(
+  (select start_time_preference::text from app_private.registrations where id = (select registration_id from registration_values)),
+  'early',
+  'submission copies the soft start preference from the private draft'
+);
+select is(
+  (select requested_ordinary_stop_at from app_private.registrations where id = (select registration_id from registration_values)),
+  timestamptz '2026-10-31 19:30:00+01',
+  'submission copies an organizer-offered earlier stop moment'
 );
 select is(
   (select count(*)::integer from app_private.registration_children where registration_id = (select registration_id from registration_values)),
@@ -158,6 +175,18 @@ select is(
   (api.my_context('duindorp-halloween-2026')->'capabilities')::text,
   '[]',
   'registration never grants admin, leader or operational capabilities'
+);
+
+set local role postgres;
+update app_private.registration_drafts
+set payload = jsonb_set(payload, '{ordinaryStopAt}', '"2026-10-31T18:47:00+01:00"'::jsonb)
+where household_id = (select household_id from registration_values);
+select throws_ok(
+  $$ insert into app_private.registrations(event_id, household_id, reference, status)
+     select event_id, household_id, 'INVALID-STOP-PREFERENCE', 'cancelled'
+     from app_private.registrations where id = (select registration_id from registration_values) $$,
+  '22023', 'INVALID_STOP_PREFERENCE',
+  'a direct crafted submission cannot select a stop moment the organization did not offer'
 );
 
 select * from finish();

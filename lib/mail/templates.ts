@@ -3,6 +3,12 @@ import "server-only";
 type TemplateInput = { messageType: string; payload: Record<string, unknown> };
 
 const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]!);
+const eventDateTime = (value: unknown) => {
+  if (typeof value !== "string") return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat("nl-NL", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Amsterdam" }).format(parsed);
+};
 
 export function renderTransactionalMail({ messageType, payload }: TemplateInput) {
   const reference = escapeHtml(payload.reference ?? payload.registrationReference ?? payload.applicationReference ?? payload.ticketReference ?? "");
@@ -14,6 +20,10 @@ export function renderTransactionalMail({ messageType, payload }: TemplateInput)
     payload.senderLabel ? `Van: ${String(payload.senderLabel)}` : "",
     typeof payload.proposedAmountCents === "number" ? `Voorgesteld bedrag: € ${(payload.proposedAmountCents / 100).toFixed(2)}` : "",
     payload.message ? `Bericht: ${String(payload.message)}` : "",
+    payload.startPoint ? `Startpunt: ${String(payload.startPoint)}` : "",
+    payload.startAddress ? `Adres startpunt: ${String(payload.startAddress)}` : "",
+    eventDateTime(payload.startsAt) ? `Starttijd: ${eventDateTime(payload.startsAt)}` : "",
+    eventDateTime(payload.ordinaryStopAt) ? `Geen nieuwe gewone poorten vanaf: ${eventDateTime(payload.ordinaryStopAt)}` : "",
   ].filter(Boolean);
   const configuredSiteUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
   const siteUrlRaw = /^https?:\/\//.test(configuredSiteUrl) ? configuredSiteUrl : "";
@@ -33,6 +43,8 @@ export function renderTransactionalMail({ messageType, payload }: TemplateInput)
     group_ticket_message_leader: { subject: "Nieuw bericht over jouw groep", heading: "Er staat een nieuw bericht klaar", body: "Open Hulp & contact in de deelnemersomgeving om het gesprek te lezen en te reageren." },
     group_viewer_invite: { subject: "Uitnodiging om een groep te volgen", heading: "Je mag veilig meekijken", body: "Deze persoonlijke toegang toont beperkte groepsvoortgang en relevante updates. Kindernamen, live GPS en toekomstige adressen blijven verborgen." },
     participant_update: { subject: String(payload.title ?? "Nieuwe update voor jouw Halloweenavond"), heading: String(payload.title ?? "Er is een nieuwe update"), body: String(payload.message ?? "Open je persoonlijke omgeving voor de actuele informatie.") },
+    group_schedule_published: { subject: "Startpunt en starttijd bevestigd", heading: "Jullie groepsstart is bevestigd", body: "Hieronder staan jullie startpunt, exacte starttijd en grens voor nieuwe gewone poorten. Na die grens volgt nog de laatste poort en eindshow." },
+    group_schedule_corrected: { subject: "Correctie van jullie groepsstart", heading: "Jullie groepsindeling is aangepast", body: "Gebruik de bijgewerkte startgegevens hieronder. Eerder ontvangen startgegevens zijn niet meer geldig." },
   };
   const content = definitions[messageType] ?? { subject: "Update over Halloween in Duindorp", heading: "Er is een update", body: "Bekijk je persoonlijke omgeving voor de actuele informatie." };
   const destination = actionUrl || siteUrl;

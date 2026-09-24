@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(15);
 
 create temporary table registration_channel_state(version integer) on commit drop;
 insert into registration_channel_state
@@ -75,9 +75,15 @@ select is(
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-select throws_ok(
+select lives_ok(
   $$ select api.portal_application_save('duindorp-halloween-2026', '{"contactName":"Tweede bewoner","address":{"street":"Teststraat","houseNumber":"2"}}'::jsonb, null) $$,
-  'P0001', 'PORTAL_REGISTRATION_CLOSED', 'the database rejects portal drafts while that channel is closed'
+  'an existing house draft remains editable after the public channel closes'
+);
+
+select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select throws_ok(
+  $$ select api.portal_application_save('duindorp-halloween-2026', '{"contactName":"Nieuwe bewoner","address":{"street":"Teststraat","houseNumber":"3"}}'::jsonb, null) $$,
+  'P0001', 'PORTAL_REGISTRATION_CLOSED', 'the database still rejects a new house draft while that channel is closed'
 );
 
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);

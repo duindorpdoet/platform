@@ -9,9 +9,21 @@ import { safeReturnPath } from "@/lib/auth/redirect";
 
 const COOLDOWN_SECONDS = 60;
 
-export function EmailOtpForm({ nextPath, children, onVerified }: { nextPath?: string; children?: ReactNode; onVerified?: () => Promise<void> }) {
+export function EmailOtpForm({
+  nextPath,
+  children,
+  onVerified,
+  beforeRequestCode,
+  initialEmail = "",
+}: {
+  nextPath?: string;
+  children?: ReactNode;
+  onVerified?: () => Promise<void>;
+  beforeRequestCode?: (email: string) => Promise<void>;
+  initialEmail?: string;
+}) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [otp, setOtp] = useState("");
   const [stage, setStage] = useState<"email" | "code">("email");
   const [busy, setBusy] = useState(false);
@@ -36,8 +48,10 @@ export function EmailOtpForm({ nextPath, children, onVerified }: { nextPath?: st
     setBusy(true);
     setMessage(undefined);
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (beforeRequestCode) await beforeRequestCode(normalizedEmail);
       const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         options: { shouldCreateUser: true },
       });
 
@@ -48,8 +62,10 @@ export function EmailOtpForm({ nextPath, children, onVerified }: { nextPath?: st
       }
       setStage("code");
       setMessage("Als dit adres e-mail kan ontvangen, staat er zo een eenmalige code klaar.");
-    } catch {
-      setMessage("Geen verbinding met de e-maildienst. Controleer je internetverbinding en probeer opnieuw.");
+    } catch (error) {
+      setMessage(error instanceof Error && error.message === "PORTAL_REGISTRATION_CLOSED"
+        ? "De organisatie heeft nieuwe locatieaanmeldingen gepauzeerd."
+        : "De aanmelding of e-mailcode kon niet worden verwerkt. Controleer je gegevens en probeer opnieuw.");
     } finally { setBusy(false); }
   }
 

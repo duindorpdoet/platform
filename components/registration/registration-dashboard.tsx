@@ -63,6 +63,16 @@ type HouseholdSnapshot = {
     createdAt: string;
   }>;
 };
+type PreferenceSnapshot = {
+  registrationId: string | null;
+  version: number | null;
+  startPreference: "early" | "indifferent" | "later";
+  ordinaryStopAt: string | null;
+  editable: boolean;
+  changeStatus: "editable" | "locked" | "change_requested";
+  confirmedSchedule?: { startsAt: string; startPoint: string; startAddress: string; effectiveOrdinaryStopAt: string; expectedFinaleArrivalAt: string; revision: number } | null;
+  event: { firstStartAt?: string | null; globalOrdinaryStopAt?: string | null; allowedStopTimes: string[] };
+};
 
 const registrationStatusLabels: Record<string, string> = {
   draft: "Concept",
@@ -123,11 +133,13 @@ export function RegistrationDashboard({
     Boolean(inviteToken),
   );
   const [notice, setNotice] = useState("");
+  const [preferences, setPreferences] = useState<PreferenceSnapshot | null>(null);
+  const [preferenceDraft, setPreferenceDraft] = useState<{ startPreference: PreferenceSnapshot["startPreference"]; ordinaryStopAt: string }>({ startPreference: "indifferent", ordinaryStopAt: "" });
   const inviteAttempted = useRef(false);
   const load = useCallback(async () => {
     const client = createClient();
     if (!client) return;
-    const [registrationResult, householdResult] =
+    const [registrationResult, householdResult, preferenceResult] =
       await Promise.all([
         client
           .schema("api")
@@ -135,11 +147,19 @@ export function RegistrationDashboard({
         client
           .schema("api")
           .rpc("household_access_snapshot", { _event_slug: eventSlug }),
+        client
+          .schema("api")
+          .rpc("registration_preferences_snapshot", { _event_slug: eventSlug }),
       ]);
     if (!registrationResult.error)
       setSnapshot(registrationResult.data as Snapshot);
     if (!householdResult.error)
       setHousehold(householdResult.data as HouseholdSnapshot | null);
+    if (!preferenceResult.error) {
+      const next = preferenceResult.data as PreferenceSnapshot;
+      setPreferences(next);
+      setPreferenceDraft({ startPreference: next.startPreference, ordinaryStopAt: next.ordinaryStopAt ?? "" });
+    }
   }, [eventSlug]);
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
@@ -196,6 +216,25 @@ export function RegistrationDashboard({
         ? "De betaalmelding kon niet worden verwerkt."
         : "Je melding is opgeslagen. De organisatie controleert de betaling handmatig.",
     );
+    await load();
+  }
+  async function savePreferences() {
+    if (!preferences?.registrationId || preferences.version === null) return;
+    const client = createClient(); if (!client) return;
+    const args = {
+      _registration_id: preferences.registrationId,
+      _start_preference: preferenceDraft.startPreference,
+      _ordinary_stop_at: preferenceDraft.ordinaryStopAt || null,
+    };
+    const result = preferences.editable
+      ? await client.schema("api").rpc("registration_preferences_save", { ...args, _expected_version: preferences.version })
+      : await client.schema("api").rpc("registration_preferences_request_change", {
+          ...args,
+          _reason: window.prompt("Waarom wil je de bevestigde voorkeur aanpassen? (minimaal 10 tekens)")?.trim() ?? "",
+        });
+    setNotice(result.error
+      ? result.error.message.includes("PREFERENCES_LOCKED") ? "De indeling is intussen gesloten. Verstuur hiervoor een wijzigingsverzoek." : "De voorkeur kon niet worden verwerkt."
+      : preferences.editable ? "Start- en stopvoorkeur bijgewerkt." : "Wijzigingsverzoek naar de organisatie verstuurd.");
     await load();
   }
   async function requestRegistrationChange(
@@ -350,6 +389,14 @@ export function RegistrationDashboard({
           melding van jou is nog geen bevestiging.
         </p>
       </section>
+      {preferences && <section className="panel">
+        <p className="kicker">Start en einde</p><h2>Jullie voorkeuren</h2>
+        {preferences.confirmedSchedule && <div className="form-notice"><strong>Bevestigde indeling · revisie {preferences.confirmedSchedule.revision}</strong><br />Start: {new Date(preferences.confirmedSchedule.startsAt).toLocaleString("nl-NL", { dateStyle: "long", timeStyle: "short" })} bij {preferences.confirmedSchedule.startPoint}, {preferences.confirmedSchedule.startAddress}.<br />Geen nieuwe gewone poorten vanaf {new Date(preferences.confirmedSchedule.effectiveOrdinaryStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}; verwachte aankomst laatste poort circa {new Date(preferences.confirmedSchedule.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}.</div>}
+        <label className="field"><span>Voorkeur voor starten</span><select value={preferenceDraft.startPreference} onChange={(event) => setPreferenceDraft({ ...preferenceDraft, startPreference: event.target.value as PreferenceSnapshot["startPreference"] })}><option value="early">Vroeg</option><option value="indifferent">Maakt niet uit</option><option value="later">Later</option></select><small>Dit blijft een voorkeur totdat de organisatie een exacte start bevestigt.</small></label>
+        <label className="field"><span>Wanneer stoppen jullie met gewone poorten?</span><select value={preferenceDraft.ordinaryStopAt} onChange={(event) => setPreferenceDraft({ ...preferenceDraft, ordinaryStopAt: event.target.value })}><option value="">Tot de algemene grens{preferences.event.globalOrdinaryStopAt ? ` (${new Date(preferences.event.globalOrdinaryStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })})` : ""}</option>{preferences.event.allowedStopTimes.map((value) => <option value={value} key={value}>{new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</option>)}</select><small>De laatste poort en eindshow volgen daarna nog.</small></label>
+        <button className="btn outline" onClick={() => void savePreferences()}>{preferences.editable ? "Voorkeuren opslaan" : "Wijziging aanvragen"}</button>
+        {preferences.changeStatus === "change_requested" && <p className="note">Jullie wijzigingsverzoek wacht op beoordeling door de organisatie.</p>}
+      </section>}
       <section className="panel">
         <p className="kicker">Deelname aanpassen</p>
         <h2>Kinderen en wijzigingen</h2>
