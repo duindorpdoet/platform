@@ -8,6 +8,14 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
       const url = new URL(String(input));
       let body = {};
 
+      if (url.pathname.endsWith('/config/auth') && init.method === 'PATCH') {
+        const requested = JSON.parse(init.body);
+        const expectedRateLimit = process.env.APP_ENVIRONMENT === 'production' ? 120 : 30;
+        if (requested.rate_limit_email_sent !== expectedRateLimit) {
+          throw new Error('Incorrect Auth email rate limit');
+        }
+      }
+
       if (url.origin === 'https://staging.example.invalid' && url.pathname === '/api/jobs/mail') {
         return new Response(
           runtimeStatus === 200 ? JSON.stringify({ probe: 'transactional_gateway', accepted: true }) : 'runtime probe failed',
@@ -24,7 +32,7 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
           mailer_otp_length: 6,
           hook_send_email_enabled: true,
           hook_send_email_uri: 'https://project-ref.supabase.co/functions/v1/send-email-hook',
-          rate_limit_email_sent: 30,
+          rate_limit_email_sent: process.env.APP_ENVIRONMENT === 'production' ? 120 : 30,
         };
       }
 

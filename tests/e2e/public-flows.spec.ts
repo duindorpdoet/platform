@@ -71,6 +71,24 @@ test("authentication uses a six-digit email OTP without a role picker", async ({
   await expect(page.locator("body")).not.toContainText("Kies een rol");
 });
 
+test("a rapid double tap requests only one email code", async ({ page }) => {
+  let requestCount = 0;
+  await page.route("**/auth/v1/otp", async (route) => {
+    requestCount += 1;
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    await route.fulfill({ json: {} });
+  });
+  await page.goto("/inloggen");
+  await page.getByLabel("E-mailadres").fill("mobile-double-tap@example.invalid");
+  const submit = page.getByRole("button", { name: "Stuur eenmalige code" });
+  await submit.evaluate((element: HTMLButtonElement) => {
+    element.click();
+    element.click();
+  });
+  await expect(page.getByRole("heading", { name: "Vul de zes cijfers in." })).toBeVisible();
+  expect(requestCount).toBe(1);
+});
+
 test("protected route redirects to login and keeps safe return path", async ({ page }) => {
   await page.goto("/mijn-groep");
   await expect(page).toHaveURL(/\/inloggen\?next=%2Fmijn-groep|\/inloggen\?next=\/mijn-groep/);

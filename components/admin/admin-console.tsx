@@ -1,16 +1,22 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Papa from "papaparse";
 import { paymentAmount, type PaymentBatch } from "@/components/payments/payment-details";
 import {
   AlertTriangle,
+  ArrowRight,
+  CalendarClock,
   CheckCircle2,
   Database,
   FileText,
   House,
   LifeBuoy,
   BellRing,
+  Play,
+  SlidersHorizontal,
   MapPinned,
   MessageSquare,
   RefreshCw,
@@ -149,6 +155,25 @@ type TogetherRequest = {
   limitOverridden: boolean;
   createdAt: string;
 };
+type AdminRegistration = {
+  id: string;
+  reference: string;
+  status: string;
+  submittedAt: string | null;
+  updatedAt: string;
+  parentName: string;
+  parentEmail: string;
+  phone: string | null;
+  groupId: string | null;
+  groupCode: string | null;
+  groupName: string;
+  togetherCode: string | null;
+  preferredStartAt: string | null;
+  desiredEndAt: string | null;
+  childCount: number;
+  children: Array<{ id: string; name: string; age: number | null; accessibilityNote: string | null; status: string }>;
+  priceCents: number;
+};
 async function digest(value: unknown) {
   return [
     ...new Uint8Array(
@@ -174,6 +199,21 @@ const labels: Record<string, string> = {
   pendingTogetherRequests: "Samenloopverzoeken",
   openTickets: "Open gesprekken",
 };
+const sectionMeta = {
+  overview: { kicker: "De avond · voorbereiding", title: "De nacht in beeld.", description: "Alles wat nu aandacht vraagt, bij elkaar." },
+  imports: { kicker: "Beheer · gegevens", title: "Imports", description: "Controleer bronbestanden voordat gegevens worden toegepast." },
+  registrations: { kicker: "Deelnemers · groepen", title: "Inschrijvingen", description: "Iedere inschrijving direct in beeld, met groep en deelnemers." },
+  payments: { kicker: "Deelnemers · betalingen", title: "Betalingen", description: "Tikkies, ontvangsten en uitzonderingen per kind." },
+  portals: { kicker: "De avond · voorbereiding", title: "Poorten", description: "Beoordeel huizen en houd hun gegevens actueel." },
+  planner: { kicker: "De avond · voorbereiding", title: "Startpuntregie", description: "Verdeel groepen veilig over de wijk en de beschikbare tijden." },
+  content: { kicker: "Website · redactie", title: "Content & sponsors", description: "Beheer zichtbare informatie en partners." },
+  access: { kicker: "Organisatie · toegang", title: "Beheerders", description: "Bepaal wie welk onderdeel van de nacht mag beheren." },
+  live: { kicker: "De avond · live", title: "Avondcockpit", description: "Volg alleen serverbevestigde voortgang en handel uitzonderingen af." },
+  tickets: { kicker: "Eén doorlopend gesprek", title: "Messenger", description: "Nieuwe berichten, lopende gesprekken en antwoorden in één inbox." },
+  updates: { kicker: "Communicatie · gericht", title: "Gerichte updates", description: "Bereik precies de groepen of huizen waarvoor een wijziging geldt." },
+  simulation: { kicker: "Veilig testen", title: "Avondsimulatie", description: "Controleer de actuele plannercondities voordat de avond live gaat." },
+  settings: { kicker: "Grenzen en toegang", title: "Instellingen", description: "Beheer inschrijfkanalen, groepsgrenzen en operationele voorbereiding." },
+} as const;
 const paymentStatusLabels: Record<string, string> = {
   cancelled: "Afgezegd",
   needs_review: "Controle nodig",
@@ -208,6 +248,8 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "live"
     | "tickets"
     | "updates"
+    | "simulation"
+    | "settings"
   >("overview");
   const [importKind, setImportKind] = useState("portals");
   const [importResult, setImportResult] = useState<{
@@ -241,6 +283,10 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   const [registrationChanges, setRegistrationChanges] = useState<
     RegistrationChange[]
   >([]);
+  const [registrations, setRegistrations] = useState<AdminRegistration[]>([]);
+  const [registrationsLoading, setRegistrationsLoading] = useState(false);
+  const [registrationSearch, setRegistrationSearch] = useState("");
+  const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const [togetherRequests, setTogetherRequests] = useState<TogetherRequest[]>([]);
   const [groupSizeLimit, setGroupSizeLimit] = useState(10);
   const [supportReason, setSupportReason] = useState("");
@@ -254,10 +300,33 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     setDashboard(next);
     setGroupSizeLimit(next.event.maxGroupSize);
   }, [eventSlug]);
+  const loadLive = useCallback(async () => {
+    const client = createClient();
+    if (!client) return;
+    const [cockpitResult, portalResult] = await Promise.all([
+      client.schema("api").rpc("admin_evening_cockpit", { _event_slug: eventSlug }),
+      client.schema("api").rpc("admin_portal_operations_snapshot", { _event_slug: eventSlug }),
+    ]);
+    if (cockpitResult.error) return setNotice("Live-overzicht is alleen beschikbaar voor avondondersteuning.");
+    const cockpit = cockpitResult.data as { groups: LiveRun[]; portals: LivePortal[]; alerts: LiveAlert[] };
+    setLiveRuns(cockpit.groups);
+    setLivePortals(cockpit.portals);
+    setLiveAlerts(cockpit.alerts);
+    if (!portalResult.error) setPortalOperations(((portalResult.data as { portals?: PortalOperation[] } | null)?.portals ?? []));
+  }, [eventSlug]);
   useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
-  }, [load]);
+    const timer = window.setTimeout(() => {
+      void load();
+      void loadLive();
+    }, 0);
+    const poll = window.setInterval(() => {
+      if (section === "overview" || section === "live") void loadLive();
+    }, 20_000);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearInterval(poll);
+    };
+  }, [load, loadLive, section]);
 
   async function dryRun(file: File) {
     const parsed = Papa.parse<Record<string, string>>(await file.text(), {
@@ -312,21 +381,6 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     await load();
   }
 
-  async function loadLive() {
-    const client = createClient();
-    if (!client) return;
-    const [cockpitResult, portalResult] = await Promise.all([
-      client.schema("api").rpc("admin_evening_cockpit", { _event_slug: eventSlug }),
-      client.schema("api").rpc("admin_portal_operations_snapshot", { _event_slug: eventSlug }),
-    ]);
-    if (cockpitResult.error) return setNotice("Live-overzicht is alleen beschikbaar voor avondondersteuning.");
-    const cockpit = cockpitResult.data as { groups: LiveRun[]; portals: LivePortal[]; alerts: LiveAlert[] };
-    setLiveRuns(cockpit.groups);
-    setLivePortals(cockpit.portals);
-    setLiveAlerts(cockpit.alerts);
-    if (!portalResult.error) setPortalOperations(((portalResult.data as { portals?: PortalOperation[] } | null)?.portals ?? []));
-  }
-
   async function startMessage(subjectKind: "group" | "portal", subjectId: string, label: string) {
     const body = window.prompt("Bericht aan " + label, "")?.trim();
     if (!body) return;
@@ -368,6 +422,21 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         "Wijzigingsverzoeken zijn alleen beschikbaar voor inschrijvingsbeheer.",
       );
     setRegistrationChanges(data as RegistrationChange[]);
+  }
+
+  async function loadRegistrations() {
+    const client = createClient();
+    if (!client) return;
+    setRegistrationsLoading(true);
+    const { data, error } = await client
+      .schema("api")
+      .rpc("admin_registrations_snapshot", { _event_slug: eventSlug });
+    setRegistrationsLoading(false);
+    if (error)
+      return setNotice(
+        "De inschrijvingen konden niet worden opgehaald. Controleer je beheerrechten of probeer opnieuw.",
+      );
+    setRegistrations((data ?? []) as AdminRegistration[]);
   }
 
   async function loadTogetherRequests() {
@@ -870,13 +939,17 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   return (
     <div className="admin-shell">
       <aside className="admin-nav">
-        <p className="kicker">Organisatie</p>
+        <Link className="admin-brand" href="/">
+          <Image src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" width={180} height={76} priority />
+          <span>Nachtregie · organisatie</span>
+        </Link>
+        <p className="admin-nav-label">Werkruimte</p>
         <button
           className={section === "overview" ? "active" : ""}
           onClick={() => setSection("overview")}
         >
           <ShieldCheck />
-          Overzicht
+          Cockpit
         </button>
         <button
           className={section === "imports" ? "active" : ""}
@@ -890,13 +963,15 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           onClick={() => {
             setSection("registrations");
             void Promise.all([
+              loadRegistrations(),
               loadRegistrationChanges(),
               loadTogetherRequests(),
             ]);
           }}
         >
           <UsersRound />
-          Inschrijvingen
+          <span>Inschrijvingen</span>
+          {dashboard.counts.registrations > 0 && <b aria-hidden="true">{dashboard.counts.registrations}</b>}
         </button>
         {(capabilities.includes("event_admin") ||
           capabilities.includes("groups_manage") ||
@@ -906,7 +981,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             onClick={() => setSection("tickets")}
           >
             <MessageSquare />
-            Hulp & contact
+            Messenger
           </button>
         )}
         {(capabilities.includes("event_admin") ||
@@ -968,18 +1043,39 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           }}
         >
           <LifeBuoy />
-          Avondcockpit
+          Avond live
+        </button>
+        <button
+          className={section === "simulation" ? "active" : ""}
+          onClick={() => {
+            setSection("simulation");
+            void loadLive();
+          }}
+        >
+          <Play />
+          Avondsimulatie
+        </button>
+        <button
+          className={section === "settings" ? "active" : ""}
+          onClick={() => setSection("settings")}
+        >
+          <SlidersHorizontal />
+          Instellingen
         </button>
       </aside>
-      <div className="admin-content">
-        <div className="app-heading row-between">
+      <div className="admin-workspace">
+        <div className="admin-topbar">
+          <span>De Duindorpse Poorten <i>›</i> Nachtregie</span>
+          <span>{dashboard.event.date} <i>·</i> {dashboard.event.phase}</span>
+        </div>
+        <main className="admin-content">
+        <div className="app-heading admin-page-heading row-between">
           <div>
-            <p className="kicker">
-              {dashboard.event.phase} · {dashboard.event.date}
-            </p>
-            <h1>{dashboard.event.title}</h1>
+            <p className="kicker">{sectionMeta[section].kicker}</p>
+            <h1>{sectionMeta[section].title}</h1>
+            <p>{sectionMeta[section].description}</p>
           </div>
-          <button className="btn outline" onClick={() => void load()}>
+          <button className="btn outline" onClick={() => void Promise.all([load(), section === "registrations" ? loadRegistrations() : Promise.resolve()])}>
             <RefreshCw />
             Vernieuwen
           </button>
@@ -989,7 +1085,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             {notice}
           </div>
         )}
-        {section === "overview" && (
+        {section === "settings" && (
           <>
             <section className="panel registration-controls">
               <p className="kicker">Aanmeldingen beheren</p>
@@ -1066,13 +1162,34 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                 )}
               </div>
             </section>
-            <div className="dashboard-metrics">
-              {Object.entries(dashboard.counts).map(([key, value]) => (
+          </>
+        )}
+        {section === "overview" && (
+          <>
+            <div className="dashboard-metrics cockpit-metrics">
+              {["groups", "approvedPortals", "openTickets", "registrations"].map((key) => (
                 <div className="metric" key={key}>
-                  <strong>{value}</strong>
+                  <strong>{dashboard.counts[key] ?? 0}</strong>
                   <span>{labels[key] ?? key}</span>
                 </div>
               ))}
+            </div>
+            <section className="panel cockpit-action-panel">
+              <div className="row-between"><div><p className="kicker">Direct handelen</p><h2>Dit vraagt nu aandacht.</h2></div><span className="registration-total">{liveAlerts.length + (dashboard.counts.pendingTogetherRequests ?? 0)} open</span></div>
+              {liveAlerts.length === 0 && !(dashboard.counts.pendingTogetherRequests ?? 0) ? <p className="form-notice">Geen veiligheidsmeldingen of samenloopverzoeken die nu actie vragen.</p> : <>
+                {liveAlerts.slice(0, 4).map((alert) => <div className="cockpit-action-row" key={alert.id}><AlertTriangle /><div><strong>{alert.code}</strong><span>{alert.message}</span></div><button className="text-link" onClick={() => setSection("live")}>Open avond live <ArrowRight /></button></div>)}
+                {(dashboard.counts.pendingTogetherRequests ?? 0) > 0 && <div className="cockpit-action-row"><UsersRound /><div><strong>{dashboard.counts.pendingTogetherRequests} samenloopverzoek(en)</strong><span>Controleer groepsgrootte, tijden en gezamenlijke indeling.</span></div><button className="text-link" onClick={() => { setSection("registrations"); void Promise.all([loadRegistrations(), loadTogetherRequests(), loadRegistrationChanges()]); }}>Open inschrijvingen <ArrowRight /></button></div>}
+              </>}
+            </section>
+            <div className="cockpit-overview-grid">
+              <section className="panel">
+                <div className="row-between"><div><p className="kicker">Wijkregie</p><h2>Poorten van de nacht</h2></div><button className="text-link" onClick={() => setSection("portals")}>Alle poorten <ArrowRight /></button></div>
+                <div className="cockpit-portal-grid">{livePortals.length === 0 ? <p>De operationele poortstatus wordt opgehaald.</p> : livePortals.slice(0, 8).map((portal) => <article className={"cockpit-portal-card " + portal.operationStatus} key={portal.id}><House /><strong>{portal.systemCode || portal.name}</strong><span>{portal.operationStatus === "open" ? "Open" : portal.operationStatus === "paused" ? "Pauze" : "Gesloten"}</span></article>)}</div>
+              </section>
+              <section className="panel">
+                <div className="row-between"><div><p className="kicker">Onderweg</p><h2>Groepen in beweging</h2></div><button className="text-link" onClick={() => setSection("live")}>Avond live <ArrowRight /></button></div>
+                <div className="cockpit-group-list">{liveRuns.length === 0 ? <p>Nog geen ingedeelde groepen actief.</p> : liveRuns.slice(0, 6).map((run) => <article key={run.groupId}><span>{run.systemCode || run.groupCode}</span><div><strong>{run.displayName || "Groep " + run.groupCode}</strong><small>{run.currentPortal || "Wacht op volgende bestemming"} · {run.childCount} kinderen</small></div><b>{run.runStatus || run.status}</b></article>)}</div>
+              </section>
             </div>
             <section className="panel activity">
               <p className="kicker">Recente auditactiviteit</p>
@@ -1097,6 +1214,32 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
               )}
             </section>
           </>
+        )}
+        {section === "simulation" && (
+          <div className="admin-simulation-grid">
+            <section className="panel simulation-main">
+              <div className="simulation-icon"><Play /></div>
+              <p className="kicker">Veilig testen met actuele condities</p>
+              <h2>Repetitie van de nacht.</h2>
+              <p>Deze schaduwcontrole verandert geen routes en verstuurt geen berichten. Ze laat zien of de actuele poorten, groepen en signalen klaarstaan voor een proefavond op staging.</p>
+              <button className="btn" onClick={() => void loadLive()}><Play />Proefbeeld opnieuw berekenen</button>
+              <div className="simulation-steps">
+                <span className={dashboard.counts.groups > 0 ? "ready" : ""}><CheckCircle2 />Groepen ingedeeld</span>
+                <span className={dashboard.counts.approvedPortals > 0 ? "ready" : ""}><CheckCircle2 />Poorten beschikbaar</span>
+                <span className="ready"><CheckCircle2 />Capaciteit bewaakt</span>
+                <span className={liveAlerts.length === 0 ? "ready" : "attention"}><CheckCircle2 />Veiligheidssignalen</span>
+                <span className="ready"><CheckCircle2 />Laatste poort vereist</span>
+              </div>
+            </section>
+            <section className="panel simulation-result">
+              <p className="kicker">Wat ziet de planner?</p>
+              <h2>Veilig door de wijk.</h2>
+              <div><strong>{livePortals.filter((portal) => portal.operationStatus === "open").length}</strong><span>poorten open voor nieuwe groepen</span></div>
+              <div><strong>{liveRuns.length}</strong><span>groepen in het actuele proefbeeld</span></div>
+              <div><strong>{liveAlerts.length}</strong><span>signalen die eerst aandacht vragen</span></div>
+              <p className={liveAlerts.length ? "form-warning" : "form-notice"}>{liveAlerts.length ? "Los de zichtbare signalen op voordat de avond live gaat." : "De actuele schaduwcontrole bevat geen open veiligheidssignalen."}</p>
+            </section>
+          </div>
         )}
         {section === "imports" && (
           <section className="panel">
@@ -1185,6 +1328,43 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
               </article>;
             })}
             <details className="payment-publish-form"><summary>Betalingshistorie en terugbetalingen per inschrijving</summary><p>Een terugbetaling wordt pas vastgelegd nadat deze werkelijk buiten de app is uitgevoerd. Nieuwe Tikkies maak je hierboven per kind. Betalingen per kind betaal je uitsluitend terug via het betreffende verzoek hierboven, zodat andere kinderen hun betaalstatus behouden.</p>{payments.map((payment) => <div className="incident-row" key={payment.id}><div><strong>{payment.parentName || payment.householdLabel || payment.registrationReference}</strong><small>{payment.reference} · ontvangen {paymentAmount(payment.netCollectedCents)} van {paymentAmount(payment.amountCents)} · {paymentStatusLabels[payment.status] ?? payment.status}</small></div><div className="actions">{!payment.childPaymentMode && payment.batch && ["awaiting_payment", "reported"].includes(payment.batch.status) && <button className="btn outline" disabled={paymentBusy} onClick={() => void paymentCommand(payment, "confirm")}>Bevestig eerder verzoek {paymentAmount(payment.batch.totalAmountCents)}</button>}{!payment.childPaymentMode && payment.batch && payment.batch.status !== "confirmed" && <button className="btn outline" disabled={paymentBusy} onClick={() => void cancelPaymentBatch(payment.batch!, true)}>Eerder betaalverzoek opheffen</button>}{!payment.childPaymentMode && !payment.batch && payment.externalUrl && ["awaiting_payment", "reported"].includes(payment.status) && <button className="btn outline" disabled={paymentBusy} onClick={() => void paymentCommand(payment, "confirm")}>Bevestig eerdere losse Tikkie</button>}{!payment.childPaymentMode && !payment.batch && payment.externalUrl && ["awaiting_link", "awaiting_payment", "reported"].includes(payment.status) && <button className="btn outline" disabled={paymentBusy} onClick={() => void clearLegacyPayment(payment)}>Eerdere losse Tikkie intrekken</button>}{!payment.childPaymentMode && payment.netCollectedCents > 0 && payment.status !== "refunded" && <button className="btn outline" disabled={paymentBusy} onClick={() => void paymentCommand(payment, "refund")}>Leg terugbetaling vast</button>}</div></div>)}</details>
+          </section>
+        )}
+        {section === "registrations" && (
+          <section className="panel registration-roster">
+            <div className="row-between registration-roster-heading">
+              <div>
+                <p className="kicker">Actuele deelnemerslijst</p>
+                <h2>Alle inschrijvingen</h2>
+                <p>Een definitieve inschrijving verschijnt hier direct. Open een groep voor contactgegevens, kinderen en voorkeurstijden.</p>
+              </div>
+              <span className="registration-total">{registrations.length} {registrations.length === 1 ? "groep" : "groepen"}</span>
+            </div>
+            <label className="field registration-search">
+              <span>Zoek op groepsnaam, ouder, e-mailadres of referentie</span>
+              <input type="search" value={registrationSearch} onChange={(event) => setRegistrationSearch(event.target.value)} placeholder="Bijvoorbeeld De Nachtlopers of REG-…" />
+            </label>
+            {registrationsLoading ? <div className="registration-roster-empty"><RefreshCw className="spin" /> Inschrijvingen ophalen…</div> : (() => {
+              const query = registrationSearch.trim().toLocaleLowerCase("nl");
+              const visible = registrations.filter((registration) => !query || [registration.groupName, registration.groupCode, registration.parentName, registration.parentEmail, registration.reference, ...registration.children.map((child) => child.name)].some((value) => value?.toLocaleLowerCase("nl").includes(query)));
+              if (visible.length === 0) return <div className="registration-roster-empty"><UsersRound /><strong>{registrations.length ? "Geen inschrijvingen gevonden" : "Nog geen inschrijvingen"}</strong><span>{registrations.length ? "Pas je zoekterm aan." : "Een afgeronde deelnemersinschrijving verschijnt hier automatisch."}</span></div>;
+              return <div className="registration-list">{visible.map((registration) => {
+                const open = selectedRegistrationId === registration.id;
+                return <article className={"registration-admin-card" + (open ? " open" : "")} key={registration.id}>
+                  <div className="registration-admin-summary">
+                    <span className="registration-group-mark">{registration.groupCode ?? registration.groupName.slice(0, 2).toUpperCase()}</span>
+                    <div className="registration-admin-name"><strong>{registration.groupName}</strong><span>{registration.parentName} · {registration.childCount} {registration.childCount === 1 ? "kind" : "kinderen"}</span></div>
+                    <div className="registration-admin-meta"><span>{registration.reference}</span><span>{registration.submittedAt ? new Date(registration.submittedAt).toLocaleString("nl-NL", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Amsterdam" }) : "Inschrijving ontvangen"}</span></div>
+                    <button className="btn outline registration-row-open" aria-expanded={open} onClick={() => setSelectedRegistrationId(open ? null : registration.id)}>{open ? "Sluit details" : "Bekijk details"}<ArrowRight /></button>
+                  </div>
+                  {open && <div className="registration-admin-details">
+                    <div className="registration-contact-card"><p className="kicker">Contactpersoon</p><strong>{registration.parentName}</strong><a href={"mailto:" + registration.parentEmail}>{registration.parentEmail}</a>{registration.phone ? <a href={"tel:" + registration.phone.replace(/\s/g, "")}>{registration.phone}</a> : <span>Geen telefoonnummer vastgelegd</span>}</div>
+                    <div className="registration-preference-card"><p className="kicker">Voorkeuren</p><span><CalendarClock />Start: {registration.preferredStartAt ? new Date(registration.preferredStartAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "maakt niet uit"}</span><span><CalendarClock />Gewone poorten stoppen: {registration.desiredEndAt ? new Date(registration.desiredEndAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "nog niet gekozen"}</span>{registration.togetherCode && <span>Samenloopcode: <strong>{registration.togetherCode}</strong></span>}</div>
+                    <div className="registration-children-card"><p className="kicker">Kinderen</p>{registration.children.map((child) => <div key={child.id}><strong>{child.name}</strong><span>{child.age === null ? "Leeftijd niet ingevuld" : child.age + " jaar"}{child.status !== "active" ? " · " + child.status : ""}</span>{child.accessibilityNote && <small>{child.accessibilityNote}</small>}</div>)}</div>
+                  </div>}
+                </article>;
+              })}</div>;
+            })()}
           </section>
         )}
         {section === "registrations" && (
@@ -1343,6 +1523,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             <section className="panel emergency"><AlertTriangle /><div><p className="kicker">Alleen bij uitval van de laatste poort</p><h2>Voorbereide noodafsluiting</h2><p>Deze actie sluit de eindpoort, trekt reserveringen in, stopt de actieve routes en publiceert uitsluitend de vooraf ingestelde veilige verzamelinstructie.</p></div><button className="btn outline" onClick={() => void activateEmergencyClosure()}>Noodafsluiting activeren</button></section>
           </div>
         )}
+        </main>
       </div>
     </div>
   );

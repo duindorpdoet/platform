@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCheck, Inbox, MessageSquarePlus, RefreshCw, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -49,6 +49,7 @@ export function MessengerInbox({ eventSlug }: { eventSlug: string }) {
   const [busy, setBusy] = useState(false);
   const [available, setAvailable] = useState(true);
   const [realtimeTopic, setRealtimeTopic] = useState<string | null>(null);
+  const messageEnd = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     const client = createClient();
@@ -86,6 +87,10 @@ export function MessengerInbox({ eventSlug }: { eventSlug: string }) {
   }, [available, eventSlug]);
 
   const selected = useMemo(() => conversations.find((item) => item.id === selectedId) ?? null, [conversations, selectedId]);
+
+  useEffect(() => {
+    messageEnd.current?.scrollIntoView({ block: "nearest" });
+  }, [selected?.id, selected?.messages.length]);
 
   useEffect(() => {
     if (!selected?.unreadCount) return;
@@ -138,14 +143,21 @@ export function MessengerInbox({ eventSlug }: { eventSlug: string }) {
     <div className="ticket-layout">
       <div className="ticket-list" aria-label="Gesprekken">
         {conversations.length === 0 && <p><Inbox /> Geen gesprekken in de inbox.</p>}
-        {conversations.map((conversation) => <button key={conversation.id} className={selectedId === conversation.id ? "active" : ""} onClick={() => setSelectedId(conversation.id)}>
-          <span><strong>{[conversation.systemCode, conversation.displayName || conversation.subjectLabel].filter(Boolean).join(" · ") || "Privégesprek"}</strong><small>{statusLabel[conversation.status]} · {new Date(conversation.updatedAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}</small></span>
-          {conversation.unreadCount > 0 && <b aria-label={`${conversation.unreadCount} ongelezen`}>{conversation.unreadCount}</b>}
-        </button>)}
+        {conversations.map((conversation) => {
+          const latest = conversation.messages.at(-1);
+          return <button key={conversation.id} className={selectedId === conversation.id ? "active" : ""} onClick={() => setSelectedId(conversation.id)}>
+            <span className="ticket-list-copy">
+              <strong>{[conversation.systemCode, conversation.displayName || conversation.subjectLabel].filter(Boolean).join(" · ") || "Privégesprek"}</strong>
+              <small className="ticket-preview">{latest?.body || "Gesprek zonder bericht"}</small>
+              <small>{statusLabel[conversation.status]}</small>
+            </span>
+            <span className="ticket-list-time">{new Date(latest?.createdAt ?? conversation.updatedAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}{conversation.unreadCount > 0 && <b aria-label={conversation.unreadCount + " ongelezen"}>{conversation.unreadCount}</b>}</span>
+          </button>;
+        })}
       </div>
       {selected ? <div className="ticket-thread">
         <div className="row-between"><div><p className="kicker">{selected.subjectKind}</p><h3>{[selected.systemCode, selected.displayName || selected.subjectLabel].filter(Boolean).join(" · ")}</h3><small>{statusLabel[selected.status]}</small></div><MessageSquarePlus /></div>
-        <div className="ticket-messages" aria-live="polite">{selected.messages.map((message) => <article className={`ticket-message ${message.senderSide === "organization" || message.isMine ? "mine" : "theirs"}`} key={message.id}><strong>{message.senderSide === "organization" ? "Organisatie" : "Deelnemer"}</strong><p>{message.body}</p><small>{new Date(message.createdAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" })}{message.readAt && message.senderSide === "organization" ? <><CheckCheck size={14} /> gelezen</> : null}</small></article>)}</div>
+        <div className="ticket-messages" aria-live="polite">{selected.messages.map((message) => <article className={`ticket-message ${message.senderSide === "organization" || message.isMine ? "mine" : "theirs"}`} key={message.id}><strong>{message.senderSide === "organization" ? "Organisatie" : "Deelnemer"}</strong><p>{message.body}</p><small><time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString("nl-NL", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Amsterdam" })}</time>{message.readAt && message.senderSide === "organization" ? <><CheckCheck size={14} /> gelezen</> : null}</small></article>)}<div ref={messageEnd} /></div>
         {selected.status === "queued" && <button className="btn" disabled={busy} onClick={() => void claim()}>Gesprek openen</button>}
         {selected.status !== "closed" && selected.status !== "queued" && <div className="ticket-reply"><label className="field"><span>Antwoord</span><textarea rows={4} maxLength={4000} value={reply} onChange={(event) => setReply(event.target.value)} /></label><button className="btn" disabled={busy || !reply.trim()} onClick={() => void sendReply()}><Send />Versturen</button></div>}
       </div> : <div className="ticket-thread empty-state"><Inbox /><p>Kies een gesprek.</p></div>}

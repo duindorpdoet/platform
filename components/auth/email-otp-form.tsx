@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Mail, RotateCcw } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -29,6 +29,7 @@ export function EmailOtpForm({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string>();
   const [cooldown, setCooldown] = useState(0);
+  const codeRequestPending = useRef(false);
   const destination = safeReturnPath(nextPath);
 
   useEffect(() => {
@@ -39,12 +40,13 @@ export function EmailOtpForm({
 
   async function requestCode(event?: FormEvent) {
     event?.preventDefault();
-    if (cooldown || busy) return;
+    if (cooldown || codeRequestPending.current) return;
     const supabase = createClient();
     if (!supabase) {
       setMessage("Inloggen is in deze omgeving nog niet gekoppeld. De organisatie is hiervan op de hoogte.");
       return;
     }
+    codeRequestPending.current = true;
     setBusy(true);
     setMessage(undefined);
     try {
@@ -66,7 +68,10 @@ export function EmailOtpForm({
       setMessage(error instanceof Error && error.message === "PORTAL_REGISTRATION_CLOSED"
         ? "De organisatie heeft nieuwe locatieaanmeldingen gepauzeerd."
         : "De aanmelding of e-mailcode kon niet worden verwerkt. Controleer je gegevens en probeer opnieuw.");
-    } finally { setBusy(false); }
+    } finally {
+      codeRequestPending.current = false;
+      setBusy(false);
+    }
   }
 
   async function verifyCode(event: FormEvent) {

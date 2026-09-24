@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Clock3, RefreshCw, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import styles from "@/components/portal/portal-premium.module.css";
 
 type Arrival = {
   groupCode: string;
@@ -57,18 +58,23 @@ export function PortalForecast({ portalId, systemCode, name, operationStatus }: 
   const forecastAvailable = snapshot?.forecastAvailable !== false;
   const nextArrival = snapshot?.nextArrivalAt ?? [...assigned, ...forecast].sort((left, right) => left.plannedArrivalAt.localeCompare(right.plannedArrivalAt))[0]?.plannedArrivalAt;
 
-  return <section className="panel portal-forecast" aria-labelledby="portal-forecast-title">
-    <div className="row-between"><div><p className="kicker">{systemCode || "Poort"} · {name}</p><h2 id="portal-forecast-title">Wie kun je nog verwachten?</h2></div><button className="btn outline" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div>
-    <p className="portal-forecast-status"><span className={`status-dot ${operationStatus}`} />{operationStatus === "open" ? "Open voor nieuwe toewijzingen" : operationStatus === "paused" ? "Gepauzeerd: geen nieuwe prognose" : operationStatus === "closed" ? "Gesloten: geen nieuwe prognose" : "Nog ingepland"}</p>
-    {unavailable ? <div className="form-warning">De prognose is tijdelijk niet beschikbaar. Reeds vrijgegeven opdrachten blijven leidend.</div> : <>
-      <div className="portal-forecast-metrics">
-        <span><Users /><small>Toegewezen of onderweg</small><strong>{assigned.length} groepen · {assignedChildren} kinderen</strong></span>
-        <span><Users /><small>Mogelijk later</small><strong>{!forecastAvailable ? "Prognose tijdelijk niet beschikbaar" : operationStatus === "open" ? `${forecast.length} groepen · ${forecastChildren} kinderen` : "Geen nieuwe prognose"}</strong></span>
-        <span><Clock3 /><small>Volgende indicatieve aankomst</small><strong>{time(nextArrival)}</strong></span>
+  const currentStatus = snapshot?.operationStatus ?? operationStatus;
+  const assignedGroups = snapshot?.assignedGroups ?? assigned.length;
+  const forecastGroups = snapshot?.forecastGroups ?? forecast.length;
+
+  return <section className={`${styles.forecast} portal-forecast owner-forecast`} aria-labelledby="portal-forecast-title">
+    <div className={styles.forecastHead}><div><p className={styles.eyebrow}><Clock3 aria-hidden="true" />Avondoverzicht · {systemCode || name}</p><h2 id="portal-forecast-title">Wie kun je nog verwachten?</h2></div><button className="btn outline" onClick={() => void load()}><RefreshCw aria-hidden="true" />Vernieuwen</button></div>
+    <span className={styles.state} data-state={currentStatus}>{currentStatus === "open" ? "Open voor nieuwe toewijzingen" : currentStatus === "paused" ? "Gepauzeerd: geen nieuwe prognose" : currentStatus === "closed" ? "Gesloten: geen nieuwe prognose" : "Nog ingepland"}</span>
+    {unavailable ? <div className="form-warning">De prognose is tijdelijk niet beschikbaar. Reeds vrijgegeven opdrachten blijven leidend.</div> : !snapshot ? <p className={styles.empty}>De actuele ontvangstplanning wordt opgehaald…</p> : <>
+      <div className={`${styles.metrics} owner-arrival-metrics`}>
+        <div><small>Toegewezen of onderweg</small><strong>{assignedGroups} groepen</strong><span>{assignedChildren} kinderen toegewezen</span></div>
+        <div><small>Mogelijk later</small>{forecastAvailable && currentStatus === "open" ? <><strong>{forecastGroups} groepen</strong><span>{forecastChildren} kinderen mogelijk later</span></> : <strong className={styles.metricText}>{!forecastAvailable ? "Prognose tijdelijk niet beschikbaar" : "Geen nieuwe prognose"}</strong>}</div>
+        <div><small>Volgende indicatieve aankomst</small><strong className={!nextArrival ? styles.metricText : undefined}>{time(nextArrival)}</strong><span>Gepland venster · geen live ETA</span></div>
       </div>
-      {assigned.length === 0 && forecast.length === 0 && <p className="empty-state">Er staan nu geen groepen in de actuele planning voor jullie poort.</p>}
-      <p className="note">Toegewezen groepen hebben jullie poort al in hun serverbevestigde route. De prognose kan nog veranderen door tempo, pauzes, veiligheid en beschikbaarheid. Dit is geen live GPS.</p>
-      <small>Laatst door de server bijgewerkt: {snapshot?.updatedAt ? new Date(snapshot.updatedAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" }) : "nog niet beschikbaar"}</small>
+      {assigned.length > 0 && <div><p className={styles.eyebrow}><Users aria-hidden="true" />Al toegewezen</p><div className={styles.arrivals}>{assigned.map((arrival) => <article className={styles.arrival} key={`${arrival.groupCode}-${arrival.plannedArrivalAt}`}><strong>{arrival.displayName || arrival.groupCode}</strong><span>{arrival.displayName ? `${arrival.groupCode} · ` : ""}{arrival.expectedChildren} kinderen</span><span>{time(arrival.plannedArrivalAt)}–{time(arrival.plannedDepartureAt)}</span></article>)}</div></div>}
+      {assigned.length === 0 && forecast.length === 0 && <p className={styles.empty}>Er staan nu geen groepen in de actuele planning voor jullie poort.</p>}
+      <p className={styles.forecastExplanation}>Toegewezen groepen hebben jullie poort al in hun serverbevestigde route. De prognose kan nog veranderen door tempo, pauzes, veiligheid en beschikbaarheid. Dit is geen live GPS.</p>
+      <div className={styles.forecastFoot}><span>{name} · ontvangstplanning</span><span>Laatst door de server bijgewerkt: {snapshot.updatedAt ? new Date(snapshot.updatedAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" }) : "nog niet beschikbaar"}</span></div>
     </>}
   </section>;
 }

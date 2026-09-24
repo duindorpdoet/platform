@@ -42,10 +42,10 @@ export function GroupJourneyPreference({ groupId, onSaved }: { groupId: string; 
   }
 
   if (!preference?.supported) return null;
-  return <section className="participant-card">
+  return <section className="participant-card group-journey-card">
     <p className="participant-eyebrow">Jullie tocht</p><h2>Hoeveel huizen willen jullie bezoeken?</h2>
     <p>De groepsleider kan vóór vertrek een maximumaantal gewone huizen kiezen. Laat het veld leeg om door te lopen zolang er tijd is. Veilige routes, beschikbare huizen en jullie stopgrens kunnen de tocht korter maken. De laatste poort volgt altijd daarna.</p>
-    {preference.canEdit ? <form onSubmit={(event) => { event.preventDefault(); void save(); }}>
+    {preference.canEdit ? <form className="group-journey-form" onSubmit={(event) => { event.preventDefault(); void save(); }}>
       <label className="participant-field"><span>Gewenst maximumaantal gewone huizen (optioneel)</span><input type="number" min={1} max={1000} step={1} inputMode="numeric" value={limit} onChange={(event) => setLimit(event.target.value)} placeholder="Zolang er tijd is" disabled={busy} /></label>
       <div className="actions"><button className="btn" disabled={busy}>{busy ? "Opslaan…" : "Aantal huizen bewaren"}</button></div>
     </form> : <p><strong>{preference.desiredOrdinaryVisits === null ? "Doorlopen zolang er tijd is" : `Maximaal ${preference.desiredOrdinaryVisits} gewone huizen`}</strong>. Wijzigingen tijdens de tocht bespreek je via Messenger.</p>}

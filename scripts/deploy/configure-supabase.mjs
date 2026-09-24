@@ -16,6 +16,7 @@ for (const name of required) {
 const projectRef = process.env.SUPABASE_PROJECT_REF;
 const appUrl = new URL(process.env.APP_URL).origin;
 const supabaseUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const authEmailRateLimit = process.env.APP_ENVIRONMENT === "production" ? 120 : 30;
 if (supabaseUrl.hostname !== `${projectRef}.supabase.co`) {
   throw new Error("Supabase URL and project reference do not match.");
 }
@@ -157,7 +158,7 @@ await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, 
     mailer_secure_email_change_enabled: true,
     mailer_otp_exp: 600,
     mailer_otp_length: 6,
-    ...(process.env.APP_ENVIRONMENT === "staging" ? { rate_limit_email_sent: 30 } : {}),
+    rate_limit_email_sent: authEmailRateLimit,
     hook_send_email_enabled: true,
     hook_send_email_uri: `${supabaseUrl.origin}/functions/v1/send-email-hook`,
     hook_send_email_secrets: hookSecret,
@@ -170,8 +171,8 @@ const authConfig = await request(`https://api.supabase.com/v1/projects/${project
 if (authConfig.hook_send_email_enabled !== true || authConfig.hook_send_email_uri !== `${supabaseUrl.origin}/functions/v1/send-email-hook`) {
   throw new Error("Supabase Auth did not retain the configured Send Email hook.");
 }
-if (process.env.APP_ENVIRONMENT === "staging" && authConfig.rate_limit_email_sent !== 30) {
-  throw new Error("Supabase Auth did not retain the bounded staging email rate limit.");
+if (authConfig.rate_limit_email_sent !== authEmailRateLimit) {
+  throw new Error(`Supabase Auth did not retain the bounded ${process.env.APP_ENVIRONMENT} email rate limit.`);
 }
 
 if (authConfig.mailer_autoconfirm !== false

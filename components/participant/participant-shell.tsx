@@ -152,13 +152,14 @@ export function ParticipantShell({
   return <div className={`participant-environment role-${selectedRole.key}`}>
     <aside className="participant-sidebar" aria-label="Persoonlijke navigatie">
       <Link className="participant-brand" href="/"><img src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" /></Link>
+      <p className="participant-sidebar-caption">Jouw avond in Duindorp</p>
       <RoleIdentity role={selectedRole} />
       <ParticipantNavigation role={selectedRole.key} activeSection={activeSection} desktop />
-      <div className="participant-sidebar-foot"><p>31 oktober 2026</p><span>Duindorp · Den Haag</span><SignOutButton /></div>
+      <div className="participant-sidebar-foot"><p><time dateTime={context.event.localDate}>{new Date(`${context.event.localDate}T12:00:00`).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Amsterdam" })}</time></p><span>Duindorp · Den Haag</span><SignOutButton /></div>
     </aside>
     <div className="participant-main">
       <header className="participant-topbar">
-        <div><p className="participant-eyebrow">Jouw Halloweenavond</p><strong>{selectedRole.label}</strong></div>
+        <div className="participant-topbar-identity"><span className="participant-topbar-mark" aria-hidden="true"><MoonStar /></span><div><p className="participant-eyebrow">De Duindorpse Poorten</p><strong>{selectedRole.label}</strong></div></div>
         {context.roles.length > 1 && <RoleSwitcher roles={context.roles} selected={selectedRole.key} />}
       </header>
       {inviteNotice && <div className="participant-notice" role="status">{inviteNotice}</div>}
@@ -175,7 +176,7 @@ export function ParticipantShell({
 
 function RoleIdentity({ role }: { role: ParticipantRole }) {
   const Icon = role.key === "walker" ? Footprints : role.key === "viewer" ? Eye : Home;
-  return <div className="role-identity"><span><Icon /></span><div><small>Je kijkt als</small><strong>{role.label}</strong></div></div>;
+  return <div className="role-identity"><span><Icon aria-hidden="true" /></span><div><small>Je kijkt als</small><strong>{role.label}</strong></div></div>;
 }
 
 function RoleSwitcher({ roles, selected }: { roles: ParticipantRole[]; selected: ParticipantRoleKey }) {
@@ -290,14 +291,14 @@ function WalkerNow({ context, registration, group, reload }: { context: Particip
   }
 
   return <ParticipantPageFrame eyebrow="Voorpret begint hier" title="Klaar voor de nacht?">
-    <section className="participant-hero-card countdown-card"><div className="hero-glow amber" /><div><p className="participant-eyebrow">Tot 31 oktober</p><Countdown target={context.event.startsAt} /><p>Jullie tijdslot en startplek verschijnen zodra de groepsindeling definitief is.</p></div></section>
+    <section className="participant-hero-card countdown-card"><div className="hero-glow amber" /><div className="countdown-copy"><p className="participant-eyebrow">De wijk wacht op jullie</p><h2>Het begint met voorpret.</h2><Countdown target={context.event.startsAt} /><p>Jullie tijdslot en startplek verschijnen zodra de groepsindeling definitief is.</p></div><span className="countdown-emblem" aria-hidden="true"><MoonStar /></span></section>
     <div className="participant-stat-grid">
       <StatusCard icon={payment?.status === "confirmed" || payment?.status === "waived" ? CheckCircle2 : Clock3} label="Betaling" value={payment ? paymentLabels[payment.status] ?? payment.status : "Wordt voorbereid"} good={payment?.status === "confirmed" || payment?.status === "waived"} />
       <StatusCard icon={Users} label="Groep" value={group ? `Groep ${group.group.code}` : "Indeling volgt"} />
       <StatusCard icon={Clock3} label="Vertrek" value={group?.group.start ? formatTime(group.group.start.startsAt) : "Tijdslot volgt"} />
     </div>
-    {registration?.registration && <section className="participant-card"><p className="participant-eyebrow">Per eigen kind</p><h2>Deelnamestatus</h2><ChildPaymentRows items={registration.registration.children} registrationId={registration.registration.id} legacyPayment={payment} reload={reload} /></section>}
-    <PreparationList paid={payment?.status === "confirmed" || payment?.status === "waived"} grouped={Boolean(group)} />
+    <div className="participant-preparation-grid">{registration?.registration && <section className="participant-card participant-children-card"><div className="section-title"><div><p className="participant-eyebrow">Per eigen kind</p><h2>Deelnamestatus</h2></div><TicketCheck aria-hidden="true" /></div><ChildPaymentRows items={registration.registration.children} registrationId={registration.registration.id} legacyPayment={payment} reload={reload} /></section>}
+    <PreparationList paid={payment?.status === "confirmed" || payment?.status === "waived"} grouped={Boolean(group)} /></div>
   </ParticipantPageFrame>;
 }
 
@@ -306,9 +307,8 @@ function WalkerGroup({ group, registration, groupId, reload }: { group: GroupSna
   const participants = group.run?.participants ?? [];
   const visibleChildren = participants.length ? participants : (registration?.registration?.children ?? []).map((child) => ({ id: child.id, firstName: child.firstName, attendance: "aangemeld", isOwnChild: true, status: null }));
   return <ParticipantPageFrame eyebrow={`Groep ${group.group.code}`} title={group.access.leader ? "Jij houdt het overzicht." : "Samen op pad."}>
-    {groupId && <GroupIdentity groupId={groupId} systemCode={group.group.systemCode} displayName={group.group.displayName} version={group.group.version} canEdit={group.access.leader} onSaved={reload} />}
-    {groupId && <GroupJourneyPreference groupId={groupId} onSaved={reload} />}
-    <section className="participant-card group-summary"><div><p className="participant-eyebrow">Startmoment</p><h2>{group.group.start ? formatDateTime(group.group.start.startsAt) : "Wordt binnenkort gedeeld"}</h2><p>{group.group.start ? `${group.group.start.locationName}${group.group.start.address ? ` · ${group.group.start.address}` : ""}` : "De startplek blijft verborgen tot publicatie."}</p></div><span className="group-code">{group.group.code}</span></section>
+    {groupId && <div className="participant-group-grid"><GroupIdentity groupId={groupId} systemCode={group.group.systemCode} displayName={group.group.displayName} version={group.group.version} canEdit={group.access.leader} onSaved={reload} /><GroupJourneyPreference groupId={groupId} onSaved={reload} /></div>}
+    <section className="participant-card group-summary"><span className="group-summary-icon" aria-hidden="true"><Footprints /></span><div><p className="participant-eyebrow">Startmoment</p><h2>{group.group.start ? formatDateTime(group.group.start.startsAt) : "Wordt binnenkort gedeeld"}</h2><p>{group.group.start ? `${group.group.start.locationName}${group.group.start.address ? ` · ${group.group.start.address}` : ""}` : "De startplek blijft verborgen tot publicatie."}</p></div><span className="group-code">{group.group.code}</span></section>
     <section className="participant-card"><div className="section-title"><div><p className="participant-eyebrow">Gekoppelde deelnemers</p><h2>{group.access.leader ? "Aanwezigheid en veiligheid" : "Jouw kinderen"}</h2></div><ShieldCheck /></div>
       {visibleChildren.length === 0 && <p>De deelnemerslijst verschijnt zodra de route start.</p>}
       <div className="participant-list">{visibleChildren.map((child) => <div key={child.id}><span className="participant-avatar">{child.firstName.slice(0, 1)}</span><span><strong>{child.firstName}</strong><small>{child.attendance === "present" ? "Aanwezig" : child.attendance === "absent" ? "Afwezig" : "Aangemeld"}</small></span>{child.status && <em>{child.status === "visited" ? "Bezocht" : child.status === "skipped" ? "Overgeslagen" : "Wacht"}</em>}</div>)}</div>
@@ -325,7 +325,7 @@ function NightPass({ context, snapshot, group, reload }: { context: ParticipantC
   const paid = activeChildren.length > 0 && activeChildren.every((child) => childPaymentState(child, childPaymentFor(child, registration.children, registration.payment)).paid);
   return <ParticipantPageFrame eyebrow="Alles voor deelname" title="Jullie Nachtpas">
     <section className={`night-pass ${paid ? "active" : "locked"}`}><div className="night-pass-top"><span><MoonStar />Duindorp 2026</span><strong>{paid ? "TOEGANG ACTIEF" : "NOG VERGRENDELD"}</strong></div><h2>{registration.reference}</h2><div className="night-pass-grid"><span>Kinderen<strong>{registration.children.filter((child) => child.status === "active").map((child) => child.firstName).join(", ")}</strong></span><span>Tijdslot<strong>{group?.group.start ? formatTime(group.group.start.startsAt) : "Volgt"}</strong></span><span>Groep<strong>{group ? group.group.code : "Volgt"}</strong></span><span>Betaling<strong>{registration.payment ? paymentLabels[registration.payment.status] ?? registration.payment.status : "Wordt voorbereid"}</strong></span></div>{paid ? <div className="night-pass-valid"><ShieldCheck />Toegang bevestigd. Neem deze pagina en de bevestigingsmail mee.</div> : <div className="night-pass-warning"><LockKeyhole /><span><strong>Betaal vóór <time dateTime={context.event.paymentDeadline}>30 oktober</time> om mee te kunnen doen.</strong>Het toegangsbewijs wordt pas zichtbaar nadat de organisatie de betaling heeft bevestigd.</span></div>}</section>
-    <section className="participant-card"><p className="participant-eyebrow">Per eigen kind</p><h2>Deelnamestatus</h2>
+    <section className="participant-card participant-children-card"><div className="section-title"><div><p className="participant-eyebrow">Per eigen kind</p><h2>Deelnamestatus</h2></div><TicketCheck aria-hidden="true" /></div>
       <ChildPaymentRows items={registration.children} registrationId={registration.id} legacyPayment={registration.payment} reload={reload} />
     </section>
     <section className="participant-card practical"><p className="participant-eyebrow">Praktisch</p><h2>Zo gebruik je de Nachtpas</h2><ul><li>Meld je met de groepsleider bij de gepubliceerde startplek.</li><li>Kinderen blijven de hele avond bij hun eigen groep en verantwoordelijke volwassene.</li><li>We tonen geen QR-code: er is geen aparte QR-controle nodig naast de bevestigde inschrijving.</li></ul></section>
@@ -376,9 +376,9 @@ function HomeownerSection({ context, eventSlug, role, section }: { context: Part
   if (section === "updates") return <UpdatesPanel eventSlug={eventSlug} role="homeowner" />;
   if (section === "meer") return <MorePage context={context} eventSlug={eventSlug} role="homeowner" />;
   if (section === "verwacht") return <ArrivalsPage arrivals={arrivals} />;
-  return <ParticipantPageFrame eyebrow="Avondcockpit" title={portal?.portal ? `${portal.portal.name} is ${portal.portal.operationStatus === "open" ? "open" : portal.portal.operationStatus === "paused" ? "gepauzeerd" : portal.portal.operationStatus === "closed" ? "gesloten" : "ingepland"}.` : "Mijn poort"}>
-    <div className="cockpit-metrics"><StatusCard icon={Users} label="Verwacht totaal" value={arrivals ? `${arrivals.expectedTotal} kinderen` : "Wordt berekend"} /><StatusCard icon={Clock3} label="Volgend venster" value={arrivals?.arrivals.find((item) => item.state !== "completed") ? `${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedArrivalAt)}–${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedDepartureAt)}` : "Geen open venster"} /></div>
-    <div className="planned-not-live"><Clock3 /><span><strong>Dit is een geplande aankomst, geen live ETA.</strong>Groepen kunnen eerder of later lopen. Gebruik Pauze zodra ontvangst tijdelijk niet veilig of mogelijk is.</span></div>
+  return <ParticipantPageFrame eyebrow="Mijn huis · jullie plek in de nacht" title={portal?.portal?.name || "Mijn poort"}>
+    <div className="cockpit-metrics owner-summary-metrics"><StatusCard icon={Users} label="Verwacht totaal" value={arrivals ? `${arrivals.expectedTotal} kinderen` : "Wordt berekend"} /><StatusCard icon={Clock3} label="Volgend venster" value={arrivals?.arrivals.find((item) => item.state !== "completed") ? `${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedArrivalAt)}–${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedDepartureAt)}` : "Geen open venster"} /></div>
+    <div className="planned-not-live owner-arrival-note"><Clock3 /><span><strong>Dit is een geplande aankomst, geen live ETA.</strong>Groepen kunnen eerder of later lopen. Gebruik Pauze zodra ontvangst tijdelijk niet veilig of mogelijk is.</span></div>
     <PortalDashboard eventSlug={eventSlug} />
   </ParticipantPageFrame>;
 }
@@ -486,13 +486,13 @@ function ViewerAccessManager({ groupId }: { groupId: string }) {
 
 
 function ParticipantPageFrame({ eyebrow, title, compact = false, children }: { eyebrow: string; title: string; compact?: boolean; children: React.ReactNode }) {
-  return <div className={`participant-page page-transition ${compact ? "compact" : ""}`}><header className="participant-page-head"><p className="participant-eyebrow">{eyebrow}</p><h1>{title}</h1></header>{children}</div>;
+  return <div className={`participant-page page-transition ${compact ? "compact" : ""}`}><header className="participant-page-head"><div><p className="participant-eyebrow">{eyebrow}</p><h1>{title}</h1></div><span className="participant-page-emblem" aria-hidden="true"><MoonStar /></span></header>{children}</div>;
 }
 
 function ParticipantLoading() { return <div className="participant-loading"><RefreshCw className="spin" /><span>Je omgeving wordt veilig geladen…</span></div>; }
 
 function StatusCard({ icon: Icon, label, value, good = false }: { icon: LucideIcon; label: string; value: string; good?: boolean }) {
-  return <section className={`participant-card status-card ${good ? "good" : ""}`}><span><Icon /></span><div><small>{label}</small><strong>{value}</strong></div></section>;
+  return <section className={`participant-card status-card ${good ? "good" : ""}`}><span><Icon aria-hidden="true" /></span><div><small>{label}</small><strong>{value}</strong></div></section>;
 }
 
 function Countdown({ target }: { target: string }) {

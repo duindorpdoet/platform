@@ -46,11 +46,11 @@ export function GroupIdentity({
 
   return <section className="participant-card group-identity-card">
     <div>
-      <p className="participant-eyebrow">Jullie vaste systeemcode</p>
+      <p className="participant-eyebrow">Eén groep · samen op pad</p>
       <h2>{displayName || `Groep ${systemCode}`}</h2>
-      <p>Deze G-code herkent jullie groep in de app en bij de organisatie. Aansluiten gebeurt via de aparte samenloopcode en wordt altijd eerst door de organisatie beoordeeld.</p>
+      <p>Jullie groepsnaam maakt de tocht persoonlijk. De vaste G-code helpt de organisatie jullie terug te vinden. Samen aansluiten gaat via de aparte samenloopcode, na goedkeuring.</p>
     </div>
-    <div className="group-code-panel"><strong>{systemCode}</strong><button className="btn outline" onClick={() => void copyCode()}>{copied ? <Check /> : <Clipboard />}{copied ? "Gekopieerd" : "Kopieer systeemcode"}</button></div>
+    <div className="group-code-panel"><span className="group-code-caption">Groepscode</span><strong>{systemCode}</strong><button className="btn outline" onClick={() => void copyCode()}>{copied ? <Check /> : <Clipboard />}{copied ? "Gekopieerd" : "Kopieer systeemcode"}</button></div>
     {canEdit && <div className="group-name-editor">{editing ? <><label className="participant-field"><span>Zelfgekozen groepsnaam</span><input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} /></label><div className="actions"><button className="btn" onClick={() => void save()}><Check />Opslaan</button><button className="btn outline" onClick={() => { setName(displayName ?? ""); setEditing(false); }}>Annuleren</button></div></> : <button className="btn outline" onClick={() => setEditing(true)}><Pencil />Groepsnaam aanpassen</button>}</div>}
     {notice && <p className="form-notice" role="status">{notice}</p>}
   </section>;

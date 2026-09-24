@@ -324,6 +324,23 @@ test("a multi-child registration draft survives refresh and submits once", async
   await expect(page.getByText("In behandeling", { exact: true })).toBeVisible();
 });
 
+test("submitted registrations appear immediately with group details in the backoffice", async ({ context, page }) => {
+  requireLocalAuth();
+  await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  await page.getByRole("button", { name: /Inschrijvingen/ }).click();
+
+  await expect(page.getByRole("heading", { name: "Alle inschrijvingen" })).toBeVisible();
+  const registration = page.locator(".registration-admin-card").first();
+  await expect(registration).toBeVisible();
+  await expect(registration.locator(".registration-admin-name strong")).not.toBeEmpty();
+  await registration.getByRole("button", { name: "Bekijk details" }).click();
+  await expect(registration).toContainText("Contactpersoon");
+  await expect(registration).toContainText("Kinderen");
+  await expect(registration.getByRole("link", { name: /@/ })).toHaveAttribute("href", /^mailto:/);
+  await assertReadableLayout(page);
+});
+
 test("an event administrator can grant and revoke narrowly scoped access", async ({ context, page }) => {
   requireLocalAuth();
   await authenticate(context, "admin@example.invalid");
@@ -399,7 +416,7 @@ test("a group leader and organizer can exchange messages through the private sup
 
   await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
-  await page.getByRole("button", { name: "Hulp & contact", exact: true }).click();
+  await page.getByRole("button", { name: "Messenger", exact: true }).click();
   const conversationButton = page.locator(".ticket-list button").filter({ hasText: "G-01" }).first();
   await expect(conversationButton).toBeVisible();
   await conversationButton.click();
@@ -488,8 +505,9 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
         await expect(page.locator(".loading-state, .participant-loading")).toHaveCount(0);
         await assertReadableLayout(page, doubleText);
         if (path === "/admin") {
+          await page.locator(".admin-nav").getByRole("button", { name: "Instellingen", exact: true }).click();
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
-          for (const section of ["Imports", "Inschrijvingen", "Hulp & contact", "Deelnemersupdates", "Betalingen", "Poortaanvragen", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avondcockpit"]) {
+          for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Messenger", "Deelnemersupdates", "Betalingen", "Poortaanvragen", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
             await page.goto("/admin");
             await page.locator(".admin-nav").getByRole("button", { name: section, exact: true }).click();
             await expect(page.locator(".admin-nav").getByRole("button", { name: section, exact: true })).toHaveClass("active");
@@ -592,6 +610,7 @@ test("participant Messenger is opaque and account actions stay reachable on desk
 
 test("a walker awaiting a group can send and recover chat without realtime", async ({ context, page }, testInfo) => {
   requireLocalAuth();
+  test.skip(testInfo.project.name !== "desktop-chromium", "The stateful recovery flow runs once at the mobile viewport; responsive chat is covered in both projects.");
   await page.setViewportSize({ width: 390, height: 844 });
   const client = await authenticate(context, "browser-chat-unassigned@example.invalid");
   const participant = await rpc(client, "participant_context", { _event_slug: "duindorp-halloween-2026" }) as { roles: Array<{ key: string; groupId: string | null }> };
@@ -609,7 +628,8 @@ test("a walker awaiting a group can send and recover chat without realtime", asy
   const dialog = page.getByRole("dialog");
   const input = dialog.getByLabel("Bericht", { exact: true });
   const send = dialog.getByRole("button", { name: "Versturen", exact: true });
-  const body = `Browserbericht zonder groepsindeling ${testInfo.testId}`;
+  const body = `Browserbericht zonder groepsindeling ${testInfo.testId}-${Date.now()}`;
+  const deliveredMessage = dialog.locator("article").getByText(body, { exact: true });
   await input.fill(body);
   await expect(dialog.getByText(/Berichten konden niet worden vernieuwd/)).toBeVisible();
   await expect(send).toBeDisabled();
@@ -626,31 +646,37 @@ test("a walker awaiting a group can send and recover chat without realtime", asy
     await route.abort("connectionreset");
   }, { times: 1 });
   await send.click();
-  await expect(dialog.getByText(/Verzenden is niet bevestigd/)).toBeVisible();
-  await expect(input).toHaveValue(body);
+  // A fast polling refresh can discover the committed message before the local
+  // connection-reset notice paints. Either state proves the ambiguous response
+  // was reconciled without duplicating the server-side message.
+  await expect(dialog.getByText(/Verzenden is niet bevestigd/).or(deliveredMessage).first()).toBeVisible();
+  const draftWasKept = await input.inputValue() === body;
   // A refresh may already discover the committed message before the user retries.
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
-  await expect(dialog.getByText(body, { exact: true })).toBeVisible();
-  await expect(send).toBeEnabled();
-  await send.click();
+  await expect(deliveredMessage).toBeVisible();
+  if (draftWasKept) {
+    await expect(send).toBeEnabled();
+    await send.click();
+  }
   await expect(input).toHaveValue("");
-  await expect(dialog.getByText(body, { exact: true })).toHaveCount(1);
+  await expect(deliveredMessage).toHaveCount(1);
   const snapshot = await rpc(client, "participant_messenger_context", { _event_slug: "duindorp-halloween-2026", _role: "user" }) as { conversation: { messages: Array<{ body: string }> } };
   expect(snapshot.conversation.messages.filter((message) => message.body === body)).toHaveLength(1);
 
   await page.reload();
   await page.getByRole("button", { name: "Hulp van de organisatie" }).click();
-  await expect(dialog.getByText(body, { exact: true })).toBeVisible();
-  await input.fill("Deze reactie blijft staan bij verbindingsverlies.");
+  await expect(deliveredMessage).toBeVisible();
+  const recoveryBody = `Deze reactie blijft staan bij verbindingsverlies (${testInfo.project.name}-${Date.now()}).`;
+  await input.fill(recoveryBody);
   await context.setOffline(true);
   await expect(dialog.getByText("Je bent offline", { exact: true })).toBeVisible();
   await expect(send).toBeDisabled();
   await context.setOffline(false);
   await expect(send).toBeEnabled();
-  await expect(input).toHaveValue("Deze reactie blijft staan bij verbindingsverlies.");
+  await expect(input).toHaveValue(recoveryBody);
   await send.click();
   await expect(input).toHaveValue("");
-  await expect(dialog.getByText("Deze reactie blijft staan bij verbindingsverlies.", { exact: true })).toBeVisible();
+  await expect(dialog.getByText(recoveryBody, { exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("messenger-sent-mobile.png") });
 });
 
