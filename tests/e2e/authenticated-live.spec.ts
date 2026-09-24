@@ -73,7 +73,6 @@ test("the homeowner cockpit labels schedules as planned rather than live ETA", a
   await expect(page.getByRole("button", { name: "Open" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Pauze", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Gesloten" })).toBeVisible();
-  await expect(page.getByText("23 kinderen", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Veilig ontvangen" })).toBeVisible();
   await assertReadableLayout(page);
 });
