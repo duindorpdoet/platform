@@ -26,9 +26,18 @@ test("premium homepage keeps the supplied identity and closed participation path
 test("public map never exposes exact route data", async ({ page }) => {
   await page.goto("/kaart");
   await expect(page.getByRole("heading", { name: /waar begint jullie avontuur/i })).toBeVisible();
-  await expect(page.getByText(/deelnemende huizen en verrassingen houden we geheim/i)).toBeVisible();
+  await expect(page.getByText(/de kaart laat de buurt zien, maar nog niet welke huizen meedoen/i)).toBeVisible();
+  const style = await page.request.get("/maps/duindorp-night.json");
+  expect(style.ok()).toBeTruthy();
   await expect(page.locator("body")).not.toContainText("NIET-BESTAAND TESTADRES");
   await expect(page.locator("body")).not.toContainText("Testpoort 01");
+});
+
+test("map outage shows a usable Duindorp text fallback", async ({ page }) => {
+  await page.route("https://tiles.openfreemap.org/**", (route) => route.abort());
+  await page.goto("/kaart");
+  await expect(page.getByText("Kaart tijdelijk niet beschikbaar")).toBeVisible();
+  await expect(page.getByText(/De avondloop vindt plaats in Duindorp, Den Haag/i)).toBeVisible();
 });
 
 test("authentication uses a six-digit email OTP without a role picker", async ({ page }) => {
