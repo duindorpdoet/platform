@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PaymentDetails, type ParticipantPayment } from "@/components/payments/payment-details";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -202,7 +203,7 @@ type RegistrationSnapshot = {
     togetherCode: string;
     version: number;
     children: Array<{ id: string; firstName: string; ageAtEvent?: number | null; status: string; unitPriceCents: number }>;
-    payment?: { status: string; amountCents: number; externalUrl?: string | null; version: number } | null;
+    payment?: ParticipantPayment | null;
   } | null;
 };
 type GroupSnapshot = {
@@ -294,6 +295,7 @@ function WalkerNow({ context, registration, group }: { context: ParticipantConte
       <StatusCard icon={Users} label="Groep" value={group ? `Groep ${group.group.code}` : "Indeling volgt"} />
       <StatusCard icon={Clock3} label="Vertrek" value={group?.group.start ? formatTime(group.group.start.startsAt) : "Tijdslot volgt"} />
     </div>
+    {payment && <PaymentDetails payment={payment} />}
     <PreparationList paid={payment?.status === "confirmed" || payment?.status === "waived"} grouped={Boolean(group)} />
   </ParticipantPageFrame>;
 }
@@ -316,20 +318,37 @@ function WalkerGroup({ group, registration, groupId, reload }: { group: GroupSna
 }
 
 function NightPass({ context, snapshot, group, reload }: { context: ParticipantContext; snapshot: RegistrationSnapshot | null; group: GroupSnapshot | null; reload: () => Promise<void> }) {
+  const [paymentNotice, setPaymentNotice] = useState("");
+  const [reportingPayment, setReportingPayment] = useState(false);
   const registration = snapshot?.registration;
   const paid = ["confirmed", "waived"].includes(registration?.payment?.status ?? "");
   async function reportPayment() {
     const client = createClient();
-    if (!client || !registration?.payment) return;
-    await client.schema("api").rpc("registration_report_payment", { _registration_id: registration.id, _expected_version: registration.payment.version });
-    await reload();
+    if (!client || !registration?.payment || reportingPayment) return;
+    setReportingPayment(true);
+    try {
+      const { error } = await client.schema("api").rpc("registration_report_payment", { _registration_id: registration.id, _expected_version: registration.payment.version });
+      setPaymentNotice(error ? "De melding kon niet worden verwerkt. Probeer het opnieuw." : "De betaling is gemeld. De organisatie controleert de ontvangst.");
+      await reload();
+    } catch { setPaymentNotice("De verbinding is onderbroken. Probeer het opnieuw zodra je verbinding hebt."); }
+    finally { setReportingPayment(false); }
   }
   if (!registration) return <ParticipantPageFrame eyebrow="Nachtpas" title="Nog geen inschrijving"><section className="participant-card"><p>Na je definitieve inschrijving verschijnt hier de Nachtpas voor je eigen kinderen.</p><Link className="btn" href="/meelopen">Schrijf je in</Link></section></ParticipantPageFrame>;
+  const firstActiveChild = registration.children.find((child) => child.status === "active");
+  const paymentActions = registration.payment ? <>
+    <PaymentDetails payment={registration.payment} />
+    {!paid && (!registration.payment.batch || registration.payment.batch.canPay) && registration.payment.batch?.status !== "needs_review" && ["awaiting_link", "awaiting_payment"].includes(registration.payment.status) && <button className="btn outline" disabled={reportingPayment} onClick={() => void reportPayment()}>{registration.payment.batch && registration.payment.batch.participants.length > 1 ? "Het gezamenlijke bedrag is betaald" : "Ik heb betaald"}</button>}
+    {paymentNotice && <p className="form-notice" role="status">{paymentNotice}</p>}
+  </> : null;
   return <ParticipantPageFrame eyebrow="Alles voor deelname" title="Jullie Nachtpas">
     <section className={`night-pass ${paid ? "active" : "locked"}`}><div className="night-pass-top"><span><MoonStar />Duindorp 2026</span><strong>{paid ? "TOEGANG ACTIEF" : "NOG VERGRENDELD"}</strong></div><h2>{registration.reference}</h2><div className="night-pass-grid"><span>Kinderen<strong>{registration.children.filter((child) => child.status === "active").map((child) => child.firstName).join(", ")}</strong></span><span>Tijdslot<strong>{group?.group.start ? formatTime(group.group.start.startsAt) : "Volgt"}</strong></span><span>Groep<strong>{group ? group.group.code : "Volgt"}</strong></span><span>Betaling<strong>{registration.payment ? paymentLabels[registration.payment.status] ?? registration.payment.status : "Wordt voorbereid"}</strong></span></div>{paid ? <div className="night-pass-valid"><ShieldCheck />Toegang bevestigd. Neem deze pagina en de bevestigingsmail mee.</div> : <div className="night-pass-warning"><LockKeyhole /><span><strong>Betaal vóór <time dateTime={context.event.paymentDeadline}>30 oktober</time> om mee te kunnen doen.</strong>Het toegangsbewijs wordt pas zichtbaar nadat de organisatie de betaling heeft bevestigd.</span></div>}</section>
-    {!paid && registration.payment?.externalUrl && <a className="btn participant-primary-action" href={registration.payment.externalUrl} target="_blank" rel="noreferrer noopener">Open de Tikkie-link<ChevronRight /></a>}
-    {!paid && registration.payment && ["awaiting_link", "awaiting_payment"].includes(registration.payment.status) && <button className="btn outline" onClick={() => void reportPayment()}>Ik heb betaald</button>}
-    <section className="participant-card"><p className="participant-eyebrow">Per eigen kind</p><h2>Deelnamestatus</h2><div className="child-pass-list">{registration.children.map((child) => <div key={child.id}><span className="participant-avatar">{child.firstName.slice(0, 1)}</span><span><strong>{child.firstName}</strong><small>{child.status === "active" ? `Aangemeld · € ${(child.unitPriceCents / 100).toFixed(2).replace(".", ",")}` : "Afgezegd"}</small></span><em className={paid && child.status === "active" ? "confirmed" : ""}>{child.status !== "active" ? "Niet actief" : paid ? "Toegang actief" : "Wacht op betaling"}</em></div>)}</div></section>
+    <section className="participant-card"><p className="participant-eyebrow">Per eigen kind</p><h2>Deelnamestatus</h2>
+      <div className="child-pass-list">{registration.children.map((child) => <div key={child.id}>
+        <span className="participant-avatar">{child.firstName.slice(0, 1)}</span><span><strong>{child.firstName}</strong><small>{child.status === "active" ? `Aangemeld · € ${(child.unitPriceCents / 100).toFixed(2).replace(".", ",")}` : "Afgezegd"}</small></span><em className={paid && child.status === "active" ? "confirmed" : ""}>{child.status !== "active" ? "Niet actief" : paid ? "Toegang actief" : "Wacht op betaling"}</em>
+        {child.status === "active" && child.id === firstActiveChild?.id ? <div className="child-payment-actions">{paymentActions}</div> : child.status === "active" && <p className="child-payment-included">Inbegrepen bij de betaling {registration.payment?.batch ? `via ${registration.payment.batch.payerName}` : `voor ${firstActiveChild?.firstName} en jullie gezin`}. Geen aparte Tikkie.</p>}
+      </div>)}</div>
+      {!firstActiveChild && paymentActions}
+    </section>
     <section className="participant-card practical"><p className="participant-eyebrow">Praktisch</p><h2>Zo gebruik je de Nachtpas</h2><ul><li>Meld je met de groepsleider bij de gepubliceerde startplek.</li><li>Kinderen blijven de hele avond bij hun eigen groep en verantwoordelijke volwassene.</li><li>We tonen geen QR-code: er is geen aparte QR-controle nodig naast de bevestigde inschrijving.</li></ul></section>
   </ParticipantPageFrame>;
 }

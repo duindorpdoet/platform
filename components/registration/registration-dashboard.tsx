@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PaymentDetails, type ParticipantPayment } from "@/components/payments/payment-details";
 import { createClient } from "@/lib/supabase/client";
 
 type Snapshot = {
@@ -37,12 +38,7 @@ type Snapshot = {
       createdAt: string;
       updatedAt: string;
     }>;
-    payment?: {
-      status: string;
-      amountCents: number;
-      externalUrl?: string;
-      version: number;
-    } | null;
+    payment?: ParticipantPayment | null;
   } | null;
 };
 type HouseholdSnapshot = {
@@ -366,25 +362,16 @@ export function RegistrationDashboard({
           <span>Betaling</span>
           <strong>{registration.payment ? paymentStatusLabels[registration.payment.status] ?? registration.payment.status : "Wordt voorbereid"}</strong>
         </div>
-        {registration.payment?.externalUrl && (
-          <a
-            className="btn"
-            href={registration.payment.externalUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            Open de Tikkie-link
-          </a>
-        )}
+        {registration.payment && <PaymentDetails payment={registration.payment} />}
         {registration.payment &&
           ["awaiting_link", "awaiting_payment"].includes(
             registration.payment.status,
-          ) && (
+          ) && (!registration.payment.batch || registration.payment.batch.canPay) && registration.payment.batch?.status !== "needs_review" && (
             <button
               className="btn outline"
               onClick={() => void reportPayment()}
             >
-              Ik heb betaald
+              {registration.payment.batch && registration.payment.batch.participants.length > 1 ? "Het gezamenlijke bedrag is betaald" : "Ik heb betaald"}
             </button>
           )}
         <p className="note">

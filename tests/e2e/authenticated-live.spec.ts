@@ -640,3 +640,96 @@ test("a walker awaiting a group can send and recover chat without realtime", asy
   await expect(dialog.getByText("Deze reactie blijft staan bij verbindingsverlies.", { exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("messenger-sent-mobile.png") });
 });
+
+test("joint Tikkie links connect parents, persist on their dashboards and settle only once for the full total", async ({ context, page, browser }, testInfo) => {
+  requireLocalAuth();
+  test.skip(testInfo.project.name !== "desktop-chromium", "The payment lifecycle mutates isolated fixtures once; this test also checks the mobile layout.");
+    type PaymentSnapshot = { registration: { id: string; payment: { version: number; status: string; externalUrl: string | null; batch: { id: string; status: string; totalAmountCents: number; externalUrl: string | null; canPay: boolean; payerName: string } } } };
+  const admin = await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Betalingen", exact: true }).click();
+  await page.getByRole("searchbox", { name: "Zoek ouder, e-mail, gezin, groep of referentie" }).fill("Betaalouder");
+  await expect(page.getByText("parent-payment-a@example.invalid", { exact: true })).toBeVisible();
+  await expect(page.getByText("parent-payment-b@example.invalid", { exact: true })).toBeVisible();
+  await page.getByRole("checkbox", { name: "Selecteer Betaalouder Alfa", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Selecteer Betaalouder Beta", exact: true }).check();
+  await expect(page.getByText(/2 inschrijving\(en\) geselecteerd/)).toContainText("7,50");
+  await page.getByLabel("Wie betaalt het gezamenlijke bedrag?").selectOption("28000000-0000-0000-0000-000000000081");
+  const tikkieUrl = "https://tikkie.me/pay/browser-shared-link";
+  await page.getByLabel("Tikkie-link voor het totaalbedrag").fill(tikkieUrl);
+  await page.getByLabel("Reden voor verzending of correctie").fill("Gezinnen hebben één gezamenlijke betaling afgesproken.");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Tikkie publiceren en e-mail versturen" }).click();
+  await expect(page.getByRole("status")).toContainText("Gezamenlijke Tikkie gepubliceerd");
+  await page.screenshot({ path: testInfo.outputPath("joint-tikkie-admin-desktop.png"), fullPage: true });
+  await page.setViewportSize({ width: 320, height: 740 });
+  await assertReadableLayout(page);
+  await page.screenshot({ path: testInfo.outputPath("joint-tikkie-admin-mobile.png"), fullPage: true });
+
+  const parentContext = await browser.newContext({ baseURL: "http://127.0.0.1:3100", viewport: { width: 320, height: 740 } });
+  try {
+    const parentA = await authenticate(parentContext, "parent-payment-a@example.invalid");
+    const parentPage = await parentContext.newPage();
+    await parentPage.goto("/omgeving/meeloper/nu");
+    const paymentCard = parentPage.getByRole("region", { name: "Gezamenlijke betaling", exact: true });
+    await expect(paymentCard).toContainText("Betaalouder Alfa");
+    await expect(paymentCard).toContainText("Betaalouder Beta");
+    await expect(paymentCard).toContainText("7,50");
+    await expect(paymentCard).toContainText("2,50");
+    await expect(paymentCard).not.toContainText("@example.invalid");
+    await expect(paymentCard.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveAttribute("href", tikkieUrl);
+    await expect(paymentCard).toContainText("betaal deze link niet ieder apart");
+    await parentPage.reload();
+    await expect(paymentCard.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveAttribute("href", tikkieUrl);
+    await assertReadableLayout(parentPage);
+    await parentPage.screenshot({ path: testInfo.outputPath("joint-tikkie-parent-mobile.png"), fullPage: true });
+    const parentB = (await fixtureClient("parent-payment-b@example.invalid")).client;
+    const otherSnapshot = await rpc(parentB, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
+    expect(otherSnapshot.registration.payment.batch.canPay).toBe(false);
+    expect(otherSnapshot.registration.payment.batch.externalUrl).toBeNull();
+    expect(otherSnapshot.registration.payment.externalUrl).toBeNull();
+    expect(otherSnapshot.registration.payment.batch.payerName).toBe("Betaalouder Alfa");
+    const forbiddenReport = await parentB.schema("api").rpc("registration_report_payment", { _registration_id: otherSnapshot.registration.id, _expected_version: otherSnapshot.registration.payment.version });
+    expect(forbiddenReport.error?.message).toContain("NOT_AUTHORIZED");
+    await authenticate(parentContext, "parent-payment-b@example.invalid");
+    await parentPage.goto("/omgeving/meeloper/nachtpas");
+    await expect(parentPage.getByText("Betaling loopt via Betaalouder Alfa.", { exact: true })).toBeVisible();
+    await expect(parentPage.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveCount(0);
+    await expect(parentPage.getByRole("button", { name: "Het gezamenlijke bedrag is betaald" })).toHaveCount(0);
+    await parentPage.screenshot({ path: testInfo.outputPath("joint-tikkie-linked-parent-mobile.png"), fullPage: true });
+    await authenticate(parentContext, "parent-payment-a@example.invalid");
+    await parentPage.goto("/omgeving/meeloper/nachtpas");
+    await parentPage.getByRole("button", { name: "Het gezamenlijke bedrag is betaald" }).click();
+    await expect(parentPage.getByText("De betaling is gemeld. De organisatie controleert de ontvangst.", { exact: true })).toBeVisible();
+    await expect(parentPage.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveCount(0);
+
+
+    for (const client of [parentA, parentB]) {
+      const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
+      expect(snapshot.registration.payment.status).toBe("reported");
+      expect(snapshot.registration.payment.batch.status).toBe("reported");
+      expect(snapshot.registration.payment.batch.totalAmountCents).toBe(750);
+    }
+    await page.reload();
+    await page.getByRole("button", { name: "Betalingen", exact: true }).click();
+    await page.getByRole("searchbox", { name: "Zoek ouder, e-mail, gezin, groep of referentie" }).fill("Betaalouder");
+    const answers = ["7,50", "BROWSER-JOINT-RECEIVED", "Het gezamenlijke bedrag is gecontroleerd op de bank.", ""];
+    const confirmDialog = async (dialog: import("@playwright/test").Dialog) => { await dialog.accept(answers.shift()); };
+    page.on("dialog", confirmDialog);
+    await page.getByRole("button", { name: /Bevestig gezamenlijk.*7,50/ }).click();
+    await expect(page.getByRole("status")).toContainText("Betaalmutatie append-only opgeslagen");
+    page.off("dialog", confirmDialog);
+    expect(answers).toHaveLength(0);
+    const payments = await rpc(admin, "admin_payments_snapshot", { _event_slug: "duindorp-halloween-2026" }) as Array<{ reference: string; status: string; netCollectedCents: number }>;
+    expect(payments.filter((payment) => payment.reference.startsWith("PAY-BROWSER-PAYMENT-")).map(({ status, netCollectedCents }) => ({ status, netCollectedCents })).sort((a, b) => a.netCollectedCents - b.netCollectedCents)).toEqual([{ status: "confirmed", netCollectedCents: 250 }, { status: "confirmed", netCollectedCents: 500 }]);
+    for (const client of [parentA, parentB]) {
+      const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
+      expect(snapshot.registration.payment.status).toBe("confirmed");
+      expect(snapshot.registration.payment.externalUrl).toBeNull();
+      expect(snapshot.registration.payment.batch.externalUrl).toBeNull();
+    }
+    await parentPage.reload();
+    await expect(parentPage.getByText("TOEGANG ACTIEF", { exact: true })).toBeVisible();
+    await expect(parentPage.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveCount(0);
+  } finally { await parentContext.close(); }
+});

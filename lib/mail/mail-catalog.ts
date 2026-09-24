@@ -1,4 +1,5 @@
 import type { MailDetail, PremiumMailBrand, PremiumMailContent } from "./premium-template";
+import { validatedTikkieUrl } from "./tikkie-url";
 
 export const MAIL_MESSAGE_TYPES = [
   "auth_otp",
@@ -78,7 +79,15 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
   },
   payment_link_ready: {
     kind: "payment", subject: "De betaling voor jullie groep staat klaar", preheader: "Betaal vóór 30 oktober om mee te kunnen lopen.", eyebrow: "Betaling van je groep", title: "Nog één stap tot de avond.",
-    paragraphs: (payload) => [`${greeting(payload)}voor ${groupName(payload)} is de betaling nu beschikbaar. Open jullie beveiligde omgeving voor het juiste bedrag en de betaalinstructie.`],
+    paragraphs: (payload) => validatedTikkieUrl(payload.externalUrl)
+      ? [
+          `${greeting(payload)}de Tikkie-link voor jullie inschrijving staat klaar. Hieronder zie je het totale bedrag en voor wie deze betaling bedoeld is.`,
+          text(payload, ["payerName"])
+            ? `${text(payload, ["payerName"])} regelt deze gezamenlijke betaling voor alle hieronder genoemde gezinnen. Betaal het totaalbedrag één keer; de andere gezinnen hoeven niet afzonderlijk te betalen.`
+            : "Dit is één gezamenlijke betaling voor alle hieronder genoemde gezinnen. Spreek samen af wie het totaalbedrag betaalt; ieder gezin hoeft deze link dus niet afzonderlijk te betalen.",
+          "De bijdrage is bedoeld om waar nodig snoep te verdelen onder de deelnemende huizen. Je kunt de betaling ook terugvinden in jullie persoonlijke omgeving.",
+        ]
+      : [`${greeting(payload)}voor ${groupName(payload)} is de betaling nu beschikbaar. Open jullie beveiligde omgeving voor het juiste bedrag en de betaalinstructie.`],
     notice: { title: "Uiterste betaalmoment", text: "De betaling moet vóór 30 oktober zijn voldaan; zonder tijdige betaling is deelname niet mogelijk." },
     action: { label: "Bekijk de betaling", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt dit bericht omdat er voor jouw inschrijving een betaling klaarstaat.",
   },
@@ -290,6 +299,18 @@ function detailsFor(messageType: MailMessageType, payload: Payload): MailDetail[
   if (["group_ticket_message_organization", "group_ticket_message_leader", "messenger_incoming_admin"].includes(messageType)) {
     add("Referentie", reference(payload));
   }
+  if (messageType === "payment_link_ready") {
+    add("Betaler", text(payload, ["payerName"]));
+    const cents = payload.amountCents;
+    if (typeof cents === "number" && Number.isSafeInteger(cents) && cents >= 0) {
+      add("Totaal te betalen", new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100));
+    }
+    if (Array.isArray(payload.paymentParticipants)) {
+      for (const participant of payload.paymentParticipants) {
+        if (typeof participant === "string" && participant.trim()) add("Voor", participant.trim());
+      }
+    }
+  }
   if (messageType === "payment_confirmed") add("Status", "Betaald");
   return entries.map(([label, value]) => ({ label, value }));
 }
@@ -311,7 +332,8 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
   const dynamicTitle = messageType === "participant_update" ? text(payload, ["title", "titel"], definition.title) : definition.title;
   const dynamicSubject = messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
   const codeValue = text(payload, ["code", "token"]);
-  const action = definition.action
+  const paymentUrl = messageType === "payment_link_ready" ? validatedTikkieUrl(payload.externalUrl) : undefined;
+  const action = paymentUrl ? { label: "Betaal via Tikkie", url: paymentUrl } : definition.action
     ? { label: definition.action.label, url: new URL(actionPath(payload, definition.action.path), brand.homeUrl).toString() }
     : undefined;
   const code = definition.kind === "otp"

@@ -203,7 +203,42 @@ if (live.run.currentStop.sequence === 4) {
   check(live.run.currentStop.sequence === 5 && live.run.history.length === 4, "successful raced completion produced an inconsistent next stop");
 }
 
+// Two HTTP transactions must converge on one shared payment and one allocation.
+const paymentSnapshot = await api(adminA, "admin_payments_snapshot", { _event_slug: eventSlug });
+check(!paymentSnapshot.error, "payment snapshot unavailable");
+const selectedPayments = paymentSnapshot.data.filter((payment) => payment.reference.startsWith("PAY-BROWSER-PAYMENT-")).sort((a, b) => a.reference.localeCompare(b.reference));
+check(selectedPayments.length === 2, "shared payment fixtures missing");
+const publishPaymentArgs = {
+  _event_slug: eventSlug,
+  _payments: selectedPayments.map(({ id, version }) => ({ id, version })),
+  _payer_payment_request_id: selectedPayments[0].id,
+  _external_url: "https://tikkie.me/pay/parallel-shared-test",
+  _reason: "Parallelle gedeelde betaling controleren",
+  _idempotency_key: "parallel-shared-publish",
+};
+const publicationResults = await Promise.all([
+  api(adminA, "admin_payment_batch_publish", publishPaymentArgs),
+  api(adminB, "admin_payment_batch_publish", publishPaymentArgs),
+]);
+check(publicationResults.every((item) => !item.error), `parallel payment publication failed: ${publicationResults.find((item) => item.error)?.error?.message}`);
+check(publicationResults[0].data.id === publicationResults[1].data.id, "parallel publication created two batches");
+const sharedPayment = publicationResults[0].data;
+const confirmPaymentArgs = {
+  _batch_id: sharedPayment.id, _expected_version: sharedPayment.version,
+  _amount_cents: 750, _external_reference: "PARALLEL-SHARED-PAYMENT",
+  _reason: "Totaal eenmaal ontvangen en gecontroleerd", _idempotency_key: "parallel-shared-confirm",
+};
+const paymentConfirmations = await Promise.all([
+  api(adminA, "admin_payment_batch_confirm", confirmPaymentArgs),
+  api(adminB, "admin_payment_batch_confirm", confirmPaymentArgs),
+]);
+check(paymentConfirmations.every((item) => !item.error), "parallel payment confirmation did not return the same receipt");
+const finalPayments = await api(adminA, "admin_payments_snapshot", { _event_slug: eventSlug });
+const allocations = finalPayments.data.filter((payment) => selectedPayments.some((selected) => selected.id === payment.id));
+check(allocations.every((payment) => payment.status === "confirmed" && payment.netCollectedCents === payment.amountCents), "joint payment was duplicated or allocated incorrectly");
+check(allocations.reduce((sum, payment) => sum + payment.netCollectedCents, 0) === 750, "shared ledger total was not booked exactly once");
+
 console.log(JSON.stringify({
   status: "pass",
-  checks: ["REG-04", "HOUSE-02", "PLAN-06", "RACE-01", "RACE-02", "RACE-04", "RACE-05", "RACE-06"],
+  checks: ["REG-04", "HOUSE-02", "PLAN-06", "RACE-01", "RACE-02", "RACE-04", "RACE-05", "RACE-06", "PAYMENT-SHARED-RACE"],
 }));

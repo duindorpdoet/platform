@@ -112,6 +112,84 @@ describe("premium transactional mail catalog", () => {
     expect(rejected.text).toContain("https://staging-halloween.duindorpdoet.nl/mijn-inschrijving");
   });
 
+  it("renders a shared Tikkie payment with the joint total, family names and a direct fallback link", () => {
+    const rendered = renderTransactionalMail({
+      messageType: "payment_link_ready",
+      payload: {
+        externalUrl: "https://tikkie.me/pay/shared?request=abc&source=email",
+        amountCents: 2250,
+        paymentParticipants: ["Sam Jansen · Familie Jansen", 'Alex <Ouder> & "Familie"'],
+      },
+    });
+    expect(rendered.text).toContain("Totaal te betalen: €\u00a022,50");
+    expect(rendered.text).toContain("Voor: Sam Jansen · Familie Jansen");
+    expect(rendered.text).toContain('Voor: Alex <Ouder> & "Familie"');
+    expect(rendered.text).toContain("wie het totaalbedrag betaalt");
+    expect(rendered.text).toContain("Betaal via Tikkie: https://tikkie.me/pay/shared?request=abc&source=email");
+    expect(rendered.html).toContain("Alex &lt;Ouder&gt; &amp; &quot;Familie&quot;");
+    expect(rendered.html).not.toContain("<Ouder>");
+    expect(rendered.html.match(/href="https:\/\/tikkie\.me\/pay\/shared\?request=abc&amp;source=email"/g)).toHaveLength(2);
+    expect(rendered.html).toContain("Werkt de knop niet? Open deze link:");
+  });
+
+  it("clearly identifies the designated payer for the shared payment", () => {
+    const rendered = renderTransactionalMail({
+      messageType: "payment_link_ready",
+      payload: {
+        externalUrl: "https://tikkie.me/pay/designated", amountCents: 1200,
+        payerName: "Sam <Jansen>", paymentParticipants: ["Sam <Jansen>", "Alex Visser"],
+      },
+    });
+    expect(rendered.text).toContain("Betaler: Sam <Jansen>");
+    expect(rendered.text).toContain("Sam <Jansen> regelt deze gezamenlijke betaling");
+    expect(rendered.text).toContain("Betaal het totaalbedrag één keer");
+    expect(rendered.text).not.toContain("Spreek samen af");
+    expect(rendered.html).toContain("Sam &lt;Jansen&gt;");
+  });
+
+  it("supports a single-family payment and trusted Tikkie subdomains", () => {
+    const rendered = renderTransactionalMail({
+      messageType: "payment_link_ready",
+      payload: { externalUrl: "https://pay.tikkie.me/single", amountCents: 500, paymentParticipants: ["Familie Jansen"] },
+    });
+    expect(rendered.text).toContain("Totaal te betalen: €\u00a05,00");
+    expect(rendered.text).toContain("Voor: Familie Jansen");
+    expect(rendered.text).toContain("Betaal via Tikkie: https://pay.tikkie.me/single");
+    const legacy = renderTransactionalMail({ messageType: "payment_link_ready", payload: { amountCents: 500 } });
+    expect(legacy.text).toContain("Bekijk de betaling: https://staging-halloween.duindorpdoet.nl/mijn-inschrijving");
+  });
+
+  it.each([
+    "http://tikkie.me/pay/request",
+    "https://tikkie.me.attacker.invalid/pay/request",
+    "https://not-tikkie.me/pay/request",
+    "https://tikkie.me@attacker.invalid/pay/request",
+    "https://attacker.invalid@tikkie.me/pay/request",
+    "https://user:password@tikkie.me/pay/request",
+    "https://tikkie.me:443/pay/request",
+    "https://tikkie.me:8443/pay/request",
+    "https://tikkie.me./pay/request",
+    "https://tikkie.me\\@attacker.invalid/pay/request",
+    "https://tik\nk ie.me/pay/request",
+    "javascript:alert(1)",
+    "//tikkie.me/pay/request",
+    { href: "https://tikkie.me/pay/request" },
+  ])("rejects an unsafe external Tikkie link: %s", (externalUrl) => {
+    expect(() => renderTransactionalMail({ messageType: "payment_link_ready", payload: { externalUrl } }))
+      .toThrow(/Tikkie URL/);
+  });
+
+  it("does not allow external payment links to change any other mail action", () => {
+    for (const messageType of MAIL_MESSAGE_TYPES.filter((key) => key !== "payment_link_ready")) {
+      const rendered = renderTransactionalMail({
+        messageType,
+        payload: { ...completePayload, externalUrl: "https://tikkie.me/pay/request", actionPath: "https://tikkie.me/pay/request" },
+      });
+      expect(rendered.html).not.toContain('href="https://tikkie.me');
+      expect(rendered.text).not.toContain("https://tikkie.me");
+    }
+  });
+
   it("formats schedule timestamps in Europe/Amsterdam and exposes the private start only in schedule mail", () => {
     const schedule = renderTransactionalMail({
       messageType: "group_schedule_published",

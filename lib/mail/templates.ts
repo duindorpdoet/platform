@@ -3,6 +3,8 @@ import "server-only";
 import { contentForMessage, UnknownMailTemplateError } from "./mail-catalog";
 import { InvalidMailTemplateError, renderPremiumEmail, type PremiumMailBrand } from "./premium-template";
 
+import { validatedTikkieUrl } from "./tikkie-url";
+
 type TemplateInput = { messageType: string; payload: Record<string, unknown> };
 
 function configuredBrand(): PremiumMailBrand {
@@ -36,6 +38,8 @@ function configuredBrand(): PremiumMailBrand {
 
 export function renderTransactionalMail({ messageType, payload }: TemplateInput) {
   const brand = configuredBrand();
+  const paymentUrl = messageType === "payment_link_ready" ? validatedTikkieUrl(payload.externalUrl) : undefined;
+  if (paymentUrl) brand.allowedLinkHosts.push(new URL(paymentUrl).hostname);
   return renderPremiumEmail(contentForMessage(messageType, payload, brand), brand);
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Papa from "papaparse";
+import { paymentAmount, type PaymentBatch } from "@/components/payments/payment-details";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -77,6 +78,12 @@ type LivePortal = { id: string; systemCode?: string; name: string; operationStat
 type PortalOperation = { portalId: string; systemCode: string; name: string; operationStatus: string; contactName?: string | null; phone?: string | null; email?: string | null; formattedAddress: string; activeReservations: number; expectedChildren: number };
 type LiveAlert = { id: string; priority: "urgent" | "warning" | "info"; code: string; message: string; groupId: string | null; portalId: string | null; createdAt: string };
 type PaymentRow = {
+  parentName?: string | null;
+  parentEmail?: string | null;
+  householdLabel?: string | null;
+  groupCode?: string | null;
+  groupName?: string | null;
+  batch?: PaymentBatch | null;
   id: string;
   reference: string;
   registrationReference: string;
@@ -188,6 +195,18 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   const [portalOperations, setPortalOperations] = useState<PortalOperation[]>([]);
   const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [selectedPaymentIds, setSelectedPaymentIds] = useState<string[]>([]);
+  const [paymentPayerId, setPaymentPayerId] = useState("");
+  const [paymentLink, setPaymentLink] = useState("");
+  const [paymentLinkReason, setPaymentLinkReason] = useState("");
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const paymentMutation = useRef(false);
+  const paymentPublishKey = useRef<{ payload: string; key: string } | null>(null);
+  const selectedPayments = payments.filter((payment) => selectedPaymentIds.includes(payment.id));
+  const selectedPayer = selectedPayments.find((payment) => payment.id === paymentPayerId) ?? selectedPayments[0];
+  const selectedPaymentTotal = selectedPayments.reduce((total, payment) => total + payment.amountCents, 0);
+  const filteredPayments = payments.filter((payment) => [payment.parentName, payment.parentEmail, payment.householdLabel, payment.groupCode, payment.groupName, payment.reference, payment.registrationReference].some((value) => value?.toLocaleLowerCase("nl").includes(paymentSearch.trim().toLocaleLowerCase("nl"))));
   const [registrationChanges, setRegistrationChanges] = useState<
     RegistrationChange[]
   >([]);
@@ -492,7 +511,9 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     payment: PaymentRow,
     command: "confirm" | "refund",
   ) {
-    const defaultCents =
+    if (paymentMutation.current) return;
+    const batch = command === "confirm" ? payment.batch : null;
+    const defaultCents = batch ? batch.totalAmountCents :
       command === "refund"
         ? payment.netCollectedCents
         : Math.max(0, payment.amountCents - payment.netCollectedCents);
@@ -507,6 +528,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         "Vul een geldig positief bedrag met maximaal twee decimalen in.",
       );
     const amountCents = Math.round(Number(amountInput.replace(",", ".")) * 100);
+    if (batch && amountCents !== batch.totalAmountCents) return setNotice(`Bevestig het volledige gezamenlijke bedrag van ${paymentAmount(batch.totalAmountCents)}. Controleer een afwijkende ontvangst eerst met de betrokken gezinnen.`);
     const externalReference = window
       .prompt("Externe Tikkie-/bankreferentie:")
       ?.trim();
@@ -532,8 +554,19 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
       reason,
       command,
     });
-    const result =
-      command === "confirm"
+    paymentMutation.current = true;
+    setPaymentBusy(true);
+    try {
+    const result = batch
+      ? await client.schema("api").rpc("admin_payment_batch_confirm", {
+          _batch_id: batch.id,
+          _expected_version: batch.version,
+          _amount_cents: amountCents,
+          _external_reference: externalReference,
+          _reason: reason,
+          _idempotency_key: key,
+        })
+      : command === "confirm"
         ? await client.schema("api").rpc("payment_confirm_versioned", {
             _payment_request_id: payment.id,
             _expected_version: payment.version,
@@ -557,36 +590,54 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         : "Betaalmutatie append-only opgeslagen en geaudit.",
     );
     await Promise.all([loadPayments(), load()]);
+    } catch { setNotice("De verbinding is onderbroken. Vernieuw het overzicht en controleer de ontvangst voordat je opnieuw bevestigt."); }
+    finally { paymentMutation.current = false; setPaymentBusy(false); }
   }
 
-  async function setPaymentLink(payment: PaymentRow) {
-    const url = window
-      .prompt(
-        "Volledige Tikkie-link (https://…tikkie.me/…):",
-        payment.externalUrl ?? "",
-      )
-      ?.trim();
-    const reason = window
-      .prompt("Auditreden voor deze betaallink (minimaal 10 tekens):")
-      ?.trim();
-    if (!url || !reason || reason.length < 10)
-      return setNotice("Een geldige Tikkie-link en auditreden zijn verplicht.");
+  function selectPayment(payment: PaymentRow, checked: boolean) {
+    const members = payment.batch ? payments.filter((row) => row.batch?.id === payment.batch?.id) : [payment];
+    const ids = members.map((row) => row.id);
+    setSelectedPaymentIds((previous) => checked ? [...new Set([...previous, ...ids])] : previous.filter((id) => !ids.includes(id)));
+    if (checked && payment.batch) setPaymentPayerId(payment.batch.payerPaymentRequestId);
+    if (checked && payment.batch?.externalUrl) setPaymentLink(payment.batch.externalUrl);
+  }
+
+  async function publishPaymentLink() {
+    if (paymentMutation.current) return;
+    if (!selectedPayments.length || !paymentLink.trim() || paymentLinkReason.trim().length < 10) return setNotice("Selecteer gezinnen en vul een Tikkie-link en een reden van minimaal tien tekens in.");
+    if (!window.confirm(`Eén gezamenlijke Tikkie van ${paymentAmount(selectedPaymentTotal)} voor ${selectedPayments.length} inschrijving(en) publiceren en per e-mail versturen? Controleer dat de externe Tikkie dit totaalbedrag bevat.`)) return;
     const client = createClient();
     if (!client) return;
-    const { error } = await client
-      .schema("api")
-      .rpc("payment_set_external_link", {
-        _payment_request_id: payment.id,
-        _expected_version: payment.version,
-        _external_url: url,
-        _reason: reason,
-      });
-    setNotice(
-      error
-        ? `Betaallink geweigerd: ${error.message}`
-        : "Tikkie-link veilig gekoppeld; de betaling blijft open tot handmatige controle.",
-    );
-    await loadPayments();
+    const payload = { _event_slug: eventSlug, _payments: selectedPayments.map(({ id, version }) => ({ id, version })), _external_url: paymentLink.trim(), _payer_payment_request_id: selectedPayer?.id, _reason: paymentLinkReason.trim() };
+    const serialized = JSON.stringify(payload);
+    if (paymentPublishKey.current?.payload !== serialized) paymentPublishKey.current = { payload: serialized, key: crypto.randomUUID() };
+    paymentMutation.current = true;
+    setPaymentBusy(true);
+    try {
+      const { error } = await client.schema("api").rpc("admin_payment_batch_publish", { ...payload, _idempotency_key: paymentPublishKey.current.key });
+      setNotice(error ? `Tikkie niet gepubliceerd: ${error.message}` : "Gezamenlijke Tikkie gepubliceerd. De e-mails staan klaar voor verzending; ontvangst moet nog worden gecontroleerd.");
+      if (!error) { setSelectedPaymentIds([]); setPaymentLink(""); setPaymentLinkReason(""); paymentPublishKey.current = null; }
+      await loadPayments();
+    } catch { setNotice("De verbinding is onderbroken. Probeer dezelfde opdracht opnieuw; je selectie blijft bewaard."); }
+    finally { paymentMutation.current = false; setPaymentBusy(false); }
+  }
+
+  async function cancelPaymentBatch(batch: PaymentBatch) {
+    if (paymentMutation.current) return;
+    const reason = window.prompt("Waarom hef je dit gezamenlijke betaalverzoek op? (minimaal 10 tekens)")?.trim();
+    if (!reason || reason.length < 10) return;
+    if (!window.confirm("Deactiveer de oude Tikkie ook zelf bij Tikkie. Deze actie verwijdert de link uit de dashboards en maakt de open inschrijvingen weer apart selecteerbaar. Er wordt geen betaling of terugbetaling vastgelegd. Doorgaan?")) return;
+    const client = createClient();
+    if (!client) return;
+    paymentMutation.current = true;
+    setPaymentBusy(true);
+    try {
+      const { error } = await client.schema("api").rpc("admin_payment_batch_cancel", { _batch_id: batch.id, _expected_version: batch.version, _reason: reason });
+      setNotice(error ? `Opheffen geweigerd: ${error.message}` : "Gezamenlijk betaalverzoek opgeheven. Controleer dat de externe Tikkie is gedeactiveerd voordat je een nieuw verzoek verstuurt.");
+      if (!error) setSelectedPaymentIds([]);
+      await loadPayments();
+    } catch { setNotice("De verbinding is onderbroken. Vernieuw de betalingen om te controleren of het verzoek is opgeheven."); }
+    finally { paymentMutation.current = false; setPaymentBusy(false); }
   }
 
   async function liveCommand(
@@ -1034,67 +1085,34 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           </section>
         )}
         {section === "payments" && (
-          <section className="panel">
-            <p className="kicker">Handmatige Tikkie-controle</p>
-            <h2>Betalingen en terugbetalingen</h2>
-            <p>
-              Alle bedragen komen uit het append-only grootboek. Een
-              oudermelding is geen bevestiging; een terugbetaling wordt pas
-              vastgelegd nadat die buiten de app werkelijk is uitgevoerd.
-            </p>
-            {payments.length === 0 ? (
-              <p>Geen betaalverzoeken.</p>
-            ) : (
-              payments.map((payment) => (
-                <div className="incident-row" key={payment.id}>
-                  <div>
-                    <strong>
-                      {payment.reference} · {payment.registrationReference}
-                    </strong>
-                    <small>
-                      {paymentStatusLabels[payment.status] ?? payment.status} · ontvangen €{" "}
-                      {(payment.netCollectedCents / 100)
-                        .toFixed(2)
-                        .replace(".", ",")}{" "}
-                      van €{" "}
-                      {(payment.amountCents / 100).toFixed(2).replace(".", ",")}{" "}
-                      · versie {payment.version}
-                    </small>
-                  </div>
-                  <div className="actions">
-                    {["awaiting_link", "awaiting_payment"].includes(
-                      payment.status,
-                    ) && (
-                      <button
-                        className="btn outline"
-                        onClick={() => void setPaymentLink(payment)}
-                      >
-                        Tikkie-link instellen
-                      </button>
-                    )}
-                    {!["confirmed", "refunded", "waived"].includes(
-                      payment.status,
-                    ) && (
-                      <button
-                        className="btn outline"
-                        onClick={() => void paymentCommand(payment, "confirm")}
-                      >
-                        Bevestig ontvangst
-                      </button>
-                    )}
-                    {payment.netCollectedCents > 0 &&
-                      payment.status !== "refunded" && (
-                        <button
-                          className="btn outline"
-                          onClick={() => void paymentCommand(payment, "refund")}
-                        >
-                          Leg terugbetaling vast
-                        </button>
-                      )}
-                  </div>
+          <section className="panel payment-admin-panel">
+            <p className="kicker">Tikkie & ontvangstcontrole</p>
+            <h2>Betalingen per ouder en groep</h2>
+            <p>Selecteer één of meerdere gezinnen voor één gezamenlijk totaalbedrag. Kies één betalende ouder. Alleen dit gezin krijgt een actieve Tikkie; de andere gezinnen zien via wie de betaling loopt. Een oudermelding bevestigt nog geen ontvangst.</p>
+            <label className="field"><span>Zoek ouder, e-mail, gezin, groep of referentie</span><input type="search" value={paymentSearch} onChange={(event) => setPaymentSearch(event.target.value)} placeholder="Naam of groepscode" /></label>
+            <form className="payment-publish-form" onSubmit={(event) => { event.preventDefault(); void publishPaymentLink(); }}>
+              <h3>Gezamenlijke Tikkie versturen</h3>
+              <p><strong>{selectedPayments.length} inschrijving(en) geselecteerd · {paymentAmount(selectedPaymentTotal)}</strong></p>
+              {selectedPayments.length > 0 && <ul className="payment-selection-list">{selectedPayments.map((payment) => <li key={payment.id}>{payment.parentName || payment.householdLabel || payment.registrationReference} · {paymentAmount(payment.amountCents)}</li>)}</ul>}
+              {selectedPayments.length > 0 && <label className="field"><span>Wie betaalt het gezamenlijke bedrag?</span><select className="choice" value={selectedPayer?.id ?? ""} onChange={(event) => setPaymentPayerId(event.target.value)}>{selectedPayments.map((payment) => <option key={payment.id} value={payment.id}>{payment.parentName || payment.householdLabel || payment.registrationReference}</option>)}</select></label>}
+              <p className="note">Maak bij Tikkie één link voor exact dit totaal. Bij een bestaande gezamenlijke Tikkie selecteren we automatisch alle gekoppelde gezinnen; de link en betalende ouder kunnen worden gecorrigeerd. Deactiveer bij een correctie de oude externe Tikkie.</p>
+              <div className="two-fields"><label className="field"><span>Tikkie-link voor het totaalbedrag</span><input type="url" required value={paymentLink} onChange={(event) => setPaymentLink(event.target.value)} placeholder="https://tikkie.me/pay/…" /></label><label className="field"><span>Reden voor verzending of correctie</span><input required minLength={10} value={paymentLinkReason} onChange={(event) => setPaymentLinkReason(event.target.value)} /></label></div>
+              <div className="actions"><button className="btn" disabled={!selectedPayments.length || paymentBusy} type="submit">{paymentBusy ? "Bezig…" : "Tikkie publiceren en e-mail versturen"}</button><button className="btn outline" type="button" disabled={paymentBusy || !selectedPayments.length} onClick={() => setSelectedPaymentIds([])}>Selectie wissen</button></div>
+            </form>
+            {filteredPayments.length === 0 ? <p>Geen betaalverzoeken gevonden.</p> : filteredPayments.map((payment) => {
+              const canSelect = ["awaiting_link", "awaiting_payment"].includes(payment.status) && (!payment.batch || payment.batch.status === "awaiting_payment");
+              const firstBatchRow = !payment.batch || filteredPayments.find((row) => row.batch?.id === payment.batch?.id)?.id === payment.id;
+              return <article className="payment-admin-row" key={payment.id}>
+                <label className="payment-row-select"><input type="checkbox" checked={selectedPaymentIds.includes(payment.id)} disabled={!canSelect || paymentBusy} onChange={(event) => selectPayment(payment, event.target.checked)} aria-label={`Selecteer ${payment.parentName || payment.householdLabel || payment.registrationReference}`} /><span><strong>{payment.parentName || payment.householdLabel || "Ouder nog niet bekend"}</strong><small>{payment.parentEmail}</small><small>{[payment.householdLabel, payment.groupCode, payment.groupName].filter(Boolean).join(" · ") || "Groepsindeling volgt"}</small></span></label>
+                <div className="payment-row-amount"><strong>{paymentAmount(payment.amountCents)}</strong><span>{paymentStatusLabels[payment.status] ?? payment.status}</span><small>Ontvangen {paymentAmount(payment.netCollectedCents)}</small><small>{payment.registrationReference} · {payment.reference}</small></div>
+                {payment.batch && <div className="payment-admin-batch"><strong>Gekoppelde betaling · totaal {paymentAmount(payment.batch.totalAmountCents)}</strong><p>{payment.batch.participants.join(" · ")}</p><p>Betaling loopt via {payment.batch.payerName} · {payment.id === payment.batch.payerPaymentRequestId ? "Actieve betaallink" : "Inbegrepen, geen aparte betaling"}</p>{payment.batch.status === "needs_review" && <p>Controle nodig: de eerdere link is geblokkeerd. Controleer de ontvangst en hef het verzoek zo nodig op.</p>}</div>}
+                <div className="actions">
+                  {firstBatchRow && !["confirmed", "refunded", "waived"].includes(payment.status) && payment.batch?.status !== "needs_review" && <button className="btn outline" disabled={paymentBusy} onClick={() => void paymentCommand(payment, "confirm")}>{payment.batch ? `Bevestig gezamenlijk ${paymentAmount(payment.batch.totalAmountCents)}` : "Bevestig ontvangst"}</button>}
+                  {firstBatchRow && payment.batch?.status === "needs_review" && <button className="btn outline" disabled={paymentBusy} onClick={() => void cancelPaymentBatch(payment.batch!)}>Gezamenlijk betaalverzoek opheffen</button>}
+                  {payment.netCollectedCents > 0 && payment.status !== "refunded" && <button className="btn outline" disabled={paymentBusy} onClick={() => void paymentCommand(payment, "refund")}>Leg terugbetaling vast</button>}
                 </div>
-              ))
-            )}
+              </article>;
+            })}
           </section>
         )}
         {section === "registrations" && (

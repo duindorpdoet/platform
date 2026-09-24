@@ -24,7 +24,9 @@ from (values
   ('a0000000-0000-0000-0000-000000000010'::uuid, 'parent-size-10@example.invalid'),
   ('a0000000-0000-0000-0000-000000000011'::uuid, 'browser-registration-desktop@example.invalid'),
   ('a0000000-0000-0000-0000-000000000012'::uuid, 'browser-registration-mobile@example.invalid'),
-  ('a0000000-0000-0000-0000-000000000013'::uuid, 'browser-chat-unassigned@example.invalid')
+  ('a0000000-0000-0000-0000-000000000013'::uuid, 'browser-chat-unassigned@example.invalid'),
+  ('a0000000-0000-0000-0000-000000000081'::uuid, 'parent-payment-a@example.invalid'),
+  ('a0000000-0000-0000-0000-000000000082'::uuid, 'parent-payment-b@example.invalid')
 ) fixture(id, email)
 on conflict (id) do nothing;
 
@@ -205,4 +207,27 @@ begin
   insert into app_private.group_leaders(group_id, user_id, active_from, revision, assigned_by)
   values ('23000000-0000-0000-0000-000000000099', 'c0000000-0000-0000-0000-000000000001', timestamptz '2026-01-01 00:00:00+01', 1, 'f0000000-0000-0000-0000-000000000001')
   on conflict do nothing;
+end $$;
+
+
+-- Isolated browser fixtures for one joint Tikkie without changing route rosters.
+do $$
+declare fixture record; event_id uuid;
+begin
+  select id into event_id from app_private.events where slug = 'duindorp-halloween-2026';
+  for fixture in select * from (values
+    ('a0000000-0000-0000-0000-000000000081'::uuid, '21000000-0000-0000-0000-000000000081'::uuid, '22000000-0000-0000-0000-000000000081'::uuid, '28000000-0000-0000-0000-000000000081'::uuid, 'Betaalouder Alfa', 'Betaalgezin Alfa', 'BROWSER-PAYMENT-A', 250),
+    ('a0000000-0000-0000-0000-000000000082'::uuid, '21000000-0000-0000-0000-000000000082'::uuid, '22000000-0000-0000-0000-000000000082'::uuid, '28000000-0000-0000-0000-000000000082'::uuid, 'Betaalouder Beta', 'Betaalgezin Beta', 'BROWSER-PAYMENT-B', 500)
+  ) data(user_id, household_id, registration_id, payment_id, parent_name, household_label, reference, amount_cents) loop
+    insert into app_private.profiles(user_id, display_name) values(fixture.user_id, fixture.parent_name)
+    on conflict(user_id) do update set display_name=excluded.display_name;
+    insert into app_private.households(id,label,primary_contact_user_id)
+    values(fixture.household_id,fixture.household_label,fixture.user_id) on conflict do nothing;
+    insert into app_private.household_members(household_id,user_id,relation_role)
+    values(fixture.household_id,fixture.user_id,'owner') on conflict do nothing;
+    insert into app_private.registrations(id,event_id,household_id,status,reference,price_snapshot_cents,submitted_at)
+    values(fixture.registration_id,event_id,fixture.household_id,'submitted',fixture.reference,fixture.amount_cents,now()) on conflict do nothing;
+    insert into app_private.payment_requests(id,registration_id,purpose,amount_cents,reference,status)
+    values(fixture.payment_id,fixture.registration_id,'event_registration',fixture.amount_cents,'PAY-'||fixture.reference,'awaiting_link') on conflict do nothing;
+  end loop;
 end $$;
