@@ -190,7 +190,7 @@ const serviceHeaders = {
   "Accept-Profile": "api",
 };
 
-const releaseMode = process.env.REGISTRATION_MODE === "staging_test" ? "staging_test_open" : "production_closed";
+const releaseMode = process.env.REGISTRATION_MODE === "staging_test" ? "staging_test_open" : process.env.REGISTRATION_MODE === "live" ? "production_open" : "production_closed";
 const release = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/configure_release_mode`, {
   method: "POST",
   headers: serviceHeaders,
@@ -230,6 +230,9 @@ if (typeof release?.groupRegistrationOpen !== "boolean" || typeof release?.porta
 }
 if (releaseMode === "staging_test_open" && (release?.phase !== "registration_open" || release?.registrationPublished !== true || release?.groupRegistrationOpen !== true || release?.portalRegistrationOpen !== true)) {
   throw new Error("Staging test registration was not opened.");
+}
+if (releaseMode === "production_open" && release?.releaseMode !== "production_open") {
+  throw new Error("Production participant registration release was not configured.");
 }
 if (process.env.MAIL_MODE !== "disabled" && mailWorker?.active !== true) {
   throw new Error("The durable mail worker was not activated.");

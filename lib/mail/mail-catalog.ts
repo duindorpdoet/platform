@@ -73,7 +73,7 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
   },
   registration_received: {
     kind: "confirmation", subject: "Jullie inschrijving is ontvangen", preheader: "Je inschrijving staat klaar; betaling en starttijd volgen apart.", eyebrow: "Jullie avontuur begint", title: "De eerste stap is gezet.", hero: true,
-    paragraphs: (payload) => [`${greeting(payload)}we hebben jullie inschrijving ontvangen. De betaling en de startindeling bevestigen we afzonderlijk. Je vindt de actuele stand altijd in jullie omgeving.`],
+    paragraphs: (payload) => [`${greeting(payload)}we hebben jullie inschrijving ontvangen. De betaling en de startindeling bevestigen we afzonderlijk. Je vindt de actuele stand altijd in jullie omgeving.`, "De bijdrage is bedoeld om waar nodig snoep te verdelen onder de deelnemende huizen."],
     action: { label: "Bekijk jullie inschrijving", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt deze bevestiging naar aanleiding van jullie inschrijving.",
   },
   payment_link_ready: {

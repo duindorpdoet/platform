@@ -335,8 +335,8 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   }
 
   async function saveGroupSizeLimit() {
-    if (!dashboard || groupSizeLimit < 2 || groupSizeLimit > 50)
-      return setNotice("Kies een maximum tussen 2 en 50 kinderen.");
+    if (!dashboard || groupSizeLimit < 2 || groupSizeLimit > 20)
+      return setNotice("Kies een maximum tussen 2 en 20 kinderen.");
     const reason = window
       .prompt(
         "Waarom wijzig je de maximale groepsgrootte? (minimaal 10 tekens)",
@@ -368,6 +368,8 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     request: TogetherRequest,
     decision: "accept" | "reject",
   ) {
+    if (decision === "accept" && request.projectedChildren > 20)
+      return setNotice("Een groep mag maximaal 20 kinderen hebben. Deel deze gezinnen in afzonderlijke groepen in.");
     const override =
       decision === "accept" &&
       request.projectedChildren > request.maxGroupSize;
@@ -924,7 +926,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                       <input
                         type="number"
                         min={2}
-                        max={50}
+                        max={20}
                         value={groupSizeLimit}
                         onChange={(event) =>
                           setGroupSizeLimit(Number(event.target.value))
@@ -1123,11 +1125,12 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                     <div className="actions">
                       <button
                         className="btn"
+                        disabled={request.projectedChildren > 20}
                         onClick={() =>
                           void decideTogetherRequest(request, "accept")
                         }
                       >
-                        {request.projectedChildren > request.maxGroupSize
+                        {request.projectedChildren > 20 ? "Meer dan 20 kinderen" : request.projectedChildren > request.maxGroupSize
                           ? "Accepteren met uitzondering"
                           : "Accepteren"}
                       </button>

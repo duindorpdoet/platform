@@ -39,7 +39,7 @@ jobs:
       AUTH_SITE_URL: https://halloween.duindorpdoet.nl
       EVENT_SLUG: duindorp-halloween-2026
       EVENT_TIMEZONE: Europe/Amsterdam
-      REGISTRATION_MODE: closed
+      REGISTRATION_MODE: live
       AUTH_MAIL_MODE: live
       MAIL_MODE: live
       MAIL_ALLOWED_RECIPIENTS: halloween@duindorpdoet.nl
@@ -125,7 +125,7 @@ jobs:
             "${GITHUB_WORKSPACE}" \
             "${GITHUB_SHA}" \
             "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-      - name: Configure closed release, Auth and scheduler
+      - name: Configure participant registration, Auth and scheduler
         run: node scripts/deploy/configure-supabase.mjs
       - name: Check Supabase security advisors
         run: node scripts/deploy/check-security-advisors.mjs

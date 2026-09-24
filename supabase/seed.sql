@@ -45,7 +45,7 @@ update app_private.events
 set phase = 'registration_open',
     registration_open_at = timestamptz '2026-09-01 00:00:00+02',
     registration_close_at = timestamptz '2026-10-25 23:59:00+01',
-    settings = settings || '{"fixture":true,"termsVersion":"test-v1","privacyVersion":"test-v1","groupRegistrationOpen":true,"portalRegistrationOpen":true,"maxGroupSize":10}'::jsonb
+    settings = settings || '{"fixture":true,"termsVersion":"test-v1","privacyVersion":"test-v1","groupRegistrationOpen":true,"portalRegistrationOpen":true,"maxGroupSize":20}'::jsonb
 where slug = 'duindorp-halloween-2026';
 
 do $$

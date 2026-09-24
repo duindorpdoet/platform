@@ -94,7 +94,7 @@ test("service worker is a real script with private network-only rules", async ({
   expect(body).toContain('cache: "no-store"');
 });
 
-for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText: false }, { width: 390, doubleText: true }]) {
+for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText: false }, { width: 390, doubleText: true }, { width: 768, doubleText: false }, { width: 1440, doubleText: false }]) {
   test(`public pages fit ${size.width}px with ${size.doubleText ? "200%" : "100%"} text`, async ({ page }) => {
     test.setTimeout(90_000);
     await page.setViewportSize({ width: size.width, height: 844 });
@@ -191,4 +191,20 @@ test("the Halloween image package is connected to every intended public role", a
   }
   await page.goto("/verhaal");
   await expect(page.locator(".story-hero img")).toHaveAttribute("src", /07-verhaal-wereld-achter-de-deur/);
+});
+
+
+test("motion preference lives in accessibility settings and persists without floating controls", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/toegankelijkheid");
+  await expect(page.locator(".motion-toggle")).toHaveCount(0);
+  await page.getByRole("button", { name: "Animaties pauzeren" }).click();
+  await expect(page.locator("html")).toHaveClass(/motion-off/);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Animaties hervatten" })).toBeVisible();
+  await page.getByRole("button", { name: "Animaties hervatten" }).click();
+  await expect(page.locator("html")).not.toHaveClass(/motion-off/);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(page.getByRole("button", { name: "Animaties uit volgens je apparaatinstelling" })).toBeDisabled();
+  await expect(page.locator("html")).toHaveClass(/motion-off/);
 });

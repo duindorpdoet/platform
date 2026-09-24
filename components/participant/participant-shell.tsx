@@ -31,6 +31,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { SignOutButton } from "@/components/auth/account-actions";
 import { GroupExperience } from "@/components/group/group-experience";
+import { GroupJourneyPreference } from "@/components/group/group-journey-preference";
 import { GroupIdentity } from "@/components/group/group-identity";
 import { PortalDashboard } from "@/components/portal/portal-dashboard";
 import { SupportWidget } from "@/components/support/support-widget";
@@ -303,6 +304,7 @@ function WalkerGroup({ group, registration, groupId, reload }: { group: GroupSna
   const visibleChildren = participants.length ? participants : (registration?.registration?.children ?? []).map((child) => ({ id: child.id, firstName: child.firstName, attendance: "aangemeld", isOwnChild: true, status: null }));
   return <ParticipantPageFrame eyebrow={`Groep ${group.group.code}`} title={group.access.leader ? "Jij houdt het overzicht." : "Samen op pad."}>
     {groupId && <GroupIdentity groupId={groupId} systemCode={group.group.systemCode} displayName={group.group.displayName} version={group.group.version} canEdit={group.access.leader} onSaved={reload} />}
+    {groupId && <GroupJourneyPreference groupId={groupId} onSaved={reload} />}
     <section className="participant-card group-summary"><div><p className="participant-eyebrow">Startmoment</p><h2>{group.group.start ? formatDateTime(group.group.start.startsAt) : "Wordt binnenkort gedeeld"}</h2><p>{group.group.start ? `${group.group.start.locationName}${group.group.start.address ? ` · ${group.group.start.address}` : ""}` : "De startplek blijft verborgen tot publicatie."}</p></div><span className="group-code">{group.group.code}</span></section>
     <section className="participant-card"><div className="section-title"><div><p className="participant-eyebrow">Gekoppelde deelnemers</p><h2>{group.access.leader ? "Aanwezigheid en veiligheid" : "Jouw kinderen"}</h2></div><ShieldCheck /></div>
       {visibleChildren.length === 0 && <p>De deelnemerslijst verschijnt zodra de route start.</p>}
@@ -416,6 +418,7 @@ function MorePage({ context, eventSlug, role, accessId }: { context: Participant
     {role === "walker" && <UpdatesPanel eventSlug={eventSlug} role="walker" embedded />}
     <section className="participant-card participant-contact-compact"><Contact /><div><strong>Contact bij storing of spoed</strong><div className="participant-actions"><a href={"mailto:" + context.event.supportEmail}>E-mail</a>{context.event.supportPhone && <a href={"tel:" + context.event.supportPhone.replace(/\s/g, "")}>Bel organisatie</a>}</div></div></section>
     <ProfilePanel eventSlug={eventSlug} />
+    <section className="participant-card participant-account"><div><h2>Uitloggen</h2><p>Klaar op dit apparaat? Sluit je persoonlijke omgeving veilig af.</p></div><SignOutButton /></section>
     {role === "viewer" && accessId && <ViewerSelfRevoke accessId={accessId} />}
   </ParticipantPageFrame>;
 }
@@ -429,7 +432,7 @@ function ProfilePanel({ eventSlug }: { eventSlug: string }) {
   const load = useCallback(async () => {
     const client = createClient(); if (!client) return;
     const { data } = await client.schema("api").rpc("participant_profile_snapshot", { _event_slug: eventSlug });
-    if (data) { const next = data as ProfileSnapshot; setProfile(next); setName(next.displayName ?? ""); document.documentElement.dataset.readable = next.preferences.readableMode ? "true" : "false"; document.documentElement.dataset.reduceMotion = next.preferences.reducedMotion ? "true" : "false"; }
+    if (data) { const next = data as ProfileSnapshot; setProfile(next); setName(next.displayName ?? ""); document.documentElement.dataset.readable = next.preferences.readableMode ? "true" : "false"; document.documentElement.dataset.reduceMotion = next.preferences.reducedMotion ? "true" : "false"; localStorage.setItem("poorten-motion", next.preferences.reducedMotion ? "off" : "on"); window.dispatchEvent(new Event("poorten-motion")); }
   }, [eventSlug]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
   async function save(patch?: Partial<ProfileSnapshot["preferences"]>) {

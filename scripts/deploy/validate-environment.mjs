@@ -52,7 +52,7 @@ if (target === "staging") {
     throw new Error("Staging mail allowlist must exactly contain the two authorized test inboxes.");
   }
 } else {
-  if (process.env.REGISTRATION_MODE !== "closed") throw new Error("Production registration must remain closed.");
+  if (!new Set(["closed", "live"]).has(process.env.REGISTRATION_MODE)) throw new Error("Production registration must explicitly be closed or live.");
   if (process.env.MAIL_MODE !== "live") throw new Error("Production transactional mail must use live mode after staging approval.");
 }
 

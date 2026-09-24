@@ -23,3 +23,20 @@ html[data-readable="true"] .participant-environment{background:#071019}html[data
 @media (max-width:500px){.child-pass-list>div{grid-template-columns:42px minmax(0,1fr)}.child-pass-list em{grid-column:2}}
 .participant-hero-card.countdown-card{display:flex;align-items:center;padding:clamp(28px,5vw,56px);min-height:270px}
 @media (max-width:760px){.participant-hero-card.countdown-card{min-height:280px;padding:25px;align-items:flex-start}}
+
+/* Account actions remain reachable at small heights and large text sizes. */
+.participant-sidebar{overflow-y:auto}
+.participant-sidebar-foot{margin-top:auto;padding-top:18px;padding-bottom:8px;flex-shrink:0}
+.participant-sidebar-foot .account-signout,.participant-account .account-signout{display:inline-flex;justify-content:center;align-items:center;gap:10px;min-height:44px;padding:10px 16px;border:1px solid #647888;border-radius:12px;background:#14222d;color:#e8edf0}
+.participant-sidebar-foot .account-signout:hover,.participant-account .account-signout:hover{background:#213441;border-color:#b4c5d0}
+.participant-account{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.participant-account h2{font-size:26px}.participant-account p{margin:0}
+.participant-main,.participant-content,.participant-page,.participant-page>*{min-width:0}
+.participant-card,.participant-hero-card,.participant-contact-compact{overflow-wrap:anywhere}
+.access-email>span{min-width:0;overflow-wrap:anywhere}.access-email svg{flex-shrink:0}
+.preference-list input{flex:0 0 47px}
+.role-access-list>span{flex-wrap:wrap}
+@media(max-width:760px){.participant-account{align-items:stretch;flex-direction:column}.participant-account .account-signout{width:100%}.participant-topbar{flex-wrap:wrap;gap:12px}.participant-content{padding-bottom:160px}}
+.participant-environment .group-app{grid-template-columns:minmax(0,1fr)}
+.participant-environment .group-app>*{min-width:0}
+@media(max-width:1200px){.participant-environment .group-app>.live-grid{grid-template-columns:minmax(0,1fr)}}

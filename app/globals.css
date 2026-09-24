@@ -204,6 +204,14 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
 
 /* Durable participant messenger */
 .messenger-widget {
+  --ink: #edf1f1;
+  --muted: #b1c0cb;
+  --gold: #f0be80;
+  --mint: #97d9bc;
+  --panel: #0e1923;
+  --panel-soft: #1c2a36;
+  --page: #09131d;
+  --line: #425260;
   position: fixed;
   z-index: 90;
   right: max(1rem, env(safe-area-inset-right));
@@ -249,13 +257,14 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
 
 .messenger-dialog {
   display: grid;
-  grid-template-rows: auto minmax(8rem, 1fr) auto auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   width: min(25rem, calc(100vw - 2rem));
   max-height: min(42rem, calc(100dvh - 2rem - env(safe-area-inset-bottom)));
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 1.25rem;
-  background: color-mix(in srgb, var(--panel) 96%, #000);
+  background: #0e1923;
+  color: #edf1f1;
   box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 48%);
 }
 
@@ -270,7 +279,12 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
   gap: .75rem;
   padding: 1rem;
   border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel-soft) 90%, transparent);
+  background: #1c2a36;
+}
+
+.messenger-header > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .messenger-header h2 {
@@ -295,6 +309,7 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
 }
 
 .messenger-controls {
+  flex-shrink: 0;
   display: flex;
   gap: .35rem;
 }
@@ -302,8 +317,8 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
 .messenger-controls button {
   display: grid;
   place-items: center;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 1px solid var(--line);
   border-radius: .7rem;
   background: transparent;
@@ -315,7 +330,7 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
   display: flex;
   flex-direction: column;
   gap: .7rem;
-  min-height: 10rem;
+  min-height: 0;
   padding: 1rem;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -403,6 +418,7 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
   width: 100%;
   resize: vertical;
   min-height: 4.75rem;
+  max-height: 25dvh;
   border: 1px solid var(--line);
   border-radius: .75rem;
   padding: .7rem;
@@ -450,7 +466,7 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
   outline-offset: 2px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .messenger-widget {
     right: max(.75rem, env(safe-area-inset-right));
     bottom: calc(4.75rem + env(safe-area-inset-bottom));
@@ -495,3 +511,26 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
   .portal-forecast-metrics>span{border-right:0;border-bottom:1px solid var(--line)}
   .portal-forecast-metrics>span:last-child{border-bottom:0}
 }
+
+/* Conversation content scrolls independently above the mobile navigation. */
+.messenger-dialog:has(.messenger-notice){grid-template-rows:auto minmax(0,1fr) auto auto auto}
+.messenger-eyebrow{flex-wrap:wrap;line-height:1.5}
+.messenger-eyebrow svg{flex-shrink:0}
+.messenger-compose textarea{font-size:16px}
+.messenger-widget .messenger-launcher{max-width:100%;white-space:normal;text-align:left}
+.messenger-widget .messenger-compose button:disabled{cursor:not-allowed}
+.motion-setting{position:static;min-height:44px;max-width:100%;margin-block:8px 20px}
+@media(max-height:600px){.messenger-empty{min-height:4rem}.messenger-header{padding:.65rem}.messenger-compose{padding:.5rem .8rem}.messenger-compose textarea{min-height:3rem;height:3rem}.messenger-status{padding:.4rem .8rem}}
+
+/* Live route metadata must wrap within both the page and embedded cockpit. */
+.group-app{min-width:0}
+.group-app>.live-topbar{display:flex;flex-wrap:wrap;gap:14px 20px}
+.group-app>.live-topbar>span{min-width:0;flex:1 1 180px;white-space:normal;overflow-wrap:anywhere}
+.group-app>.live-topbar>.text-link{flex:0 1 auto;white-space:normal;text-align:left}
+.group-app>.live-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.12fr)}
+.group-app>.live-grid>*,.group-app>.panel{min-width:0}
+.group-app .portal-meta{flex-wrap:wrap}
+.group-app .portal-meta>span{min-width:0;overflow-wrap:anywhere}
+.group-app .scan-panel .actions input{min-width:0}
+@media(max-width:900px){.group-app>.live-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){.group-app>.live-topbar>span{flex-basis:100%}.group-app>.live-topbar>.text-link{width:100%}.group-app .scan-panel .actions{display:grid;grid-template-columns:minmax(0,1fr)}}

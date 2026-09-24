@@ -4,7 +4,7 @@ if (!new Set(["staging", "production"]).has(target) || !expectedUrl) {
 }
 
 const origin = new URL(expectedUrl).origin;
-const expectedRegistrationMode = target === "staging" ? "staging_test" : "closed";
+const expectedRegistrationMode = target === "staging" ? "staging_test" : process.env.REGISTRATION_MODE;
 
 async function get(path, init = {}) {
   let lastError;

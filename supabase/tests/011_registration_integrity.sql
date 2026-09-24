@@ -89,8 +89,8 @@ select lives_ok(
 update registration_values set registration_id = (submit_result->>'id')::uuid;
 select is(
   (select submit_result->>'priceCents' from registration_values),
-  '400',
-  'server computes two children times the authoritative 200-cent event price'
+  '500',
+  'server computes two children times the authoritative 250-cent event price'
 );
 
 set local role postgres;
@@ -133,7 +133,7 @@ select ok(
   'every persisted child is owned by the submitting household'
 );
 select is(
-  (select count(*)::integer from app_private.payment_requests where registration_id = (select registration_id from registration_values) and amount_cents = 400),
+  (select count(*)::integer from app_private.payment_requests where registration_id = (select registration_id from registration_values) and amount_cents = 500),
   1,
   'one payment request carries the server-derived amount'
 );

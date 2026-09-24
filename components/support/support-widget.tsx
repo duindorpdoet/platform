@@ -119,7 +119,10 @@ export function SupportWidget({ eventSlug, role, groupId, portalId, viewerAccess
   useEffect(() => {
     if (!open || minimized) return;
     closeRef.current?.focus();
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
+  }, [open, minimized]);
+
+  useEffect(() => {
+    if (open && !minimized) threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [open, minimized, conversation?.messages.length]);
 
   useEffect(() => {
@@ -270,7 +273,7 @@ export function SupportWidget({ eventSlug, role, groupId, portalId, viewerAccess
                 />
                 <div>
                   <small>{body.length}/4000</small>
-                  <button type="submit" disabled={busy || !body.trim()}>
+                  <button type="submit" disabled={busy || !body.trim() || !context}>
                     <Send aria-hidden="true" />
                     {busy ? "Versturen…" : "Versturen"}
                   </button>

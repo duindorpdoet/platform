@@ -29,7 +29,10 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
       }
 
       if (url.pathname.endsWith('/configure_release_mode')) {
+        const requested = JSON.parse(init.body)._mode;
+        if (process.env.REGISTRATION_MODE === 'live' && requested !== 'production_open') throw new Error('Live deployment did not request participant opening');
         body = {
+          releaseMode: requested,
           phase: 'registration_open',
           registrationPublished: true,
           groupRegistrationOpen: true,
@@ -94,6 +97,12 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
 }
 
 describe("mail worker deployment probe", () => {
+  it("opens the explicitly authorized live release through the service RPC", () => {
+    const result = configure({ found: true, statusCode: 204, timedOut: false, error: null }, 200,
+      { APP_ENVIRONMENT: "production", REGISTRATION_MODE: "live", MAIL_MODE: "live", ORGANIZATION_SUPPORT_EMAIL: "test@example.nl" });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain("Supabase release controls configured for production.");
+  });
   it("rejects a staging notification recipient outside the allowlist", () => {
     const result = configure({}, 200, { TEST_EMAIL_1: "outside@example.nl" });
     expect(result.status).not.toBe(0);

@@ -23,6 +23,18 @@ const base: PlanningInput = {
 };
 
 describe("group and finale planner", () => {
+  it("rejects a configured size above the absolute twenty-child maximum", () => {
+    expect(proposePlan({ ...base, maxGroupSize: 21 }).conflicts).toContainEqual(expect.objectContaining({ code: "INVALID_GROUP_LIMIT" }));
+  });
+
+  it("keeps the twenty-child ceiling even with a legacy capacity override", () => {
+    const result = proposePlan({ ...base, maxGroupSize: 20, parties: [
+      { id: "large", childCount: 21, togetherOverride: true, paymentEligible: true },
+    ] });
+    expect(result.groups).toEqual([]);
+    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "TOGETHER_PARTY_TOO_LARGE" }));
+  });
+
   it("is deterministic for reordered input", () => {
     expect(proposePlan(base)).toEqual(proposePlan({ ...base, parties: [...base.parties].reverse(), starts: [...base.starts].reverse() }));
   });

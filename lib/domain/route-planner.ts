@@ -97,7 +97,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   const finaleLast = millis(input.finaleLastArrivalAt);
   const finaleClose = millis(input.finaleClosesAt);
   if (!input.starts.length) conflicts.push({ code: "NO_START_SLOTS", message: "Voeg ten minste één geverifieerd startpunt met een exact tijdstip toe." });
-  if (input.targetGroupSize < 1 || input.targetGroupSize > input.maxGroupSize) conflicts.push({ code: "INVALID_GROUP_LIMIT", message: "De gewenste groepsgrootte valt buiten de grens." });
+  if (input.maxGroupSize > 20 || input.targetGroupSize < 1 || input.targetGroupSize > input.maxGroupSize) conflicts.push({ code: "INVALID_GROUP_LIMIT", message: "De gewenste groepsgrootte valt buiten de grens." });
   if ([globalStop, finaleOpen, finaleLast, finaleClose].some((value) => value === null)) conflicts.push({ code: "ROUTE_CONFIGURATION_INCOMPLETE", message: "Vul de stopgrens en alle eindpoortvensters in." });
   if (input.finaleShowSeconds < 60 || input.finaleMaxGroups < 1 || input.finaleMaxChildren < 1) conflicts.push({ code: "INVALID_FINALE_CAPACITY", message: "De eindpoortcapaciteit is niet geldig." });
   if (conflicts.length) return { groups: [], conflicts };
@@ -117,7 +117,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   })).sort((a, b) => b.size - a.size || a.key.localeCompare(b.key));
 
   for (const bundle of bundles) {
-    if (bundle.size > input.maxGroupSize && !bundle.capacityOverride) conflicts.push({ code: "TOGETHER_PARTY_TOO_LARGE", subjectId: bundle.key, message: `${bundle.key} bevat ${bundle.size} kinderen; maximaal ${input.maxGroupSize}.` });
+    if (bundle.size > 20 || (bundle.size > input.maxGroupSize && !bundle.capacityOverride)) conflicts.push({ code: "TOGETHER_PARTY_TOO_LARGE", subjectId: bundle.key, message: `${bundle.key} bevat ${bundle.size} kinderen; maximaal ${input.maxGroupSize}.` });
     if (bundle.preference === "conflict") conflicts.push({ code: "START_PREFERENCE_CONFLICT", subjectId: bundle.key, message: `${bundle.key} bevat zowel een vroege als late voorkeur. Stem een gezamenlijke afspraak af of splits bewust.` });
   }
   if (conflicts.length) return { groups: [], conflicts };

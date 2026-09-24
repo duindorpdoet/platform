@@ -298,7 +298,7 @@ test("a multi-child registration draft survives refresh and submits once", async
 
   const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as { registration: { id: string; priceCents: number; togetherCode: string; togetherCount: number; togetherRequest?: { status: string; requestedCode: string } } };
   expect(snapshot.registration.id).toBeTruthy();
-  expect(snapshot.registration.priceCents).toBe(400);
+  expect(snapshot.registration.priceCents).toBe(500);
   expect(snapshot.registration.togetherCode).toMatch(/^[A-HJ-NP-Z2-9]{4}$/);
   expect(snapshot.registration.togetherCount).toBe(1);
   expect(snapshot.registration.togetherRequest).toMatchObject({ status: "pending", requestedCode: sharedTogetherCode });
@@ -455,22 +455,23 @@ test("an existing homeowner account is routed to the same house instead of creat
   expect(after.application.id).toBe(before.application.id);
 });
 
-for (const doubleText of [false, true]) {
-  test(`private screens fit a narrow phone with ${doubleText ? "200%" : "100%"} text`, async ({ context, page }) => {
+for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText: true }, { width: 768, doubleText: false }, { width: 1440, doubleText: false }]) {
+  const { doubleText } = size;
+  test(`private screens fit ${size.width}px with ${doubleText ? "200%" : "100%"} text`, async ({ context, page }) => {
     requireLocalAuth();
-    test.setTimeout(90_000);
-    await page.setViewportSize({ width: doubleText ? 390 : 320, height: 844 });
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: size.width, height: 844 });
     await page.emulateMedia({ reducedMotion: "reduce" });
     for (const actor of [
       { email: "parent-a@example.invalid", paths: ["/mijn-inschrijving", "/meelopen"] },
-      { email: "owner@example.invalid", paths: ["/mijn-huis", "/huis-aanmelden"] },
-      { email: "leader-a@example.invalid", paths: ["/mijn-groep"] },
+      { email: "owner@example.invalid", paths: ["/mijn-huis", "/huis-aanmelden", "/omgeving/huiseigenaar/mijn-poort", "/omgeving/huiseigenaar/verwacht", "/omgeving/huiseigenaar/updates", "/omgeving/huiseigenaar/meer"] },
+      { email: "leader-a@example.invalid", paths: ["/mijn-groep", "/omgeving/meeloper/nu", "/omgeving/meeloper/route", "/omgeving/meeloper/groep", "/omgeving/meeloper/nachtpas", "/omgeving/meeloper/meer"] },
       { email: "admin@example.invalid", paths: ["/admin"] },
     ]) {
       await authenticate(context, actor.email);
       for (const path of actor.paths) {
         await page.goto(path);
-        await expect(page.locator(".loading-state")).toHaveCount(0);
+        await expect(page.locator(".loading-state, .participant-loading")).toHaveCount(0);
         await assertReadableLayout(page, doubleText);
         if (path === "/admin") {
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
@@ -529,4 +530,41 @@ test("house details unlock only after successful email confirmation", async ({ p
   await page.reload();
   await expect(page.getByRole("heading", { name: "Werk jullie poort uit" })).toBeVisible();
   await expect(page.getByLabel("Naam contactpersoon *")).toHaveValue("Nieuwe testbewoner gewijzigd");
+});
+
+
+test("participant Messenger is opaque and account actions stay reachable on desktop and mobile", async ({ context, page }, testInfo) => {
+  requireLocalAuth();
+  await authenticate(context, "parent-size-5@example.invalid");
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 700, height: 844 }, { width: 320, height: 568 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/omgeving/meeloper/meer");
+    await expect(page.getByRole("heading", { name: "Jouw voorkeuren" })).toBeVisible();
+    await expect(page.locator(".motion-toggle")).toHaveCount(0);
+    await expect(page.getByLabel("Verminder beweging")).toBeVisible();
+    const logout = page.locator(".participant-account").getByRole("button", { name: "Uitloggen", exact: true });
+    await logout.scrollIntoViewIfNeeded();
+    await expect(logout).toBeVisible();
+    await logout.click({ trial: true });
+    await page.getByRole("button", { name: "Hulp van de organisatie" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toHaveCSS("background-color", "rgb(14, 25, 35)");
+    await expect(dialog).toHaveCSS("color", "rgb(237, 241, 241)");
+    await expect(dialog.getByRole("button", { name: "Gesprek sluiten" })).toBeVisible();
+    await expect(dialog.getByLabel("Bericht", { exact: true })).toBeVisible();
+    const bounds = await dialog.boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.y).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height);
+    if (viewport.width <= 760) {
+      const navigation = await page.locator(".participant-bottomnav").boundingBox();
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(navigation!.y);
+    }
+    await page.screenshot({ path: testInfo.outputPath(`messenger-${viewport.width}.png`) });
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Hulp van de organisatie" })).toBeFocused();
+    await assertReadableLayout(page);
+  }
 });

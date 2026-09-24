@@ -3,22 +3,32 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
 
-export function MotionToggle() {
+export function MotionToggle({ inline = false }: { inline?: boolean }) {
   const [paused, setPaused] = useState(false);
   const [systemReduced, setSystemReduced] = useState(false);
 
   useEffect(() => {
     const media = matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => {
-      const off = media.matches || localStorage.getItem("poorten-motion") === "off";
+      const off = media.matches || document.documentElement.dataset.reduceMotion === "true" || localStorage.getItem("poorten-motion") === "off";
+      const changed = document.documentElement.classList.contains("motion-off") !== off;
       setSystemReduced(media.matches);
       document.documentElement.classList.toggle("motion-off", off);
       setPaused(off);
-      window.dispatchEvent(new Event("poorten-motion"));
+      if (changed) window.dispatchEvent(new Event("poorten-motion"));
     };
     sync();
     media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
+    window.addEventListener("poorten-motion", sync);
+    window.addEventListener("storage", sync);
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-reduce-motion"] });
+    return () => {
+      media.removeEventListener("change", sync);
+      window.removeEventListener("poorten-motion", sync);
+      window.removeEventListener("storage", sync);
+      observer.disconnect();
+    };
   }, []);
 
   const toggle = () => {
@@ -30,9 +40,12 @@ export function MotionToggle() {
     window.dispatchEvent(new Event("poorten-motion"));
   };
 
+  if (!inline) return null;
+
   return (
     <button
-      className="motion-toggle"
+      type="button"
+      className="motion-setting btn outline"
       disabled={systemReduced}
       aria-pressed={paused}
       aria-label={systemReduced ? "Animaties uit volgens je apparaatinstelling" : paused ? "Animaties hervatten" : "Animaties pauzeren"}
