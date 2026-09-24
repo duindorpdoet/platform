@@ -238,7 +238,34 @@ const allocations = finalPayments.data.filter((payment) => selectedPayments.some
 check(allocations.every((payment) => payment.status === "confirmed" && payment.netCollectedCents === payment.amountCents), "joint payment was duplicated or allocated incorrectly");
 check(allocations.reduce((sum, payment) => sum + payment.netCollectedCents, 0) === 750, "shared ledger total was not booked exactly once");
 
+// Individual siblings may have independent Tikkies while sharing one registration ledger.
+const childSnapshot = await api(adminA, "admin_child_payments_snapshot", { _event_slug: eventSlug });
+check(!childSnapshot.error, "child payment snapshot unavailable");
+const siblings = childSnapshot.data.filter((row) => row.registrationReference === "BROWSER-CHILD-PAYMENT-A").sort((a, b) => a.childId.localeCompare(b.childId));
+check(siblings.length === 3, "child payment fixtures missing");
+const childArgs = {
+  _event_slug: eventSlug, _children: siblings.slice(0, 2).map((row) => ({ id: row.childId, version: row.version })),
+  _anchor_child_id: siblings[0].childId, _external_url: "https://tikkie.me/pay/parallel-two-children",
+  _reason: "Twee kinderen gezamenlijk apart controleren", _idempotency_key: "parallel-children-publish",
+};
+const childPublications = await Promise.all([api(adminA, "admin_child_payment_publish", childArgs), api(adminB, "admin_child_payment_publish", childArgs)]);
+check(childPublications.every((item) => !item.error), `child publication failed: ${childPublications.find((item) => item.error)?.error?.message}`);
+check(childPublications[0].data.id === childPublications[1].data.id, "children received duplicate batches");
+const siblingBatch = childPublications[0].data;
+const thirdPublication = await api(adminA, "admin_child_payment_publish", { ...childArgs, _children: [{ id: siblings[2].childId, version: siblings[2].version }], _anchor_child_id: siblings[2].childId, _external_url: "https://tikkie.me/pay/parallel-third-child", _idempotency_key: "parallel-third-publish" });
+check(!thirdPublication.error, `third child publication failed: ${thirdPublication.error?.message}`);
+const childConfirmArgs = (batch, key) => ({ _batch_id: batch.id, _expected_version: batch.version, _amount_cents: batch.totalAmountCents, _external_reference: key, _reason: "Ontvangst voor deze kinderen gecontroleerd", _idempotency_key: key });
+const childConfirmations = await Promise.all([
+  api(adminA, "admin_child_payment_confirm", childConfirmArgs(siblingBatch, "parallel-two-confirm")),
+  api(adminB, "admin_child_payment_confirm", childConfirmArgs(thirdPublication.data, "parallel-third-confirm")),
+  api(adminA, "admin_child_payment_confirm", childConfirmArgs(siblingBatch, "parallel-two-confirm")),
+]);
+check(childConfirmations.every((item) => !item.error), `parallel child confirmation failed: ${childConfirmations.find((item) => item.error)?.error?.message}`);
+const childLedger = await api(adminA, "admin_payments_snapshot", { _event_slug: eventSlug });
+const childInvoice = childLedger.data.find((row) => row.registrationReference === "BROWSER-CHILD-PAYMENT-A");
+check(childInvoice.status === "confirmed" && childInvoice.netCollectedCents === 750, "two child batches did not settle the registration exactly once");
+
 console.log(JSON.stringify({
   status: "pass",
-  checks: ["REG-04", "HOUSE-02", "PLAN-06", "RACE-01", "RACE-02", "RACE-04", "RACE-05", "RACE-06", "PAYMENT-SHARED-RACE"],
+  checks: ["REG-04", "HOUSE-02", "PLAN-06", "RACE-01", "RACE-02", "RACE-04", "RACE-05", "RACE-06", "PAYMENT-SHARED-RACE", "PAYMENT-CHILD-RACE"],
 }));

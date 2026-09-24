@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PaymentDetails, type ParticipantPayment } from "@/components/payments/payment-details";
+import type { ParticipantPayment } from "@/components/payments/payment-details";
+import { ChildPaymentRows, type ChildPayment } from "@/components/payments/child-payment-rows";
 import { createClient } from "@/lib/supabase/client";
 
 type Snapshot = {
@@ -25,10 +26,12 @@ type Snapshot = {
     version: number;
     children: Array<{
       id: string;
+      childId?: string;
       firstName: string;
       ageAtEvent?: number | null;
       status: string;
       unitPriceCents: number;
+      payment?: ChildPayment | null;
     }>;
     changeRequests: Array<{
       id: string;
@@ -199,23 +202,6 @@ export function RegistrationDashboard({
         )}
       </div>
     );
-  async function reportPayment() {
-    const current = snapshot?.registration;
-    const client = createClient();
-    if (!client || !current?.payment) return;
-    const { error } = await client
-      .schema("api")
-      .rpc("registration_report_payment", {
-        _registration_id: current.id,
-        _expected_version: current.payment.version,
-      });
-    setNotice(
-      error
-        ? "De betaalmelding kon niet worden verwerkt."
-        : "Je melding is opgeslagen. De organisatie controleert de betaling handmatig.",
-    );
-    await load();
-  }
   async function savePreferences() {
     if (!preferences?.registrationId || preferences.version === null) return;
     const client = createClient(); if (!client) return;
@@ -362,18 +348,6 @@ export function RegistrationDashboard({
           <span>Betaling</span>
           <strong>{registration.payment ? paymentStatusLabels[registration.payment.status] ?? registration.payment.status : "Wordt voorbereid"}</strong>
         </div>
-        {registration.payment && <PaymentDetails payment={registration.payment} />}
-        {registration.payment &&
-          ["awaiting_link", "awaiting_payment"].includes(
-            registration.payment.status,
-          ) && (!registration.payment.batch || registration.payment.batch.canPay) && registration.payment.batch?.status !== "needs_review" && (
-            <button
-              className="btn outline"
-              onClick={() => void reportPayment()}
-            >
-              {registration.payment.batch && registration.payment.batch.participants.length > 1 ? "Het gezamenlijke bedrag is betaald" : "Ik heb betaald"}
-            </button>
-          )}
         <p className="note">
           Alleen een bevoegde organisator kan een betaling bevestigen. Een
           melding van jou is nog geen bevestiging.
@@ -390,26 +364,9 @@ export function RegistrationDashboard({
       <section className="panel">
         <p className="kicker">Deelname aanpassen</p>
         <h2>Kinderen en wijzigingen</h2>
-        {registration.children.map((child) => (
-          <div className="summary-row" key={child.id}>
-            <span>
-              {child.firstName} · {childStatusLabels[child.status] ?? child.status}
-            </span>
-            {child.status === "active" &&
-            registration.status === "submitted" ? (
-              <button
-                className="text-link"
-                onClick={() =>
-                  void requestRegistrationChange("remove_child", child.id)
-                }
-              >
-                Verwijdering aanvragen
-              </button>
-            ) : (
-              <strong>{childStatusLabels[child.status] ?? child.status}</strong>
-            )}
-          </div>
-        ))}
+        <ChildPaymentRows items={registration.children} registrationId={registration.id} legacyPayment={registration.payment} reload={load} additionalAction={(child) => child.status === "active" && registration.status === "submitted"
+          ? <button className="text-link" onClick={() => void requestRegistrationChange("remove_child", child.id)}>Verwijdering aanvragen</button>
+          : <strong>{childStatusLabels[child.status] ?? child.status}</strong>} />
         {registration.status === "submitted" && (
           <div className="actions">
             <button

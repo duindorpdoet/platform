@@ -82,7 +82,9 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     paragraphs: (payload) => validatedTikkieUrl(payload.externalUrl)
       ? [
           `${greeting(payload)}de Tikkie-link voor jullie inschrijving staat klaar. Hieronder zie je het totale bedrag en voor wie deze betaling bedoeld is.`,
-          text(payload, ["payerName"])
+          Array.isArray(payload.paymentChildren)
+            ? `Deze Tikkie is voor de hieronder genoemde kinderen samen en staat in jullie omgeving bij ${text(payload, ["anchorChildName"], "het aangewezen kind")}. Betaal het totaalbedrag één keer; voor de andere inbegrepen kinderen is geen aparte betaling nodig.`
+            : text(payload, ["payerName"])
             ? `${text(payload, ["payerName"])} regelt deze gezamenlijke betaling voor alle hieronder genoemde gezinnen. Betaal het totaalbedrag één keer; de andere gezinnen hoeven niet afzonderlijk te betalen.`
             : "Dit is één gezamenlijke betaling voor alle hieronder genoemde gezinnen. Spreek samen af wie het totaalbedrag betaalt; ieder gezin hoeft deze link dus niet afzonderlijk te betalen.",
           "De bijdrage is bedoeld om waar nodig snoep te verdelen onder de deelnemende huizen. Je kunt de betaling ook terugvinden in jullie persoonlijke omgeving.",
@@ -99,12 +101,16 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
   },
   payment_reported: {
     kind: "payment", subject: "Je betaalmelding is binnen", preheader: "De organisatie controleert de betaling nog.", eyebrow: "Betaling in controle", title: "We hebben je melding ontvangen.",
-    paragraphs: (payload) => [`${greeting(payload)}je melding over de betaling van ${groupName(payload)} is ontvangen. Dit is nog geen bevestiging dat de betaling is verwerkt. Je krijgt apart bericht zodra dat is gecontroleerd.`],
+    paragraphs: (payload) => Array.isArray(payload.paymentChildren)
+      ? [`${greeting(payload)}de betaalmelding voor de hieronder genoemde kinderen is ontvangen. De organisatie controleert deze betaling nog. Deze melding geldt alleen voor deze kinderen; de status van ieder kind staat in jullie omgeving.`]
+      : [`${greeting(payload)}je melding over de betaling van ${groupName(payload)} is ontvangen. Dit is nog geen bevestiging dat de betaling is verwerkt. Je krijgt apart bericht zodra dat is gecontroleerd.`],
     action: { label: "Bekijk de status", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt dit bericht omdat je een betaalmelding hebt gedaan.",
   },
   payment_confirmed: {
     kind: "payment", subject: "De betaling is bevestigd", preheader: "Jullie betaling is verwerkt; de startindeling volgt.", eyebrow: "Alles geregeld", title: "Jullie deelname is betaald.",
-    paragraphs: (payload) => [`${greeting(payload)}de betaling voor ${groupName(payload)} is bevestigd. Fijn dat jullie erbij zijn. De starttijd en het startpunt ontvang je apart zodra de organisatie de indeling heeft gepubliceerd.`],
+    paragraphs: (payload) => Array.isArray(payload.paymentChildren)
+      ? [`${greeting(payload)}de betaling voor de hieronder genoemde kinderen is bevestigd. Deze bevestiging geldt alleen voor deze kinderen. De betaalstatus van de andere kinderen vind je in jullie omgeving.`, "De starttijd en het startpunt ontvang je apart zodra de organisatie de indeling heeft gepubliceerd."]
+      : [`${greeting(payload)}de betaling voor ${groupName(payload)} is bevestigd. Fijn dat jullie erbij zijn. De starttijd en het startpunt ontvang je apart zodra de organisatie de indeling heeft gepubliceerd.`],
     action: { label: "Bekijk jullie deelname", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt deze bevestiging na de registratie van jullie betaling.",
   },
   payment_deadline_missed: {
@@ -299,11 +305,17 @@ function detailsFor(messageType: MailMessageType, payload: Payload): MailDetail[
   if (["group_ticket_message_organization", "group_ticket_message_leader", "messenger_incoming_admin"].includes(messageType)) {
     add("Referentie", reference(payload));
   }
-  if (messageType === "payment_link_ready") {
+  if (messageType === "payment_link_ready" || (["payment_confirmed", "payment_reported"].includes(messageType) && Array.isArray(payload.paymentChildren))) {
     add("Betaler", text(payload, ["payerName"]));
+    if (Array.isArray(payload.paymentChildren)) {
+      add("Tikkie bij", text(payload, ["anchorChildName"]));
+      for (const child of payload.paymentChildren) {
+        if (typeof child === "string" && child.trim()) add("Voor kind", child.trim());
+      }
+    }
     const cents = payload.amountCents;
     if (typeof cents === "number" && Number.isSafeInteger(cents) && cents >= 0) {
-      add("Totaal te betalen", new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100));
+      add(messageType === "payment_confirmed" ? "Ontvangen bedrag" : messageType === "payment_reported" ? "Gemeld bedrag" : "Totaal te betalen", new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100));
     }
     if (Array.isArray(payload.paymentParticipants)) {
       for (const participant of payload.paymentParticipants) {
@@ -329,8 +341,10 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
   if (!isMailMessageType(messageType)) throw new UnknownMailTemplateError(messageType);
   const definition = CATALOG[messageType];
   const details = detailsFor(messageType, payload);
-  const dynamicTitle = messageType === "participant_update" ? text(payload, ["title", "titel"], definition.title) : definition.title;
-  const dynamicSubject = messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
+  const childConfirmation = messageType === "payment_confirmed" && Array.isArray(payload.paymentChildren);
+  const childReport = messageType === "payment_reported" && Array.isArray(payload.paymentChildren);
+  const dynamicTitle = childConfirmation ? "De betaling voor deze kinderen is verwerkt." : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.title) : definition.title;
+  const dynamicSubject = childConfirmation ? "Betaling voor deze kinderen bevestigd" : childReport ? "Betaalmelding voor deze kinderen ontvangen" : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
   const codeValue = text(payload, ["code", "token"]);
   const paymentUrl = messageType === "payment_link_ready" ? validatedTikkieUrl(payload.externalUrl) : undefined;
   const action = paymentUrl ? { label: "Betaal via Tikkie", url: paymentUrl } : definition.action
@@ -343,6 +357,7 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
     ...definition,
     title: dynamicTitle,
     subject: dynamicSubject,
+    preheader: childConfirmation ? "Deze bevestiging geldt voor de hieronder genoemde kinderen." : definition.preheader,
     paragraphs: definition.paragraphs(payload),
     details: details.length ? details : undefined,
     primaryAction: action,

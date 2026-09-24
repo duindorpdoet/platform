@@ -1,0 +1,17 @@
+.child-payment-list{display:grid;min-width:0}
+.child-payment-row{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;align-items:start;padding:16px 0;border-top:1px solid #ffffff14;min-width:0}
+.child-payment-list .participant-avatar{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#20343e;color:#f1c995;font-size:14px}
+.child-payment-main{display:grid;gap:6px;min-width:0}
+.child-payment-name-action{display:flex;align-items:center;gap:9px 12px;flex-wrap:wrap;min-width:0}
+.child-payment-name-action>strong{font-size:15px;color:#f3eee5;overflow-wrap:anywhere;max-width:100%}
+.child-payment-main>small{font-size:12px;line-height:1.55;color:#a7b9c4;overflow-wrap:anywhere}
+.child-payment-main>.child-payment-included{color:#c6b795}
+.child-tikkie-action{display:inline-flex;gap:7px;align-items:center;justify-content:center;min-height:36px;max-width:100%;padding:7px 11px;border:1px solid #d6a463;border-radius:8px;background:#f0bf81;color:#1b1914;text-decoration:none;font-family:inherit;line-height:1.4;font-size:12px;font-weight:600;text-align:center;overflow-wrap:anywhere}
+.child-tikkie-action>svg{width:13px;height:13px;flex-shrink:0}
+.child-tikkie-action:disabled{background:#18252e;border-color:#354854;color:#9eb0ba;cursor:default;opacity:1}
+.child-tikkie-action:focus-visible,.child-payment-report:focus-visible{outline:2px solid #f3c68f;outline-offset:3px}
+.child-payment-report{background:transparent;border:0;padding:8px 0;color:#efc48c;font-size:12px;line-height:1.5;text-decoration:underline;text-underline-offset:3px;text-align:left;cursor:pointer}
+.child-payment-report:disabled{color:#95a5ae;cursor:wait}
+.child-payment-extra{grid-column:2;min-width:0;font-size:12px;overflow-wrap:anywhere}
+@media(min-width:700px){.child-payment-row:has(.child-payment-extra){grid-template-columns:36px minmax(0,1fr) auto}.child-payment-extra{grid-column:auto;align-self:center;max-width:180px}}
+@media(max-width:380px){.child-payment-row{grid-template-columns:28px minmax(0,1fr);gap:9px}.child-payment-list .participant-avatar{width:28px;height:28px;font-size:12px}.child-payment-name-action{gap:7px 8px}.child-tikkie-action{padding:7px 9px}}

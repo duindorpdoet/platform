@@ -231,6 +231,8 @@ test("a multi-child registration draft survives refresh and submits once", async
   await page.goto("/meelopen");
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.locator(".wizard").getByRole("alert")).toBeFocused();
+  await expect(page.getByLabel("E-mailadres (geverifieerd account)")).toHaveValue(registrationEmail);
+  await expect(page.getByLabel("E-mailadres (geverifieerd account)")).toHaveAttribute("readonly", "");
   await page.getByLabel("Naam verantwoordelijke volwassene").fill("Browser testouder");
   await page.getByLabel("Telefoonnummer voor de avond").fill("0612345678");
   for (const label of ["Gewenste starttijd", "Wanneer stoppen jullie met gewone poorten?"]) {
@@ -641,95 +643,140 @@ test("a walker awaiting a group can send and recover chat without realtime", asy
   await page.screenshot({ path: testInfo.outputPath("messenger-sent-mobile.png") });
 });
 
-test("joint Tikkie links connect parents, persist on their dashboards and settle only once for the full total", async ({ context, page, browser }, testInfo) => {
+test("legacy joint Tikkie links retain parent authorization and settle their full total", async ({}, testInfo) => {
   requireLocalAuth();
-  test.skip(testInfo.project.name !== "desktop-chromium", "The payment lifecycle mutates isolated fixtures once; this test also checks the mobile layout.");
-    type PaymentSnapshot = { registration: { id: string; payment: { version: number; status: string; externalUrl: string | null; batch: { id: string; status: string; totalAmountCents: number; externalUrl: string | null; canPay: boolean; payerName: string } } } };
+  test.skip(testInfo.project.name !== "desktop-chromium", "The legacy payment lifecycle mutates isolated fixtures once.");
+  type PaymentSnapshot = { registration: { id: string; payment: { version: number; status: string; externalUrl: string | null; batch: { id: string; version: number; status: string; totalAmountCents: number; externalUrl: string | null; canPay: boolean; payerName: string } } } };
+  const admin = (await fixtureClient("admin@example.invalid")).client;
+  const parentA = (await fixtureClient("parent-payment-a@example.invalid")).client;
+  const parentB = (await fixtureClient("parent-payment-b@example.invalid")).client;
+  const tikkieUrl = "https://tikkie.me/pay/browser-shared-link";
+  const existing = await rpc(admin, "admin_payments_snapshot", { _event_slug: "duindorp-halloween-2026" }) as Array<{ id: string; version: number; reference: string }>;
+  const selected = existing.filter((payment) => payment.reference.startsWith("PAY-BROWSER-PAYMENT-"));
+  expect(selected).toHaveLength(2);
+  await rpc(admin, "admin_payment_batch_publish", {
+    _event_slug: "duindorp-halloween-2026", _payments: selected.map(({ id, version }) => ({ id, version })),
+    _external_url: tikkieUrl, _reason: "Gezinnen hebben één gezamenlijke betaling afgesproken.",
+    _idempotency_key: "browser-legacy-joint-publish", _payer_payment_request_id: "28000000-0000-0000-0000-000000000081",
+  });
+  const otherSnapshot = await rpc(parentB, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
+  expect(otherSnapshot.registration.payment.batch.canPay).toBe(false);
+  expect(otherSnapshot.registration.payment.batch.externalUrl).toBeNull();
+  expect(otherSnapshot.registration.payment.externalUrl).toBeNull();
+  expect(otherSnapshot.registration.payment.batch.payerName).toBe("Betaalouder Alfa");
+  const forbiddenReport = await parentB.schema("api").rpc("registration_report_payment", { _registration_id: otherSnapshot.registration.id, _expected_version: otherSnapshot.registration.payment.version });
+  expect(forbiddenReport.error?.message).toContain("NOT_AUTHORIZED");
+  const payerSnapshot = await rpc(parentA, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
+  expect(payerSnapshot.registration.payment.batch.externalUrl).toBe(tikkieUrl);
+  await rpc(parentA, "registration_report_payment", { _registration_id: payerSnapshot.registration.id, _expected_version: payerSnapshot.registration.payment.version });
+  const reported = await rpc(parentA, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
+  expect(reported.registration.payment.status).toBe("reported");
+  expect(reported.registration.payment.batch.totalAmountCents).toBe(750);
+  const confirmation = {
+    _batch_id: reported.registration.payment.batch.id, _expected_version: reported.registration.payment.batch.version,
+    _amount_cents: 750, _external_reference: "BROWSER-JOINT-RECEIVED", _reason: "Het gezamenlijke bedrag is gecontroleerd op de bank.",
+    _idempotency_key: "browser-legacy-joint-confirm",
+  };
+  await rpc(admin, "admin_payment_batch_confirm", confirmation);
+  await rpc(admin, "admin_payment_batch_confirm", confirmation);
+  const payments = await rpc(admin, "admin_payments_snapshot", { _event_slug: "duindorp-halloween-2026" }) as Array<{ reference: string; status: string; netCollectedCents: number }>;
+  expect(payments.filter((payment) => payment.reference.startsWith("PAY-BROWSER-PAYMENT-")).map(({ status, netCollectedCents }) => ({ status, netCollectedCents })).sort((a, b) => a.netCollectedCents - b.netCollectedCents)).toEqual([{ status: "confirmed", netCollectedCents: 250 }, { status: "confirmed", netCollectedCents: 500 }]);
+  for (const client of [parentA, parentB]) {
+    const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
+    expect(snapshot.registration.payment.status).toBe("confirmed");
+    expect(snapshot.registration.payment.externalUrl).toBeNull();
+    expect(snapshot.registration.payment.batch.externalUrl).toBeNull();
+  }
+});
+
+test("Tikkies select individual siblings and expose one payment action per linked set", async ({ context, page, browser }, testInfo) => {
+  requireLocalAuth();
+  test.skip(testInfo.project.name !== "desktop-chromium", "Isolated child payment fixtures run once; the parent flow includes a narrow phone.");
+  const eventSlug = "duindorp-halloween-2026";
+  const ids = [1, 2, 3].map((number) => `25000083-0000-0000-0000-${String(number).padStart(12, "0")}`);
+  const registrationChildIds = ids.map((id) => id.replace("25000083", "26000083"));
+  type ChildRow = { childId: string; status: string; version: number; amountCents: number; batch: null | { id: string; version: number; totalAmountCents: number; status: string } };
   const admin = await authenticate(context, "admin@example.invalid");
+  const childRows = async () => await rpc(admin, "admin_child_payments_snapshot", { _event_slug: eventSlug }) as ChildRow[];
+  const before = (await childRows()).find((row) => row.childId === ids[2])!;
+  expect(before.status).toBe("awaiting_link");
+  expect(before.amountCents).toBe(250);
   await page.goto("/admin");
   await page.getByRole("button", { name: "Betalingen", exact: true }).click();
-  await page.getByRole("searchbox", { name: "Zoek ouder, e-mail, gezin, groep of referentie" }).fill("Betaalouder");
-  await expect(page.getByText("parent-payment-a@example.invalid", { exact: true })).toBeVisible();
-  await expect(page.getByText("parent-payment-b@example.invalid", { exact: true })).toBeVisible();
-  await page.getByRole("checkbox", { name: "Selecteer Betaalouder Alfa", exact: true }).check();
-  await page.getByRole("checkbox", { name: "Selecteer Betaalouder Beta", exact: true }).check();
-  await expect(page.getByText(/2 inschrijving\(en\) geselecteerd/)).toContainText("7,50");
-  await page.getByLabel("Wie betaalt het gezamenlijke bedrag?").selectOption("28000000-0000-0000-0000-000000000081");
-  const tikkieUrl = "https://tikkie.me/pay/browser-shared-link";
-  await page.getByLabel("Tikkie-link voor het totaalbedrag").fill(tikkieUrl);
-  await page.getByLabel("Reden voor verzending of correctie").fill("Gezinnen hebben één gezamenlijke betaling afgesproken.");
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Tikkie publiceren en e-mail versturen" }).click();
-  await expect(page.getByRole("status")).toContainText("Gezamenlijke Tikkie gepubliceerd");
-  await page.screenshot({ path: testInfo.outputPath("joint-tikkie-admin-desktop.png"), fullPage: true });
-  await page.setViewportSize({ width: 320, height: 740 });
-  await assertReadableLayout(page);
-  await page.screenshot({ path: testInfo.outputPath("joint-tikkie-admin-mobile.png"), fullPage: true });
+  await page.getByRole("searchbox", { name: "Zoek kind, ouder, e-mail, groep of referentie" }).fill("Kindbetaalouder Alfa");
+  for (const index of [0, 1]) await page.getByTestId(`child-payment-${ids[index]}`).getByRole("checkbox").check();
+  await expect(page.getByText(/2 kind\(eren\) geselecteerd/)).toContainText("5,00");
+  await page.getByRole("combobox", { name: "Betaalknop bij", exact: true }).selectOption(ids[0]);
+  const sharedUrl = "https://tikkie.me/pay/browser-two-siblings";
+  const singleUrl = "https://tikkie.me/pay/browser-third-sibling";
+  const publish = async (url: string) => {
+    await page.getByLabel("Tikkie-link voor het totaalbedrag").fill(url);
+    await page.getByLabel("Reden voor verzending of correctie").fill("Selectie van kinderen met de ouder afgestemd.");
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Tikkie publiceren en e-mail versturen" }).click();
+    await expect(page.getByRole("status")).toContainText("Gezamenlijke Tikkie gepubliceerd");
+    await expect(page.getByText(/0 kind\(eren\) geselecteerd/)).toBeVisible();
+  };
+  await publish(sharedUrl);
+  const afterShared = await childRows();
+  expect(afterShared.find((row) => row.childId === ids[2])).toEqual(before);
+  const sharedBatch = afterShared.find((row) => row.childId === ids[0])!.batch!;
+  expect(sharedBatch.totalAmountCents).toBe(500);
+  expect(afterShared.find((row) => row.childId === ids[1])!.batch!.id).toBe(sharedBatch.id);
+  await expect(page.getByRole("link", { name: "Tikkie bij Betaalkind Alfa 1", exact: true })).toHaveAttribute("href", sharedUrl);
+  await expect(page.getByTestId(`child-payment-${ids[1]}`).getByRole("button", { name: "Inbegrepen bij Betaalkind Alfa 1", exact: true })).toBeDisabled();
+  await page.getByTestId(`child-payment-${ids[2]}`).getByRole("checkbox").check();
+  await expect(page.getByText(/1 kind\(eren\) geselecteerd/)).toContainText("2,50");
+  await publish(singleUrl);
+  await page.screenshot({ path: testInfo.outputPath("child-tikkies-admin-desktop.png"), fullPage: true });
 
   const parentContext = await browser.newContext({ baseURL: "http://127.0.0.1:3100", viewport: { width: 320, height: 740 } });
   try {
-    const parentA = await authenticate(parentContext, "parent-payment-a@example.invalid");
+    const parent = await authenticate(parentContext, "parent-child-payment-a@example.invalid");
     const parentPage = await parentContext.newPage();
-    await parentPage.goto("/omgeving/meeloper/nu");
-    const paymentCard = parentPage.getByRole("region", { name: "Gezamenlijke betaling", exact: true });
-    await expect(paymentCard).toContainText("Betaalouder Alfa");
-    await expect(paymentCard).toContainText("Betaalouder Beta");
-    await expect(paymentCard).toContainText("7,50");
-    await expect(paymentCard).toContainText("2,50");
-    await expect(paymentCard).not.toContainText("@example.invalid");
-    await expect(paymentCard.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveAttribute("href", tikkieUrl);
-    await expect(paymentCard).toContainText("betaal deze link niet ieder apart");
+    await parentPage.goto("/omgeving/meeloper/nachtpas");
+    const rows = registrationChildIds.map((id) => parentPage.locator(`[data-child-payment-row="${id}"]`));
+    await expect(rows[0].getByRole("link", { name: /Betaal Tikkie voor Betaalkind Alfa 1/ })).toHaveAttribute("href", sharedUrl);
+    await expect(rows[1].getByRole("button", { name: "Tikkie inbegrepen", exact: true })).toBeDisabled();
+    await expect(rows[1]).toContainText("Inbegrepen bij Betaalkind Alfa 1");
+    await expect(rows[1].getByRole("link")).toHaveCount(0);
+    await expect(rows[2].getByRole("link", { name: /Betaal Tikkie voor Betaalkind Alfa 3/ })).toHaveAttribute("href", singleUrl);
+    await expect(parentPage.locator("a.child-tikkie-action")).toHaveCount(2);
     await parentPage.reload();
-    await expect(paymentCard.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveAttribute("href", tikkieUrl);
+    await expect(rows[0].getByRole("link")).toHaveAttribute("href", sharedUrl);
+    await expect(rows[2].getByRole("link")).toHaveAttribute("href", singleUrl);
     await assertReadableLayout(parentPage);
-    await parentPage.screenshot({ path: testInfo.outputPath("joint-tikkie-parent-mobile.png"), fullPage: true });
-    const parentB = (await fixtureClient("parent-payment-b@example.invalid")).client;
-    const otherSnapshot = await rpc(parentB, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
-    expect(otherSnapshot.registration.payment.batch.canPay).toBe(false);
-    expect(otherSnapshot.registration.payment.batch.externalUrl).toBeNull();
-    expect(otherSnapshot.registration.payment.externalUrl).toBeNull();
-    expect(otherSnapshot.registration.payment.batch.payerName).toBe("Betaalouder Alfa");
-    const forbiddenReport = await parentB.schema("api").rpc("registration_report_payment", { _registration_id: otherSnapshot.registration.id, _expected_version: otherSnapshot.registration.payment.version });
-    expect(forbiddenReport.error?.message).toContain("NOT_AUTHORIZED");
-    await authenticate(parentContext, "parent-payment-b@example.invalid");
-    await parentPage.goto("/omgeving/meeloper/nachtpas");
-    await expect(parentPage.getByText("Betaling loopt via Betaalouder Alfa.", { exact: true })).toBeVisible();
-    await expect(parentPage.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveCount(0);
-    await expect(parentPage.getByRole("button", { name: "Het gezamenlijke bedrag is betaald" })).toHaveCount(0);
-    await parentPage.screenshot({ path: testInfo.outputPath("joint-tikkie-linked-parent-mobile.png"), fullPage: true });
-    await authenticate(parentContext, "parent-payment-a@example.invalid");
-    await parentPage.goto("/omgeving/meeloper/nachtpas");
-    await parentPage.getByRole("button", { name: "Het gezamenlijke bedrag is betaald" }).click();
-    await expect(parentPage.getByText("De betaling is gemeld. De organisatie controleert de ontvangst.", { exact: true })).toBeVisible();
-    await expect(parentPage.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveCount(0);
+    await parentPage.screenshot({ path: testInfo.outputPath("child-tikkies-parent-mobile.png"), fullPage: true });
 
+    const stranger = (await fixtureClient("parent-child-payment-b@example.invalid")).client;
+    const unauthorized = await stranger.schema("api").rpc("child_payment_report", { _batch_id: sharedBatch.id, _expected_version: sharedBatch.version });
+    expect(unauthorized.error?.message).toContain("NOT_AUTHORIZED");
+    const strangerSnapshot = await rpc(stranger, "registration_snapshot", { _event_slug: eventSlug });
+    expect(JSON.stringify(strangerSnapshot)).not.toContain(sharedUrl);
+    expect(JSON.stringify(strangerSnapshot)).not.toContain(singleUrl);
 
-    for (const client of [parentA, parentB]) {
-      const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
-      expect(snapshot.registration.payment.status).toBe("reported");
-      expect(snapshot.registration.payment.batch.status).toBe("reported");
-      expect(snapshot.registration.payment.batch.totalAmountCents).toBe(750);
-    }
+    await rows[0].getByRole("button", { name: "Betaling voor Betaalkind Alfa 1 melden" }).click();
+    await expect(rows[0].getByRole("button", { name: "In controle", exact: true })).toBeDisabled();
+    await expect(rows[1].getByRole("button", { name: "In controle", exact: true })).toBeDisabled();
+    await expect(rows[2].getByRole("link")).toHaveAttribute("href", singleUrl);
     await page.reload();
     await page.getByRole("button", { name: "Betalingen", exact: true }).click();
-    await page.getByRole("searchbox", { name: "Zoek ouder, e-mail, gezin, groep of referentie" }).fill("Betaalouder");
-    const answers = ["7,50", "BROWSER-JOINT-RECEIVED", "Het gezamenlijke bedrag is gecontroleerd op de bank.", ""];
-    const confirmDialog = async (dialog: import("@playwright/test").Dialog) => { await dialog.accept(answers.shift()); };
-    page.on("dialog", confirmDialog);
-    await page.getByRole("button", { name: /Bevestig gezamenlijk.*7,50/ }).click();
-    await expect(page.getByRole("status")).toContainText("Betaalmutatie append-only opgeslagen");
-    page.off("dialog", confirmDialog);
+    await page.getByRole("searchbox", { name: "Zoek kind, ouder, e-mail, groep of referentie" }).fill("Kindbetaalouder Alfa");
+    const answers = ["5,00", "BROWSER-CHILD-RECEIPT", "Ontvangst van beide geselecteerde kinderen gecontroleerd.", ""];
+    const confirm = async (dialog: import("@playwright/test").Dialog) => { await dialog.accept(answers.shift()); };
+    page.on("dialog", confirm);
+    await page.getByRole("button", { name: /Bevestig ontvangst.*5,00/ }).click();
+    await expect(page.getByRole("status")).toContainText("Ontvangst bevestigd voor de gekoppelde kinderen");
+    page.off("dialog", confirm);
     expect(answers).toHaveLength(0);
-    const payments = await rpc(admin, "admin_payments_snapshot", { _event_slug: "duindorp-halloween-2026" }) as Array<{ reference: string; status: string; netCollectedCents: number }>;
-    expect(payments.filter((payment) => payment.reference.startsWith("PAY-BROWSER-PAYMENT-")).map(({ status, netCollectedCents }) => ({ status, netCollectedCents })).sort((a, b) => a.netCollectedCents - b.netCollectedCents)).toEqual([{ status: "confirmed", netCollectedCents: 250 }, { status: "confirmed", netCollectedCents: 500 }]);
-    for (const client of [parentA, parentB]) {
-      const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as PaymentSnapshot;
-      expect(snapshot.registration.payment.status).toBe("confirmed");
-      expect(snapshot.registration.payment.externalUrl).toBeNull();
-      expect(snapshot.registration.payment.batch.externalUrl).toBeNull();
-    }
+    const afterConfirm = await childRows();
+    expect(ids.map((id) => afterConfirm.find((row) => row.childId === id)!.status)).toEqual(["confirmed", "confirmed", "awaiting_payment"]);
     await parentPage.reload();
-    await expect(parentPage.getByText("TOEGANG ACTIEF", { exact: true })).toBeVisible();
-    await expect(parentPage.getByRole("link", { name: "Betaal het gezamenlijke Tikkie" })).toHaveCount(0);
+    await expect(rows[0].getByRole("button", { name: "Betaald", exact: true })).toBeDisabled();
+    await expect(rows[1].getByRole("button", { name: "Betaald", exact: true })).toBeDisabled();
+    await expect(rows[2].getByRole("link")).toHaveAttribute("href", singleUrl);
+    await expect(parentPage.locator("a.child-tikkie-action")).toHaveCount(1);
+    const snapshot = await rpc(parent, "registration_snapshot", { _event_slug: eventSlug }) as { registration: { children: Array<{ id: string; payment: { status: string } }> } };
+    expect(registrationChildIds.map((id) => snapshot.registration.children.find((child) => child.id === id)!.payment.status)).toEqual(["confirmed", "confirmed", "awaiting_payment"]);
   } finally { await parentContext.close(); }
 });

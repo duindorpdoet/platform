@@ -147,6 +147,35 @@ describe("premium transactional mail catalog", () => {
     expect(rendered.html).toContain("Sam &lt;Jansen&gt;");
   });
 
+  it("shows selected child names and the single anchor in child-level payment mail", () => {
+    const rendered = renderTransactionalMail({
+      messageType: "payment_link_ready",
+      payload: { externalUrl: "https://tikkie.me/pay/children", amountCents: 500, paymentChildren: ["Noor", "Sam <Kind>"], anchorChildName: "Noor" },
+    });
+    expect(rendered.text).toContain("Tikkie bij: Noor");
+    expect(rendered.text).toContain("Voor kind: Noor");
+    expect(rendered.text).toContain("Voor kind: Sam <Kind>");
+    expect(rendered.text).toContain("genoemde kinderen samen");
+    expect(rendered.text).not.toContain("genoemde gezinnen");
+    expect(rendered.html).toContain("Sam &lt;Kind&gt;");
+    expect(rendered.text).toContain("Betaal via Tikkie: https://tikkie.me/pay/children");
+  });
+
+  it.each(["payment_reported", "payment_confirmed"])("limits %s mail to the included children", (messageType) => {
+    const rendered = renderTransactionalMail({
+      messageType,
+      payload: { amountCents: 500, paymentChildren: ["Noor", "Sam"], anchorChildName: "Noor" },
+    });
+    expect(rendered.subject).toContain("deze kinderen");
+    expect(rendered.text).toContain("Voor kind: Noor");
+    expect(rendered.text).toContain("Voor kind: Sam");
+    expect(rendered.text).toContain("alleen voor deze kinderen");
+    expect(rendered.text).not.toContain("Jullie deelname is betaald");
+    expect(rendered.text).not.toContain("de betaling voor jullie groep is bevestigd");
+    expect(rendered.text).toContain(`${messageType === "payment_confirmed" ? "Ontvangen" : "Gemeld"} bedrag: €\u00a05,00`);
+    expect(rendered.text).not.toContain("Totaal te betalen");
+  });
+
   it("supports a single-family payment and trusted Tikkie subdomains", () => {
     const rendered = renderTransactionalMail({
       messageType: "payment_link_ready",

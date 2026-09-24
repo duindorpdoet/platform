@@ -26,7 +26,9 @@ from (values
   ('a0000000-0000-0000-0000-000000000012'::uuid, 'browser-registration-mobile@example.invalid'),
   ('a0000000-0000-0000-0000-000000000013'::uuid, 'browser-chat-unassigned@example.invalid'),
   ('a0000000-0000-0000-0000-000000000081'::uuid, 'parent-payment-a@example.invalid'),
-  ('a0000000-0000-0000-0000-000000000082'::uuid, 'parent-payment-b@example.invalid')
+  ('a0000000-0000-0000-0000-000000000082'::uuid, 'parent-payment-b@example.invalid'),
+  ('a0000000-0000-0000-0000-000000000083'::uuid, 'parent-child-payment-a@example.invalid'),
+  ('a0000000-0000-0000-0000-000000000084'::uuid, 'parent-child-payment-b@example.invalid')
 ) fixture(id, email)
 on conflict (id) do nothing;
 
@@ -229,5 +231,33 @@ begin
     values(fixture.registration_id,event_id,fixture.household_id,'submitted',fixture.reference,fixture.amount_cents,now()) on conflict do nothing;
     insert into app_private.payment_requests(id,registration_id,purpose,amount_cents,reference,status)
     values(fixture.payment_id,fixture.registration_id,'event_registration',fixture.amount_cents,'PAY-'||fixture.reference,'awaiting_link') on conflict do nothing;
+  end loop;
+end $$;
+
+
+-- Separate child-level payment fixtures; keep legacy 81/82 and route rosters intact.
+do $$
+declare fixture record; event_id uuid; child_number integer; child_id uuid; registration_child_id uuid;
+begin
+  select id into event_id from app_private.events where slug = 'duindorp-halloween-2026';
+  for fixture in select * from (values
+    (83, 'a0000000-0000-0000-0000-000000000083'::uuid, '21000000-0000-0000-0000-000000000083'::uuid, '22000000-0000-0000-0000-000000000083'::uuid, '28000000-0000-0000-0000-000000000083'::uuid, 'Kindbetaalouder Alfa', 'Kindbetaalgezin Alfa', 'BROWSER-CHILD-PAYMENT-A', 3),
+    (84, 'a0000000-0000-0000-0000-000000000084'::uuid, '21000000-0000-0000-0000-000000000084'::uuid, '22000000-0000-0000-0000-000000000084'::uuid, '28000000-0000-0000-0000-000000000084'::uuid, 'Kindbetaalouder Beta', 'Kindbetaalgezin Beta', 'BROWSER-CHILD-PAYMENT-B', 1)
+  ) data(number,user_id,household_id,registration_id,payment_id,parent_name,household_label,reference,children_count) loop
+    insert into app_private.profiles(user_id,display_name) values(fixture.user_id,fixture.parent_name) on conflict(user_id) do update set display_name=excluded.display_name;
+    insert into app_private.households(id,label,primary_contact_user_id) values(fixture.household_id,fixture.household_label,fixture.user_id) on conflict do nothing;
+    insert into app_private.household_members(household_id,user_id,relation_role) values(fixture.household_id,fixture.user_id,'owner') on conflict do nothing;
+    insert into app_private.registrations(id,event_id,household_id,status,reference,price_snapshot_cents,submitted_at)
+    values(fixture.registration_id,event_id,fixture.household_id,'submitted',fixture.reference,fixture.children_count*250,now()) on conflict do nothing;
+    for child_number in 1..fixture.children_count loop
+      child_id := ('2500'||lpad(fixture.number::text,4,'0')||'-0000-0000-0000-'||lpad(child_number::text,12,'0'))::uuid;
+      registration_child_id := ('2600'||lpad(fixture.number::text,4,'0')||'-0000-0000-0000-'||lpad(child_number::text,12,'0'))::uuid;
+      insert into app_private.children(id,household_id,first_name,age_at_event)
+      values(child_id,fixture.household_id,case when fixture.number=83 then 'Betaalkind Alfa ' else 'Betaalkind Beta ' end||child_number,9) on conflict do nothing;
+      insert into app_private.registration_children(id,event_id,registration_id,child_id,unit_price_cents)
+      values(registration_child_id,event_id,fixture.registration_id,child_id,250) on conflict do nothing;
+    end loop;
+    insert into app_private.payment_requests(id,registration_id,purpose,amount_cents,reference,status)
+    values(fixture.payment_id,fixture.registration_id,'event_registration',fixture.children_count*250,'PAY-'||fixture.reference,'awaiting_link') on conflict do nothing;
   end loop;
 end $$;
