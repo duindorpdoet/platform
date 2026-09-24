@@ -14,6 +14,8 @@ type RouteSettings = {
   laterPreferenceEarliestAt: string | null;
   globalOrdinaryStopAt: string | null;
   allowedStopTimes: string[];
+  allowedStartTimes: string[];
+  allowedEndTimes: string[];
   ordinaryVisitSeconds: number;
   bufferSeconds: number;
   finalPortalId: string | null;
@@ -40,11 +42,11 @@ type StartPoint = {
   walkingNodeId: string | null; verified: boolean; accessible: boolean | null; maxGroups: number;
   maxChildren: number; version: number; slots: Slot[];
 };
-type Portal = { id: string; name: string; world: string; operationStatus: string; verified: boolean; isFinal: boolean };
-type RegistrationRow = { id: string; reference: string; startPreference: string; ordinaryStopAt: string | null; paymentEligible: boolean };
+type Portal = { id: string; code?: string; systemCode?: string; name: string; world: string; operationStatus: string; verified: boolean; isFinal: boolean };
+type RegistrationRow = { id: string; reference: string; startPreference: string; ordinaryStopAt: string | null; preferredStartAt: string | null; desiredEndAt: string | null; paymentEligible: boolean };
 type Schedule = { id: string; revision: number; state: string; startSlotId: string; effectiveStopAt: string; expectedFinaleArrivalAt: string; preferenceMatch: string; warnings: string[] };
-type Group = { id: string; code: string; status: string; version: number; routeMode: string; childCount: number; registrations: RegistrationRow[]; schedule: Schedule | null };
-type Unassigned = { id: string; reference: string; childCount: number; startPreference: "early" | "indifferent" | "later"; ordinaryStopAt: string | null; togetherKey?: string | null; paymentStatus?: string | null; paymentEligible: boolean };
+type Group = { id: string; code: string; systemCode?: string; displayName?: string | null; status: string; version: number; routeMode: string; childCount: number; registrations: RegistrationRow[]; schedule: Schedule | null };
+type Unassigned = { id: string; reference: string; childCount: number; startPreference: "early" | "indifferent" | "later"; ordinaryStopAt: string | null; preferredStartAt: string | null; desiredEndAt: string | null; togetherKey?: string | null; paymentStatus?: string | null; paymentEligible: boolean };
 type Snapshot = { settings: RouteSettings; startPoints: StartPoint[]; portals: Portal[]; groups: Group[]; unassigned: Unassigned[]; finaleFlow: Array<{ window: string; groups: number; children: number }> };
 type DraftPoint = {
   name: string;
@@ -76,6 +78,13 @@ function iso(value: string) {
 }
 
 function matchPreference(group: Group, slot: Slot, settings: RouteSettings): Schedule["preferenceMatch"] {
+  const exactStarts = group.registrations.flatMap((registration) => registration.preferredStartAt ? [new Date(registration.preferredStartAt).getTime()] : []);
+  if (exactStarts.length > 0) {
+    const slotStart = new Date(slot.startsAt).getTime();
+    const largestDeviationMinutes = Math.max(...exactStarts.map((preferred) => Math.abs(slotStart - preferred) / 60_000));
+    if (largestDeviationMinutes === 0) return "good";
+    return largestDeviationMinutes <= 30 ? "small_deviation" : "large_deviation";
+  }
   const preferences = [...new Set(group.registrations.map((registration) => registration.startPreference).filter((value) => value !== "indifferent"))];
   if (preferences.length === 0) return "neutral";
   if (preferences.length > 1) return "large_deviation";
@@ -307,9 +316,9 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize }: { eventSlug: str
       {proposal?.conflicts.map((conflict) => <div className="form-warning" key={`${conflict.code}-${conflict.subjectId}`}><AlertTriangle />{conflict.code}: {conflict.message}</div>)}
       {proposal?.groups.map((group: PlannedGroup) => {
         const registrations = group.partyIds.map((id) => snapshot.unassigned.find((party) => party.id === id)).filter((party): party is Unassigned => Boolean(party));
-        return <article className={`schedule-card match-${group.preferenceMatch}`} key={group.key}><div><strong>{group.key} · {group.childCount} kinderen</strong><p>{matchLabels[group.preferenceMatch]} · stop gewone poorten {new Date(group.effectiveStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })} · finale circa {new Date(group.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</p><small>{registrations.map((registration) => `${registration.reference}: ${registration.startPreference}, ${registration.paymentEligible ? "betaald" : "betaling open"}`).join(" · ")}</small>{group.warnings.includes("PAYMENT_NOT_CONFIRMED") && <small>Conceptraming: betaling nog niet bevestigd; publicatie blokkeert.</small>}</div><UsersRound /></article>;
+        return <article className={`schedule-card match-${group.preferenceMatch}`} key={group.key}><div><strong>{group.key} · {group.childCount} kinderen</strong><p>{matchLabels[group.preferenceMatch]} · stop gewone poorten {new Date(group.effectiveStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })} · finale circa {new Date(group.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</p><small>{registrations.map((registration) => `${registration.reference}: start ${registration.preferredStartAt ? new Date(registration.preferredStartAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "maakt niet uit"}, einde ${registration.desiredEndAt ? new Date(registration.desiredEndAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "niet gekozen"}, ${registration.paymentEligible ? "betaald" : "betaling open"}`).join(" · ")}</small>{group.warnings.includes("PAYMENT_NOT_CONFIRMED") && <small>Conceptraming: betaling nog niet bevestigd; publicatie blokkeert.</small>}</div><UsersRound /></article>;
       })}
-      {snapshot.groups.filter((group) => group.routeMode === "dynamic" && group.schedule).map((group) => <article className={`schedule-card match-${group.schedule!.preferenceMatch}`} key={group.id} draggable onDragStart={(event) => event.dataTransfer.setData("text/group-id", group.id)}><div><strong>{group.code} · {group.childCount} kinderen · revisie {group.schedule!.revision}</strong><p>{matchLabels[group.schedule!.preferenceMatch]} · {group.schedule!.state} · finale {new Date(group.schedule!.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</p><small>{group.registrations.map((registration) => `${registration.reference}: ${registration.startPreference}, ${registration.paymentEligible ? "betaald" : "betaling open"}`).join(" · ")}</small><label className="field"><span>Startpunt en tijd (toetsenbord/formulier)</span><select value={group.schedule!.startSlotId} onChange={(event) => void moveGroup(group, event.target.value)}>{snapshot.startPoints.flatMap((point) => point.slots.map((slot) => <option key={slot.id} value={slot.id}>{point.name} · {new Date(slot.startsAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</option>))}</select></label></div>{group.schedule!.state === "published" ? <CheckCircle2 /> : <Clock3 />}</article>)}
+      {snapshot.groups.filter((group) => group.routeMode === "dynamic" && group.schedule).map((group) => <article className={`schedule-card match-${group.schedule!.preferenceMatch}`} key={group.id} draggable onDragStart={(event) => event.dataTransfer.setData("text/group-id", group.id)}><div><strong>{group.code} · {group.childCount} kinderen · revisie {group.schedule!.revision}</strong><p>{matchLabels[group.schedule!.preferenceMatch]} · {group.schedule!.state} · finale {new Date(group.schedule!.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</p><small>{group.registrations.map((registration) => `${registration.reference}: start ${registration.preferredStartAt ? new Date(registration.preferredStartAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "maakt niet uit"}, einde ${registration.desiredEndAt ? new Date(registration.desiredEndAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "niet gekozen"}, ${registration.paymentEligible ? "betaald" : "betaling open"}`).join(" · ")}</small><label className="field"><span>Startpunt en tijd (toetsenbord/formulier)</span><select value={group.schedule!.startSlotId} onChange={(event) => void moveGroup(group, event.target.value)}>{snapshot.startPoints.flatMap((point) => point.slots.map((slot) => <option key={slot.id} value={slot.id}>{point.name} · {new Date(slot.startsAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</option>))}</select></label></div>{group.schedule!.state === "published" ? <CheckCircle2 /> : <Clock3 />}</article>)}
       <div className="separator" /><h3>Voorspelde druk op de laatste poort</h3>{snapshot.finaleFlow.length ? snapshot.finaleFlow.map((row) => <div className="summary-row" key={row.window}><span>{new Date(row.window).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</span><strong>{row.groups} groepen · {row.children} kinderen</strong></div>) : <p>Nog geen concept- of gepubliceerde finalevensters.</p>}
     </section>
   </div>;

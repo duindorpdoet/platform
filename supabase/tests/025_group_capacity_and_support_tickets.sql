@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(35);
+select plan(43);
 
 select ok(
   (select relrowsecurity from pg_class where oid = 'app_private.together_join_requests'::regclass),
@@ -153,6 +153,106 @@ select ok(
   'the route planner receives the authorized oversize marker'
 );
 
+set local role postgres;
+with fixture as (
+  select
+    source.event_id,
+    source.id as requested_by_registration_id,
+    target.together_code as requested_code,
+    source_membership.party_id as source_party_id,
+    target_membership.party_id as target_party_id
+  from app_private.registrations source
+  join app_private.together_memberships source_membership
+    on source_membership.registration_id = source.id and source_membership.left_at is null
+  join app_private.registrations target
+    on target.event_id = source.event_id and target.reference = 'FIXTURE-5'
+  join app_private.together_memberships target_membership
+    on target_membership.registration_id = target.id and target_membership.left_at is null
+  where source.reference = 'FIXTURE-1'
+), created as (
+  insert into app_private.together_join_requests(
+    event_id, source_party_id, target_party_id, requested_by_registration_id,
+    requested_code, child_count_at_request, group_limit_at_request
+  )
+  select event_id, source_party_id, target_party_id, requested_by_registration_id,
+    requested_code, 1, 10
+  from fixture
+  returning id, version
+)
+insert into feature_values(key, value)
+select 'reject-request', jsonb_build_object('id', id, 'version', version)
+from created;
+
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select is(
+  api.admin_decide_together_request(
+    ((select value ->> 'id' from feature_values where key = 'reject-request'))::uuid,
+    ((select value ->> 'version' from feature_values where key = 'reject-request'))::integer,
+    'reject', false, 'Deze huishoudens lopen afzonderlijk.'
+  ) #>> '{status}',
+  'rejected',
+  'an organizer can reject a pending join request'
+);
+select is(
+  api.admin_decide_together_request(
+    ((select value ->> 'id' from feature_values where key = 'reject-request'))::uuid,
+    ((select value ->> 'version' from feature_values where key = 'reject-request'))::integer,
+    'reject', false, 'Deze huishoudens lopen afzonderlijk.'
+  ) #>> '{status}',
+  'rejected',
+  'retrying the same rejection with the original version is idempotent'
+);
+select throws_ok(
+  $$ select api.admin_decide_together_request(
+    ((select value ->> 'id' from feature_values where key = 'reject-request'))::uuid,
+    ((select value ->> 'version' from feature_values where key = 'reject-request'))::integer,
+    'accept', false, 'Tegengesteld besluit is niet toegestaan.'
+  ) $$,
+  '40001', 'STALE_VERSION',
+  'an opposite decision cannot overwrite an already rejected request'
+);
+
+set local role postgres;
+select is(
+  (select count(*)::integer from app_private.email_outbox
+   where message_type = 'group_merge_declined'
+     and payload ->> 'requestId' = (select value ->> 'id' from feature_values where key = 'reject-request')),
+  2,
+  'a rejection queues one message for each involved adult contact'
+);
+select is(
+  (select count(distinct recipient_email)::integer from app_private.email_outbox
+   where message_type = 'group_merge_declined'
+     and payload ->> 'requestId' = (select value ->> 'id' from feature_values where key = 'reject-request')),
+  2,
+  'rejection recipients are unique by adult contact'
+);
+select is(
+  (select array_agg(recipient_email order by recipient_email) from app_private.email_outbox
+   where message_type = 'group_merge_declined'
+     and payload ->> 'requestId' = (select value ->> 'id' from feature_values where key = 'reject-request')),
+  array['parent-a@example.invalid', 'parent-size-5@example.invalid']::text[],
+  'both source and target adult contacts receive the rejection'
+);
+select ok(
+  (select count(*) = count(distinct dedupe_key) from app_private.email_outbox
+   where message_type = 'group_merge_declined'
+     and payload ->> 'requestId' = (select value ->> 'id' from feature_values where key = 'reject-request')),
+  'a rejection retry cannot duplicate mail for a recipient and state'
+);
+
+select is(
+  (select count(*)::integer
+   from app_private.audit_events audit
+   where audit.resource_type = 'together_join_request'
+     and audit.resource_id = ((select value ->> 'id' from feature_values where key = 'reject-request'))::uuid
+     and audit.action = 'together.capacity_request_rejected'),
+  1,
+  'an idempotent rejection retry does not duplicate the decision audit event'
+);
+
+set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select lives_ok(
   $$ insert into feature_values values (

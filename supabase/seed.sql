@@ -73,7 +73,7 @@ begin
     v_portal_id := ('12000000-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid;
     v_node_id := ('13000000-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid;
     insert into app_private.portal_applications(id, event_id, applicant_user_id, review_status, requested_world_id, private_draft_data, submitted_at, reviewed_by, reviewed_at)
-    values (v_application_id, v_event_id, v_owner, 'approved', v_world_ids[((i - 1) % 6) + 1], jsonb_build_object('fixture', true), now(), v_admin, now())
+    values (v_application_id, v_event_id, v_owner, 'approved', v_world_ids[((i - 1) % 6) + 1], jsonb_build_object('fixture', true, 'contactName', 'Test contactpersoon', 'phone', '0612345678'), now(), v_admin, now())
     on conflict (id) do nothing;
     insert into app_private.portals(id, event_id, application_id, world_id, name, description, intensity, approval_status, operation_status)
     values (v_portal_id, v_event_id, v_application_id, v_world_ids[((i - 1) % 6) + 1], 'Testpoort ' || lpad(i::text, 2, '0'), 'Fictieve poort voor lokale tests.', ((i - 1) % 4) + 1, 'approved', 'open')

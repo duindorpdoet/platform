@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { mailAllowlist, serverEnv } from "@/lib/config/server-env";
 import { ApiError } from "@/lib/http/api";
 import { createPrivilegedClient } from "@/lib/supabase/privileged";
-import { renderTransactionalMail } from "@/lib/mail/templates";
+import { renderTransactionalMail, UnknownMailTemplateError } from "@/lib/mail/templates";
 import { sendSendGrid } from "@/lib/mail/sendgrid";
 import { nextRetry } from "@/lib/mail/status";
 
@@ -99,12 +99,15 @@ export async function POST(request: Request) {
 
       results.push({ id: row.id, status: "accepted" });
     } catch (cause) {
-      const terminal = row.attempts >= 8;
-      const errorCode = cause instanceof ApiError
-        ? cause.code.slice(0, 100)
-        : cause instanceof Error
-          ? cause.name.slice(0, 100)
-          : "UNKNOWN";
+      const unknownTemplate = cause instanceof UnknownMailTemplateError;
+      const terminal = unknownTemplate || row.attempts >= 8;
+      const errorCode = unknownTemplate
+        ? cause.code
+        : cause instanceof ApiError
+          ? cause.code.slice(0, 100)
+          : cause instanceof Error
+            ? cause.name.slice(0, 100)
+            : "UNKNOWN";
 
       await supabase.schema("api").rpc("worker_update_outbox", {
         _id: row.id,

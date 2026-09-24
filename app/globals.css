@@ -201,3 +201,297 @@ label.field input,label.field textarea,label.field select,.choice{border-radius:
   .admin-ticket-center .ticket-thread>.actions{display:grid;grid-template-columns:1fr}
   .admin-ticket-center .ticket-thread>.actions>*{width:100%}
 }
+
+/* Durable participant messenger */
+.messenger-widget {
+  position: fixed;
+  z-index: 90;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  color: var(--ink);
+}
+
+.messenger-launcher {
+  display: inline-flex;
+  align-items: center;
+  gap: .65rem;
+  min-height: 3rem;
+  padding: .75rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 68%, transparent);
+  border-radius: 999px;
+  background: var(--gold);
+  color: #17120d;
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 36%);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.messenger-launcher svg,
+.messenger-controls svg,
+.messenger-compose button svg,
+.messenger-eyebrow svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.messenger-unread {
+  display: grid;
+  place-items: center;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  padding-inline: .3rem;
+  border-radius: 999px;
+  background: #762f2a;
+  color: #fff;
+  font-size: .75rem;
+}
+
+.messenger-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(8rem, 1fr) auto auto auto;
+  width: min(25rem, calc(100vw - 2rem));
+  max-height: min(42rem, calc(100dvh - 2rem - env(safe-area-inset-bottom)));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--panel) 96%, #000);
+  box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 48%);
+}
+
+.messenger-dialog.is-minimized {
+  display: block;
+}
+
+.messenger-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel-soft) 90%, transparent);
+}
+
+.messenger-header h2 {
+  margin: .2rem 0 0;
+  font-size: 1.2rem;
+}
+
+.messenger-header small {
+  color: var(--muted);
+}
+
+.messenger-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0;
+  color: var(--mint);
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.messenger-controls {
+  display: flex;
+  gap: .35rem;
+}
+
+.messenger-controls button {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid var(--line);
+  border-radius: .7rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.messenger-thread {
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+  min-height: 10rem;
+  padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.messenger-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-height: 10rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.messenger-empty svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.messenger-message {
+  width: fit-content;
+  max-width: 88%;
+  padding: .7rem .8rem;
+  border: 1px solid var(--line);
+  border-radius: .95rem .95rem .95rem .25rem;
+  background: var(--panel-soft);
+}
+
+.messenger-message.is-mine {
+  align-self: flex-end;
+  border-color: color-mix(in srgb, var(--gold) 48%, var(--line));
+  border-radius: .95rem .95rem .25rem .95rem;
+  background: color-mix(in srgb, var(--gold) 10%, var(--panel-soft));
+}
+
+.messenger-message strong,
+.messenger-message small {
+  font-size: .72rem;
+}
+
+.messenger-message p {
+  margin: .25rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.messenger-message small {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  color: var(--muted);
+}
+
+.messenger-message small svg {
+  width: .9rem;
+  height: .9rem;
+}
+
+.messenger-status,
+.messenger-notice {
+  margin: 0;
+  padding: .55rem 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.messenger-notice {
+  color: var(--gold);
+}
+
+.messenger-compose {
+  display: grid;
+  gap: .45rem;
+  padding: .8rem 1rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.messenger-compose label {
+  font-weight: 800;
+  font-size: .82rem;
+}
+
+.messenger-compose textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 4.75rem;
+  border: 1px solid var(--line);
+  border-radius: .75rem;
+  padding: .7rem;
+  background: var(--page);
+  color: inherit;
+  font: inherit;
+}
+
+.messenger-compose > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.messenger-compose small {
+  color: var(--muted);
+}
+
+.messenger-compose button {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 2.5rem;
+  padding: .55rem .8rem;
+  border: 0;
+  border-radius: .7rem;
+  background: var(--gold);
+  color: #17120d;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.messenger-compose button:disabled {
+  cursor: wait;
+  opacity: .55;
+}
+
+.messenger-launcher:focus-visible,
+.messenger-controls button:focus-visible,
+.messenger-compose textarea:focus-visible,
+.messenger-compose button:focus-visible {
+  outline: 3px solid var(--mint);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .messenger-widget {
+    right: max(.75rem, env(safe-area-inset-right));
+    bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    left: max(.75rem, env(safe-area-inset-left));
+  }
+
+  .messenger-launcher {
+    float: right;
+  }
+
+  .messenger-dialog {
+    width: 100%;
+    max-height: calc(100dvh - 6.25rem - env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .messenger-widget *,
+  .messenger-widget *::before,
+  .messenger-widget *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
+/* House forecast stays readable in the first viewport, including 200% text. */
+.portal-forecast{display:grid;gap:18px}
+.portal-forecast>.row-between{align-items:flex-start;flex-wrap:wrap}
+.portal-forecast>.row-between>div{min-width:0;flex:1 1 16rem;overflow-wrap:anywhere}
+.portal-forecast>.row-between>.btn{flex:0 1 auto}
+.portal-forecast-status{display:flex;align-items:center;gap:9px}
+.portal-forecast-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.portal-forecast-metrics>span{display:grid;align-content:start;gap:7px;min-width:0;padding:18px;border-right:1px solid var(--line)}
+.portal-forecast-metrics>span:last-child{border-right:0}
+.portal-forecast-metrics svg{color:#77b4c6}
+.portal-forecast-metrics small{color:#96a7b7}
+.portal-forecast-metrics strong{overflow-wrap:anywhere}
+@media(max-width:700px){
+  .portal-forecast>.row-between>.btn{width:100%}
+  .portal-forecast-metrics{grid-template-columns:1fr}
+  .portal-forecast-metrics>span{border-right:0;border-bottom:1px solid var(--line)}
+  .portal-forecast-metrics>span:last-child{border-bottom:0}
+}

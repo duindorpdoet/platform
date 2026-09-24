@@ -5,7 +5,6 @@ import { AlertTriangle, Camera, Check, CloudOff, LockKeyhole, MapPin, QrCode, Re
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { clearPrivateSnapshots, readPrivateSnapshot, storePrivateSnapshot } from "@/lib/pwa/private-snapshot";
-import { GroupTickets } from "@/components/group/group-tickets";
 import { NightMap } from "@/components/maps/night-map";
 
 type RosterItem = { registrationChildId: string; firstName: string; householdLabel: string };
@@ -144,7 +143,6 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
       {scannerOpen && <QrScanner onCancel={() => setScannerOpen(false)} onResult={(value) => { setScannerOpen(false); void command("run_scan", { _run_id: run.id, _expected_stop_id: stop.id, _expected_run_version: run.version, _credential: value, _method: "qr" }); }} />}
     </>}
     {run && run.history.length > 0 && <div className="panel timeline"><p className="kicker">Logboek</p><h2>Afgeronde poorten</h2>{run.history.map((item) => <div className="summary-row" key={item.sequence}><span>{item.sequence}. {item.portalName} · {item.world}</span><strong>{item.outcome === "system_skipped" ? "Poort gesloten" : item.outcome === "all_skipped" ? "Overgeslagen" : item.outcome === "mixed" ? "Deels bezocht" : "Bezocht"}</strong></div>)}</div>}
-    {snapshot.access.leader && <GroupTickets groupId={groupId} />}
   </div>;
 }
 

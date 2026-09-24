@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, MapPinCheck, RefreshCw, RotateCcw, XCircle } from "lucide-react";
+import { CheckCircle2, MapPinCheck, MessageCircle, RefreshCw, RotateCcw, XCircle } from "lucide-react";
 import { NightMap } from "@/components/maps/night-map";
 import { createClient } from "@/lib/supabase/client";
 
 type World = { id: string; slug: string; name: string };
 type PortalApplication = {
   id: string;
+  code: string;
+  systemCode: string;
   status: "submitted" | "changes_requested" | "approved" | "rejected" | "withdrawn";
   version: number;
   submittedAt: string | null;
@@ -24,6 +26,8 @@ type PortalApplication = {
   };
   portal: null | {
     id: string;
+    code: string;
+    systemCode: string;
     version: number;
     name: string;
     locationVerified: boolean;
@@ -33,6 +37,16 @@ type PortalApplication = {
 };
 
 type Snapshot = { worlds: World[]; applications: PortalApplication[] };
+type PortalOperation = {
+  portalId: string;
+  systemCode: string;
+  name: string;
+  contactName: string | null;
+  phone: string | null;
+  email: string | null;
+  formattedAddress: string;
+  messageTarget: { kind: "portal"; portalId: string; userId: string; label: string };
+};
 
 const statusLabels: Record<PortalApplication["status"], string> = {
   submitted: "In beoordeling",
@@ -44,15 +58,20 @@ const statusLabels: Record<PortalApplication["status"], string> = {
 
 export function PortalReviews({ eventSlug }: { eventSlug: string }) {
   const [snapshot, setSnapshot] = useState<Snapshot>({ worlds: [], applications: [] });
+  const [operations, setOperations] = useState<PortalOperation[]>([]);
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const client = createClient();
     if (!client) return;
-    const { data, error } = await client.schema("api").rpc("admin_portal_applications_snapshot", { _event_slug: eventSlug });
-    if (error) return setNotice("Poortaanvragen konden niet worden opgehaald.");
-    setSnapshot(data as Snapshot);
+    const [applicationsResult, operationsResult] = await Promise.all([
+      client.schema("api").rpc("admin_portal_applications_snapshot", { _event_slug: eventSlug }),
+      client.schema("api").rpc("admin_portal_operations_snapshot", { _event_slug: eventSlug }),
+    ]);
+    if (applicationsResult.error) return setNotice("Poortaanvragen konden niet worden opgehaald.");
+    setSnapshot(applicationsResult.data as Snapshot);
+    if (!operationsResult.error) setOperations(((operationsResult.data as { portals?: PortalOperation[] })?.portals) ?? []);
   }, [eventSlug]);
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
@@ -133,6 +152,24 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
     if (!error) await load();
   }
 
+  async function sendMessage(application: PortalApplication) {
+    if (!application.portal) return;
+    const body = window.prompt(`Bericht aan ${application.systemCode} · ${application.draft.portalName || application.portal.name}:`)?.trim();
+    if (!body) return;
+    const client = createClient(); if (!client) return;
+    const idempotencyKey = crypto.randomUUID();
+    const requestHash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify({
+      eventSlug, subjectKind: "portal", subjectId: application.portal.id, body,
+    }))))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    setBusyId(application.id);
+    const { error } = await client.schema("api").rpc("admin_messenger_create", {
+      _event_slug: eventSlug, _subject_kind: "portal", _subject_id: application.portal.id,
+      _body: body, _idempotency_key: idempotencyKey, _request_hash: requestHash,
+    });
+    setBusyId(null);
+    setNotice(error ? `Bericht kon niet worden verstuurd: ${error.message}` : "Bericht staat in het gesprek met deze poort.");
+  }
+
   async function openAsset(path: string) {
     const client = createClient(); if (!client) return;
     const { data, error } = await client.storage.from("portal-application-assets").createSignedUrl(path, 60);
@@ -149,15 +186,23 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
     {notice && <div className="form-notice" role="status">{notice}</div>}
     {snapshot.applications.length === 0 ? <p>Er zijn nog geen ingediende aanvragen.</p> : snapshot.applications.map((application) => {
       const address = application.draft.address;
+      const operation = operations.find((candidate) => candidate.portalId === application.portal?.id);
+      const visibleAddress = operation?.formattedAddress ?? `${address?.street ?? ""} ${address?.houseNumber ?? ""}${address?.addition ? ` ${address.addition}` : ""}, ${address?.postalCode ?? ""} Den Haag`;
+      const contactName = operation?.contactName ?? application.draft.contactName;
+      const phone = operation?.phone ?? application.draft.phone;
+      const email = operation?.email ?? application.applicantEmail;
       return <div className="incident-row" key={application.id}>
         <div>
-          <strong>{application.draft.portalName || "Naamloze poort"} · {statusLabels[application.status]}</strong>
-          <small>{application.applicantEmail} · {address?.street} {address?.houseNumber}{address?.addition ? ` ${address.addition}` : ""}, {address?.postalCode} Den Haag · spanning {application.draft.intensity ?? "?"} · versie {application.version}</small>
+          <strong>{application.systemCode} · {application.draft.portalName || application.portal?.name || "Naamloze poort"} · {statusLabels[application.status]}</strong>
+          <small><strong>Adres:</strong> {visibleAddress}</small>
+          <small><strong>Contact:</strong> {contactName || "Niet ingevuld"} · {phone ? <a href={`tel:${phone}`}>{phone}</a> : "geen telefoon"} · {email ? <a href={`mailto:${email}`}>{email}</a> : "geen e-mail"}</small>
+          <small>Spanning {application.draft.intensity ?? "?"} · versie {application.version}</small>
           {application.draft.description && <p>{application.draft.description}</p>}
           {(application.draft.assetPaths ?? []).map((path, index) => <button className="text-link" key={path} onClick={() => void openAsset(path)}>Bekijk privéfoto {index + 1}</button>)}
           {application.portal && <small>Wereld: {application.requestedWorldSlug} · locatie {application.portal.locationVerified ? "geverifieerd" : "nog te verifiëren"}</small>}
         </div>
         <div className="actions">
+          {application.portal && <button className="btn outline" disabled={busyId === application.id} onClick={() => void sendMessage(application)}><MessageCircle />Bericht sturen</button>}
           {application.status === "submitted" && <>
             <button className="btn" disabled={busyId === application.id} onClick={() => void review(application, "approved")}><CheckCircle2 />Goedkeuren</button>
             <button className="btn outline" disabled={busyId === application.id} onClick={() => void review(application, "changes_requested")}><RotateCcw />Aanpassing</button>

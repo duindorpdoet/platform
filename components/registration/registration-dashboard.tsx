@@ -68,10 +68,12 @@ type PreferenceSnapshot = {
   version: number | null;
   startPreference: "early" | "indifferent" | "later";
   ordinaryStopAt: string | null;
+  preferredStartAt: string | null;
+  desiredEndAt: string | null;
   editable: boolean;
   changeStatus: "editable" | "locked" | "change_requested";
   confirmedSchedule?: { startsAt: string; startPoint: string; startAddress: string; effectiveOrdinaryStopAt: string; expectedFinaleArrivalAt: string; revision: number } | null;
-  event: { firstStartAt?: string | null; globalOrdinaryStopAt?: string | null; allowedStopTimes: string[] };
+  event: { firstStartAt?: string | null; globalOrdinaryStopAt?: string | null; allowedStopTimes: string[]; allowedStartTimes: string[]; allowedEndTimes: string[] };
 };
 
 const registrationStatusLabels: Record<string, string> = {
@@ -134,7 +136,7 @@ export function RegistrationDashboard({
   );
   const [notice, setNotice] = useState("");
   const [preferences, setPreferences] = useState<PreferenceSnapshot | null>(null);
-  const [preferenceDraft, setPreferenceDraft] = useState<{ startPreference: PreferenceSnapshot["startPreference"]; ordinaryStopAt: string }>({ startPreference: "indifferent", ordinaryStopAt: "" });
+  const [preferenceDraft, setPreferenceDraft] = useState<{ preferredStartAt: string; desiredEndAt: string }>({ preferredStartAt: "", desiredEndAt: "" });
   const inviteAttempted = useRef(false);
   const load = useCallback(async () => {
     const client = createClient();
@@ -158,7 +160,7 @@ export function RegistrationDashboard({
     if (!preferenceResult.error) {
       const next = preferenceResult.data as PreferenceSnapshot;
       setPreferences(next);
-      setPreferenceDraft({ startPreference: next.startPreference, ordinaryStopAt: next.ordinaryStopAt ?? "" });
+      setPreferenceDraft({ preferredStartAt: next.preferredStartAt ?? "", desiredEndAt: next.desiredEndAt ?? next.ordinaryStopAt ?? "" });
     }
   }, [eventSlug]);
   useEffect(() => {
@@ -221,14 +223,15 @@ export function RegistrationDashboard({
   async function savePreferences() {
     if (!preferences?.registrationId || preferences.version === null) return;
     const client = createClient(); if (!client) return;
+    if (!preferenceDraft.desiredEndAt) return setNotice("Kies wanneer jullie met gewone poorten willen stoppen.");
     const args = {
       _registration_id: preferences.registrationId,
-      _start_preference: preferenceDraft.startPreference,
-      _ordinary_stop_at: preferenceDraft.ordinaryStopAt || null,
+      _preferred_start_at: preferenceDraft.preferredStartAt || null,
+      _desired_end_at: preferenceDraft.desiredEndAt,
     };
     const result = preferences.editable
-      ? await client.schema("api").rpc("registration_preferences_save", { ...args, _expected_version: preferences.version })
-      : await client.schema("api").rpc("registration_preferences_request_change", {
+      ? await client.schema("api").rpc("registration_exact_preferences_save", { ...args, _expected_version: preferences.version })
+      : await client.schema("api").rpc("registration_exact_preferences_request_change", {
           ...args,
           _reason: window.prompt("Waarom wil je de bevestigde voorkeur aanpassen? (minimaal 10 tekens)")?.trim() ?? "",
         });
@@ -392,8 +395,8 @@ export function RegistrationDashboard({
       {preferences && <section className="panel">
         <p className="kicker">Start en einde</p><h2>Jullie voorkeuren</h2>
         {preferences.confirmedSchedule && <div className="form-notice"><strong>Bevestigde indeling · revisie {preferences.confirmedSchedule.revision}</strong><br />Start: {new Date(preferences.confirmedSchedule.startsAt).toLocaleString("nl-NL", { dateStyle: "long", timeStyle: "short" })} bij {preferences.confirmedSchedule.startPoint}, {preferences.confirmedSchedule.startAddress}.<br />Geen nieuwe gewone poorten vanaf {new Date(preferences.confirmedSchedule.effectiveOrdinaryStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}; verwachte aankomst laatste poort circa {new Date(preferences.confirmedSchedule.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}.</div>}
-        <label className="field"><span>Voorkeur voor starten</span><select value={preferenceDraft.startPreference} onChange={(event) => setPreferenceDraft({ ...preferenceDraft, startPreference: event.target.value as PreferenceSnapshot["startPreference"] })}><option value="early">Vroeg</option><option value="indifferent">Maakt niet uit</option><option value="later">Later</option></select><small>Dit blijft een voorkeur totdat de organisatie een exacte start bevestigt.</small></label>
-        <label className="field"><span>Wanneer stoppen jullie met gewone poorten?</span><select value={preferenceDraft.ordinaryStopAt} onChange={(event) => setPreferenceDraft({ ...preferenceDraft, ordinaryStopAt: event.target.value })}><option value="">Tot de algemene grens{preferences.event.globalOrdinaryStopAt ? ` (${new Date(preferences.event.globalOrdinaryStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })})` : ""}</option>{preferences.event.allowedStopTimes.map((value) => <option value={value} key={value}>{new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</option>)}</select><small>De laatste poort en eindshow volgen daarna nog.</small></label>
+        <label className="field"><span>Gewenste starttijd</span><select value={preferenceDraft.preferredStartAt} onChange={(event) => setPreferenceDraft({ ...preferenceDraft, preferredStartAt: event.target.value })}><option value="">Maakt niet uit</option>{preferences.event.allowedStartTimes.map((value) => <option value={value} key={value}>{new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</option>)}</select><small>Dit blijft een voorkeur totdat de organisatie een exacte start bevestigt.</small></label>
+        <label className="field"><span>Wanneer stoppen jullie met gewone poorten?</span><select required value={preferenceDraft.desiredEndAt} onChange={(event) => setPreferenceDraft({ ...preferenceDraft, desiredEndAt: event.target.value })}><option value="">Kies een tijd</option>{preferences.event.allowedEndTimes.map((value) => <option value={value} key={value} disabled={Boolean(preferences.confirmedSchedule && new Date(value) <= new Date(preferences.confirmedSchedule.startsAt))}>{new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</option>)}</select><small>De laatste poort en eindshow volgen daarna nog.</small></label>
         <button className="btn outline" onClick={() => void savePreferences()}>{preferences.editable ? "Voorkeuren opslaan" : "Wijziging aanvragen"}</button>
         {preferences.changeStatus === "change_requested" && <p className="note">Jullie wijzigingsverzoek wacht op beoordeling door de organisatie.</p>}
       </section>}
@@ -524,20 +527,20 @@ export function RegistrationDashboard({
         <div className="registration-code together-share-code" aria-label={`Samenloopcode ${registration.togetherCode}`}>{registration.togetherCode}</div>
         <p className="note">
           {registration.togetherCount > 1
-            ? `${registration.togetherCount} inschrijvingen zijn met deze samenloopgroep verbonden. De routeplanner probeert jullie bij elkaar te houden; capaciteit en veiligheid blijven leidend.`
-            : "Nog niemand heeft zich met jullie code gekoppeld. De routeplanner probeert gekoppelde inschrijvingen bij elkaar te houden; capaciteit en veiligheid blijven leidend."}
+            ? `${registration.togetherCount} inschrijvingen zijn na goedkeuring met deze hoofdgroep verbonden en delen één start, route en laatste poort.`
+            : "Er zijn nog geen andere inschrijvingen definitief aan jullie hoofdgroep gekoppeld."}
         </p>
         <p className="note">
-          De ingestelde groepsgrens is maximaal {snapshot.event?.maxGroupSize ?? 10} kinderen. Onder die grens wordt een geldige code meteen gekoppeld.
+          De ingestelde groepsgrens is maximaal {snapshot.event?.maxGroupSize ?? 10} kinderen. Iedere aanvraag blijft apart totdat de organisatie capaciteit en veiligheid heeft gecontroleerd en de koppeling expliciet goedkeurt.
         </p>
         {registration.togetherRequest?.status === "pending" && (
           <div className="form-warning">
-            Jullie wens om bij code {registration.togetherRequest.requestedCode} te lopen komt uit op {registration.togetherRequest.projectedChildren} kinderen. De organisatie beoordeelt daarom eerst of een veilige uitzondering mogelijk is.
+            Jullie verzoek om bij code {registration.togetherRequest.requestedCode} aan te sluiten is nog niet goedgekeurd. Samen zouden jullie {registration.togetherRequest.projectedChildren} kinderen zijn; de organisatie controleert capaciteit, tijden en veiligheid.
           </div>
         )}
         {registration.togetherRequest?.status === "rejected" && (
           <div className="form-notice">
-            De gevraagde samenvoeging met code {registration.togetherRequest.requestedCode} past niet binnen de veilige groepsgrootte. Jullie eigen inschrijving blijft gewoon geldig.
+            De organisatie heeft de gevraagde koppeling met code {registration.togetherRequest.requestedCode} afgewezen. Jullie eigen inschrijving blijft geldig.
           </div>
         )}
         {registration.togetherRequest?.status === "accepted" && registration.togetherRequest.limitOverridden && (

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { RegistrationDashboard } from "@/components/registration/registration-dashboard";
+import { SupportWidget } from "@/components/support/support-widget";
 import { SignOutButton } from "@/components/auth/account-actions";
 import { getActor } from "@/lib/auth/session";
 import { serverEnv } from "@/lib/config/server-env";
@@ -14,5 +15,6 @@ export default async function MyRegistrationPage({ searchParams }: { searchParam
     const destination = safeInviteToken ? `/mijn-inschrijving?uitnodiging=${safeInviteToken}` : "/mijn-inschrijving";
     redirect(`/inloggen?next=${encodeURIComponent(destination)}`);
   }
-  return <div className="page wrap"><div className="app-heading row-between"><div><p className="kicker">Persoonlijke omgeving</p><h1>Mijn inschrijving</h1></div><SignOutButton /></div><RegistrationDashboard eventSlug={serverEnv().EVENT_SLUG} inviteToken={safeInviteToken} /></div>;
+  const eventSlug = serverEnv().EVENT_SLUG;
+  return <><div className="page wrap"><div className="app-heading row-between"><div><p className="kicker">Persoonlijke omgeving</p><h1>Mijn inschrijving</h1></div><SignOutButton /></div><RegistrationDashboard eventSlug={eventSlug} inviteToken={safeInviteToken} /></div><SupportWidget eventSlug={eventSlug} role="user" /></>;
 }

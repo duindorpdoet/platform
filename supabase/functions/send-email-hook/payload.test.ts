@@ -10,14 +10,20 @@ describe("Auth email hook payload contract", () => {
     })).toEqual({ deliveries: [], supported: false });
   });
 
-  it("maps a standard OTP action only to the verified hook user address", () => {
-    expect(deliveriesForPayload({
-      user: { email: "parent@example.invalid", new_email: "ignored@example.invalid" },
-      email_data: { email_action_type: "email", token: "123456" },
-    })).toEqual({ deliveries: [{ email: "parent@example.invalid", token: "123456" }], supported: true });
-  });
+  it.each(["signup", "invite", "magiclink", "email", "recovery", "reauthentication"])(
+    "maps the %s action only to the verified hook user address and premium OTP template",
+    (emailActionType) => {
+      expect(deliveriesForPayload({
+        user: { email: "parent@example.invalid", new_email: "ignored@example.invalid" },
+        email_data: { email_action_type: emailActionType, token: "123456" },
+      })).toEqual({
+        deliveries: [{ email: "parent@example.invalid", token: "123456", template: "auth_otp" }],
+        supported: true,
+      });
+    },
+  );
 
-  it("maps secure dual email change tokens to their intended addresses", () => {
+  it("maps secure dual email change tokens to distinct current and new address templates", () => {
     expect(deliveriesForPayload({
       user: { email: "old@example.invalid", new_email: "new@example.invalid" },
       email_data: {
@@ -29,8 +35,8 @@ describe("Auth email hook payload contract", () => {
       },
     })).toEqual({
       deliveries: [
-        { email: "old@example.invalid", token: "old-token" },
-        { email: "new@example.invalid", token: "new-token" },
+        { email: "old@example.invalid", token: "old-token", template: "auth_email_change" },
+        { email: "new@example.invalid", token: "new-token", template: "auth_email_change_new" },
       ],
       supported: true,
     });
@@ -49,11 +55,12 @@ describe("Auth email hook payload contract", () => {
     }));
 
     await expect(sendHookDeliveries({
-      deliveries: [{ email: "halloweentest1@duindorpdoet.nl", token: "123456" }],
+      deliveries: [{ email: "halloweentest1@duindorpdoet.nl", token: "123456", template: "auth_otp" }],
       apiKey: "test-only",
       from: "halloween@duindorpdoet.nl",
       fromName: "Halloween test",
-      subject: "Test",
+      siteUrl: "https://staging-halloween.duindorpdoet.nl",
+      supportEmail: "halloween@duindorpdoet.nl",
       providerProbe: false,
       sandbox: false,
       timeoutMs: 10,

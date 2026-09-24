@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(35);
 
 select ok((select relrowsecurity from pg_class where oid = 'app_private.group_viewer_invites'::regclass), 'viewer invites have RLS defense in depth');
 select ok((select relrowsecurity from pg_class where oid = 'app_private.group_viewer_access'::regclass), 'viewer access has RLS defense in depth');
@@ -134,6 +134,11 @@ select lives_ok(
   'viewer can update display and accessibility preferences with optimistic locking'
 );
 
+set local role postgres;
+update app_private.walking_groups
+set display_name = 'Familie Privé'
+where id = '23000000-0000-0000-0000-000000000001';
+set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select is(
   api.participant_context('duindorp-halloween-2026') #>> '{roles,0,key}',
@@ -148,6 +153,10 @@ select is(
 select ok(
   api.portal_arrivals_snapshot('12000000-0000-0000-0000-000000000001')::text !~ 'Testkind',
   'planned arrival windows never expose child names'
+);
+select ok(
+  api.portal_arrivals_snapshot('12000000-0000-0000-0000-000000000001')::text !~ 'Familie Privé',
+  'homeowner arrival windows expose stable G-codes without leader-chosen family names'
 );
 
 select set_config('request.jwt.claims', '{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);

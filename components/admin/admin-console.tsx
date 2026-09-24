@@ -22,7 +22,7 @@ import {
 import { AdminAccessManagement } from "@/components/admin/admin-access-management";
 import { PortalReviews } from "@/components/admin/portal-reviews";
 import { ContentManagement } from "@/components/admin/content-management";
-import { SupportTickets } from "@/components/admin/support-tickets";
+import { MessengerInbox } from "@/components/admin/messenger-inbox";
 import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
 import { NightMap } from "@/components/maps/night-map";
@@ -54,6 +54,8 @@ type Dashboard = {
 type LiveRun = {
   groupId: string;
   groupCode: string;
+  systemCode?: string;
+  displayName?: string | null;
   groupVersion: number;
   leaderEmail: string | null;
   responsibleAdults: Array<{ userId: string; email: string }>;
@@ -71,7 +73,8 @@ type LiveRun = {
   expectedFinaleArrivalAt: string | null;
   childCount: number;
 };
-type LivePortal = { id: string; name: string; operationStatus: string; version: number; isFinal: boolean; activeReservations: number; expectedChildren: number };
+type LivePortal = { id: string; systemCode?: string; name: string; operationStatus: string; version: number; isFinal: boolean; activeReservations: number; expectedChildren: number };
+type PortalOperation = { portalId: string; systemCode: string; name: string; operationStatus: string; contactName?: string | null; phone?: string | null; email?: string | null; formattedAddress: string; activeReservations: number; expectedChildren: number };
 type LiveAlert = { id: string; priority: "urgent" | "warning" | "info"; code: string; message: string; groupId: string | null; portalId: string | null; createdAt: string };
 type PaymentRow = {
   id: string;
@@ -182,6 +185,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   const [notice, setNotice] = useState("");
   const [liveRuns, setLiveRuns] = useState<LiveRun[]>([]);
   const [livePortals, setLivePortals] = useState<LivePortal[]>([]);
+  const [portalOperations, setPortalOperations] = useState<PortalOperation[]>([]);
   const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [registrationChanges, setRegistrationChanges] = useState<
@@ -261,17 +265,34 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   async function loadLive() {
     const client = createClient();
     if (!client) return;
-    const { data, error } = await client
-      .schema("api")
-      .rpc("admin_evening_cockpit", { _event_slug: eventSlug });
-    if (error)
-      return setNotice(
-        "Live-overzicht is alleen beschikbaar voor avondondersteuning.",
-      );
-    const cockpit = data as { groups: LiveRun[]; portals: LivePortal[]; alerts: LiveAlert[] };
+    const [cockpitResult, portalResult] = await Promise.all([
+      client.schema("api").rpc("admin_evening_cockpit", { _event_slug: eventSlug }),
+      client.schema("api").rpc("admin_portal_operations_snapshot", { _event_slug: eventSlug }),
+    ]);
+    if (cockpitResult.error) return setNotice("Live-overzicht is alleen beschikbaar voor avondondersteuning.");
+    const cockpit = cockpitResult.data as { groups: LiveRun[]; portals: LivePortal[]; alerts: LiveAlert[] };
     setLiveRuns(cockpit.groups);
     setLivePortals(cockpit.portals);
     setLiveAlerts(cockpit.alerts);
+    if (!portalResult.error) setPortalOperations(((portalResult.data as { portals?: PortalOperation[] } | null)?.portals ?? []));
+  }
+
+  async function startMessage(subjectKind: "group" | "portal", subjectId: string, label: string) {
+    const body = window.prompt("Bericht aan " + label, "")?.trim();
+    if (!body) return;
+    const client = createClient();
+    if (!client) return;
+    const payload = { eventSlug, subjectKind, subjectId, body };
+    const { error } = await client.schema("api").rpc("admin_messenger_create", {
+      _event_slug: eventSlug,
+      _subject_kind: subjectKind,
+      _subject_id: subjectId,
+      _body: body,
+      _idempotency_key: crypto.randomUUID(),
+      _request_hash: await digest(payload),
+    });
+    setNotice(error ? "Het bericht kon niet worden verstuurd." : "Bericht verstuurd en opgeslagen in Messenger.");
+    if (!error) setSection("tickets");
   }
 
   async function loadPayments() {
@@ -1077,11 +1098,10 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         {section === "registrations" && (
           <section className="panel">
             <p className="kicker">Samenloopcode & capaciteit</p>
-            <h2>Verzoeken boven de groepslimiet</h2>
+            <h2>Open samenloopverzoeken</h2>
             <p>
-              Onder de limiet worden inschrijvingen automatisch gekoppeld.
-              Alleen verzoeken die de ingestelde grens overschrijden wachten
-              hier op een besluit. Een uitzondering vraagt altijd een
+              Iedere geldige aanvraag wacht op een expliciet besluit. Controleer capaciteit,
+              gezamenlijke tijden en veiligheid; een overschrijding vraagt bovendien een
               vastgelegde veiligheidsafweging.
             </p>
             {togetherRequests.filter((request) => request.status === "pending")
@@ -1185,7 +1205,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           (capabilities.includes("event_admin") ||
             capabilities.includes("groups_manage") ||
             capabilities.includes("live_support")) && (
-            <SupportTickets eventSlug={eventSlug} />
+            <MessengerInbox eventSlug={eventSlug} />
           )}
         {section === "updates" &&
           (capabilities.includes("event_admin") ||
@@ -1213,7 +1233,8 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
               <label className="field"><span>Verplichte reden voor een handmatige actie</span><textarea rows={3} value={supportReason} onChange={(event) => setSupportReason(event.target.value)} /></label>
               {liveRuns.length === 0 ? <p>Geen ingedeelde groepen.</p> : liveRuns.map((run) => (
                 <div className="incident-row" key={run.groupId}>
-                  <div><strong>{run.groupCode} · {run.currentPortal ?? "geen actieve bestemming"}</strong><small>{run.runStatus ?? run.status} · {run.childCount} kinderen · laatst bevestigd {run.lastConfirmedAt ? new Date(run.lastConfirmedAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "nog niet gestart"}</small><small>Stopgrens {run.effectiveStopAt ? new Date(run.effectiveStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "–"} · finale {run.expectedFinaleArrivalAt ? new Date(run.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "–"}</small></div>
+                  <div><strong>{[run.systemCode || run.groupCode, run.displayName].filter(Boolean).join(" · ")} · {run.currentPortal ?? "geen actieve bestemming"}</strong><small>{run.runStatus ?? run.status} · {run.childCount} kinderen · laatst bevestigd {run.lastConfirmedAt ? new Date(run.lastConfirmedAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "nog niet gestart"}</small><small>Stopgrens {run.effectiveStopAt ? new Date(run.effectiveStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "–"} · finale {run.expectedFinaleArrivalAt ? new Date(run.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" }) : "–"}</small></div>
+                  <button className="btn outline" onClick={() => void startMessage("group", run.groupId, [run.systemCode || run.groupCode, run.displayName].filter(Boolean).join(" · "))}><MessageSquare />Bericht sturen</button>
                   {run.runId && run.runVersion !== null && <div className="actions">
                     {run.currentStopId && <button className="btn outline" onClick={() => void liveCommand(run, "override")}>Scanoverride</button>}
                     <button className="btn outline" onClick={() => void liveCommand(run, run.runStatus === "paused" ? "live" : "paused")}>{run.runStatus === "paused" ? "Hervatten" : "Pauzeren"}</button>
@@ -1225,7 +1246,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                 </div>
               ))}
             </section>
-            <section className="panel"><p className="kicker">Poorten en finale-instroom</p><h2>Capaciteit per poort</h2>{livePortals.map((portal) => <div className="incident-row" key={portal.id}><div><strong>{portal.name}{portal.isFinal ? " · laatste poort" : ""}</strong><small>{portal.operationStatus} · {portal.activeReservations} groepen · {portal.expectedChildren} kinderen verwacht</small></div><div className="actions"><button className="btn outline" disabled={portal.operationStatus === "open"} onClick={() => void setPortalState(portal, "open")}>Open</button><button className="btn outline" disabled={portal.operationStatus === "paused"} onClick={() => void setPortalState(portal, "paused")}>Na huidige groep pauzeren</button><button className="btn outline" disabled={portal.operationStatus === "closed"} onClick={() => void setPortalState(portal, "closed")}>Direct sluiten</button></div></div>)}</section>
+            <section className="panel"><p className="kicker">Poorten en finale-instroom</p><h2>Contact en capaciteit per poort</h2>{portalOperations.map((details) => { const portal = livePortals.find((item) => item.id === details.portalId); return <div className="incident-row portal-operation-card" key={details.portalId}><div><strong>{details.systemCode} · {details.name}</strong><span>{details.formattedAddress}</span><small>{details.contactName || "Geen contactpersoon opgegeven"} · {details.operationStatus} · {details.activeReservations} groepen · {details.expectedChildren} kinderen verwacht</small><div className="actions">{details.phone && <a className="text-link" href={"tel:" + details.phone.replace(/\s/g, "")}>{details.phone}</a>}{details.email && <a className="text-link" href={"mailto:" + details.email}>{details.email}</a>}<button className="btn outline" onClick={() => void startMessage("portal", details.portalId, details.systemCode + " · " + details.name)}><MessageSquare />Bericht sturen</button></div></div>{portal && <div className="actions"><button className="btn outline" disabled={portal.operationStatus === "open"} onClick={() => void setPortalState(portal, "open")}>Open</button><button className="btn outline" disabled={portal.operationStatus === "paused"} onClick={() => void setPortalState(portal, "paused")}>Na huidige groep pauzeren</button><button className="btn outline" disabled={portal.operationStatus === "closed"} onClick={() => void setPortalState(portal, "closed")}>Direct sluiten</button></div>}</div>; })}</section>
             <section className="panel emergency"><AlertTriangle /><div><p className="kicker">Alleen bij uitval van de laatste poort</p><h2>Voorbereide noodafsluiting</h2><p>Deze actie sluit de eindpoort, trekt reserveringen in, stopt de actieve routes en publiceert uitsluitend de vooraf ingestelde veilige verzamelinstructie.</p></div><button className="btn outline" onClick={() => void activateEmergencyClosure()}>Noodafsluiting activeren</button></section>
           </div>
         )}

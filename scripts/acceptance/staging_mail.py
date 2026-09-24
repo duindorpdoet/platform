@@ -177,7 +177,7 @@ try:
         {"apikey": ANON_KEY, "Authorization": f"Bearer {ANON_KEY}"},
     )
     print("OTP request submitted.")
-    otp_uid, otp_message, otp_text = wait_for(imap, before_otp, "Je zescijferige inlogcode")
+    otp_uid, otp_message, otp_text = wait_for(imap, before_otp, "Je code voor De Duindorpse Poorten")
     print("Matching OTP message received.")
     otp_match = re.search(r"(?<!\d)(\d{6})(?!\d)", otp_text)
     if not otp_match:
@@ -210,7 +210,7 @@ try:
     if contact_status != 201 or contact_result.get("data", {}).get("stored") is not True:
         raise RuntimeError("The staging contact request did not create a durable transactional outbox entry.")
     print("Transactional contact request stored; waiting for outbox delivery.")
-    _, contact_message, contact_text = wait_for(imap, before_contact, "Nieuw contactbericht", RUN_ID)
+    _, contact_message, contact_text = wait_for(imap, before_contact, "Er is een nieuw contactbericht", RUN_ID)
     if "halloween@duindorpdoet.nl" not in decoded_header(contact_message.get("From")).lower():
         raise RuntimeError("The staging transactional message has an unexpected sender.")
     if APP_URL not in contact_text:

@@ -34,9 +34,7 @@ Deno.serve(async (request) => {
 
   const transactional = transactionalMessageForPayload(verifiedPayload);
   if (transactional) {
-    if (
-      !recipientAllowed(mailMode, transactional.to, allowlist)
-    ) {
+    if (!recipientAllowed(mailMode, transactional.to, allowlist)) {
       return new Response("recipient disabled", { status: 403 });
     }
 
@@ -59,15 +57,8 @@ Deno.serve(async (request) => {
       return new Response("provider timeout", { status: 504 });
     }
 
-    console.log(JSON.stringify({
-      event: "transactional_email_provider_response",
-      status: providerResponse.status,
-      sandbox,
-    }));
-
-    if (!providerAccepted(providerResponse, sandbox)) {
-      return new Response("provider rejected", { status: 502 });
-    }
+    console.log(JSON.stringify({ event: "transactional_email_provider_response", status: providerResponse.status, sandbox }));
+    if (!providerAccepted(providerResponse, sandbox)) return new Response("provider rejected", { status: 502 });
 
     const headers = new Headers({ "content-type": "application/json" });
     const providerId = providerResponse.headers.get("x-message-id");
@@ -76,48 +67,40 @@ Deno.serve(async (request) => {
   }
 
   const payload = verifiedPayload as HookPayload;
-  const { deliveries: emails, supported } = deliveriesForPayload(payload);
+  const { deliveries, supported } = deliveriesForPayload(payload);
   if (!supported) return new Response("unsupported action", { status: 422 });
-  if (emails.length === 0) return new Response("invalid payload", { status: 422 });
-
-  if (
-    emails.some(({ email }) => !recipientAllowed(authMailMode, email, allowlist))
-  ) {
+  if (deliveries.length === 0) return new Response("invalid payload", { status: 422 });
+  if (deliveries.some(({ email }) => !recipientAllowed(authMailMode, email, allowlist))) {
     return new Response("recipient disabled", { status: 403 });
   }
 
+  const authSiteUrl = Deno.env.get("AUTH_SITE_URL");
+  if (!authSiteUrl) return new Response("auth mail site not configured", { status: 503 });
   const providerProbe = payload.email_data.email_action_type === "staging_provider_probe";
   const providerProbeId = (payload.email_data.token_hash ?? "probe").replace(/[^a-zA-Z0-9-]/g, "").slice(-12);
-  const subject = providerProbe ? `Staging mailprovidercontrole ${providerProbeId}` : "Je zescijferige inlogcode";
   const sandbox = authMailMode === "sandbox";
 
   let responses: Response[];
   try {
     responses = await sendHookDeliveries({
-      deliveries: emails,
+      deliveries,
       apiKey,
       from,
       fromName: Deno.env.get("SENDGRID_FROM_NAME") ?? "De Duindorpse Poorten van Halloween",
-      subject,
+      siteUrl: authSiteUrl,
+      supportEmail: Deno.env.get("SENDGRID_REPLY_TO") ?? from,
       providerProbe,
+      providerProbeSubject: `Staging mailprovidercontrole ${providerProbeId}`,
       sandbox,
     });
   } catch {
     return new Response("provider timeout", { status: 504 });
   }
 
-  console.log(JSON.stringify({
-    event: "auth_email_provider_response",
-    statuses: responses.map((response) => response.status),
-    sandbox,
-  }));
-
+  console.log(JSON.stringify({ event: "auth_email_provider_response", statuses: responses.map((response) => response.status), sandbox }));
   if (responses.some((response) => !providerAccepted(response, sandbox))) {
     return new Response("provider rejected", { status: 502 });
   }
 
-  return new Response(JSON.stringify({}), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
+  return new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } });
 });

@@ -73,7 +73,7 @@ test("the homeowner cockpit labels schedules as planned rather than live ETA", a
   await expect(page.getByRole("button", { name: "Open" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Pauze", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Gesloten" })).toBeVisible();
-  await expect(page.getByText("23 kinderen")).toBeVisible();
+  await expect(page.getByText("23 kinderen", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Veilig ontvangen" })).toBeVisible();
   await assertReadableLayout(page);
 });
@@ -233,6 +233,7 @@ test("a multi-child registration draft survives refresh and submits once", async
   await expect(page.locator(".wizard").getByRole("alert")).toBeFocused();
   await page.getByLabel("Naam verantwoordelijke volwassene").fill("Browser testouder");
   await page.getByLabel("Telefoonnummer voor de avond").fill("0612345678");
+  await page.getByLabel("Wanneer stoppen jullie met gewone poorten?", { exact: false }).selectOption({ label: "20:15" });
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.getByRole("heading", { name: "Deelnemende kinderen" })).toBeFocused();
   await assertReadableLayout(page);
@@ -295,11 +296,12 @@ test("a multi-child registration draft survives refresh and submits once", async
   await page.getByRole("button", { name: "Definitief inschrijven" }).click();
   await expect(page.getByRole("heading", { name: "Welkom bij de poorten!" })).toBeVisible();
 
-  const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as { registration: { id: string; priceCents: number; togetherCode: string; togetherCount: number } };
+  const snapshot = await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as { registration: { id: string; priceCents: number; togetherCode: string; togetherCount: number; togetherRequest?: { status: string; requestedCode: string } } };
   expect(snapshot.registration.id).toBeTruthy();
   expect(snapshot.registration.priceCents).toBe(400);
   expect(snapshot.registration.togetherCode).toMatch(/^[A-HJ-NP-Z2-9]{4}$/);
-  expect(snapshot.registration.togetherCount).toBeGreaterThanOrEqual(2);
+  expect(snapshot.registration.togetherCount).toBe(1);
+  expect(snapshot.registration.togetherRequest).toMatchObject({ status: "pending", requestedCode: sharedTogetherCode });
 
   await page.goto("/mijn-inschrijving");
   await expect(page.getByText("Eerste testkind")).toBeVisible();
@@ -348,42 +350,64 @@ test("an event administrator can grant and revoke narrowly scoped access", async
   await expect(member).toHaveCount(0);
 });
 
-test("a group leader and organizer can exchange a private ticket with read status", async ({ context, page }, testInfo) => {
+test("an organizer sees portal identity and private contact details and can message the owner directly", async ({ context, page }) => {
+  requireLocalAuth();
+  await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Poortaanvragen", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Poortaanvragen" })).toBeVisible();
+
+  const portalCard = page.locator(".incident-row").filter({ hasText: "P-01" }).first();
+  await expect(portalCard).toContainText("Testpoort 01");
+  await expect(portalCard).toContainText("Adres: NIET-BESTAAND TESTADRES 1, 0000AA Teststad");
+  await expect(portalCard).toContainText("Contact: Test contactpersoon");
+  await expect(portalCard.getByRole("link", { name: "0612345678" })).toHaveAttribute("href", "tel:0612345678");
+  await expect(portalCard.getByRole("link", { name: "owner@example.invalid" })).toHaveAttribute("href", "mailto:owner@example.invalid");
+
+  page.once("dialog", (dialog) => dialog.accept("Gericht browser-testbericht aan de poort."));
+  await portalCard.getByRole("button", { name: "Bericht sturen" }).click();
+  await expect(page.getByRole("status")).toContainText(/bericht staat in het gesprek/i);
+  await assertReadableLayout(page);
+});
+
+test("a group leader and organizer can exchange messages through the private support widget", async ({ context, page }, testInfo) => {
   requireLocalAuth();
   const suffix = testInfo.project.name === "mobile-chromium" ? "mobiel" : "desktop";
-  const subject = `Routevraag ${suffix}`;
   const leaderMessage = `Kunnen jullie het startmoment voor ${suffix} bevestigen?`;
   const organizerReply = `Ja, het startmoment voor ${suffix} staat definitief vast.`;
 
   await authenticate(context, "leader-a@example.invalid");
   await page.goto("/mijn-groep");
-  await expect(page.getByRole("heading", { name: "Hulp & contact" })).toBeVisible();
-  await page.getByRole("button", { name: "Nieuw gesprek" }).click();
-  await page.getByLabel("Waar gaat het over?").selectOption("planning");
-  await page.getByLabel("Onderwerp").fill(subject);
-  await page.getByLabel("Bericht").fill(leaderMessage);
-  await page.getByRole("button", { name: "Versturen" }).click();
-  await expect(page.getByRole("status")).toContainText(/e-mailmelding/i);
-  await expect(page.locator(".ticket-thread")).toContainText(leaderMessage);
+  const launcher = page.getByRole("button", { name: /Hulp van de organisatie/ });
+  await expect(launcher).toBeVisible();
+  await launcher.click();
+  const participantDialog = page.getByRole("dialog");
+  await expect(participantDialog).toBeVisible();
+  await participantDialog.getByLabel("Bericht").fill(leaderMessage);
+  await participantDialog.getByRole("button", { name: "Versturen" }).click();
+  await expect(participantDialog).toContainText(leaderMessage);
+  await expect(participantDialog.getByRole("status")).toContainText(/verstuurd/i);
   await assertReadableLayout(page);
 
   await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
   await page.getByRole("button", { name: "Hulp & contact", exact: true }).click();
-  const ticketButton = page.locator(".ticket-list button").filter({ hasText: subject });
-  await expect(ticketButton).toBeVisible();
-  await ticketButton.click();
-  await page.getByLabel("Reactie namens de organisatie").fill(organizerReply);
-  await page.getByRole("button", { name: "Versturen" }).click();
-  await expect(page.getByRole("status")).toContainText(/beide kanten/i);
+  const conversationButton = page.locator(".ticket-list button").filter({ hasText: "G-01" }).first();
+  await expect(conversationButton).toBeVisible();
+  await conversationButton.click();
+  await expect(page.locator(".ticket-thread")).toContainText(leaderMessage);
+  const claimButton = page.getByRole("button", { name: "Gesprek openen" });
+  if (await claimButton.isVisible()) await claimButton.click();
+  await page.getByLabel("Antwoord").fill(organizerReply);
+  await page.locator(".ticket-reply").getByRole("button", { name: "Versturen" }).click();
   await expect(page.locator(".ticket-thread")).toContainText(organizerReply);
+  await expect(page.getByRole("status")).toContainText(/verstuurd/i);
   await assertReadableLayout(page);
 
   await authenticate(context, "leader-a@example.invalid");
   await page.goto("/mijn-groep");
-  await page.locator(".ticket-list button").filter({ hasText: subject }).click();
-  await expect(page.locator(".ticket-thread")).toContainText(organizerReply);
-  await expect(page.locator(".ticket-message.mine").filter({ hasText: leaderMessage })).toContainText("gelezen");
+  await page.getByRole("button", { name: /Hulp van de organisatie/ }).click();
+  await expect(page.getByRole("dialog")).toContainText(organizerReply);
 });
 
 test("a portal draft survives refresh and rejects disguised executable upload content", async ({ context, page }, testInfo) => {

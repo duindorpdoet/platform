@@ -17,7 +17,7 @@ select is((select count(*)::integer from app_private.contact_messages where send
 select is((select recipient_email from app_private.email_outbox where message_type = 'contact_notification' order by created_at desc limit 1), 'halloween@duindorpdoet.nl', 'the notification remains fixed to the organization mailbox');
 
 set local role service_role;
-select is((select count(*)::integer from api.worker_claim_outbox(20, 10)), 1, 'the pending notification can be leased by one worker');
+select is((select count(*)::integer from api.worker_claim_outbox(20, 10)), 2, 'the receipt and organization notification can be leased by one worker');
 set local role postgres;
 update app_private.email_outbox set lease_until = now() - interval '1 second' where message_type = 'contact_notification';
 

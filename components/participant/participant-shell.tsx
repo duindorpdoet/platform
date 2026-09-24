@@ -16,7 +16,6 @@ import {
   Home,
   KeyRound,
   LockKeyhole,
-  MessageCircle,
   MoonStar,
   Pause,
   RefreshCw,
@@ -32,8 +31,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { SignOutButton } from "@/components/auth/account-actions";
 import { GroupExperience } from "@/components/group/group-experience";
-import { GroupTickets } from "@/components/group/group-tickets";
+import { GroupIdentity } from "@/components/group/group-identity";
 import { PortalDashboard } from "@/components/portal/portal-dashboard";
+import { SupportWidget } from "@/components/support/support-widget";
 import { createClient } from "@/lib/supabase/client";
 
 export type ParticipantRoleKey = "walker" | "viewer" | "homeowner";
@@ -166,6 +166,7 @@ export function ParticipantShell({
       </main>
     </div>
     <ParticipantNavigation role={selectedRole.key} activeSection={activeSection} />
+    <SupportWidget eventSlug={eventSlug} role={selectedRole.key} groupId={selectedRole.groupId ?? undefined} portalId={selectedRole.portalId ?? undefined} viewerAccessId={selectedRole.accessId ?? undefined} />
   </div>;
 }
 
@@ -207,6 +208,8 @@ type GroupSnapshot = {
   group: {
     id: string;
     code: string;
+    systemCode: string;
+    displayName?: string | null;
     status: string;
     version: number;
     effectiveOrdinaryStopAt?: string | null;
@@ -257,9 +260,9 @@ function WalkerSection({ context, eventSlug, userId, role, section }: { context:
 
   if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience groupId={role.groupId} userId={userId} /></ParticipantPageFrame>;
   if (loading) return <ParticipantLoading />;
-  if (section === "groep") return <WalkerGroup group={group} registration={registration} groupId={role.groupId ?? undefined} />;
+  if (section === "groep") return <WalkerGroup group={group} registration={registration} groupId={role.groupId ?? undefined} reload={load} />;
   if (section === "nachtpas") return <NightPass context={context} snapshot={registration} group={group} reload={load} />;
-  if (section === "meer" || section === "updates") return <MorePage context={context} eventSlug={eventSlug} role="walker" groupId={role.groupId ?? undefined} />;
+  if (section === "meer" || section === "updates") return <MorePage context={context} eventSlug={eventSlug} role="walker" />;
   return <WalkerNow context={context} registration={registration} group={group} />;
 }
 
@@ -294,18 +297,19 @@ function WalkerNow({ context, registration, group }: { context: ParticipantConte
   </ParticipantPageFrame>;
 }
 
-function WalkerGroup({ group, registration, groupId }: { group: GroupSnapshot | null; registration: RegistrationSnapshot | null; groupId?: string }) {
+function WalkerGroup({ group, registration, groupId, reload }: { group: GroupSnapshot | null; registration: RegistrationSnapshot | null; groupId?: string; reload: () => Promise<void> }) {
   if (!group) return <ParticipantPageFrame eyebrow="Groepsindeling" title="Jullie groep komt eraan"><section className="participant-card"><Users /><h2>We delen zorgvuldig in</h2><p>Zodra starttijd en groep zijn gepubliceerd, verschijnt hier alleen de informatie die bij jouw inschrijving hoort.</p></section></ParticipantPageFrame>;
   const participants = group.run?.participants ?? [];
   const visibleChildren = participants.length ? participants : (registration?.registration?.children ?? []).map((child) => ({ id: child.id, firstName: child.firstName, attendance: "aangemeld", isOwnChild: true, status: null }));
   return <ParticipantPageFrame eyebrow={`Groep ${group.group.code}`} title={group.access.leader ? "Jij houdt het overzicht." : "Samen op pad."}>
+    {groupId && <GroupIdentity groupId={groupId} systemCode={group.group.systemCode} displayName={group.group.displayName} version={group.group.version} canEdit={group.access.leader} onSaved={reload} />}
     <section className="participant-card group-summary"><div><p className="participant-eyebrow">Startmoment</p><h2>{group.group.start ? formatDateTime(group.group.start.startsAt) : "Wordt binnenkort gedeeld"}</h2><p>{group.group.start ? `${group.group.start.locationName}${group.group.start.address ? ` · ${group.group.start.address}` : ""}` : "De startplek blijft verborgen tot publicatie."}</p></div><span className="group-code">{group.group.code}</span></section>
     <section className="participant-card"><div className="section-title"><div><p className="participant-eyebrow">Gekoppelde deelnemers</p><h2>{group.access.leader ? "Aanwezigheid en veiligheid" : "Jouw kinderen"}</h2></div><ShieldCheck /></div>
       {visibleChildren.length === 0 && <p>De deelnemerslijst verschijnt zodra de route start.</p>}
       <div className="participant-list">{visibleChildren.map((child) => <div key={child.id}><span className="participant-avatar">{child.firstName.slice(0, 1)}</span><span><strong>{child.firstName}</strong><small>{child.attendance === "present" ? "Aanwezig" : child.attendance === "absent" ? "Afwezig" : "Aangemeld"}</small></span>{child.status && <em>{child.status === "visited" ? "Bezocht" : child.status === "skipped" ? "Overgeslagen" : "Wacht"}</em>}</div>)}</div>
       {group.access.leader ? <div className="participant-alert subtle"><ShieldCheck />Aanwezigheid, scans, pauzeren en veiligheidsacties staan bij Route. Andere volwassenen zien alleen hun eigen gekoppelde kinderen.</div> : <p className="privacy-note"><LockKeyhole /> Om kinderen te beschermen zie je geen namen of gegevens uit andere huishoudens.</p>}
     </section>
-    {group.access.leader && groupId && <><ViewerAccessManager groupId={groupId} /><GroupTickets groupId={groupId} /></>}
+    {group.access.leader && groupId && <ViewerAccessManager groupId={groupId} />}
   </ParticipantPageFrame>;
 }
 
@@ -376,7 +380,6 @@ function HomeownerSection({ context, eventSlug, role, section }: { context: Part
     <div className="cockpit-metrics"><StatusCard icon={Users} label="Verwacht totaal" value={arrivals ? `${arrivals.expectedTotal} kinderen` : "Wordt berekend"} /><StatusCard icon={Clock3} label="Volgend venster" value={arrivals?.arrivals.find((item) => item.state !== "completed") ? `${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedArrivalAt)}–${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedDepartureAt)}` : "Geen open venster"} /></div>
     <div className="planned-not-live"><Clock3 /><span><strong>Dit is een geplande aankomst, geen live ETA.</strong>Groepen kunnen eerder of later lopen. Gebruik Pauze zodra ontvangst tijdelijk niet veilig of mogelijk is.</span></div>
     <PortalDashboard eventSlug={eventSlug} />
-    <DirectContact context={context} />
   </ParticipantPageFrame>;
 }
 
@@ -408,13 +411,12 @@ function UpdatesPanel({ eventSlug, role, embedded = false }: { eventSlug: string
   return <ParticipantPageFrame eyebrow="Van de organisatie" title="Updates">{list}</ParticipantPageFrame>;
 }
 
-function MorePage({ context, eventSlug, role, groupId, accessId }: { context: ParticipantContext; eventSlug: string; role: ParticipantRoleKey; groupId?: string; accessId?: string }) {
+function MorePage({ context, eventSlug, role, accessId }: { context: ParticipantContext; eventSlug: string; role: ParticipantRoleKey; accessId?: string }) {
   return <ParticipantPageFrame eyebrow="Instellingen en bereikbaarheid" title="Meer">
     {role === "walker" && <UpdatesPanel eventSlug={eventSlug} role="walker" embedded />}
-    {role === "walker" && groupId && <section className="participant-card contact-shortcut"><MessageCircle /><div><h2>Hulp & contact</h2><p>De groepsleider kan in het groepsscherm een privégesprek met de organisatie starten. Beide kanten ontvangen een e-mail bij een nieuw bericht.</p><Link className="text-link" href="/omgeving/meeloper/groep">Naar Hulp & contact <ChevronRight /></Link></div></section>}
+    <section className="participant-card participant-contact-compact"><Contact /><div><strong>Contact bij storing of spoed</strong><div className="participant-actions"><a href={"mailto:" + context.event.supportEmail}>E-mail</a>{context.event.supportPhone && <a href={"tel:" + context.event.supportPhone.replace(/\s/g, "")}>Bel organisatie</a>}</div></div></section>
     <ProfilePanel eventSlug={eventSlug} />
     {role === "viewer" && accessId && <ViewerSelfRevoke accessId={accessId} />}
-    <DirectContact context={context} />
   </ParticipantPageFrame>;
 }
 
@@ -481,9 +483,6 @@ function ViewerAccessManager({ groupId }: { groupId: string }) {
   return <section className="participant-card viewer-manager"><div className="section-title"><div><p className="participant-eyebrow">Read-only meekijken</p><h2>Nodig een meekijker uit</h2></div><Eye /></div><p>De link is persoonlijk en 48 uur geldig. De toegang toont nooit kindernamen, GPS of toekomstige adressen.</p><div className="invite-grid"><label className="participant-field"><span>E-mailadres</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="naam@voorbeeld.nl" /></label><label className="participant-field"><span>Toegang geldig</span><select value={duration} onChange={(event) => setDuration(event.target.value)}><option value="event">Tot intrekking</option><option value="24">24 uur</option><option value="72">3 dagen</option><option value="168">7 dagen</option></select></label><button className="btn" disabled={!email.includes("@") || !email.includes(".")} onClick={() => void invite()}>Uitnodigen</button></div>{notice && <p className="form-notice" role="status">{notice}</p>}<div className="access-rows">{snapshot?.active.map((access) => <div key={access.id}><span><strong>{access.email}</strong><small>{access.expiresAt ? `tot ${formatDateTime(access.expiresAt)}` : "tot intrekking"}</small></span><button className="text-link" onClick={() => void revoke("access", access.id)}>Intrekken</button></div>)}{snapshot?.pending.map((invite) => <div key={invite.id}><span><strong>{invite.email}</strong><small>uitnodiging wacht op acceptatie</small></span><button className="text-link" onClick={() => void revoke("invite", invite.id)}>Intrekken</button></div>)}</div></section>;
 }
 
-function DirectContact({ context }: { context: ParticipantContext }) {
-  return <section className="participant-card contact-card"><Contact /><div><p className="participant-eyebrow">Direct contact</p><h2>Organisatie</h2><p>Geen spoed? Mail de organisatie. Bij direct gevaar bel je 112.</p><div className="participant-actions"><a className="btn outline" href={`mailto:${context.event.supportEmail}`}>{context.event.supportEmail}</a>{context.event.supportPhone && <a className="btn outline" href={`tel:${context.event.supportPhone.replace(/\s/g, "")}`}>{context.event.supportPhone}</a>}</div></div></section>;
-}
 
 function ParticipantPageFrame({ eyebrow, title, compact = false, children }: { eyebrow: string; title: string; compact?: boolean; children: React.ReactNode }) {
   return <div className={`participant-page page-transition ${compact ? "compact" : ""}`}><header className="participant-page-head"><p className="participant-eyebrow">{eyebrow}</p><h1>{title}</h1></header>{children}</div>;

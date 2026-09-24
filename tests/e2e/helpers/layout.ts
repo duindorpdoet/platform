@@ -20,6 +20,9 @@ export async function assertReadableLayout(page: Page, doubleText = false) {
     return [...document.querySelectorAll<HTMLElement>("main h1, main h2, main input:not([type=hidden]), main select, main textarea, main button")]
       .filter((element) => {
         if (!element.checkVisibility() || element.closest(".honeypot")) return false;
+        // MapLibre keeps focusable markers just outside the viewport while its
+        // canvas pans; the map container deliberately clips that map content.
+        if (element.closest(".maplibregl-map")) return false;
         // Tables and navigation strips may intentionally scroll horizontally.
         for (let parent = element.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
           if (["auto", "scroll"].includes(getComputedStyle(parent).overflowX)) return false;
