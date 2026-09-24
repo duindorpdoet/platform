@@ -160,6 +160,9 @@ test("house registration respects the release mode and starts with only contact 
     await expect(page.getByRole("heading", { name: "Nieuwe plekken kunnen zich nu niet aanmelden." })).toBeVisible();
     await expect(page.getByLabel("E-mailadres", { exact: true })).toHaveCount(0);
     await assertReadableLayout(page, false);
+    await page.goto("/meelopen");
+    await expect(page.getByRole("heading", { name: "Groepsinschrijving opent later." })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Start met inschrijven" })).toHaveCount(0);
     return;
   }
   for (const name of ["E-mailadres", "Naam contactpersoon *", "Telefoonnummer *", "Straat *", "Huisnummer *", "Postcode *"]) {

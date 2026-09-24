@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalRegistration } from "@/components/registration/portal-registration";
 import { getActor } from "@/lib/auth/session";
 import { serverEnv } from "@/lib/config/server-env";
+import { registrationChannelIsOpen } from "@/lib/config/registration-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,10 @@ export default async function PortalRegistrationPage() {
     client?.schema("api").rpc("event_public_snapshot", { _event_slug: env.EVENT_SLUG }),
     actor ? client?.schema("api").rpc("portal_snapshot", { _event_slug: env.EVENT_SLUG }) : null,
   ]);
-  const portalRegistrationOpen = (publicSnapshot?.data as { portalRegistrationOpen?: boolean } | null)?.portalRegistrationOpen ?? env.REGISTRATION_MODE !== "closed";
+  const portalRegistrationOpen = registrationChannelIsOpen(
+    env.REGISTRATION_MODE,
+    (publicSnapshot?.data as { portalRegistrationOpen?: boolean } | null)?.portalRegistrationOpen,
+  );
   const hasApplication = Boolean(portalSnapshot?.data?.application);
   const form = portalRegistrationOpen
     ? <PortalRegistration eventSlug={env.EVENT_SLUG} email={actor?.email} hasApplication={hasApplication} />

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
 import { getActor } from "@/lib/auth/session";
 import { serverEnv } from "@/lib/config/server-env";
+import { registrationChannelIsOpen } from "@/lib/config/registration-mode";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,10 @@ export default async function RegistrationPage() {
   const env = serverEnv();
   const client = await createClient();
   const publicSnapshot = client ? await client.schema("api").rpc("event_public_snapshot", { _event_slug: env.EVENT_SLUG }) : null;
-  const groupRegistrationOpen = (publicSnapshot?.data as { groupRegistrationOpen?: boolean } | null)?.groupRegistrationOpen ?? env.REGISTRATION_MODE !== "closed";
+  const groupRegistrationOpen = registrationChannelIsOpen(
+    env.REGISTRATION_MODE,
+    (publicSnapshot?.data as { groupRegistrationOpen?: boolean } | null)?.groupRegistrationOpen,
+  );
   const registrationPanel = groupRegistrationOpen
     ? actor
       ? <RegistrationWizard eventSlug={env.EVENT_SLUG} canSubmit />
