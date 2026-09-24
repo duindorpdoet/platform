@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, MapPinCheck, RefreshCw, RotateCcw, XCircle } from "lucide-react";
+import { NightMap } from "@/components/maps/night-map";
 import { createClient } from "@/lib/supabase/client";
 
 type World = { id: string; slug: string; name: string };
@@ -55,6 +56,17 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
   }, [eventSlug]);
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
+
+  const verifiedPortals = useMemo(() => snapshot.applications
+    .filter((application) => application.status === "approved" && application.portal?.locationVerified)
+    .map((application) => ({
+      id: application.portal!.id,
+      name: application.portal!.name,
+      world: application.requestedWorldSlug ?? "Onbekende wereld",
+      coordinate: application.portal!.longitude !== null && application.portal!.latitude !== null
+        ? [application.portal!.longitude, application.portal!.latitude] as [number, number] : null,
+      address: `${application.draft.address?.street ?? ""} ${application.draft.address?.houseNumber ?? ""}${application.draft.address?.addition ? ` ${application.draft.address.addition}` : ""}, ${application.draft.address?.postalCode ?? ""} Den Haag`,
+    })), [snapshot.applications]);
 
   async function review(application: PortalApplication, decision: "approved" | "changes_requested" | "rejected") {
     const reason = window.prompt(decision === "approved" ? "Auditreden voor goedkeuring (minimaal 10 tekens):" : "Toelichting voor de bewoner (minimaal 10 tekens):")?.trim();
@@ -131,6 +143,9 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
   return <section className="panel">
     <div className="row-between"><div><p className="kicker">Privé beoordeling</p><h2>Poortaanvragen</h2></div><button className="btn outline" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div>
     <p>Exacte adressen zijn alleen hier zichtbaar. Een goedgekeurde maar nog niet fysiek geverifieerde locatie wordt niet aan de routeplanner aangeboden.</p>
+    <div className="admin-portal-map-heading"><h3>Goedgekeurde poorten op de nachtkaart</h3><span>{verifiedPortals.length} geverifieerd</span></div>
+    <NightMap variant="admin" portals={verifiedPortals} ariaLabel="Beheerkaart met geverifieerde poorten" />
+    <p className="admin-portal-map-note">De markers krijgen de kleur van hun wereld. Aanvragen zonder gecontroleerde ingang staan nog niet op de kaart.</p>
     {notice && <div className="form-notice" role="status">{notice}</div>}
     {snapshot.applications.length === 0 ? <p>Er zijn nog geen ingediende aanvragen.</p> : snapshot.applications.map((application) => {
       const address = application.draft.address;
