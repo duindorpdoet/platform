@@ -519,6 +519,25 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
   });
 }
 
+test("a rapid double tap requests only one email code", async ({ page }) => {
+  requireLocalAuth();
+  let requestCount = 0;
+  await page.route(`${supabaseUrl}/auth/v1/otp`, async (route) => {
+    requestCount += 1;
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    await route.fulfill({ json: {} });
+  });
+  await page.goto("/inloggen");
+  await page.getByLabel("E-mailadres").fill("mobile-double-tap@example.invalid");
+  const submit = page.getByRole("button", { name: "Stuur eenmalige code" });
+  await submit.evaluate((element: HTMLButtonElement) => {
+    element.click();
+    element.click();
+  });
+  await expect(page.getByRole("heading", { name: "Vul de zes cijfers in." })).toBeVisible();
+  expect(requestCount).toBe(1);
+});
+
 test("house details unlock only after successful email confirmation", async ({ page }, testInfo) => {
   requireLocalAuth();
   const email = testInfo.project.name === "mobile-chromium" ? "parent-size-10@example.invalid" : "parent-size-5@example.invalid";
