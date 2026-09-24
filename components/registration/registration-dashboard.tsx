@@ -221,7 +221,7 @@ export function RegistrationDashboard({
       ? await client.schema("api").rpc("registration_exact_preferences_save", { ...args, _expected_version: preferences.version })
       : await client.schema("api").rpc("registration_exact_preferences_request_change", {
           ...args,
-          _reason: window.prompt("Waarom wil je de bevestigde voorkeur aanpassen? (minimaal 10 tekens)")?.trim() ?? "",
+          _reason: "Voorkeur gewijzigd door de ouder",
         });
     setNotice(result.error
       ? result.error.message.includes("PREFERENCES_LOCKED") ? "De indeling is intussen gesloten. Verstuur hiervoor een wijzigingsverzoek." : "De voorkeur kon niet worden verwerkt."

@@ -77,7 +77,6 @@ export function AdminAccessManagement({ eventSlug }: { eventSlug: string }) {
   const [selected, setSelected] = useState<Capability[]>(allCapabilities);
   const [expected, setExpected] = useState<Capability[]>([]);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [noticeIsError, setNoticeIsError] = useState(false);
@@ -121,7 +120,6 @@ export function AdminAccessManagement({ eventSlug }: { eventSlug: string }) {
     setSelected(allCapabilities);
     setExpected([]);
     setEditingUserId(null);
-    setReason("");
   }
 
   function edit(member: AccessMember) {
@@ -129,7 +127,6 @@ export function AdminAccessManagement({ eventSlug }: { eventSlug: string }) {
     setSelected(member.capabilities);
     setExpected(member.capabilities);
     setEditingUserId(member.userId);
-    setReason("");
     setNotice("");
   }
 
@@ -146,11 +143,6 @@ export function AdminAccessManagement({ eventSlug }: { eventSlug: string }) {
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
       setNoticeIsError(true);
       setNotice("Vul een geldig e-mailadres in.");
-      return;
-    }
-    if (reason.trim().length < 10) {
-      setNoticeIsError(true);
-      setNotice("Leg in minimaal tien tekens vast waarom je deze rechten wijzigt.");
       return;
     }
     if (
@@ -175,7 +167,7 @@ export function AdminAccessManagement({ eventSlug }: { eventSlug: string }) {
         _email: normalizedEmail,
         _capabilities: selected,
         _expected_capabilities: expected,
-        _reason: reason.trim(),
+        _reason: "Beheerdersrechten bijgewerkt via beheeromgeving",
       });
     setBusy(false);
     if (error) {
@@ -297,17 +289,6 @@ export function AdminAccessManagement({ eventSlug }: { eventSlug: string }) {
             })}
           </div>
         </fieldset>
-        <label className="field">
-          <span>Reden voor deze wijziging</span>
-          <textarea
-            rows={3}
-            maxLength={500}
-            value={reason}
-            placeholder="Bijvoorbeeld: toegevoegd aan het organisatieteam voor locatiebeoordeling."
-            onChange={(event) => setReason(event.target.value)}
-          />
-          <small>Verplicht, minimaal tien tekens. Deze tekst komt in de auditlog.</small>
-        </label>
         {notice && (
           <p className={noticeIsError ? "form-warning" : "form-notice"} role={noticeIsError ? "alert" : "status"}>
             {notice}
@@ -317,7 +298,7 @@ export function AdminAccessManagement({ eventSlug }: { eventSlug: string }) {
           <button
             className="btn"
             type="button"
-            disabled={busy || !email.trim() || reason.trim().length < 10}
+            disabled={busy || !email.trim()}
             onClick={() => void save()}
           >
             {editingUserId ? <ShieldCheck /> : <UserPlus />}

@@ -32,10 +32,9 @@ export function ContentManagement({ eventSlug }: { eventSlug: string }) {
   }
 
   async function publishContent(version: ContentVersion) {
-    const reason = window.prompt("Auditreden voor publicatie (minimaal 10 tekens):")?.trim();
-    if (!reason || reason.length < 10 || !window.confirm(`Publiceer ${version.pageKey} versie ${version.version}?`)) return;
+    if (!window.confirm(`Publiceer ${version.pageKey} versie ${version.version}?`)) return;
     const client = createClient(); if (!client) return;
-    const { error } = await client.schema("api").rpc("admin_publish_content", { _content_version_id: version.id, _expected_version: version.version, _reason: reason });
+    const { error } = await client.schema("api").rpc("admin_publish_content", { _content_version_id: version.id, _expected_version: version.version, _reason: "Content gepubliceerd via beheeromgeving" });
     setNotice(error ? `Publicatie geweigerd: ${error.message}` : "Contentversie gepubliceerd; de vorige publicatie is gearchiveerd.");
     if (!error) await load();
   }
@@ -43,10 +42,9 @@ export function ContentManagement({ eventSlug }: { eventSlug: string }) {
   async function publishSponsor(sponsor: Sponsor) {
     const approvedName = window.prompt("Publieke sponsornaam:", sponsor.publication?.approvedName ?? sponsor.contactName)?.trim();
     const websiteUrl = window.prompt("Publieke HTTPS-website (optioneel):", sponsor.publication?.websiteUrl ?? "")?.trim() ?? "";
-    const reason = window.prompt("Auditreden voor sponsorpublicatie (minimaal 10 tekens):")?.trim();
-    if (!approvedName || !reason || reason.length < 10 || !window.confirm(`Publiceer ${approvedName} als sponsor?`)) return;
+    if (!approvedName || !window.confirm(`Publiceer ${approvedName} als sponsor?`)) return;
     const client = createClient(); if (!client) return;
-    const { error } = await client.schema("api").rpc("admin_publish_sponsor", { _application_id: sponsor.id, _expected_version: sponsor.version, _approved_name: approvedName, _website_url: websiteUrl, _sort_order: 0, _reason: reason });
+    const { error } = await client.schema("api").rpc("admin_publish_sponsor", { _application_id: sponsor.id, _expected_version: sponsor.version, _approved_name: approvedName, _website_url: websiteUrl, _sort_order: 0, _reason: "Sponsor gepubliceerd via beheeromgeving" });
     setNotice(error ? `Sponsorpublicatie geweigerd: ${error.message}` : "Alleen de goedgekeurde sponsornaam en website zijn gepubliceerd.");
     if (!error) await load();
   }

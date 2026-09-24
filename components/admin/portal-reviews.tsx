@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, MapPinCheck, MessageCircle, RefreshCw, RotateCcw, XCircle } from "lucide-react";
 import { NightMap } from "@/components/maps/night-map";
+import { parseLatitudeLongitude } from "@/lib/maps/coordinates";
 import { createClient } from "@/lib/supabase/client";
 
 type World = { id: string; slug: string; name: string };
@@ -88,8 +89,10 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
     })), [snapshot.applications]);
 
   async function review(application: PortalApplication, decision: "approved" | "changes_requested" | "rejected") {
-    const reason = window.prompt(decision === "approved" ? "Auditreden voor goedkeuring (minimaal 10 tekens):" : "Toelichting voor de bewoner (minimaal 10 tekens):")?.trim();
-    if (!reason || reason.length < 10) return setNotice("Een reden van minimaal tien tekens is verplicht.");
+    const feedback = decision === "approved"
+      ? "Aanmelding goedgekeurd door de organisatie"
+      : window.prompt("Toelichting voor de bewoner (minimaal 10 tekens):")?.trim();
+    if (!feedback || feedback.length < 10) return setNotice("Een toelichting van minimaal tien tekens is verplicht.");
 
     let worldSlug: string | null = null;
     let latitude: number | null = null;
@@ -97,14 +100,12 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
     if (decision === "approved") {
       worldSlug = window.prompt("Wereldslug:", application.requestedWorldSlug ?? snapshot.worlds[0]?.slug ?? "")?.trim().toLowerCase() ?? null;
       if (!snapshot.worlds.some((world) => world.slug === worldSlug)) return setNotice("Kies een bestaande wereldslug.");
-      const latitudeInput = window.prompt("Breedtegraad (leeg laten als de locatie later wordt geverifieerd):", "")?.trim() ?? "";
-      const longitudeInput = latitudeInput ? window.prompt("Lengtegraad:", "")?.trim() ?? "" : "";
-      if (latitudeInput || longitudeInput) {
-        latitude = Number(latitudeInput.replace(",", "."));
-        longitude = Number(longitudeInput.replace(",", "."));
-        if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-          return setNotice("Vul geldige coördinaten in, of laat beide velden leeg.");
-        }
+      const coordinateInput = window.prompt("Coördinaten als breedtegraad, lengtegraad (optioneel):", application.portal?.latitude != null && application.portal.longitude != null ? `${application.portal?.latitude}, ${application.portal?.longitude}` : "")?.trim() ?? "";
+      if (coordinateInput) {
+        const coordinate = parseLatitudeLongitude(coordinateInput);
+        if (!coordinate) return setNotice("Gebruik het formaat 52.090522, 4.262384 (breedtegraad, lengtegraad).");
+        latitude = coordinate.latitude;
+        longitude = coordinate.longitude;
       }
     }
 
@@ -119,26 +120,22 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
       _world_slug: worldSlug,
       _latitude: latitude,
       _longitude: longitude,
-      _reason: reason,
+      _reason: feedback,
     });
     setBusyId(null);
     setNotice(error
       ? error.message.includes("CONTACT_ADDRESS_REQUIRED")
         ? "Goedkeuren kan zodra naam, bevestigd e-mailadres, telefoonnummer en het volledige adres zijn ingevuld."
         : `Beoordeling geweigerd: ${error.message}`
-      : `${statusLabels[decision]} en geaudit.`);
+      : `${statusLabels[decision]} opgeslagen.`);
     if (!error) await load();
   }
 
   async function verifyLocation(application: PortalApplication) {
     if (!application.portal) return;
-    const latitudeInput = window.prompt("Geverifieerde breedtegraad:", application.portal.latitude?.toString() ?? "")?.trim();
-    const longitudeInput = window.prompt("Geverifieerde lengtegraad:", application.portal.longitude?.toString() ?? "")?.trim();
-    const reason = window.prompt("Auditreden voor locatieverificatie (minimaal 10 tekens):")?.trim();
-    if (!latitudeInput || !longitudeInput || !reason || reason.length < 10) return setNotice("Coördinaten en een reden van minimaal tien tekens zijn verplicht.");
-    const latitude = Number(latitudeInput.replace(",", "."));
-    const longitude = Number(longitudeInput.replace(",", "."));
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return setNotice("De coördinaten zijn ongeldig.");
+    const coordinateInput = window.prompt("Coördinaten als breedtegraad, lengtegraad:", application.portal.latitude !== null && application.portal.longitude !== null ? `${application.portal.latitude}, ${application.portal.longitude}` : "")?.trim() ?? "";
+    const coordinate = parseLatitudeLongitude(coordinateInput);
+    if (!coordinate) return setNotice("Gebruik het formaat 52.090522, 4.262384 (breedtegraad, lengtegraad).");
     if (!window.confirm("Locatie als fysiek gecontroleerd markeren?")) return;
 
     setBusyId(application.id);
@@ -147,12 +144,12 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
     const { error } = await client.schema("api").rpc("admin_verify_portal_location", {
       _portal_id: application.portal.id,
       _expected_portal_version: application.portal.version,
-      _latitude: latitude,
-      _longitude: longitude,
-      _reason: reason,
+      _latitude: coordinate.latitude,
+      _longitude: coordinate.longitude,
+      _reason: "Locatie geverifieerd door de organisatie",
     });
     setBusyId(null);
-    setNotice(error ? `Locatieverificatie geweigerd: ${error.message}` : "Locatie geverifieerd en geaudit.");
+    setNotice(error ? `Locatieverificatie geweigerd: ${error.message}` : "Locatie geverifieerd.");
     if (!error) await load();
   }
 

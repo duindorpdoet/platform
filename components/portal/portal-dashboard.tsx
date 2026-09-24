@@ -35,9 +35,8 @@ export function PortalDashboard({ eventSlug }: { eventSlug: string }) {
   }
   async function rotateCredential() {
     const client = createClient(); if (!client || !snapshot?.portal) return;
-    const reason = window.prompt("Waarom vervang je de huidige QR-code? De oude code wordt direct ongeldig.", "Nieuw QR-materiaal uitgegeven")?.trim();
-    if (!reason || reason.length < 5) return setNotice("Leg voor QR-vervanging minimaal vijf tekens reden vast.");
-    const { data, error } = await client.schema("api").rpc("portal_rotate_credential", { _portal_id: snapshot.portal.id, _expected_portal_version: snapshot.portal.version, _reason: reason });
+    if (snapshot.portal.hasCredential && !window.confirm("De huidige QR-code wordt direct ongeldig. Nieuwe code maken?")) return;
+    const { data, error } = await client.schema("api").rpc("portal_rotate_credential", { _portal_id: snapshot.portal.id, _expected_portal_version: snapshot.portal.version, _reason: snapshot.portal.hasCredential ? "QR-code vervangen door bewoner" : "Eerste QR-code aangemaakt door bewoner" });
     if (error) { setNotice("De QR-code kon niet worden vervangen. De actuele poortversie is opgehaald."); await load(); return; }
     const material = data as { credentialVersion: number; credential: string; shortCode: string };
     const { default: QRCode } = await import("qrcode");

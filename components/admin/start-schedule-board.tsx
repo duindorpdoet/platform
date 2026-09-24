@@ -129,15 +129,13 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize }: { eventSlug: str
 
   async function saveSettings() {
     if (!snapshot || !settingsDraft) return;
-    const reason = window.prompt("Waarom wijzig je de route-instellingen? (minimaal 10 tekens)")?.trim();
-    if (!reason || reason.length < 10) return setNotice("Een auditreden van minimaal tien tekens is verplicht.");
     const client = createClient(); if (!client) return;
     setBusy(true);
     const { error } = await client.schema("api").rpc("admin_save_route_settings", {
       _event_slug: eventSlug,
       _settings: settingsDraft,
       _expected_version: snapshot.settings.version,
-      _reason: reason,
+      _reason: "Route-instellingen gewijzigd via beheeromgeving",
     });
     setBusy(false);
     setNotice(error ? `Instellingen geweigerd: ${error.message}` : "Route-instellingen versieerbaar opgeslagen.");
@@ -145,8 +143,6 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize }: { eventSlug: str
   }
 
   async function addStartPoint() {
-    const reason = window.prompt("Hoe is dit startpunt gecontroleerd? (minimaal 10 tekens)")?.trim();
-    if (!reason || reason.length < 10) return setNotice("Leg de verificatie in minimaal tien tekens vast.");
     const client = createClient(); if (!client) return;
     setBusy(true);
     const { error } = await client.schema("api").rpc("admin_start_point_save", {
@@ -163,7 +159,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize }: { eventSlug: str
         verified: true,
       },
       _expected_version: null,
-      _reason: reason,
+      _reason: "Startpunt toegevoegd via beheeromgeving",
     });
     setBusy(false);
     setNotice(error ? `Startpunt geweigerd: ${error.message}` : "Geverifieerd startpunt toegevoegd. Voeg nu één of meer exacte tijden toe.");

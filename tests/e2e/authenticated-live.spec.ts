@@ -375,7 +375,6 @@ test("an event administrator can grant and revoke narrowly scoped access", async
   ]) {
     await page.getByRole("checkbox", { name: new RegExp(`^${name}`) }).uncheck();
   }
-  await page.getByLabel("Reden voor deze wijziging").fill("Helpt met het beoordelen van aangemelde locaties.");
   await page.getByRole("button", { name: "Beheerder toevoegen" }).click();
   await expect(page.getByRole("status")).toContainText(/rechten.*bijgewerkt/i);
 
@@ -384,7 +383,6 @@ test("an event administrator can grant and revoke narrowly scoped access", async
   await member.getByRole("button", { name: "Bewerken" }).click();
   await expect(page.getByLabel("E-mailadres")).toHaveAttribute("readonly", "");
   await page.getByRole("checkbox", { name: /^Locaties/ }).uncheck();
-  await page.getByLabel("Reden voor deze wijziging").fill("De tijdelijke locatiebeoordeling is afgerond.");
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Rechten opslaan" }).click();
   await expect(page.getByRole("status")).toContainText(/rechten.*bijgewerkt/i);
@@ -776,6 +774,10 @@ test("Tikkies select individual siblings and expose one payment action per linke
   await page.goto("/admin");
   await selectAdminSection(page, "Betalingen");
   await page.getByRole("searchbox", { name: "Zoek kind, ouder, e-mail, groep of referentie" }).fill("Kindbetaalouder Alfa");
+  await expect(page.getByRole("button", { name: /Niet betaald/ })).toBeVisible();
+  const paymentRegistration = page.locator(".payment-registration-group").filter({ hasText: "Kindbetaalouder Alfa" });
+  await expect(paymentRegistration).toHaveCount(1);
+  await paymentRegistration.locator("summary").click();
   for (const index of [0, 1]) await page.getByTestId(`child-payment-${ids[index]}`).getByRole("checkbox").check();
   await expect(page.getByText(/2 kind\(eren\) geselecteerd/)).toContainText("5,00");
   await page.getByRole("combobox", { name: "Betaalknop bij", exact: true }).selectOption(ids[0]);
@@ -783,7 +785,6 @@ test("Tikkies select individual siblings and expose one payment action per linke
   const singleUrl = "https://tikkie.me/pay/browser-third-sibling";
   const publish = async (url: string) => {
     await page.getByLabel("Tikkie-link voor het totaalbedrag").fill(url);
-    await page.getByLabel("Reden voor verzending of correctie").fill("Selectie van kinderen met de ouder afgestemd.");
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Tikkie publiceren en e-mail versturen" }).click();
     await expect(page.getByRole("status")).toContainText("Gezamenlijke Tikkie gepubliceerd");
@@ -831,10 +832,28 @@ test("Tikkies select individual siblings and expose one payment action per linke
     await expect(rows[0].getByRole("button", { name: "In controle", exact: true })).toBeDisabled();
     await expect(rows[1].getByRole("button", { name: "In controle", exact: true })).toBeDisabled();
     await expect(rows[2].getByRole("link")).toHaveAttribute("href", singleUrl);
+
+    await page.reload();
+    await selectAdminSection(page, "Betalingen");
+    await page.getByRole("button", { name: /Wachtend/ }).click();
+    await page.getByRole("searchbox", { name: "Zoek kind, ouder, e-mail, groep of referentie" }).fill("Kindbetaalouder Alfa");
+    let adminPaymentRegistration = page.locator(".payment-registration-group").filter({ hasText: "Kindbetaalouder Alfa" });
+    await adminPaymentRegistration.locator("summary").click();
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByTestId(`child-payment-${ids[0]}`).getByRole("combobox", { name: "Status door admin" }).selectOption("unpaid");
+    await expect(page.getByRole("status")).toContainText("staat weer op niet betaald");
+
+    await parentPage.reload();
+    await expect(rows[0].getByRole("link")).toHaveAttribute("href", sharedUrl);
+    await rows[0].getByRole("button", { name: "Betaling voor Betaalkind Alfa 1 melden" }).click();
+    await expect(rows[0].getByRole("button", { name: "In controle", exact: true })).toBeDisabled();
+
     await page.reload();
     await selectAdminSection(page, "Betalingen");
     await page.getByRole("searchbox", { name: "Zoek kind, ouder, e-mail, groep of referentie" }).fill("Kindbetaalouder Alfa");
-    const answers = ["5,00", "BROWSER-CHILD-RECEIPT", "Ontvangst van beide geselecteerde kinderen gecontroleerd.", ""];
+    adminPaymentRegistration = page.locator(".payment-registration-group").filter({ hasText: "Kindbetaalouder Alfa" });
+    await adminPaymentRegistration.locator("summary").click();
+    const answers = ["5,00", "BROWSER-CHILD-RECEIPT", ""];
     const confirm = async (dialog: import("@playwright/test").Dialog) => { await dialog.accept(answers.shift()); };
     page.on("dialog", confirm);
     await page.getByRole("button", { name: /Bevestig ontvangst.*5,00/ }).click();

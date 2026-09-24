@@ -123,12 +123,10 @@ export function GroupTickets({ groupId }: { groupId: string }) {
 
   async function setStatus(status: "open" | "closed") {
     if (!selected) return;
-    const reason = window.prompt(status === "closed" ? "Waarom sluit je dit gesprek?" : "Waarom wil je dit gesprek heropenen?")?.trim();
-    if (!reason || reason.length < 5) return setNotice("Geef een korte reden van minimaal vijf tekens.");
     const client = createClient();
     if (!client) return;
     const { error } = await client.schema("api").rpc("group_ticket_set_status", {
-      _ticket_id: selected.id, _expected_version: selected.version, _status: status, _reason: reason,
+      _ticket_id: selected.id, _expected_version: selected.version, _status: status, _reason: status === "closed" ? "Gesprek gesloten door groepsbeheerder" : "Gesprek heropend door groepsbeheerder",
     });
     setNotice(error ? "De status kon niet worden gewijzigd." : status === "closed" ? "Gesprek gesloten." : "Gesprek heropend.");
     await load();

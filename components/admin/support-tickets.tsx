@@ -49,11 +49,9 @@ export function SupportTickets({ eventSlug }: { eventSlug: string }) {
   }
   async function setStatus(status: "open" | "resolved" | "closed") {
     if (!selected) return;
-    const reason = window.prompt("Leg kort vast waarom je deze status kiest (minimaal vijf tekens):")?.trim();
-    if (!reason || reason.length < 5) return setNotice("Een korte auditreden is verplicht.");
     const client = createClient(); if (!client) return;
-    const { error } = await client.schema("api").rpc("group_ticket_set_status", { _ticket_id: selected.id, _expected_version: selected.version, _status: status, _reason: reason });
-    setNotice(error ? "De status kon niet worden aangepast." : "Gespreksstatus bijgewerkt en geaudit."); await load();
+    const { error } = await client.schema("api").rpc("group_ticket_set_status", { _ticket_id: selected.id, _expected_version: selected.version, _status: status, _reason: `Gespreksstatus ingesteld op ${status}` });
+    setNotice(error ? "De status kon niet worden aangepast." : "Gespreksstatus bijgewerkt."); await load();
   }
 
   return <section className="panel ticket-center admin-ticket-center">
