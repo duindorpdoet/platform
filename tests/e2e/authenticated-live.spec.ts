@@ -500,10 +500,14 @@ test("the night cockpit exposes verified portals and the group board without lea
   }
 
   await selectAdminSection(page, "Poorten");
-  const operation = page.locator(".portal-operation-tile").filter({ hasText: "P-01" });
+  await page.getByRole("tab", { name: /Actieve poorten/ }).click();
+  const operation = page.locator(".active-portals-list .portal-list-row").filter({ hasText: "P-01" }).first();
+  await expect(operation).toContainText("Testpoort 01");
+  await operation.locator(".portal-primary").click();
+  await expect(operation).toHaveAttribute("open", "");
   await expect(operation).toContainText("NIET-BESTAAND TESTADRES 1, 0000AA Teststad");
   await expect(operation).toContainText("Test contactpersoon");
-  await expect(operation.getByRole("link", { name: "0612345678" })).toHaveAttribute("href", "tel:0612345678");
+  await expect(operation.getByRole("link", { name: "0612345678" }).first()).toHaveAttribute("href", "tel:0612345678");
   await expect(operation.getByRole("button", { name: "Open", exact: true })).toBeVisible();
 
   await selectAdminSection(page, "Groepsindeling");
