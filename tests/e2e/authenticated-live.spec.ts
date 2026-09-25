@@ -888,7 +888,9 @@ test("payment links select individual siblings and expose one payment action per
   await page.goto("/admin");
   await selectAdminSection(page, "Betalingen");
   await page.getByRole("searchbox", { name: "Zoek kind, ouder, e-mail, groep of referentie" }).fill("Kindbetaalouder Alfa");
-  await expect(page.getByRole("button", { name: /Niet betaald/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nog een betaallink sturen" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Betaallink verstuurd" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Betaalde inschrijvingen" })).toBeVisible();
   const paymentRegistration = page.locator(".payment-registration-group").filter({ hasText: "Kindbetaalouder Alfa" });
   await expect(paymentRegistration).toHaveCount(1);
   await paymentRegistration.locator("summary").click();
@@ -902,7 +904,7 @@ test("payment links select individual siblings and expose one payment action per
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Betaallink publiceren en e-mail versturen" }).click();
     await expect(page.getByRole("status")).toContainText("Gezamenlijke betaallink gepubliceerd");
-    await expect(page.getByText(/0 kind\(eren\) geselecteerd/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Betaallink voor geselecteerde kinderen" })).toHaveCount(0);
   };
   await publish(sharedUrl);
   const afterShared = await childRows();
@@ -911,6 +913,7 @@ test("payment links select individual siblings and expose one payment action per
   expect(sharedBatch.totalAmountCents).toBe(500);
   expect(afterShared.find((row) => row.childId === ids[1])!.batch!.id).toBe(sharedBatch.id);
   await expect(page.getByRole("link", { name: "Betaallink bij Betaalkind Alfa 1", exact: true })).toHaveAttribute("href", sharedUrl);
+  await expect(page.getByRole("button", { name: "Nieuwe betaallink sturen", exact: true })).toBeVisible();
   await expect(page.getByTestId(`child-payment-${ids[1]}`).getByRole("button", { name: "Inbegrepen bij Betaalkind Alfa 1", exact: true })).toBeDisabled();
   await page.getByTestId(`child-payment-${ids[2]}`).getByRole("checkbox").check();
   await expect(page.getByText(/1 kind\(eren\) geselecteerd/)).toContainText("2,50");
@@ -949,7 +952,6 @@ test("payment links select individual siblings and expose one payment action per
 
     await page.reload();
     await selectAdminSection(page, "Betalingen");
-    await page.getByRole("button", { name: /Wachtend/ }).click();
     await page.getByRole("searchbox", { name: "Zoek kind, ouder, e-mail, groep of referentie" }).fill("Kindbetaalouder Alfa");
     let adminPaymentRegistration = page.locator(".payment-registration-group").filter({ hasText: "Kindbetaalouder Alfa" });
     await adminPaymentRegistration.locator("summary").click();

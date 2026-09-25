@@ -147,16 +147,31 @@ describe("premium transactional mail catalog", () => {
     expect(rendered.html).toContain("Sam &lt;Jansen&gt;");
   });
 
-  it("shows selected child names and the single anchor in child-level payment mail", () => {
+  it("renders the registration payment mail with the code, child amounts and requested deadline copy", () => {
     const rendered = renderTransactionalMail({
       messageType: "payment_link_ready",
-      payload: { externalUrl: "https://betaalverzoek.ing.nl/verzoek/children", amountCents: 500, paymentChildren: ["Noor", "Sam <Kind>"], anchorChildName: "Noor" },
+      payload: {
+        externalUrl: "https://betaalverzoek.ing.nl/verzoek/children",
+        registrationReference: "DDP-1042",
+        amountCents: 500,
+        paymentChildren: ["Noor", "Sam <Kind>"],
+        paymentChildDetails: [
+          { name: "Noor", amountCents: 250 },
+          { name: "Sam <Kind>", amountCents: 250 },
+        ],
+        anchorChildName: "Noor",
+      },
     });
-    expect(rendered.text).toContain("Betaalknop bij: Noor");
-    expect(rendered.text).toContain("Voor kind: Noor");
-    expect(rendered.text).toContain("Voor kind: Sam <Kind>");
-    expect(rendered.text).toContain("genoemde kinderen samen");
-    expect(rendered.text).not.toContain("genoemde gezinnen");
+    expect(rendered.subject).toBe("Betaling van je inschrijving");
+    expect(rendered.text).toContain("Nog één stap tot de avond.");
+    expect(rendered.text).toContain("de betaallink voor jullie inschrijving staat klaar.");
+    expect(rendered.text).toContain("INSCHRIJVINGCODE: DDP-1042");
+    expect(rendered.text).toContain("Voor kind: Noor (€\u00a02,50)");
+    expect(rendered.text).toContain("Voor kind: Sam <Kind> (€\u00a02,50)");
+    expect(rendered.text).toContain("Totaal te betalen: €\u00a05,00");
+    expect(rendered.text).toContain("Deze betaallink is voor de hieronder genoemde kinderen samen en staat in jullie omgeving klaar.");
+    expect(rendered.text).toContain("We verzoeken je vriendelijk om de betaling uiterlijk 30 oktober te voltooien");
+    expect(rendered.text).not.toContain("Betaalknop bij:");
     expect(rendered.html).toContain("Sam &lt;Kind&gt;");
     expect(rendered.text).toContain("Open de betaallink: https://betaalverzoek.ing.nl/verzoek/children");
   });

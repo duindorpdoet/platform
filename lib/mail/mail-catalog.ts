@@ -78,19 +78,23 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     action: { label: "Bekijk jullie inschrijving", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt deze bevestiging naar aanleiding van jullie inschrijving.",
   },
   payment_link_ready: {
-    kind: "payment", subject: "De betaling voor jullie groep staat klaar", preheader: "Betaal vóór 30 oktober om mee te kunnen lopen.", eyebrow: "Betaling van je groep", title: "Nog één stap tot de avond.",
+    kind: "payment", subject: "Betaling van je inschrijving", preheader: "De betaallink voor jullie inschrijving staat klaar.", eyebrow: "Betaling van je inschrijving", title: "Nog één stap tot de avond.",
     paragraphs: (payload) => validatedPaymentUrl(payload.externalUrl)
-      ? [
+      ? Array.isArray(payload.paymentChildren)
+        ? [
+            `${greeting(payload)}de betaallink voor jullie inschrijving staat klaar.`,
+            "Deze betaallink is voor de hieronder genoemde kinderen samen en staat in jullie omgeving klaar. Je kunt de inschrijving voor alle kinderen in één keer betalen via onderstaande link.",
+            "De bijdrage is bedoeld om waar nodig snoep te verdelen onder de deelnemende huizen. Je kunt de betaling ook terugvinden in jullie persoonlijke omgeving.",
+          ]
+        : [
           `${greeting(payload)}de betaallink voor jullie inschrijving staat klaar. Hieronder zie je het totale bedrag en voor wie deze betaling bedoeld is.`,
-          Array.isArray(payload.paymentChildren)
-            ? `Deze betaallink is voor de hieronder genoemde kinderen samen en staat in jullie omgeving bij ${text(payload, ["anchorChildName"], "het aangewezen kind")}. Betaal het totaalbedrag één keer; voor de andere inbegrepen kinderen is geen aparte betaling nodig.`
-            : text(payload, ["payerName"])
+          text(payload, ["payerName"])
             ? `${text(payload, ["payerName"])} regelt deze gezamenlijke betaling voor alle hieronder genoemde gezinnen. Betaal het totaalbedrag één keer; de andere gezinnen hoeven niet afzonderlijk te betalen.`
             : "Dit is één gezamenlijke betaling voor alle hieronder genoemde gezinnen. Spreek samen af wie het totaalbedrag betaalt; ieder gezin hoeft deze link dus niet afzonderlijk te betalen.",
           "De bijdrage is bedoeld om waar nodig snoep te verdelen onder de deelnemende huizen. Je kunt de betaling ook terugvinden in jullie persoonlijke omgeving.",
         ]
       : [`${greeting(payload)}voor ${groupName(payload)} is de betaling nu beschikbaar. Open jullie beveiligde omgeving voor het juiste bedrag en de betaalinstructie.`],
-    notice: { title: "Uiterste betaalmoment", text: "De betaling moet vóór 30 oktober zijn voldaan; zonder tijdige betaling is deelname niet mogelijk." },
+    notice: { title: "Uiterste betaalmoment", text: "We verzoeken je vriendelijk om de betaling uiterlijk 30 oktober te voltooien, zodat wij alle poorten van genoeg lekkere snoepjes kunnen voorzien voor de kinderen!" },
     action: { label: "Bekijk de betaling", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt dit bericht omdat er voor jouw inschrijving een betaling klaarstaat.",
   },
   payment_reminder: {
@@ -305,7 +309,28 @@ function detailsFor(messageType: MailMessageType, payload: Payload): MailDetail[
   if (["group_ticket_message_organization", "group_ticket_message_leader", "messenger_incoming_admin"].includes(messageType)) {
     add("Referentie", reference(payload));
   }
-  if (messageType === "payment_link_ready" || (["payment_confirmed", "payment_reported"].includes(messageType) && Array.isArray(payload.paymentChildren))) {
+  if (messageType === "payment_link_ready" && Array.isArray(payload.paymentChildren)) {
+    add("INSCHRIJVINGCODE", text(payload, ["registrationReference"]));
+    const childDetails = Array.isArray(payload.paymentChildDetails) ? payload.paymentChildDetails : [];
+    if (childDetails.length > 0) {
+      for (const child of childDetails) {
+        if (!child || typeof child !== "object" || Array.isArray(child)) continue;
+        const name = text(child as Payload, ["name"]);
+        const amountCents = (child as Payload).amountCents;
+        if (name && typeof amountCents === "number" && Number.isSafeInteger(amountCents) && amountCents >= 0) {
+          add("Voor kind", `${name} (${new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(amountCents / 100)})`);
+        }
+      }
+    } else {
+      for (const child of payload.paymentChildren) {
+        if (typeof child === "string" && child.trim()) add("Voor kind", child.trim());
+      }
+    }
+    const cents = payload.amountCents;
+    if (typeof cents === "number" && Number.isSafeInteger(cents) && cents >= 0) {
+      add("Totaal te betalen", new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100));
+    }
+  } else if (messageType === "payment_link_ready" || (["payment_confirmed", "payment_reported"].includes(messageType) && Array.isArray(payload.paymentChildren))) {
     add("Betaler", text(payload, ["payerName"]));
     if (Array.isArray(payload.paymentChildren)) {
       add("Betaalknop bij", text(payload, ["anchorChildName"]));
