@@ -392,23 +392,32 @@ test("an event administrator can grant and revoke narrowly scoped access", async
   await expect(member).toHaveCount(0);
 });
 
-test("an organizer sees portal identity and private contact details and can message the owner directly", async ({ context, page }) => {
+test("an organizer sees deduplicated registrations and approved active portals", async ({ context, page }) => {
   requireLocalAuth();
   await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
-  await selectAdminSection(page, "Poortaanvragen");
-  await expect(page.getByRole("heading", { name: "Poortaanvragen" })).toBeVisible();
+  await selectAdminSection(page, "Poorten");
+  await expect(page.getByRole("heading", { name: "Poorten", exact: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Aangemelde poorten/ })).toHaveAttribute("aria-selected", "true");
 
-  const portalCard = page.locator(".incident-row").filter({ hasText: "P-01" }).first();
-  await expect(portalCard).toContainText("Testpoort 01");
-  await expect(portalCard).toContainText("Adres: NIET-BESTAAND TESTADRES 1, 0000AA Teststad");
-  await expect(portalCard).toContainText("Contact: Test contactpersoon");
-  await expect(portalCard.getByRole("link", { name: "0612345678" })).toHaveAttribute("href", "tel:0612345678");
-  await expect(portalCard.getByRole("link", { name: "owner@example.invalid" })).toHaveAttribute("href", "mailto:owner@example.invalid");
+  const registrationRow = page.locator(".portal-list-row").filter({ hasText: "P-01" }).first();
+  await expect(registrationRow).toContainText("Test contactpersoon");
+  await expect(registrationRow.getByRole("link", { name: "0612345678" })).toHaveAttribute("href", "tel:0612345678");
+  await registrationRow.locator(".portal-primary").click();
+  await expect(registrationRow).toHaveAttribute("open", "");
+  await expect(registrationRow).toContainText("Voortgang aanvraag");
+  await expect(registrationRow.getByRole("link", { name: "owner@example.invalid" })).toHaveAttribute("href", "mailto:owner@example.invalid");
 
-  page.once("dialog", (dialog) => dialog.accept("Gericht browser-testbericht aan de poort."));
-  await portalCard.getByRole("button", { name: "Bericht sturen" }).click();
-  await expect(page.getByRole("status")).toContainText(/bericht staat in het gesprek/i);
+  await page.getByRole("tab", { name: /Actieve poorten/ }).click();
+  await expect(page.getByRole("tab", { name: /Actieve poorten/ })).toHaveAttribute("aria-selected", "true");
+  const activePortal = page.locator(".active-portals-list .portal-list-row").filter({ hasText: "P-01" }).first();
+  await expect(activePortal).toContainText("Testpoort 01");
+  await activePortal.locator(".portal-primary").click();
+  await expect(activePortal).toHaveAttribute("open", "");
+  await expect(activePortal).toContainText("NIET-BESTAAND TESTADRES 1");
+  await expect(activePortal.getByRole("button", { name: "Open", exact: true })).toBeVisible();
+  await expect(activePortal.getByRole("button", { name: "Pauze", exact: true })).toBeVisible();
+  await expect(activePortal.getByRole("button", { name: "Gestopt", exact: true })).toBeVisible();
   await assertReadableLayout(page);
 });
 
