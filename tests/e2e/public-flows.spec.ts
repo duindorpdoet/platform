@@ -122,10 +122,42 @@ test("keyboard navigation and reduced motion remain usable", async ({ page }) =>
 test("service worker is a real script with private network-only rules", async ({ request }) => {
   const response = await request.get("/sw.js");
   expect(response.ok()).toBeTruthy();
+  expect(response.headers()["cache-control"]).toContain("no-store");
   const body = await response.text();
+  expect(body).toContain('VERSION = "duindorp-public-v2"');
   expect(body).toContain("CLEAR_PRIVATE_CACHE");
   expect(body).toContain('"/mijn-"');
+  expect(body).toContain('event.request.mode === "navigate"');
   expect(body).toContain('cache: "no-store"');
+  expect(body).toContain("legacyPublicCaches.length > 0");
+  expect(body).toContain("client.navigate(client.url)");
+  expect(body).not.toContain("await Promise.allSettled(clients.map");
+  expect(body).not.toContain('caches.match("/")');
+  expect(body).not.toContain('["/", "/verhaal"');
+});
+
+test("service worker never serves cached page HTML on a first navigation", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller) {
+      await new Promise<void>((resolve) => {
+        navigator.serviceWorker.addEventListener("controllerchange", () => resolve(), { once: true });
+      });
+    }
+
+    const cache = await caches.open("duindorp-public-v2:assets");
+    await cache.put(
+      new Request(`${window.location.origin}/werelden`),
+      new Response("<!doctype html><title>Verouderd</title><p>VEROUDERDE PAGINA</p>", {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      }),
+    );
+  });
+
+  await page.goto("/werelden");
+  await expect(page.getByRole("heading", { name: /welke wereld durf jij te betreden/i })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("VEROUDERDE PAGINA");
 });
 
 for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText: false }, { width: 390, doubleText: true }, { width: 768, doubleText: false }, { width: 1440, doubleText: false }]) {

@@ -7,7 +7,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(mijn-groep|mijn-huis|mijn-inschrijving|admin)(.*)",
+        source: "/sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      {
+        source: "/(mijn-groep|mijn-huis|mijn-inschrijving|omgeving|admin|auth)(.*)",
         headers: [
           { key: "Cache-Control", value: "private, no-store, max-age=0" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
