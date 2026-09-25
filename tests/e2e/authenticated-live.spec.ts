@@ -442,8 +442,13 @@ test("the night cockpit exposes verified portals and the group board without lea
   for (let attempt = 0; attempt < 4 && await mapPanel.locator(".night-map-portal-pin").count() === 0; attempt += 1) {
     const cluster = mapPanel.locator(".night-map-cluster").first();
     await expect(cluster).toBeVisible();
-    await cluster.focus();
-    await expect(cluster).toBeFocused();
+    await expect.poll(async () => {
+      if (!(await cluster.isVisible())) return false;
+      return cluster.evaluate((element) => {
+        (element as HTMLElement).focus();
+        return document.activeElement === element;
+      }).catch(() => false);
+    }, { timeout: 5_000 }).toBe(true);
     await cluster.click();
     await page.waitForTimeout(550);
   }
@@ -494,7 +499,7 @@ test("the night cockpit exposes verified portals and the group board without lea
     });
   }
 
-  await selectAdminSection(page, "Poortaanvragen");
+  await selectAdminSection(page, "Poorten");
   const operation = page.locator(".portal-operation-tile").filter({ hasText: "P-01" });
   await expect(operation).toContainText("NIET-BESTAAND TESTADRES 1, 0000AA Teststad");
   await expect(operation).toContainText("Test contactpersoon");
@@ -644,7 +649,7 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
         if (path === "/admin") {
           await selectAdminSection(page, "Instellingen");
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
-          for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Groepsindeling", "Messenger", "Deelnemersupdates", "Betalingen", "Poortaanvragen", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
+          for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Groepsindeling", "Messenger", "Deelnemersupdates", "Betalingen", "Poorten", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
             await page.goto("/admin");
             await selectAdminSection(page, section);
             await expect(page.locator(".admin-nav button").filter({ hasText: section }).first()).toHaveClass("active");
