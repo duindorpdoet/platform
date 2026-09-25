@@ -374,6 +374,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   const [registrationsLoading, setRegistrationsLoading] = useState(false);
   const [registrationSearch, setRegistrationSearch] = useState("");
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
+  const registrationChildCount = registrations.reduce((total, registration) => total + registration.childCount, 0);
   const [togetherRequests, setTogetherRequests] = useState<TogetherRequest[]>([]);
   const [groupSizeLimit, setGroupSizeLimit] = useState(10);
   const load = useCallback(async () => {
@@ -1321,6 +1322,11 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                 <div className="metric" key={key}>
                   <strong>{dashboard.counts[key] ?? 0}</strong>
                   <span>{labels[key] ?? key}</span>
+                  {key === "registrations" && (
+                    <small>
+                      {dashboard.counts.children ?? 0} ingeschreven {dashboard.counts.children === 1 ? "kind" : "kinderen"}
+                    </small>
+                  )}
                 </div>
               ))}
             </div>
@@ -1527,7 +1533,10 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                 <h2>Alle inschrijvingen</h2>
                 <p>Een definitieve inschrijving verschijnt hier direct. Open een groep voor contactgegevens, kinderen en voorkeurstijden.</p>
               </div>
-              <span className="registration-total">{registrations.length} {registrations.length === 1 ? "groep" : "groepen"}</span>
+              <span className="registration-total">
+                {registrations.length} {registrations.length === 1 ? "inschrijving" : "inschrijvingen"} ·{" "}
+                {registrationChildCount} {registrationChildCount === 1 ? "kind" : "kinderen"}
+              </span>
             </div>
             <label className="field registration-search">
               <span>Zoek op groepsnaam, ouder, e-mailadres of referentie</span>

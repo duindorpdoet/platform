@@ -10,7 +10,7 @@ type Registration = {
   householdLabel: string;
   parentEmail: string | null;
   childCount: number;
-  children: string[];
+  children: Array<{ name: string; age: number | null }>;
   partyId: string | null;
   preferredStartAt: string | null;
   desiredEndAt: string | null;
@@ -121,7 +121,11 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
       <GripVertical aria-hidden="true" />
       <div>
         <strong>{registration.householdLabel}</strong>
-        <span>{registration.children.join(", ") || "Geen actieve kinderen"}</span>
+        <span className="group-registration-children">
+          {registration.children.length
+            ? registration.children.map((child) => `${child.name} (${child.age === null ? "leeftijd onbekend" : `${child.age} jaar`})`).join(", ")
+            : "Geen actieve kinderen"}
+        </span>
         <small>{registration.reference} · {registration.childCount} kind{registration.childCount === 1 ? "" : "eren"}</small>
         <small>Start {time(registration.preferredStartAt)} · laatste poort {time(registration.desiredEndAt)}</small>
         {registration.partyId && <em>Samenloopinschrijvingen verplaatsen als één geheel</em>}

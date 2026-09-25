@@ -344,9 +344,12 @@ test("submitted registrations appear immediately with group details in the backo
   requireLocalAuth();
   await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
+  const registrationsMetric = page.locator(".cockpit-metrics .metric").filter({ hasText: "Inschrijvingen" });
+  await expect(registrationsMetric).toContainText(/ingeschreven kinderen?/i);
   await page.getByRole("button", { name: /Inschrijvingen/ }).click();
 
   await expect(page.getByRole("heading", { name: "Alle inschrijvingen" })).toBeVisible();
+  await expect(page.locator(".registration-roster-heading .registration-total")).toContainText(/inschrijvingen? · \d+ kinderen?/i);
   const registration = page.locator(".registration-admin-card").first();
   await expect(registration).toBeVisible();
   await expect(registration.locator(".registration-admin-name strong")).not.toBeEmpty();
@@ -492,6 +495,7 @@ test("the night cockpit exposes verified portals and the group board without lea
   await selectAdminSection(page, "Groepsindeling");
   await expect(page.getByRole("heading", { name: "Maak de wandelgroepen." })).toBeVisible();
   await expect(page.locator(".group-composition-column").first()).toContainText(/kinderen/i);
+  await expect(page.locator(".group-registration-children").first()).toContainText(/\(\d+ jaar\)/);
   await expect(page.getByRole("button", { name: "Groep maken" })).toBeVisible();
   await assertReadableLayout(page);
 });

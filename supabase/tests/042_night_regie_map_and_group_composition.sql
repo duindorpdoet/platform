@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(15);
 
 select ok(not has_function_privilege('anon', 'api.admin_portal_operations_snapshot(text)', 'execute'),
   'anonymous clients cannot read private map details');
@@ -45,6 +45,15 @@ select is((
   from jsonb_array_elements(api.admin_group_composition_snapshot('duindorp-halloween-2026') -> 'groups') group_item
   where group_item ->> 'id' = (select id::text from created_group)
 ), '3', 'the board immediately shows the new group child total');
+select is((
+  select child_item ->> 'age'
+  from jsonb_array_elements(api.admin_group_composition_snapshot('duindorp-halloween-2026') -> 'groups') group_item
+  cross join lateral jsonb_array_elements(group_item -> 'registrations') registration_item
+  cross join lateral jsonb_array_elements(registration_item -> 'children') child_item
+  where group_item ->> 'id' = (select id::text from created_group)
+  order by child_item ->> 'name'
+  limit 1
+), '9', 'the organizer group board includes the child age next to the child name');
 select is(jsonb_array_length(api.admin_group_composition_snapshot('duindorp-halloween-2026') -> 'unassigned'), 4,
   'the moved registration disappears from the unassigned list');
 

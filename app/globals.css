@@ -615,6 +615,7 @@ body:has(.admin-shell) .site-header{background:#07111bed;border-bottom-color:#78
 .registration-roster-heading h2{font-size:clamp(30px,3vw,44px)}
 .registration-roster-heading p:not(.kicker){max-width:720px;margin-top:8px}
 .registration-total{flex:none;padding:8px 13px;border:1px solid #6e879b70;border-radius:999px;color:#f5c486;font-size:12px}
+.cockpit-metrics .metric small{color:#91a8b5;font-size:11px;line-height:1.35}
 .registration-search{max-width:680px;margin:22px 0 16px}
 .registration-list{display:grid;gap:10px}
 .registration-admin-card{overflow:hidden;border:1px solid #647d9045;border-radius:12px;background:#07121d99;transition:border-color .18s ease,background .18s ease}
