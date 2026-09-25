@@ -26,6 +26,8 @@ export type NightMapPortal = {
   status?: "scheduled" | "open" | "paused" | "closed" | string;
   isFinal?: boolean;
   color?: string;
+  description?: string;
+  demo?: boolean;
 };
 
 export function portalColor(portal: Pick<NightMapPortal, "world" | "color">) {

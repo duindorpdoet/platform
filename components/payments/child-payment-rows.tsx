@@ -61,7 +61,7 @@ export function childPaymentState(child: PaymentChild, payment: ChildPayment | n
   const included = Boolean(batch && (batch.anchorChildId !== (child.childId ?? child.id) || !batch.canPay));
   const canPay = Boolean(active && !paid && !included && status === "awaiting_payment" && batch?.externalUrl);
   const label = !active ? "Niet actief" : paid ? "Betaald" : status === "reported" ? "In controle"
-    : status === "needs_review" ? "Tikkie wordt aangepast" : included ? "Tikkie inbegrepen" : "Tikkie volgt";
+    : status === "needs_review" ? "Betaallink wordt aangepast" : included ? "Betaallink inbegrepen" : "Betaallink volgt";
   return { paid, included, canPay, label, status };
 }
 
@@ -100,7 +100,7 @@ export function ChildPaymentRows({ items: children, registrationId, legacyPaymen
         <span className="participant-avatar" aria-hidden="true">{child.firstName.slice(0, 1)}</span>
         <div className="child-payment-main">
           <div className="child-payment-name-action"><strong>{child.firstName}</strong>
-            {state.canPay && batch ? <a className="child-tikkie-action" href={batch.externalUrl!} target="_blank" rel="noreferrer noopener" aria-label={`Betaal Tikkie voor ${child.firstName}: ${paymentAmount(batch.totalAmountCents)}`}>Tikkie {paymentAmount(batch.totalAmountCents)}<ExternalLink aria-hidden="true" /></a>
+            {state.canPay && batch ? <a className="child-tikkie-action" href={batch.externalUrl!} target="_blank" rel="noreferrer noopener" aria-label={`Open betaallink voor ${child.firstName}: ${paymentAmount(batch.totalAmountCents)}`}>Betaal {paymentAmount(batch.totalAmountCents)}<ExternalLink aria-hidden="true" /></a>
               : <button className="child-tikkie-action" type="button" disabled>{state.label}</button>}
             {state.canPay && batch && <button type="button" className="child-payment-report" disabled={reporting !== null} onClick={() => void report(batch)} aria-label={`Betaling voor ${child.firstName} melden`}>{reporting === batch.id ? "Melden…" : "Betaling melden"}</button>}
           </div>

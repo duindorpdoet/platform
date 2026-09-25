@@ -241,7 +241,7 @@ type GroupSnapshot = {
 };
 
 const paymentLabels: Record<string, string> = {
-  awaiting_link: "Wacht op Tikkie",
+  awaiting_link: "Wacht op betaallink",
   awaiting_payment: "Wacht op betaling",
   reported: "Betaling wordt gecontroleerd",
   confirmed: "Betaald",

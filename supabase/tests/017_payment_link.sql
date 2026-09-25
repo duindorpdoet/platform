@@ -13,7 +13,7 @@ select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-0000000
 select throws_ok(
   $$ select api.payment_set_external_link(
     '26000000-0000-0000-0000-000000000901',
-    1, 'https://www.tikkie.me/pay/test-only-reference', 'Ouder mag geen link instellen'
+    1, 'https://betaalverzoek.ing.nl/verzoek/test-only-reference', 'Ouder mag geen link instellen'
   ) $$,
   '42501', 'NOT_AUTHORIZED', 'a household cannot attach its own alleged payment link'
 );
@@ -22,20 +22,20 @@ select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-0000000
 select throws_ok(
   $$ select api.payment_set_external_link(
     '26000000-0000-0000-0000-000000000901',
-    1, 'https://evil.example.invalid/pay/test-only-reference', 'Ongeldige provider wordt geweigerd'
+    1, 'http://evil.example.invalid/pay/test-only-reference', 'Onveilige betaallink wordt geweigerd'
   ) $$,
-  '22023', 'VALIDATION_ERROR', 'an arbitrary external payment URL is rejected'
+  '22023', 'VALIDATION_ERROR', 'a non-HTTPS payment URL is rejected'
 );
 select lives_ok(
   $$ select api.payment_set_external_link(
     '26000000-0000-0000-0000-000000000901',
-    1, 'https://www.tikkie.me/pay/test-only-reference', 'Handmatig aangemaakte Tikkie voor deze inschrijving'
+    1, 'https://betaalverzoek.ing.nl/verzoek/test-only-reference', 'Handmatig aangemaakte betaallink voor deze inschrijving'
   ) $$,
-  'a payment manager can attach an HTTPS Tikkie link'
+  'a payment manager can attach an ING HTTPS payment link'
 );
 select is(
   (select item ->> 'externalUrl' from jsonb_array_elements(api.admin_payments_snapshot('duindorp-halloween-2026')) item where item ->> 'id' = '26000000-0000-0000-0000-000000000901'),
-  'https://www.tikkie.me/pay/test-only-reference',
+  'https://betaalverzoek.ing.nl/verzoek/test-only-reference',
   'the private payment dashboard can restore the exact link for a controlled correction'
 );
 
@@ -46,7 +46,7 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select is(
   api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,payment,externalUrl}',
-  'https://www.tikkie.me/pay/test-only-reference',
+  'https://betaalverzoek.ing.nl/verzoek/test-only-reference',
   'the household receives the exact organization-provided link in its private snapshot'
 );
 select lives_ok(

@@ -22,7 +22,7 @@ De homepage en `/kaart` tonen de Duindorpse wijk met MapLibre GL JS en een eigen
 
 Bij `pnpm dev` en `pnpm build` kopieert het voorbereidende script de MapLibre-worker en de bijbehorende gedeelde module vanuit de geïnstalleerde versie naar `public/maplibre/`. Next.js/Turbopack heeft beide bestanden op hetzelfde domein nodig om vectorpoorten te tekenen. Browsers zonder WebGL2 krijgen de tekstweergave.
 
-De openbare kaart toont uitsluitend Duindorp als gebied, zonder deelnemende huisadressen. In het afgeschermde beheer verschijnen alleen goedgekeurde poorten met geverifieerde coördinaten, elk in de kleur van hun wereld. De groepskaart toont slechts de op dat moment vrijgegeven poort uit de bestaande, beveiligde `group_snapshot`; toekomstige poorten blijven verborgen. Bij een netwerk- of kaartfout, of wanneer een pin nog niet is geverifieerd, blijft het vrijgegeven adres als tekst beschikbaar. De kaartlaag berekent zelf geen wandelroutes; daarvoor is later echte voetgangersdata nodig.
+De openbare kaart toont een levende, nadrukkelijk fictieve demonstratie met verzonnen poorten en tijdelijke rechte voorbeeldroutes. Ze gebruikt geen deelnemers, privéadressen of definitieve routes. In het afgeschermde beheer verschijnen alleen goedgekeurde poorten met geverifieerde coördinaten, elk in de kleur van hun wereld. De groepskaart toont slechts de op dat moment vrijgegeven poort uit de bestaande, beveiligde `group_snapshot`; toekomstige poorten blijven verborgen. Bij een netwerk- of kaartfout, of wanneer een pin nog niet is geverifieerd, blijft het vrijgegeven adres als tekst beschikbaar. Echte wandelroutes vereisen later een daarvoor geschikte routebron.
 
 ## Verificatie
 
@@ -34,7 +34,7 @@ pnpm exec supabase test db
 pnpm exec supabase db lint --level warning
 ```
 
-De testset omvat domein-unit-tests, browseracceptatie op desktop en mobiel, een volledig herbouwde lokale database, 484 pgTAP-contracttests en schemalint. De stagingworkflow voegt echte OTP-, mailbox-, SendGrid-webhook- en deploymenttests toe.
+De testset omvat domein-unit-tests, browseracceptatie op desktop en mobiel, een volledig herbouwde lokale database, 891 pgTAP-contracttests en schemalint. De stagingworkflow voegt echte OTP-, mailbox-, SendGrid-webhook- en deploymenttests toe.
 
 De lokale integratie- en browsertests wijzigen testfixtures. Voer pgTAP na een database-reset uit en reset opnieuw vóór de aangemelde browsertests. De CI-workflow bevat de volledige volgorde en lokale omgevingsvariabelen. De 200-clientproef draait uitsluitend tegen localhost:
 

@@ -19,15 +19,15 @@ function render(items: PaymentChild[]) {
   return renderToStaticMarkup(createElement(ChildPaymentRows, { items, registrationId: "registration-1", reload: async () => {} }));
 }
 
-describe("per-child Tikkie actions", () => {
-  it("renders one active button per Tikkie immediately after the anchor child's name", () => {
+describe("per-child payment-link actions", () => {
+  it("renders one active button per payment link immediately after the anchor child's name", () => {
     const html = render(children);
     expect(html.match(/class="child-tikkie-action" href=/g)).toHaveLength(2);
     expect(html).toMatch(/<strong>Noor<\/strong><a class="child-tikkie-action"/);
     expect(html).toMatch(/<strong>Sam<\/strong><button class="child-tikkie-action"[^>]*disabled/);
     expect(html).toContain("Inbegrepen bij Noor");
     expect(html).toContain("Eén betaling voor Noor · Sam");
-    expect(html).toContain("Betaal Tikkie voor Robin:");
+    expect(html).toContain("Open betaallink voor Robin:");
     expect(html).not.toContain('class="payment-details"');
   });
 
@@ -42,7 +42,7 @@ describe("per-child Tikkie actions", () => {
     const html = render([child]);
     expect(html).not.toContain('href="https://tikkie.me');
     expect(html).not.toContain("Betaling melden");
-    expect(html).toContain("Tikkie inbegrepen");
+    expect(html).toContain("Betaallink inbegrepen");
   });
 
   it.each(["reported", "confirmed", "needs_review", "cancelled"])("does not present a payable link for %s batches", (status) => {
@@ -52,7 +52,7 @@ describe("per-child Tikkie actions", () => {
 
   it("shows a disabled pending action before assignment and hides cancelled children's links", () => {
     const pending = { ...children[0], payment: { status: "awaiting_link", version: 1, batch: null } };
-    expect(render([pending])).toContain("Tikkie volgt");
+    expect(render([pending])).toContain("Betaallink volgt");
     expect(render([pending])).not.toContain('href="https://tikkie.me');
     expect(render([{ ...children[0], status: "cancelled" }])).toContain("Niet actief");
     expect(render([{ ...children[0], status: "cancelled" }])).not.toContain('href="https://tikkie.me');

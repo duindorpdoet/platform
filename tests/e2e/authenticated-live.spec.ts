@@ -320,7 +320,7 @@ test("a multi-child registration draft survives refresh and submits once", async
 
   await page.goto("/mijn-inschrijving");
   await expect(page.getByText("Eerste testkind")).toBeVisible();
-  await expect(page.getByText("Wacht op Tikkie", { exact: true })).toBeVisible();
+  await expect(page.getByText("Wacht op betaallink", { exact: true })).toBeVisible();
   await expect(page.getByText(snapshot.registration.togetherCode, { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("awaiting_link");
   const addChild = page.locator(".registration-child-form");
@@ -873,7 +873,7 @@ test("legacy joint Tikkie links retain parent authorization and settle their ful
   }
 });
 
-test("Tikkies select individual siblings and expose one payment action per linked set", async ({ context, page, browser }, testInfo) => {
+test("payment links select individual siblings and expose one payment action per linked set", async ({ context, page, browser }, testInfo) => {
   requireLocalAuth();
   test.skip(testInfo.project.name !== "desktop-chromium", "Isolated child payment fixtures run once; the parent flow includes a narrow phone.");
   const eventSlug = "duindorp-halloween-2026";
@@ -895,13 +895,13 @@ test("Tikkies select individual siblings and expose one payment action per linke
   for (const index of [0, 1]) await page.getByTestId(`child-payment-${ids[index]}`).getByRole("checkbox").check();
   await expect(page.getByText(/2 kind\(eren\) geselecteerd/)).toContainText("5,00");
   await page.getByRole("combobox", { name: "Betaalknop bij", exact: true }).selectOption(ids[0]);
-  const sharedUrl = "https://tikkie.me/pay/browser-two-siblings";
+  const sharedUrl = "https://betaalverzoek.ing.nl/verzoek/browser-two-siblings";
   const singleUrl = "https://tikkie.me/pay/browser-third-sibling";
   const publish = async (url: string) => {
-    await page.getByLabel("Tikkie-link voor het totaalbedrag").fill(url);
+    await page.getByLabel("Betaallink voor het totaalbedrag").fill(url);
     page.once("dialog", (dialog) => dialog.accept());
-    await page.getByRole("button", { name: "Tikkie publiceren en e-mail versturen" }).click();
-    await expect(page.getByRole("status")).toContainText("Gezamenlijke Tikkie gepubliceerd");
+    await page.getByRole("button", { name: "Betaallink publiceren en e-mail versturen" }).click();
+    await expect(page.getByRole("status")).toContainText("Gezamenlijke betaallink gepubliceerd");
     await expect(page.getByText(/0 kind\(eren\) geselecteerd/)).toBeVisible();
   };
   await publish(sharedUrl);
@@ -910,7 +910,7 @@ test("Tikkies select individual siblings and expose one payment action per linke
   const sharedBatch = afterShared.find((row) => row.childId === ids[0])!.batch!;
   expect(sharedBatch.totalAmountCents).toBe(500);
   expect(afterShared.find((row) => row.childId === ids[1])!.batch!.id).toBe(sharedBatch.id);
-  await expect(page.getByRole("link", { name: "Tikkie bij Betaalkind Alfa 1", exact: true })).toHaveAttribute("href", sharedUrl);
+  await expect(page.getByRole("link", { name: "Betaallink bij Betaalkind Alfa 1", exact: true })).toHaveAttribute("href", sharedUrl);
   await expect(page.getByTestId(`child-payment-${ids[1]}`).getByRole("button", { name: "Inbegrepen bij Betaalkind Alfa 1", exact: true })).toBeDisabled();
   await page.getByTestId(`child-payment-${ids[2]}`).getByRole("checkbox").check();
   await expect(page.getByText(/1 kind\(eren\) geselecteerd/)).toContainText("2,50");
@@ -923,11 +923,11 @@ test("Tikkies select individual siblings and expose one payment action per linke
     const parentPage = await parentContext.newPage();
     await parentPage.goto("/omgeving/meeloper/nachtpas");
     const rows = registrationChildIds.map((id) => parentPage.locator(`[data-child-payment-row="${id}"]`));
-    await expect(rows[0].getByRole("link", { name: /Betaal Tikkie voor Betaalkind Alfa 1/ })).toHaveAttribute("href", sharedUrl);
-    await expect(rows[1].getByRole("button", { name: "Tikkie inbegrepen", exact: true })).toBeDisabled();
+    await expect(rows[0].getByRole("link", { name: /Open betaallink voor Betaalkind Alfa 1/ })).toHaveAttribute("href", sharedUrl);
+    await expect(rows[1].getByRole("button", { name: "Betaallink inbegrepen", exact: true })).toBeDisabled();
     await expect(rows[1]).toContainText("Inbegrepen bij Betaalkind Alfa 1");
     await expect(rows[1].getByRole("link")).toHaveCount(0);
-    await expect(rows[2].getByRole("link", { name: /Betaal Tikkie voor Betaalkind Alfa 3/ })).toHaveAttribute("href", singleUrl);
+    await expect(rows[2].getByRole("link", { name: /Open betaallink voor Betaalkind Alfa 3/ })).toHaveAttribute("href", singleUrl);
     await expect(parentPage.locator("a.child-tikkie-action")).toHaveCount(2);
     await parentPage.reload();
     await expect(rows[0].getByRole("link")).toHaveAttribute("href", sharedUrl);

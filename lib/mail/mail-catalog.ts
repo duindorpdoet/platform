@@ -1,5 +1,5 @@
 import type { MailDetail, PremiumMailBrand, PremiumMailContent } from "./premium-template";
-import { validatedTikkieUrl } from "./tikkie-url";
+import { validatedPaymentUrl } from "./payment-url";
 
 export const MAIL_MESSAGE_TYPES = [
   "auth_otp",
@@ -79,11 +79,11 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
   },
   payment_link_ready: {
     kind: "payment", subject: "De betaling voor jullie groep staat klaar", preheader: "Betaal vóór 30 oktober om mee te kunnen lopen.", eyebrow: "Betaling van je groep", title: "Nog één stap tot de avond.",
-    paragraphs: (payload) => validatedTikkieUrl(payload.externalUrl)
+    paragraphs: (payload) => validatedPaymentUrl(payload.externalUrl)
       ? [
-          `${greeting(payload)}de Tikkie-link voor jullie inschrijving staat klaar. Hieronder zie je het totale bedrag en voor wie deze betaling bedoeld is.`,
+          `${greeting(payload)}de betaallink voor jullie inschrijving staat klaar. Hieronder zie je het totale bedrag en voor wie deze betaling bedoeld is.`,
           Array.isArray(payload.paymentChildren)
-            ? `Deze Tikkie is voor de hieronder genoemde kinderen samen en staat in jullie omgeving bij ${text(payload, ["anchorChildName"], "het aangewezen kind")}. Betaal het totaalbedrag één keer; voor de andere inbegrepen kinderen is geen aparte betaling nodig.`
+            ? `Deze betaallink is voor de hieronder genoemde kinderen samen en staat in jullie omgeving bij ${text(payload, ["anchorChildName"], "het aangewezen kind")}. Betaal het totaalbedrag één keer; voor de andere inbegrepen kinderen is geen aparte betaling nodig.`
             : text(payload, ["payerName"])
             ? `${text(payload, ["payerName"])} regelt deze gezamenlijke betaling voor alle hieronder genoemde gezinnen. Betaal het totaalbedrag één keer; de andere gezinnen hoeven niet afzonderlijk te betalen.`
             : "Dit is één gezamenlijke betaling voor alle hieronder genoemde gezinnen. Spreek samen af wie het totaalbedrag betaalt; ieder gezin hoeft deze link dus niet afzonderlijk te betalen.",
@@ -308,7 +308,7 @@ function detailsFor(messageType: MailMessageType, payload: Payload): MailDetail[
   if (messageType === "payment_link_ready" || (["payment_confirmed", "payment_reported"].includes(messageType) && Array.isArray(payload.paymentChildren))) {
     add("Betaler", text(payload, ["payerName"]));
     if (Array.isArray(payload.paymentChildren)) {
-      add("Tikkie bij", text(payload, ["anchorChildName"]));
+      add("Betaalknop bij", text(payload, ["anchorChildName"]));
       for (const child of payload.paymentChildren) {
         if (typeof child === "string" && child.trim()) add("Voor kind", child.trim());
       }
@@ -346,8 +346,8 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
   const dynamicTitle = childConfirmation ? "De betaling voor deze kinderen is verwerkt." : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.title) : definition.title;
   const dynamicSubject = childConfirmation ? "Betaling voor deze kinderen bevestigd" : childReport ? "Betaalmelding voor deze kinderen ontvangen" : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
   const codeValue = text(payload, ["code", "token"]);
-  const paymentUrl = messageType === "payment_link_ready" ? validatedTikkieUrl(payload.externalUrl) : undefined;
-  const action = paymentUrl ? { label: "Betaal via Tikkie", url: paymentUrl } : definition.action
+  const paymentUrl = messageType === "payment_link_ready" ? validatedPaymentUrl(payload.externalUrl) : undefined;
+  const action = paymentUrl ? { label: "Open de betaallink", url: paymentUrl } : definition.action
     ? { label: definition.action.label, url: new URL(actionPath(payload, definition.action.path), brand.homeUrl).toString() }
     : undefined;
   const code = definition.kind === "otp"

@@ -11,7 +11,7 @@ describe("activity status labels", () => {
     ["registration.submitted", "registration", "Nieuwe inschrijving ontvangen", "Inschrijving"],
     ["together.join_requested", "registration", "Samenloopverzoek ontvangen", "Inschrijving"],
     ["release.notification_recipient_configured", "event", "Ontvanger voor organisatiemeldingen ingesteld", "Evenement"],
-    ["payment.child_published", "child_payment_batch", "Tikkie voor kind verstuurd", "Tikkie voor kind"],
+    ["payment.child_published", "child_payment_batch", "Betaallink voor kind verstuurd", "Betaallink voor kind"],
   ])("normalizes %s", (action, source, message, sourceLabel) => {
     expect(normalizeActivity(action, source)).toMatchObject({ message, source: sourceLabel });
   });

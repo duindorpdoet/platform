@@ -86,7 +86,7 @@ const registrationStatusLabels: Record<string, string> = {
 };
 
 const paymentStatusLabels: Record<string, string> = {
-  awaiting_link: "Wacht op Tikkie",
+  awaiting_link: "Wacht op betaallink",
   awaiting_payment: "Wacht op betaling",
   reported: "Betaling gemeld",
   confirmed: "Betaald",

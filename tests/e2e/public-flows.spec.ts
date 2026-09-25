@@ -23,10 +23,10 @@ test("premium homepage keeps the supplied identity and closed participation path
   await page.screenshot({ path: testInfo.outputPath("homepage.png"), animations: "allow" });
 });
 
-test("public map never exposes exact route data", async ({ page }) => {
+test("public map shows a living fictional route without exposing real participants", async ({ page }) => {
   await page.goto("/kaart");
-  await expect(page.getByRole("heading", { name: /waar begint jullie avontuur/i })).toBeVisible();
-  await expect(page.getByText(/de kaart laat de buurt zien, maar nog niet welke huizen meedoen/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /zie de nacht tot leven komen/i })).toBeVisible();
+  await expect(page.getByText(/fictieve live-demonstratie met verzonnen poorten/i)).toBeVisible();
   const style = await page.request.get("/maps/duindorp-night.json");
   expect(style.ok()).toBeTruthy();
   for (const file of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"]) {
@@ -35,18 +35,33 @@ test("public map never exposes exact route data", async ({ page }) => {
   }
   await expect(page.locator("body")).not.toContainText("NIET-BESTAAND TESTADRES");
   await expect(page.locator("body")).not.toContainText("Testpoort 01");
-  await expect(page.locator('[data-map-center="4.2579563,52.0899891"]')).toHaveAttribute("data-map-privacy", "area-only");
+  const map = page.locator('[data-map-center="4.2579563,52.0899891"]');
+  await expect(map).toHaveAttribute("data-map-privacy", "area-only");
+  await expect(map).toHaveAttribute("data-map-demo", "fictional");
+  await expect(map.locator(".night-map-portal-pin")).toHaveCount(4, { timeout: 10_000 });
+  await expect(map).toHaveAttribute("data-map-route-points", "4");
+  await page.getByRole("button", { name: "Pauzeren" }).click();
+  await map.locator(".night-map-portal-pin").first().dispatchEvent("mouseenter");
+  const popup = map.locator(".night-map-popup");
+  await expect(popup).toContainText("Fictieve demonstratie");
+  await expect(popup).toContainText(/Heksenrijk|Circuswereld|Geestenwereld|Vampierrijk/);
+  await expect(popup).not.toContainText("Adres:");
+  await expect(popup).not.toContainText("Contact:");
+
+  const experience = page.locator(".public-map-experience");
+  const firstScene = await experience.getAttribute("data-demo-scene");
+  await page.getByRole("button", { name: "Nieuwe voorbeeldroute" }).click();
+  await expect(experience).not.toHaveAttribute("data-demo-scene", firstScene ?? "0");
+  await expect(map.locator(".night-map-portal-pin")).toHaveCount(3);
 });
 
-test("homepage and full map share the verified Tesselseplein centre without house markers", async ({ page }) => {
-  for (const path of ["/", "/kaart"]) {
-    await page.goto(path);
-    const map = page.locator('[data-map-center="4.2579563,52.0899891"]').first();
-    await expect(map).toBeVisible();
-    await expect(map).toHaveAttribute("data-map-privacy", "area-only");
-    await expect(map.locator(".night-map-portal-pin")).toHaveCount(0);
-    await expect(page.locator("body")).not.toContainText("NIET-BESTAAND TESTADRES");
-  }
+test("homepage preview keeps the verified Tesselseplein centre without house markers", async ({ page }) => {
+  await page.goto("/");
+  const map = page.locator('[data-map-center="4.2579563,52.0899891"]').first();
+  await expect(map).toBeVisible();
+  await expect(map).toHaveAttribute("data-map-privacy", "area-only");
+  await expect(map.locator(".night-map-portal-pin")).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("NIET-BESTAAND TESTADRES");
 });
 
 test("public map mounts a canvas in a WebGL2 browser", async ({ page }) => {
@@ -60,7 +75,26 @@ test("map outage shows a usable Duindorp text fallback", async ({ page }) => {
   await page.route("https://tiles.openfreemap.org/**", (route) => route.abort());
   await page.goto("/kaart");
   await expect(page.getByText("Kaart tijdelijk niet beschikbaar")).toBeVisible();
-  await expect(page.getByText(/De avondloop vindt plaats in Duindorp, Den Haag/i)).toBeVisible();
+  await expect(page.getByText(/fictieve voorbeeldpoort/i).first()).toBeVisible();
+  await expect(page.locator(".night-map-fallback")).not.toContainText("Adres:");
+});
+
+test("world overview presents six optional themes in a stable grid", async ({ page }) => {
+  await page.goto("/werelden");
+  await expect(page.getByRole("heading", { name: /welke wereld durf jij te betreden/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /hoofdthema’s ter inspiratie, geen vast draaiboek/i })).toBeVisible();
+  await expect(page.getByText(/elk deelnemend huis kiest zelf een thema/i)).toBeVisible();
+  await expect(page.getByText(/geen garantie dat iedere wereld/i)).toBeVisible();
+  const grid = page.locator(".worlds-page .all-worlds");
+  await expect(grid).toHaveCSS("display", "grid");
+  const cards = grid.locator(".world-card");
+  await expect(cards).toHaveCount(6);
+  const boxes = await cards.evaluateAll((elements) => elements.map((element) => {
+    const box = element.getBoundingClientRect();
+    return { width: box.width, height: box.height, top: box.top, bottom: box.bottom };
+  }));
+  expect(boxes.every((box) => box.width > 180 && box.height > 240)).toBe(true);
+  expect(boxes[3].top).toBeGreaterThan(boxes[0].top);
 });
 
 test("authentication uses a six-digit email OTP without a role picker", async ({ page }) => {

@@ -6,8 +6,8 @@ export const metadata = { title: "Kaart · De Duindorpse Poorten" };
 export default function MapPage() {
   return (
     <div className="wrap page map-page">
-      <PageHeading eyebrow="DE WIJK ONTWAAKT" title="Waar begint jullie avontuur?" intro="Bekijk de buurt waar de Halloween-avondloop plaatsvindt. De kaart geeft sfeer en richting, de verrassingen bewaren we voor de avond zelf." />
-      <ConceptNotice>De kaart laat de buurt zien, maar nog niet welke huizen meedoen. Zo blijven de poorten een echte verrassing.</ConceptNotice>
+      <PageHeading eyebrow="DE WIJK ONTWAAKT" title="Zie de nacht tot leven komen." intro="Ontdek hoe poorten tijdens de Halloween-avond verschijnen en hoe een route door de wijk kan veranderen. Beweeg over een poort of tik erop voor het verhaal erachter." />
+      <ConceptNotice>Dit is een fictieve live-demonstratie met verzonnen poorten en voorbeeldroutes. Echte deelnemers, privéadressen en definitieve routes blijven verborgen.</ConceptNotice>
       <PublicMap />
     </div>
   );

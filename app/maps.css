@@ -6,7 +6,8 @@
 .admin-portal-map-heading h3{margin:0;font:25px Georgia,serif;color:#e8e3da}
 .admin-portal-map-heading span,.admin-portal-map-note{color:#a9bac5;font-size:12px}
 .admin-portal-map-note{margin-top:-9px!important}
-.night-map-canvas{position:absolute;inset:0;width:100%;height:100%}
+.night-map-canvas{position:absolute!important;inset:0;width:100%;height:100%!important}
+.night-map .maplibregl-marker{z-index:3}
 .night-map:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;box-shadow:inset 0 0 55px #02080f77;background:linear-gradient(180deg,#06111b2e,transparent 24%,transparent 74%,#06111b55)}
 .night-map-fallback{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;padding:32px;text-align:center;background:radial-gradient(ellipse at 50% 40%,#1a3542,#07131f 73%);color:#dce8ec}
 .night-map-fallback>svg{color:#dfa66d;filter:drop-shadow(0 0 18px #df915d77)}
@@ -38,6 +39,7 @@
 .night-map-popup strong{font:22px/1.2 Georgia,serif;color:#f2e9df}
 .night-map-popup span{color:#acbfc6;font-size:12px}
 .night-map-popup span b{color:#e9ded0;font-weight:700}
+.night-map-popup-description{max-width:245px;margin:5px 0 3px;color:#b7c7ce;font-size:12px;line-height:1.65}
 .night-map-popup a{width:max-content;color:#8ce5d0;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:700}
 .night-map-popup-action{margin-top:7px;padding:8px 10px;border:1px solid #d4a26780;border-radius:7px;background:#2b2119;color:#f6c78f;font:700 12px/1.2 inherit;text-align:left;cursor:pointer}
 .night-map-popup-action:hover,.night-map-popup-action:focus-visible{border-color:#f0b871;background:#3a2a1d;outline:2px solid #fff;outline-offset:2px}
@@ -50,6 +52,25 @@
 .night-map-portal-pin.status-paused{border-style:dashed}.night-map-portal-pin.status-closed{filter:saturate(.45);opacity:.78}.night-map-portal-pin.status-closed:after{background:#e77c74}.night-map-portal-pin.is-final{border-radius:50%;border-color:#f4c17d;box-shadow:inset 0 0 25px #d48f4c44,0 0 0 8px #d89b5030,0 0 36px #d99a5b}
 .night-map-cluster{display:grid;place-items:center;width:46px;height:46px;border:2px solid #f3c17f;border-radius:50%;background:#152635;color:#fff1dd;font:800 14px/1 inherit;box-shadow:0 0 0 8px #e3aa5b20,0 0 27px #d39a5555;cursor:pointer}
 .night-map-cluster:hover,.night-map-cluster:focus-visible{transform:scale(1.08);outline:2px solid #fff;outline-offset:3px}
+.night-map-route-traveller{display:block;width:15px;height:15px;border:3px solid #fff2df;border-radius:50%;background:#f1aa6d;box-shadow:0 0 0 8px #f0a5652b,0 0 28px #f0a565;animation:nightRoutePulse 1.9s ease-in-out infinite}
+.public-map-experience{display:grid;gap:14px}
+.public-map-stage{position:relative}
+.public-map-experience .night-map--public{min-height:clamp(540px,68vh,720px)}
+.public-map-demo-label{position:absolute;z-index:4;top:16px;left:16px;display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid #ebbb7c52;border-radius:999px;background:#07131ee8;color:#f1c896;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;backdrop-filter:blur(12px);box-shadow:0 10px 30px #0006;pointer-events:none}
+.public-map-demo-label svg{filter:drop-shadow(0 0 8px #e8a36f)}
+.public-map-livebar{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:21px 23px;border:1px solid #8da6b236;border-radius:10px;background:radial-gradient(circle at 85% 0,#a8633420,transparent 38%),linear-gradient(120deg,#111e29,#09141e);box-shadow:0 14px 40px #0003}
+.public-map-livecopy{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 16px;min-width:0}
+.public-map-livecopy>span{display:flex;align-items:center;gap:7px;color:#b9a48f;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.public-map-livecopy>span i{width:8px;height:8px;border-radius:50%;background:#c18a5f;box-shadow:0 0 10px #c18a5f}
+.public-map-livecopy>span.is-live{color:#8ce0bd}.public-map-livecopy>span.is-live i{background:#72d5ad;box-shadow:0 0 12px #72d5ad;animation:nightLivePulse 2s ease-in-out infinite}
+.public-map-livecopy>strong{color:#f0e7dc;font:24px/1.25 Georgia,serif}
+.public-map-livecopy>p{grid-column:1/-1;margin:2px 0 0;color:#94a9b5;font-size:12px;line-height:1.6}
+.public-map-live-actions{display:flex;flex:0 0 auto;gap:9px}
+.public-map-live-actions .btn{min-height:43px;padding:10px 14px;white-space:nowrap;font-size:12px}
+.public-map-live-actions .btn svg{width:16px;height:16px}
 @keyframes nightPortalGlow{50%{opacity:.55;filter:drop-shadow(0 0 11px currentColor)}}
-@media(max-width:700px){.night-map:not(.night-map--preview){min-height:410px}.night-map--route,.night-map--admin{height:410px}.night-map--preview{height:340px;min-height:340px}.night-map-fallback{padding:17px}.night-map-privacy-note{font-size:10px;bottom:33px}.night-map .maplibregl-ctrl-attrib{font-size:9px}.night-map-filters{right:54px;max-width:none}.night-map-filters button{font-size:0;padding:8px}.night-map-filters button i{width:11px;height:11px}}
-@media(prefers-reduced-motion:reduce){.night-map-portal-pin>span{animation:none}.night-map-portal-pin{transition:none}}
+@keyframes nightRoutePulse{50%{transform:scale(.82);box-shadow:0 0 0 13px #f0a56516,0 0 34px #f0a565}}
+@keyframes nightLivePulse{50%{opacity:.55;transform:scale(.72)}}
+@media(max-width:700px){.night-map:not(.night-map--preview){min-height:410px}.public-map-experience .night-map--public{min-height:520px}.night-map--route,.night-map--admin{height:410px}.night-map--preview{height:340px;min-height:340px}.night-map-fallback{padding:17px}.night-map-privacy-note{font-size:10px;bottom:33px}.night-map .maplibregl-ctrl-attrib{font-size:9px}.night-map-filters{right:54px;max-width:none}.night-map-filters button{font-size:0;padding:8px}.night-map-filters button i{width:11px;height:11px}.public-map-demo-label{top:11px;left:11px;max-width:calc(100% - 70px);font-size:9px}.public-map-livebar{display:grid;gap:18px;padding:18px}.public-map-livecopy{grid-template-columns:1fr}.public-map-livecopy>strong{font-size:21px}.public-map-livecopy>p{grid-column:auto}.public-map-live-actions{display:grid;grid-template-columns:1fr 1fr}.public-map-live-actions .btn{white-space:normal;line-height:1.35;padding-inline:10px}}
+@media(max-width:390px){.public-map-live-actions{grid-template-columns:1fr}.public-map-live-actions .btn{width:100%}}
+@media(prefers-reduced-motion:reduce){.night-map-portal-pin>span,.night-map-route-traveller,.public-map-livecopy>span.is-live i{animation:none}.night-map-portal-pin{transition:none}}

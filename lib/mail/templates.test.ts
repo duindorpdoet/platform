@@ -112,11 +112,11 @@ describe("premium transactional mail catalog", () => {
     expect(rejected.text).toContain("https://staging-halloween.duindorpdoet.nl/mijn-inschrijving");
   });
 
-  it("renders a shared Tikkie payment with the joint total, family names and a direct fallback link", () => {
+  it("renders a shared payment link with the joint total, family names and a direct fallback link", () => {
     const rendered = renderTransactionalMail({
       messageType: "payment_link_ready",
       payload: {
-        externalUrl: "https://tikkie.me/pay/shared?request=abc&source=email",
+        externalUrl: "https://betaalverzoek.ing.nl/verzoek/shared?request=abc&source=email",
         amountCents: 2250,
         paymentParticipants: ["Sam Jansen · Familie Jansen", 'Alex <Ouder> & "Familie"'],
       },
@@ -125,10 +125,10 @@ describe("premium transactional mail catalog", () => {
     expect(rendered.text).toContain("Voor: Sam Jansen · Familie Jansen");
     expect(rendered.text).toContain('Voor: Alex <Ouder> & "Familie"');
     expect(rendered.text).toContain("wie het totaalbedrag betaalt");
-    expect(rendered.text).toContain("Betaal via Tikkie: https://tikkie.me/pay/shared?request=abc&source=email");
+    expect(rendered.text).toContain("Open de betaallink: https://betaalverzoek.ing.nl/verzoek/shared?request=abc&source=email");
     expect(rendered.html).toContain("Alex &lt;Ouder&gt; &amp; &quot;Familie&quot;");
     expect(rendered.html).not.toContain("<Ouder>");
-    expect(rendered.html.match(/href="https:\/\/tikkie\.me\/pay\/shared\?request=abc&amp;source=email"/g)).toHaveLength(2);
+    expect(rendered.html.match(/href="https:\/\/betaalverzoek\.ing\.nl\/verzoek\/shared\?request=abc&amp;source=email"/g)).toHaveLength(2);
     expect(rendered.html).toContain("Werkt de knop niet? Open deze link:");
   });
 
@@ -136,7 +136,7 @@ describe("premium transactional mail catalog", () => {
     const rendered = renderTransactionalMail({
       messageType: "payment_link_ready",
       payload: {
-        externalUrl: "https://tikkie.me/pay/designated", amountCents: 1200,
+        externalUrl: "https://betaalverzoek.ing.nl/verzoek/designated", amountCents: 1200,
         payerName: "Sam <Jansen>", paymentParticipants: ["Sam <Jansen>", "Alex Visser"],
       },
     });
@@ -150,15 +150,15 @@ describe("premium transactional mail catalog", () => {
   it("shows selected child names and the single anchor in child-level payment mail", () => {
     const rendered = renderTransactionalMail({
       messageType: "payment_link_ready",
-      payload: { externalUrl: "https://tikkie.me/pay/children", amountCents: 500, paymentChildren: ["Noor", "Sam <Kind>"], anchorChildName: "Noor" },
+      payload: { externalUrl: "https://betaalverzoek.ing.nl/verzoek/children", amountCents: 500, paymentChildren: ["Noor", "Sam <Kind>"], anchorChildName: "Noor" },
     });
-    expect(rendered.text).toContain("Tikkie bij: Noor");
+    expect(rendered.text).toContain("Betaalknop bij: Noor");
     expect(rendered.text).toContain("Voor kind: Noor");
     expect(rendered.text).toContain("Voor kind: Sam <Kind>");
     expect(rendered.text).toContain("genoemde kinderen samen");
     expect(rendered.text).not.toContain("genoemde gezinnen");
     expect(rendered.html).toContain("Sam &lt;Kind&gt;");
-    expect(rendered.text).toContain("Betaal via Tikkie: https://tikkie.me/pay/children");
+    expect(rendered.text).toContain("Open de betaallink: https://betaalverzoek.ing.nl/verzoek/children");
   });
 
   it.each(["payment_reported", "payment_confirmed"])("limits %s mail to the included children", (messageType) => {
@@ -176,22 +176,22 @@ describe("premium transactional mail catalog", () => {
     expect(rendered.text).not.toContain("Totaal te betalen");
   });
 
-  it("supports a single-family payment and trusted Tikkie subdomains", () => {
+  it("supports a single-family payment through any safe HTTPS payment provider", () => {
     const rendered = renderTransactionalMail({
       messageType: "payment_link_ready",
-      payload: { externalUrl: "https://pay.tikkie.me/single", amountCents: 500, paymentParticipants: ["Familie Jansen"] },
+      payload: { externalUrl: "https://www.ing.nl/particulier/betaalverzoek?request=single", amountCents: 500, paymentParticipants: ["Familie Jansen"] },
     });
     expect(rendered.text).toContain("Totaal te betalen: €\u00a05,00");
     expect(rendered.text).toContain("Voor: Familie Jansen");
-    expect(rendered.text).toContain("Betaal via Tikkie: https://pay.tikkie.me/single");
+    expect(rendered.text).toContain("Open de betaallink: https://www.ing.nl/particulier/betaalverzoek?request=single");
     const legacy = renderTransactionalMail({ messageType: "payment_link_ready", payload: { amountCents: 500 } });
     expect(legacy.text).toContain("Bekijk de betaling: https://staging-halloween.duindorpdoet.nl/mijn-inschrijving");
   });
 
   it.each([
     "http://tikkie.me/pay/request",
-    "https://tikkie.me.attacker.invalid/pay/request",
-    "https://not-tikkie.me/pay/request",
+    "https://localhost/pay/request",
+    "https://payment-provider/pay/request",
     "https://tikkie.me@attacker.invalid/pay/request",
     "https://attacker.invalid@tikkie.me/pay/request",
     "https://user:password@tikkie.me/pay/request",
@@ -203,9 +203,9 @@ describe("premium transactional mail catalog", () => {
     "javascript:alert(1)",
     "//tikkie.me/pay/request",
     { href: "https://tikkie.me/pay/request" },
-  ])("rejects an unsafe external Tikkie link: %s", (externalUrl) => {
+  ])("rejects an unsafe external payment link: %s", (externalUrl) => {
     expect(() => renderTransactionalMail({ messageType: "payment_link_ready", payload: { externalUrl } }))
-      .toThrow(/Tikkie URL/);
+      .toThrow(/payment URL/);
   });
 
   it("does not allow external payment links to change any other mail action", () => {

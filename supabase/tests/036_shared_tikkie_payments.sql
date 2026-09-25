@@ -28,29 +28,29 @@ select ok(not has_table_privilege('anon','app_private.payment_link_batches','sel
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://tikkie.me/pay/shared-test','Gezamenlijke betaling','batch-test-publish') $$,
+select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://betaalverzoek.ing.nl/verzoek/shared-test','Gezamenlijke betaling','batch-test-publish') $$,
   '42501','NOT_AUTHORIZED','a parent cannot publish a shared payment request');
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://tikkie.me.attacker.invalid/pay/test','Gezamenlijke betaling','batch-invalid-url') $$,
-  '22023','VALIDATION_ERROR','an impostor Tikkie host is rejected');
+select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://user@attacker.invalid/pay/test','Gezamenlijke betaling','batch-invalid-url') $$,
+  '22023','VALIDATION_ERROR','a payment URL with user information is rejected');
 select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://tikkie.me:443/pay/test','Gezamenlijke betaling','batch-invalid-port') $$,
   '22023','VALIDATION_ERROR','an explicit port in the payment URL is rejected');
-select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select jsonb_build_array(selection->0,selection->0) from batch_test),'https://tikkie.me/pay/shared-test','Gezamenlijke betaling','batch-duplicate-selection') $$,
+select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select jsonb_build_array(selection->0,selection->0) from batch_test),'https://betaalverzoek.ing.nl/verzoek/shared-test','Gezamenlijke betaling','batch-duplicate-selection') $$,
   '22023','VALIDATION_ERROR','duplicate request selections cannot inflate a batch total');
-select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select jsonb_set(selection,'{1,version}','999') from batch_test),'https://tikkie.me/pay/shared-test','Gezamenlijke betaling','batch-stale-selection') $$,
+select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select jsonb_set(selection,'{1,version}','999') from batch_test),'https://betaalverzoek.ing.nl/verzoek/shared-test','Gezamenlijke betaling','batch-stale-selection') $$,
   '40001','STALE_VERSION','one stale selected payment rejects the entire batch');
 reset role;
 select is((select count(*)::integer from app_private.payment_requests where payment_batch_id is not null and id in (select first_payment from batch_test union all select second_payment from batch_test)),0,'a failed batch leaves neither selected request linked');
-select is((select count(*)::integer from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://tikkie.me/pay/shared-test'),0,'a failed batch queues no payment e-mail');
+select is((select count(*)::integer from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://betaalverzoek.ing.nl/verzoek/shared-test'),0,'a failed batch queues no payment e-mail');
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-select lives_ok($$ update batch_test set result=api.admin_payment_batch_publish('duindorp-halloween-2026',selection,'https://tikkie.me/pay/shared-test','Gezamenlijke betaling','batch-test-publish') $$,
-  'the manager publishes one shared Tikkie for two households');
+select lives_ok($$ update batch_test set result=api.admin_payment_batch_publish('duindorp-halloween-2026',selection,'https://betaalverzoek.ing.nl/verzoek/shared-test','Gezamenlijke betaling','batch-test-publish') $$,
+  'the manager publishes one shared payment link for two households');
 select is((select (result->>'totalAmountCents')::integer from batch_test),1200,'the batch amount is the sum of both original invoices');
 select is((select jsonb_array_length(result->'participants') from batch_test),2,'the batch describes both linked households');
 select is((select result->>'payerPaymentRequestId' from batch_test),(select first_payment::text from batch_test),'the first selected household is the default single payer');
-select is(api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://tikkie.me/pay/shared-test','Gezamenlijke betaling','batch-test-publish'),
+select is(api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://betaalverzoek.ing.nl/verzoek/shared-test','Gezamenlijke betaling','batch-test-publish'),
   (select result from batch_test),'replaying the publication command returns the original batch');
 select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://tikkie.me/pay/another','Gezamenlijke betaling','batch-test-publish') $$,
   '23505','IDEMPOTENCY_CONFLICT','the same publication key cannot silently change the payment URL');
@@ -59,28 +59,28 @@ select ok((select item ? 'parentName' and item ? 'parentEmail' and item ? 'house
   'admin payment cards identify the parent, household, group and shared batch');
 reset role;
 select is((select count(*)::integer from app_private.payment_link_batch_members where batch_id=(select (result->>'id')::uuid from batch_test)),2,'the batch contains both invoices exactly once');
-select is((select count(*)::integer from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://tikkie.me/pay/shared-test'),1,'only the designated payer household receives the direct Tikkie e-mail');
-select is((select recipient_email from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://tikkie.me/pay/shared-test'),'parent-a@example.invalid','the designated payer receives the direct link, not every linked family');
-select ok((select bool_and(payload ? 'batchId' and payload ? 'batchVersion' and nullif(payload->>'payerName','') is not null) from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://tikkie.me/pay/shared-test'),'the payment mail includes payer and batch revision metadata');
+select is((select count(*)::integer from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://betaalverzoek.ing.nl/verzoek/shared-test'),1,'only the designated payer household receives the direct payment-link e-mail');
+select is((select recipient_email from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://betaalverzoek.ing.nl/verzoek/shared-test'),'parent-a@example.invalid','the designated payer receives the direct link, not every linked family');
+select ok((select bool_and(payload ? 'batchId' and payload ? 'batchVersion' and nullif(payload->>'payerName','') is not null) from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://betaalverzoek.ing.nl/verzoek/shared-test'),'the payment mail includes payer and batch revision metadata');
 select ok((select bool_and((payload->>'amountCents')::integer=1200 and jsonb_array_length(payload->'paymentParticipants')=2)
-  from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://tikkie.me/pay/shared-test'),
+  from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://betaalverzoek.ing.nl/verzoek/shared-test'),
   'every batch e-mail contains the full joint total and both names');
 update batch_test set selection=(select jsonb_agg(jsonb_build_object('id',id,'version',version) order by case when id=(select first_payment from batch_test) then 0 else 1 end) from app_private.payment_requests
   where id in (select first_payment from batch_test union all select second_payment from batch_test));
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-select lives_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://tikkie.me/pay/shared-test','Zelfde betaalverzoek','batch-test-noop') $$,
+select lives_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://betaalverzoek.ing.nl/verzoek/shared-test','Zelfde betaalverzoek','batch-test-noop') $$,
   'the same current members and URL can be submitted again safely');
 select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://tikkie.me/pay/noop-changed','Zelfde betaalverzoek','batch-test-noop') $$,
   '23505','IDEMPOTENCY_CONFLICT','even an unchanged publication reserves its idempotency key');
 select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select jsonb_build_array(selection->0) from batch_test),'https://tikkie.me/pay/subset','Onvolledige selectie','batch-test-subset') $$,
   '23514','BATCH_MEMBERSHIP_MISMATCH','an existing batch cannot be edited through only one family invoice');
 reset role;
-select is((select count(*)::integer from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://tikkie.me/pay/shared-test'),1,'resubmitting the unchanged batch does not queue duplicate mail');
+select is((select count(*)::integer from app_private.email_outbox where message_type='payment_link_ready' and payload->>'externalUrl'='https://betaalverzoek.ing.nl/verzoek/shared-test'),1,'resubmitting the unchanged batch does not queue duplicate mail');
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}',true);
-select ok(nullif(api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,payment,externalUrl}','') is null,'a non-paying linked household does not receive the active Tikkie link');
+select ok(nullif(api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,payment,externalUrl}','') is null,'a non-paying linked household does not receive the active payment link');
 select is(api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,payment,batch,canPay}','false','the linked non-payer has no active payment action');
 select ok(nullif(api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,payment,batch,externalUrl}','') is null,'the nested batch projection cannot leak the payer-only link');
 select throws_ok($$ select api.registration_report_payment((select second_registration from batch_test),2) $$,
@@ -92,10 +92,10 @@ select throws_ok($$ select api.admin_payment_batch_cancel((select (result->>'id'
 select is((api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,payment,batch,totalAmountCents}')::integer,1200,'the parent dashboard shows the joint amount instead of suggesting their individual share is the total');
 select is(jsonb_array_length(api.registration_snapshot('duindorp-halloween-2026') #> '{registration,payment,batch,participants}'),2,'the parent dashboard identifies both households paying together');
 select ok((api.registration_snapshot('duindorp-halloween-2026') #> '{registration,payment,batch}')::text not like '%@example.invalid%','the shared parent projection does not disclose other parents e-mail addresses');
-select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://tikkie.me/pay/shared-test','Gezamenlijke betaling','batch-test-publish') $$,
+select throws_ok($$ select api.admin_payment_batch_publish('duindorp-halloween-2026',(select selection from batch_test),'https://betaalverzoek.ing.nl/verzoek/shared-test','Gezamenlijke betaling','batch-test-publish') $$,
   '42501','NOT_AUTHORIZED','a different actor cannot exploit the manager publication idempotency key');
 select set_config('request.jwt.claims','{"sub":"a0000000-0000-0000-0000-000000000007","role":"authenticated"}',true);
-select ok(api.registration_snapshot('duindorp-halloween-2026')::text not like '%https://tikkie.me/pay/shared-test%','another household cannot see the private shared payment link');
+select ok(api.registration_snapshot('duindorp-halloween-2026')::text not like '%https://betaalverzoek.ing.nl/verzoek/shared-test%','another household cannot see the private shared payment link');
 select ok(coalesce(api.registration_snapshot('duindorp-halloween-2026') #> '{registration,payment,batch}','null'::jsonb)='null'::jsonb,'another household cannot see the batch participant names');
 
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
@@ -115,7 +115,7 @@ reset role;
 delete from app_private.household_members where user_id='a0000000-0000-0000-0000-000000000001' and household_id=(select household_id from app_private.registrations where id=(select second_registration from batch_test));
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-select is(api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,payment,externalUrl}','https://tikkie.me/pay/shared-test','the designated payer receives the active Tikkie URL');
+select is(api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,payment,externalUrl}','https://betaalverzoek.ing.nl/verzoek/shared-test','the designated payer receives the active payment URL');
 select is(api.registration_snapshot('duindorp-halloween-2026') #>> '{registration,payment,batch,canPay}','true','the payer sees an active payment action');
 select throws_ok($$ select api.registration_report_payment((select first_registration from batch_test),null) $$,
   '40001','STALE_VERSION','a null version cannot bypass the payer report revision guard');
@@ -175,10 +175,10 @@ select throws_ok($$ select api.admin_payment_batch_confirm((select (result->>'id
   '23514','BATCH_NEEDS_REVIEW','a changed family amount must be reviewed before any joint confirmation');
 reset role;
 select is((select count(*)::integer from api.worker_claim_outbox(50,30) where message_type='payment_link_ready' and payload->>'externalUrl' in (
-  'https://tikkie.me/pay/shared-test','https://tikkie.me/pay/cancel-test','https://tikkie.me/pay/cancel-corrected','https://tikkie.me/pay/changed-total')),
+  'https://betaalverzoek.ing.nl/verzoek/shared-test','https://tikkie.me/pay/cancel-test','https://tikkie.me/pay/cancel-corrected','https://tikkie.me/pay/changed-total')),
   0,'the worker never claims a settled, corrected, cancelled or amount-invalidated payment link');
 select is((select count(*)::integer from app_private.email_outbox where message_type='payment_link_ready' and status='suppressed' and last_error_code='PAYMENT_LINK_SUPERSEDED'
-  and payload->>'externalUrl' in ('https://tikkie.me/pay/shared-test','https://tikkie.me/pay/cancel-test','https://tikkie.me/pay/cancel-corrected','https://tikkie.me/pay/changed-total')),
+  and payload->>'externalUrl' in ('https://betaalverzoek.ing.nl/verzoek/shared-test','https://tikkie.me/pay/cancel-test','https://tikkie.me/pay/cancel-corrected','https://tikkie.me/pay/changed-total')),
   4,'each obsolete queued payer e-mail is explicitly suppressed');
 select * from finish();
 rollback;

@@ -18,21 +18,21 @@ select throws_ok(
     'duindorp-halloween-2026',
     '[{"id":"25000083-0000-0000-0000-000000000001","version":1},{"id":"25000084-0000-0000-0000-000000000001","version":1}]',
     '25000083-0000-0000-0000-000000000001',
-    'https://tikkie.me/pay/cross-registration',
-    'Tikkie gepubliceerd via beheeromgeving',
+    'https://betaalverzoek.ing.nl/verzoek/cross-registration',
+    'Betaallink gepubliceerd via beheeromgeving',
     'cross-registration'
   )$$,
   '23514',
   'CHILDREN_MUST_SHARE_REGISTRATION',
-  'one child Tikkie cannot mix registrations'
+  'one child payment link cannot mix registrations'
 );
 update payment_review_test
 set batch = api.admin_child_payment_publish(
   'duindorp-halloween-2026',
   '[{"id":"25000084-0000-0000-0000-000000000001","version":1}]',
   '25000084-0000-0000-0000-000000000001',
-  'https://tikkie.me/pay/admin-review',
-  'Tikkie gepubliceerd via beheeromgeving',
+  'https://betaalverzoek.ing.nl/verzoek/admin-review',
+  'Betaallink gepubliceerd via beheeromgeving',
   'admin-review-publish'
 );
 
@@ -56,8 +56,8 @@ set batch = api.admin_child_payment_mark_unpaid(
   (batch->>'id')::uuid,
   (batch->>'version')::integer
 );
-select is((select batch->>'status' from payment_review_test), 'awaiting_payment', 'admin can mark the reported Tikkie unpaid');
-select is((select batch->>'externalUrl' from payment_review_test), 'https://tikkie.me/pay/admin-review', 'unpaid decision restores the existing payment link');
+select is((select batch->>'status' from payment_review_test), 'awaiting_payment', 'admin can mark the reported payment link unpaid');
+select is((select batch->>'externalUrl' from payment_review_test), 'https://betaalverzoek.ing.nl/verzoek/admin-review', 'unpaid decision restores the existing payment link');
 select throws_ok(
   $$select api.admin_child_payment_mark_unpaid((select (batch->>'id')::uuid from payment_review_test),(select (batch->>'version')::integer from payment_review_test))$$,
   '23514',
