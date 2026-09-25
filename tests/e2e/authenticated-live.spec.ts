@@ -495,7 +495,9 @@ test("the night cockpit exposes verified portals and the group board without lea
   await selectAdminSection(page, "Groepsindeling");
   await expect(page.getByRole("heading", { name: "Maak de wandelgroepen." })).toBeVisible();
   await expect(page.locator(".group-composition-column").first()).toContainText(/kinderen/i);
-  await expect(page.locator(".group-registration-children").first()).toContainText(/\(\d+ jaar\)/);
+  await expect(
+    page.locator(".group-registration-children").filter({ hasText: /\(\d+ jaar\)/ }).first(),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Groep maken" })).toBeVisible();
   await assertReadableLayout(page);
 });
