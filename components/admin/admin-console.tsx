@@ -36,6 +36,7 @@ import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
 import { GroupCompositionBoard } from "@/components/admin/group-composition-board";
 import { NightMap } from "@/components/maps/night-map";
+import { normalizeActivity } from "@/lib/domain/activity-labels";
 import { createClient } from "@/lib/supabase/client";
 
 type Dashboard = {
@@ -1350,7 +1351,10 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                 </section>
                 <section className="panel cockpit-live-log">
                   <div className="row-between"><div><p className="kicker">Binnenkomend</p><h2>Live log</h2></div><button className="text-link" onClick={() => void Promise.all([load(), loadLive()])}>Vernieuwen <RefreshCw /></button></div>
-                  {dashboard.recentActivity.length ? dashboard.recentActivity.slice(0, 6).map((item, index) => <div className="activity-row" key={`${item.createdAt}-${index}`}><CheckCircle2 /><div><strong>{item.action}</strong><small>{item.resourceType} · {new Date(item.createdAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}</small></div></div>) : <p>Nog geen activiteit.</p>}
+                  {dashboard.recentActivity.length ? dashboard.recentActivity.slice(0, 6).map((item, index) => {
+                    const activity = normalizeActivity(item.action, item.resourceType);
+                    return <div className={`activity-row activity-${activity.tone}`} key={`${item.createdAt}-${index}`}><CheckCircle2 aria-hidden="true" /><div><strong>{activity.message}</strong><small>{activity.source} · {new Date(item.createdAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}</small></div></div>;
+                  }) : <p>Nog geen activiteit.</p>}
                 </section>
               </div>
             </div>

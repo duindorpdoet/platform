@@ -415,6 +415,13 @@ test("the night cockpit exposes verified portals and the group board without lea
   const admin = await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
 
+  const activityMessages = page.locator(".cockpit-live-log .activity-row strong");
+  await expect(activityMessages.first()).toBeVisible({ timeout: 15_000 });
+  for (const message of await activityMessages.allTextContents()) expect(message).not.toMatch(/[._]/);
+  for (const detail of await page.locator(".cockpit-live-log .activity-row small").allTextContents()) {
+    expect(detail.split(" · ")[0]).not.toMatch(/[._]/);
+  }
+
   const mapPanel = page.locator(".cockpit-map-panel");
   await expect(mapPanel).toContainText(/bevestigde bestemming/i);
   await expect(mapPanel.getByRole("group", { name: "Filter poorten op status" })).toBeVisible({ timeout: 15_000 });
