@@ -36,6 +36,7 @@ import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
 import { GroupCompositionBoard } from "@/components/admin/group-composition-board";
 import { NightMap } from "@/components/maps/night-map";
+import { PushNotificationSettings } from "@/components/pwa/pwa-experience";
 import { normalizeActivity } from "@/lib/domain/activity-labels";
 import { paymentRegistrationStage, type PaymentRegistrationStage } from "@/lib/domain/payment-registration-stage";
 import { createClient } from "@/lib/supabase/client";
@@ -1052,6 +1053,18 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     await loadLive();
   }
 
+  async function sendTestPush() {
+    setNotice("Testmelding wordt verstuurd…");
+    try {
+      const response = await fetch("/api/push/test", { method: "POST", cache: "no-store" });
+      const result = await response.json() as { data?: { delivered?: number }; error?: { message?: string } };
+      if (!response.ok) throw new Error(result.error?.message || "De testmelding kon niet worden verstuurd.");
+      setNotice(`Testmelding afgeleverd op ${result.data?.delivered ?? 0} apparaat/apparaten.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "De testmelding kon niet worden verstuurd.");
+    }
+  }
+
   if (!dashboard)
     return (
       <div className="panel loading-state">
@@ -1326,6 +1339,12 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                     </button>
                   </article>
                 )}
+                {capabilities.includes("event_admin") && <article className="panel registration-channel">
+                  <BellRing />
+                  <div><h3>Staging-testmelding</h3><p>Zet meldingen op dit apparaat aan en verstuur daarna een neutrale test. De server weigert deze actie buiten staging.</p></div>
+                  <PushNotificationSettings />
+                  <button className="btn outline" type="button" onClick={() => void sendTestPush()}>Testmelding versturen</button>
+                </article>}
               </div>
             </section>
           </>

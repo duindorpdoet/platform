@@ -12,6 +12,23 @@ export function SignOutButton() {
   async function signOut() {
     setBusy(true);
     clearPrivateSnapshots();
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await fetch("/api/push/subscription", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ endpoint: subscription.endpoint }),
+            cache: "no-store",
+          });
+          await subscription.unsubscribe();
+        }
+      } catch {
+        // Uitloggen gaat altijd door; een verlopen endpoint wordt bij aflevering opgeruimd.
+      }
+    }
     await createClient()?.auth.signOut();
     router.replace("/");
     router.refresh();

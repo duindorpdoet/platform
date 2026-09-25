@@ -39,6 +39,17 @@ for (const path of ["/", "/verhaal", "/werelden", "/kaart", "/faq", "/contact", 
   if (!response.ok) throw new Error(`Public smoke test failed for ${path} (${response.status}).`);
 }
 
+const manifestResponse = await get("/manifest.webmanifest");
+if (!manifestResponse.ok) throw new Error("PWA manifest is unavailable.");
+const manifest = await manifestResponse.json();
+if (manifest.id !== "/omgeving" || manifest.start_url !== "/omgeving" || !manifest.icons?.some((icon) => icon.purpose === "maskable")) {
+  throw new Error("PWA manifest does not match the installation contract.");
+}
+for (const path of ["/sw.js", "/offline.html", "/pwa/icons/pwa-192.png", "/pwa/icons/pwa-512.png", "/pwa/icons/maskable-512.png", "/pwa/icons/apple-touch-icon-180.png"]) {
+  const response = await get(path);
+  if (!response.ok) throw new Error(`PWA asset smoke test failed for ${path} (${response.status}).`);
+}
+
 for (const path of ["/mijn-inschrijving", "/mijn-huis", "/mijn-groep", "/admin"]) {
   const response = await get(path);
   if (![302, 307, 308].includes(response.status)) throw new Error(`Protected route ${path} did not redirect.`);

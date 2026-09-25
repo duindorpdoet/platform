@@ -33,6 +33,9 @@ const schema = z.object({
   AUTH_SITE_URL: optionalUrl.default("http://localhost:3000"),
   ORGANIZATION_SUPPORT_EMAIL: z.string().email().default("halloween@duindorpdoet.nl"),
   ORGANIZATION_EVENT_PHONE: z.string().default("0659019035"),
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().refine((value) => value.startsWith("mailto:") || value.startsWith("https://"), "VAPID_SUBJECT must be a mailto or https URL").optional(),
 });
 
 let cached: z.infer<typeof schema> | undefined;
