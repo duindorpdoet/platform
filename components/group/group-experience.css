@@ -29,6 +29,7 @@
 .group-premium .group-check-in .checkfield input{width:18px;height:18px;flex:0 0 18px;accent-color:var(--group-gold)}
 .group-premium .group-check-in .checkfield small{color:#a8bdc7}
 .group-premium .group-check-in>.btn{margin-top:22px}
+.attendance-progress{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:8px;padding:13px 0;border-top:1px solid #344550;color:#dce5e9;font-size:12px}.attendance-progress span{color:#9fb2bd}.attendance-row{display:grid;grid-template-columns:minmax(110px,1fr) minmax(200px,1.25fr);align-items:center;gap:16px;margin:0;padding:15px 0;border:0;border-top:1px solid #344550}.attendance-row legend{display:flex;flex-direction:column;float:left;width:100%;padding:0;color:#eef0ec}.attendance-row legend small{margin-top:4px;color:#91a7b4;font-size:11px}.attendance-row>div{display:grid;grid-template-columns:1fr 1fr;gap:8px}.attendance-row label{display:flex;justify-content:center;align-items:center;gap:7px;min-height:42px;border:1px solid #465966;border-radius:8px;color:#b8c6ce;font-size:12px;cursor:pointer}.attendance-row label.selected.present{border-color:#79bf99;background:#244837;color:#c8f1da}.attendance-row label.selected.absent{border-color:#d18a72;background:#4d2d29;color:#ffd4c7}.attendance-row input{position:absolute;opacity:0;pointer-events:none}.attendance-row label:focus-within{outline:2px solid var(--group-gold);outline-offset:2px}
 .group-premium .group-route-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;background:#101c25;border:1px solid var(--group-line);border-radius:12px;padding:0;overflow:hidden}
 .group-premium .group-route-metrics>span,.group-premium .group-route-metrics>.text-link{padding:14px 18px;border-bottom:1px solid #34455070;min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:12px;line-height:1.65;color:#b9c9d2}
 .group-premium .group-route-metrics>span:first-child{color:var(--group-gold);font-weight:700}
@@ -72,6 +73,7 @@
   .group-premium .participant-actions{padding-left:0;gap:8px;justify-content:flex-start;flex-wrap:wrap}
   .group-premium .participant-actions button{flex:1 1 95px;justify-content:center;white-space:normal}
   .group-premium .group-check-in .checkfield{min-height:48px}
+  .attendance-progress{align-items:flex-start;flex-direction:column;gap:4px}.attendance-row{grid-template-columns:minmax(0,1fr);gap:10px}.attendance-row>div{width:100%}.attendance-row label{min-height:46px}
   .group-premium .group-route-context{gap:10px}
   .group-premium .group-route-phase{flex:1 1 120px;min-width:0}
   .group-premium .active-portal-copy{padding:24px 18px}

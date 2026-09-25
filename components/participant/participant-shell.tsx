@@ -37,6 +37,7 @@ import { GroupJourneyPreference } from "@/components/group/group-journey-prefere
 import { GroupIdentity } from "@/components/group/group-identity";
 import { PortalDashboard } from "@/components/portal/portal-dashboard";
 import { SupportWidget } from "@/components/support/support-widget";
+import { PwaInstallInvitation, PushNotificationSettings } from "@/components/pwa/pwa-experience";
 import { createClient } from "@/lib/supabase/client";
 
 export type ParticipantRoleKey = "walker" | "viewer" | "homeowner";
@@ -139,6 +140,7 @@ export function ParticipantShell({
 
   if (!selectedRole) {
     return <div className="participant-empty page-transition">
+      <PwaInstallInvitation userId={userId} />
       <div className="participant-empty-art" />
       <section className="participant-card participant-empty-copy">
         <p className="participant-eyebrow">Persoonlijke omgeving</p>
@@ -150,6 +152,7 @@ export function ParticipantShell({
   }
 
   return <div className={`participant-environment role-${selectedRole.key}`}>
+    <PwaInstallInvitation userId={userId} />
     <aside className="participant-sidebar" aria-label="Persoonlijke navigatie">
       <Link className="participant-brand" href="/"><img src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" /></Link>
       <p className="participant-sidebar-caption">Jouw avond in Duindorp</p>
@@ -165,8 +168,8 @@ export function ParticipantShell({
       {inviteNotice && <div className="participant-notice" role="status">{inviteNotice}</div>}
       <main className="participant-content" id="participant-content">
         {selectedRole.key === "walker" && <WalkerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
-        {selectedRole.key === "viewer" && <ViewerSection context={context} eventSlug={eventSlug} role={selectedRole} section={activeSection} />}
-        {selectedRole.key === "homeowner" && <HomeownerSection context={context} eventSlug={eventSlug} role={selectedRole} section={activeSection} />}
+        {selectedRole.key === "viewer" && <ViewerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
+        {selectedRole.key === "homeowner" && <HomeownerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
       </main>
     </div>
     <ParticipantNavigation role={selectedRole.key} activeSection={activeSection} />
@@ -275,7 +278,7 @@ function WalkerSection({ context, eventSlug, userId, role, section }: { context:
   if (loading) return <ParticipantLoading />;
   if (section === "groep") return <WalkerGroup group={group} registration={registration} preferences={preferences} groupId={role.groupId ?? undefined} reload={load} />;
   if (section === "nachtpas") return <NightPass context={context} snapshot={registration} group={group} reload={load} />;
-  if (section === "meer" || section === "updates") return <MorePage context={context} eventSlug={eventSlug} role="walker" />;
+  if (section === "meer" || section === "updates") return <MorePage context={context} eventSlug={eventSlug} userId={userId} role="walker" />;
   return <WalkerNow context={context} registration={registration} group={group} reload={load} />;
 }
 
@@ -352,7 +355,7 @@ function NightPass({ context, snapshot, group, reload }: { context: ParticipantC
 
 type ViewerSnapshot = { group: { code: string; status: string; start?: { name: string; startsAt: string } | null }; progress: { status: string; completed: number; lastUpdatedAt: string }; history: Array<{ sequence: number; world: string; outcome: string; completedAt: string }> };
 
-function ViewerSection({ context, eventSlug, role, section }: { context: ParticipantContext; eventSlug: string; role: ParticipantRole; section?: string }) {
+function ViewerSection({ context, eventSlug, userId, role, section }: { context: ParticipantContext; eventSlug: string; userId: string; role: ParticipantRole; section?: string }) {
   const [snapshot, setSnapshot] = useState<ViewerSnapshot | null>(null);
   useEffect(() => {
     const timer = window.setTimeout(async () => {
@@ -363,7 +366,7 @@ function ViewerSection({ context, eventSlug, role, section }: { context: Partici
     return () => window.clearTimeout(timer);
   }, [role.groupId]);
   if (section === "updates") return <UpdatesPanel eventSlug={eventSlug} role="viewer" />;
-  if (section === "meer") return <MorePage context={context} eventSlug={eventSlug} role="viewer" accessId={role.accessId ?? undefined} />;
+  if (section === "meer") return <MorePage context={context} eventSlug={eventSlug} userId={userId} role="viewer" accessId={role.accessId ?? undefined} />;
   if (!snapshot) return <ParticipantLoading />;
   if (section === "groep") return <ParticipantPageFrame eyebrow="Bewust beperkt" title={`Groep ${snapshot.group.code}`}><section className="participant-card"><ShieldCheck /><h2>Meekijken zonder mee te lopen</h2><p>Je ziet de status, het geplande startmoment en de afgeronde wereldstappen. Kindernamen, live GPS, toekomstige adressen en andere groepen blijven altijd verborgen.</p><div className="summary-row"><span>Startmoment</span><strong>{snapshot.group.start ? formatDateTime(snapshot.group.start.startsAt) : "Volgt"}</strong></div><div className="summary-row"><span>Toegang</span><strong>{role.expiresAt ? `tot ${formatDateTime(role.expiresAt)}` : "tot intrekking"}</strong></div></section></ParticipantPageFrame>;
   return <ParticipantPageFrame eyebrow="Alleen wat je nodig hebt" title={snapshot.progress.status === "completed" ? "De groep is veilig klaar." : snapshot.progress.status === "live" ? "Ze zijn onderweg." : "De avond moet nog beginnen."}>
@@ -376,7 +379,7 @@ function ViewerSection({ context, eventSlug, role, section }: { context: Partici
 type PortalSnapshot = { portal: null | { id: string; name: string; operationStatus: "scheduled" | "open" | "paused" | "closed" } } | null;
 type ArrivalsSnapshot = { expectedTotal: number; arrivals: Array<{ groupCode: string; plannedArrivalAt: string; plannedDepartureAt: string; expectedChildren: number; state: string }> };
 
-function HomeownerSection({ context, eventSlug, role, section }: { context: ParticipantContext; eventSlug: string; role: ParticipantRole; section?: string }) {
+function HomeownerSection({ context, eventSlug, userId, role, section }: { context: ParticipantContext; eventSlug: string; userId: string; role: ParticipantRole; section?: string }) {
   const [arrivals, setArrivals] = useState<ArrivalsSnapshot | null>(null);
   const [portal, setPortal] = useState<PortalSnapshot>(null);
   const load = useCallback(async () => {
@@ -392,7 +395,7 @@ function HomeownerSection({ context, eventSlug, role, section }: { context: Part
   }, [eventSlug, role.portalId]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
   if (section === "updates") return <UpdatesPanel eventSlug={eventSlug} role="homeowner" />;
-  if (section === "meer") return <MorePage context={context} eventSlug={eventSlug} role="homeowner" />;
+  if (section === "meer") return <MorePage context={context} eventSlug={eventSlug} userId={userId} role="homeowner" />;
   if (section === "verwacht") return <ArrivalsPage arrivals={arrivals} />;
   return <ParticipantPageFrame eyebrow="Mijn huis · jullie plek in de nacht" title={portal?.portal?.name || "Mijn poort"}>
     <div className="cockpit-metrics owner-summary-metrics"><StatusCard icon={Users} label="Verwacht totaal" value={arrivals ? `${arrivals.expectedTotal} kinderen` : "Wordt berekend"} /><StatusCard icon={Clock3} label="Volgend venster" value={arrivals?.arrivals.find((item) => item.state !== "completed") ? `${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedArrivalAt)}–${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedDepartureAt)}` : "Geen open venster"} /></div>
@@ -429,11 +432,12 @@ function UpdatesPanel({ eventSlug, role, embedded = false }: { eventSlug: string
   return <ParticipantPageFrame eyebrow="Van de organisatie" title="Updates">{list}</ParticipantPageFrame>;
 }
 
-function MorePage({ context, eventSlug, role, accessId }: { context: ParticipantContext; eventSlug: string; role: ParticipantRoleKey; accessId?: string }) {
+function MorePage({ context, eventSlug, userId, role, accessId }: { context: ParticipantContext; eventSlug: string; userId: string; role: ParticipantRoleKey; accessId?: string }) {
   return <ParticipantPageFrame eyebrow="Instellingen en bereikbaarheid" title="Meer">
     {role === "walker" && <UpdatesPanel eventSlug={eventSlug} role="walker" embedded />}
     <section className="participant-card participant-contact-compact"><Contact /><div><strong>Contact bij storing of spoed</strong><div className="participant-actions"><a href={"mailto:" + context.event.supportEmail}>E-mail</a>{context.event.supportPhone && <a href={"tel:" + context.event.supportPhone.replace(/\s/g, "")}>Bel organisatie</a>}</div></div></section>
     <ProfilePanel eventSlug={eventSlug} />
+    <PushNotificationSettings key={userId} />
     <section className="participant-card participant-account"><div><h2>Uitloggen</h2><p>Klaar op dit apparaat? Sluit je persoonlijke omgeving veilig af.</p></div><SignOutButton /></section>
     {role === "viewer" && accessId && <ViewerSelfRevoke accessId={accessId} />}
   </ParticipantPageFrame>;

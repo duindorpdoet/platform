@@ -23,6 +23,9 @@ const required = [
   "REGISTRATION_MODE",
   "MAIL_MODE",
   "AUTH_MAIL_MODE",
+  "NEXT_PUBLIC_VAPID_PUBLIC_KEY",
+  "VAPID_PRIVATE_KEY",
+  "VAPID_SUBJECT",
 ];
 
 for (const name of required) {
@@ -42,6 +45,9 @@ if (new URL(process.env.APP_URL).origin !== new URL(process.env.NEXT_PUBLIC_SITE
 }
 if (new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname !== `${process.env.SUPABASE_PROJECT_REF}.supabase.co`) {
   throw new Error("Supabase URL and project reference do not match.");
+}
+if (!process.env.VAPID_SUBJECT.startsWith("mailto:") && !process.env.VAPID_SUBJECT.startsWith("https://")) {
+  throw new Error("VAPID_SUBJECT must start with mailto: or https://.");
 }
 if (process.env.AUTH_MAIL_MODE !== "live") throw new Error("User-requested authentication codes must be deliverable to residents in both environments.");
 if (target === "staging") {

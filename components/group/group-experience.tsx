@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { clearPrivateSnapshots, readPrivateSnapshot, storePrivateSnapshot } from "@/lib/pwa/private-snapshot";
 import { GroupJourneyPreference } from "@/components/group/group-journey-preference";
 import { NightMap } from "@/components/maps/night-map";
+import { attendanceSummary, reconcileAttendance, type AttendanceDecision } from "@/lib/domain/attendance-check";
 
 type RosterItem = { registrationChildId: string; firstName: string; householdLabel: string };
 type Participant = { id: string; firstName: string; attendance: string; rosterVersion: number; isOwnChild: boolean; status: "pending" | "visited" | "skipped" | null; statusVersion: number | null; required: boolean | null };
@@ -56,7 +57,7 @@ function explain(error: { message?: string } | null) {
 export function GroupExperience({ groupId, userId }: { groupId: string; userId: string }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [roster, setRoster] = useState<RosterItem[]>([]);
-  const [present, setPresent] = useState<Set<string>>(new Set());
+  const [attendance, setAttendance] = useState<Record<string, AttendanceDecision>>({});
   const [offline, setOffline] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -80,7 +81,8 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
       const rosterResult = await client.schema("api").rpc("group_roster", { _group_id: groupId });
       if (!rosterResult.error) {
         const items = rosterResult.data as RosterItem[];
-        setRoster(items); setPresent(new Set(items.map((item) => item.registrationChildId)));
+        setRoster(items);
+        setAttendance((current) => reconcileAttendance(items.map((item) => item.registrationChildId), current));
       }
     }
   }, [groupId, userId]);
@@ -126,6 +128,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
   const stop = run?.currentStop;
   const isFinale = stop?.kind === "finale";
   const elapsedMinutes = run ? Math.floor(run.elapsedSeconds / 60) : 0;
+  const attendanceState = attendanceSummary(roster.map((item) => item.registrationChildId), attendance);
 
   return <div className="group-app group-premium">
     <div className="app-heading row-between"><div><p className="kicker">Groep {snapshot.group.code}</p><h1>Jullie route, stap voor stap.</h1></div></div>
@@ -133,7 +136,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
     {offline && <div className="offline-banner" role="alert"><CloudOff size={18} />Offline: dit is de laatst door de server bevestigde opdracht, bijgewerkt om {run ? new Date(run.lastServerConfirmation).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "een eerder moment"}. Er wordt offline geen nieuwe poort of afronding aangemaakt.</div>}
     {notice && <div className="form-warning" role="status">{notice}</div>}
     {!run && <GroupJourneyPreference groupId={groupId} onSaved={load} />}
-    {!run && <div className="pre-event group-pre-event"><div className="pre-art"><img src="/images/avondloop-hero.webp" alt="Verlichte Duindorpse straat in de avond" /><div><p className="kicker">Route nog vergrendeld</p><h2>{snapshot.group.start ? new Date(snapshot.group.start.startsAt).toLocaleString("nl-NL", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Amsterdam" }) : "Starttijd volgt"}</h2><p>{snapshot.group.start ? `${snapshot.group.start.locationName} · ${snapshot.group.start.address}` : "De organisatie publiceert de startlocatie later."}</p></div></div><div className="panel group-check-in"><p className="kicker">Samen vertrekken</p><h2>Controleer aanwezigheid</h2>{snapshot.access.leader ? <>{roster.map((item) => <label className="checkfield" key={item.registrationChildId}><input type="checkbox" checked={present.has(item.registrationChildId)} onChange={(event) => setPresent((current) => { const next = new Set(current); if (event.target.checked) next.add(item.registrationChildId); else next.delete(item.registrationChildId); return next; })} />{item.firstName} <small>· {item.householdLabel}</small></label>)}<button className="btn full" disabled={busy || offline || present.size === 0} onClick={() => void command("run_start", { _group_id: groupId, _present_registration_child_ids: [...present], _expected_group_version: snapshot.group.version, _idempotency_key: crypto.randomUUID(), _request_hash: [...present].sort().join(":") })}>Start groep met {present.size} aanwezig</button></> : <p>Alleen de aangewezen groepsleider kan de route starten. Tot die tijd blijven adressen verborgen.</p>}</div></div>}
+    {!run && <div className="pre-event group-pre-event"><div className="pre-art"><img src="/images/avondloop-hero.webp" alt="Verlichte Duindorpse straat in de avond" /><div><p className="kicker">Route nog vergrendeld</p><h2>{snapshot.group.start ? new Date(snapshot.group.start.startsAt).toLocaleString("nl-NL", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Amsterdam" }) : "Starttijd volgt"}</h2><p>{snapshot.group.start ? `${snapshot.group.start.locationName} · ${snapshot.group.start.address}` : "De organisatie publiceert de startlocatie later."}</p></div></div><div className="panel group-check-in"><p className="kicker">Samen vertrekken</p><h2>Controleer aanwezigheid</h2>{snapshot.access.leader ? <>{roster.length === 0 ? <p>De actuele groepslijst wordt opgehaald.</p> : <><div className="attendance-progress" aria-live="polite"><strong>{attendanceState.checked} van {attendanceState.total} gecontroleerd</strong><span>{attendanceState.presentIds.length} aanwezig · {attendanceState.absent} afwezig</span></div>{roster.map((item) => <fieldset className="attendance-row" key={item.registrationChildId}><legend><strong>{item.firstName}</strong><small>{item.householdLabel}</small></legend><div><label className={attendance[item.registrationChildId] === "present" ? "selected present" : "present"}><input type="radio" name={`attendance-${item.registrationChildId}`} checked={attendance[item.registrationChildId] === "present"} onChange={() => setAttendance((current) => ({ ...current, [item.registrationChildId]: "present" }))} />Aanwezig</label><label className={attendance[item.registrationChildId] === "absent" ? "selected absent" : "absent"}><input type="radio" name={`attendance-${item.registrationChildId}`} checked={attendance[item.registrationChildId] === "absent"} onChange={() => setAttendance((current) => ({ ...current, [item.registrationChildId]: "absent" }))} />Afwezig</label></div></fieldset>)}</>}<button className="btn full" disabled={busy || offline || !attendanceState.canStart} onClick={() => { if (!attendanceState.canStart) return; const message = `Je start met ${attendanceState.presentIds.length} aanwezige ${attendanceState.presentIds.length === 1 ? "kind" : "kinderen"}. ${attendanceState.absent} ${attendanceState.absent === 1 ? "kind is" : "kinderen zijn"} afwezig. Klopt dit?`; if (window.confirm(message)) void command("run_start", { _group_id: groupId, _present_registration_child_ids: attendanceState.presentIds, _expected_group_version: snapshot.group.version, _idempotency_key: crypto.randomUUID(), _request_hash: attendanceState.presentIds.slice().sort().join(":") }); }}>Start groep met {attendanceState.presentIds.length} aanwezig</button>{attendanceState.complete && attendanceState.presentIds.length === 0 && <p className="form-warning" role="alert">Een groep kan niet starten zonder aanwezig kind.</p>}</> : <p>Alleen de aangewezen groepsleider kan de route starten. Tot die tijd blijven adressen verborgen.</p>}</div></div>}
     {run?.status === "completed" && <div className="finish-screen"><Check size={54} /><p className="kicker">De cirkel is rond</p><h2>Jullie zijn gefinisht.</h2><p>Alle bezochte en overgeslagen poorten staan in het logboek. Een overslag levert geen bezochte zegel op.</p></div>}
     {run?.status === "stopped" && <div className="finish-screen"><LockKeyhole size={54} /><p className="kicker">Route beëindigd</p><h2>Volg de organisatie-instructie.</h2><p>{run.emergencyInstruction ?? "Er worden geen nieuwe poorten vrijgegeven. Blijf bij de verantwoordelijke volwassene en neem bij direct gevaar contact op met de hulpdiensten."}</p></div>}
     {run && !["completed", "stopped"].includes(run.status) && !stop && <div className="panel loading-state" aria-live="polite"><RefreshCw className="spin" /><div><h2>Wacht veilig bij de laatst bevestigde plek</h2><p>De planner controleert opnieuw welke poort en welk aankomstvenster veilig beschikbaar zijn. Vernieuw voor de volgende serverinstructie.</p></div></div>}
