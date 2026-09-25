@@ -70,7 +70,7 @@ export const activityActionLabels: Record<string, string> = {
   "portal.submit": "Poortaanmelding ingediend",
   "portal_application.approved": "Poortaanmelding goedgekeurd",
   "portal_application.submitted": "Nieuwe poortaanmelding ontvangen",
-  "portal_registration.claimed": "Poortomgeving geactiveerd",
+  "portal_registration.claimed": "Bewoner heeft poortomgeving geactiveerd",
   "registration.change_applied": "Wijziging van inschrijving verwerkt",
   "registration.change_rejected": "Wijziging van inschrijving afgewezen",
   "registration.change_requested": "Wijziging van inschrijving aangevraagd",

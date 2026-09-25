@@ -1178,7 +1178,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           onClick={() => setSection("portals")}
         >
           <House />
-          Poortaanvragen
+          Poorten
         </button>
         <button
           className={section === "planner" ? "active" : ""}
