@@ -12,5 +12,5 @@ export default async function AdminPage() {
   const { data } = client ? await client.schema("api").rpc("my_context", { _event_slug: serverEnv().EVENT_SLUG }) : { data: null };
   const capabilities = (data as { capabilities?: string[] } | null)?.capabilities ?? [];
   if (!capabilities.some((capability) => ["event_admin", "registration_manage", "portals_manage", "groups_manage", "live_support"].includes(capability))) redirect("/mijn-inschrijving");
-  return <div className="page admin-page"><AdminConsole eventSlug={serverEnv().EVENT_SLUG} capabilities={capabilities} /></div>;
+  return <div className="admin-page"><AdminConsole eventSlug={serverEnv().EVENT_SLUG} capabilities={capabilities} /></div>;
 }
