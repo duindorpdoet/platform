@@ -270,12 +270,14 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   const canUseLive = capabilities.includes("event_admin") || capabilities.includes("live_support");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navigationRef = useRef<HTMLElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const headerMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const bottomNavMoreButtonRef = useRef<HTMLButtonElement>(null);
+  const navigationOpenerRef = useRef<HTMLButtonElement | null>(null);
   const closeMenuRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
-    const menuButton = menuButtonRef.current;
+    const menuButton = navigationOpenerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeMenuRef.current?.focus();
@@ -1242,7 +1244,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
       </aside>
       <div className="admin-workspace" inert={mobileNavOpen}>
         <div className="admin-topbar">
-          <button ref={menuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(true)}>
+          <button ref={headerMenuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => { navigationOpenerRef.current = headerMenuButtonRef.current; setMobileNavOpen(true); }}>
             <Menu aria-hidden="true" />
             <span>Menu</span>
           </button>
@@ -1765,7 +1767,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           {canManageGroups && <button className={section === "groups" ? "active" : ""} aria-current={section === "groups" ? "page" : undefined} onClick={() => setSection("groups")}><UsersRound /><span>Groepen</span></button>}
           {canUseLive && <button className={section === "live" ? "active" : ""} aria-current={section === "live" ? "page" : undefined} onClick={() => { setSection("live"); void loadLive(); }}><LifeBuoy /><span>Cockpit</span></button>}
           {canUseTickets && <button className={section === "tickets" ? "active" : ""} aria-current={section === "tickets" ? "page" : undefined} onClick={() => setSection("tickets")}><MessageSquare /><span>Berichten</span></button>}
-          <button ref={menuButtonRef} className="admin-bottomnav-more" aria-expanded={mobileNavOpen} aria-controls="admin-navigation" onClick={() => setMobileNavOpen(true)}><Menu /><span>Meer</span></button>
+          <button ref={bottomNavMoreButtonRef} className="admin-bottomnav-more" aria-expanded={mobileNavOpen} aria-controls="admin-navigation" onClick={() => { navigationOpenerRef.current = bottomNavMoreButtonRef.current; setMobileNavOpen(true); }}><Menu /><span>Meer</span></button>
         </nav>
       </div>
     </div>

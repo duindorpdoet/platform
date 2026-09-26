@@ -63,12 +63,12 @@ describe("group composition clusters", () => {
           }),
         ])[0],
       ),
-    ).toContain("18:00");
+    ).toEqual({ kind: "same", value: "2026-10-31T18:00:00Z" });
     expect(
       preferenceSummary(
         compositionItems([registration("1", "p"), registration("2", "p")])[0],
       ),
-    ).toBe("Geen voorkeur");
+    ).toEqual({ kind: "none" });
     expect(
       preferenceSummary(
         compositionItems([
@@ -76,7 +76,7 @@ describe("group composition clusters", () => {
           registration("2", "p", 1, { preferredStartAt: "b" }),
         ])[0],
       ),
-    ).toBe("Verschillende voorkeurstijden");
+    ).toEqual({ kind: "mixed" });
   });
   it("blocks a whole cluster for published, locked, inconsistent, and full destinations", () => {
     const item = compositionItems([

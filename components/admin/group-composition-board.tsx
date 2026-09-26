@@ -590,6 +590,13 @@ function Card({
 }) {
   const rep = itemRepresentative(item);
   const multiple = item.registrations.length > 1;
+  const preference = preferenceSummary(item);
+  const preferenceLabel =
+    preference.kind === "none"
+      ? "Geen voorkeur"
+      : preference.kind === "mixed"
+        ? "Verschillende voorkeurstijden"
+        : `Voorkeur ${clock(preference.value)}`;
   const moveCheck = (target: Group | null) =>
     canMoveCompositionItem(item, {
       editable: snapshot.editable,
@@ -624,7 +631,7 @@ function Card({
         <small>
           {itemChildren(item)} kinderen ·{" "}
           {multiple
-            ? `Samenloop bevestigd · ${preferenceSummary(item) === "Verschillende voorkeurstijden" ? "Verschillende voorkeurstijden" : `Voorkeur ${clock(preferenceSummary(item))}`}`
+            ? `Samenloop bevestigd · ${preferenceLabel}`
             : `Voorkeur ${clock(rep.preferredStartAt)}`}
         </small>
         {inconsistent && (

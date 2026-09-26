@@ -62,7 +62,11 @@ export const itemChildren = (item: CompositionItem) =>
   );
 export const itemRepresentative = (item: CompositionItem) =>
   item.registrations[0];
-export function preferenceSummary(item: CompositionItem) {
+export type PreferenceSummary =
+  | { kind: "none" }
+  | { kind: "same"; value: string }
+  | { kind: "mixed" };
+export function preferenceSummary(item: CompositionItem): PreferenceSummary {
   const values = [
     ...new Set(
       item.registrations
@@ -71,10 +75,10 @@ export function preferenceSummary(item: CompositionItem) {
     ),
   ];
   return values.length === 0
-    ? "Geen voorkeur"
+    ? { kind: "none" }
     : values.length === 1
-      ? values[0]
-      : "Verschillende voorkeurstijden";
+      ? { kind: "same", value: values[0] }
+      : { kind: "mixed" };
 }
 export function itemMatches(item: CompositionItem, query: string) {
   const needle = query.trim().toLocaleLowerCase("nl");
