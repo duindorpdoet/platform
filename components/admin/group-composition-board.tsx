@@ -14,10 +14,14 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
+  canMoveCompositionItem,
   compositionItems,
+  dividedPartyIds,
+  groupMatches,
   itemChildren,
   itemMatches,
   itemRepresentative,
+  preferenceSummary,
   type CompositionItem,
   type CompositionRegistration,
 } from "@/lib/domain/group-composition";
@@ -56,16 +60,25 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<
-    "all" | "assigned" | "unassigned" | "together" | "singles"
+  const [assignmentFilter, setAssignmentFilter] = useState<
+    "all" | "assigned" | "unassigned"
   >("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "together" | "singles">(
+    "all",
+  );
+  const [groupFilter, setGroupFilter] = useState<
+    "all" | "free" | "full" | "locked"
+  >("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [activeColumnId, setActiveColumnId] = useState("unassigned");
   const [activeColumn, setActiveColumn] = useState(0);
   const request = useRef(0);
   const boardRef = useRef<HTMLDivElement>(null);
   const createRef = useRef<HTMLInputElement>(null);
+  const createButtonRef = useRef<HTMLButtonElement>(null);
   const load = useCallback(async () => {
     const client = createClient();
     if (!client) return;
@@ -135,11 +148,30 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
         : [],
     [snapshot],
   );
-  const move = async (item: CompositionItem, target: string | null) => {
-    if (!snapshot?.editable || busy) return;
-    const representative = itemRepresentative(item);
+  const move = async (
+    item: CompositionItem,
+    target: string | null,
+    sourceLocked = false,
+    inconsistent = false,
+  ) => {
+    if (!snapshot || busy) return;
     const group = target ? snapshot.groups.find((g) => g.id === target) : null;
-    if (group?.locked || representative.assignmentPublished) return;
+    const check = canMoveCompositionItem(item, {
+      editable: snapshot.editable,
+      sourceLocked,
+      targetLocked: Boolean(group?.locked),
+      targetValid: target === null || Boolean(group),
+      targetChildCount: group?.childCount ?? 0,
+      maxGroupSize: snapshot.maxGroupSize,
+      alreadyInTarget:
+        group?.id === undefined ? target === null && !sourceLocked : false,
+      inconsistent,
+    });
+    if (!check.canMove) {
+      setNotice(check.reason ?? "Verplaatsen is niet beschikbaar.");
+      return;
+    }
+    const representative = itemRepresentative(item);
     setBusy(true);
     const client = createClient();
     if (!client) return setBusy(false);
@@ -158,40 +190,70 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
     );
     if (!error) await load();
   };
+  const closeCreate = () => {
+    setCreateOpen(false);
+    setNewName("");
+    window.setTimeout(() => createButtonRef.current?.focus(), 0);
+  };
   const create = async () => {
     if (!snapshot || busy) return;
     setBusy(true);
     const client = createClient();
     if (!client) return setBusy(false);
-    const { error } = await client.schema("api").rpc("admin_group_create", {
-      _event_slug: eventSlug,
-      _display_name: newName.trim() || null,
-    });
+    const { data, error } = await client
+      .schema("api")
+      .rpc("admin_group_create", {
+        _event_slug: eventSlug,
+        _display_name: newName.trim() || null,
+      });
     setBusy(false);
     if (error) setNotice(`Groep kon niet worden gemaakt: ${error.message}`);
     else {
-      setCreateOpen(false);
-      setNewName("");
+      const created = data as { id?: string; systemCode?: string } | null;
+      closeCreate();
       await load();
+      if (created?.id) setActiveColumnId(created.id);
+      setNotice(`Nieuwe groep ${created?.systemCode ?? ""} aangemaakt.`);
     }
   };
   const selectColumn = (index: number) => {
+    const column = columns[index];
+    if (!column) return;
     setActiveColumn(index);
+    setActiveColumnId(column.id);
     boardRef.current?.scrollTo({
       left: index * boardRef.current.clientWidth,
       behavior: "smooth",
     });
   };
-  const visible = (registrations: Registration[], assigned: boolean) =>
-    compositionItems(registrations).filter(
+  const dividedParties = useMemo(() => dividedPartyIds(columns), [columns]);
+  const activeFilters = [
+    assignmentFilter !== "all",
+    typeFilter !== "all",
+    groupFilter !== "all",
+  ].filter(Boolean).length;
+  const visible = (column: (typeof columns)[number]) =>
+    compositionItems(column.registrations).filter(
       (item) =>
         itemMatches(item, query) &&
-        (filter === "all" ||
-          (filter === "assigned" && assigned) ||
-          (filter === "unassigned" && !assigned) ||
-          (filter === "together" && Boolean(item.partyId)) ||
-          (filter === "singles" && !item.partyId)),
+        (assignmentFilter === "all" ||
+          (assignmentFilter === "assigned" && column.id !== "unassigned") ||
+          (assignmentFilter === "unassigned" && column.id === "unassigned")) &&
+        (typeFilter === "all" ||
+          (typeFilter === "together" && Boolean(item.partyId)) ||
+          (typeFilter === "singles" && !item.partyId)),
     );
+  const columnVisible = (column: (typeof columns)[number]) =>
+    groupMatches(column.code, column.title, query) ||
+    visible(column).length > 0;
+  const maxGroupSize = snapshot?.maxGroupSize ?? 0;
+  const matchesGroupFilter = (column: (typeof columns)[number]) =>
+    groupFilter === "all" ||
+    (groupFilter === "locked" && column.locked) ||
+    (groupFilter === "full" && column.childCount >= maxGroupSize) ||
+    (groupFilter === "free" &&
+      !column.locked &&
+      column.childCount < maxGroupSize);
   if (!snapshot)
     return (
       <section className="panel loading-state">
@@ -217,21 +279,19 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Zoek referentie, gezin, kind…"
           />
-          <select
-            aria-label="Filter groepsindeling"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as typeof filter)}
+          <button
+            className="btn outline"
+            type="button"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen(true)}
           >
-            <option value="all">Alle inschrijvingen</option>
-            <option value="unassigned">Niet ingedeeld</option>
-            <option value="assigned">Ingedeeld</option>
-            <option value="together">Samenloop bevestigd</option>
-            <option value="singles">Enkel</option>
-          </select>
+            Filters{activeFilters ? ` (${activeFilters})` : ""}
+          </button>
           <button
             className="btn"
             type="button"
             disabled={!snapshot.editable || busy}
+            ref={createButtonRef}
             onClick={() => setCreateOpen(true)}
           >
             <Plus />
@@ -253,7 +313,21 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
           <ChevronLeft />
         </button>
         <span>
-          {columns[activeColumn]?.code} · {columns[activeColumn]?.title}
+          <select
+            aria-label="Kies groep"
+            value={activeColumnId}
+            onChange={(event) =>
+              selectColumn(
+                columns.findIndex((column) => column.id === event.target.value),
+              )
+            }
+          >
+            {columns.map((column) => (
+              <option key={column.id} value={column.id}>
+                {column.code} · {column.title}
+              </option>
+            ))}
+          </select>
         </span>
         <button
           aria-label="Volgende groep"
@@ -275,50 +349,57 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
           )
         }
       >
-        {columns.map((column) => (
-          <section
-            className={`group-composition-column${column.locked ? " locked" : ""}`}
-            key={column.id}
-            onDragOver={(e) => {
-              if (!column.locked) e.preventDefault();
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              const id = e.dataTransfer.getData("text/plain");
-              const source = columns
-                .flatMap((c) => compositionItems(c.registrations))
-                .find((item) => item.id === id);
-              if (source)
-                void move(
-                  source,
-                  column.id === "unassigned" ? null : column.id,
-                );
-            }}
-          >
-            <header>
-              <div>
-                <p className="kicker">{column.code}</p>
-                <h3>{column.title}</h3>
-              </div>
-              <span>
-                {column.childCount}/{snapshot.maxGroupSize} kinderen
-              </span>
-            </header>
-            {column.locked && (
-              <p className="group-locked">
-                <LockKeyhole /> Definitief
-              </p>
-            )}
-            <div
-              className="group-composition-dropzone"
-              aria-label={`${column.title}: inschrijvingen`}
+        {columns
+          .filter(
+            (column) => matchesGroupFilter(column) && columnVisible(column),
+          )
+          .map((column) => (
+            <section
+              className={`group-composition-column${column.locked ? " locked" : ""}`}
+              key={column.id}
+              onDragOver={(e) => {
+                if (!column.locked) e.preventDefault();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const id = e.dataTransfer.getData("text/plain");
+                const source = columns
+                  .flatMap((c) => compositionItems(c.registrations))
+                  .find((item) => item.id === id);
+                if (source)
+                  void move(
+                    source,
+                    column.id === "unassigned" ? null : column.id,
+                  );
+              }}
             >
-              {visible(column.registrations, column.id !== "unassigned").map(
-                (item) => (
+              <header>
+                <div>
+                  <p className="kicker">{column.code}</p>
+                  <h3>{column.title}</h3>
+                </div>
+                <span>
+                  {column.childCount}/{snapshot.maxGroupSize} kinderen
+                </span>
+              </header>
+              {column.locked && (
+                <p className="group-locked">
+                  <LockKeyhole /> Definitief
+                </p>
+              )}
+              <div
+                className="group-composition-dropzone"
+                aria-label={`${column.title}: inschrijvingen`}
+              >
+                {visible(column).map((item) => (
                   <Card
                     key={item.id}
                     item={item}
                     current={column.id === "unassigned" ? null : column.id}
+                    sourceLocked={column.locked}
+                    inconsistent={Boolean(
+                      item.partyId && dividedParties.has(item.partyId),
+                    )}
                     snapshot={snapshot}
                     groups={snapshot.groups}
                     expanded={Boolean(expanded[item.id])}
@@ -331,26 +412,105 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
                     move={move}
                     busy={busy}
                   />
-                ),
-              )}
-              {!visible(column.registrations, column.id !== "unassigned")
-                .length && (
-                <div className="group-composition-empty">
-                  <UsersRound />
-                  {query
-                    ? "Geen treffers"
-                    : "Sleep hier een inschrijving naartoe."}
-                </div>
-              )}
+                ))}
+                {!visible(column).length && (
+                  <div className="group-composition-empty">
+                    <UsersRound />
+                    {query || activeFilters
+                      ? "Geen resultaten binnen deze filters"
+                      : "Deze groep is leeg"}
+                  </div>
+                )}
+              </div>
+            </section>
+          ))}
+      </div>
+      {filtersOpen && (
+        <div
+          className="group-create-backdrop"
+          role="presentation"
+          onMouseDown={() => setFiltersOpen(false)}
+        >
+          <section
+            className="group-create-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="group-filter-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              className="group-dialog-close"
+              aria-label="Filters sluiten"
+              onClick={() => setFiltersOpen(false)}
+            >
+              <X />
+            </button>
+            <h2 id="group-filter-title">Filters</h2>
+            <label>
+              Indeling
+              <select
+                value={assignmentFilter}
+                onChange={(event) =>
+                  setAssignmentFilter(
+                    event.target.value as typeof assignmentFilter,
+                  )
+                }
+              >
+                <option value="all">Alle</option>
+                <option value="unassigned">Niet ingedeeld</option>
+                <option value="assigned">Ingedeeld</option>
+              </select>
+            </label>
+            <label>
+              Type
+              <select
+                value={typeFilter}
+                onChange={(event) =>
+                  setTypeFilter(event.target.value as typeof typeFilter)
+                }
+              >
+                <option value="all">Alle</option>
+                <option value="singles">Losse inschrijvingen</option>
+                <option value="together">Samenloop bevestigd</option>
+              </select>
+            </label>
+            <label>
+              Groepsstatus
+              <select
+                value={groupFilter}
+                onChange={(event) =>
+                  setGroupFilter(event.target.value as typeof groupFilter)
+                }
+              >
+                <option value="all">Alle</option>
+                <option value="free">Vrije ruimte</option>
+                <option value="full">Vol</option>
+                <option value="locked">Vergrendeld</option>
+              </select>
+            </label>
+            <div className="actions">
+              <button
+                className="btn outline"
+                onClick={() => {
+                  setAssignmentFilter("all");
+                  setTypeFilter("all");
+                  setGroupFilter("all");
+                }}
+              >
+                Filters wissen
+              </button>
+              <button className="btn" onClick={() => setFiltersOpen(false)}>
+                Toepassen
+              </button>
             </div>
           </section>
-        ))}
-      </div>
+        </div>
+      )}
       {createOpen && (
         <div
           className="group-create-backdrop"
           role="presentation"
-          onMouseDown={() => setCreateOpen(false)}
+          onMouseDown={closeCreate}
         >
           <section
             className="group-create-dialog"
@@ -362,34 +522,38 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
             <button
               className="group-dialog-close"
               aria-label="Sluiten"
-              onClick={() => setCreateOpen(false)}
+              onClick={closeCreate}
             >
               <X />
             </button>
             <h2 id="group-create-title">Groep aanmaken</h2>
-            <label>
-              Naam (optioneel)
-              <input
-                ref={createRef}
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-              />
-            </label>
-            <div className="actions">
-              <button
-                className="btn outline"
-                onClick={() => setCreateOpen(false)}
-              >
-                Annuleren
-              </button>
-              <button
-                className="btn"
-                disabled={busy}
-                onClick={() => void create()}
-              >
-                Aanmaken
-              </button>
-            </div>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void create();
+              }}
+            >
+              <label>
+                Naam (optioneel)
+                <input
+                  ref={createRef}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+              </label>
+              <div className="actions">
+                <button className="btn outline" onClick={closeCreate}>
+                  Annuleren
+                </button>
+                <button
+                  className="btn"
+                  disabled={busy}
+                  onClick={() => void create()}
+                >
+                  Aanmaken
+                </button>
+              </div>
+            </form>
           </section>
         </div>
       )}
@@ -399,6 +563,8 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
 function Card({
   item,
   current,
+  sourceLocked,
+  inconsistent,
   snapshot,
   groups,
   expanded,
@@ -408,16 +574,34 @@ function Card({
 }: {
   item: CompositionItem;
   current: string | null;
+  sourceLocked: boolean;
+  inconsistent: boolean;
   snapshot: Snapshot;
   groups: Group[];
   expanded: boolean;
   toggle: () => void;
-  move: (item: CompositionItem, target: string | null) => Promise<void>;
+  move: (
+    item: CompositionItem,
+    target: string | null,
+    sourceLocked?: boolean,
+    inconsistent?: boolean,
+  ) => Promise<void>;
   busy: boolean;
 }) {
   const rep = itemRepresentative(item);
   const multiple = item.registrations.length > 1;
-  const movable = snapshot.editable && !rep.assignmentPublished;
+  const moveCheck = (target: Group | null) =>
+    canMoveCompositionItem(item, {
+      editable: snapshot.editable,
+      sourceLocked,
+      targetLocked: Boolean(target?.locked),
+      targetValid: target === null || Boolean(target),
+      targetChildCount: target?.childCount ?? 0,
+      maxGroupSize: snapshot.maxGroupSize,
+      alreadyInTarget: target?.id === current,
+      inconsistent,
+    });
+  const movable = moveCheck(null).canMove;
   return (
     <article className="group-registration-card">
       <button
@@ -440,9 +624,14 @@ function Card({
         <small>
           {itemChildren(item)} kinderen ·{" "}
           {multiple
-            ? "Samenloop bevestigd"
+            ? `Samenloop bevestigd · ${preferenceSummary(item) === "Verschillende voorkeurstijden" ? "Verschillende voorkeurstijden" : `Voorkeur ${clock(preferenceSummary(item))}`}`
             : `Voorkeur ${clock(rep.preferredStartAt)}`}
         </small>
+        {inconsistent && (
+          <small className="form-warning">
+            Samenloop verdeeld over meerdere groepen. Vernieuw eerst.
+          </small>
+        )}
       </div>
       <button
         className="accordion-toggle"
@@ -489,18 +678,31 @@ function Card({
                 void move(
                   item,
                   e.target.value === "unassigned" ? null : e.target.value,
+                  sourceLocked,
+                  inconsistent,
                 )
               }
             >
               <option value="unassigned">Nog niet ingedeeld</option>
-              {groups
-                .filter((g) => !g.locked)
-                .map((g) => (
-                  <option key={g.id} value={g.id}>
+              {groups.map((g) => {
+                const check = moveCheck(g);
+                return (
+                  <option
+                    key={g.id}
+                    value={g.id}
+                    disabled={!check.canMove && g.id !== current}
+                  >
                     {g.systemCode} · {g.displayName || "Naam volgt"}
+                    {!check.canMove && g.id !== current
+                      ? ` — ${check.reason}`
+                      : ""}
                   </option>
-                ))}
+                );
+              })}
             </select>
+            {!movable && (
+              <small className="form-warning">{moveCheck(null).reason}</small>
+            )}
           </label>
         </div>
       )}

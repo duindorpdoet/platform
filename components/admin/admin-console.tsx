@@ -265,6 +265,9 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "simulation"
     | "settings"
   >("overview");
+  const canManageGroups = capabilities.includes("event_admin") || capabilities.includes("groups_manage");
+  const canUseTickets = capabilities.includes("event_admin") || capabilities.includes("groups_manage") || capabilities.includes("live_support");
+  const canUseLive = capabilities.includes("event_admin") || capabilities.includes("live_support");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navigationRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -1759,9 +1762,9 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </main>
         <nav className="admin-bottomnav" aria-label="Snelle organisatienavigatie">
           <button className={section === "overview" ? "active" : ""} aria-current={section === "overview" ? "page" : undefined} onClick={() => setSection("overview")}><House /><span>Home</span></button>
-          <button className={section === "groups" ? "active" : ""} aria-current={section === "groups" ? "page" : undefined} onClick={() => setSection("groups")}><UsersRound /><span>Groepen</span></button>
-          <button className={section === "live" ? "active" : ""} aria-current={section === "live" ? "page" : undefined} onClick={() => { setSection("live"); void loadLive(); }}><LifeBuoy /><span>Cockpit</span></button>
-          <button className={section === "tickets" ? "active" : ""} aria-current={section === "tickets" ? "page" : undefined} onClick={() => setSection("tickets")}><MessageSquare /><span>Berichten</span></button>
+          {canManageGroups && <button className={section === "groups" ? "active" : ""} aria-current={section === "groups" ? "page" : undefined} onClick={() => setSection("groups")}><UsersRound /><span>Groepen</span></button>}
+          {canUseLive && <button className={section === "live" ? "active" : ""} aria-current={section === "live" ? "page" : undefined} onClick={() => { setSection("live"); void loadLive(); }}><LifeBuoy /><span>Cockpit</span></button>}
+          {canUseTickets && <button className={section === "tickets" ? "active" : ""} aria-current={section === "tickets" ? "page" : undefined} onClick={() => setSection("tickets")}><MessageSquare /><span>Berichten</span></button>}
           <button ref={menuButtonRef} className="admin-bottomnav-more" aria-expanded={mobileNavOpen} aria-controls="admin-navigation" onClick={() => setMobileNavOpen(true)}><Menu /><span>Meer</span></button>
         </nav>
       </div>
