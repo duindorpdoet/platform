@@ -36,7 +36,7 @@ async function authenticate(context: BrowserContext, email: string) {
 }
 
 async function selectAdminSection(page: Page, name: string) {
-  await expect(page.locator(".admin-topbar")).toBeVisible();
+  await expect(page.locator(".admin-page-heading")).toBeVisible();
   const more = page.getByRole("button", { name: "Meer", exact: true });
   const menu = page.getByRole("button", { name: "Organisatienavigatie openen" });
   if (await more.isVisible()) await more.click();
@@ -1021,7 +1021,8 @@ for (const width of [320, 375, 390, 430, 900]) {
     const navigation = page.locator("#admin-navigation");
     await expect(opener).toBeVisible();
     await expect(navigation).toBeHidden();
-    expect(await page.locator(".admin-topbar").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(90);
+    await expect(page.locator(".admin-topbar")).toHaveCount(0);
+    await expect(page.locator(".admin-page-heading")).toHaveCount(1);
     await assertReadableLayout(page);
     await opener.click();
     await expect(navigation).toHaveAttribute("aria-modal", "true");
@@ -1040,7 +1041,7 @@ for (const width of [320, 375, 390, 430, 900]) {
     await opener.click();
     await navigation.getByRole("button", { name: "Instellingen", exact: true }).click();
     await expect(navigation).toBeHidden();
-    await expect(page.locator(".admin-mobile-section")).toContainText("Instellingen");
+    await expect(page.locator(".admin-page-heading h1")).toContainText("Instellingen");
     await assertReadableLayout(page);
     await opener.click();
     await page.locator(".admin-nav-backdrop").click({ position: { x: width - 8, y: 100 } });

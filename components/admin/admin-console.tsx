@@ -1243,17 +1243,11 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </button>
       </aside>
       <div className="admin-workspace" inert={mobileNavOpen}>
-        <div className="admin-topbar">
-          <button ref={headerMenuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => { navigationOpenerRef.current = headerMenuButtonRef.current; setMobileNavOpen(true); }}>
-            <Menu aria-hidden="true" />
-            <span>Menu</span>
-          </button>
-          <span className="admin-mobile-section">{sectionMeta[section].title}</span>
-          <span className="admin-desktop-crumb">De Duindorpse Poorten <i>›</i> Nachtregie</span>
-          <span>{dashboard.event.date} <i>·</i> {dashboard.event.phase}</span>
-        </div>
         <main id="admin-content" className="admin-content" tabIndex={-1}>
-        <div className="app-heading admin-page-heading row-between">
+        <header className="app-heading admin-page-heading row-between">
+          <button ref={headerMenuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => { navigationOpenerRef.current = headerMenuButtonRef.current; setMobileNavOpen(true); }}>
+            <Menu aria-hidden="true" /><span>Menu</span>
+          </button>
           <div>
             <p className="kicker">{sectionMeta[section].kicker}</p>
             <h1>{sectionMeta[section].title}</h1>
@@ -1263,7 +1257,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             <RefreshCw />
             Vernieuwen
           </button>
-        </div>
+        </header>
         {notice && (
           <div className="form-notice" role="status">
             {notice}

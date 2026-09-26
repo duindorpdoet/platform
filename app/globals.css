@@ -820,11 +820,11 @@ body:has(.admin-shell) .inner-page{padding-top:0}
 .admin-route-surface{height:100vh;height:100dvh;overflow:hidden;background:radial-gradient(circle at 74% 8%,#1d141725 0,transparent 34%),#050b12}
 .admin-route-surface .admin-page{height:100%;max-width:none!important;margin:0!important;padding:clamp(0px,1.25vw,20px)!important;overflow:hidden}
 .admin-route-surface .admin-shell{height:100%;min-height:0;max-height:100%;max-width:none;margin:0;grid-template-columns:clamp(13rem,15vw,17.5rem) minmax(0,1fr);gap:0;overflow:hidden;border:1px solid #33475a;border-radius:24px;background:#08131f;box-shadow:0 22px 60px #0008}
-.admin-route-surface .admin-workspace{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:0;height:100%;overflow:hidden}
+.admin-route-surface .admin-workspace{display:grid;grid-template-rows:minmax(0,1fr);min-width:0;min-height:0;height:100%;overflow:hidden}
 .admin-route-surface .admin-nav{top:auto;align-self:stretch;min-height:0;height:100%;max-height:none;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-color:#566e83 transparent}
 .admin-route-surface .admin-topbar{position:relative;top:auto;z-index:20;flex:none}
 .admin-route-surface .admin-content{min-width:0;min-height:0;height:100%;max-width:none;margin:0;overflow:auto;overscroll-behavior:contain;scrollbar-color:#6a8295 #0b1724}
-.admin-route-surface .admin-content>.admin-page-heading{position:sticky;top:0;z-index:8;margin-top:-1px;padding-top:18px;background:linear-gradient(180deg,#08131f 0%,#08131ff5 82%,#08131f00 100%);backdrop-filter:blur(10px)}
+.admin-route-surface .admin-content>.admin-page-heading{position:relative;top:auto;margin-top:0;padding-top:18px}
 .admin-route-surface .admin-content:focus{outline:none}
 @media(max-width:1100px){
   .admin-route-surface .admin-page{padding:0!important}
@@ -849,3 +849,6 @@ dialog.group-create-dialog::backdrop{background:#02070dc7;backdrop-filter:blur(4
 .group-create-dialog label,.group-create-dialog input{min-width:0}
 .group-create-dialog .actions{flex-wrap:wrap}
 @media(max-width:700px){dialog.group-create-dialog{margin:auto auto 16px;border-radius:16px}}
+
+.admin-page-heading .admin-menu-toggle{display:none}
+@media(min-width:701px) and (max-width:1100px){.admin-page-heading .admin-menu-toggle{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:9px 12px;border:1px solid #425765;border-radius:10px;background:#14222e;color:#f6dfbe}.admin-page-heading .admin-menu-toggle svg{width:20px}}
