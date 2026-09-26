@@ -75,6 +75,10 @@ jobs:
         run: |
           eval "$(pnpm exec supabase status -o env)"
           SUPABASE_URL="$API_URL" SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" node scripts/acceptance/concurrency.mjs
+      - name: Run together cluster concurrency acceptance
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          SUPABASE_URL="$API_URL" SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" node scripts/acceptance/together-concurrency.mjs
       - name: Rebuild fixtures for local load acceptance
         run: pnpm exec supabase db reset
       - name: Run 200-client local load acceptance
@@ -104,7 +108,8 @@ jobs:
           ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
         run: |
           eval "$(pnpm exec supabase status -o env)"
-          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts tests/e2e/homeowner-responsive.spec.ts tests/e2e/participant-mobile-polish.spec.ts --project=desktop-chromium
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts tests/e2e/homeowner-responsive.spec.ts tests/e2e/participant-mobile-polish.spec.ts tests/e2e/together-management.spec.ts --project=desktop-chromium
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/together-management.spec.ts --project=mobile-chromium
       - name: Lint database schemas
         run: pnpm exec supabase db lint --level warning
       - name: Stop local Supabase

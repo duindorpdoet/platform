@@ -348,7 +348,7 @@ test("submitted registrations appear immediately with group details in the backo
   await page.goto("/admin");
   const registrationsMetric = page.locator(".cockpit-metrics .metric").filter({ hasText: "Inschrijvingen" });
   await expect(registrationsMetric).toContainText(/ingeschreven kinderen?/i);
-  await page.getByRole("button", { name: /Inschrijvingen/ }).click();
+  await selectAdminSection(page, "Inschrijvingen");
 
   await expect(page.getByRole("heading", { name: "Alle inschrijvingen" })).toBeVisible();
   await expect(page.locator(".registration-roster-heading .registration-total")).toContainText(/inschrijvingen? · \d+ kinderen?/i);
@@ -742,6 +742,8 @@ test("house details unlock only after successful email confirmation", async ({ p
 
 test("participant Messenger is opaque and account actions stay reachable on desktop and mobile", async ({ context, page }, testInfo) => {
   requireLocalAuth();
+  // This flow verifies Messenger; dismiss the independently tested install invitation.
+  await page.addInitScript(() => localStorage.setItem("poorten:pwa-installed:a0000000-0000-0000-0000-000000000005", "true"));
   await authenticate(context, "parent-size-5@example.invalid");
   for (const viewport of [{ width: 1440, height: 900 }, { width: 700, height: 844 }, { width: 320, height: 568 }]) {
     await page.setViewportSize(viewport);
@@ -1057,7 +1059,7 @@ for (const width of [320, 375, 390, 430, 900]) {
 function boardFixture() {
   const registration = (id: string, preferredStartAt: string | null = null, partyId: string | null = null, assignmentPublished = false) => ({
     id, reference: `TEST-${id}`, householdLabel: `Gezin ${id}`, parentEmail: null,
-    childCount: 1, children: [{ name: `Kind ${id}`, age: 8 }], partyId, preferredStartAt, desiredEndAt: null, assignmentPublished,
+    childCount: 1, children: [{ name: `Kind ${id}`, age: 8 }], partyId, clusterReference: partyId ? "SL-2026-K7M4PQ" : null, preferredStartAt, desiredEndAt: null, assignmentPublished,
   });
   const early = "2026-10-31T17:00:00Z";
   const late = "2026-10-31T18:00:00Z";

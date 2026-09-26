@@ -852,3 +852,21 @@ dialog.group-create-dialog::backdrop{background:#02070dc7;backdrop-filter:blur(4
 
 .admin-page-heading .admin-menu-toggle{display:none}
 @media(min-width:701px) and (max-width:1100px){.admin-page-heading .admin-menu-toggle{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:9px 12px;border:1px solid #425765;border-radius:10px;background:#14222e;color:#f6dfbe}.admin-page-heading .admin-menu-toggle svg{width:20px}}
+
+/* Together management reuses the existing admin shell and native modal. */
+.together-management{display:grid;gap:18px;align-content:start;min-width:0}
+.together-toolbar{gap:16px;flex-wrap:wrap}.together-toolbar>.field{flex:1;min-width:min(280px,100%)}
+.together-toolbar input{width:100%;min-width:0}.together-tabs{flex-wrap:wrap}
+.together-card{padding:18px;border:1px solid #405765;border-radius:12px;background:#0b1824;min-width:0;overflow-wrap:anywhere}
+.together-card summary{cursor:pointer;display:grid;gap:8px;list-style:revert}
+.together-summary{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}.together-summary strong{color:#f5c486}
+.together-summary small,.together-card small{color:#b4c6cf}
+.together-members{display:grid;gap:12px;margin-top:18px}.together-members article{display:grid;gap:5px;padding:12px;border:1px solid #405765;border-radius:8px}
+.together-preview-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.together-preview-columns h3{margin:12px 0}.together-management .actions{flex-wrap:wrap}
+.group-create-dialog textarea{width:100%;min-height:100px;padding:10px;border:1px solid #526a78;border-radius:8px;background:#091722;color:#edf1ec;font:inherit;resize:vertical}
+@media(max-width:500px){.together-preview-columns{grid-template-columns:1fr}.together-tabs>.btn{flex:1;min-width:130px}.together-card{padding:12px}}
+.participant-together{min-width:0;overflow-wrap:anywhere}.participant-together .together-share-code{display:inline-block;padding:8px 14px;font-size:24px;letter-spacing:.12em}
+.participant-together-request{display:grid;gap:8px;padding:16px 0;border-top:1px solid #405765}.participant-together-request p{margin:0}
+.participant-together form{display:grid;gap:12px;margin-top:18px}.participant-together .actions{flex-wrap:wrap}.participant-together input{max-width:100%;min-width:0}
+.participant-together :is(input,button){scroll-margin-block:100px 140px}

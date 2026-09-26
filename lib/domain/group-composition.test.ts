@@ -5,6 +5,7 @@ import {
   dividedPartyIds,
   groupMatches,
   itemChildren,
+  itemIdentity,
   itemMatches,
   itemMatchesPreference,
   itemRepresentative,
@@ -23,12 +24,25 @@ const registration = (
   childCount,
   children: [{ name: `Kind ${id}`, age: 8 }],
   partyId,
-  preferredStartAt: null,
+  clusterReference: null,  preferredStartAt: null,
   desiredEndAt: null,
   assignmentPublished: false,
   ...extra,
 });
 describe("group composition clusters", () => {
+  it("displays the server cluster identity, deduplicates members and keeps a stable RPC representative", () => {
+    const a = registration("a", "p", 2, { clusterReference: "SL-2026-K7M4PQ" });
+    const b = registration("b", "p", 3, { clusterReference: "SL-2026-K7M4PQ" });
+    const items = compositionItems([b, a, b]);
+    expect(items).toHaveLength(1);
+    expect(items[0].registrations).toHaveLength(2);
+    expect(itemIdentity(items[0])).toBe("SL-2026-K7M4PQ");
+    expect(itemRepresentative(items[0]).id).toBe("a");
+    expect(itemChildren(items[0])).toBe(5);
+    expect(itemMatches(items[0], "sl-2026-k7m4pq")).toBe(true);
+    expect(itemIdentity(compositionItems([registration("a", "p"), registration("b", "p")])[0])).toBe("Samenloop · reference ontbreekt");
+    expect(itemIdentity(compositionItems([a])[0])).toBe("INS-a");
+  });
   it("filters preferences without splitting confirmed parties", () => {
     const mixed = compositionItems([
       registration("a", "party", 1, {

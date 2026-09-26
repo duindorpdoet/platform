@@ -7,7 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import {
   ChevronDown,
@@ -20,6 +19,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
+import { AdminDialog } from "@/components/admin/admin-dialog";
 import { createClient } from "@/lib/supabase/client";
 import {
   canMoveCompositionItem,
@@ -27,6 +27,7 @@ import {
   dividedPartyIds,
   groupMatches,
   itemChildren,
+  itemIdentity,
   itemMatches,
   itemMatchesPreference,
   itemRepresentative,
@@ -88,6 +89,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   const [revealRequest, setRevealRequest] = useState(0);
   const mutationPending = useRef(false);
   const revealColumn = useRef<string | null>(null);
+  const pendingAlignment = useRef<string | null>(null);
   const request = useRef(0);
   const boardRef = useRef<HTMLDivElement>(null);
 
@@ -104,6 +106,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
     else {
       setSnapshot(data as Snapshot);
       if (revealColumn.current) {
+        pendingAlignment.current = revealColumn.current;
         setQuery("");
         setAssignmentFilter("all");
         setTypeFilter("all");
@@ -289,8 +292,8 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
       (item) =>
         (matchesGroup || itemMatches(item, query)) &&
         (typeFilter === "all" ||
-          (typeFilter === "together" && Boolean(item.partyId)) ||
-          (typeFilter === "singles" && !item.partyId)) &&
+          (typeFilter === "together" && item.registrations.length > 1) ||
+          (typeFilter === "singles" && item.registrations.length === 1)) &&
         itemMatchesPreference(item, preferenceFilter),
     );
     if (
@@ -330,8 +333,12 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
     scrollToColumn(column.id, "smooth");
   };
   const alignColumn = useEffectEvent(() => {
-    setActiveColumnId(selectedColumnId);
-    scrollToColumn(selectedColumnId, "instant");
+    const target = pendingAlignment.current ?? selectedColumnId;
+    setActiveColumnId(target);
+    scrollToColumn(target, "instant");
+    // Filtering can queue an old scroll event before the new column is measured.
+    // Keep the explicit reveal authoritative until the alignment has painted.
+    requestAnimationFrame(() => { pendingAlignment.current = null; });
   });
   useEffect(() => {
     const board = boardRef.current;
@@ -439,6 +446,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
         className="group-composition-board"
         aria-label="Groepskolommen"
         onScroll={(event) => {
+          if (pendingAlignment.current) return;
           const board = event.currentTarget;
           const elements = [...board.children] as HTMLElement[];
           const first = elements[0];
@@ -527,7 +535,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
         <p role="status">Geen groepen binnen deze filters.</p>
       )}
       {filtersOpen && (
-        <BoardDialog
+        <AdminDialog
           labelledBy="group-filter-title"
           close={() => setFiltersOpen(false)}
         >
@@ -619,10 +627,10 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
               Toepassen
             </button>
           </div>
-        </BoardDialog>
+        </AdminDialog>
       )}
       {createOpen && (
-        <BoardDialog labelledBy="group-create-title" close={closeCreate}>
+        <AdminDialog labelledBy="group-create-title" close={closeCreate}>
           <button
             className="group-dialog-close"
             type="button"
@@ -659,7 +667,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
               </button>
             </div>
           </form>
-        </BoardDialog>
+        </AdminDialog>
       )}
     </section>
   );
@@ -699,22 +707,23 @@ function Card({
     <article className="group-registration-card">
       <button
         className="drag-handle"
-        aria-label={`${rep.reference} verplaatsen`}
+        aria-label={`${itemIdentity(item)} verplaatsen`}
         disabled={!movable || busy}
         draggable={movable && !busy}
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = "move";
           e.dataTransfer.setData("text/plain", item.id);
+          const card = e.currentTarget.closest("article");
+          if (card) e.dataTransfer.setDragImage(card, 16, 16);
         }}
       >
         <GripVertical />
       </button>
       <div className="registration-card-summary">
         <strong>
-          {rep.reference}
-          {multiple && ` (+${item.registrations.length - 1})`}
+          {itemIdentity(item)}
         </strong>
-        <span>{rep.householdLabel || "Huishouden onbekend"}</span>
+        <span>{multiple ? `${item.registrations.length} inschrijvingen` : rep.householdLabel || "Huishouden onbekend"}</span>
         <small>
           {itemChildren(item)} kinderen ·{" "}
           {multiple
@@ -799,73 +808,5 @@ function Card({
         </div>
       )}
     </article>
-  );
-}
-
-function BoardDialog({
-  labelledBy,
-  close,
-  children,
-}: {
-  labelledBy: string;
-  close: () => void;
-  children: ReactNode;
-}) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const opener = document.activeElement as HTMLElement | null;
-    const overflow = document.body.style.overflow;
-    dialog.showModal();
-    dialog.querySelector<HTMLElement>("[data-initial-focus]")?.focus();
-    document.body.style.overflow = "hidden";
-    return () => {
-      dialog.close();
-      document.body.style.overflow = overflow;
-      if (opener?.isConnected) opener.focus();
-    };
-  }, []);
-  return (
-    <dialog
-      ref={dialogRef}
-      className="group-create-dialog"
-      aria-labelledby={labelledBy}
-      aria-modal="true"
-      onCancel={(event) => {
-        event.preventDefault();
-        close();
-      }}
-      onKeyDown={(event) => {
-        if (event.key !== "Tab") return;
-        const focusable = [
-          ...event.currentTarget.querySelectorAll<HTMLElement>(
-            'button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]',
-          ),
-        ];
-        const first = focusable[0];
-        const last = focusable.at(-1);
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first?.focus();
-        }
-      }}
-      onClick={(event) => {
-        if (event.target !== event.currentTarget) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        if (
-          event.clientX < rect.left ||
-          event.clientX > rect.right ||
-          event.clientY < rect.top ||
-          event.clientY > rect.bottom
-        )
-          close();
-      }}
-    >
-      {children}
-    </dialog>
   );
 }

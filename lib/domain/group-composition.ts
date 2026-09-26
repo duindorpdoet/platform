@@ -6,6 +6,7 @@ export type CompositionRegistration = {
   childCount: number;
   children: Array<{ name: string; age: number | null }>;
   partyId: string | null;
+  clusterReference: string | null;
   preferredStartAt: string | null;
   desiredEndAt: string | null;
   assignmentPublished: boolean;
@@ -28,7 +29,8 @@ export function compositionItems(
 ): CompositionItem[] {
   const parties = new Map<string, CompositionRegistration[]>();
   const singles: CompositionItem[] = [];
-  for (const registration of registrations) {
+  const unique = new Map(registrations.map((registration) => [registration.id, registration]));
+  for (const registration of unique.values()) {
     if (!registration.partyId)
       singles.push({
         id: registration.id,
@@ -55,6 +57,11 @@ export function compositionItems(
       ) || itemRepresentative(a).id.localeCompare(itemRepresentative(b).id),
   );
 }
+/** Presentation never changes the representative registration used by the move RPC. */
+export const itemIdentity = (item: CompositionItem) =>
+  item.registrations.length > 1
+    ? item.registrations.find((registration) => registration.clusterReference)?.clusterReference ?? "Samenloop · reference ontbreekt"
+    : itemRepresentative(item).reference;
 export const itemChildren = (item: CompositionItem) =>
   item.registrations.reduce(
     (total, registration) => total + registration.childCount,
@@ -87,6 +94,7 @@ export function itemMatches(item: CompositionItem, query: string) {
     item.registrations.some((registration) =>
       [
         registration.reference,
+        registration.clusterReference,
         registration.householdLabel,
         registration.parentEmail,
         ...registration.children.map((child) => child.name),
