@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   ChevronDown,
   ChevronLeft,
@@ -20,10 +28,12 @@ import {
   groupMatches,
   itemChildren,
   itemMatches,
+  itemMatchesPreference,
   itemRepresentative,
   preferenceSummary,
   type CompositionItem,
   type CompositionRegistration,
+  type MoveCheck,
 } from "@/lib/domain/group-composition";
 
 type Registration = CompositionRegistration;
@@ -69,16 +79,18 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   const [groupFilter, setGroupFilter] = useState<
     "all" | "free" | "full" | "locked"
   >("all");
+  const [preferenceFilter, setPreferenceFilter] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [activeColumnId, setActiveColumnId] = useState("unassigned");
-  const [activeColumn, setActiveColumn] = useState(0);
+  const [revealRequest, setRevealRequest] = useState(0);
+  const mutationPending = useRef(false);
+  const revealColumn = useRef<string | null>(null);
   const request = useRef(0);
   const boardRef = useRef<HTMLDivElement>(null);
-  const createRef = useRef<HTMLInputElement>(null);
-  const createButtonRef = useRef<HTMLButtonElement>(null);
+
   const load = useCallback(async () => {
     const client = createClient();
     if (!client) return;
@@ -89,7 +101,19 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
     if (current !== request.current) return;
     if (error)
       setNotice(`Groepsindeling kon niet worden opgehaald: ${error.message}`);
-    else setSnapshot(data as Snapshot);
+    else {
+      setSnapshot(data as Snapshot);
+      if (revealColumn.current) {
+        setQuery("");
+        setAssignmentFilter("all");
+        setTypeFilter("all");
+        setGroupFilter("all");
+        setPreferenceFilter("all");
+        setActiveColumnId(revealColumn.current);
+        setRevealRequest((value) => value + 1);
+        revealColumn.current = null;
+      }
+    }
   }, [eventSlug]);
   useEffect(() => {
     const initial = window.setTimeout(() => void load(), 0);
@@ -110,17 +134,6 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
       void client.removeChannel(channel);
     };
   }, [load, snapshot?.realtimeTopic]);
-  useEffect(() => {
-    if (createOpen) window.setTimeout(() => createRef.current?.focus(), 0);
-  }, [createOpen]);
-  useEffect(() => {
-    if (!createOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setCreateOpen(false);
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [createOpen]);
   const columns = useMemo(
     () =>
       snapshot
@@ -148,112 +161,194 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
         : [],
     [snapshot],
   );
-  const move = async (
+  const dividedParties = useMemo(() => dividedPartyIds(columns), [columns]);
+  const checkMove = (
     item: CompositionItem,
+    source: (typeof columns)[number],
     target: string | null,
-    sourceLocked = false,
-    inconsistent = false,
-  ) => {
-    if (!snapshot || busy) return;
-    const group = target ? snapshot.groups.find((g) => g.id === target) : null;
-    const check = canMoveCompositionItem(item, {
-      editable: snapshot.editable,
-      sourceLocked,
+  ): MoveCheck => {
+    const group = target ? snapshot?.groups.find((g) => g.id === target) : null;
+    return canMoveCompositionItem(item, {
+      editable: Boolean(snapshot?.editable),
+      sourceLocked: source.locked,
       targetLocked: Boolean(group?.locked),
       targetValid: target === null || Boolean(group),
       targetChildCount: group?.childCount ?? 0,
-      maxGroupSize: snapshot.maxGroupSize,
-      alreadyInTarget:
-        group?.id === undefined ? target === null && !sourceLocked : false,
-      inconsistent,
+      maxGroupSize: snapshot?.maxGroupSize ?? 0,
+      // The unassigned lane has no capacity ceiling.
+      alreadyInTarget: target === null || target === source.id,
+      inconsistent: Boolean(item.partyId && dividedParties.has(item.partyId)),
     });
-    if (!check.canMove) {
-      setNotice(check.reason ?? "Verplaatsen is niet beschikbaar.");
-      return;
-    }
-    const representative = itemRepresentative(item);
-    setBusy(true);
-    const client = createClient();
-    if (!client) return setBusy(false);
-    const { data, error } = await client
-      .schema("api")
-      .rpc("admin_group_move_registration", {
-        _event_slug: eventSlug,
-        _registration_id: representative.id,
-        _target_group_id: target,
-      });
-    setBusy(false);
-    setNotice(
-      error
-        ? `Verplaatsen geweigerd: ${error.message}`
-        : `${(data as { movedRegistrations?: number })?.movedRegistrations ?? item.registrations.length} inschrijving(en) verplaatst.`,
+  };
+  const move = async (itemId: string, target: string | null) => {
+    if (!snapshot || mutationPending.current) return;
+    // Resolve both input methods against the latest complete snapshot.
+    const source = columns.find((column) =>
+      compositionItems(column.registrations).some((item) => item.id === itemId),
     );
-    if (!error) await load();
+    const item =
+      source &&
+      compositionItems(source.registrations).find((item) => item.id === itemId);
+    if (!source || !item)
+      return setNotice(
+        "Inschrijving niet meer beschikbaar. Vernieuw de gegevens.",
+      );
+    const check = checkMove(item, source, target);
+    if (!check.canMove)
+      return setNotice(check.reason ?? "Verplaatsen is niet beschikbaar.");
+    if (source.id === (target ?? "unassigned")) return;
+    const client = createClient();
+    if (!client) return;
+    mutationPending.current = true;
+    setBusy(true);
+    try {
+      const { data, error } = await client
+        .schema("api")
+        .rpc("admin_group_move_registration", {
+          _event_slug: eventSlug,
+          _registration_id: itemRepresentative(item).id,
+          _target_group_id: target,
+        });
+      setNotice(
+        error
+          ? `Verplaatsen geweigerd: ${error.message}`
+          : `${(data as { movedRegistrations?: number })?.movedRegistrations ?? item.registrations.length} inschrijving(en) verplaatst.`,
+      );
+      if (!error) await load();
+    } finally {
+      mutationPending.current = false;
+      setBusy(false);
+    }
   };
   const closeCreate = () => {
     setCreateOpen(false);
     setNewName("");
-    window.setTimeout(() => createButtonRef.current?.focus(), 0);
   };
   const create = async () => {
-    if (!snapshot || busy) return;
-    setBusy(true);
+    if (!snapshot?.editable || mutationPending.current) return;
     const client = createClient();
-    if (!client) return setBusy(false);
-    const { data, error } = await client
-      .schema("api")
-      .rpc("admin_group_create", {
-        _event_slug: eventSlug,
-        _display_name: newName.trim() || null,
-      });
-    setBusy(false);
-    if (error) setNotice(`Groep kon niet worden gemaakt: ${error.message}`);
-    else {
-      const created = data as { id?: string; systemCode?: string } | null;
-      closeCreate();
-      await load();
-      if (created?.id) setActiveColumnId(created.id);
-      setNotice(`Nieuwe groep ${created?.systemCode ?? ""} aangemaakt.`);
+    if (!client) return;
+    mutationPending.current = true;
+    setBusy(true);
+    try {
+      const { data, error } = await client
+        .schema("api")
+        .rpc("admin_group_create", {
+          _event_slug: eventSlug,
+          _display_name: newName.trim() || null,
+        });
+      if (error) setNotice(`Groep kon niet worden gemaakt: ${error.message}`);
+      else {
+        const created = data as { id?: string; systemCode?: string } | null;
+        revealColumn.current = created?.id ?? null;
+        await load();
+        closeCreate();
+        setNotice(`Nieuwe groep ${created?.systemCode ?? ""} aangemaakt.`);
+      }
+    } finally {
+      mutationPending.current = false;
+      setBusy(false);
     }
   };
-  const selectColumn = (index: number) => {
-    const column = columns[index];
-    if (!column) return;
-    setActiveColumn(index);
-    setActiveColumnId(column.id);
-    boardRef.current?.scrollTo({
-      left: index * boardRef.current.clientWidth,
-      behavior: "smooth",
-    });
-  };
-  const dividedParties = useMemo(() => dividedPartyIds(columns), [columns]);
   const activeFilters = [
     assignmentFilter !== "all",
     typeFilter !== "all",
     groupFilter !== "all",
+    preferenceFilter !== "all",
   ].filter(Boolean).length;
-  const visible = (column: (typeof columns)[number]) =>
-    compositionItems(column.registrations).filter(
+  const preferenceTimes = [
+    ...new Set(
+      columns.flatMap((column) =>
+        column.registrations.flatMap((registration) =>
+          registration.preferredStartAt ? [registration.preferredStartAt] : [],
+        ),
+      ),
+    ),
+  ].sort();
+  const visibleColumns = columns.flatMap((column) => {
+    if (
+      (assignmentFilter === "assigned" && column.id === "unassigned") ||
+      (assignmentFilter === "unassigned" && column.id !== "unassigned")
+    )
+      return [];
+    const maxGroupSize = snapshot?.maxGroupSize ?? 0;
+    if (
+      groupFilter !== "all" &&
+      (column.id === "unassigned" ||
+        !(
+          (groupFilter === "locked" && column.locked) ||
+          (groupFilter === "full" && column.childCount >= maxGroupSize) ||
+          (groupFilter === "free" &&
+            !column.locked &&
+            column.childCount < maxGroupSize)
+        ))
+    )
+      return [];
+    const matchesGroup = groupMatches(column.code, column.title, query);
+    const items = compositionItems(column.registrations).filter(
       (item) =>
-        itemMatches(item, query) &&
-        (assignmentFilter === "all" ||
-          (assignmentFilter === "assigned" && column.id !== "unassigned") ||
-          (assignmentFilter === "unassigned" && column.id === "unassigned")) &&
+        (matchesGroup || itemMatches(item, query)) &&
         (typeFilter === "all" ||
           (typeFilter === "together" && Boolean(item.partyId)) ||
-          (typeFilter === "singles" && !item.partyId)),
+          (typeFilter === "singles" && !item.partyId)) &&
+        itemMatchesPreference(item, preferenceFilter),
     );
-  const columnVisible = (column: (typeof columns)[number]) =>
-    groupMatches(column.code, column.title, query) ||
-    visible(column).length > 0;
-  const maxGroupSize = snapshot?.maxGroupSize ?? 0;
-  const matchesGroupFilter = (column: (typeof columns)[number]) =>
-    groupFilter === "all" ||
-    (groupFilter === "locked" && column.locked) ||
-    (groupFilter === "full" && column.childCount >= maxGroupSize) ||
-    (groupFilter === "free" &&
-      !column.locked &&
-      column.childCount < maxGroupSize);
+    if (
+      !items.length &&
+      (!matchesGroup || typeFilter !== "all" || preferenceFilter !== "all")
+    )
+      return [];
+    return [{ ...column, items }];
+  });
+  const activeColumn = Math.max(
+    0,
+    visibleColumns.findIndex((column) => column.id === activeColumnId),
+  );
+  const selectedColumnId = visibleColumns[activeColumn]?.id ?? "";
+  const visibleColumnOrder = JSON.stringify(
+    visibleColumns.map((column) => column.id),
+  );
+  const scrollToColumn = (id: string, behavior: ScrollBehavior) => {
+    const board = boardRef.current;
+    const element =
+      board &&
+      [...board.children].find(
+        (child) => (child as HTMLElement).dataset.columnId === id,
+      );
+    if (!board || !element || !board.firstElementChild) return;
+    board.scrollTo({
+      left:
+        element.getBoundingClientRect().left -
+        board.firstElementChild.getBoundingClientRect().left,
+      behavior,
+    });
+  };
+  const selectColumn = (index: number) => {
+    const column = visibleColumns[index];
+    if (!column) return;
+    setActiveColumnId(column.id);
+    scrollToColumn(column.id, "smooth");
+  };
+  const alignColumn = useEffectEvent(() => {
+    setActiveColumnId(selectedColumnId);
+    scrollToColumn(selectedColumnId, "instant");
+  });
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+    let frame = 0;
+    const align = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => alignColumn());
+    };
+    align();
+    const observer = new ResizeObserver(align);
+    observer.observe(board);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [visibleColumnOrder, revealRequest]);
   if (!snapshot)
     return (
       <section className="panel loading-state">
@@ -291,7 +386,6 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
             className="btn"
             type="button"
             disabled={!snapshot.editable || busy}
-            ref={createButtonRef}
             onClick={() => setCreateOpen(true)}
           >
             <Plus />
@@ -307,7 +401,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
       <div className="group-mobile-picker">
         <button
           aria-label="Vorige groep"
-          disabled={activeColumn === 0}
+          disabled={activeColumn === 0 || !visibleColumns.length}
           onClick={() => selectColumn(activeColumn - 1)}
         >
           <ChevronLeft />
@@ -315,14 +409,17 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
         <span>
           <select
             aria-label="Kies groep"
-            value={activeColumnId}
+            disabled={!visibleColumns.length}
+            value={selectedColumnId}
             onChange={(event) =>
               selectColumn(
-                columns.findIndex((column) => column.id === event.target.value),
+                visibleColumns.findIndex(
+                  (column) => column.id === event.target.value,
+                ),
               )
             }
           >
-            {columns.map((column) => (
+            {visibleColumns.map((column) => (
               <option key={column.id} value={column.id}>
                 {column.code} · {column.title}
               </option>
@@ -331,7 +428,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
         </span>
         <button
           aria-label="Volgende groep"
-          disabled={activeColumn === columns.length - 1}
+          disabled={activeColumn >= visibleColumns.length - 1}
           onClick={() => selectColumn(activeColumn + 1)}
         >
           <ChevronRight />
@@ -341,221 +438,228 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
         ref={boardRef}
         className="group-composition-board"
         aria-label="Groepskolommen"
-        onScroll={(event) =>
-          setActiveColumn(
-            Math.round(
-              event.currentTarget.scrollLeft / event.currentTarget.clientWidth,
-            ),
-          )
-        }
+        onScroll={(event) => {
+          const board = event.currentTarget;
+          const elements = [...board.children] as HTMLElement[];
+          const first = elements[0];
+          if (!first) return;
+          const nearest = elements.reduce((best, element) => {
+            const distance = (node: HTMLElement) =>
+              Math.abs(
+                node.getBoundingClientRect().left -
+                  first.getBoundingClientRect().left -
+                  board.scrollLeft,
+              );
+            return distance(element) < distance(best) ? element : best;
+          });
+          if (nearest.dataset.columnId)
+            setActiveColumnId(nearest.dataset.columnId);
+        }}
       >
-        {columns
-          .filter(
-            (column) => matchesGroupFilter(column) && columnVisible(column),
-          )
-          .map((column) => (
-            <section
-              className={`group-composition-column${column.locked ? " locked" : ""}`}
-              key={column.id}
-              onDragOver={(e) => {
-                if (!column.locked) e.preventDefault();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                const id = e.dataTransfer.getData("text/plain");
-                const source = columns
-                  .flatMap((c) => compositionItems(c.registrations))
-                  .find((item) => item.id === id);
-                if (source)
-                  void move(
-                    source,
-                    column.id === "unassigned" ? null : column.id,
-                  );
+        {visibleColumns.map((column) => (
+          <section
+            className={`group-composition-column${column.locked ? " locked" : ""}`}
+            key={column.id}
+            data-column-id={column.id}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              void move(
+                e.dataTransfer.getData("text/plain"),
+                column.id === "unassigned" ? null : column.id,
+              );
+            }}
+          >
+            <header>
+              <div>
+                <p className="kicker">{column.code}</p>
+                <h3>{column.title}</h3>
+              </div>
+              <span>
+                {column.childCount}/{snapshot.maxGroupSize} kinderen
+              </span>
+            </header>
+            {column.locked && (
+              <p className="group-locked">
+                <LockKeyhole /> Definitief
+              </p>
+            )}
+            <div
+              className="group-composition-dropzone"
+              aria-label={`${column.title}: inschrijvingen`}
+            >
+              {column.items.map((item) => (
+                <Card
+                  key={item.id}
+                  item={item}
+                  current={column.id === "unassigned" ? null : column.id}
+                  inconsistent={Boolean(
+                    item.partyId && dividedParties.has(item.partyId),
+                  )}
+                  moveCheck={(target) =>
+                    checkMove(item, column, target?.id ?? null)
+                  }
+                  groups={snapshot.groups}
+                  expanded={Boolean(expanded[item.id])}
+                  toggle={() =>
+                    setExpanded((value) => ({
+                      ...value,
+                      [item.id]: !value[item.id],
+                    }))
+                  }
+                  move={move}
+                  busy={busy}
+                />
+              ))}
+              {!column.items.length && (
+                <div className="group-composition-empty">
+                  <UsersRound />
+                  {query || activeFilters
+                    ? "Geen resultaten binnen deze filters"
+                    : "Deze groep is leeg"}
+                </div>
+              )}
+            </div>
+          </section>
+        ))}
+      </div>
+      {!visibleColumns.length && (
+        <p role="status">Geen groepen binnen deze filters.</p>
+      )}
+      {filtersOpen && (
+        <BoardDialog
+          labelledBy="group-filter-title"
+          close={() => setFiltersOpen(false)}
+        >
+          <button
+            className="group-dialog-close"
+            type="button"
+            aria-label="Filters sluiten"
+            onClick={() => setFiltersOpen(false)}
+          >
+            <X />
+          </button>
+          <h2 id="group-filter-title">Filters</h2>
+          <label>
+            Indeling
+            <select
+              value={assignmentFilter}
+              onChange={(event) =>
+                setAssignmentFilter(
+                  event.target.value as typeof assignmentFilter,
+                )
+              }
+            >
+              <option value="all">Alle</option>
+              <option value="unassigned">Niet ingedeeld</option>
+              <option value="assigned">Ingedeeld</option>
+            </select>
+          </label>
+          <label>
+            Type
+            <select
+              value={typeFilter}
+              onChange={(event) =>
+                setTypeFilter(event.target.value as typeof typeFilter)
+              }
+            >
+              <option value="all">Alle</option>
+              <option value="singles">Losse inschrijvingen</option>
+              <option value="together">Samenloop bevestigd</option>
+            </select>
+          </label>
+          <label>
+            Groepsstatus
+            <select
+              value={groupFilter}
+              onChange={(event) =>
+                setGroupFilter(event.target.value as typeof groupFilter)
+              }
+            >
+              <option value="all">Alle</option>
+              <option value="free">Vrije ruimte</option>
+              <option value="full">Vol</option>
+              <option value="locked">Vergrendeld</option>
+            </select>
+          </label>
+          <label>
+            Voorkeurstijd
+            <select
+              value={preferenceFilter}
+              onChange={(event) => setPreferenceFilter(event.target.value)}
+            >
+              <option value="all">Alle voorkeurstijden</option>
+              <option value="none">Geen voorkeur</option>
+              <option value="mixed">Verschillende voorkeurstijden</option>
+              {preferenceTimes.map((time) => (
+                <option key={time} value={time}>
+                  {clock(time)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="actions">
+            <button
+              type="button"
+              className="btn outline"
+              onClick={() => {
+                setAssignmentFilter("all");
+                setTypeFilter("all");
+                setGroupFilter("all");
+                setPreferenceFilter("all");
               }}
             >
-              <header>
-                <div>
-                  <p className="kicker">{column.code}</p>
-                  <h3>{column.title}</h3>
-                </div>
-                <span>
-                  {column.childCount}/{snapshot.maxGroupSize} kinderen
-                </span>
-              </header>
-              {column.locked && (
-                <p className="group-locked">
-                  <LockKeyhole /> Definitief
-                </p>
-              )}
-              <div
-                className="group-composition-dropzone"
-                aria-label={`${column.title}: inschrijvingen`}
-              >
-                {visible(column).map((item) => (
-                  <Card
-                    key={item.id}
-                    item={item}
-                    current={column.id === "unassigned" ? null : column.id}
-                    sourceLocked={column.locked}
-                    inconsistent={Boolean(
-                      item.partyId && dividedParties.has(item.partyId),
-                    )}
-                    snapshot={snapshot}
-                    groups={snapshot.groups}
-                    expanded={Boolean(expanded[item.id])}
-                    toggle={() =>
-                      setExpanded((value) => ({
-                        ...value,
-                        [item.id]: !value[item.id],
-                      }))
-                    }
-                    move={move}
-                    busy={busy}
-                  />
-                ))}
-                {!visible(column).length && (
-                  <div className="group-composition-empty">
-                    <UsersRound />
-                    {query || activeFilters
-                      ? "Geen resultaten binnen deze filters"
-                      : "Deze groep is leeg"}
-                  </div>
-                )}
-              </div>
-            </section>
-          ))}
-      </div>
-      {filtersOpen && (
-        <div
-          className="group-create-backdrop"
-          role="presentation"
-          onMouseDown={() => setFiltersOpen(false)}
-        >
-          <section
-            className="group-create-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="group-filter-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
+              Filters wissen
+            </button>
             <button
-              className="group-dialog-close"
-              aria-label="Filters sluiten"
+              type="button"
+              className="btn"
               onClick={() => setFiltersOpen(false)}
             >
-              <X />
+              Toepassen
             </button>
-            <h2 id="group-filter-title">Filters</h2>
+          </div>
+        </BoardDialog>
+      )}
+      {createOpen && (
+        <BoardDialog labelledBy="group-create-title" close={closeCreate}>
+          <button
+            className="group-dialog-close"
+            type="button"
+            aria-label="Sluiten"
+            onClick={closeCreate}
+          >
+            <X />
+          </button>
+          <h2 id="group-create-title">Groep aanmaken</h2>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void create();
+            }}
+          >
             <label>
-              Indeling
-              <select
-                value={assignmentFilter}
-                onChange={(event) =>
-                  setAssignmentFilter(
-                    event.target.value as typeof assignmentFilter,
-                  )
-                }
-              >
-                <option value="all">Alle</option>
-                <option value="unassigned">Niet ingedeeld</option>
-                <option value="assigned">Ingedeeld</option>
-              </select>
-            </label>
-            <label>
-              Type
-              <select
-                value={typeFilter}
-                onChange={(event) =>
-                  setTypeFilter(event.target.value as typeof typeFilter)
-                }
-              >
-                <option value="all">Alle</option>
-                <option value="singles">Losse inschrijvingen</option>
-                <option value="together">Samenloop bevestigd</option>
-              </select>
-            </label>
-            <label>
-              Groepsstatus
-              <select
-                value={groupFilter}
-                onChange={(event) =>
-                  setGroupFilter(event.target.value as typeof groupFilter)
-                }
-              >
-                <option value="all">Alle</option>
-                <option value="free">Vrije ruimte</option>
-                <option value="full">Vol</option>
-                <option value="locked">Vergrendeld</option>
-              </select>
+              Naam (optioneel)
+              <input
+                data-initial-focus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
             </label>
             <div className="actions">
               <button
+                type="button"
                 className="btn outline"
-                onClick={() => {
-                  setAssignmentFilter("all");
-                  setTypeFilter("all");
-                  setGroupFilter("all");
-                }}
+                onClick={closeCreate}
               >
-                Filters wissen
+                Annuleren
               </button>
-              <button className="btn" onClick={() => setFiltersOpen(false)}>
-                Toepassen
+              <button className="btn" disabled={busy} type="submit">
+                Aanmaken
               </button>
             </div>
-          </section>
-        </div>
-      )}
-      {createOpen && (
-        <div
-          className="group-create-backdrop"
-          role="presentation"
-          onMouseDown={closeCreate}
-        >
-          <section
-            className="group-create-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="group-create-title"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <button
-              className="group-dialog-close"
-              aria-label="Sluiten"
-              onClick={closeCreate}
-            >
-              <X />
-            </button>
-            <h2 id="group-create-title">Groep aanmaken</h2>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void create();
-              }}
-            >
-              <label>
-                Naam (optioneel)
-                <input
-                  ref={createRef}
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                />
-              </label>
-              <div className="actions">
-                <button className="btn outline" onClick={closeCreate}>
-                  Annuleren
-                </button>
-                <button
-                  className="btn"
-                  disabled={busy}
-                  onClick={() => void create()}
-                >
-                  Aanmaken
-                </button>
-              </div>
-            </form>
-          </section>
-        </div>
+          </form>
+        </BoardDialog>
       )}
     </section>
   );
@@ -563,9 +667,8 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
 function Card({
   item,
   current,
-  sourceLocked,
   inconsistent,
-  snapshot,
+  moveCheck,
   groups,
   expanded,
   toggle,
@@ -574,18 +677,12 @@ function Card({
 }: {
   item: CompositionItem;
   current: string | null;
-  sourceLocked: boolean;
   inconsistent: boolean;
-  snapshot: Snapshot;
+  moveCheck: (target: Group | null) => MoveCheck;
   groups: Group[];
   expanded: boolean;
   toggle: () => void;
-  move: (
-    item: CompositionItem,
-    target: string | null,
-    sourceLocked?: boolean,
-    inconsistent?: boolean,
-  ) => Promise<void>;
+  move: (itemId: string, target: string | null) => Promise<void>;
   busy: boolean;
 }) {
   const rep = itemRepresentative(item);
@@ -597,24 +694,14 @@ function Card({
       : preference.kind === "mixed"
         ? "Verschillende voorkeurstijden"
         : `Voorkeur ${clock(preference.value)}`;
-  const moveCheck = (target: Group | null) =>
-    canMoveCompositionItem(item, {
-      editable: snapshot.editable,
-      sourceLocked,
-      targetLocked: Boolean(target?.locked),
-      targetValid: target === null || Boolean(target),
-      targetChildCount: target?.childCount ?? 0,
-      maxGroupSize: snapshot.maxGroupSize,
-      alreadyInTarget: target?.id === current,
-      inconsistent,
-    });
   const movable = moveCheck(null).canMove;
   return (
     <article className="group-registration-card">
       <button
         className="drag-handle"
         aria-label={`${rep.reference} verplaatsen`}
-        draggable={movable}
+        disabled={!movable || busy}
+        draggable={movable && !busy}
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = "move";
           e.dataTransfer.setData("text/plain", item.id);
@@ -683,10 +770,8 @@ function Card({
               value={current ?? "unassigned"}
               onChange={(e) =>
                 void move(
-                  item,
+                  item.id,
                   e.target.value === "unassigned" ? null : e.target.value,
-                  sourceLocked,
-                  inconsistent,
                 )
               }
             >
@@ -714,5 +799,73 @@ function Card({
         </div>
       )}
     </article>
+  );
+}
+
+function BoardDialog({
+  labelledBy,
+  close,
+  children,
+}: {
+  labelledBy: string;
+  close: () => void;
+  children: ReactNode;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    dialog.showModal();
+    dialog.querySelector<HTMLElement>("[data-initial-focus]")?.focus();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog.close();
+      document.body.style.overflow = overflow;
+      if (opener?.isConnected) opener.focus();
+    };
+  }, []);
+  return (
+    <dialog
+      ref={dialogRef}
+      className="group-create-dialog"
+      aria-labelledby={labelledBy}
+      aria-modal="true"
+      onCancel={(event) => {
+        event.preventDefault();
+        close();
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        const focusable = [
+          ...event.currentTarget.querySelectorAll<HTMLElement>(
+            'button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]',
+          ),
+        ];
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        if (
+          event.clientX < rect.left ||
+          event.clientX > rect.right ||
+          event.clientY < rect.top ||
+          event.clientY > rect.bottom
+        )
+          close();
+      }}
+    >
+      {children}
+    </dialog>
   );
 }

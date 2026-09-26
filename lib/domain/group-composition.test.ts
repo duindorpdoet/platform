@@ -6,6 +6,7 @@ import {
   groupMatches,
   itemChildren,
   itemMatches,
+  itemMatchesPreference,
   itemRepresentative,
   preferenceSummary,
 } from "./group-composition";
@@ -28,6 +29,23 @@ const registration = (
   ...extra,
 });
 describe("group composition clusters", () => {
+  it("filters preferences without splitting confirmed parties", () => {
+    const mixed = compositionItems([
+      registration("a", "party", 1, {
+        preferredStartAt: "2026-10-31T18:00:00Z",
+      }),
+      registration("b", "party", 1, {
+        preferredStartAt: "2026-10-31T19:00:00Z",
+      }),
+    ])[0];
+    const none = compositionItems([registration("c", null)])[0];
+    expect(itemMatchesPreference(mixed, "mixed")).toBe(true);
+    expect(itemMatchesPreference(mixed, "2026-10-31T19:00:00Z")).toBe(true);
+    expect(itemMatchesPreference(mixed, "2026-10-31T20:00:00Z")).toBe(false);
+    expect(itemMatchesPreference(mixed, "none")).toBe(false);
+    expect(itemMatchesPreference(none, "none")).toBe(true);
+    expect(itemMatchesPreference(none, "all")).toBe(true);
+  });
   it("clusters only authoritative party ids, counts children once, and searches each member", () => {
     const items = compositionItems([
       registration("1", "confirmed", 2),

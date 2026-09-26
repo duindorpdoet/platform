@@ -94,6 +94,18 @@ export function itemMatches(item: CompositionItem, query: string) {
     )
   );
 }
+/** Match an entire confirmed party when any member requests the selected time. */
+export function itemMatchesPreference(
+  item: CompositionItem,
+  preference: string,
+) {
+  if (preference === "all") return true;
+  if (preference === "none" || preference === "mixed")
+    return preferenceSummary(item).kind === preference;
+  return item.registrations.some(
+    (registration) => registration.preferredStartAt === preference,
+  );
+}
 export const groupMatches = (
   code: string,
   name: string | null,
