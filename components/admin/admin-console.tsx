@@ -265,14 +265,19 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "simulation"
     | "settings"
   >("overview");
+  const canManageGroups = capabilities.includes("event_admin") || capabilities.includes("groups_manage");
+  const canUseTickets = capabilities.includes("event_admin") || capabilities.includes("groups_manage") || capabilities.includes("live_support");
+  const canUseLive = capabilities.includes("event_admin") || capabilities.includes("live_support");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navigationRef = useRef<HTMLElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const headerMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const bottomNavMoreButtonRef = useRef<HTMLButtonElement>(null);
+  const navigationOpenerRef = useRef<HTMLButtonElement | null>(null);
   const closeMenuRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!mobileNavOpen) return;
-    const menuButton = menuButtonRef.current;
+    const menuButton = navigationOpenerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeMenuRef.current?.focus();
@@ -1239,7 +1244,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
       </aside>
       <div className="admin-workspace" inert={mobileNavOpen}>
         <div className="admin-topbar">
-          <button ref={menuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(true)}>
+          <button ref={headerMenuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => { navigationOpenerRef.current = headerMenuButtonRef.current; setMobileNavOpen(true); }}>
             <Menu aria-hidden="true" />
             <span>Menu</span>
           </button>
@@ -1247,7 +1252,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           <span className="admin-desktop-crumb">De Duindorpse Poorten <i>›</i> Nachtregie</span>
           <span>{dashboard.event.date} <i>·</i> {dashboard.event.phase}</span>
         </div>
-        <main className="admin-content">
+        <main id="admin-content" className="admin-content" tabIndex={-1}>
         <div className="app-heading admin-page-heading row-between">
           <div>
             <p className="kicker">{sectionMeta[section].kicker}</p>
@@ -1757,6 +1762,13 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           </div>
         )}
         </main>
+        <nav className="admin-bottomnav" aria-label="Snelle organisatienavigatie">
+          <button className={section === "overview" ? "active" : ""} aria-current={section === "overview" ? "page" : undefined} onClick={() => setSection("overview")}><House /><span>Home</span></button>
+          {canManageGroups && <button className={section === "groups" ? "active" : ""} aria-current={section === "groups" ? "page" : undefined} onClick={() => setSection("groups")}><UsersRound /><span>Groepen</span></button>}
+          {canUseLive && <button className={section === "live" ? "active" : ""} aria-current={section === "live" ? "page" : undefined} onClick={() => { setSection("live"); void loadLive(); }}><LifeBuoy /><span>Cockpit</span></button>}
+          {canUseTickets && <button className={section === "tickets" ? "active" : ""} aria-current={section === "tickets" ? "page" : undefined} onClick={() => setSection("tickets")}><MessageSquare /><span>Berichten</span></button>}
+          <button ref={bottomNavMoreButtonRef} className="admin-bottomnav-more" aria-expanded={mobileNavOpen} aria-controls="admin-navigation" onClick={() => { navigationOpenerRef.current = bottomNavMoreButtonRef.current; setMobileNavOpen(true); }}><Menu /><span>Meer</span></button>
+        </nav>
       </div>
     </div>
   );

@@ -37,8 +37,10 @@ async function authenticate(context: BrowserContext, email: string) {
 
 async function selectAdminSection(page: Page, name: string) {
   await expect(page.locator(".admin-topbar")).toBeVisible();
+  const more = page.getByRole("button", { name: "Meer", exact: true });
   const menu = page.getByRole("button", { name: "Organisatienavigatie openen" });
-  if (await menu.isVisible()) await menu.click();
+  if (await more.isVisible()) await more.click();
+  else if (await menu.isVisible()) await menu.click();
   await page.locator(".admin-nav").getByRole("button", { name, exact: true }).click();
 }
 
@@ -427,13 +429,6 @@ test("the night cockpit exposes verified portals and the group board without lea
   const admin = await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
 
-  const activityMessages = page.locator(".cockpit-live-log .activity-row strong");
-  await expect(activityMessages.first()).toBeVisible({ timeout: 15_000 });
-  for (const message of await activityMessages.allTextContents()) expect(message).not.toMatch(/[._]/);
-  for (const detail of await page.locator(".cockpit-live-log .activity-row small").allTextContents()) {
-    expect(detail.split(" · ")[0]).not.toMatch(/[._]/);
-  }
-
   const mapPanel = page.locator(".cockpit-map-panel");
   await expect(mapPanel).toContainText(/bevestigde bestemming/i);
   await expect(mapPanel.getByRole("group", { name: "Filter poorten op status" })).toBeVisible({ timeout: 15_000 });
@@ -499,6 +494,15 @@ test("the night cockpit exposes verified portals and the group board without lea
     });
   }
 
+  // Inspect the audit entry produced by this test, independent of test order.
+  await page.locator(".cockpit-live-log").getByRole("button", { name: "Vernieuwen" }).click();
+  const activityMessages = page.locator(".cockpit-live-log .activity-row strong");
+  await expect(activityMessages.first()).toBeVisible({ timeout: 15_000 });
+  for (const message of await activityMessages.allTextContents()) expect(message).not.toMatch(/[._]/);
+  for (const detail of await page.locator(".cockpit-live-log .activity-row small").allTextContents()) {
+    expect(detail.split(" · ")[0]).not.toMatch(/[._]/);
+  }
+
   await selectAdminSection(page, "Poorten");
   await page.getByRole("tab", { name: /Actieve poorten/ }).click();
   const operation = page.locator(".active-portals-list .portal-list-row").filter({ hasText: "P-01" }).first();
@@ -513,10 +517,10 @@ test("the night cockpit exposes verified portals and the group board without lea
   await selectAdminSection(page, "Groepsindeling");
   await expect(page.getByRole("heading", { name: "Maak de wandelgroepen." })).toBeVisible();
   await expect(page.locator(".group-composition-column").first()).toContainText(/kinderen/i);
-  await expect(
-    page.locator(".group-registration-children").filter({ hasText: /\(\d+ jaar\)/ }).first(),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Groep maken" })).toBeVisible();
+  const card = page.locator(".group-registration-card").first();
+  await card.getByRole("button", { name: "Details tonen" }).click();
+  await expect(card.locator(".registration-details")).toContainText(/\(\d+ jaar\)/);
+  await expect(page.getByRole("button", { name: "Groep aanmaken", exact: true })).toBeVisible();
   await assertReadableLayout(page);
 });
 
@@ -1007,13 +1011,13 @@ test("payment links select individual siblings and expose one payment action per
 });
 
 
-for (const width of [320, 375, 390, 430]) {
+for (const width of [320, 375, 390, 430, 900]) {
   test(`organisation navigation is a keyboard accessible drawer at ${width}px`, async ({ context, page }) => {
     requireLocalAuth();
     await page.setViewportSize({ width, height: 844 });
     await authenticate(context, "admin@example.invalid");
     await page.goto("/admin");
-    const opener = page.getByRole("button", { name: "Organisatienavigatie openen" });
+    const opener = width <= 700 ? page.getByRole("button", { name: "Meer", exact: true }) : page.getByRole("button", { name: "Organisatienavigatie openen" });
     const navigation = page.locator("#admin-navigation");
     await expect(opener).toBeVisible();
     await expect(navigation).toBeHidden();
@@ -1048,3 +1052,190 @@ for (const width of [320, 375, 390, 430]) {
     expect(await page.evaluate(() => document.body.style.overflow)).not.toBe("hidden");
   });
 }
+
+function boardFixture() {
+  const registration = (id: string, preferredStartAt: string | null = null, partyId: string | null = null, assignmentPublished = false) => ({
+    id, reference: `TEST-${id}`, householdLabel: `Gezin ${id}`, parentEmail: null,
+    childCount: 1, children: [{ name: `Kind ${id}`, age: 8 }], partyId, preferredStartAt, desiredEndAt: null, assignmentPublished,
+  });
+  const early = "2026-10-31T17:00:00Z";
+  const late = "2026-10-31T18:00:00Z";
+  const group = (id: string, registrations: ReturnType<typeof registration>[], locked = false, childCount = registrations.length) => ({
+    id, systemCode: `G-${id}`, displayName: `Groep ${id}`, status: "draft", version: 1, locked, childCount, registrations,
+  });
+  return {
+    eventId: "fixture-event", phase: "draft", editable: true, maxGroupSize: 4, realtimeTopic: "",
+    unassigned: [registration("free", early), registration("mixed-a", early, "mixed"), registration("mixed-b", late, "mixed"), registration("split-a", null, "split"), registration("published", null, null, true)],
+    groups: [group("a", [registration("assigned", late), registration("split-b", null, "split")]), group("b", []), group("locked", [registration("locked")], true), group("full", [registration("full")], false, 4)],
+  };
+}
+
+async function openFixtureBoard(page: Page, context: BrowserContext, width = 390) {
+  requireLocalAuth();
+  await page.setViewportSize({ width, height: 1000 });
+  const snapshot = boardFixture();
+  const moves: Array<Record<string, unknown>> = [];
+  const creates: Array<Record<string, unknown>> = [];
+  await page.route("**/rest/v1/rpc/admin_group_composition_snapshot", (route) => route.fulfill({ json: snapshot }));
+  await page.route("**/rest/v1/rpc/admin_group_move_registration", async (route) => {
+    moves.push(route.request().postDataJSON());
+    await route.fulfill({ json: { movedRegistrations: 1 } });
+  });
+  await page.route("**/rest/v1/rpc/admin_group_create", async (route) => {
+    creates.push(route.request().postDataJSON());
+    snapshot.groups.push({ id: "created", systemCode: "G-created", displayName: "Nieuwe groep", status: "draft", version: 1, locked: false, childCount: 0, registrations: [] });
+    // Keep the request pending while the test attempts another submit.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await route.fulfill({ json: { id: "created", systemCode: "G-created" } });
+  });
+  await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  await selectAdminSection(page, "Groepsindeling");
+  await expect(page.locator(".group-composition-column")).toHaveCount(5);
+  return { moves, creates };
+}
+
+async function expectColumnAligned(page: Page, id: string) {
+  await expect(page.getByRole("combobox", { name: "Kies groep" })).toHaveValue(id);
+  await expect.poll(() => page.locator(`[data-column-id="${id}"]`).evaluate((element) => {
+    const board = element.parentElement!;
+    return Math.abs(element.getBoundingClientRect().left - board.getBoundingClientRect().left);
+  })).toBeLessThan(2);
+}
+
+test("group board keeps swipes, filtered picker and previous/next aligned across gaps", async ({ page, context }) => {
+  await openFixtureBoard(page, context);
+  const picker = page.getByRole("combobox", { name: "Kies groep" });
+  await page.getByRole("button", { name: "Volgende groep" }).click();
+  await expectColumnAligned(page, "a");
+  // A swipe's scroll event must update the same selection used by the picker.
+  await page.locator('[data-column-id="b"]').evaluate((element) => element.scrollIntoView({ block: "nearest", inline: "start" }));
+  await expectColumnAligned(page, "b");
+  await page.getByRole("button", { name: "Vorige groep" }).click();
+  await expectColumnAligned(page, "a");
+  await page.getByRole("button", { name: /^Filters/ }).click();
+  await page.getByRole("combobox", { name: "Groepsstatus", exact: true }).selectOption("free");
+  await page.getByRole("button", { name: "Toepassen" }).click();
+  await expect(picker.locator("option")).toHaveCount(2);
+  await expectColumnAligned(page, "a");
+  await page.getByRole("button", { name: "Volgende groep" }).click();
+  await expectColumnAligned(page, "b");
+  await expect(page.getByRole("button", { name: "Volgende groep" })).toBeDisabled();
+  await page.getByRole("button", { name: /^Filters/ }).click();
+  await page.getByRole("combobox", { name: "Groepsstatus", exact: true }).selectOption("locked");
+  await page.getByRole("button", { name: "Toepassen" }).click();
+  await expectColumnAligned(page, "locked");
+  await page.getByRole("textbox", { name: "Zoek in groepsindeling" }).fill("geen-resultaat");
+  await expect(picker).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Vorige groep" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Volgende groep" })).toBeDisabled();
+  await expect(page.getByText("Geen groepen binnen deze filters.")).toBeVisible();
+});
+
+test("group board preference filters preserve complete parties and combine with assignment filters", async ({ page, context }) => {
+  await openFixtureBoard(page, context);
+  const filter = page.getByRole("button", { name: /^Filters/ });
+  await filter.click();
+  await page.getByRole("combobox", { name: "Voorkeurstijd", exact: true }).selectOption("mixed");
+  await page.getByRole("button", { name: "Toepassen" }).click();
+  await expect(filter).toHaveText("Filters (1)");
+  await expect(page.locator(".group-registration-card")).toHaveCount(1);
+  const party = page.locator(".group-registration-card");
+  await party.getByRole("button", { name: "Details tonen" }).click();
+  await expect(party).toContainText("TEST-mixed-a");
+  await expect(party).toContainText("TEST-mixed-b");
+  await filter.click();
+  await page.getByRole("combobox", { name: "Voorkeurstijd", exact: true }).selectOption("2026-10-31T18:00:00Z");
+  await page.getByRole("combobox", { name: "Indeling", exact: true }).selectOption("assigned");
+  await page.getByRole("button", { name: "Toepassen" }).click();
+  await expectColumnAligned(page, "a");
+  await expect(page.locator(".group-registration-card")).toHaveCount(1);
+  await expect(page.locator(".group-registration-card")).toContainText("TEST-assigned");
+  await filter.click();
+  await page.getByRole("button", { name: "Filters wissen" }).click();
+  await page.getByRole("combobox", { name: "Voorkeurstijd", exact: true }).selectOption("none");
+  await page.getByRole("button", { name: "Toepassen" }).click();
+  await expect(page.locator(".group-registration-card").filter({ hasText: "TEST-assigned" })).toHaveCount(0);
+  await expect(page.locator(".group-registration-card").filter({ hasText: "TEST-published" })).toHaveCount(1);
+});
+
+test("group dialogs trap focus, cancel safely and submit once before revealing the new group", async ({ page, context }) => {
+  const { creates } = await openFixtureBoard(page, context);
+  const filter = page.getByRole("button", { name: /^Filters/ });
+  const create = page.getByRole("button", { name: "Groep aanmaken", exact: true });
+  for (const opener of [filter, create]) {
+    await opener.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    expect(await dialog.evaluate((element) => element.matches(":modal"))).toBe(true);
+    // Even explicit focus cannot reach the inert background.
+    await page.getByRole("textbox", { name: "Zoek in groepsindeling" }).evaluate((element) => element.focus());
+    expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+    for (let i = 0; i < 12; i++) {
+      await page.keyboard.press(i < 6 ? "Tab" : "Shift+Tab");
+      expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(opener).toBeFocused();
+    await opener.click();
+    await page.mouse.click(1, 1);
+    await expect(dialog).toHaveCount(0);
+    await expect(opener).toBeFocused();
+  }
+  await create.click();
+  await page.getByRole("button", { name: "Annuleren" }).click();
+  await expect(create).toBeFocused();
+  expect(creates).toHaveLength(0);
+  await filter.click();
+  await page.getByRole("combobox", { name: "Groepsstatus", exact: true }).selectOption("locked");
+  await page.getByRole("button", { name: "Toepassen" }).click();
+  await page.getByRole("textbox", { name: "Zoek in groepsindeling" }).fill("locked");
+  await create.click();
+  await expect(page.getByRole("textbox", { name: "Naam (optioneel)" })).toBeFocused();
+  await page.getByRole("textbox", { name: "Naam (optioneel)" }).fill("Nieuwe groep");
+  await page.getByRole("button", { name: "Aanmaken", exact: true }).click();
+  await page.locator(".group-create-dialog form").evaluate((element) => {
+    (element as HTMLFormElement).requestSubmit();
+    (element as HTMLFormElement).requestSubmit();
+  });
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expectColumnAligned(page, "created");
+  await expect(filter).toHaveText("Filters");
+  await expect(page.getByRole("textbox", { name: "Zoek in groepsindeling" })).toHaveValue("");
+  expect(creates).toEqual([{ _event_slug: "duindorp-halloween-2026", _display_name: "Nieuwe groep" }]);
+  await expect(create).toBeFocused();
+});
+
+test("group board rejects unsafe drops using the same rules as the move selector", async ({ page, context }) => {
+  const { moves } = await openFixtureBoard(page, context, 1440);
+  const drop = async (item: string, target: string) => {
+    const transfer = await page.evaluateHandle((id) => {
+      const data = new DataTransfer(); data.setData("text/plain", id); return data;
+    }, item);
+    await page.locator(`[data-column-id="${target}"]`).dispatchEvent("drop", { dataTransfer: transfer });
+    await transfer.dispose();
+  };
+  for (const [id, target, reason] of [["locked", "b", "huidige groep is vergrendeld"], ["party:split", "b", "verdeeld over meerdere groepen"], ["published", "b", "al gepubliceerd"], ["free", "locked", "doelgroep is vergrendeld"], ["free", "full", "Vol ·"]]) {
+    await drop(id, target);
+    await expect(page.locator(".group-composition .form-notice")).toContainText(reason);
+    expect(moves).toHaveLength(0);
+  }
+  const free = page.locator(".group-registration-card").filter({ hasText: "TEST-free" });
+  await free.getByRole("button", { name: "Details tonen" }).click();
+  const select = free.getByRole("combobox", { name: "Verplaatsen naar…" });
+  await expect(select.locator('option[value="locked"]')).toHaveJSProperty("disabled", true);
+  await expect(select.locator('option[value="full"]')).toHaveJSProperty("disabled", true);
+  await select.selectOption("b");
+  await expect.poll(() => moves.length).toBe(1);
+  await expect(select).toBeEnabled();
+  await drop("free", "b");
+  await expect.poll(() => moves.length).toBe(2);
+  expect(moves[0]).toEqual(moves[1]);
+  await expect(select).toBeEnabled();
+  await drop("assigned", "a");
+  expect(moves).toHaveLength(2);
+  await drop("assigned", "unassigned");
+  await expect.poll(() => moves.length).toBe(3);
+  expect(moves[2]._target_group_id).toBeNull();
+});
