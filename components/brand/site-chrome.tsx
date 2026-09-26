@@ -21,6 +21,13 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const isPortal = protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
   const isParticipantEnvironment = pathname.startsWith("/omgeving");
 
+  if (pathname.startsWith("/admin")) {
+    return <>
+      <a className="skip-link" href="#admin-content">Ga naar inhoud</a>
+      <div className="admin-route-surface">{children}</div>
+    </>;
+  }
+
   if (isParticipantEnvironment) {
     return <>
       <a className="skip-link" href="#participant-content">Ga naar inhoud</a>
