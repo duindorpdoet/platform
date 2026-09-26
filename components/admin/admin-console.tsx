@@ -1247,7 +1247,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           <span className="admin-desktop-crumb">De Duindorpse Poorten <i>›</i> Nachtregie</span>
           <span>{dashboard.event.date} <i>·</i> {dashboard.event.phase}</span>
         </div>
-        <main className="admin-content">
+        <main id="admin-content" className="admin-content" tabIndex={-1}>
         <div className="app-heading admin-page-heading row-between">
           <div>
             <p className="kicker">{sectionMeta[section].kicker}</p>
