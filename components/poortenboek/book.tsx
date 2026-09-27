@@ -175,7 +175,7 @@ export function Poortenboek({
       pending.current = true;
       setBusy(true);
       setNotice("");
-      sequence.current++;
+      const current = ++sequence.current;
       if (action === "checklist")
         setSnapshot((current) =>
           current
@@ -189,12 +189,16 @@ export function Poortenboek({
           cache: "no-store",
           body: JSON.stringify(payload),
         });
+        const data = await result.json();
+        if (current !== sequence.current || document.hidden) {
+          if (!document.hidden && navigator.onLine) await load();
+          return;
+        }
         if (result.status === 401) {
           setSnapshot(null);
           window.location.replace("/poortenboek/inloggen");
           return;
         }
-        const data = await result.json();
         if (!result.ok) {
           setNotice(data.error ?? "Dat lukte even niet.");
           await load();
@@ -208,8 +212,10 @@ export function Poortenboek({
         setSnapshot(data as BookSnapshot);
         setOffline(false);
       } catch {
-        setSnapshot(null);
-        setOffline(true);
+        if (current === sequence.current && !document.hidden) {
+          setSnapshot(null);
+          setOffline(true);
+        }
       } finally {
         pending.current = false;
         setBusy(false);

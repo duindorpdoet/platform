@@ -333,7 +333,49 @@ test("private PWA responses, offline neutral view and no stored child data", asy
       JSON.stringify({ ...localStorage, ...sessionStorage }),
     ),
   ).not.toMatch(/Mila|DEMO26|poortenboek-session/);
+  // Hold a real response after the network has returned it. Losing connectivity
+  // or changing visibility must invalidate it before React can display it.
+  await page.evaluate(() => {
+    const original = window.fetch.bind(window);
+    window.fetch = async (...args) => {
+      const response = await original(...args);
+      if (String(args[0]).endsWith("/api/poortenboek/checklist")) {
+        const buffered = new Response(await response.arrayBuffer(), {
+          status: response.status,
+          headers: response.headers,
+        });
+        await new Promise<void>((resolve) => {
+          Object.assign(window, { releaseChildResponse: resolve });
+        });
+        Object.assign(window, { childResponseReleased: true });
+        return buffered;
+      }
+      return response;
+    };
+  });
+  await page
+    .getByRole("checkbox", { name: "Snoeptas klaar", exact: true })
+    .check();
+  await page.waitForFunction(() => "releaseChildResponse" in window);
   await context.setOffline(true);
+  await expect(
+    page.getByRole("heading", { name: "De verbinding rust even" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Welkom terug, Mila", { exact: true }),
+  ).toHaveCount(0);
+  await page.evaluate(() => {
+    (
+      window as unknown as { releaseChildResponse: () => void }
+    ).releaseChildResponse();
+  });
+  await page.waitForFunction(() => "childResponseReleased" in window);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
   await expect(
     page.getByRole("heading", { name: "De verbinding rust even" }),
   ).toBeVisible();
