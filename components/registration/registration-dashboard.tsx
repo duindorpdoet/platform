@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./registration-dashboard.css";
 import { ParticipantTogether } from "@/components/registration/participant-together";
+import { ParentPoortenboek } from "@/components/poortenboek/parent";
 import type { ParticipantPayment } from "@/components/payments/payment-details";
 import { ChildPaymentRows, type ChildPayment } from "@/components/payments/child-payment-rows";
 import { createClient } from "@/lib/supabase/client";
@@ -551,6 +552,7 @@ export function RegistrationDashboard({
         </p>
       </section>
       <ParticipantTogether registrationId={registration.id} />
+      {registration.status === "submitted" && <ParentPoortenboek />}
     </div>
   );
 }

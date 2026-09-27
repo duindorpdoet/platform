@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, CalendarDays, Menu, UserRound } from "lucide-react";
 import { MotionAtmosphere, MotionToggle } from "@/components/poorten-cinematic";
+import { PoortenboekLink } from "@/components/poortenboek/entry-link";
 
 const navigation = [
   ["Het verhaal", "/verhaal"],
@@ -20,6 +21,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const isHome = pathname === "/";
   const isPortal = protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
   const isParticipantEnvironment = pathname.startsWith("/omgeving");
+
+  if (pathname.startsWith("/poortenboek")) return <><a className="skip-link" href="#poortenboek-content">Ga naar jouw Poortenboek</a>{children}<MotionToggle /></>;
 
   if (pathname.startsWith("/admin")) {
     return <>
@@ -51,6 +54,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="header-actions">
+          <PoortenboekLink />
           <Link className="group-link" href="/omgeving"><UserRound size={16} /><span>Mijn omgeving</span></Link>
           <Link className="btn header-signup" href="/meelopen">Bekijk deelname <ArrowUpRight size={16} /></Link>
           <details className="mobile-navigation">
@@ -60,6 +64,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               <Link href="/huis-aanmelden">Plek aanmelden</Link>
               <Link href="/sponsoren">Sponsoren</Link>
               <Link href="/omgeving">Mijn omgeving</Link>
+              <PoortenboekLink menu />
             </div>
           </details>
         </div>

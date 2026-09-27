@@ -19,6 +19,9 @@ const required = [
   "CRON_SECRET",
   "PORTAL_CODE_PEPPER",
   "ABUSE_HASH_SECRET",
+  "CHILD_CODE_PEPPER",
+  "CHILD_CODE_ENCRYPTION_KEY",
+  "POORTENBOEK_DEMO_ENABLED",
   "EVENT_SLUG",
   "REGISTRATION_MODE",
   "MAIL_MODE",
@@ -31,6 +34,14 @@ const required = [
 for (const name of required) {
   if (!process.env[name]) throw new Error(`Missing required ${target} variable: ${name}`);
 }
+
+for (const name of ["CHILD_CODE_PEPPER", "CHILD_CODE_ENCRYPTION_KEY"]) {
+  const value = process.env[name];
+  const decoded = Buffer.from(value, "base64");
+  if (decoded.length !== 32 || decoded.toString("base64") !== value) throw new Error(`${name} must be a canonical base64-encoded 32-byte key.`);
+}
+if (process.env.CHILD_CODE_PEPPER === process.env.CHILD_CODE_ENCRYPTION_KEY) throw new Error("Child lookup and encryption keys must be independent.");
+if (target === "production" && process.env.POORTENBOEK_DEMO_ENABLED !== "false") throw new Error("Production must disable the child demo.");
 
 const hookKey = process.env.SEND_EMAIL_HOOK_SECRET.replace(/^v1,whsec_/, "");
 const decodedHookKey = Buffer.from(hookKey, "base64");

@@ -15,11 +15,15 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/(mijn-groep|mijn-huis|mijn-inschrijving|omgeving|admin|auth)(.*)",
+        source: "/(mijn-groep|mijn-huis|mijn-inschrijving|omgeving|admin|auth|poortenboek)(.*)",
         headers: [
           { key: "Cache-Control", value: "private, no-store, max-age=0" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
+      },
+      {
+        source: "/api/poortenboek/:path*",
+        headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0" }, { key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
       {
         source: "/api/(.*)",

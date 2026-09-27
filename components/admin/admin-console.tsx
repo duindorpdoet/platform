@@ -23,6 +23,7 @@ import {
   X,
   RefreshCw,
   ShieldCheck,
+  Sparkles,
   Upload,
   UserCog,
   UsersRound,
@@ -35,6 +36,7 @@ import { MessengerInbox } from "@/components/admin/messenger-inbox";
 import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
 import { TogetherManagement } from "@/components/admin/together-management";
+import { PoortenboekAdmin } from "@/components/poortenboek/admin";
 import { GroupCompositionBoard } from "@/components/admin/group-composition-board";
 import { NightMap } from "@/components/maps/night-map";
 import { PushNotificationSettings } from "@/components/pwa/pwa-experience";
@@ -214,6 +216,7 @@ const sectionMeta = {
   imports: { kicker: "Beheer · gegevens", title: "Imports", description: "Controleer bronbestanden voordat gegevens worden toegepast." },
   registrations: { kicker: "Deelnemers · groepen", title: "Inschrijvingen", description: "Iedere inschrijving direct in beeld, met groep en deelnemers." },
   together: { kicker: "Deelnemers · samenloop", title: "Samenloop", description: "Beheer bevestigde samenlopen en beoordeel verzoeken om samen te lopen." },
+  poortenboek: { kicker: "Deelnemers · kindomgeving", title: "Het Poortenboek", description: "Keuzenamen, stemrondes en sluitingsmomenten voor de kindteams." },
   groups: { kicker: "Deelnemers · indeling", title: "Groepsindeling", description: "Maak wandelgroepen en zie direct hoeveel kinderen iedere groep telt." },
   payments: { kicker: "Deelnemers · betalingen", title: "Betalingen", description: "Betaallinks, ontvangsten en uitzonderingen per kind." },
   portals: { kicker: "De avond · voorbereiding", title: "Poorten", description: "Beoordeel huizen en houd hun gegevens actueel." },
@@ -260,6 +263,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "registrations"
     | "groups"
     | "together"
+    | "poortenboek"
     | "payments"
     | "portals"
     | "planner"
@@ -1151,6 +1155,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           {dashboard.counts.registrations > 0 && <b aria-hidden="true">{dashboard.counts.registrations}</b>}
         </button>
         {canManageTogether && <button className={section === "together" ? "active" : ""} aria-current={section === "together" ? "page" : undefined} onClick={() => setSection("together")}><UsersRound />Samenloop</button>}
+        {canManageGroups && <button className={section === "poortenboek" ? "active" : ""} aria-current={section === "poortenboek" ? "page" : undefined} onClick={() => setSection("poortenboek")}><Sparkles />Poortenboek</button>}
         {(capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && (
           <button
             className={section === "groups" ? "active" : ""}
@@ -1741,6 +1746,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
         {section === "together" && canManageTogether && <TogetherManagement eventSlug={eventSlug} />}
+        {section === "poortenboek" && canManageGroups && <PoortenboekAdmin />}
         {section === "groups" && (capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && <GroupCompositionBoard eventSlug={eventSlug} />}
         {section === "planner" && <StartScheduleBoard eventSlug={eventSlug} maxGroupSize={dashboard.event.maxGroupSize} />}
         {section === "live" && (

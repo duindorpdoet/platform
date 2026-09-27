@@ -657,10 +657,10 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
         if (path === "/admin") {
           await selectAdminSection(page, "Instellingen");
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
-          for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Groepsindeling", "Messenger", "Deelnemersupdates", "Betalingen", "Poorten", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
+          for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Groepsindeling", "Samenloop", "Poortenboek", "Messenger", "Deelnemersupdates", "Betalingen", "Poorten", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
             await page.goto("/admin");
             await selectAdminSection(page, section);
-            await expect(page.locator(".admin-nav button").filter({ hasText: section }).first()).toHaveClass("active");
+            await expect(page.locator(".admin-nav").getByText(section, { exact: true }).locator("xpath=ancestor-or-self::button[1]")).toHaveClass("active");
             await assertReadableLayout(page, doubleText);
           }
         }
