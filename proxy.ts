@@ -1,7 +1,10 @@
 import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
+import { NextResponse } from "next/server";
 
 export async function proxy(request: NextRequest) {
+  // Child access never creates, refreshes or depends on an adult Auth session.
+  if (request.nextUrl.pathname.startsWith("/poortenboek") || request.nextUrl.pathname.startsWith("/api/poortenboek")) return NextResponse.next();
   return updateSession(request);
 }
 

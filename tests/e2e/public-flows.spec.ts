@@ -124,7 +124,7 @@ test("service worker is a real script with private network-only rules", async ({
   expect(response.ok()).toBeTruthy();
   expect(response.headers()["cache-control"]).toContain("no-store");
   const body = await response.text();
-  expect(body).toContain('VERSION = "duindorp-public-v3"');
+  expect(body).toContain('VERSION = "duindorp-public-v4"');
   expect(body).toContain('OFFLINE_URL = "/offline.html"');
   expect(body).toContain("SAFE_ASSETS");
   expect(body).toContain("CLEAR_PRIVATE_CACHE");

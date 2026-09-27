@@ -1,4 +1,4 @@
-const VERSION = "duindorp-public-v3";
+const VERSION = "duindorp-public-v4";
 const ASSET_CACHE = `${VERSION}:assets`;
 const LEGACY_PUBLIC_CACHE_PREFIX = "duindorp-public-";
 const PRIVATE_CACHE_PREFIX = "duindorp-private";
@@ -13,7 +13,7 @@ const SAFE_ASSETS = [
   "/pwa/icons/pwa-512.png",
   "/pwa/icons/maskable-512.png",
 ];
-const PRIVATE_PREFIXES = ["/mijn-", "/omgeving", "/admin", "/api/", "/auth/"];
+const PRIVATE_PREFIXES = ["/mijn-", "/omgeving", "/admin", "/api/", "/auth/", "/poortenboek"];
 
 function isPrivatePath(pathname) {
   return PRIVATE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -78,8 +78,10 @@ self.addEventListener("fetch", (event) => {
 
   if (isPrivatePath(url.pathname)) {
     event.respondWith(fetch(event.request, { cache: "no-store" }).catch(async () => {
+      const headers = { "Cache-Control": "private, no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow" };
+      if (event.request.mode !== "navigate") return new Response(JSON.stringify({ error: "Geen verbinding" }), { status: 503, headers: { ...headers, "Content-Type": "application/json" } });
       const cached = await caches.match(OFFLINE_URL);
-      return cached || new Response("Geen verbinding", { status: 503, headers: { "Cache-Control": "no-store" } });
+      return new Response(cached ? await cached.text() : "Geen verbinding", { status: 503, headers: { ...headers, "Content-Type": "text/html; charset=utf-8" } });
     }));
     return;
   }
