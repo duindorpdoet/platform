@@ -62,4 +62,16 @@ for (const path of ["/mijn-inschrijving", "/mijn-huis", "/mijn-groep", "/admin"]
   await response.arrayBuffer();
 }
 
+if (process.env.REDACTIEKAMER_ENABLED === "true") {
+  const newsResponse = await get("/nieuws");
+  if (!newsResponse.ok) throw new Error("The deployed news feed is unavailable.");
+  await newsResponse.arrayBuffer();
+  const editorResponse = await get("/api/editorial/admin");
+  const editorBody = await editorResponse.json();
+  if (editorResponse.status !== 401 || editorBody.error?.code !== "LOGIN_REQUIRED") {
+    throw new Error("The deployed Redactiekamer must be enabled and require authentication.");
+  }
+  console.log("Deployed news feed and authenticated Redactiekamer are enabled.");
+}
+
 console.log(`${target} deployment ${process.env.GITHUB_SHA} passed its public and protected-route smoke tests.`);
