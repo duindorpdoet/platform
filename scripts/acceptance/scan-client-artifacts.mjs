@@ -9,7 +9,7 @@ const checks = [
   { label: "fixture account password", pattern: /local-test-only/ },
 ];
 
-for (const name of ["SENDGRID_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY", "CRON_SECRET", "PORTAL_CODE_PEPPER", "ABUSE_HASH_SECRET", "SEND_EMAIL_HOOK_SECRET", "CHILD_CODE_PEPPER", "CHILD_CODE_ENCRYPTION_KEY"]) {
+for (const name of ["SENDGRID_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY", "CRON_SECRET", "PORTAL_CODE_PEPPER", "ABUSE_HASH_SECRET", "SEND_EMAIL_HOOK_SECRET", "CHILD_CODE_PEPPER", "CHILD_CODE_ENCRYPTION_KEY", "EDITORIAL_TOKEN_SECRET", "VAPID_PRIVATE_KEY"]) {
   const value = process.env[name];
   if (value && value.length >= 12) checks.push({ label: `${name} value`, pattern: new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) });
 }

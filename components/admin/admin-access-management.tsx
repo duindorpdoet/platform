@@ -38,8 +38,11 @@ const capabilityOptions = [
   {
     value: "content_manage",
     label: "Content en sponsors",
-    description: "Bezoekerspagina’s en sponsorvermeldingen publiceren.",
+    description: "Nieuwsconcepten, bezoekerspagina’s en sponsorvermeldingen beheren.",
   },
+  { value: "content_publish", label: "Nieuws publiceren", description: "Nieuwsberichten inplannen, publiceren en archiveren." },
+  { value: "communications_manage", label: "Nachtpost redactie", description: "Nieuwsbrieven opstellen en doelgroepen controleren." },
+  { value: "communications_send", label: "Communicatie verzenden", description: "Nachtpost en nieuws-push bevestigen en verzenden." },
 ] as const;
 
 type Capability = (typeof capabilityOptions)[number]["value"];

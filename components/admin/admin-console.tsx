@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { AdminAccessManagement } from "@/components/admin/admin-access-management";
 import { PortalReviews } from "@/components/admin/portal-reviews";
+import { Redactiekamer } from "@/components/editorial/redactiekamer";
 import { ContentManagement } from "@/components/admin/content-management";
 import { MessengerInbox } from "@/components/admin/messenger-inbox";
 import { ParticipantUpdates } from "@/components/admin/participant-updates";
@@ -221,6 +222,7 @@ const sectionMeta = {
   payments: { kicker: "Deelnemers · betalingen", title: "Betalingen", description: "Betaallinks, ontvangsten en uitzonderingen per kind." },
   portals: { kicker: "De avond · voorbereiding", title: "Poorten", description: "Beoordeel huizen en houd hun gegevens actueel." },
   planner: { kicker: "De avond · voorbereiding", title: "Startpuntregie", description: "Verdeel groepen veilig over de wijk en de beschikbare tijden." },
+  editorial: { kicker: "Verhalen · nieuws · Nachtpost", title: "Redactiekamer", description: "Schrijf het verhaal van de nacht en bereik de juiste mensen." },
   content: { kicker: "Website · redactie", title: "Content & sponsors", description: "Beheer zichtbare informatie en partners." },
   access: { kicker: "Organisatie · toegang", title: "Beheerders", description: "Bepaal wie welk onderdeel van de nacht mag beheren." },
   live: { kicker: "De avond · live", title: "Avondcockpit", description: "Volg alleen serverbevestigde voortgang en handel uitzonderingen af." },
@@ -255,7 +257,7 @@ const requiredColumns: Record<string, string[]> = {
   starts: ["name", "starts_at", "max_children"],
 };
 
-export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; capabilities: string[] }) {
+export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false }: { eventSlug: string; capabilities: string[]; editorialEnabled?: boolean }) {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [section, setSection] = useState<
     | "overview"
@@ -267,6 +269,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "payments"
     | "portals"
     | "planner"
+    | "editorial"
     | "content"
     | "access"
     | "live"
@@ -274,7 +277,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "updates"
     | "simulation"
     | "settings"
-  >("overview");
+  >(editorialEnabled && !capabilities.some((c) => ["event_admin", "registration_manage", "portals_manage", "groups_manage", "live_support"].includes(c)) ? "editorial" : "overview");
   const canManageGroups = capabilities.includes("event_admin") || capabilities.includes("groups_manage");
   const canManageTogether = canManageGroups || capabilities.includes("registration_manage");
   const canUseTickets = capabilities.includes("event_admin") || capabilities.includes("groups_manage") || capabilities.includes("live_support");
@@ -1217,6 +1220,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           <MapPinned />
           Startpunten en indeling
         </button>
+        {editorialEnabled && capabilities.some((c) => ["event_admin", "content_manage", "content_publish", "communications_manage", "communications_send"].includes(c)) && <button className={section === "editorial" ? "active" : ""} aria-current={section === "editorial" ? "page" : undefined} onClick={() => setSection("editorial")}><FileText />Redactiekamer</button>}
         <button
           className={section === "content" ? "active" : ""}
           aria-current={section === "content" ? "page" : undefined}
@@ -1743,6 +1747,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             <ParticipantUpdates eventSlug={eventSlug} />
           )}
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
+        {section === "editorial" && editorialEnabled && <Redactiekamer capabilities={capabilities} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
         {section === "together" && canManageTogether && <TogetherManagement eventSlug={eventSlug} />}

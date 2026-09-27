@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/(mijn-groep|mijn-huis|mijn-inschrijving|omgeving|admin|auth|poortenboek|uitnodiging)(.*)",
+        source: "/(mijn-groep|mijn-huis|mijn-inschrijving|omgeving|admin|auth|poortenboek|uitnodiging|nachtpost)(.*)",
         headers: [
           { key: "Cache-Control", value: "private, no-store, max-age=0" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },

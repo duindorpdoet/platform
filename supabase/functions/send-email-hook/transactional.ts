@@ -6,6 +6,9 @@ export type TransactionalHookMessage = {
   outboxId?: string;
   replyTo?: string;
   providerProbe?: boolean;
+  editorial?: boolean;
+  senderName?: string;
+  unsubscribeUrl?: string;
 };
 
 export type TransactionalHookPayload = {
@@ -69,7 +72,17 @@ export function transactionalMessageForPayload(payload: unknown): TransactionalH
     return null;
   }
 
+  if (message.editorial !== undefined && typeof message.editorial !== "boolean") return null;
+  if (message.senderName !== undefined && (!boundedString(message.senderName, 1, 120) || /[\r\n]/.test(message.senderName))) return null;
+  if (message.unsubscribeUrl !== undefined) {
+    if (!boundedString(message.unsubscribeUrl, 1, 2000)) return null;
+    try {
+      const url = new URL(message.unsubscribeUrl);
+      if (url.protocol !== "https:" || url.username || url.password || /[\r\n]/.test(message.unsubscribeUrl)) return null;
+    } catch { return null; }
+  }
   return {
+    ...(message.editorial === true ? { editorial: true, senderName: message.senderName as string | undefined, unsubscribeUrl: message.unsubscribeUrl as string | undefined } : {}),
     to,
     subject: message.subject,
     text: message.text,

@@ -1,4 +1,4 @@
-const VERSION = "duindorp-public-v5";
+const VERSION = "duindorp-public-v6";
 const ASSET_CACHE = `${VERSION}:assets`;
 const LEGACY_PUBLIC_CACHE_PREFIX = "duindorp-public-";
 const PRIVATE_CACHE_PREFIX = "duindorp-private";
@@ -13,7 +13,7 @@ const SAFE_ASSETS = [
   "/pwa/icons/pwa-512.png",
   "/pwa/icons/maskable-512.png",
 ];
-const PRIVATE_PREFIXES = ["/mijn-", "/omgeving", "/admin", "/api/", "/auth/", "/poortenboek", "/uitnodiging"];
+const PRIVATE_PREFIXES = ["/mijn-", "/omgeving", "/admin", "/api/", "/auth/", "/poortenboek", "/uitnodiging", "/nachtpost"];
 
 function isPrivatePath(pathname) {
   return PRIVATE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -92,22 +92,25 @@ self.addEventListener("fetch", (event) => {
   if (isVersionedAsset(url.pathname)) event.respondWith(fetchVersionedAsset(event.request));
 });
 
+function safeNewsUrl(value) { return typeof value === "string" && /^\/omgeving\/nieuws\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\?push=[a-f0-9-]{36}(?:&device=[a-f0-9-]{36})?)?$/.test(value) ? value : null; }
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try { payload = event.data?.json() ?? {}; } catch { /* Generic notification if a provider sent malformed data. */ }
   const portal = payload.url === "/mijn-huis";
+  const news = safeNewsUrl(payload.url);
   event.waitUntil(self.registration.showNotification(portal ? "De Poortkamer" : "De Duindorpse Poorten", {
-    body: portal && typeof payload.body === "string" ? payload.body.slice(0, 240) : "Er staat een nieuwe melding in je persoonlijke omgeving klaar.",
-    tag: portal && typeof payload.tag === "string" ? payload.tag.slice(0, 120) : undefined,
+    body: portal && typeof payload.body === "string" ? payload.body.slice(0, 240) : news ? "Er staat een nieuw bericht voor je klaar." : "Er staat een nieuwe melding in je persoonlijke omgeving klaar.",
+    tag: (portal || news) && typeof payload.tag === "string" ? payload.tag.slice(0, 120) : undefined,
     icon: "/pwa/icons/pwa-192.png",
     badge: "/pwa/icons/pwa-192.png",
-    data: { url: portal ? "/mijn-huis" : "/omgeving" },
+    data: { url: portal ? "/mijn-huis" : news || "/omgeving" },
   }));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const destination = event.notification.data?.url === "/mijn-huis" ? "/mijn-huis" : "/omgeving";
+  const destination = event.notification.data?.url === "/mijn-huis" ? "/mijn-huis" : safeNewsUrl(event.notification.data?.url) || "/omgeving";
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);

@@ -22,6 +22,7 @@ type TransactionalSendOptions = {
   html: string;
   outboxId?: string;
   replyTo?: string;
+  unsubscribeUrl?: string;
   apiKey: string;
   from: string;
   fromName: string;
@@ -86,6 +87,7 @@ export async function sendTransactionalDelivery(options: TransactionalSendOption
       from: { email: options.from, name: options.fromName },
       reply_to: options.replyTo ? { email: options.replyTo } : undefined,
       subject: options.subject,
+      headers: options.unsubscribeUrl ? { "List-Unsubscribe": `<${options.unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : undefined,
       content: [
         { type: "text/plain", value: options.text },
         { type: "text/html", value: options.html },

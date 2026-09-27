@@ -34,6 +34,10 @@ Deno.serve(async (request) => {
 
   const transactional = transactionalMessageForPayload(verifiedPayload);
   if (transactional) {
+    if (transactional.editorial) {
+      const editorialAllowed = new Set((Deno.env.get("EDITORIAL_ALLOWED_RECIPIENTS") ?? "").split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
+      if (Deno.env.get("NEWSLETTER_SENDING_ENABLED") !== "true" || (Deno.env.get("APP_ENVIRONMENT") !== "production" && !editorialAllowed.has(transactional.to))) return new Response("editorial recipient disabled", { status: 403 });
+    }
     if (!recipientAllowed(mailMode, transactional.to, allowlist)) {
       return new Response("recipient disabled", { status: 403 });
     }
@@ -48,9 +52,10 @@ Deno.serve(async (request) => {
         html: transactional.html,
         outboxId: transactional.outboxId,
         replyTo: transactional.replyTo,
+        unsubscribeUrl: transactional.editorial ? transactional.unsubscribeUrl : undefined,
         apiKey,
         from,
-        fromName: Deno.env.get("SENDGRID_FROM_NAME") ?? "De Duindorpse Poorten van Halloween",
+        fromName: (transactional.editorial ? transactional.senderName : undefined) ?? Deno.env.get("SENDGRID_FROM_NAME") ?? "De Duindorpse Poorten van Halloween",
         sandbox,
       });
     } catch {

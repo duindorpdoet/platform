@@ -36,6 +36,7 @@ import { ParticipantTogether } from "@/components/registration/participant-toget
 import { GroupExperience } from "@/components/group/group-experience";
 import { GroupJourneyPreference } from "@/components/group/group-journey-preference";
 import { GroupIdentity } from "@/components/group/group-identity";
+import { PortalNews } from "@/components/editorial/portal-news";
 import { PortalDashboard } from "@/components/portal/portal-dashboard";
 import { SupportWidget } from "@/components/support/support-widget";
 import { PwaInstallInvitation, PushNotificationSettings } from "@/components/pwa/pwa-experience";
@@ -280,7 +281,7 @@ function WalkerSection({ context, eventSlug, userId, role, section }: { context:
   if (section === "groep") return <WalkerGroup group={group} registration={registration} preferences={preferences} groupId={role.groupId ?? undefined} reload={load} />;
   if (section === "nachtpas") return <NightPass context={context} snapshot={registration} group={group} reload={load} />;
   if (section === "meer" || section === "updates") return <MorePage context={context} eventSlug={eventSlug} userId={userId} role="walker" />;
-  return <WalkerNow context={context} registration={registration} group={group} reload={load} />;
+  return <><WalkerNow context={context} registration={registration} group={group} reload={load} /><PortalNews channel="parents" compact /></>;
 }
 
 function WalkerNow({ context, registration, group, reload }: { context: ParticipantContext; registration: RegistrationSnapshot | null; group: GroupSnapshot | null; reload: () => Promise<void> }) {
@@ -403,7 +404,7 @@ function HomeownerSection({ context, eventSlug, userId, role, section }: { conte
   return <ParticipantPageFrame eyebrow="Mijn huis · jullie plek in de nacht" title={portal?.portal?.name || "Mijn poort"}>
     <div className="cockpit-metrics owner-summary-metrics"><StatusCard icon={Users} label="Verwacht totaal" value={arrivals ? `${arrivals.expectedTotal} kinderen` : "Wordt berekend"} /><StatusCard icon={Clock3} label="Volgend venster" value={arrivals?.arrivals.find((item) => item.state !== "completed") ? `${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedArrivalAt)}–${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedDepartureAt)}` : "Geen open venster"} /></div>
     <div className="planned-not-live owner-arrival-note"><Clock3 /><span><strong>Dit is een geplande aankomst, geen live ETA.</strong>Groepen kunnen eerder of later lopen. Gebruik Pauze zodra ontvangst tijdelijk niet veilig of mogelijk is.</span></div>
-    <PortalDashboard eventSlug={eventSlug} />
+    <PortalDashboard eventSlug={eventSlug} /><PortalNews channel="houses" compact />
   </ParticipantPageFrame>;
 }
 
@@ -439,6 +440,8 @@ function MorePage({ context, eventSlug, userId, role, accessId }: { context: Par
   return <ParticipantPageFrame eyebrow="Instellingen en bereikbaarheid" title="Meer">
     {role === "walker" && <UpdatesPanel eventSlug={eventSlug} role="walker" embedded />}
     <section className="participant-card participant-contact-compact"><Contact /><div><strong>Contact bij storing of spoed</strong><div className="participant-actions"><a href={"mailto:" + context.event.supportEmail}>E-mail</a>{context.event.supportPhone && <a href={"tel:" + context.event.supportPhone.replace(/\s/g, "")}>Bel organisatie</a>}</div></div></section>
+    <Link href="/omgeving/communicatie" className="participant-card">Nachtpost en communicatievoorkeuren →</Link>
+    <PortalNews channel={role === "homeowner" ? "houses" : "parents"} compact />
     <ProfilePanel eventSlug={eventSlug} />
     <PushNotificationSettings key={userId} />
     <section className="participant-card participant-account"><div><h2>Uitloggen</h2><p>Klaar op dit apparaat? Sluit je persoonlijke omgeving veilig af.</p></div><SignOutButton /></section>

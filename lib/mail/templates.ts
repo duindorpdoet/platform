@@ -7,7 +7,7 @@ import { validatedPaymentUrl } from "./payment-url";
 
 type TemplateInput = { messageType: string; payload: Record<string, unknown> };
 
-function configuredBrand(): PremiumMailBrand {
+export function configuredBrand(): PremiumMailBrand {
   const configuredSiteUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
   if (!configuredSiteUrl) throw new InvalidMailTemplateError("A public mail base URL is required");
 
@@ -31,8 +31,8 @@ function configuredBrand(): PremiumMailBrand {
     privacyUrl: `${baseUrl}/privacy`,
     logoUrl: `${baseUrl}/images/logo.webp`,
     heroUrl: `${baseUrl}/images/01-home-hero-duindorp-bij-avond-960.webp`,
-    allowedLinkHosts: [site.hostname],
-    allowedImageHosts: [site.hostname],
+    allowedLinkHosts: [site.host],
+    allowedImageHosts: [site.host],
   };
 }
 
