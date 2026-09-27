@@ -1264,6 +1264,7 @@ test("mobile admin scroll reaches complete panels while its toolbar and dock sta
     if (section === "Cockpit") {
       const canvas = page.locator(".cockpit-map-panel .maplibregl-canvas");
       await expect(canvas).toBeVisible();
+      await expect(canvas).toHaveCSS("touch-action", "pan-x pan-y");
       await canvas.scrollIntoViewIfNeeded();
       const before = await content.evaluate((el) => el.scrollTop);
       const bounds = await canvas.boundingBox();
@@ -1279,11 +1280,15 @@ test("mobile admin scroll reaches complete panels while its toolbar and dock sta
         }
         await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
         await touch.detach();
-      } else {
+      } else if (!(browserName === "webkit" && testInfo.project.use.isMobile)) {
         await page.mouse.move(x, y);
         await page.mouse.wheel(0, 180);
       }
-      await expect.poll(() => content.evaluate((el) => el.scrollTop)).toBeGreaterThan(before + 20);
+      // Playwright's mobile WebKit supports neither wheel input nor touch swipes.
+      // It still checks native pan permissions above and the full scroll geometry below.
+      if (!(browserName === "webkit" && testInfo.project.use.isMobile)) {
+        await expect.poll(() => content.evaluate((el) => el.scrollTop)).toBeGreaterThan(before + 20);
+      }
     }
     if (section === "Poorten") {
       await expect(page.locator(".portal-management")).toBeVisible();
