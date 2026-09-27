@@ -13,7 +13,7 @@ Forward-only migratie `20260927001914_poortenboek_child_sessions_and_elections.s
 - `poortenboek_codes`: unieke HMAC-lookup, versleutelde code, intrekking en laatste gebruik.
 - `poortenboek_sessions`: uitsluitend tokenhash, absolute vervaldatum, intrekking en welkomstatus.
 - `poortenboek_progress`: persoonlijke checklist en geluidsvoorkeur.
-- `poortenboek_unlocks`: toekomstige, idempotente kindgebonden zegels/hoofdstukken per brongebeurtenis.
+- `poortenboek_unlocks`: toekomstige, idempotente kindgebonden zegels/hoofdstukken, gekoppeld aan het bestaande `journey_events.id` (bigint) met deduplicatie per kind/bron/type.
 - `poortenboek_settings` en `poortenboek_name_options`: eventdeadlines en twintig standaardnamen.
 - `poortenboek_elections`, `poortenboek_ballots`, `poortenboek_commands`: generaties, geheime individuele stemmen en idempotente opdrachten.
 - `poortenboek_throttles`: blijvende, atomische loginbudgetten met gehashte kenmerken.

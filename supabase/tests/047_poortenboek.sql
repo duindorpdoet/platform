@@ -33,6 +33,13 @@ create function pg_temp.parent(_action text,_n int default 1,_digest text defaul
 create function pg_temp.action(_n int,_action text default 'snapshot',_payload jsonb default '{}',_key uuid default null) returns jsonb language sql as $$
  select api.poortenboek_child_action(repeat(_n::text,64),_action,_payload,_key)$$;
 select is((select count(*) from f,app_private.poortenboek_members(event_id,team)),2::bigint,'confirmed parties derive exactly their children');
+create temp table source_run as with inserted as(insert into app_private.group_runs(group_id,active_plan_version_id) select group_id,id from app_private.route_plan_versions limit 1 returning id) select id from inserted;
+create temp table source_event as with inserted as(insert into app_private.journey_events(run_id,event_type) select id,'poortenboek.fixture' from source_run returning id) select id from inserted;
+select is((select count(*) from source_event),1::bigint,'test uses a real event from an existing route plan');
+select lives_ok($$insert into app_private.poortenboek_unlocks(event_id,child_id,source_event_id,kind) select event_id,pg_temp.child(1),source_event.id,'seal' from f,source_event$$,'future seals reference the existing route event journal');
+select throws_ok($$insert into app_private.poortenboek_unlocks(event_id,child_id,source_event_id,kind) select event_id,pg_temp.child(1),source_event.id,'seal' from f,source_event$$,'23505',null,'same route event cannot award the same child seal twice');
+select throws_ok($$insert into app_private.poortenboek_unlocks(event_id,child_id,source_event_id,kind) select event_id,pg_temp.child(2),-1,'seal' from f$$,'23503',null,'a nonexistent route event cannot award a seal');
+
 select ok(not has_function_privilege('authenticated','api.poortenboek_parent(uuid,text,text,uuid,text,text,text)','execute'),'browser cannot assert another parent actor');
 select ok(not has_function_privilege('anon','api.poortenboek_child_action(text,text,jsonb,uuid)','execute'),'anonymous browser cannot access child RPC');
 select ok(has_function_privilege('service_role','api.poortenboek_login(text,text,text,text)','execute'),'server may perform login');

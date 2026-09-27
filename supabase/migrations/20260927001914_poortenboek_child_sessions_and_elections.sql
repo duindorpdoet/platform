@@ -28,12 +28,13 @@ create index poortenboek_progress_child on app_private.poortenboek_progress(chil
 -- Future route events can award per-child entries without a fixed number of gates.
 create table app_private.poortenboek_unlocks (
   id uuid primary key default gen_random_uuid(), event_id uuid not null references app_private.events(id),
-  child_id uuid not null references app_private.children(id), source_event_id uuid not null,
+  child_id uuid not null references app_private.children(id), source_event_id bigint not null references app_private.journey_events(id),
   kind text not null check(kind in('seal','chapter')), world_id uuid references app_private.worlds(id),
   earned_at timestamptz not null default now(), unique(event_id,child_id,source_event_id,kind)
 );
 create index poortenboek_unlocks_child on app_private.poortenboek_unlocks(child_id);
 create index poortenboek_unlocks_world on app_private.poortenboek_unlocks(world_id);
+create index poortenboek_unlocks_source on app_private.poortenboek_unlocks(source_event_id);
 create table app_private.poortenboek_settings (
   event_id uuid primary key references app_private.events(id), round_one_deadline timestamptz not null,
   round_two_deadline timestamptz not null, closes_at timestamptz not null,
