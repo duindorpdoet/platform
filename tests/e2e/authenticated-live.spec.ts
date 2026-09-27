@@ -76,6 +76,7 @@ test("the unified mobile participant environment keeps role navigation and payme
 test("the homeowner cockpit labels schedules as planned rather than live ETA", async ({ context, page }) => {
   requireLocalAuth();
   await authenticate(context, "owner@example.invalid");
+  await page.addLocatorHandler(page.getByRole("button", { name: "Installatievenster sluiten" }), async (close) => close.click());
   await page.goto("/omgeving/huiseigenaar/mijn-poort");
   await page.getByRole("link", { name: "Open De Poortkamer", exact: true }).click();
   await expect(page.getByRole("button", { name: "Open" })).toBeVisible();
