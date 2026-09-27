@@ -123,7 +123,7 @@ async function realFamily(context: BrowserContext) {
   return children;
 }
 
-test("staging presentation: login, welcome, team voting, book and coming-soon cards", async ({
+test("staging presentation: V2 identity, favourites, banner, practice and passport", async ({
   page,
   context,
 }, info) => {
@@ -145,12 +145,10 @@ test("staging presentation: login, welcome, team voting, book and coming-soon ca
   await dashboard(page);
   await noOverflow(page);
   await screenshot(page, "nu", info.project.name);
-  await expect(page.locator('[data-feature-status="coming_soon"]')).toHaveCount(
-    3,
-  );
+  await expect(page.getByRole("heading", { name: "Open eerst de oefenpoort" })).toBeVisible();
   await page.goto("/poortenboek/team");
   await expect(
-    page.getByRole("heading", { name: "Geef jullie naam een vonk" }),
+    page.getByRole("heading", { name: "Kies jullie favoriete namen" }),
   ).toBeVisible();
   await expect(page.locator(".pb-companions li")).toHaveCount(5);
   for (const label of [
@@ -159,11 +157,10 @@ test("staging presentation: login, welcome, team voting, book and coming-soon ca
     "De Schaduwzoekers",
   ])
     await page.getByRole("button", { name: label, exact: true }).click();
-  await page.getByRole("button", { name: "Keuze 2 omhoog" }).click();
   await expect(page.locator(".pb-own-choices li").first()).toContainText(
-    "De Poortwachters",
+    "De Nachtlopers",
   );
-  await page.getByRole("button", { name: "Verstuur mijn drie vonken" }).click();
+  await page.getByRole("button", { name: "Verstuur mijn favorieten" }).click();
   await expect(
     page.getByText("Jouw keuze is bewaard.", { exact: false }),
   ).toBeVisible();
@@ -172,21 +169,18 @@ test("staging presentation: login, welcome, team voting, book and coming-soon ca
     .getByRole("button", { name: "Drie van de vijf gestemd", exact: true })
     .click();
   await expect(
-    page.getByText("3 van de 5 reisgenootjes hebben gekozen", { exact: true }),
+    page.getByText("3 van de 5 reisgenootjes hebben gekozen", { exact: true }).first(),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Geef het vaandel jouw vonk" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kies wie jij bent in de nacht" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Laat de oefenpoort ontwaken" })).toBeVisible();
   await page
-    .getByRole("button", { name: "Finalisten bekend", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Drie namen hebben de poort bereikt…" }),
-  ).toBeVisible();
-  await screenshot(page, "team", info.project.name);
-  await page
-    .getByRole("button", { name: "Definitieve teamnaam bekend", exact: true })
+    .getByRole("button", { name: "Allemaal gestemd", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: /Jullie zijn.*De Nachtlopers/ }),
   ).toBeVisible();
+  await screenshot(page, "team", info.project.name);
   await page.goto("/poortenboek/boek");
   await noOverflow(page);
   await expect(page.locator(".pb-book-cover")).toContainText("Mila");

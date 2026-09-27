@@ -232,7 +232,11 @@ export function PoortkamerChat({
             {area !== "announcements" && (
               <Image
                 className={s.cardImage}
-                src={`/images/poortkamer/${area === "team" ? "behind-the-gate-chat.webp" : "portal-square-community.webp"}`}
+                src={
+                  area === "team"
+                    ? "/images/poortkamer-v2/house-team-hero-wide.webp"
+                    : "/images/poortkamer-v2/poortenplein-community-wide.webp"
+                }
                 width={720}
                 height={405}
                 sizes="(max-width: 650px) 90vw, 700px"

@@ -14,7 +14,7 @@ select is(jsonb_array_length(api.portal_room_snapshot('duindorp-halloween-2026')
 select ok((api.portal_room_snapshot('duindorp-halloween-2026')->'visits')::text !~ 'email|phone|street|firstName|lastName','visit projection contains no household PII');
 select set_config('test.old_topic',api.portal_room_snapshot('duindorp-halloween-2026')->>'portalTopic',true);
 select set_config('test.team_channel',(select id::text from app_private.portal_room_channels where portal_id='12000000-0000-0000-0000-000000000001'),true);
-select set_config('test.community_channel',(select id::text from app_private.portal_room_channels where kind='community' and name='Algemeen' limit 1),true);
+select set_config('test.community_channel',(select id::text from app_private.portal_room_channels where kind='community' and name='Hulp gevraagd' limit 1),true);
 select set_config('test.announcements',(select id::text from app_private.portal_room_channels where kind='announcements' limit 1),true);
 select lives_ok($$select api.portal_team_command('12000000-0000-0000-0000-000000000001','invite','{"email":"parent-a@example.invalid","firstName":"Mila","lastName":"Geheim","role":"viewer"}','94000000-0000-0000-0000-000000000001')$$,'owner shares a viewer key');
 select set_config('test.invite_id',(select id::text from app_private.portal_team_invites where email='parent-a@example.invalid'),true);

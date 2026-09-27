@@ -2,23 +2,17 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- Private child pages deliberately reload to validate the cookie and discard the previous child snapshot. */
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ArrowDown,
   ArrowRight,
-  ArrowUp,
   BookOpen,
   Check,
   ChevronRight,
   DoorOpen,
   Flame,
   Home,
-  KeyRound,
   LockKeyhole,
   Moon,
   RefreshCw,
-  Shield,
   Sparkles,
-  Star,
-  Sun,
   Users,
   Volume2,
   VolumeX,
@@ -27,16 +21,20 @@ import {
 import { MotionToggle } from "@/components/poorten-cinematic";
 import {
   checklistLabels,
-  comingSoon,
   nightsUntil,
   prologue,
-  rankedChoices,
   type BookSection,
   type BookSnapshot,
   type Election,
 } from "@/lib/poortenboek/model";
+import {
+  JourneyBook,
+  JourneyStatus,
+  PracticeGate,
+  TeamBannerWorkshop,
+  TeamIdentityWorkshop,
+} from "./v2-experience";
 
-const symbols = [Moon, Flame, Star, KeyRound, Sun, Shield];
 const statusText = {
   preparing: "Nog voorbereiden",
   ready: "Klaar voor vertrek",
@@ -49,20 +47,6 @@ const sections = [
   ["boek", "Mijn boek", BookOpen, "/poortenboek/boek"],
   ["ik", "Ik", Moon, "/poortenboek/ik"],
 ] as const;
-function Medallion({
-  value,
-  small = false,
-}: {
-  value: number;
-  small?: boolean;
-}) {
-  const Icon = symbols[value % symbols.length];
-  return (
-    <span className={`pb-medallion ${small ? "small" : ""}`} aria-hidden="true">
-      <Icon />
-    </span>
-  );
-}
 const dateTime = (date: string) =>
   new Intl.DateTimeFormat("nl-NL", {
     dateStyle: "short",
@@ -381,6 +365,7 @@ export function Poortenboek({
                 </span>
               </section>
             </div>
+            <JourneyStatus snapshot={snapshot} />
             <section className="pb-preparation pb-panel" id="voorbereiding">
               <div className="pb-preparation-art">
                 <img
@@ -465,7 +450,6 @@ export function Poortenboek({
                 </span>
               </div>
             </a>
-            <Teasers />
           </>
         )}
         {section === "team" && (
@@ -512,7 +496,21 @@ export function Poortenboek({
                 })
               }
             />
-            <Teasers />
+            <TeamBannerWorkshop
+              snapshot={snapshot}
+              busy={busy}
+              act={(action, payload) => void act(action, payload)}
+            />
+            <TeamIdentityWorkshop
+              snapshot={snapshot}
+              busy={busy}
+              act={(action, payload) => void act(action, payload)}
+            />
+            <PracticeGate
+              completed={snapshot.practice.completed}
+              busy={busy}
+              act={(action, payload) => void act(action, payload)}
+            />
           </>
         )}
         {section === "boek" && (
@@ -551,28 +549,8 @@ export function Poortenboek({
                 </p>
               </section>
             </div>
-            <section className="pb-panel pb-seals">
-              <p className="pb-eyebrow">Sporen van jouw tocht</p>
-              <h2>Jouw poortzegels</h2>
-              {snapshot.unlocks.length ? (
-                <ul>
-                  {snapshot.unlocks.map((unlock, index) => (
-                    <li key={index}>
-                      <Sparkles />
-                      {unlock.world ?? "Een herinnering aan de nacht"}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>
-                  Iedere bezochte poort kan een herinnering achterlaten. Hier
-                  ontstaat tijdens jouw avontuur vanzelf ruimte voor jouw
-                  zegels.
-                </p>
-              )}
-            </section>
+            <JourneyBook snapshot={snapshot} />
             <Worlds snapshot={snapshot} />
-            <Teasers />
           </>
         )}
         {section === "ik" && (
@@ -582,7 +560,11 @@ export function Poortenboek({
               <h1>Ik ben {snapshot.firstName}</h1>
             </div>
             <section className="pb-panel pb-profile">
-              <Medallion value={snapshot.medallion} />
+              <img
+                className="pb-profile-avatar"
+                src={`/images/poortenboek-v2/avatars/${snapshot.identity.avatarId}.webp`}
+                alt={`Gekozen verschijning van ${snapshot.firstName}`}
+              />
               <h2>{snapshot.firstName}</h2>
               <p>
                 {snapshot.election.winner ??
@@ -660,7 +642,6 @@ export function Poortenboek({
                   ["empty", "Nog niemand gestemd"],
                   ["three", "Drie van de vijf gestemd"],
                   ["all", "Allemaal gestemd"],
-                  ["finalists", "Finalisten bekend"],
                   ["winner", "Definitieve teamnaam bekend"],
                   ["prepared", "Voorbereiding voltooid"],
                 ] as const
@@ -749,7 +730,10 @@ function Companions({
     <ul className={`pb-companions ${compact ? "compact" : ""}`}>
       {companions.map((member, index) => (
         <li key={`${member.firstName}-${index}`}>
-          <Medallion value={member.medallion} small />
+          <span className="pb-companion-avatar">
+            <img src={`/images/poortenboek-v2/avatars/${member.avatarId}.webp`} alt="" />
+            <i data-color={member.lanternColor} aria-hidden="true"><Flame /></i>
+          </span>
           <strong>{member.firstName}</strong>
           <span>{statusText[member.status]}</span>
         </li>
@@ -768,7 +752,7 @@ function ElectionCard({
 }) {
   const [choices, setChoices] = useState(election.ownChoices);
   const attempt = useRef({ body: "", key: "" });
-  const required = election.phase === "round_one" ? 3 : 1;
+  const maxChoices = election.phase === "round_one" ? 3 : 1;
   if (election.winner)
     return (
       <section className="pb-panel pb-winner">
@@ -793,22 +777,12 @@ function ElectionCard({
     setChoices((current) =>
       current.includes(id)
         ? current.filter((value) => value !== id)
-        : required === 1
+        : maxChoices === 1
           ? [id]
-          : current.length < 3
+          : current.length < maxChoices
             ? [...current, id]
             : current,
     );
-  }
-  function move(index: number, direction: number) {
-    setChoices((current) => {
-      const next = [...current];
-      [next[index], next[index + direction]] = [
-        next[index + direction],
-        next[index],
-      ];
-      return next;
-    });
   }
   return (
     <section
@@ -818,19 +792,19 @@ function ElectionCard({
         {election.phase === "direct"
           ? "Jouw naam voor de nacht"
           : election.phase === "round_one"
-            ? "Ronde één · drie stemvonken"
-            : "Ronde twee · de laatste drie"}
+            ? "Teamnaamstem · maximaal drie favorieten"
+            : "Beslissende stem · bestaande ronde"}
       </p>
       <h2>
         {election.phase === "round_two"
-          ? "Drie namen hebben de poort bereikt…"
+          ? "De laatste namen hebben de poort bereikt…"
           : election.phase === "direct"
             ? "Welke naam neem jij mee?"
-            : "Geef jullie naam een vonk"}
+            : "Kies jullie favoriete namen"}
       </h2>
       <p>
-        {required === 3
-          ? "Kies drie verschillende namen. Jouw eerste keuze krijgt 3 vonken, de tweede 2 en de derde 1. Je kunt nog veranderen zolang deze ronde open is."
+        {maxChoices === 3
+          ? "Kies maximaal drie verschillende favorieten. Iedere gekozen naam telt één keer. Je kunt nog veranderen zolang de stemming open is."
           : "Kies de naam die het beste bij jullie avontuur past."}
       </p>
       <p className="pb-team-progress">
@@ -859,11 +833,11 @@ function ElectionCard({
                   aria-pressed={rank >= 0}
                   disabled={
                     busy ||
-                    (rank < 0 && choices.length === required && required > 1)
+                    (rank < 0 && choices.length === maxChoices && maxChoices > 1)
                   }
                   onClick={() => choose(option.id)}
                 >
-                  <span>{rank >= 0 ? rank + 1 : <Flame size={17} />}</span>
+                  <span>{rank >= 0 ? <Sparkles size={17} /> : <Flame size={17} />}</span>
                   {option.label}
                   {rank >= 0 && <Check size={17} />}
                 </button>
@@ -872,9 +846,9 @@ function ElectionCard({
           </div>
           {choices.length > 0 && (
             <div className="pb-own-choices">
-              <h3>Jouw {required === 3 ? "stemvonken" : "keuze"}</h3>
+              <h3>Jouw {maxChoices === 3 ? "favorieten" : "keuze"}</h3>
               <ol>
-                {rankedChoices(choices).map(({ id, sparks }, index) => (
+                {choices.map((id, index) => (
                   <li key={id}>
                     <span>
                       <strong>
@@ -883,30 +857,8 @@ function ElectionCard({
                             ?.label
                         }
                       </strong>
-                      {required === 3 && (
-                        <small>
-                          {sparks} {sparks === 1 ? "vonk" : "vonken"}
-                        </small>
-                      )}
+                      {maxChoices === 3 && <small>Gekozen favoriet</small>}
                     </span>
-                    {required === 3 && (
-                      <>
-                        <button
-                          disabled={busy || index === 0}
-                          aria-label={`Keuze ${index + 1} omhoog`}
-                          onClick={() => move(index, -1)}
-                        >
-                          <ArrowUp size={17} />
-                        </button>
-                        <button
-                          disabled={busy || index === choices.length - 1}
-                          aria-label={`Keuze ${index + 1} omlaag`}
-                          onClick={() => move(index, 1)}
-                        >
-                          <ArrowDown size={17} />
-                        </button>
-                      </>
-                    )}
                     <button
                       disabled={busy}
                       aria-label={`Verwijder keuze ${index + 1}`}
@@ -921,7 +873,7 @@ function ElectionCard({
           )}
           <button
             className="pb-button"
-            disabled={busy || choices.length !== required}
+            disabled={busy || choices.length < 1 || choices.length > maxChoices}
             onClick={() => {
               const body = choices.join(",");
               if (attempt.current.body !== body || !attempt.current.key)
@@ -931,8 +883,8 @@ function ElectionCard({
           >
             {election.ownChoices.length
               ? "Mijn keuze aanpassen"
-              : required === 3
-                ? "Verstuur mijn drie vonken"
+              : maxChoices === 3
+                ? "Verstuur mijn favorieten"
                 : "Verstuur mijn keuze"}
             <Sparkles size={18} />
           </button>
@@ -951,43 +903,15 @@ function ElectionCard({
     </section>
   );
 }
-function Teasers() {
-  return (
-    <section className="pb-teasers">
-      <div className="pb-section-heading">
-        <div>
-          <p className="pb-eyebrow">Er komt meer achter de poorten</p>
-          <h2>Het avontuur groeit</h2>
-        </div>
-        <Sparkles />
-      </div>
-      <div>
-        {comingSoon.map((feature) => (
-          <article
-            className="pb-teaser"
-            key={feature.id}
-            data-feature-status={feature.status}
-          >
-            <img
-              src={`/images/poortenboek/${feature.image}.webp`}
-              alt=""
-              loading="lazy"
-            />
-            <div>
-              <span className="pb-chip">
-                <LockKeyhole size={13} />
-                Binnenkort beschikbaar
-              </span>
-              <h3>{feature.title}</h3>
-              <p>{feature.text}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
 function Worlds({ snapshot }: { snapshot: BookSnapshot }) {
+  const artwork: Record<string, string> = {
+    heksenrijk: "seals/witch-realm.webp",
+    dodenrijk: "seals/realm-of-the-dead.webp",
+    circuswereld: "seals/circus-realm.webp",
+    "besmette-zone": "seals/contaminated-zone.webp",
+    geestenwereld: "seals/ghost-realm.webp",
+    vampierrijk: "seals/vampire-realm.webp",
+  };
   return (
     <section className="pb-worlds">
       <div className="pb-section-heading">
@@ -1007,12 +931,19 @@ function Worlds({ snapshot }: { snapshot: BookSnapshot }) {
       </div>
       <div className="pb-world-grid">
         {snapshot.worlds.map((world) => (
-          <article className="pb-panel" key={world.slug}>
-            <LockKeyhole size={19} />
+          <article className={`pb-panel ${world.unlocked ? "unlocked" : ""}`} key={world.slug}>
+            {artwork[world.slug] && (
+              <img
+                src={`/images/poortenboek-v2/${artwork[world.slug]}`}
+                alt=""
+                loading="lazy"
+              />
+            )}
+            {world.unlocked ? <Sparkles size={19} /> : <LockKeyhole size={19} />}
             <h3>{world.name}</h3>
             <p>{world.story}</p>
             <span className="pb-small">
-              Dit hoofdstuk slaapt nog <ChevronRight size={12} />
+              {world.unlocked ? "Deze wereld is ontwaakt" : "Dit hoofdstuk slaapt nog"} <ChevronRight size={12} />
             </span>
           </article>
         ))}

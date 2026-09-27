@@ -14,10 +14,8 @@ import {
 } from "./crypto";
 import {
   CODE_ALPHABET,
-  comingSoon,
   demoEnabled,
   normalizeCode,
-  rankedChoices,
   validCode,
 } from "./model";
 import { demoSnapshot, newDemoSession } from "./demo";
@@ -99,14 +97,7 @@ describe("staging demo and presentation", () => {
       );
       expect(demoSnapshot(session).demo).toBe(true);
     }
-    expect(comingSoon).toHaveLength(3);
-    expect(
-      comingSoon.every((feature) => feature.status === "coming_soon"),
-    ).toBe(true);
-    expect(
-      rankedChoices(["first", "second", "third"]).map(
-        (choice) => choice.sparks,
-      ),
-    ).toEqual([3, 2, 1]);
+    expect(demoSnapshot(session).v2).toBe(true);
+    expect(demoSnapshot(session).identity.avatarId).toBe("nightwatcher");
   });
 });

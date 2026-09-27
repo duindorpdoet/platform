@@ -7,12 +7,22 @@ export async function shareNightRecap(room: PortalRoom) {
   canvas.height = 1200;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("CARD_UNAVAILABLE");
+  const image = new Image();
+  image.src = "/images/poortkamer-v2/recap/gate-share-card-background.webp";
+  try {
+    await image.decode();
+    ctx.drawImage(image, 0, 0, 1200, 1200);
+  } catch {
+    // The text-only export remains available when the decorative asset fails.
+  }
   const backdrop = ctx.createLinearGradient(0, 0, 1200, 1200);
   backdrop.addColorStop(0, "#1b3241");
   backdrop.addColorStop(0.65, "#081321");
   backdrop.addColorStop(1, "#3b2630");
   ctx.fillStyle = backdrop;
+  ctx.globalAlpha = image.complete ? 0.72 : 1;
   ctx.fillRect(0, 0, 1200, 1200);
+  ctx.globalAlpha = 1;
   ctx.strokeStyle = "#b88750";
   ctx.lineWidth = 2;
   ctx.strokeRect(44, 44, 1112, 1112);

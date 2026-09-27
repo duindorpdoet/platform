@@ -42,11 +42,11 @@ import {
   readinessItems,
   roomError,
   roomMetrics,
-  stockLabels,
   type PortalRoom,
 } from "@/lib/domain/poortkamer";
 import { shareNightRecap } from "./share-night-recap";
 import { PoortkamerChat } from "./poortkamer-chat";
+import { PoortkamerLiveV2, PoortkamerManagementV2 } from "./poortkamer-v2";
 import s from "./poortkamer.module.css";
 
 type Tab = "night" | "visits" | "team" | "messages" | "more";
@@ -414,7 +414,7 @@ export function Poortkamer({
         <section className={s.hero}>
           <Image
             className={s.heroImage}
-            src="/images/poortkamer/nightwatch-hero-wide.webp"
+            src="/images/poortkamer-v2/nightwatch-live-hero-wide.webp"
             fill
             sizes="100vw"
             alt=""
@@ -422,7 +422,7 @@ export function Poortkamer({
           />
           <Image
             className={`${s.heroImage} ${s.mobileImage}`}
-            src="/images/poortkamer/nightwatch-hero-mobile.webp"
+            src="/images/poortkamer-v2/nightwatch-live-hero-wide.webp"
             fill
             sizes="100vw"
             alt=""
@@ -610,48 +610,7 @@ export function Poortkamer({
                 </section>
               </div>
             )}
-            <section className={s.card}>
-              <p className={s.eyebrow}>De snoepmeter</p>
-              <h2>{stockLabels[room.portal.stock]}</h2>
-              <p>
-                {metrics.remainingChildren} kinderen in de huidige
-                verwachtingen. Dit aantal kan wijzigen.
-              </p>
-              <div className={s.actions}>
-                {Object.entries(stockLabels).map(([key, label]) => (
-                  <button
-                    key={key}
-                    className={s.button}
-                    disabled={disabled || !canLive}
-                    aria-pressed={room.portal.stock === key}
-                    onClick={() => void command("stock", { stock: key })}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {["low", "empty"].includes(room.portal.stock) && (
-                <p className={s.notice}>
-                  De organisatie ziet jullie lage voorraad in de cockpit.
-                </p>
-              )}
-              {canLive && (
-                <button
-                  className={s.linkButton}
-                  disabled={disabled}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Een hulpvraag met alleen jullie poortcode op het besloten Poortplein plaatsen?",
-                      )
-                    )
-                      void command("help", { shareCommunity: true });
-                  }}
-                >
-                  Vraag het Poortplein om snoephulp
-                </button>
-              )}
-            </section>
+            <PoortkamerLiveV2 room={room} />
           </>
         )}
         {tab === "night" && <PortalNews channel="houses" compact />}
@@ -775,12 +734,45 @@ export function Poortkamer({
                       {m.lastSeenAt
                         ? ` · laatst actief ${new Intl.DateTimeFormat("nl-NL", { dateStyle: "short", timeStyle: "short" }).format(new Date(m.lastSeenAt))}`
                         : ""}
+                      {m.suspendedAt ? " · tijdelijk gedeactiveerd" : ""}
                     </small>
                   </div>
                   {manage && (
                     <div className={s.actions}>
                       {m.role !== "owner" && (
                         <>
+                          <label className={s.field}>
+                            Toegangsniveau voor {m.name}
+                            <select
+                              aria-label={`Toegangsniveau voor ${m.name}`}
+                              value={m.accessLevel}
+                              disabled={disabled || Boolean(m.suspendedAt)}
+                              onChange={(e) =>
+                                void command(
+                                  "access",
+                                  { userId: m.userId, accessLevel: e.target.value },
+                                  true,
+                                )
+                              }
+                            >
+                              <option value="read">Alleen lezen en chatten</option>
+                              <option value="live">Live bediening en voorbereiding</option>
+                              <option value="manage">Ook vaste poortgegevens beheren</option>
+                            </select>
+                          </label>
+                          <button
+                            className={s.button}
+                            disabled={disabled}
+                            onClick={() =>
+                              void command(
+                                m.suspendedAt ? "reactivate" : "suspend",
+                                { userId: m.userId },
+                                true,
+                              )
+                            }
+                          >
+                            {m.suspendedAt ? "Toegang activeren" : "Tijdelijk deactiveren"}
+                          </button>
                           <label className={s.field}>
                             Rol voor {m.name}
                             <select
@@ -800,7 +792,15 @@ export function Poortkamer({
                                   );
                               }}
                             >
-                              {(["viewer", "crew", "coadmin"] as const).map(
+                              {(
+                                [
+                                  "viewer",
+                                  "actor",
+                                  "reception",
+                                  "tech",
+                                  "portal_manager",
+                                ] as const
+                              ).map(
                                 (role) => (
                                   <option value={role} key={role}>
                                     {portalRoles[role]}
@@ -863,7 +863,6 @@ export function Poortkamer({
                           <option value="">Geen taak</option>
                           {[
                             "ontvangst",
-                            "snoep",
                             "acteur",
                             "rij/veiligheid",
                             "techniek",
@@ -925,6 +924,28 @@ export function Poortkamer({
                 )}
               </section>
             )}
+            {manage && (
+              <section className={s.card}>
+                <h2>Toegangsgeschiedenis</h2>
+                {room.v2.teamHistory.length === 0 ? (
+                  <p>Er zijn nog geen wijzigingen in het huisteam vastgelegd.</p>
+                ) : (
+                  room.v2.teamHistory.map((entry, index) => (
+                    <article className={s.row} key={`${entry.action}-${entry.at}-${index}`}>
+                      <div>
+                        <strong>{entry.action.replace("portal.team.", "").replaceAll("_", " ")}</strong>
+                        <small>
+                          {new Intl.DateTimeFormat("nl-NL", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          }).format(new Date(entry.at))}
+                        </small>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </section>
+            )}
           </>
         )}
         {tab === "messages" && (
@@ -938,6 +959,13 @@ export function Poortkamer({
         {tab === "more" && <Link href="/omgeving/communicatie">Nachtpost en communicatievoorkeuren →</Link>}
         {tab === "more" && (
           <div className={s.moreGrid}>
+            <PoortkamerManagementV2
+              room={room}
+              busy={busy}
+              disabled={disabled}
+              canEdit={canEdit}
+              command={(operation, payload) => command(operation, payload)}
+            />
             <section className={s.card}>
               <Image
                 className={s.cardImage}
@@ -1194,12 +1222,18 @@ export function Poortkamer({
                   Rol
                   <select name="role" aria-label="Rol" defaultValue="viewer">
                     <option value="viewer">Meekijker · lezen en chatten</option>
-                    <option value="crew">
-                      Crew/acteur · ook live status en voorbereiding
-                    </option>
-                    <option value="coadmin">
-                      Mede-beheerder · ook vaste poortgegevens
-                    </option>
+                    <option value="actor">Acteur · live stand en voorbereiding</option>
+                    <option value="reception">Ontvangst · live stand en voorbereiding</option>
+                    <option value="tech">Techniek · live stand en voorbereiding</option>
+                    <option value="portal_manager">Poortbeheerder · ook vaste poortgegevens</option>
+                  </select>
+                </label>
+                <label>
+                  Toegangsniveau
+                  <select name="accessLevel" aria-label="Toegangsniveau" defaultValue="read">
+                    <option value="read">Alleen lezen en chatten</option>
+                    <option value="live">Live bediening en voorbereiding</option>
+                    <option value="manage">Ook vaste poortgegevens beheren</option>
                   </select>
                 </label>
               </>
@@ -1297,7 +1331,7 @@ function NightRecap({ room }: { room: PortalRoom }) {
     <section className={`${s.card} ${s.recap}`}>
       <Image
         className={s.cardImage}
-        src="/images/poortkamer/night-recap.webp"
+        src="/images/poortkamer-v2/recap-hero-wide.webp"
         width={960}
         height={540}
         sizes="(max-width:650px) 90vw, 960px"
@@ -1306,6 +1340,10 @@ function NightRecap({ room }: { room: PortalRoom }) {
       <p className={s.eyebrow}>Een stukje magie, dankzij jullie</p>
       <h2>Nachtverslag · {room.portal.code}</h2>
       <p>Dank je wel voor jullie licht in de wijk.</p>
+      <div className={s.certificate}>
+        <img src="/images/poortkamer-v2/certificates/gate-certificate-background.webp" alt="" />
+        <div><span>Digitaal certificaat</span><strong>Officiële Poort van 2026</strong><small>{room.portal.name} · {room.portal.code}</small></div>
+      </div>
       <div className={s.metrics}>
         <Metric value={recap.groups} label="Groepen ontvangen" />
         <Metric value={recap.children} label="Kinderen ontvangen" />

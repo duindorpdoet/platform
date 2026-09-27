@@ -1,5 +1,9 @@
 export const portalRoles = {
   owner: "Hoofdpoortwachter",
+  portal_manager: "Poortbeheerder",
+  actor: "Acteur",
+  reception: "Ontvangst",
+  tech: "Techniek",
   coadmin: "Mede-beheerder",
   crew: "Crew/acteur",
   viewer: "Meekijker",
@@ -21,7 +25,6 @@ export const stockLabels = {
 export const readinessItems = [
   ["access", "Toegang en looproute zijn vrij"],
   ["lighting", "Verlichting en kabels zijn veilig"],
-  ["candy", "Snoep staat klaar"],
   ["crew", "Acteurs en crew zijn aanwezig"],
   ["phone", "Telefoon is opgeladen"],
   ["push", "Pushmeldingen zijn getest"],
@@ -51,6 +54,33 @@ export type PortalMember = {
   role: PortalRole;
   task: string | null;
   lastSeenAt: string | null;
+  accessLevel: "read" | "live" | "manage";
+  suspendedAt: string | null;
+};
+export type PortalPresentation = {
+  id: string;
+  version: number;
+  status: "draft" | "submitted" | "approved" | "changes_requested" | "rejected" | "active" | "retired";
+  publicName: string;
+  world: string;
+  shortDescription: string;
+  story: string;
+  symbol: string;
+  color: string;
+  imagePath: string | null;
+  accessibility: string;
+  intensity: number;
+  reviewNote: string | null;
+};
+export type PortalIncident = {
+  id: string;
+  category: "crowding" | "lingering" | "technical" | "nuisance" | "unsafe" | "contact_requested" | "other";
+  urgency: "normal" | "high";
+  status: "new" | "seen" | "in_progress" | "resolved" | "closed";
+  description: string;
+  callbackRequested: boolean;
+  resolutionMessage: string | null;
+  createdAt: string;
 };
 export type Arrival = {
   groupCode: string;
@@ -115,6 +145,34 @@ export type PortalRoom = {
   visits: { arrivals: Arrival[]; visits: Visit[]; recap: NightRecap };
   urgentAnnouncement: { id: number; body: string; createdAt: string } | null;
   preferences: Record<keyof typeof notificationLabels, boolean>;
+  v2: {
+    presentation: PortalPresentation | null;
+    presentationVersions: Array<Pick<PortalPresentation, "id" | "version" | "status" | "publicName" | "reviewNote">>;
+    incidents: PortalIncident[];
+    simulation: {
+      id: string;
+      phase: "quiet" | "open" | "approaching" | "arrived" | "busy" | "paused" | "stopped" | "incident" | "chat" | "seal" | "finale" | "completed";
+      state: "running" | "completed" | "reset";
+      updatedAt: string;
+      simulation: true;
+      scenario: {
+        queue: Array<{ groupCode: string; children: number; etaMinutes: number }>;
+        visits: number;
+        children: number;
+        incident: boolean;
+        chatTested: boolean;
+        sealTested: boolean;
+        finaleTested: boolean;
+      };
+    } | null;
+    liveLog: Array<{ groupCode: string; visitedAt: string; children: number }>;
+    teamHistory: Array<{
+      action: string;
+      at: string;
+      change: Record<string, unknown>;
+    }>;
+    simulationLabel: true;
+  };
 };
 export type RoomMessage = {
   mentionUserId?: string | null;
@@ -139,7 +197,7 @@ export type ChatSnapshot = {
   pins: Array<{ id: number; body: string }>;
 };
 export function canEditPortal(role: PortalRole) {
-  return ["owner", "coadmin", "admin"].includes(role);
+  return ["owner", "portal_manager", "coadmin", "admin"].includes(role);
 }
 export function canManageTeam(role: PortalRole) {
   return role === "owner" || role === "admin";

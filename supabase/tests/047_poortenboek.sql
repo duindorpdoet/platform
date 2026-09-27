@@ -70,25 +70,20 @@ create temp table election as select (app_private.poortenboek_election(event_id,
 create temp table options as select id,row_number() over(order by sort_order,id)::int n from app_private.poortenboek_name_options where event_id=(select event_id from f);
 create function pg_temp.vote(_n int,_choices int[],_round text default 'round_one',_key uuid default gen_random_uuid()) returns jsonb language sql as $$
  select pg_temp.action(_n,'vote',jsonb_build_object('electionId',(select id from election),'round',_round,'choices',(select jsonb_agg(id order by rank) from unnest(_choices) with ordinality c(n,rank) join options using(n))),_key)$$;
-select throws_ok($$select pg_temp.vote(1,array[1,1,2])$$,'P0001','INVALID_OPTIONS','ranked choices must differ');
-select lives_ok($$select pg_temp.vote(1,array[1,2,3],'round_one','11111111-1111-4111-8111-111111111111')$$,'ranked ballot is accepted');
+select throws_ok($$select pg_temp.vote(1,array[1,1,2])$$,'P0001','INVALID_OPTIONS','favourites must differ');
+select lives_ok($$select pg_temp.vote(1,array[1,2,3],'round_one','11111111-1111-4111-8111-111111111111')$$,'three favourites are accepted');
 select lives_ok($$select pg_temp.vote(1,array[1,2,3],'round_one','11111111-1111-4111-8111-111111111111')$$,'same command retry is idempotent');
 select is((select count(*) from app_private.poortenboek_ballots where election_id=(select id from election)),1::bigint,'retry stores exactly one ballot');
 select throws_ok($$select pg_temp.vote(1,array[3,2,1],'round_one','11111111-1111-4111-8111-111111111111')$$,'P0001','IDEMPOTENCY_CONFLICT','same key cannot replace its payload');
-select is((select sparks from app_private.poortenboek_scores((select id from election)) where option_id=(select id from options where n=1)),3::bigint,'first choice has three sparks');
-select is((select sparks from app_private.poortenboek_scores((select id from election)) where option_id=(select id from options where n=2)),2::bigint,'second choice has two sparks');
-select is((select sparks from app_private.poortenboek_scores((select id from election)) where option_id=(select id from options where n=3)),1::bigint,'third choice has one spark');
+select is((select sparks from app_private.poortenboek_scores((select id from election)) where option_id=(select id from options where n=1)),1::bigint,'every favourite has one equal vote');
+select is((select sparks from app_private.poortenboek_scores((select id from election)) where option_id=(select id from options where n=2)),1::bigint,'second favourite has equal weight');
+select is((select sparks from app_private.poortenboek_scores((select id from election)) where option_id=(select id from options where n=3)),1::bigint,'third favourite has equal weight');
 select is(pg_temp.action(2)#>'{election,ownChoices}','[]'::jsonb,'other child cannot see individual votes');
 select lives_ok($$select pg_temp.vote(1,array[2,1,3])$$,'own choice editable while round open');
-select lives_ok($$select pg_temp.vote(2,array[1,2,3])$$,'last eligible ballot advances the round');
-select is(pg_temp.action(1)#>>'{election,phase}','round_two','all eligible ballots close first round');
-select is(jsonb_array_length(pg_temp.action(1)#>'{election,options}'),3,'exactly three finalists');
-select throws_ok($$select pg_temp.vote(1,array[1,2,3])$$,'P0001','VOTING_CLOSED','closed first round refuses writes');
-select throws_ok($$select pg_temp.vote(1,array[20],'round_two')$$,'P0001','INVALID_OPTIONS','non-finalist cannot receive final vote');
-select lives_ok($$select pg_temp.vote(1,array[1],'round_two')$$,'first final ballot');
-select lives_ok($$select pg_temp.vote(2,array[2],'round_two')$$,'second final ballot');
-select is(pg_temp.action(1)#>>'{election,phase}','finished','final round closes after everyone votes');
-select is((select winner_id from app_private.poortenboek_elections where id=(select id from election)),(select id from options where n in(1,2) order by md5((select event_id::text||team::text from f)||id::text) limit 1),'equal final votes and sparks use deterministic event/team tie break');
+select lives_ok($$select pg_temp.vote(2,array[1,2,3])$$,'last eligible ballot closes the election');
+select is(pg_temp.action(1)#>>'{election,phase}','finished','all eligible favourite ballots determine the team name');
+select throws_ok($$select pg_temp.vote(1,array[1,2,3])$$,'P0001','VOTING_CLOSED','closed favourites round refuses writes');
+select is((select winner_id from app_private.poortenboek_elections where id=(select id from election)),(select id from options where n in(1,2,3) order by md5((select event_id::text||team::text from f)||id::text) limit 1),'equal favourite votes use deterministic event/team tie break');
 select is(pg_temp.action(1)#>>'{election,magicTiebreak}','true','tie is disclosed without exposing other votes');
 select throws_ok($$update app_private.poortenboek_name_options set label='Changed' where id=(select id from options where n=1)$$,'P0001','OPTION_IN_USE','used labels cannot change');
 select throws_ok($$delete from app_private.poortenboek_name_options where id=(select id from options where n=1)$$,'P0001','OPTION_IN_USE','used option cannot disappear');
@@ -96,6 +91,7 @@ select throws_ok($$update app_private.poortenboek_name_options set active=false 
 select lives_ok($$select pg_temp.parent('reset')$$,'owner resets team election before final close');
 select ok((pg_temp.action(1)#>>'{election,id}')::uuid<>(select id from election),'reset creates separate generation');
 select is((select count(*) from app_private.audit_events where action='poortenboek.election_reset' and resource_id=(select team from f)),1::bigint,'reset audited');
+select is((select count(*) from app_private.audit_events where action='poortenboek.team_identity_reset' and resource_id=(select team from f)),1::bigint,'combined team identity reset audited');
 select lives_ok($$select pg_temp.parent('renew',1,repeat('c',64))$$,'renewal replaces code atomically');
 select is(api.poortenboek_login(repeat('a',64),repeat('3',64),repeat('f',64),repeat('d',64))->>'ok','false','renewed old code immediately invalid');
 select throws_ok($$select pg_temp.action(1)$$,'42501','CHILD_SESSION_INVALID','renewal revokes old session');
@@ -127,10 +123,9 @@ select is((app_private.poortenboek_advance((select id from expired_election))).w
 insert into app_private.poortenboek_ballots(election_id,child_id,round,choices) select id,pg_temp.child(1),'round_one',array[(select id from options where n=1),(select id from options where n=2),(select id from options where n=3)] from expired_election;
 -- Recompute the finalists as if that valid ballot had arrived before the first deadline.
 update app_private.poortenboek_elections set phase='round_one' where id=(select id from expired_election);
-select is((app_private.poortenboek_advance((select id from expired_election))).winner_id,(select id from options where n=1),'no final ballots falls back to first-round sparks');
+select is((app_private.poortenboek_advance((select id from expired_election))).winner_id,(select id from options where n in(1,2,3) order by md5((select event_id::text||team::text from f)||id::text) limit 1),'deadline resolves equal favourites deterministically');
 update app_private.poortenboek_settings set round_one_deadline=now()-interval '2 hours',round_two_deadline=now()-interval '1 hour',closes_at=now()+interval '1 hour' where event_id=(select event_id from f);
-select lives_ok($$select pg_temp.parent('reset')$$,'reset remains useful between ordinary deadline and final close');
-select ok((select round_one_deadline>now() and round_two_deadline<=now()+interval '1 hour' from app_private.poortenboek_elections where team_id=(select team from f) and phase<>'superseded'),'reset reopens finite rounds within final close');
+select throws_ok($$select pg_temp.parent('reset')$$,'P0001','TEAM_RESET_USED','a parent can reset the team identity only once');
 update app_private.poortenboek_settings set round_one_deadline=now()-interval '3 hours',round_two_deadline=now()-interval '2 hours',closes_at=now()-interval '1 hour' where event_id=(select event_id from f);
 select throws_ok($$select pg_temp.parent('reset')$$,'P0001','ELECTION_LOCKED','parent cannot reset after final close');
 

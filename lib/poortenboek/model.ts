@@ -38,29 +38,6 @@ export const teamNames = [
   "De Snoepspeurders",
   "De Verdwaalde Schaduwen",
 ];
-export const comingSoon = [
-  {
-    id: "vaandel",
-    status: "coming_soon",
-    image: "coming-vaandel",
-    title: "Bouw samen jullie vaandel",
-    text: "Ieder reisgenootje voegt later een magisch teken toe. Samen maken jullie het vaandel van jullie team.",
-  },
-  {
-    id: "verschijning",
-    status: "coming_soon",
-    image: "coming-avatar-lantern",
-    title: "Kies jouw verschijning",
-    text: "Kies later jouw Halloweenverschijning, avonturenrol en de kleur van jouw magische lantaarn.",
-  },
-  {
-    id: "oefenpoort",
-    status: "coming_soon",
-    image: "coming-practice-gate",
-    title: "De oefenpoort ontwaakt binnenkort",
-    text: "Leer vóór de tocht hoe een poort opent en hoe een nieuwe zegel in jouw Poortenboek verschijnt.",
-  },
-] as const;
 export const prologue =
   "Wanneer de laatste zonnestraal achter de duinen verdwijnt, ontwaakt iets in de straten van Duindorp. Oude poorten lichten op. Achter iedere deur wacht een andere wereld. Dit boek heeft op jou gewacht. Samen met je reisgenootjes schrijf je het verhaal van één bijzondere nacht.";
 export type NameOption = { id: string; label: string };
@@ -90,16 +67,61 @@ export type BookSnapshot = {
   companions: Array<{
     firstName: string;
     medallion: number;
+    avatarId: string;
+    lanternShape: string;
+    lanternColor: string;
     status: "preparing" | "ready" | "underway" | "completed";
   }>;
   election: Election;
   start: { name: string; startsAt: string } | null;
-  worlds: Array<{ slug: string; name: string; story: string }>;
+  worlds: Array<{ slug: string; name: string; story: string; unlocked?: boolean }>;
   unlocks: Array<{
     kind: "seal" | "chapter";
     world: string | null;
     earnedAt: string;
   }>;
+  identity: {
+    avatarId: string;
+    lanternShape: string;
+    lanternColor: string;
+  };
+  practice: { completed: boolean };
+  banner: {
+    options: Record<string, string[]>;
+    ownVote: Record<string, string>;
+    votedCount: number;
+    eligibleCount: number;
+    result: Record<string, string> | null;
+    locked: boolean;
+  };
+  journey: {
+    visitedCount: number;
+    assignedCount: number;
+    upgradeLevel: number;
+    complete: boolean;
+    chapters: Array<{ chapter: number; unlockedAt: string }>;
+    seals: Array<{
+      portalId: string;
+      worldId: string;
+      earnedAt: string;
+      finale: boolean;
+      presentation: {
+        version: number;
+        portalCode: string;
+        world: string;
+        worldSlug: string;
+        publicName: string;
+        shortDescription: string;
+        story: string;
+        symbol: string;
+        color: string;
+        imagePath: string | null;
+        accessibility: string;
+        intensity: number;
+      };
+    }>;
+  };
+  v2: true;
   updatedAt: string;
 };
 export type BookSection = "nu" | "team" | "boek" | "ik";
@@ -112,7 +134,4 @@ export function nightsUntil(date: string, now: number) {
       (new Date(`${date}T00:00:00+01:00`).getTime() - now) / 86_400_000,
     ),
   );
-}
-export function rankedChoices(choices: string[]) {
-  return choices.map((id, index) => ({ id, sparks: 3 - index }));
 }

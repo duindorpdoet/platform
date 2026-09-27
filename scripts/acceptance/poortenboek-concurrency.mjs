@@ -71,8 +71,8 @@ assert.equal(
   sql(
     `select phase from app_private.poortenboek_elections where id='${initial.election.id}'`,
   ),
-  "round_two",
-  "last ballot advances the round exactly once",
+  "finished",
+  "last ballot finishes the one-round V2 election exactly once",
 );
 assert.equal(
   sql(
@@ -80,25 +80,14 @@ assert.equal(
   ),
   "1",
 );
-const finalPayload = JSON.stringify({
-  electionId: initial.election.id,
-  round: "round_two",
-  choices: [choices[0]],
-});
-await Promise.all(
-  tokens.map((token) =>
-    parallelSql(
-      `select api.poortenboek_child_action('${token}','vote','${finalPayload}'::jsonb,'${randomUUID()}');`,
+assert.ok(
+  choices.includes(
+    sql(
+      `select winner_id from app_private.poortenboek_elections where id='${initial.election.id}'`,
     ),
   ),
-);
-assert.equal(
-  sql(
-    `select winner_id from app_private.poortenboek_elections where id='${initial.election.id}'`,
-  ),
-  choices[0],
-  "simultaneous final votes produce one stable winner",
+  "simultaneous final favourites produce one stable winner",
 );
 console.log(
-  "Poortenboek concurrency: collision/retry, duplicate commands, round advancement and final winner passed.",
+  "Poortenboek concurrency: collision/retry, duplicate commands, V2 election closure and stable winner passed.",
 );

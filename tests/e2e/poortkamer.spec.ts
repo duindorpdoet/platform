@@ -102,6 +102,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
     timeout: 15_000,
   });
   await screenshot(page, "nachtwacht", info.project.name);
+  await expect(page.getByRole("heading", { name: "De stroom door jullie poort" })).toBeVisible();
   await page.getByRole("button", { name: "Team", exact: true }).click();
   await page.getByRole("button", { name: "Deel een sleutel" }).click();
   const dialog = page.getByRole("dialog");
@@ -202,8 +203,15 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
     .toBe("1");
 
   await page.getByRole("button", { name: "Team", exact: true }).click();
+  await page.getByRole("button", { name: "Tijdelijk deactiveren", exact: true }).click();
+  await expect(
+    guest.getByRole("heading", { name: "Open je Poortkamer opnieuw" }),
+  ).toBeVisible({ timeout: 25_000 });
+  await page.getByRole("button", { name: "Toegang activeren", exact: true }).click();
+  await guest.reload();
+  await expect(guest.getByRole("button", { name: /^Berichten/ })).toBeVisible({ timeout: 25_000 });
   page.once("dialog", (d) => d.accept());
-  await page.getByLabel("Rol voor Sem Privénaam").selectOption("coadmin");
+  await page.getByLabel("Rol voor Sem Privénaam").selectOption("portal_manager");
   await expect(
     guest.getByRole("button", { name: "Open", exact: true }),
   ).toBeVisible({ timeout: 25_000 });
@@ -250,6 +258,15 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
     ),
   ).toBe("t");
   await page.getByRole("button", { name: "Meer", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Het verhaal dat kinderen meenemen" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Meld wat de ontvangst belemmert" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Oefen de avond zonder echte gegevens" })).toBeVisible();
+  await expect(page.getByText(/snoepvoorraad/i)).toHaveCount(0);
+  const installDismiss = page.getByRole("button", {
+    name: "Ik heb de app al geïnstalleerd",
+    exact: true,
+  });
+  if (await installDismiss.isVisible()) await installDismiss.click();
   await page.getByLabel("Telefoon is opgeladen", { exact: false }).click();
   await expect
     .poll(() =>
@@ -316,6 +333,11 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   const card = Buffer.concat(chunks);
   expect(card.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
   expect(card.byteLength).toBeGreaterThan(5000);
+  const installed = page.getByRole("button", {
+    name: "Ik heb de app al geïnstalleerd",
+    exact: true,
+  });
+  if (await installed.isVisible()) await installed.click();
   await page.getByRole("button", { name: /Uitloggen/ }).click();
   await page.goBack();
   await expect(page.getByText("De Lantaarnpoort", { exact: true })).toHaveCount(

@@ -253,6 +253,9 @@ export async function POST(request: Request, context: Context) {
         "checklist",
         "vote",
         "sound",
+        "identity",
+        "practice",
+        "banner_vote",
         "demo-phase",
       ].includes(action)
     )
@@ -260,6 +263,42 @@ export async function POST(request: Request, context: Context) {
     if (action === "checklist")
       z.object({ values: z.array(z.boolean()).length(6) }).parse(input);
     if (action === "sound") z.object({ enabled: z.boolean() }).parse(input);
+    if (action === "identity")
+      z.object({
+        avatarId: z.enum([
+          "nightwatcher",
+          "little-wizard",
+          "ghost-scout",
+          "pumpkin-guardian",
+          "shadow-traveler",
+          "moon-knight",
+        ]),
+        lanternShape: z.enum(["classic", "moon", "tower", "crystal"]),
+        lanternColor: z.enum([
+          "amber",
+          "cyan",
+          "violet",
+          "emerald",
+          "rose",
+          "moonlight",
+        ]),
+        requestId: z.uuid(),
+      }).parse(input);
+    if (action === "practice")
+      z.object({ heldMs: z.number().int().min(1200).max(10_000), requestId: z.uuid() }).parse(input);
+    if (action === "banner_vote")
+      z.object({
+        choices: z.object({
+          shape: z.enum(["shield", "swallowtail", "round", "split"]),
+          color: z.enum(["amber", "cyan", "violet", "emerald", "crimson", "moonlight"]),
+          secondaryColor: z.enum(["amber", "cyan", "violet", "emerald", "crimson", "moonlight"]),
+          border: z.enum(["rope", "metal", "thorns", "stars"]),
+          symbol: z.enum(["gate", "moon", "flame", "ghost", "key", "star", "bat", "pumpkin"]),
+          lantern: z.enum(["classic", "moon", "tower", "crystal"]),
+          glow: z.enum(["warm", "cold", "magic", "mist"]),
+        }),
+        requestId: z.uuid(),
+      }).parse(input);
     if (action === "vote")
       z.object({
         electionId: z.string().max(80),
@@ -294,12 +333,21 @@ export async function POST(request: Request, context: Context) {
       if (action === "welcome") demo.welcomeSeen = true;
       if (action === "checklist") demo.checklist = input.values;
       if (action === "sound") demo.sound = input.enabled;
+      if (action === "identity")
+        demo.identity = {
+          avatarId: input.avatarId,
+          lanternShape: input.lanternShape,
+          lanternColor: input.lanternColor,
+        };
+      if (action === "practice") demo.practiceCompleted = true;
+      if (action === "banner_vote") demo.bannerVote = input.choices;
       if (action === "vote") {
         const election = demoSnapshot(demo).election;
         if (
           !election.open ||
           input.round !== election.phase ||
-          input.choices.length !== (election.phase === "round_one" ? 3 : 1) ||
+          input.choices.length < 1 ||
+          input.choices.length > (election.phase === "round_one" ? 3 : 1) ||
           new Set(input.choices).size !== input.choices.length ||
           input.choices.some(
             (id: string) =>
@@ -349,6 +397,11 @@ export async function POST(request: Request, context: Context) {
     if (/ELECTION_LOCKED/.test(message))
       return errorResponse(
         "De organisatorische sluitingsdatum is bereikt.",
+        409,
+      );
+    if (/TEAM_RESET_USED/.test(message))
+      return errorResponse(
+        "De eenmalige herstart voor dit kindteam is al gebruikt.",
         409,
       );
     return errorResponse(

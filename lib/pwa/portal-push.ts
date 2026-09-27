@@ -11,6 +11,7 @@ const copy: Record<string, string> = {
   arrived: "Een groep heeft het bezoek aan jullie poort gescand.",
   pause_1: "Jullie getimede pauze eindigt over ongeveer één minuut.",
   urgent: "De Omroeper heeft een belangrijke mededeling. Open De Poortkamer.",
+  incident: "Een poort heeft een urgente operationele melding gedaan. Open de cockpit.",
   mention: "Een Poortwachter heeft je vermeld in een besloten gesprek.",
   access: "Je toegang of rol in De Poortkamer is gewijzigd.",
   test: "Meldingen voor dit apparaat werken. Jullie poort is verbonden.",
@@ -47,7 +48,7 @@ export async function deliverPortalPush(
       JSON.stringify({
         title: "De Poortkamer",
         body: copy[kind] ?? "Er is een update voor jullie poort.",
-        url: "/mijn-huis",
+        url: kind === "incident" ? "/admin" : "/mijn-huis",
         tag: `poortkamer-${id}`,
       }),
       { TTL: 300, timeout: 8000 },

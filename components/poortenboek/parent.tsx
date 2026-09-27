@@ -149,7 +149,7 @@ function ChildBook({
           : value === "revoke"
             ? "Alle kindersessies zijn afgesloten."
             : value === "reset"
-              ? "De teamnaamverkiezing is opnieuw gestart."
+              ? "De teamnaamverkiezing en het teamvaandel zijn opnieuw gestart."
               : "Bewaar deze code bij je. Deel hem alleen met je kind.",
       );
       await reload();
@@ -248,7 +248,7 @@ function ChildBook({
           disabled={busy}
           onClick={() => setConfirm("reset")}
         >
-          Teamnaamverkiezing opnieuw starten
+          Teamkeuzes opnieuw starten
         </button>
       </div>
       {child.together && (
@@ -268,14 +268,14 @@ function ChildBook({
               ? "Code vernieuwen?"
               : confirm === "revoke"
                 ? "Alle kindersessies afsluiten?"
-                : "Teamnaamverkiezing opnieuw starten?"}
+                : "Teamnaam en vaandel opnieuw starten?"}
           </strong>
           <p>
             {confirm === "renew"
               ? "De oude code wordt meteen ongeldig. Alle apparaten van dit kind worden uitgelogd. Persoonlijke voortgang blijft bewaard."
               : confirm === "revoke"
                 ? "Dit kind moet op ieder apparaat opnieuw de code invullen. De code zelf blijft geldig."
-                : "Hiermee vervallen de huidige stemronde en teamnaam voor alle bevestigde reisgenootjes. Dit kan alleen vóór de organisatorische sluitingsdatum."}
+                : "Hiermee vervallen de huidige stemronde, teamnaam en vaandelstemmen voor alle bevestigde reisgenootjes. Een ouder kan dit één keer doen en alleen vóór de organisatorische sluitingsdatum."}
           </p>
           {confirm === "reset" && (
             <label>

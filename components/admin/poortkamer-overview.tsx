@@ -2,14 +2,14 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { portalTime, stockLabels } from "@/lib/domain/poortkamer";
+import { portalTime } from "@/lib/domain/poortkamer";
 type Snapshot = {
   realtimeTopic: string;
   portals: Array<{
     id: string;
     code: string;
     name: string;
-    stock: keyof typeof stockLabels;
+    stock: string;
     ready: number;
     online: number;
     pending: number;
@@ -22,6 +22,27 @@ type Snapshot = {
     messageId: number;
     body: string;
     reason: string;
+  }>;
+  incidents: Array<{
+    id: string;
+    portalId: string;
+    portalCode: string;
+    portalName: string;
+    category: string;
+    urgency: "normal" | "high";
+    status: string;
+    description: string;
+    callbackRequested: boolean;
+    createdAt: string;
+  }>;
+  presentations: Array<{
+    id: string;
+    portalId: string;
+    portalCode: string;
+    version: number;
+    status: string;
+    publicName: string;
+    submittedAt: string | null;
   }>;
 };
 export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
@@ -94,12 +115,29 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
     );
     await load();
   }
+  async function v2Command(
+    operation: string,
+    id: string,
+    payload: Record<string, unknown> = {},
+  ) {
+    const client = createClient();
+    if (!client) return;
+    const { error } = await client.schema("api").rpc("admin_portal_v2_command", {
+      _event_slug: eventSlug,
+      _operation: operation,
+      _id: id,
+      _payload: payload,
+      _key: crypto.randomUUID(),
+    });
+    setNotice(error ? "De wijziging kon niet worden opgeslagen." : "De wijziging is opgeslagen.");
+    await load();
+  }
   return (
     <section className="panel">
       <h2>Poortkamers</h2>
       <p>
-        Teamtoegang, gereedheid en snoepvoorraad. Open een poort voor rollen,
-        uitnodigingen, berichten en de Omroeper.
+        Teamtoegang, gereedheid, presentaties en operationele meldingen. Open
+        een poort voor rollen, uitnodigingen, berichten en de Omroeper.
       </p>
       {notice && <p role="status">{notice}</p>}
       {!snapshot ? (
@@ -113,20 +151,8 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
                   {p.code} · {p.name}
                 </h3>
                 <p>
-                  {p.ready}/9 gereed · {p.online} recent actief · {p.pending}{" "}
+                  {p.ready} controles afgerond · {p.online} recent actief · {p.pending}{" "}
                   open sleutels · bijgewerkt {portalTime(p.lastActivity)}
-                </p>
-                {p.helpRequestedAt && (
-                  <p role="alert">
-                    Snoephulp gevraagd om {portalTime(p.helpRequestedAt)}
-                  </p>
-                )}
-                <p
-                  role={
-                    ["low", "empty"].includes(p.stock) ? "alert" : undefined
-                  }
-                >
-                  Snoep: <strong>{stockLabels[p.stock]}</strong>
                 </p>
                 <Link
                   className="btn outline"
@@ -137,6 +163,64 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
               </article>
             ))}
           </div>
+          <h3>Poortpresentaties ter beoordeling ({snapshot.presentations.length})</h3>
+          {snapshot.presentations.length === 0 && <p>Er wachten geen presentaties op beoordeling.</p>}
+          {snapshot.presentations.map((presentation) => (
+            <article className="panel" key={presentation.id}>
+              <h4>{presentation.portalCode} · {presentation.publicName}</h4>
+              <p>Versie {presentation.version} · {presentation.status.replace("_", " ")}</p>
+              <div className="actions">
+                <button className="btn primary" onClick={() => void v2Command("presentation_approve", presentation.id)}>
+                  Goedkeuren
+                </button>
+                <button
+                  className="btn outline"
+                  onClick={() => {
+                    const note = window.prompt("Welke aanpassing is nodig?");
+                    if (note && note.trim().length >= 5)
+                      void v2Command("presentation_changes", presentation.id, { note: note.trim() });
+                  }}
+                >
+                  Aanpassing vragen
+                </button>
+                <button
+                  className="btn outline"
+                  onClick={() => {
+                    const note = window.prompt("Waarom is deze inhoud onveilig of ongeschikt?");
+                    if (note && note.trim().length >= 5)
+                      void v2Command("presentation_reject", presentation.id, { note: note.trim() });
+                  }}
+                >
+                  Afwijzen
+                </button>
+              </div>
+            </article>
+          ))}
+          <h3>Operationele meldingen ({snapshot.incidents.length})</h3>
+          {snapshot.incidents.length === 0 && <p>Er zijn geen open operationele meldingen.</p>}
+          {snapshot.incidents.map((incident) => (
+            <article className="panel" key={incident.id}>
+              <h4>{incident.portalCode} · {incident.portalName}</h4>
+              <p role={incident.urgency === "high" ? "alert" : undefined}>
+                <strong>{incident.urgency === "high" ? "Hoge urgentie" : "Normaal"}</strong> · {incident.category.replaceAll("_", " ")} · {portalTime(incident.createdAt)}
+              </p>
+              <p>{incident.description}</p>
+              {incident.callbackRequested && <p><strong>Terugbelverzoek</strong></p>}
+              <div className="actions">
+                {incident.status === "new" && <button className="btn outline" onClick={() => void v2Command("incident_status", incident.id, { status: "seen" })}>Gezien</button>}
+                <button className="btn outline" onClick={() => {
+                  const adminNote = window.prompt("Interne notitie voor de organisatie:");
+                  if (adminNote && adminNote.trim().length >= 2)
+                    void v2Command("incident_status", incident.id, { status: "in_progress", adminNote: adminNote.trim() });
+                }}>In behandeling</button>
+                <button className="btn primary" onClick={() => {
+                  const resolutionMessage = window.prompt("Oplossingsbericht voor het huis:", "De organisatie heeft deze melding opgelost.");
+                  if (resolutionMessage && resolutionMessage.trim().length >= 2)
+                    void v2Command("incident_status", incident.id, { status: "resolved", resolutionMessage: resolutionMessage.trim() });
+                }}>Opgelost</button>
+              </div>
+            </article>
+          ))}
           <h3>Gemelde berichten ({snapshot.reports.length})</h3>
           {snapshot.reports.length === 0 && <p>Er zijn geen open meldingen.</p>}
           {snapshot.reports.map((r) => (

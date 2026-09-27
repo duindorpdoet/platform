@@ -11,6 +11,9 @@ export type DemoSession = {
   checklist: boolean[];
   choices: string[];
   sound: boolean;
+  identity: { avatarId: string; lanternShape: string; lanternColor: string };
+  bannerVote: Record<string, string>;
+  practiceCompleted: boolean;
   nonce: string;
 };
 export function newDemoSession(now: number): DemoSession {
@@ -22,12 +25,24 @@ export function newDemoSession(now: number): DemoSession {
     checklist: Array(6).fill(false),
     choices: [],
     sound: false,
+    identity: {
+      avatarId: "nightwatcher",
+      lanternShape: "classic",
+      lanternColor: "amber",
+    },
+    bannerVote: {},
+    practiceCompleted: false,
     nonce: crypto.randomUUID(),
   };
 }
 export function demoSnapshot(session: DemoSession): BookSnapshot {
-  const final = ["finalists", "winner", "prepared"].includes(session.phase);
-  const finished = ["winner", "prepared"].includes(session.phase);
+  const identity = session.identity ?? {
+    avatarId: "nightwatcher",
+    lanternShape: "classic",
+    lanternColor: "amber",
+  };
+  const finished = ["all", "finalists", "winner", "prepared"].includes(session.phase);
+  const final = finished;
   const options = teamNames.map((label, index) => ({
     id: `demo-${index}`,
     label,
@@ -45,6 +60,9 @@ export function demoSnapshot(session: DemoSession): BookSnapshot {
     companions: ["Mila", "Sem", "Yara", "Finn", "Noor"].map((firstName, i) => ({
       firstName,
       medallion: i,
+      avatarId: ["nightwatcher", "little-wizard", "ghost-scout", "pumpkin-guardian", "shadow-traveler"][i],
+      lanternShape: ["classic", "moon", "tower", "crystal", "classic"][i],
+      lanternColor: ["amber", "cyan", "violet", "emerald", "moonlight"][i],
       status:
         session.phase === "prepared" ||
         (i === 0 && session.checklist.every(Boolean)) ||
@@ -75,6 +93,58 @@ export function demoSnapshot(session: DemoSession): BookSnapshot {
     start: null,
     worlds: worlds.map(({ slug, name, story }) => ({ slug, name, story })),
     unlocks: [],
+    identity,
+    practice: { completed: Boolean(session.practiceCompleted) || session.phase === "prepared" },
+    banner: {
+      options: {
+        shape: ["shield", "swallowtail", "round", "split"],
+        color: ["amber", "cyan", "violet", "emerald", "crimson", "moonlight"],
+        secondaryColor: ["amber", "cyan", "violet", "emerald", "crimson", "moonlight"],
+        border: ["rope", "metal", "thorns", "stars"],
+        symbol: ["gate", "moon", "flame", "ghost", "key", "star", "bat", "pumpkin"],
+        lantern: ["classic", "moon", "tower", "crystal"],
+        glow: ["warm", "cold", "magic", "mist"],
+      },
+      ownVote: session.bannerVote ?? {},
+      votedCount: session.phase === "empty" ? 0 : session.phase === "three" ? 3 : 5,
+      eligibleCount: 5,
+      result: final
+        ? { shape: "shield", color: "violet", secondaryColor: "cyan", border: "stars", symbol: "gate", lantern: "classic", glow: "magic" }
+        : null,
+      locked: false,
+    },
+    journey: {
+      visitedCount: finished ? 5 : 0,
+      assignedCount: 6,
+      upgradeLevel: finished ? 3 : 0,
+      complete: finished,
+      chapters: finished
+        ? [1, 2, 3, 4, 5, 6].map((chapter) => ({ chapter, unlockedAt: new Date().toISOString() }))
+        : [{ chapter: 1, unlockedAt: new Date().toISOString() }],
+      seals: finished
+        ? worlds.slice(0, 5).map((world, index) => ({
+            portalId: `demo-portal-${index}`,
+            worldId: `demo-world-${index}`,
+            earnedAt: new Date(Date.now() - (5 - index) * 600_000).toISOString(),
+            finale: index === 4,
+            presentation: {
+              version: 1,
+              portalCode: `P-${String(index + 1).padStart(2, "0")}`,
+              world: world.name,
+              worldSlug: world.slug,
+              publicName: `${world.name}poort`,
+              shortDescription: world.story,
+              story: world.story,
+              symbol: "gate",
+              color: "violet",
+              imagePath: null,
+              accessibility: "Volg de aanwijzingen van de groepsleider.",
+              intensity: 2,
+            },
+          }))
+        : [],
+    },
+    v2: true,
     updatedAt: new Date().toISOString(),
   };
 }

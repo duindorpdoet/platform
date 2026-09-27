@@ -4,7 +4,7 @@ select no_plan();
 select set_config('request.jwt.claims','{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select api.portal_room_snapshot('duindorp-halloween-2026','12000000-0000-0000-0000-000000000001') is not null;
 select set_config('test.team_channel',(select id::text from app_private.portal_room_channels where portal_id='12000000-0000-0000-0000-000000000001'),true);
-select set_config('test.community',(select id::text from app_private.portal_room_channels where kind='community' and name='Algemeen' limit 1),true);
+select set_config('test.community',(select id::text from app_private.portal_room_channels where kind='community' and name='Hulp gevraagd' limit 1),true);
 select lives_ok($$select api.portal_team_command('12000000-0000-0000-0000-000000000001','invite','{"email":"parent-size-5@example.invalid","firstName":"Vijf","lastName":"Test","role":"viewer"}',gen_random_uuid())$$,'new invitation for boundary checks');
 select set_config('test.invite',(select id::text from app_private.portal_team_invites where email='parent-size-5@example.invalid'),true);
 select set_config('test.token',app_private.poortkamer_invite_token(current_setting('test.invite')::uuid),true);

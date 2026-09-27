@@ -647,6 +647,141 @@
 .room textarea {
   scroll-margin-block: 150px 110px;
 }
+.v2Live {
+  display: grid;
+  grid-template-columns: minmax(280px, .85fr) minmax(0, 1.15fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  margin-top: 20px;
+}
+.v2Live > img {
+  width: 100%;
+  height: 100%;
+  min-height: 560px;
+  object-fit: cover;
+}
+.v2LiveBody { padding: clamp(24px, 4vw, 44px); }
+.v2Queue {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+.v2Queue > div {
+  display: grid;
+  gap: 5px;
+  padding: 17px;
+  border: 1px solid #9fb3c438;
+  border-radius: 12px;
+  background: #071321b8;
+}
+.v2Queue svg { color: #77d5d4; }
+.v2Queue strong { font: 2rem Georgia, serif; color: #efc28e; }
+.v2Queue span { font-size: .76rem; color: var(--pk-muted); }
+.v2Next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 16px;
+  border-left: 3px solid #67c9cb;
+  background: #112b36;
+}
+.v2Next strong,.v2Next small { display: block; }
+.v2Log { margin-top: 20px; }
+.v2Log article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #ffffff16;
+}
+.v2Log svg { color: #82d9b3; }
+.v2Log strong,.v2Log small { display: block; }
+.v2Feature { position: relative; overflow: hidden; }
+.v2Feature > .cardImage { height: 250px; }
+.v2Status {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px solid #9cb3c640;
+  border-radius: 10px;
+  background: #0a1724;
+}
+.v2Status svg { color: #7ed4b7; }
+.v2Status strong,.v2Status small { display: block; }
+.v2Status p { margin: 6px 0 0; font-size: .82rem; }
+.v2Details { margin-top: 20px; }
+.v2Details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: #f0c896;
+  cursor: pointer;
+}
+.v2Details form,.v2IncidentForm { display: grid; gap: 14px; margin-top: 15px; }
+.v2Details label,.v2IncidentForm label {
+  display: grid;
+  gap: 7px;
+  color: var(--pk-muted);
+  font-size: .8rem;
+}
+.v2Details input,.v2Details textarea,.v2Details select,
+.v2IncidentForm textarea,.v2IncidentForm select {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px;
+  border: 1px solid #93a7b763;
+  border-radius: 8px;
+  background: #07121e;
+  color: #f5eee4;
+}
+.v2Details textarea,.v2IncidentForm textarea { min-height: 110px; }
+.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.v2Incidents { margin-top: 20px; }
+.v2Incidents article {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid #ffffff1b;
+}
+.v2Incidents article[data-urgency="high"] > svg { color: #ff8b6b; }
+.v2Incidents article > div { flex: 1; min-width: 0; }
+.v2Incidents p { margin: 4px 0; font-size: .84rem; }
+.simulation { border-color: #9b78ce59; background: linear-gradient(145deg,#201832,#0c1725); }
+.v2SimulationLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border: 1px solid #bd96eb64;
+  border-radius: 999px;
+  color: #e3caff;
+  background: #3b245963;
+}
+.certificate {
+  position: relative;
+  min-height: 230px;
+  overflow: hidden;
+  margin: 20px 0;
+  border: 1px solid #d8b87878;
+  border-radius: 12px;
+}
+.certificate > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .72; }
+.certificate > div { position: relative; z-index: 1; display: grid; place-items: center; align-content: center; gap: 7px; min-height: 230px; padding: 22px; text-align: center; background: #08111b55; }
+.certificate span,.certificate small { text-transform: uppercase; letter-spacing: .14em; color: #dfc89e; font-size: .68rem; }
+.certificate strong { font: clamp(1.7rem,4vw,3rem) Georgia,serif; color: #fff0ce; }
+@media (max-width: 760px) {
+  .v2Live { grid-template-columns: 1fr; }
+  .v2Live > img { min-height: 260px; max-height: 340px; }
+  .v2Queue,.formGrid { grid-template-columns: 1fr; }
+  .v2Next { align-items: flex-start; flex-direction: column; }
+  .v2Incidents article { flex-wrap: wrap; }
+}
 @media (max-width: 650px) {
   .composer {
     position: static;
