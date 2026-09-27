@@ -107,5 +107,6 @@ Bestanden van deze release ten opzichte van staging `d7604fbc`. Screenshots beva
 - `supabase/tests/051_redactiekamer.sql`
 - `supabase/tests/052_editorial_deliveries.sql`
 - `tests/e2e/authenticated-live.spec.ts`
+- `tests/e2e/public-flows.spec.ts`
 - `tests/e2e/redactiekamer.spec.ts`
 - `tsconfig.json`
