@@ -1,6 +1,6 @@
 # Redactiekamer gebruiken en beheren
 
-Deze release is uitsluitend voor staging. Productie, DNS en de inschrijfformulieren worden niet gewijzigd. De nieuwe forward-only migratie is `20260927165020_redactiekamer.sql`. Bestaande pagina-, ouder-, Poortkamer-, mail- en PWA-contracten blijven bestaan.
+Na de stagingacceptatie is op 27 september 2026 ook productie vrijgegeven met Redactiekamer, Nachtpost en Web Push ingeschakeld. De forward-only migratie is `20260927165020_redactiekamer.sql`. De productiepromotie vereist dezelfde commit met een volledig geslaagde stagingdeployment. Bestaande pagina-, ouder-, Poortkamer-, mail- en PWA-contracten blijven bestaan.
 
 ## Toegang en routes
 
@@ -66,7 +66,9 @@ Installeren blijft maximaal één suggestie per ingelogd account per dag, met La
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Bestaande publieke VAPID-sleutel |
 | `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Bestaande serverconfiguratie, nooit in clientbundles |
 
-`MAIL_MODE`, `MAIL_ALLOWED_RECIPIENTS`, `SEND_EMAIL_HOOK_SECRET`, SendGrid-credentials en `CRON_SECRET` blijven nodig. Staging gebruikt MAIL_MODE=allowlist én de aparte redactionele lijst. De Edge-hook controleert de redactionele lijst onafhankelijk van de Next-server; een onbedoelde MAIL_MODE=live heft de grens niet op. De operationele pushworker krijgt op staging dezelfde begrensde lijst. Productieconfiguratie is niet onderdeel van deze release.
+`MAIL_MODE`, `MAIL_ALLOWED_RECIPIENTS`, `SEND_EMAIL_HOOK_SECRET`, SendGrid-credentials en `CRON_SECRET` blijven nodig. Staging gebruikt MAIL_MODE=allowlist én de aparte redactionele lijst. De Edge-hook controleert de redactionele lijst onafhankelijk van de Next-server; een onbedoelde MAIL_MODE=live heft de grens niet op. De operationele pushworker krijgt op staging dezelfde begrensde lijst.
+
+De productieworkflow zet `REDACTIEKAMER_ENABLED`, `NEWSLETTER_SENDING_ENABLED` en `WEB_PUSH_SENDING_ENABLED` op `true` en geeft deze ook door aan de app-runtime. Productie heeft een eigen `EDITORIAL_TOKEN_SECRET` in het GitHub-environment; deze sleutel wordt niet gedeeld met staging. De productie-Edge-hook krijgt daarnaast `APP_ENVIRONMENT=production` en `NEWSLETTER_SENDING_ENABLED=true`, zodat de bestaande mailgateway Nachtpost kan verwerken. De toestemming- en publicatiecontroles blijven van toepassing. Functies inschakelen publiceert geen artikel en maakt geen campagne aan. De Poortenboek-demo blijft uitsluitend op staging beschikbaar.
 
 De bestaande minuutcron roept `/api/jobs/mail` aan. Die publiceert eerst nieuws en verwerkt afzonderlijk de push- en mailqueues. Mail mag uitstaan terwijl nieuws wordt gepubliceerd. `api.worker_editorial_tick`, `worker_claim_editorial_push`, `worker_record_editorial_push`, `worker_finish_editorial_push` en `worker_newsletter_material` zijn uitsluitend service-rolefuncties. Het bestaande `worker_claim_outbox` blijft de mailqueue-ingang en behoudt alle eerdere betaal-/portaalguards.
 
