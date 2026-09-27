@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./registration-dashboard.css";
+import { ParticipantTogether } from "@/components/registration/participant-together";
 import type { ParticipantPayment } from "@/components/payments/payment-details";
 import { ChildPaymentRows, type ChildPayment } from "@/components/payments/child-payment-rows";
 import { createClient } from "@/lib/supabase/client";
@@ -397,6 +398,7 @@ export function RegistrationDashboard({
   }
   return (
     <div className="dashboard-stack registration-dashboard">
+      {notice && <p className="form-notice" role="status">{notice}</p>}
       <section className="panel registration-overview-card">
         <p className="kicker">Referentie</p>
         <h2 className="registration-reference">{registration.reference}</h2>
@@ -548,40 +550,7 @@ export function RegistrationDashboard({
           en vervalt automatisch.
         </p>
       </section>
-      <section className="panel together-code-card">
-        <p className="kicker">Samen lopen</p>
-        <h2>Jullie samenloopcode</h2>
-        <p>Deel deze code met bekenden die nog moeten inschrijven. Zij vullen hem tijdens hun inschrijving in.</p>
-        <div className="registration-code together-share-code" aria-label={`Samenloopcode ${registration.togetherCode}`}>{registration.togetherCode}</div>
-        <p className="note">
-          {registration.togetherCount > 1
-            ? `${registration.togetherCount} inschrijvingen zijn na goedkeuring met deze hoofdgroep verbonden en delen één start, route en laatste poort.`
-            : "Er zijn nog geen andere inschrijvingen definitief aan jullie hoofdgroep gekoppeld."}
-        </p>
-        <p className="note">
-          De ingestelde groepsgrens is maximaal {snapshot.event?.maxGroupSize ?? 10} kinderen. Iedere aanvraag blijft apart totdat de organisatie capaciteit en veiligheid heeft gecontroleerd en de koppeling expliciet goedkeurt.
-        </p>
-        {registration.togetherRequest?.status === "pending" && (
-          <div className="form-warning">
-            Jullie verzoek om bij code {registration.togetherRequest.requestedCode} aan te sluiten is nog niet goedgekeurd. Samen zouden jullie {registration.togetherRequest.projectedChildren} kinderen zijn; de organisatie controleert capaciteit, tijden en veiligheid.
-          </div>
-        )}
-        {registration.togetherRequest?.status === "rejected" && (
-          <div className="form-notice">
-            De organisatie heeft de gevraagde koppeling met code {registration.togetherRequest.requestedCode} afgewezen. Jullie eigen inschrijving blijft geldig.
-          </div>
-        )}
-        {registration.togetherRequest?.status === "accepted" && registration.togetherRequest.limitOverridden && (
-          <div className="form-notice">
-            De organisatie heeft jullie samenloopwens als gecontroleerde uitzondering geaccepteerd.
-          </div>
-        )}
-        {notice && (
-          <p className="form-notice" role="status">
-            {notice}
-          </p>
-        )}
-      </section>
+      <ParticipantTogether registrationId={registration.id} />
     </div>
   );
 }

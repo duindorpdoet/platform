@@ -139,7 +139,7 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
   },
   group_merge_approved: {
     kind: "group", subject: "Jullie lopen voortaan samen", preheader: "De hoofdgroep is leidend voor start en route.", eyebrow: "Samen is de wijk mooier", title: "Jullie groepen zijn één groep.",
-    paragraphs: (payload) => [`De samenvoeging met ${headGroup(payload)} is bevestigd. Iedereen loopt als één groep vanaf de start en volgt dezelfde actuele poorten. Bekijk de nieuwe groepssamenstelling en jullie startgegevens in de omgeving.`],
+    paragraphs: (payload) => [`De samenvoeging met ${headGroup(payload)} is bevestigd. Iedereen loopt als één groep vanaf de start en volgt dezelfde actuele poorten. Bekijk jullie startgegevens in de omgeving.`, ...(typeof payload.clusterReference === "string" && /^SL-[0-9]{4}-[A-HJ-NP-Z2-9]{6}$/.test(payload.clusterReference) ? [`Samenloopnummer: ${payload.clusterReference}`] : [])],
     action: { label: "Bekijk onze groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt deze bevestiging omdat jouw groep is samengevoegd.",
   },
   group_merge_declined: {

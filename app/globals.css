@@ -820,11 +820,11 @@ body:has(.admin-shell) .inner-page{padding-top:0}
 .admin-route-surface{height:100vh;height:100dvh;overflow:hidden;background:radial-gradient(circle at 74% 8%,#1d141725 0,transparent 34%),#050b12}
 .admin-route-surface .admin-page{height:100%;max-width:none!important;margin:0!important;padding:clamp(0px,1.25vw,20px)!important;overflow:hidden}
 .admin-route-surface .admin-shell{height:100%;min-height:0;max-height:100%;max-width:none;margin:0;grid-template-columns:clamp(13rem,15vw,17.5rem) minmax(0,1fr);gap:0;overflow:hidden;border:1px solid #33475a;border-radius:24px;background:#08131f;box-shadow:0 22px 60px #0008}
-.admin-route-surface .admin-workspace{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:0;height:100%;overflow:hidden}
+.admin-route-surface .admin-workspace{display:grid;grid-template-rows:minmax(0,1fr);min-width:0;min-height:0;height:100%;overflow:hidden}
 .admin-route-surface .admin-nav{top:auto;align-self:stretch;min-height:0;height:100%;max-height:none;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-color:#566e83 transparent}
 .admin-route-surface .admin-topbar{position:relative;top:auto;z-index:20;flex:none}
 .admin-route-surface .admin-content{min-width:0;min-height:0;height:100%;max-width:none;margin:0;overflow:auto;overscroll-behavior:contain;scrollbar-color:#6a8295 #0b1724}
-.admin-route-surface .admin-content>.admin-page-heading{position:sticky;top:0;z-index:8;margin-top:-1px;padding-top:18px;background:linear-gradient(180deg,#08131f 0%,#08131ff5 82%,#08131f00 100%);backdrop-filter:blur(10px)}
+.admin-route-surface .admin-content>.admin-page-heading{position:relative;top:auto;margin-top:0;padding-top:18px}
 .admin-route-surface .admin-content:focus{outline:none}
 @media(max-width:1100px){
   .admin-route-surface .admin-page{padding:0!important}
@@ -849,3 +849,24 @@ dialog.group-create-dialog::backdrop{background:#02070dc7;backdrop-filter:blur(4
 .group-create-dialog label,.group-create-dialog input{min-width:0}
 .group-create-dialog .actions{flex-wrap:wrap}
 @media(max-width:700px){dialog.group-create-dialog{margin:auto auto 16px;border-radius:16px}}
+
+.admin-page-heading .admin-menu-toggle{display:none}
+@media(min-width:701px) and (max-width:1100px){.admin-page-heading .admin-menu-toggle{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:9px 12px;border:1px solid #425765;border-radius:10px;background:#14222e;color:#f6dfbe}.admin-page-heading .admin-menu-toggle svg{width:20px}}
+
+/* Together management reuses the existing admin shell and native modal. */
+.together-management{display:grid;gap:18px;align-content:start;min-width:0}
+.together-toolbar{gap:16px;flex-wrap:wrap}.together-toolbar>.field{flex:1;min-width:min(280px,100%)}
+.together-toolbar input{width:100%;min-width:0}.together-tabs{flex-wrap:wrap}
+.together-card{padding:18px;border:1px solid #405765;border-radius:12px;background:#0b1824;min-width:0;overflow-wrap:anywhere}
+.together-card summary{cursor:pointer;display:grid;gap:8px;list-style:revert}
+.together-summary{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}.together-summary strong{color:#f5c486}
+.together-summary small,.together-card small{color:#b4c6cf}
+.together-members{display:grid;gap:12px;margin-top:18px}.together-members article{display:grid;gap:5px;padding:12px;border:1px solid #405765;border-radius:8px}
+.together-preview-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.together-preview-columns h3{margin:12px 0}.together-management .actions{flex-wrap:wrap}
+.group-create-dialog textarea{width:100%;min-height:100px;padding:10px;border:1px solid #526a78;border-radius:8px;background:#091722;color:#edf1ec;font:inherit;resize:vertical}
+@media(max-width:500px){.together-preview-columns{grid-template-columns:1fr}.together-tabs>.btn{flex:1;min-width:130px}.together-card{padding:12px}}
+.participant-together{min-width:0;overflow-wrap:anywhere}.participant-together .together-share-code{display:inline-block;padding:8px 14px;font-size:24px;letter-spacing:.12em}
+.participant-together-request{display:grid;gap:8px;padding:16px 0;border-top:1px solid #405765}.participant-together-request p{margin:0}
+.participant-together form{display:grid;gap:12px;margin-top:18px}.participant-together .actions{flex-wrap:wrap}.participant-together input{max-width:100%;min-width:0}
+.participant-together :is(input,button){scroll-margin-block:100px 140px}

@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { SignOutButton } from "@/components/auth/account-actions";
+import { ParticipantTogether } from "@/components/registration/participant-together";
 import { GroupExperience } from "@/components/group/group-experience";
 import { GroupJourneyPreference } from "@/components/group/group-journey-preference";
 import { GroupIdentity } from "@/components/group/group-identity";
@@ -315,10 +316,11 @@ function WalkerNow({ context, registration, group, reload }: { context: Particip
 }
 
 function WalkerGroup({ group, registration, preferences, groupId, reload }: { group: GroupSnapshot | null; registration: RegistrationSnapshot | null; preferences: RegistrationPreferences | null; groupId?: string; reload: () => Promise<void> }) {
-  if (!group) return <ParticipantPageFrame eyebrow="Groepsindeling" title="Jullie groep komt eraan"><section className="participant-card"><Users /><h2>We delen zorgvuldig in</h2><p>Zodra starttijd en groep zijn gepubliceerd, verschijnt hier alleen de informatie die bij jouw inschrijving hoort.</p></section></ParticipantPageFrame>;
+  if (!group) return <ParticipantPageFrame eyebrow="Groepsindeling" title="Jullie groep komt eraan"><section className="participant-card"><Users /><h2>We delen zorgvuldig in</h2><p>Zodra starttijd en groep zijn gepubliceerd, verschijnt hier alleen de informatie die bij jouw inschrijving hoort.</p></section>{registration?.registration && <ParticipantTogether registrationId={registration.registration.id} />}</ParticipantPageFrame>;
   const participants = group.run?.participants ?? [];
   const visibleChildren = participants.length ? participants : (registration?.registration?.children ?? []).map((child) => ({ id: child.id, firstName: child.firstName, attendance: "aangemeld", isOwnChild: true, status: null }));
   return <ParticipantPageFrame eyebrow={`Groep ${group.group.code}`} title={group.access.leader ? "Jij houdt het overzicht." : "Samen op pad."}>
+    {registration?.registration && <ParticipantTogether registrationId={registration.registration.id} />}
     {groupId && <div className="participant-group-grid"><GroupIdentity groupId={groupId} systemCode={group.group.systemCode} displayName={group.group.displayName} version={group.group.version} canEdit={group.access.leader} onSaved={reload} /><GroupJourneyPreference groupId={groupId} onSaved={reload} /></div>}
     <div className="participant-stat-grid group-preference-stats">
       <StatusCard icon={Clock3} label="Voorkeur start" value={preferences?.preferredStartAt ? formatTime(preferences.preferredStartAt) : "Geen voorkeur"} />

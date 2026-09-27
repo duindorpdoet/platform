@@ -34,6 +34,7 @@ import { ContentManagement } from "@/components/admin/content-management";
 import { MessengerInbox } from "@/components/admin/messenger-inbox";
 import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
+import { TogetherManagement } from "@/components/admin/together-management";
 import { GroupCompositionBoard } from "@/components/admin/group-composition-board";
 import { NightMap } from "@/components/maps/night-map";
 import { PushNotificationSettings } from "@/components/pwa/pwa-experience";
@@ -43,6 +44,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type Dashboard = {
   event: {
+    id: string;
     title: string;
     phase: string;
     date: string;
@@ -174,6 +176,8 @@ type AdminRegistration = {
   groupCode: string | null;
   groupName: string;
   togetherCode: string | null;
+  partyId: string | null;
+  clusterReference: string | null;
   preferredStartAt: string | null;
   desiredEndAt: string | null;
   childCount: number;
@@ -209,6 +213,7 @@ const sectionMeta = {
   overview: { kicker: "De avond · voorbereiding", title: "De nacht in beeld.", description: "Alles wat nu aandacht vraagt, bij elkaar." },
   imports: { kicker: "Beheer · gegevens", title: "Imports", description: "Controleer bronbestanden voordat gegevens worden toegepast." },
   registrations: { kicker: "Deelnemers · groepen", title: "Inschrijvingen", description: "Iedere inschrijving direct in beeld, met groep en deelnemers." },
+  together: { kicker: "Deelnemers · samenloop", title: "Samenloop", description: "Beheer bevestigde samenlopen en beoordeel verzoeken om samen te lopen." },
   groups: { kicker: "Deelnemers · indeling", title: "Groepsindeling", description: "Maak wandelgroepen en zie direct hoeveel kinderen iedere groep telt." },
   payments: { kicker: "Deelnemers · betalingen", title: "Betalingen", description: "Betaallinks, ontvangsten en uitzonderingen per kind." },
   portals: { kicker: "De avond · voorbereiding", title: "Poorten", description: "Beoordeel huizen en houd hun gegevens actueel." },
@@ -254,6 +259,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "imports"
     | "registrations"
     | "groups"
+    | "together"
     | "payments"
     | "portals"
     | "planner"
@@ -266,6 +272,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     | "settings"
   >("overview");
   const canManageGroups = capabilities.includes("event_admin") || capabilities.includes("groups_manage");
+  const canManageTogether = canManageGroups || capabilities.includes("registration_manage");
   const canUseTickets = capabilities.includes("event_admin") || capabilities.includes("groups_manage") || capabilities.includes("live_support");
   const canUseLive = capabilities.includes("event_admin") || capabilities.includes("live_support");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -434,12 +441,12 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
   }, [load, loadLive, section]);
   useEffect(() => {
     const client = createClient();
-    if (!client || !portalRealtimeTopic) return;
+    if (!client || !portalRealtimeTopic || ["together", "groups", "registrations"].includes(section)) return;
     const channel = client.channel(portalRealtimeTopic, { config: { private: true } })
       .on("broadcast", { event: "snapshot_changed" }, () => void loadLive())
       .subscribe((status: string) => setLiveConnection(status === "SUBSCRIBED" ? "live" : status === "CHANNEL_ERROR" || status === "TIMED_OUT" ? "offline" : "connecting"));
     return () => { void client.removeChannel(channel); };
-  }, [liveConnectionRetry, loadLive, portalRealtimeTopic]);
+  }, [liveConnectionRetry, loadLive, portalRealtimeTopic, section]);
 
   async function dryRun(file: File) {
     const parsed = Papa.parse<Record<string, string>>(await file.text(), {
@@ -537,7 +544,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
     setRegistrationChanges(data as RegistrationChange[]);
   }
 
-  async function loadRegistrations() {
+  const loadRegistrations = useCallback(async () => {
     const client = createClient();
     if (!client) return;
     setRegistrationsLoading(true);
@@ -550,7 +557,18 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         "De inschrijvingen konden niet worden opgehaald. Controleer je beheerrechten of probeer opnieuw.",
       );
     setRegistrations((data ?? []) as AdminRegistration[]);
-  }
+  }, [eventSlug]);
+
+  useEffect(() => {
+    if (section !== "registrations") return;
+    const client = createClient();
+    if (!client) return;
+    if (!dashboard?.event.id) return;
+    const channel = client.channel(`admin-event:${dashboard.event.id}`, { config: { private: true } })
+      .on("broadcast", { event: "snapshot_changed" }, () => void loadRegistrations()).subscribe();
+    const poll = window.setInterval(() => void loadRegistrations(), 30_000);
+    return () => { window.clearInterval(poll); void client.removeChannel(channel); };
+  }, [dashboard?.event.id, loadRegistrations, section]);
 
   async function loadTogetherRequests() {
     const client = createClient();
@@ -1132,6 +1150,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
           <span>Inschrijvingen</span>
           {dashboard.counts.registrations > 0 && <b aria-hidden="true">{dashboard.counts.registrations}</b>}
         </button>
+        {canManageTogether && <button className={section === "together" ? "active" : ""} aria-current={section === "together" ? "page" : undefined} onClick={() => setSection("together")}><UsersRound />Samenloop</button>}
         {(capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && (
           <button
             className={section === "groups" ? "active" : ""}
@@ -1243,17 +1262,11 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         </button>
       </aside>
       <div className="admin-workspace" inert={mobileNavOpen}>
-        <div className="admin-topbar">
-          <button ref={headerMenuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => { navigationOpenerRef.current = headerMenuButtonRef.current; setMobileNavOpen(true); }}>
-            <Menu aria-hidden="true" />
-            <span>Menu</span>
-          </button>
-          <span className="admin-mobile-section">{sectionMeta[section].title}</span>
-          <span className="admin-desktop-crumb">De Duindorpse Poorten <i>›</i> Nachtregie</span>
-          <span>{dashboard.event.date} <i>·</i> {dashboard.event.phase}</span>
-        </div>
         <main id="admin-content" className="admin-content" tabIndex={-1}>
-        <div className="app-heading admin-page-heading row-between">
+        <header className="app-heading admin-page-heading row-between">
+          <button ref={headerMenuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => { navigationOpenerRef.current = headerMenuButtonRef.current; setMobileNavOpen(true); }}>
+            <Menu aria-hidden="true" /><span>Menu</span>
+          </button>
           <div>
             <p className="kicker">{sectionMeta[section].kicker}</p>
             <h1>{sectionMeta[section].title}</h1>
@@ -1263,7 +1276,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             <RefreshCw />
             Vernieuwen
           </button>
-        </div>
+        </header>
         {notice && (
           <div className="form-notice" role="status">
             {notice}
@@ -1391,7 +1404,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                   <div className="row-between"><div><p className="kicker">Direct handelen</p><h2>Dit vraagt nu aandacht.</h2></div><span className="registration-total">{liveAlerts.length + (dashboard.counts.pendingTogetherRequests ?? 0)} open</span></div>
                   {liveAlerts.length === 0 && !(dashboard.counts.pendingTogetherRequests ?? 0) ? <p className="form-notice">Geen veiligheidsmeldingen of samenloopverzoeken die nu actie vragen.</p> : <>
                     {liveAlerts.slice(0, 3).map((alert) => <div className="cockpit-action-row" key={alert.id}><AlertTriangle /><div><strong>{alert.code}</strong><span>{alert.message}</span></div><button className="text-link" onClick={() => setSection("live")}>Bekijk <ArrowRight /></button></div>)}
-                    {(dashboard.counts.pendingTogetherRequests ?? 0) > 0 && <div className="cockpit-action-row"><UsersRound /><div><strong>{dashboard.counts.pendingTogetherRequests} samenloopverzoek(en)</strong><span>Controleer groepsgrootte en de gezamenlijke indeling.</span></div><button className="text-link" onClick={() => { setSection("registrations"); void Promise.all([loadRegistrations(), loadTogetherRequests(), loadRegistrationChanges()]); }}>Bekijk <ArrowRight /></button></div>}
+                    {(dashboard.counts.pendingTogetherRequests ?? 0) > 0 && <div className="cockpit-action-row"><UsersRound /><div><strong>{dashboard.counts.pendingTogetherRequests} samenloopverzoek(en)</strong><span>Controleer groepsgrootte en de gezamenlijke indeling.</span></div><button className="text-link" onClick={() => { setSection("together"); }}>Bekijk <ArrowRight /></button></div>}
                   </>}
                 </section>
                 <section className="panel cockpit-live-log">
@@ -1584,7 +1597,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
             </label>
             {registrationsLoading ? <div className="registration-roster-empty"><RefreshCw className="spin" /> Inschrijvingen ophalen…</div> : (() => {
               const query = registrationSearch.trim().toLocaleLowerCase("nl");
-              const visible = registrations.filter((registration) => !query || [registration.groupName, registration.groupCode, registration.parentName, registration.parentEmail, registration.reference, ...registration.children.map((child) => child.name)].some((value) => value?.toLocaleLowerCase("nl").includes(query)));
+              const visible = registrations.filter((registration) => !query || [registration.groupName, registration.groupCode, registration.parentName, registration.parentEmail, registration.reference, registration.clusterReference, registration.togetherCode, ...registration.children.map((child) => child.name)].some((value) => value?.toLocaleLowerCase("nl").includes(query)));
               if (visible.length === 0) return <div className="registration-roster-empty"><UsersRound /><strong>{registrations.length ? "Geen inschrijvingen gevonden" : "Nog geen inschrijvingen"}</strong><span>{registrations.length ? "Pas je zoekterm aan." : "Een afgeronde deelnemersinschrijving verschijnt hier automatisch."}</span></div>;
               return <div className="registration-list">{visible.map((registration) => {
                 const open = selectedRegistrationId === registration.id;
@@ -1597,7 +1610,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
                   </div>
                   {open && <div className="registration-admin-details">
                     <div className="registration-contact-card"><p className="kicker">Contactpersoon</p><strong>{registration.parentName}</strong><a href={"mailto:" + registration.parentEmail}>{registration.parentEmail}</a>{registration.phone ? <a href={"tel:" + registration.phone.replace(/\s/g, "")}>{registration.phone}</a> : <span>Geen telefoonnummer vastgelegd</span>}</div>
-                    <div className="registration-preference-card"><p className="kicker">Voorkeuren</p><span><CalendarClock />Start: {registration.preferredStartAt ? new Date(registration.preferredStartAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "maakt niet uit"}</span><span><CalendarClock />Gewone poorten stoppen: {registration.desiredEndAt ? new Date(registration.desiredEndAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "nog niet gekozen"}</span>{registration.togetherCode && <span>Samenloopcode: <strong>{registration.togetherCode}</strong></span>}</div>
+                    <div className="registration-preference-card"><p className="kicker">Voorkeuren</p><span><CalendarClock />Start: {registration.preferredStartAt ? new Date(registration.preferredStartAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "maakt niet uit"}</span><span><CalendarClock />Gewone poorten stoppen: {registration.desiredEndAt ? new Date(registration.desiredEndAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "nog niet gekozen"}</span>{registration.clusterReference && <span>Samenloopnummer: <strong>{registration.clusterReference}</strong></span>}{registration.togetherCode && <span>Samenloopcode: <strong>{registration.togetherCode}</strong></span>}</div>
                     <div className="registration-children-card"><p className="kicker">Kinderen</p>{registration.children.map((child) => <div key={child.id}><strong>{child.name}</strong><span>{child.age === null ? "Leeftijd niet ingevuld" : child.age + " jaar"}{child.status !== "active" ? " · " + child.status : ""}</span>{child.accessibilityNote && <small>{child.accessibilityNote}</small>}</div>)}</div>
                   </div>}
                 </article>;
@@ -1608,7 +1621,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         {section === "registrations" && (
           <section className="panel">
             <p className="kicker">Samenloopcode & capaciteit</p>
-            <h2>Open samenloopverzoeken</h2>
+            <div className="row-between"><h2>Open samenloopverzoeken</h2><button type="button" className="btn outline" onClick={() => setSection("together")}>Alle samenlopen beheren</button></div>
             <p>
               Iedere geldige aanvraag wacht op een expliciet besluit. Controleer capaciteit,
               gezamenlijke tijden en veiligheid; een overschrijding vraagt bovendien een
@@ -1727,6 +1740,7 @@ export function AdminConsole({ eventSlug, capabilities }: { eventSlug: string; c
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
+        {section === "together" && canManageTogether && <TogetherManagement eventSlug={eventSlug} />}
         {section === "groups" && (capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && <GroupCompositionBoard eventSlug={eventSlug} />}
         {section === "planner" && <StartScheduleBoard eventSlug={eventSlug} maxGroupSize={dashboard.event.maxGroupSize} />}
         {section === "live" && (
