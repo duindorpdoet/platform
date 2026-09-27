@@ -1,4 +1,4 @@
-const VERSION = "duindorp-public-v4";
+const VERSION = "duindorp-public-v5";
 const ASSET_CACHE = `${VERSION}:assets`;
 const LEGACY_PUBLIC_CACHE_PREFIX = "duindorp-public-";
 const PRIVATE_CACHE_PREFIX = "duindorp-private";
@@ -13,7 +13,7 @@ const SAFE_ASSETS = [
   "/pwa/icons/pwa-512.png",
   "/pwa/icons/maskable-512.png",
 ];
-const PRIVATE_PREFIXES = ["/mijn-", "/omgeving", "/admin", "/api/", "/auth/", "/poortenboek"];
+const PRIVATE_PREFIXES = ["/mijn-", "/omgeving", "/admin", "/api/", "/auth/", "/poortenboek", "/uitnodiging"];
 
 function isPrivatePath(pathname) {
   return PRIVATE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -93,23 +93,28 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  event.waitUntil(self.registration.showNotification("De Duindorpse Poorten", {
-    body: "Er staat een nieuwe melding in je persoonlijke omgeving klaar.",
+  let payload = {};
+  try { payload = event.data?.json() ?? {}; } catch { /* Generic notification if a provider sent malformed data. */ }
+  const portal = payload.url === "/mijn-huis";
+  event.waitUntil(self.registration.showNotification(portal ? "De Poortkamer" : "De Duindorpse Poorten", {
+    body: portal && typeof payload.body === "string" ? payload.body.slice(0, 240) : "Er staat een nieuwe melding in je persoonlijke omgeving klaar.",
+    tag: portal && typeof payload.tag === "string" ? payload.tag.slice(0, 120) : undefined,
     icon: "/pwa/icons/pwa-192.png",
     badge: "/pwa/icons/pwa-192.png",
-    data: { url: "/omgeving" },
+    data: { url: portal ? "/mijn-huis" : "/omgeving" },
   }));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const destination = event.notification.data?.url === "/mijn-huis" ? "/mijn-huis" : "/omgeving";
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);
     if (existing) {
-      await existing.navigate("/omgeving");
+      await existing.navigate(destination);
       return existing.focus();
     }
-    return self.clients.openWindow("/omgeving");
+    return self.clients.openWindow(destination);
   })());
 });

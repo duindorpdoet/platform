@@ -125,6 +125,8 @@ jobs:
           node scripts/acceptance/poortenboek-concurrency.mjs
           NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 pnpm build
           pnpm exec playwright test --config playwright.poortenboek.config.ts
+          node scripts/acceptance/poortkamer-concurrency.mjs
+          pnpm exec playwright test --config playwright.poortkamer.config.ts
       - name: Lint database schemas
         run: pnpm exec supabase db lint --level warning
       - name: Stop local Supabase

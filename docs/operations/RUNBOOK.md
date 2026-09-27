@@ -36,4 +36,4 @@ Niet via een losse frontendvariabele. Eerst moeten echte operationele data, juri
 
 ## Retention
 
-`api.retention_preview` is bewust preview-only. Controleer aantallen en datum met een eventbeheerder voordat ooit een afzonderlijke verwijdermigratie wordt ontworpen. Productiedata wordt niet automatisch verwijderd door deze release.
+`api.retention_preview` is bewust preview-only. Controleer aantallen en datum met een eventbeheerder voordat ooit een afzonderlijke verwijdermigratie wordt ontworpen. Voor de oorspronkelijke operationele datasets blijft verwijdering een afzonderlijk besluit. De Poortkamer heeft expliciet automatische chatretentie: berichten, reacties en meldingen verdwijnen één kalendermaand na het evenement via `duindorp-poortkamer-maintenance`. Memberships en audits worden daardoor niet verwijderd. Zie [Poortkamer technisch rapport](../poortkamer/technical-report.md).

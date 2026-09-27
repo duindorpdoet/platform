@@ -1,3 +1,4 @@
+import { deliverPortalPushBatch } from "@/lib/pwa/portal-push";
 import { NextResponse } from "next/server";
 import { mailAllowlist, serverEnv } from "@/lib/config/server-env";
 import { ApiError } from "@/lib/http/api";
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
     }
   }
 
+  await deliverPortalPushBatch().catch(() => console.error("portal_push_worker_failed", { code: "DELIVERY_UNAVAILABLE" }));
   if (env.MAIL_MODE === "disabled") {
     return NextResponse.json({ claimed: 0, reason: "mail-disabled" });
   }
@@ -79,6 +81,15 @@ export async function POST(request: Request) {
 
   for (const row of rows) {
     try {
+      if (row.message_type === "portal_team_invite") {
+        const material = await supabase.schema("api").rpc("portal_invitation_mail_payload", { _invite_id: row.payload.inviteId });
+        if (material.error) throw material.error;
+        if (!material.data) {
+          await supabase.schema("api").rpc("worker_update_outbox", { _id: row.id, _status: "suppressed", _provider_id: null, _error_code: "INVITATION_UNAVAILABLE", _next_attempt_at: null });
+          continue;
+        }
+        row.payload = material.data;
+      }
       const rendered = renderTransactionalMail({
         messageType: row.message_type,
         payload: row.payload,

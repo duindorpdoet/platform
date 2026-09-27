@@ -77,12 +77,13 @@ test("the homeowner cockpit labels schedules as planned rather than live ETA", a
   requireLocalAuth();
   await authenticate(context, "owner@example.invalid");
   await page.goto("/omgeving/huiseigenaar/mijn-poort");
-
-  await expect(page.getByText("Dit is een geplande aankomst, geen live ETA.")).toBeVisible();
+  await page.getByRole("link", { name: "Open De Poortkamer", exact: true }).click();
   await expect(page.getByRole("button", { name: "Open" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Pauze", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Gesloten" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Veilig ontvangen" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gestopt" })).toBeVisible();
+  await page.getByRole("button", { name: "Bezoeken", exact: true }).click();
+  await expect(page.getByText("Aankomsttijden zijn geplande vensters. Alleen bevestigde scans tellen als ontvangen bezoek.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Geweest", exact: true })).toBeVisible();
   await assertReadableLayout(page);
 });
 

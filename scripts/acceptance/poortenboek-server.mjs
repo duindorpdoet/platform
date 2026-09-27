@@ -67,6 +67,22 @@ const database = createServer(
     incoming.pipe(upstream);
   },
 );
+// Relay private Realtime WebSockets as well as HTTP. No payloads or tokens are logged.
+database.on("upgrade", (incoming, socket, head) => {
+  const upstream = request({ hostname: localApi.hostname, port: localApi.port, path: incoming.url, method: "GET", headers: { ...incoming.headers, host: localApi.host } });
+  upstream.on("upgrade", (response, peer, peerHead) => {
+    const headers = Object.entries(response.headers).flatMap(([key, value]) => Array.isArray(value) ? value.map((item) => `${key}: ${item}`) : [`${key}: ${value}`]);
+    socket.write(`HTTP/1.1 101 Switching Protocols\r\n${headers.join("\r\n")}\r\n\r\n`);
+    if (head.length) peer.write(head);
+    if (peerHead.length) socket.write(peerHead);
+    socket.pipe(peer); peer.pipe(socket);
+    socket.on("error", () => peer.destroy()); peer.on("error", () => socket.destroy());
+    socket.on("close", () => peer.destroy()); peer.on("close", () => socket.destroy());
+  });
+  upstream.on("error", () => socket.destroy());
+  upstream.on("response", () => socket.destroy());
+  upstream.end();
+});
 database.listen(3444, "127.0.0.1");
 const server = createServer(
   { key: readFileSync(key), cert: readFileSync(cert) },
