@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-location-assign-relative-destination -- Changing child identity requires a full document request without retained private router state. */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, Copy, KeyRound, LogOut, RefreshCw } from "lucide-react";
 
@@ -12,6 +13,38 @@ type Child = {
 export function ParentPoortenboek() {
   const [children, setChildren] = useState<Child[]>([]);
   const [notice, setNotice] = useState("");
+  const [openingChildId, setOpeningChildId] = useState<string | null>(null);
+  const opening = useRef(false);
+  async function openBook(childId: string) {
+    if (opening.current) return;
+    opening.current = true;
+    setOpeningChildId(childId);
+    setNotice("");
+    let leaving = false;
+    try {
+      const result = await fetch("/api/poortenboek/parent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ action: "open", childId }),
+      });
+      if (!result.ok) {
+        setNotice(
+          "Dit Poortenboek kon niet worden geopend. Controleer of je nog bent ingelogd en probeer opnieuw.",
+        );
+        return;
+      }
+      window.location.assign("/poortenboek");
+      leaving = true;
+    } catch {
+      setNotice("Maak verbinding om het Poortenboek te openen.");
+    } finally {
+      if (!leaving) {
+        opening.current = false;
+        setOpeningChildId(null);
+      }
+    }
+  }
   const load = useCallback(async () => {
     try {
       const result = await fetch("/api/poortenboek/parent", {
@@ -25,7 +58,17 @@ export function ParentPoortenboek() {
   }, []);
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
+    const restored = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      opening.current = false;
+      setOpeningChildId(null);
+      void load();
+    };
+    window.addEventListener("pageshow", restored);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("pageshow", restored);
+    };
   }, [load]);
   if (!children.length && !notice) return null;
   return (
@@ -35,12 +78,19 @@ export function ParentPoortenboek() {
         <BookOpen size={25} /> Het Poortenboek
       </h2>
       <p>
-        Elk kind opent een eigen Poortenboek met een persoonlijke code. De code
-        geeft alleen toegang tot de kinderomgeving.
+        Open het Poortenboek van je kind direct op dit apparaat. Je blijft zelf
+        ingelogd als ouder. Met de persoonlijke code kan je kind ook op een ander
+        apparaat inloggen.
       </p>
       {notice && <p role="status">{notice}</p>}
       {children.map((child) => (
-        <ChildBook key={child.id} child={child} reload={load} />
+        <ChildBook
+          key={child.id}
+          child={child}
+          reload={load}
+          openingChildId={openingChildId}
+          openBook={openBook}
+        />
       ))}
     </section>
   );
@@ -48,9 +98,13 @@ export function ParentPoortenboek() {
 function ChildBook({
   child,
   reload,
+  openingChildId,
+  openBook,
 }: {
   child: Child;
   reload: () => Promise<void>;
+  openingChildId: string | null;
+  openBook: (childId: string) => Promise<void>;
 }) {
   const [code, setCode] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
@@ -132,6 +186,16 @@ function ChildBook({
         </output>
       )}
       <div className="poortenboek-parent-actions">
+        <button
+          type="button"
+          className="btn"
+          disabled={busy || openingChildId !== null}
+          onClick={() => void openBook(child.id)}
+          aria-label={`Open Poortenboek van ${child.firstName}`}
+        >
+          <BookOpen size={16} />
+          {openingChildId === child.id ? "Poortenboek openen…" : "Open Poortenboek"}
+        </button>
         <button
           type="button"
           className="btn outline"

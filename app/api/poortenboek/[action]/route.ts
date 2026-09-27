@@ -162,25 +162,35 @@ export async function POST(request: Request, context: Context) {
     if (action === "parent") {
       const data = z
         .object({
-          action: z.enum(["view", "renew", "revoke", "reset"]),
+          action: z.enum(["open", "view", "renew", "revoke", "reset"]),
           childId: z.uuid(),
           reason: z.string().min(10).max(500).optional(),
         })
         .parse(input);
+      const token = data.action === "open" ? newSessionToken() : null;
+      const previousToken = store.get(CHILD_COOKIE)?.value;
+      const rpcName = token ? "poortenboek_parent_open" : "poortenboek_parent";
       const args = {
         _actor: await parentActor(),
         _event_slug: serverEnv().EVENT_SLUG,
-        _action: data.action,
         _child_id: data.childId,
-        _reason: data.reason ?? null,
+        ...(token
+          ? {
+              _token_hash: tokenHash(token),
+              _previous_token_hash:
+                previousToken && /^[A-Za-z0-9_-]{43}$/.test(previousToken)
+                  ? tokenHash(previousToken)
+                  : null,
+            }
+          : { _action: data.action, _reason: data.reason ?? null }),
       };
-      let result = await childRpc("poortenboek_parent", args);
+      let result = await childRpc(rpcName, args);
       if (result.needsCode) {
         const { pepper, encryptionKey } = childSecrets();
         for (let attempt = 0; attempt < 12; attempt++) {
           const code = generateChildCode();
           try {
-            result = await childRpc("poortenboek_parent", {
+            result = await childRpc(rpcName, {
               ...args,
               _digest: codeDigest(code, pepper),
               _ciphertext: encryptValue(
@@ -200,6 +210,15 @@ export async function POST(request: Request, context: Context) {
               throw error;
           }
         }
+      }
+      if (token) {
+        if (!result.ok || !result.expiresAt) throw new Error("INVALID_SESSION");
+        store.set(CHILD_COOKIE, token, {
+          ...cookieOptions,
+          expires: new Date(result.expiresAt),
+        });
+        store.set(DEMO_COOKIE, "", { ...cookieOptions, maxAge: 0 });
+        return response({ ok: true });
       }
       if (result.ciphertext)
         return response({
