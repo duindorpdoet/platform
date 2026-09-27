@@ -29,6 +29,7 @@ import {
   UsersRound,
   WalletCards,
 } from "lucide-react";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AdminAccessManagement } from "@/components/admin/admin-access-management";
 import { PortalReviews } from "@/components/admin/portal-reviews";
 import { Redactiekamer } from "@/components/editorial/redactiekamer";
@@ -283,6 +284,9 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const canUseTickets = capabilities.includes("event_admin") || capabilities.includes("groups_manage") || capabilities.includes("live_support");
   const canUseLive = capabilities.includes("event_admin") || capabilities.includes("live_support");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const contentRef = useRef<HTMLElement>(null);
+  useEffect(() => { contentRef.current?.scrollTo({ top: 0 }); }, [section]);
   const navigationRef = useRef<HTMLElement>(null);
   const headerMenuButtonRef = useRef<HTMLButtonElement>(null);
   const bottomNavMoreButtonRef = useRef<HTMLButtonElement>(null);
@@ -1095,6 +1099,10 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     }
   }
 
+  const notificationCount = (canUseLive ? liveAlerts.length : 0)
+    + (canManageTogether ? dashboard?.counts.pendingTogetherRequests ?? 0 : 0)
+    + (canUseTickets ? dashboard?.counts.openTickets ?? 0 : 0);
+
   if (!dashboard)
     return (
       <div className="panel loading-state">
@@ -1271,11 +1279,31 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         </button>
       </aside>
       <div className="admin-workspace" inert={mobileNavOpen}>
-        <main id="admin-content" className="admin-content" tabIndex={-1}>
-        <header className="app-heading admin-page-heading row-between">
+        <header className="admin-appbar" aria-label="Nachtregie werkbalk">
           <button ref={headerMenuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => { navigationOpenerRef.current = headerMenuButtonRef.current; setMobileNavOpen(true); }}>
             <Menu aria-hidden="true" /><span>Menu</span>
           </button>
+          <Link href="/omgeving" className="admin-appbar-brand">Nachtregie</Link>
+          <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+            <DialogTrigger asChild>
+              <button type="button" className="admin-notifications-button" aria-label={`Meldingen openen${notificationCount ? `, ${notificationCount} open aandachtspunten` : ""}`}>
+                <BellRing aria-hidden="true" />
+                {notificationCount > 0 && <b aria-hidden="true">{notificationCount > 99 ? "99+" : notificationCount}</b>}
+              </button>
+            </DialogTrigger>
+            <DialogContent className="admin-notifications-dialog" showCloseButton={false}>
+              <DialogTitle>Meldingen</DialogTitle>
+              <DialogDescription>Open aandachtspunten voor de organisatie.</DialogDescription>
+              <DialogClose className="admin-notifications-close" aria-label="Meldingen sluiten"><X aria-hidden="true" /></DialogClose>
+              {notificationCount === 0 && <p>Er zijn op dit moment geen open aandachtspunten.</p>}
+              {canUseLive && liveAlerts.map((alert) => <button type="button" className="admin-notification-item" key={alert.id} onClick={() => { setSection("live"); setNotificationsOpen(false); }}><AlertTriangle aria-hidden="true" /><span><strong>{alert.code}</strong><small>{alert.message}</small></span><ArrowRight aria-hidden="true" /></button>)}
+              {canManageTogether && (dashboard.counts.pendingTogetherRequests ?? 0) > 0 && <button type="button" className="admin-notification-item" onClick={() => { setSection("together"); setNotificationsOpen(false); }}><UsersRound aria-hidden="true" /><span><strong>{dashboard.counts.pendingTogetherRequests} samenloopverzoek(en)</strong><small>Bekijk de aanvragen die op beoordeling wachten.</small></span><ArrowRight aria-hidden="true" /></button>}
+              {canUseTickets && (dashboard.counts.openTickets ?? 0) > 0 && <button type="button" className="admin-notification-item" onClick={() => { setSection("tickets"); setNotificationsOpen(false); }}><MessageSquare aria-hidden="true" /><span><strong>{dashboard.counts.openTickets} open gesprek(ken)</strong><small>Open de berichten van deelnemers.</small></span><ArrowRight aria-hidden="true" /></button>}
+            </DialogContent>
+          </Dialog>
+        </header>
+        <main ref={contentRef} id="admin-content" className="admin-content" tabIndex={-1}>
+        <header className="app-heading admin-page-heading row-between">
           <div>
             <p className="kicker">{sectionMeta[section].kicker}</p>
             <h1>{sectionMeta[section].title}</h1>

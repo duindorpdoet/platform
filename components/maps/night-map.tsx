@@ -67,7 +67,7 @@ export function NightMap({
           ? publicMapZoom(variant, mobile)
           : 14.8,
         attributionControl: { compact: false },
-        cooperativeGestures: variant === "preview",
+        cooperativeGestures: variant === "preview" || variant === "admin",
       });
       mapRef.current = map;
       fittedPortalsRef.current = "";

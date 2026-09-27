@@ -76,6 +76,7 @@ test("the unified mobile participant environment keeps role navigation and payme
 test("the homeowner cockpit labels schedules as planned rather than live ETA", async ({ context, page }) => {
   requireLocalAuth();
   await authenticate(context, "owner@example.invalid");
+  await page.addLocatorHandler(page.getByRole("button", { name: "Installatievenster sluiten" }), async (close) => close.click());
   await page.goto("/omgeving/huiseigenaar/mijn-poort");
   await page.getByRole("link", { name: "Open De Poortkamer", exact: true }).click();
   await expect(page.getByRole("button", { name: "Open" })).toBeVisible();
@@ -1027,7 +1028,8 @@ for (const width of [320, 375, 390, 430, 900]) {
     const navigation = page.locator("#admin-navigation");
     await expect(opener).toBeVisible();
     await expect(navigation).toBeHidden();
-    await expect(page.locator(".admin-topbar")).toHaveCount(0);
+    await expect(page.getByRole("banner", { name: "Nachtregie werkbalk" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Meldingen openen/ })).toBeVisible();
     await expect(page.locator(".admin-page-heading")).toHaveCount(1);
     await assertReadableLayout(page);
     await opener.click();
@@ -1245,4 +1247,97 @@ test("group board rejects unsafe drops using the same rules as the move selector
   await drop("assigned", "unassigned");
   await expect.poll(() => moves.length).toBe(3);
   expect(moves[2]._target_group_id).toBeNull();
+});
+
+
+test("mobile admin scroll reaches complete panels while its toolbar and dock stay visible", async ({ context, page, browserName }, testInfo) => {
+  requireLocalAuth();
+  await page.setViewportSize({ width: 390, height: 660 });
+  await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  const content = page.locator("#admin-content");
+  const toolbar = page.getByRole("banner", { name: "Nachtregie werkbalk" });
+  const dock = page.getByRole("navigation", { name: "Snelle organisatienavigatie" });
+  await expect(toolbar).toBeVisible();
+  const toolbarTop = (await toolbar.boundingBox())!.y;
+  for (const section of ["Cockpit", "Poorten", "Inschrijvingen", "Betalingen", "Instellingen"]) {
+    await selectAdminSection(page, section);
+    if (section === "Cockpit") {
+      const canvas = page.locator(".cockpit-map-panel .maplibregl-canvas");
+      await expect(canvas).toBeVisible();
+      await expect(canvas).toHaveCSS("touch-action", "pan-x pan-y");
+      await canvas.scrollIntoViewIfNeeded();
+      const before = await content.evaluate((el) => el.scrollTop);
+      const bounds = await canvas.boundingBox();
+      const area = await content.boundingBox();
+      const x = bounds!.x + bounds!.width / 2;
+      const y = Math.min(bounds!.y + bounds!.height - 20, area!.y + area!.height - 40);
+      if (browserName === "chromium" && testInfo.project.use.hasTouch) {
+        const touch = await context.newCDPSession(page);
+        await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+        for (let step = 1; step <= 6; step++) {
+          await touch.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: y - step * 30 }] });
+          await page.waitForTimeout(20);
+        }
+        await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        await touch.detach();
+      } else if (!(browserName === "webkit" && testInfo.project.use.isMobile)) {
+        await page.mouse.move(x, y);
+        await page.mouse.wheel(0, 180);
+      }
+      // Playwright's mobile WebKit supports neither wheel input nor touch swipes.
+      // It still checks native pan permissions above and the full scroll geometry below.
+      if (!(browserName === "webkit" && testInfo.project.use.isMobile)) {
+        await expect.poll(() => content.evaluate((el) => el.scrollTop)).toBeGreaterThan(before + 20);
+      }
+    }
+    if (section === "Poorten") {
+      await expect(page.locator(".portal-management")).toBeVisible();
+      await page.getByRole("tab", { name: /^Actieve poorten/ }).click();
+      await expect(page.locator(".portal-list-row").first()).toBeVisible();
+      await expect.poll(() => page.locator(".portal-management").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(2);
+    }
+    await content.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    await expect.poll(() => content.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    const bounds = await content.boundingBox();
+    const lastBottom = await content.locator(":scope > :last-child").evaluate((el) => el.getBoundingClientRect().bottom);
+    expect(lastBottom).toBeLessThanOrEqual(bounds!.y + bounds!.height + 2);
+    expect((await toolbar.boundingBox())!.y).toBeCloseTo(toolbarTop, 0);
+    expect(bounds!.y).toBeGreaterThanOrEqual((await toolbar.boundingBox())!.y + (await toolbar.boundingBox())!.height - 1);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual((await dock.boundingBox())!.y + 1);
+    await expect(page.getByRole("button", { name: /^Meldingen openen/ })).toBeInViewport();
+    await expect(dock.getByRole("button", { name: "Meer", exact: true })).toBeInViewport();
+    await assertReadableLayout(page);
+    if (section === "Poorten") await page.screenshot({ path: testInfo.outputPath("mobile-admin-portals-scrolled.png") });
+  }
+  await page.setViewportSize({ width: 320, height: 500 });
+  await expect(toolbar).toBeInViewport();
+  await expect(dock).toBeInViewport();
+  await assertReadableLayout(page);
+});
+
+test("mobile admin notification bell opens actionable existing alerts and restores focus", async ({ context, page }, testInfo) => {
+  requireLocalAuth();
+  await page.setViewportSize({ width: 390, height: 660 });
+  await authenticate(context, "admin@example.invalid");
+  await page.route("**/rest/v1/rpc/admin_dashboard", async (route) => {
+    const response = await route.fetch();
+    const data = await response.json();
+    data.counts.pendingTogetherRequests = 1;
+    await route.fulfill({ response, json: data });
+  });
+  await page.goto("/admin");
+  const bell = page.getByRole("button", { name: /^Meldingen openen/ });
+  await bell.click();
+  const dialog = page.getByRole("dialog", { name: "Meldingen", exact: true });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(bell).toBeFocused();
+  await bell.click();
+  await page.screenshot({ path: testInfo.outputPath("mobile-admin-notifications.png") });
+  await dialog.getByRole("button", { name: /1 samenloopverzoek/ }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator(".admin-page-heading h1")).toHaveText("Samenloop");
+  await expect.poll(() => page.locator("#admin-content").evaluate((el) => el.scrollTop)).toBe(0);
 });
