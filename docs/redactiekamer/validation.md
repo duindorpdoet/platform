@@ -31,16 +31,21 @@ Gecontroleerd op 27 september 2026:
 
 | Controle | Resultaat |
 | --- | --- |
-| `pnpm verify` | Geslaagd: 243 tests in 43 bestanden; lint, TypeScript, build en scan van 987 client/server-artifacts |
+| `pnpm verify` | CI geslaagd: 223 unieke tests in 38 bestanden; lint, TypeScript, build en artifactscan. Lokale telling: 243 tests door 20 dubbele mailtests via de Supabase-symlink |
 | Reset + volledige pgTAP-suite | Geslaagd: 1.343 checks in 53 bestanden |
 | Database-lint | Geen nieuwe waarschuwingen; één bestaande ongebruikte variabele |
 | Echte parallelle transacties | Alle achtvoudige publicatie-, edit-, claim- en campagneproeven geslaagd |
 | Redactionele browserflow | 8 checks geslaagd: volledige flow en beperkte redacteurrechten op desktop, Android/Chromium, iPhone/WebKit en 320px/reduced motion |
 | Bestaande authenticated-live | Alle 31 flows geslaagd, inclusief 320px en 200% tekst |
 | Mobiele PWA | Beide flows geslaagd met een lokale publieke VAPID-testkey; geen externe push |
+| Volledige CI-browsercontrole | 147 geslaagde checks: 46 publiek, 48 ingelogde portalen, 12 mobiele samenloop, 2 PWA, 16 Poortenboek, 15 Poortkamer en 8 redactioneel |
 | Lighthouse 13, `/nieuws` | Toegankelijkheid 100, best practices 100, SEO 100; [rapport](lighthouse.json) |
 
 De database- en browsersuites moeten na elkaar draaien: de bestaande authenticated tests muteren dezelfde seedaccounts, capabilities en groepsruns. CI draait de bestaande authenticated suite daarom met één worker; de expliciete concurrencyproeven blijven parallel. De extra publicatie-/verzendrechten zijn ook opgenomen in de bestaande grant/revoke-browsertest.
+
+[Volledige CI-run](https://github.com/duindorpdoet/platform/actions/runs/36340752710) is groen. De openbare CI-job slaat de suites die een database vereisen over; de databasejob voert die daadwerkelijk uit.
+
+De staging-smoketest is ook rechtstreeks geslaagd voor de uitgerolde applicatie: juiste revision, openbare nieuwspagina, afgeschermde privéfeeds/API/media en no-store. Het deploymentcontrolescript leest responses volledig uit en begrenst netwerkwachttijd, zodat een succesvolle controle ook afsluit.
 
 Screenshots staan onder `docs/screenshots/redactiekamer/` en bevatten uitsluitend fictieve lokale testinhoud. Voorbeelden:
 
