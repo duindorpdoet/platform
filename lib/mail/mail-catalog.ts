@@ -37,6 +37,12 @@ export const MAIL_MESSAGE_TYPES = [
   "messenger_incoming_admin",
   "messenger_admin_reply",
   "participant_update",
+  "portal_team_invite",
+  "portal_team_accepted",
+  "portal_team_role_changed",
+  "portal_team_revoked",
+  "portal_urgent_announcement",
+
 ] as const;
 
 export type MailMessageType = typeof MAIL_MESSAGE_TYPES[number];
@@ -246,6 +252,26 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     kind: "group", subject: "Je hebt een antwoord van de organisatie", preheader: "Open je bericht in de persoonlijke omgeving.", eyebrow: "Hulp onderweg", title: "Er staat een antwoord klaar.",
     paragraphs: (payload) => [`${greeting(payload)}de organisatie heeft gereageerd op jouw bericht. Open het gesprek om het antwoord te lezen en te reageren. Je bericht blijft in jouw persoonlijke inbox staan.`],
     action: { label: "Open mijn berichten", path: "/omgeving" }, footerReason: "Je ontvangt deze e-mail omdat de organisatie jouw gesprek heeft beantwoord.",
+  },
+  portal_team_invite: {
+    kind: "host", subject: "Een sleutel voor De Poortkamer", preheader: "Jullie poortteam nodigt je uit.", eyebrow: "De Poortkamer", title: "Er ligt een sleutel voor je klaar.",
+    paragraphs: () => ["Open deze persoonlijke uitnodiging en bevestig precies het e-mailadres waarop je dit bericht ontving. De link is zeven dagen geldig en kan één keer worden aangenomen. Deel hem niet met anderen."], action: { label: "Neem je sleutel aan", path: "/mijn-huis" }, footerReason: "Je ontvangt dit bericht vanwege je poortteam of een persoonlijke uitnodiging.",
+  },
+  portal_team_accepted: {
+    kind: "host", subject: "Een Poortwachter is erbij", preheader: "Een uitnodiging is aangenomen.", eyebrow: "De Poortkamer", title: "Jullie team is aangevuld.",
+    paragraphs: () => ["Een uitgenodigde Poortwachter heeft de sleutel aangenomen. Bekijk jullie team en de toegekende rol in De Poortkamer."], action: { label: "Bekijk het team", path: "/mijn-huis" }, footerReason: "Je ontvangt dit bericht vanwege je poortteam of een persoonlijke uitnodiging.",
+  },
+  portal_team_role_changed: {
+    kind: "host", subject: "Je rol in De Poortkamer is gewijzigd", preheader: "Controleer je actuele toegangsrechten.", eyebrow: "De Poortkamer", title: "Je sleutel heeft nieuwe rechten.",
+    paragraphs: () => ["De hoofdpoortwachter of organisatie heeft jouw rol gewijzigd. Je actuele rechten staan in De Poortkamer."], action: { label: "Bekijk mijn rol", path: "/mijn-huis" }, footerReason: "Je ontvangt dit bericht vanwege je poortteam of een persoonlijke uitnodiging.",
+  },
+  portal_team_revoked: {
+    kind: "host", subject: "Je toegang tot de poort is ingetrokken", preheader: "Een belangrijke wijziging in je toegang.", eyebrow: "De Poortkamer", title: "Een sleutel is ingetrokken.",
+    paragraphs: () => ["Je toegang tot deze poort is ingetrokken. Denk je dat dit een vergissing is? Neem contact op met de organisatie. Je andere deelnames blijven beschikbaar."], action: { label: "Mijn omgeving", path: "/mijn-huis" }, footerReason: "Je ontvangt dit bericht vanwege je poortteam of een persoonlijke uitnodiging.",
+  },
+  portal_urgent_announcement: {
+    kind: "host", subject: "Belangrijk bericht voor Poortwachters", preheader: "Open De Poortkamer voor de actuele mededeling.", eyebrow: "De Poortkamer", title: "De Omroeper vraagt je aandacht.",
+    paragraphs: () => ["Er staat een urgente mededeling van de organisatie in De Poortkamer. Lees de actuele informatie voordat je verdergaat."], action: { label: "Lees de mededeling", path: "/mijn-huis" }, footerReason: "Je ontvangt dit bericht vanwege je poortteam of een persoonlijke uitnodiging.",
   },
   participant_update: {
     kind: "generic", subject: "Bericht van de organisatie", preheader: "Een nieuw bericht van de organisatie.", eyebrow: "Bericht van de organisatie", title: "Er is een nieuwe update.",

@@ -22,32 +22,23 @@ test("homeowner controls, profile and support fit 320, 375, 390 and 430 pixel sc
     await page.setViewportSize({ width, height: 820 });
     for (const path of ["/omgeving/huiseigenaar/mijn-poort", "/mijn-huis"]) {
       await page.goto(path);
-      await expect(page.getByRole("heading", { name: "Veilig ontvangen", exact: true })).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Werk jullie poort uit", exact: true })).toBeVisible();
+      if (path.startsWith("/omgeving")) {
+        await expect(page.getByRole("link", { name: "Open De Poortkamer", exact: true })).toBeVisible();
+        await page.getByRole("link", { name: "Open De Poortkamer", exact: true }).click();
+      }
+      await expect(page.getByRole("heading", { name: "De nacht wacht op jullie.", exact: true })).toBeVisible();
       await assertReadableLayout(page);
-      const overflow = await page.locator(".homeowner-cockpit, .owner-profile").evaluateAll((roots) => roots.flatMap((root) => [...root.querySelectorAll<HTMLElement>("button, input, textarea, select, h2, h3, a")]).filter((element) => {
-        if (!element.checkVisibility()) return false;
-        const bounds = element.getBoundingClientRect();
-        return bounds.left < -1 || bounds.right > document.documentElement.clientWidth + 1;
-      }).map((element) => element.getAttribute("aria-label") || element.textContent?.slice(0, 70) || element.tagName));
-      expect(overflow, `${path} at ${width}px`).toEqual([]);
-      const statusButtons = page.locator(".owner-state-actions button");
-      await expect(statusButtons).toHaveCount(3);
-      for (const button of await statusButtons.all()) {
+      for (const label of ["Open", "Pauze", "Gestopt"]) {
+        const button = page.getByRole("button", { name: label, exact: true });
         const bounds = await button.boundingBox();
         expect(bounds?.height).toBeGreaterThanOrEqual(44);
         expect(bounds?.width).toBeGreaterThanOrEqual(44);
       }
-      const contact = page.getByLabel("Naam contactpersoon *", { exact: true });
-      await expect(contact).toHaveCSS("font-size", "16px");
-      const submit = page.getByRole("button", { name: "Indienen voor beoordeling", exact: true });
-      await submit.evaluate((element) => element.scrollIntoView({ block: "end" }));
-      const overlap = await submit.evaluate((element) => {
-        const action = element.getBoundingClientRect();
-        const launcher = document.querySelector(".messenger-launcher")?.getBoundingClientRect();
-        return Boolean(launcher && action.left < launcher.right && action.right > launcher.left && action.top < launcher.bottom && action.bottom > launcher.top);
-      });
-      expect(overlap, `Profile submit remains clear of support at ${path}, ${width}px`).toBe(false);
+      await page.getByRole("button", { name: "Meer", exact: true }).click();
+      await page.getByRole("button", { name: "Poortgegevens wijzigen", exact: true }).click();
+      const edit = page.getByRole("dialog", { name: "Jullie poortgegevens" });
+      await expect(edit.getByLabel("Poortnaam")).toHaveCSS("font-size", "16px");
+      await edit.getByRole("button", { name: "Annuleren" }).click();
       await page.locator(".messenger-launcher").click();
       const dialog = page.getByRole("dialog", { name: "Hulp van de organisatie", exact: true });
       await expect(dialog).toBeVisible();

@@ -396,6 +396,7 @@ function HomeownerSection({ context, eventSlug, userId, role, section }: { conte
     }
   }, [eventSlug, role.portalId]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
+  if (role.portalId || portal?.portal) return <ParticipantPageFrame eyebrow="Jullie plek achter de poort" title="De Poortkamer"><p>Nachtwacht, bezoeken, jullie team en berichten komen samen in De Poortkamer.</p><Link className="btn" href="/mijn-huis">Open De Poortkamer</Link></ParticipantPageFrame>;
   if (section === "updates") return <UpdatesPanel eventSlug={eventSlug} role="homeowner" />;
   if (section === "meer") return <MorePage context={context} eventSlug={eventSlug} userId={userId} role="homeowner" />;
   if (section === "verwacht") return <ArrivalsPage arrivals={arrivals} />;

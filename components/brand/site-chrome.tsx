@@ -22,6 +22,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const isPortal = protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
   const isParticipantEnvironment = pathname.startsWith("/omgeving");
 
+  if (pathname.startsWith("/mijn-huis")) return <><a className="skip-link" href="#poortkamer-content">Ga naar De Poortkamer</a>{children}<MotionToggle /></>;
+
   if (pathname.startsWith("/poortenboek")) return <><a className="skip-link" href="#poortenboek-content">Ga naar jouw Poortenboek</a>{children}<MotionToggle /></>;
 
   if (pathname.startsWith("/admin")) {

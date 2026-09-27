@@ -18,6 +18,8 @@ describe("PWA privacy and installation contract", () => {
     const worker = readFileSync("public/sw.js", "utf8");
     expect(worker).toContain('"/omgeving"');
     expect(worker).toContain('"/api/"');
+    expect(worker).toContain('"/uitnodiging"');
+    expect(worker).toContain('"/mijn-"');
     expect(worker).toContain('fetch(event.request, { cache: "no-store" })');
     expect(worker).not.toMatch(/cache\.put\([^\n]*(omgeving|api|document)/);
     expect(worker).toContain('self.addEventListener("push"');

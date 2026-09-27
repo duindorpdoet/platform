@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   // Secure-cookie child flows run in the dedicated local HTTPS suite.
-  testIgnore: "poortenboek.spec.ts",
+  testIgnore: ["poortenboek.spec.ts", "poortkamer.spec.ts"],
   outputDir: "test-results/playwright",
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,

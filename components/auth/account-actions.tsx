@@ -14,8 +14,8 @@ export function SignOutButton() {
     clearPrivateSnapshots();
     if ("serviceWorker" in navigator && "PushManager" in window) {
       try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
+        const registration = await navigator.serviceWorker.getRegistration();
+        const subscription = await registration?.pushManager.getSubscription();
         if (subscription) {
           await fetch("/api/push/subscription", {
             method: "DELETE",
