@@ -10,8 +10,11 @@ async function get(path, init = {}) {
   let lastError;
   for (let attempt = 1; attempt <= 8; attempt += 1) {
     try {
-      const response = await fetch(`${origin}${path}`, { redirect: "manual", ...init });
-      if (response.status >= 500) throw new Error(`HTTP ${response.status}`);
+      const response = await fetch(`${origin}${path}`, { redirect: "manual", signal: AbortSignal.timeout(15_000), ...init });
+      if (response.status >= 500) {
+        await response.body?.cancel();
+        throw new Error(`HTTP ${response.status}`);
+      }
       return response;
     } catch (error) {
       lastError = error;
@@ -37,6 +40,7 @@ if (
 for (const path of ["/", "/verhaal", "/werelden", "/kaart", "/faq", "/contact", "/sponsoren", "/privacy", "/voorwaarden", "/toegankelijkheid"]) {
   const response = await get(path);
   if (!response.ok) throw new Error(`Public smoke test failed for ${path} (${response.status}).`);
+  await response.arrayBuffer();
 }
 
 const manifestResponse = await get("/manifest.webmanifest");
@@ -48,12 +52,14 @@ if (manifest.id !== "/omgeving" || manifest.start_url !== "/omgeving" || !manife
 for (const path of ["/sw.js", "/offline.html", "/pwa/icons/pwa-192.png", "/pwa/icons/pwa-512.png", "/pwa/icons/maskable-512.png", "/pwa/icons/apple-touch-icon-180.png"]) {
   const response = await get(path);
   if (!response.ok) throw new Error(`PWA asset smoke test failed for ${path} (${response.status}).`);
+  await response.arrayBuffer();
 }
 
 for (const path of ["/mijn-inschrijving", "/mijn-huis", "/mijn-groep", "/admin"]) {
   const response = await get(path);
   if (![302, 307, 308].includes(response.status)) throw new Error(`Protected route ${path} did not redirect.`);
   if (!response.headers.get("cache-control")?.includes("no-store")) throw new Error(`Protected route ${path} is cacheable.`);
+  await response.arrayBuffer();
 }
 
 console.log(`${target} deployment ${process.env.GITHUB_SHA} passed its public and protected-route smoke tests.`);

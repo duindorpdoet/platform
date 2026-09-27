@@ -100,6 +100,7 @@ Bestanden van deze release ten opzichte van staging `d7604fbc`. Screenshots beva
 - `scripts/acceptance/editorial-concurrency.mjs`
 - `scripts/acceptance/scan-client-artifacts.mjs`
 - `scripts/deploy/validate-environment.mjs`
+- `scripts/deploy/verify-deployment.mjs`
 - `supabase/functions/send-email-hook/index.ts`
 - `supabase/functions/send-email-hook/send.ts`
 - `supabase/functions/send-email-hook/transactional.ts`
