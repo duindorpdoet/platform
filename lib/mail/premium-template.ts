@@ -1,3 +1,6 @@
+import { renderEmailBlocks } from "@/lib/editorial/email-blocks";
+import { richText, type RichNode } from "@/lib/editorial/content";
+
 export type MailKind = "otp" | "confirmation" | "payment" | "reminder" | "route" | "group" | "host" | "sponsor" | "admin" | "generic";
 
 export type MailDetail = { label: string; value: string };
@@ -11,6 +14,8 @@ export type PremiumMailContent = {
   title: string;
   paragraphs: string[];
   hero?: boolean;
+  heroAlt?: string;
+  editorial?: { body: RichNode; mediaUrls: Record<string, string>; closing: string; unsubscribeUrl: string; preferencesUrl: string };
   details?: MailDetail[];
   notice?: { title: string; text: string };
   primaryAction?: MailAction;
@@ -74,7 +79,7 @@ function safeUrl(value: string, hosts: string[], field: string) {
   } catch {
     throw new InvalidMailTemplateError(`Invalid ${field}`);
   }
-  if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443") || !hosts.includes(url.hostname)) {
+  if (url.protocol !== "https:" || url.username || url.password || !hosts.includes(url.host)) {
     throw new InvalidMailTemplateError(`Unapproved ${field}`);
   }
 }
@@ -121,6 +126,10 @@ function validateContent(content: PremiumMailContent, brand: PremiumMailBrand) {
   safeUrl(brand.privacyUrl, brand.allowedLinkHosts, "privacy URL");
   safeUrl(brand.logoUrl, brand.allowedImageHosts, "logo URL");
   if (content.hero && content.kind !== "otp") safeUrl(brand.heroUrl, brand.allowedImageHosts, "hero URL");
+  if (content.editorial) {
+    safeUrl(content.editorial.unsubscribeUrl, brand.allowedLinkHosts, "unsubscribe URL");
+    safeUrl(content.editorial.preferencesUrl, brand.allowedLinkHosts, "preferences URL");
+  }
   if (content.primaryAction) {
     required(content.primaryAction.label, "action label", 60);
     safeUrl(content.primaryAction.url, brand.allowedLinkHosts, "action URL");
@@ -157,12 +166,12 @@ export function renderPremiumEmail(content: PremiumMailContent, brand: PremiumMa
     : "";
   const contentHtml = `<p style="margin:0 0 16px;font:700 10px/18px Arial,Helvetica,sans-serif;letter-spacing:2.8px;text-transform:uppercase;color:${COLORS.gold};">${escapeHtml(content.eyebrow)}</p>
 <h1 class="headline" style="margin:0 0 20px;font:400 ${otp ? 36 : 42}px/${otp ? 43 : 49}px Georgia,'Times New Roman',serif;letter-spacing:-1.2px;color:${COLORS.text};">${escapeHtml(content.title)}</h1>
-${content.paragraphs.map(paragraph).join("")}${codeBlock}${detailsBlock(content.details)}${notice}${actionBlock(content.primaryAction)}
+${content.paragraphs.map(paragraph).join("")}${content.editorial ? renderEmailBlocks(content.editorial.body, content.editorial.mediaUrls, brand.homeUrl) : ""}${codeBlock}${detailsBlock(content.details)}${notice}${actionBlock(content.primaryAction)}${content.editorial?.closing ? paragraph(content.editorial.closing) : ""}
 ${content.primaryAction ? `<p style="margin:15px 0 0;font:11px/18px Arial,Helvetica,sans-serif;color:${COLORS.muted};word-break:break-all;overflow-wrap:anywhere;">Werkt de knop niet? Open deze link:<br><a href="${escapeHtml(content.primaryAction.url)}" style="color:${COLORS.muted};text-decoration:underline;">${escapeHtml(content.primaryAction.url)}</a></p>` : ""}
 <div style="border-top:1px solid ${COLORS.line};margin:30px 0 0;padding:25px 0 0;"><p style="margin:0 0 9px;font:15px/25px Arial,Helvetica,sans-serif;color:${COLORS.text};">${otp ? "Tot in de wijk," : "Tot tussen de poorten,"}</p><p style="margin:0;font:400 21px/28px Georgia,'Times New Roman',serif;color:${COLORS.gold};">Team Duindorpse Poorten</p></div>`;
 
   const hero = content.hero && !otp
-    ? row(`<img class="hero-image" src="${escapeHtml(brand.heroUrl)}" width="640" height="360" alt="Duindorp bij avond met warme ramen en Halloweenlichtjes." style="display:block;width:100%;max-width:640px;height:auto;color:${COLORS.text};font:14px/22px Arial,sans-serif;">`, `padding:0;background:${COLORS.inset};`)
+    ? row(`<img class="hero-image" src="${escapeHtml(brand.heroUrl)}" width="640" height="360" alt="${escapeHtml(content.heroAlt ?? "Duindorp bij avond met warme ramen en Halloweenlichtjes.")}" style="display:block;width:100%;max-width:640px;height:auto;color:${COLORS.text};font:14px/22px Arial,sans-serif;">`, `padding:0;background:${COLORS.inset};`)
     : "";
   const shellRows =
     row("", "height:3px;font-size:1px;line-height:3px;background:#e3b68e;", 'height="3" bgcolor="#e3b68e"')
@@ -171,7 +180,7 @@ ${content.primaryAction ? `<p style="margin:15px 0 0;font:11px/18px Arial,Helvet
     + row(contentHtml, `padding:38px 42px 37px;text-align:left;background:${COLORS.panel};`, 'class="body-pad"')
     + row(`<p style="margin:0 0 11px;font:400 22px/30px Georgia,serif;color:${COLORS.text};">De mooiste magie maken we samen.</p><p style="margin:0;font:13px/22px Arial,Helvetica,sans-serif;color:${COLORS.muted};">Een vraag? <a href="mailto:${escapeHtml(brand.supportEmail)}" style="color:${COLORS.gold};">${escapeHtml(brand.supportEmail)}</a></p>`, `padding:26px 42px;background:${COLORS.inset};border-top:1px solid ${COLORS.line};`, 'class="footer-pad"');
   const shell = table(shellRows, `class="email-shell" align="center" width="640" bgcolor="${COLORS.panel}" style="width:640px;max-width:100%;background:${COLORS.panel};border:1px solid ${COLORS.line};border-radius:6px;overflow:hidden;"`);
-  const footerContent = `<p style="margin:0 0 12px;font:12px/21px Arial,Helvetica,sans-serif;color:#a5aab3;">${escapeHtml(content.footerReason)}</p><p style="margin:0 0 13px;font:12px/22px Arial,Helvetica,sans-serif;"><a href="${escapeHtml(brand.homeUrl)}" style="color:#c5b8a9;">Website</a>&nbsp; · &nbsp;<a href="${escapeHtml(brand.contactUrl)}" style="color:#c5b8a9;">Contact</a>&nbsp; · &nbsp;<a href="${escapeHtml(brand.privacyUrl)}" style="color:#c5b8a9;">Privacy</a></p>${content.reference ? `<p style="margin:8px 0 0;font:10px/16px Arial;color:#a5aab3;">Referentie ${escapeHtml(content.reference)}</p>` : ""}`;
+  const footerContent = `${content.editorial ? `<p style="font:14px/24px Arial,sans-serif;"><a href="${escapeHtml(content.editorial.unsubscribeUrl)}" style="color:#efbd8c;">Afmelden voor Nachtpost</a> · <a href="${escapeHtml(content.editorial.preferencesUrl)}" style="color:#efbd8c;">Communicatievoorkeuren</a></p>` : ""}<p style="margin:0 0 12px;font:12px/21px Arial,Helvetica,sans-serif;color:#a5aab3;">${escapeHtml(content.footerReason)}</p><p style="margin:0 0 13px;font:12px/22px Arial,Helvetica,sans-serif;"><a href="${escapeHtml(brand.homeUrl)}" style="color:#c5b8a9;">Website</a>&nbsp; · &nbsp;<a href="${escapeHtml(brand.contactUrl)}" style="color:#c5b8a9;">Contact</a>&nbsp; · &nbsp;<a href="${escapeHtml(brand.privacyUrl)}" style="color:#c5b8a9;">Privacy</a></p>${content.reference ? `<p style="margin:8px 0 0;font:10px/16px Arial;color:#a5aab3;">Referentie ${escapeHtml(content.reference)}</p>` : ""}`;
   const footer = table(row(footerContent, "padding:25px 20px;text-align:center;"), 'align="center" style="max-width:640px;"');
   const preheader = `<div style="display:none;font-size:1px;color:${COLORS.background};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(content.preheader)}&nbsp;&zwnj;&nbsp;&zwnj;</div>`;
   const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"><meta name="format-detection" content="telephone=no,date=no,address=no,email=no"><meta name="color-scheme" content="dark"><title>${escapeHtml(content.subject)}</title><style>html,body{margin:0!important;padding:0!important;width:100%!important;background:${COLORS.background}}table,td{mso-table-lspace:0;mso-table-rspace:0}table{border-spacing:0}img{border:0;outline:none;text-decoration:none}.ExternalClass{width:100%}@media only screen and (max-width:640px){.outer-space{padding:14px 10px!important}.email-shell{width:100%!important}.body-pad{padding:30px 23px!important}.headline{font-size:34px!important;line-height:41px!important}.brand-logo{width:270px!important}.footer-pad{padding:24px 23px!important}.primary-button{width:100%!important}.hero-image{width:100%!important;height:auto!important}}</style></head><body bgcolor="${COLORS.background}" style="margin:0;padding:0;background:${COLORS.background};color:${COLORS.text};">${preheader}${table(row(`${shell}${footer}`, "padding:32px 18px;", 'class="outer-space" align="center"'))}</body></html>`;
@@ -182,6 +191,9 @@ ${content.primaryAction ? `<p style="margin:15px 0 0;font:11px/18px Arial,Helvet
     content.title,
     "",
     ...content.paragraphs.flatMap((item) => [item, ""]),
+    content.editorial ? richText(content.editorial.body) : "",
+    content.editorial?.closing ?? "",
+    content.editorial ? `Afmelden voor Nachtpost: ${content.editorial.unsubscribeUrl}\nCommunicatievoorkeuren: ${content.editorial.preferencesUrl}` : "",
     content.code ? `Je eenmalige code: ${content.code.value}\n${content.code.expiresText}` : "",
     ...(content.details ?? []).map((detail) => `${detail.label}: ${detail.value}`),
     content.notice ? `\n${content.notice.title}\n${content.notice.text}` : "",

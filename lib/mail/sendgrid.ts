@@ -1,4 +1,6 @@
 import "server-only";
+import { editorialRecipientAllowed } from "@/lib/editorial/security";
+import { editorialAllowlist } from "@/lib/editorial/server";
 import { randomUUID } from "node:crypto";
 import { Webhook } from "standardwebhooks";
 import { mailAllowlist, serverEnv } from "@/lib/config/server-env";
@@ -11,6 +13,9 @@ type Message = {
   html: string;
   outboxId?: string;
   sandbox?: boolean;
+  editorial?: boolean;
+  senderName?: string;
+  unsubscribeUrl?: string;
 };
 
 export async function sendSendGrid(message: Message) {
@@ -23,6 +28,7 @@ export async function sendSendGrid(message: Message) {
   }
 
   const recipient = message.to.trim().toLowerCase();
+  if (message.editorial && (env.NEWSLETTER_SENDING_ENABLED !== "true" || !editorialRecipientAllowed(env.APP_ENVIRONMENT, recipient, editorialAllowlist()))) throw new ApiError(403, "EDITORIAL_RECIPIENT_NOT_ALLOWED", "Nachtpost is uitgeschakeld of deze ontvanger staat niet op de redactionele testlijst.");
   if (env.MAIL_MODE === "allowlist" && !mailAllowlist().has(recipient)) {
     throw new ApiError(403, "RECIPIENT_NOT_ALLOWED", "Deze ontvanger staat niet op de testlijst.");
   }
@@ -38,6 +44,7 @@ export async function sendSendGrid(message: Message) {
       outboxId: message.outboxId,
       replyTo: env.SENDGRID_REPLY_TO,
       providerProbe: message.sandbox === true,
+      ...(message.editorial ? { editorial: true, senderName: message.senderName, unsubscribeUrl: message.unsubscribeUrl } : {}),
     },
   });
 

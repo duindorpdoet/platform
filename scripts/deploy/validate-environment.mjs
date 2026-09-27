@@ -73,4 +73,10 @@ if (target === "staging") {
   if (process.env.MAIL_MODE !== "live") throw new Error("Production transactional mail must use live mode after staging approval.");
 }
 
+
+if (process.env.REDACTIEKAMER_ENABLED === "true") {
+  if (!process.env.EDITORIAL_TOKEN_SECRET || process.env.EDITORIAL_TOKEN_SECRET.length < 32) throw new Error("EDITORIAL_TOKEN_SECRET is required for the Redactiekamer.");
+  if (process.env.APP_ENVIRONMENT !== "production" && !process.env.EDITORIAL_ALLOWED_RECIPIENTS?.trim()) throw new Error("Editorial staging requires an explicit test recipient allowlist.");
+}
+
 console.log(`${target} environment contract is valid.`);

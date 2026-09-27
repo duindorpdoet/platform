@@ -47,7 +47,7 @@ jobs:
   database:
     name: Database migrations, contracts and lint
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - name: Check out exact revision
         uses: actions/checkout@v7
@@ -96,6 +96,8 @@ jobs:
           ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
         run: |
           eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_VAPID_PUBLIC_KEY="$(node --input-type=module -e 'import webPush from "web-push"; console.log(webPush.generateVAPIDKeys().publicKey)')"
+          echo "NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY" >> "$GITHUB_ENV"
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm build
       - name: Install Chromium and WebKit for authenticated browser acceptance
         run: pnpm exec playwright install --with-deps chromium webkit
@@ -108,8 +110,18 @@ jobs:
           ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
         run: |
           eval "$(pnpm exec supabase status -o env)"
-          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts tests/e2e/homeowner-responsive.spec.ts tests/e2e/participant-mobile-polish.spec.ts tests/e2e/together-management.spec.ts --project=desktop-chromium
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts tests/e2e/homeowner-responsive.spec.ts tests/e2e/participant-mobile-polish.spec.ts tests/e2e/together-management.spec.ts --project=desktop-chromium --workers=1
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/together-management.spec.ts --project=mobile-chromium
+      - name: Run mobile PWA invitation and attendance acceptance
+        env:
+          APP_ENVIRONMENT: test
+          REGISTRATION_MODE: staging_test
+          APP_URL: http://127.0.0.1:3100
+          ALLOWED_ORIGINS: http://127.0.0.1:3100
+        run: |
+          pnpm exec supabase db reset
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm exec playwright test tests/e2e/pwa-attendance.spec.ts --project=mobile-chromium --workers=1
       - name: Run child credential concurrency and private HTTPS browser flows
         env:
           APP_ENVIRONMENT: staging
@@ -127,6 +139,26 @@ jobs:
           pnpm exec playwright test --config playwright.poortenboek.config.ts
           node scripts/acceptance/poortkamer-concurrency.mjs
           pnpm exec playwright test --config playwright.poortkamer.config.ts
+      - name: Run editorial publication, newsletter and push acceptance
+        env:
+          APP_ENVIRONMENT: staging
+          REGISTRATION_MODE: staging_test
+          REDACTIEKAMER_ENABLED: "true"
+          NEWSLETTER_SENDING_ENABLED: "true"
+          WEB_PUSH_SENDING_ENABLED: "true"
+          EDITORIAL_ALLOWED_RECIPIENTS: admin@example.invalid,parent-a@example.invalid
+          APP_URL: https://127.0.0.1:3443
+          NEXT_PUBLIC_SITE_URL: https://127.0.0.1:3443
+          ALLOWED_ORIGINS: https://127.0.0.1:3443,http://127.0.0.1:3100
+        run: |
+          pnpm exec supabase db reset
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export EDITORIAL_TOKEN_SECRET="$(openssl rand -hex 32)"
+          node scripts/acceptance/editorial-concurrency.mjs
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 pnpm build
+          pnpm exec playwright test --config playwright.editorial.config.ts
       - name: Lint database schemas
         run: pnpm exec supabase db lint --level warning
       - name: Stop local Supabase

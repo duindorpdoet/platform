@@ -1,5 +1,6 @@
 "use client";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { PortalNews } from "@/components/editorial/portal-news";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -653,6 +654,7 @@ export function Poortkamer({
             </section>
           </>
         )}
+        {tab === "night" && <PortalNews channel="houses" compact />}
         {tab === "visits" && (
           <section className={s.card}>
             <p className={s.eyebrow}>Voetstappen door jullie poort</p>
@@ -933,6 +935,7 @@ export function Poortkamer({
             admin={admin}
           />
         )}
+        {tab === "more" && <Link href="/omgeving/communicatie">Nachtpost en communicatievoorkeuren →</Link>}
         {tab === "more" && (
           <div className={s.moreGrid}>
             <section className={s.card}>

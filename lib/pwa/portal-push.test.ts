@@ -6,6 +6,9 @@ vi.mock("web-push", () => ({
 }));
 vi.mock("@/lib/config/server-env", () => ({
   serverEnv: () => ({
+    APP_ENVIRONMENT: "staging",
+    EDITORIAL_ALLOWED_RECIPIENTS: "test@example.invalid",
+    WEB_PUSH_SENDING_ENABLED: "true",
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: "public",
     VAPID_PRIVATE_KEY: "private",
     VAPID_SUBJECT: "mailto:test@example.invalid",

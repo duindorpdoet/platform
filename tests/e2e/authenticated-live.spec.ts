@@ -378,6 +378,9 @@ test("an event administrator can grant and revoke narrowly scoped access", async
     "Groepen en routes",
     "Avondondersteuning",
     "Content en sponsors",
+    "Nieuws publiceren",
+    "Nachtpost redactie",
+    "Communicatie verzenden",
   ]) {
     await page.getByRole("checkbox", { name: new RegExp(`^${name}`) }).uncheck();
   }

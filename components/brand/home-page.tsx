@@ -20,7 +20,7 @@ function HomeFaq() {
   );
 }
 
-export function HomePage() {
+export function HomePage({ news }: { news?: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
@@ -37,6 +37,7 @@ export function HomePage() {
       go={(path) => router.push(path)}
       map={<PublicMap compact />}
       faq={<HomeFaq />}
+      news={news}
     />
   );
 }

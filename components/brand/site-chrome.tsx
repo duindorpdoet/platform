@@ -12,6 +12,7 @@ const navigation = [
   ["De kaart", "/kaart"],
   ["Meedoen", "/meelopen"],
   ["Vragen", "/faq"],
+  ["Nieuws", "/nieuws"],
 ] as const;
 
 const protectedPrefixes = ["/mijn-groep", "/mijn-huis", "/mijn-inschrijving", "/admin", "/omgeving"];

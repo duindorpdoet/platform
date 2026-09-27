@@ -37,6 +37,11 @@ const schema = z.object({
   ORGANIZATION_SUPPORT_EMAIL: z.string().email().default("halloween@duindorpdoet.nl"),
   ORGANIZATION_EVENT_PHONE: z.string().default("0659019035"),
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
+  REDACTIEKAMER_ENABLED: z.enum(["true", "false"]).default("false"),
+  NEWSLETTER_SENDING_ENABLED: z.enum(["true", "false"]).default("false"),
+  WEB_PUSH_SENDING_ENABLED: z.enum(["true", "false"]).default("false"),
+  EDITORIAL_TOKEN_SECRET: z.string().min(32).optional(),
+  EDITORIAL_ALLOWED_RECIPIENTS: z.string().default(""),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().refine((value) => value.startsWith("mailto:") || value.startsWith("https://"), "VAPID_SUBJECT must be a mailto or https URL").optional(),
 });

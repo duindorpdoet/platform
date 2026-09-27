@@ -1,3 +1,5 @@
+import { editorialTick } from "@/lib/editorial/worker";
+import { renderNewsletter, type NewsletterMaterial } from "@/lib/editorial/mail";
 import { deliverPortalPushBatch } from "@/lib/pwa/portal-push";
 import { NextResponse } from "next/server";
 import { mailAllowlist, serverEnv } from "@/lib/config/server-env";
@@ -51,6 +53,7 @@ export async function POST(request: Request) {
     }
   }
 
+  await editorialTick().catch(() => console.error("editorial_worker_failed", { code: "WORKER_UNAVAILABLE" }));
   await deliverPortalPushBatch().catch(() => console.error("portal_push_worker_failed", { code: "DELIVERY_UNAVAILABLE" }));
   if (env.MAIL_MODE === "disabled") {
     return NextResponse.json({ claimed: 0, reason: "mail-disabled" });
@@ -63,7 +66,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase
     .schema("api")
-    .rpc("worker_claim_outbox", { _batch_size: 20, _lease_seconds: 120 });
+    .rpc("worker_claim_outbox", { _batch_size: 10, _lease_seconds: 300 });
 
   if (error) {
     return NextResponse.json({ error: "claim-failed" }, { status: 500 });
@@ -90,14 +93,25 @@ export async function POST(request: Request) {
         }
         row.payload = material.data;
       }
-      const rendered = renderTransactionalMail({
-        messageType: row.message_type,
-        payload: row.payload,
-      });
+      let rendered;
+      if (row.message_type === "nachtpost") {
+        if (env.NEWSLETTER_SENDING_ENABLED !== "true") {
+          await supabase.schema("api").rpc("worker_update_outbox", { _id: row.id, _status: "deferred", _provider_id: null, _error_code: "NEWSLETTER_DISABLED", _next_attempt_at: new Date(Date.now() + 300000).toISOString() });
+          continue;
+        }
+        const material = await supabase.schema("api").rpc("worker_newsletter_material", { _outbox: row.id });
+        if (material.error) throw new ApiError(503, "NEWSLETTER_MATERIAL_UNAVAILABLE", "Probeer het later opnieuw.");
+        if (!material.data) {
+          await supabase.schema("api").rpc("worker_update_outbox", { _id: row.id, _status: "suppressed", _provider_id: null, _error_code: "EDITORIAL_CONSENT_OR_ACCESS_REVOKED", _next_attempt_at: null });
+          continue;
+        }
+        rendered = renderNewsletter(material.data as NewsletterMaterial);
+      } else rendered = renderTransactionalMail({ messageType: row.message_type, payload: row.payload });
       const sent = await sendSendGrid({
         to: row.recipient_email,
         ...rendered,
         outboxId: row.id,
+        editorial: row.message_type === "nachtpost",
       });
 
       await supabase.schema("api").rpc("worker_update_outbox", {
@@ -111,6 +125,7 @@ export async function POST(request: Request) {
       results.push({ id: row.id, status: "accepted" });
     } catch (cause) {
       const unknownTemplate = cause instanceof UnknownMailTemplateError;
+      const uncertain = row.message_type === "nachtpost" && cause instanceof ApiError && ["MAIL_GATEWAY_NETWORK", "MAIL_PROVIDER_TIMEOUT"].includes(cause.code);
       const terminal = unknownTemplate || row.attempts >= 8;
       const errorCode = unknownTemplate
         ? cause.code
@@ -122,7 +137,7 @@ export async function POST(request: Request) {
 
       await supabase.schema("api").rpc("worker_update_outbox", {
         _id: row.id,
-        _status: terminal ? "failed" : "deferred",
+        _status: uncertain ? "unknown" : terminal ? "failed" : "deferred",
         _provider_id: null,
         _error_code: errorCode,
         _next_attempt_at: terminal ? null : nextRetry(row.attempts).toISOString(),

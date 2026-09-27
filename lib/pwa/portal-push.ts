@@ -1,5 +1,6 @@
 import "server-only";
 import webPush from "web-push";
+import { editorialAllowlist } from "@/lib/editorial/server";
 import { serverEnv } from "@/lib/config/server-env";
 import { createPrivilegedClient } from "@/lib/supabase/privileged";
 const copy: Record<string, string> = {
@@ -65,11 +66,13 @@ export async function deliverPortalPush(
   }
 }
 export async function deliverPortalPushBatch() {
+  const env = serverEnv();
+  if (env.WEB_PUSH_SENDING_ENABLED !== "true") return;
   const client = createPrivilegedClient();
   if (!client) return;
   const { data, error } = await client
     .schema("api")
-    .rpc("worker_claim_portal_push");
+    .rpc("worker_claim_portal_push", { _allowed_emails: env.APP_ENVIRONMENT === "production" ? null : [...editorialAllowlist()] });
   if (error) {
     console.error("portal_push_claim_failed", { code: error.code });
     return;
