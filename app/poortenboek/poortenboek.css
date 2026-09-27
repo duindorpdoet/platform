@@ -964,6 +964,7 @@
   color: #7a5f3d;
 }
 .pb-parchment p:not(.pb-eyebrow) {
+  color: #3c2d22;
   font:
     16px/1.9 Georgia,
     serif;
