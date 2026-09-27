@@ -64,6 +64,7 @@ vi.mock("next/navigation", () => ({
 import { GET, POST } from "./route";
 import DemoPage from "@/app/poortenboek/demo/page";
 import { LOGIN_ERROR } from "@/lib/poortenboek/model";
+import { tokenHash } from "@/lib/poortenboek/crypto";
 const post = (
   action: string,
   payload: object,
@@ -83,6 +84,7 @@ beforeEach(() => {
   mocks.env.APP_ENVIRONMENT = "production";
   mocks.env.POORTENBOEK_DEMO_ENABLED = "true";
   mocks.rpc.mockResolvedValue({ ok: false, delayMs: 1 });
+  mocks.getUser.mockResolvedValue({ data: { user: null }, error: null });
 });
 describe("child HTTP boundaries", () => {
   it("production demo page is 404 even with the flag enabled", async () => {
@@ -152,5 +154,58 @@ describe("child HTTP boundaries", () => {
       "private, no-store, max-age=0",
     );
     expect(result.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+  });
+  it("opening as a child requires verified parent Auth and a trusted origin", async () => {
+    const payload = { action: "open", childId: "11111111-1111-4111-8111-111111111111" };
+    mocks.jar.set("__Host-poortenboek-session", "a".repeat(43));
+    expect((await post("parent", payload)).status).toBe(401);
+    expect((await post("parent", payload, "https://hostile.invalid")).status).toBe(400);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.setCookie).not.toHaveBeenCalled();
+  });
+  it("parent opening sets only an independent child cookie and sends hashed tokens", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: "verified-parent" } }, error: null });
+    const previous = "a".repeat(43);
+    mocks.jar.set("__Host-poortenboek-session", previous);
+    const expiresAt = new Date(Date.now() + 43_200_000).toISOString();
+    mocks.rpc.mockResolvedValue({ ok: true, expiresAt });
+    const result = await post("parent", {
+      action: "open", childId: "11111111-1111-4111-8111-111111111111", actor: "forged",
+    });
+    expect(result.status).toBe(200);
+    expect(await result.json()).toEqual({ ok: true });
+    expect(result.headers.get("cache-control")).toContain("no-store");
+    const [name, token, options] = mocks.setCookie.mock.calls[0];
+    expect(name).toBe("__Host-poortenboek-session");
+    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(token).not.toBe(previous);
+    expect(options).toEqual({ secure: true, httpOnly: true, sameSite: "lax", path: "/", expires: new Date(expiresAt) });
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("poortenboek_parent_open", {
+      _actor: "verified-parent", _event_slug: "event", _child_id: "11111111-1111-4111-8111-111111111111",
+      _token_hash: tokenHash(token), _previous_token_hash: tokenHash(previous),
+    });
+    expect(mocks.setCookie.mock.calls.map(([key]) => key)).toEqual(["__Host-poortenboek-session", "__Host-poortenboek-demo"]);
+  });
+  it("first parent opening provisions an encrypted code with collision retry without exposing it", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: "verified-parent" } }, error: null });
+    mocks.rpc
+      .mockResolvedValueOnce({ needsCode: true, eventId: "test-event" })
+      .mockRejectedValueOnce(Object.assign(new Error("collision"), { code: "23505" }))
+      .mockResolvedValueOnce({ ok: true, expiresAt: new Date(Date.now() + 43_200_000).toISOString() });
+    const result = await post("parent", { action: "open", childId: "11111111-1111-4111-8111-111111111111" });
+    expect(await result.json()).toEqual({ ok: true });
+    expect(mocks.rpc).toHaveBeenCalledTimes(3);
+    for (const [, args] of mocks.rpc.mock.calls.slice(1)) {
+      expect(args._digest).toMatch(/^[a-f0-9]{64}$/);
+      expect(args._ciphertext).toMatch(/^v1\./);
+      expect(args._token_hash).toBe(mocks.rpc.mock.calls[0][1]._token_hash);
+    }
+    expect(mocks.rpc.mock.calls[1][1]._digest).not.toBe(mocks.rpc.mock.calls[2][1]._digest);
+  });
+  it("a rejected child selection preserves the existing child cookie", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: "verified-parent" } }, error: null });
+    mocks.rpc.mockRejectedValueOnce(new Error("NOT_AUTHORIZED"));
+    expect((await post("parent", { action: "open", childId: "11111111-1111-4111-8111-111111111111" })).status).toBe(401);
+    expect(mocks.setCookie).not.toHaveBeenCalled();
   });
 });

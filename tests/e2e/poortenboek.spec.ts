@@ -1,6 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import {
   createTogetherFixtures,
@@ -95,6 +95,14 @@ async function realFamily(context: BrowserContext) {
     password: "local-poortenboek-only",
   });
   expect(signed.error).toBeNull();
+  // Auth and PostgREST run in separate local containers. Wait until the newly
+  // issued fixture JWT is accepted before the browser's one-shot initial load.
+  await expect.poll(async () => {
+    const { error } = await client.schema("api").rpc("registration_snapshot", {
+      _event_slug: "duindorp-halloween-2026",
+    });
+    return error?.code ?? null;
+  }, { timeout: 10_000 }).toBeNull();
   const value = `base64-${Buffer.from(JSON.stringify(signed.data.session)).toString("base64url")}`;
   const name = `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0]}-auth-token`;
   const chunks =
@@ -195,6 +203,60 @@ test("staging presentation: login, welcome, team voting, book and coming-soon ca
   expect(sql("select count(*) from app_private.poortenboek_sessions;")).toBe(
     countBefore,
   );
+});
+
+test("parent opens each child directly and switches safely on one shared device", async ({ page, context }) => {
+  const children = await realFamily(context);
+  const parentCookies = (await context.cookies()).filter((cookie) => cookie.name.startsWith("sb-"));
+  const childIds = children.map((child) => `'${child.id}'`).join(",");
+  const codeCount = () => Number(sql(`select count(*) from app_private.poortenboek_codes where child_id in (${childIds});`));
+  expect(codeCount()).toBe(0);
+  let opens = 0;
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/poortenboek/parent") && request.method() === "POST" && request.postDataJSON()?.action === "open") opens++;
+  });
+  async function openChild(name: string) {
+    await page.goto("/mijn-inschrijving");
+    const card = page.getByRole("article", { name: `Poortenboek van ${name}`, exact: true });
+    await expect(card).toBeVisible();
+    await expect(card.locator("output")).toHaveCount(0);
+    const response = page.waitForResponse((response) => response.url().endsWith("/api/poortenboek/parent") && response.request().method() === "POST");
+    await card.getByRole("button", { name: `Open Poortenboek van ${name}`, exact: true }).click();
+    expect((await response).status()).toBe(200);
+    await expect(page.getByRole("heading", { name: `Welkom, ${name}!`, exact: true })).toBeVisible();
+    await dashboard(page);
+    await expect(page.getByText(`Welkom terug, ${name}`, { exact: true })).toBeVisible();
+  }
+  await openChild("Mila");
+  const firstCookie = (await context.cookies()).find((cookie) => cookie.name === "__Host-poortenboek-session")!;
+  expect(firstCookie.secure && firstCookie.httpOnly).toBe(true);
+  expect(firstCookie.expires - Date.now() / 1000).toBeGreaterThan(43_170);
+  expect(firstCookie.expires - Date.now() / 1000).toBeLessThanOrEqual(43_200);
+  expect(codeCount()).toBe(1);
+  const saved = page.waitForResponse((response) => response.url().endsWith("/api/poortenboek/checklist"));
+  await page.getByRole("checkbox", { name: "Snoeptas klaar", exact: true }).check();
+  expect((await saved).status()).toBe(200);
+
+  const [foreign] = createTogetherFixtures(1, 1, 1);
+  const foreignChild = sql(`select child_id from app_private.registration_children where registration_id='${foreign.members[0].id}';`).trim();
+  expect((await mutation(page, "parent", { action: "open", childId: foreignChild })).status).toBe(401);
+  expect((await context.cookies()).find((cookie) => cookie.name === firstCookie.name)?.value).toBe(firstCookie.value);
+
+  await openChild("Sem");
+  await expect(page.getByRole("checkbox", { name: "Snoeptas klaar", exact: true })).not.toBeChecked();
+  const hash = createHash("sha256").update(firstCookie.value).digest("hex");
+  expect(sql(`select revoked_at is not null from app_private.poortenboek_sessions where token_hash='${hash}';`)).toBe("t");
+  await openChild("Mila");
+  await expect(page.getByRole("checkbox", { name: "Snoeptas klaar", exact: true })).toBeChecked();
+  expect(codeCount()).toBe(2);
+  expect(opens).toBe(4); // Three buttons plus the explicitly rejected foreign-child request.
+  expect(Number(sql(`select count(*) from app_private.audit_events where action='poortenboek.parent_login' and resource_id in (${childIds});`))).toBe(3);
+  expect((await context.cookies()).filter((cookie) => cookie.name.startsWith("sb-")).map(({ name, value }) => ({ name, value }))).toEqual(parentCookies.map(({ name, value }) => ({ name, value })));
+  await page.goto("/poortenboek/ik");
+  await page.getByRole("button", { name: "Poortenboek sluiten", exact: true }).click();
+  await expect(page).toHaveURL(/\/poortenboek\/inloggen$/);
+  await page.goto("/mijn-inschrijving");
+  await expect(page.getByRole("button", { name: "Open Poortenboek van Sem", exact: true })).toBeVisible();
 });
 
 test("real parent codes, independent child sessions, renewal and account switch", async ({
