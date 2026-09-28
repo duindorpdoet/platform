@@ -19,7 +19,7 @@ export const audienceLabels = {
   portal_editors: "Poortkamer met bewerkingsrechten",
   invited: "Uitgenodigde Poortkamerleden",
   organization: "Vrijwilligers/organisatie",
-  subscribers: "Accounts met nieuwsbriefconsent",
+  subscribers: "Alle Nachtpost-abonnees",
 } as const;
 export const uuid = z.string().uuid();
 export function safeEditorialUrl(value: string): boolean {

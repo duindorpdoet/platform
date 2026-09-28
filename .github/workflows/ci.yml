@@ -67,6 +67,10 @@ jobs:
         run: pnpm exec supabase db reset
       - name: Run pgTAP contracts
         run: pnpm exec supabase test db
+      - name: Verify one-time Nachtpost account activation
+        env:
+          LOCAL_DB_CONTAINER: supabase_db_duindorphalloween
+        run: node scripts/acceptance/nachtpost-activation.mjs
       - name: Run local Auth one-time-code acceptance
         run: |
           eval "$(pnpm exec supabase status -o env)"
