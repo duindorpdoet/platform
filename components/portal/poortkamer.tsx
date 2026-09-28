@@ -45,7 +45,6 @@ import {
   roomMetrics,
   type PortalRoom,
 } from "@/lib/domain/poortkamer";
-import { shareNightRecap } from "./share-night-recap";
 import { PoortkamerChat } from "./poortkamer-chat";
 import { PoortkamerLiveV2, PoortkamerManagementV2 } from "./poortkamer-v2";
 import s from "./poortkamer.module.css";
@@ -466,6 +465,7 @@ export function Poortkamer({
         )}
         {tab === "night" && (
           <>
+            <section className={s.card}><p className={s.eyebrow}>Deel de magie</p><h2>Laat jullie Poort stralen</h2><p>Maak een deelkaart met alleen goedgekeurde, openbare gegevens. Een adres of contactgegeven komt nooit in beeld.</p><Link className={s.button} href="/deel-de-magie?from=poortkamer">Maak een deelkaart</Link></section>
             <section className={`${s.card} ${s.organizerUpdates}`} aria-label="Updates van de organisatie">
               <div className={s.row}><div><p className={s.eyebrow}>Van de organisatie</p><h2>Kort bijgepraat</h2></div><button type="button" className={s.linkButton} onClick={() => setTab("messages")}>Alle berichten</button></div>
               {(room.announcements ?? []).length ? room.announcements!.map(update => <article key={update.id}><span className={s.updateDot} /><div>{update.urgent && <strong>Belangrijk</strong>}<p>{update.body}</p><time dateTime={update.createdAt}>{new Date(update.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "long" })} · {portalTime(update.createdAt)}</time></div></article>) : <p className={s.muted}>Je bent helemaal bij. Nieuwe aanwijzingen van de organisatie verschijnen hier.</p>}
@@ -1037,6 +1037,7 @@ export function Poortkamer({
               <p>{room.portal.description}</p>
               {canEdit && (
                 <div className={s.actions}>
+                  <Link className={s.button} href="/deel-de-magie?from=poortprofiel">Deel de magie</Link>
                   <button
                     className={s.button}
                     disabled={disabled}
@@ -1323,20 +1324,7 @@ function NightRecap({ room }: { room: PortalRoom }) {
         Drukste halfuur: {portalTime(recap.busiestHalfHour)} · gemiddeld{" "}
         {recap.averageGapMinutes ?? "—"} minuten tussen groepen
       </p>
-      <button
-        className={s.button}
-        onClick={async () => {
-          try {
-            await shareNightRecap(room);
-          } catch {
-            window.alert(
-              "De kaart kon niet worden gemaakt. Probeer het nogmaals.",
-            );
-          }
-        }}
-      >
-        Deel ons Nachtverslag
-      </button>
+      <Link className={s.button} href="/deel-de-magie?from=poortkamer-terugblik">Deel ons Nachtverslag</Link>
     </section>
   );
 }

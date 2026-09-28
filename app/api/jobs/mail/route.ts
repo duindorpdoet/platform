@@ -8,6 +8,7 @@ import { createPrivilegedClient } from "@/lib/supabase/privileged";
 import { renderTransactionalMail, UnknownMailTemplateError } from "@/lib/mail/templates";
 import { sendSendGrid } from "@/lib/mail/sendgrid";
 import { nextRetry, summarizeMailWorkerResults } from "@/lib/mail/status";
+import { cleanupSocialShareAssets } from "@/lib/social-share/cleanup";
 
 export const runtime = "nodejs";
 
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
 
   await editorialTick().catch(() => console.error("editorial_worker_failed", { code: "WORKER_UNAVAILABLE" }));
   await deliverPortalPushBatch().catch(() => console.error("portal_push_worker_failed", { code: "DELIVERY_UNAVAILABLE" }));
+  await cleanupSocialShareAssets().catch(() => console.error("social_share_cleanup_failed", { code: "CLEANUP_UNAVAILABLE" }));
   if (env.MAIL_MODE === "disabled") {
     return NextResponse.json({ claimed: 0, reason: "mail-disabled" });
   }

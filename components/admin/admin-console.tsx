@@ -24,6 +24,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Share2,
   Upload,
   UserCog,
   UsersRound,
@@ -37,6 +38,7 @@ import { Redactiekamer } from "@/components/editorial/redactiekamer";
 import { ContentManagement } from "@/components/admin/content-management";
 import { MessengerInbox } from "@/components/admin/messenger-inbox";
 import { ParticipantUpdates } from "@/components/admin/participant-updates";
+import { ShareStudioAdmin } from "@/components/admin/share-studio-admin";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
 import { TogetherManagement } from "@/components/admin/together-management";
 import { PoortenboekAdmin } from "@/components/poortenboek/admin";
@@ -226,6 +228,7 @@ const sectionMeta = {
   portals: { kicker: "De avond · voorbereiding", title: "Poorten", description: "Beoordeel huizen en houd hun gegevens actueel." },
   planner: { kicker: "De avond · voorbereiding", title: "Startpuntregie", description: "Verdeel groepen veilig over de wijk en de beschikbare tijden." },
   editorial: { kicker: "Verhalen · nieuws · Nachtpost", title: "Redactiekamer", description: "Schrijf het verhaal van de nacht en bereik de juiste mensen." },
+  share: { kicker: "Communicatie · delen", title: "Deelstudio", description: "Beheer deelkaarten, campagneperiodes en privacyvriendelijke funnels." },
   content: { kicker: "Website · redactie", title: "Content & sponsors", description: "Beheer zichtbare informatie en partners." },
   access: { kicker: "Organisatie · toegang", title: "Beheerders", description: "Bepaal wie welk onderdeel van de nacht mag beheren." },
   live: { kicker: "De avond · live", title: "Avondcockpit", description: "Volg de groepen en poorten en help waar dat nodig is." },
@@ -274,6 +277,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     | "portals"
     | "planner"
     | "editorial"
+    | "share"
     | "content"
     | "access"
     | "live"
@@ -287,6 +291,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const canManageTogether = canManageGroups || capabilities.includes("registration_manage");
   const canUseTickets = capabilities.includes("event_admin") || capabilities.includes("groups_manage") || capabilities.includes("live_support");
   const canUseLive = capabilities.includes("event_admin") || capabilities.includes("live_support");
+  const canManageShares = capabilities.includes("event_admin") || capabilities.includes("communications_manage");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const contentRef = useRef<HTMLElement>(null);
@@ -1234,6 +1239,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           Startpunten en indeling
         </button>
         {editorialEnabled && capabilities.some((c) => ["event_admin", "content_manage", "content_publish", "communications_manage", "communications_send"].includes(c)) && <button className={section === "editorial" ? "active" : ""} aria-current={section === "editorial" ? "page" : undefined} onClick={() => setSection("editorial")}><FileText />Redactiekamer</button>}
+        {canManageShares && <button className={section === "share" ? "active" : ""} aria-current={section === "share" ? "page" : undefined} onClick={() => setSection("share")}><Share2 />Deelstudio</button>}
         <button
           className={section === "content" ? "active" : ""}
           aria-current={section === "content" ? "page" : undefined}
@@ -1308,7 +1314,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           </Dialog>
         </header>
         <main ref={contentRef} id="admin-content" className="admin-content" data-admin-section={section} tabIndex={-1}>
-        {["praatkamer", "groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
+        {["praatkamer", "groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "share", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
           <div>
             <p className="kicker">{sectionMeta[section].kicker}</p>
             <h1>{sectionMeta[section].title}</h1>
@@ -1782,6 +1788,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         {section === "praatkamer" && canUsePraatkamer && <PoortkamerOverview eventSlug={eventSlug} praatkamerOnly />}
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
         {section === "editorial" && editorialEnabled && <Redactiekamer capabilities={capabilities} />}
+        {section === "share" && canManageShares && <ShareStudioAdmin eventSlug={eventSlug} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
         {section === "together" && canManageTogether && <TogetherManagement eventSlug={eventSlug} />}

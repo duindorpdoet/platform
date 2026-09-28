@@ -289,6 +289,7 @@ function WalkerNow({ context, registration, group, reload }: { context: Particip
   const payment = registration?.registration?.payment;
   if (run?.status === "completed") return <ParticipantPageFrame eyebrow="Jullie nacht in Duindorp" title="Wat een avond.">
     <section className="participant-hero-card recap"><div className="hero-glow violet" /><CheckCircle2 /><div><p className="participant-eyebrow">Route voltooid</p><h2>{run.history.length} poorten, één verhaal</h2><p>Jullie hebben samen {run.history.filter((item) => item.outcome === "visited" || item.outcome === "mixed").length} zegels verzameld. Bekijk jullie herinneringen in het Poortenboek.</p></div></section>
+    <Link href="/deel-de-magie" className="participant-card"><Sparkles /><div><p className="participant-eyebrow">Deel de magie</p><h2>Maak jullie terugblikkaart</h2><p>Zonder kindnamen, route of andere privégegevens.</p></div><ChevronRight /></Link>
     <StampRail history={run.history} />
   </ParticipantPageFrame>;
 
@@ -306,6 +307,7 @@ function WalkerNow({ context, registration, group, reload }: { context: Particip
 
   return <ParticipantPageFrame eyebrow="Voorpret begint hier" title="Klaar voor de nacht?">
     <section className="participant-hero-card countdown-card"><div className="hero-glow amber" /><div className="countdown-copy"><p className="participant-eyebrow">De wijk wacht op jullie</p><h2>Het begint met voorpret.</h2><Countdown target={context.event.startsAt} /><p>Jullie tijdslot en startplek verschijnen zodra de groepsindeling definitief is.</p></div><span className="countdown-emblem" aria-hidden="true"><MoonStar /></span></section>
+    <Link href="/deel-de-magie" className="participant-card"><Sparkles /><div><p className="participant-eyebrow">Deel de magie</p><h2>Maak jullie deelkaart</h2><p>Professioneel vormgegeven en altijd zonder kindnamen, codes of startgegevens.</p></div><ChevronRight /></Link>
     <div className="participant-stat-grid">
       <StatusCard icon={payment?.status === "confirmed" || payment?.status === "waived" ? CheckCircle2 : Clock3} label="Betaling" value={payment ? paymentLabels[payment.status] ?? payment.status : "Wordt voorbereid"} good={payment?.status === "confirmed" || payment?.status === "waived"} />
       <StatusCard icon={Users} label="Groep" value={group ? `Groep ${group.group.code}` : "Indeling volgt"} />
@@ -439,6 +441,7 @@ function UpdatesPanel({ eventSlug, role, embedded = false }: { eventSlug: string
 function MorePage({ context, eventSlug, userId, role, accessId }: { context: ParticipantContext; eventSlug: string; userId: string; role: ParticipantRoleKey; accessId?: string }) {
   return <ParticipantPageFrame eyebrow="Instellingen en bereikbaarheid" title="Meer">
     {role === "walker" && <UpdatesPanel eventSlug={eventSlug} role="walker" embedded />}
+    {role !== "viewer" && <Link href="/deel-de-magie" className="participant-card"><Sparkles /><div><h2>Deel de magie</h2><p>Maak een veilige deelkaart voor jouw deelname of Poort.</p></div><ChevronRight /></Link>}
     <section className="participant-card participant-contact-compact"><Contact /><div><strong>Contact bij storing of spoed</strong><div className="participant-actions"><a href={"mailto:" + context.event.supportEmail}>E-mail</a>{context.event.supportPhone && <a href={"tel:" + context.event.supportPhone.replace(/\s/g, "")}>Bel organisatie</a>}</div></div></section>
     <Link href="/omgeving/communicatie" className="participant-card">Nachtpost en communicatievoorkeuren →</Link>
     <PortalNews channel={role === "homeowner" ? "houses" : "parents"} compact />

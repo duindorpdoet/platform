@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { trackShareCampaignCompletion } from "@/lib/social-share/client-analytics";
 
 type ChildDraft = { name: string; age: string; accessibilityNote: string };
 type Draft = { adult: { name: string; phone: string }; children: ChildDraft[]; togetherCode: string; startPreference: "early" | "indifferent" | "later"; ordinaryStopAt: string; preferredStartAt: string; desiredEndAt: string; marketingConsent: boolean };
@@ -101,6 +102,7 @@ export function RegistrationWizard({ eventSlug, canSubmit }: { eventSlug: string
     setBusy(false);
     if (error) return reportError(error.message.includes("REGISTRATION_CLOSED") ? "De inschrijving is gesloten." : error.message.includes("INVALID_TOGETHER_CODE") ? "Deze samenloopcode is niet geldig. Controleer de vier tekens of laat het veld leeg." : "Definitief inschrijven is niet gelukt. Probeer het nog eens.");
     setRegistration(data as Snapshot["registration"]);
+    trackShareCampaignCompletion("participant_registration");
     setStep(3);
   }
 

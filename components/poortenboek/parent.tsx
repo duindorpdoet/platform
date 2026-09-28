@@ -1,7 +1,8 @@
 "use client";
 /* eslint-disable @next/next/no-location-assign-relative-destination -- Changing child identity requires a full document request without retained private router state. */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BookOpen, Copy, KeyRound, LogOut, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, Copy, KeyRound, LogOut, RefreshCw, Sparkles } from "lucide-react";
 
 type Child = {
   id: string;
@@ -82,6 +83,7 @@ export function ParentPoortenboek() {
         ingelogd als ouder. Met de persoonlijke code kan je kind ook op een ander
         apparaat inloggen.
       </p>
+      {children.some((child) => child.together) && <p className="note"><Sparkles size={17} /> Alleen jij als volwassene kunt een veilige teamkaart maken. Kindcodes krijgen nooit toegang tot delen. <Link className="text-link" href="/deel-de-magie">Maak een teamkaart</Link></p>}
       {notice && <p role="status">{notice}</p>}
       {children.map((child) => (
         <ChildBook

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./registration-dashboard.css";
 import { ParticipantTogether } from "@/components/registration/participant-together";
@@ -400,6 +401,7 @@ export function RegistrationDashboard({
   return (
     <div className="dashboard-stack registration-dashboard">
       {notice && <p className="form-notice" role="status">{notice}</p>}
+      {registration.status === "submitted" && <section className="panel together-code-card"><p className="kicker">Deel de magie</p><h2>Jullie lopen mee</h2><p>Maak een professionele deelkaart zonder kindnamen, startgegevens of samenloopcode.</p><Link className="btn" href="/deel-de-magie">Maak jouw deelkaart</Link></section>}
       <section className="panel registration-overview-card">
         <p className="kicker">Referentie</p>
         <h2 className="registration-reference">{registration.reference}</h2>

@@ -15,6 +15,7 @@ const navigation = [
   ["De app", "/ontdek"],
   ["Vragen", "/faq"],
   ["Nieuws", "/nieuws"],
+  ["Deel de magie", "/deel-de-magie"],
 ] as const;
 
 const protectedPrefixes = ["/mijn-groep", "/mijn-huis", "/mijn-inschrijving", "/admin", "/omgeving"];
@@ -88,6 +89,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               <Link href="/sponsoren">Sponsoren & doneren</Link>
               <Link href="/contact">Contact</Link>
               <Link href="/ontdek">Poortenboek & Poortkamer</Link>
+              <Link href="/deel-de-magie">Deel de magie</Link>
             </div>
             <div><CalendarDays size={20} /><strong>31 oktober 2026</strong><span>Duindorp, Den Haag</span></div>
           </div>

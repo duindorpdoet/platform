@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { EmailOtpForm } from "@/components/auth/email-otp-form";
 import { createClient } from "@/lib/supabase/client";
+import { trackShareCampaignCompletion } from "@/lib/social-share/client-analytics";
 
 export function PortalRegistration({ eventSlug, email, hasApplication }: { eventSlug: string; email?: string; hasApplication: boolean }) {
   const router = useRouter();
@@ -25,6 +26,7 @@ export function PortalRegistration({ eventSlug, email, hasApplication }: { event
         _expected_version: null,
       });
       if (result.error) throw result.error;
+      trackShareCampaignCompletion("house_registration");
       router.replace("/mijn-huis");
       router.refresh();
     } catch (error) {
@@ -52,6 +54,7 @@ export function PortalRegistration({ eventSlug, email, hasApplication }: { event
     if (!client) throw new Error("unavailable");
     const { error } = await client.schema("api").rpc("portal_registration_claim", { _event_slug: eventSlug });
     if (error) throw error;
+    trackShareCampaignCompletion("house_registration");
     router.replace("/mijn-huis");
     router.refresh();
   }
