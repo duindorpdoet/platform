@@ -114,6 +114,7 @@ jobs:
           set -euo pipefail
           pnpm exec supabase link --project-ref "${SUPABASE_PROJECT_REF}" --password "${SUPABASE_DB_PASSWORD}"
           pnpm exec supabase db push --linked --include-all --yes
+          pnpm exec supabase db query --linked --file scripts/deploy/nachtpost-activation-report.sql --output json
       - name: Deploy SendGrid Auth hook
         run: |
           set -euo pipefail

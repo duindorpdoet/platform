@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 const container = process.env.LOCAL_DB_CONTAINER ?? "supabase_db_duindorphalloween-poortenboek";
 assert.match(container, /^supabase_db_[a-z0-9_-]+$/i);
 const migration = readFileSync(new URL("../../supabase/migrations/20260928154407_activate_existing_nachtpost_accounts.sql", import.meta.url), "utf8");
+const report = readFileSync(new URL("../deploy/nachtpost-activation-report.sql", import.meta.url), "utf8");
 const sql = `
 begin;
 create extension if not exists pgtap with schema extensions;
@@ -36,6 +37,8 @@ insert into app_private.editorial_suppressions(email_hash,reason)
 values (extensions.digest('activation-4@example.invalid','sha256'),'unsubscribe');
 
 ${migration}
+
+${report}
 
 select is((select count(*)::int from app_private.participant_preferences where event_id=current_setting('test.eid')::uuid and user_id::text like 'b8500000-%' and optional_updates_consent),4,'all existing verified active accounts are enabled');
 select is((select count(*)::int from app_private.participant_preferences where event_id=current_setting('test.eid')::uuid and user_id in ('b8500000-0000-0000-0000-000000000005','b8500000-0000-0000-0000-000000000006','b8500000-0000-0000-0000-000000000007','b8500000-0000-0000-0000-000000000008')),0,'unverified, banned, anonymous and deleted accounts stay excluded');
