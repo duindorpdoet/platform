@@ -75,7 +75,7 @@ async function noOverflow(page: Page) {
     ),
   ).toBe(true);
 }
-async function viewportShellScrolls(page: Page) {
+async function viewportShellScrolls(page: Page, mouseWheelSupported = true) {
   const shell = page.locator("[data-poortkamer-shell]");
   const content = page.locator("#poortkamer-content");
   await expect(shell).toBeVisible();
@@ -105,8 +105,12 @@ async function viewportShellScrolls(page: Page) {
   expect(before.shellBottom).toBeLessThanOrEqual(
     await page.evaluate(() => innerHeight + 1),
   );
-  await content.hover();
-  await page.mouse.wheel(0, 800);
+  if (mouseWheelSupported) {
+    await content.hover();
+    await page.mouse.wheel(0, 800);
+  } else {
+    await content.evaluate((element) => element.scrollBy(0, 800));
+  }
   await expect
     .poll(() => content.evaluate((element) => element.scrollTop))
     .toBeGreaterThan(0);
@@ -320,11 +324,12 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
 test("status dialogs, shared checklist, privacy, offline and all viewport controls", async ({
   page,
   context,
+  browserName,
 }, info) => {
   const fixture = await owner(context);
   await page.addLocatorHandler(page.getByRole("button", { name: "Installatievenster sluiten" }), async close => close.click());
   await page.goto("/mijn-huis");
-  await viewportShellScrolls(page);
+  await viewportShellScrolls(page, browserName !== "webkit");
   await page.getByRole("button", { name: "Pauze", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Hervatten").selectOption("5");
