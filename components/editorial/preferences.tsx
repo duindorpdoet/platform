@@ -124,17 +124,15 @@ export function CommunicationPreferences() {
           <button className="btn" type="submit" disabled={busy}>
             {busy ? "Opslaan…" : "Voorkeuren opslaan"}
           </button>
-          {value.consentedAt && (
+          {value.email && value.consentedAt && (
             <p className="editorial-meta">
-              Toestemming vastgelegd op{" "}
+              {value.source === "organization_activation_20260928"
+                ? "De organisatie heeft Nachtpost voor je aangezet op"
+                : "Nachtpost staat aan sinds"}{" "}
               {new Date(value.consentedAt).toLocaleString("nl-NL", {
                 timeZone: "Europe/Amsterdam",
-              })}{" "}
-              via{" "}
-              {value.source === "legacy_preferences"
-                ? "je bestaande accountvoorkeuren"
-                : "je communicatievoorkeuren"}
-              .
+              })}
+              . Je kunt je keuze hierboven aanpassen en opslaan.
             </p>
           )}
           {value.unsubscribedAt && (
