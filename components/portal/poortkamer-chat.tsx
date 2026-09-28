@@ -13,7 +13,13 @@ export function PoortkamerChat({ room, disabled, refresh, admin = false, initial
 }) {
   const [area, setArea] = useState(initialChannel ? room.channels.find(c => c.id === initialChannel)?.kind ?? "community" : admin && !room.portal.id ? "community" : "team");
   const [selected, setSelected] = useState(initialChannel ?? "");
-  const channel = room.channels.find(c => c.id === selected && c.kind === area) ?? room.channels.find(c => c.kind === area);
+  const channelOrder: Record<string, number> = area === "team"
+    ? { "Achter de Poort": 0, Voorbereiding: 1, "Decor en techniek": 2, "Tijdens de avond": 3 }
+    : { Algemeen: 0, "Hulp gevraagd": 1 };
+  const areaChannels = room.channels
+    .filter(c => c.kind === area)
+    .sort((left, right) => (channelOrder[left.name] ?? 99) - (channelOrder[right.name] ?? 99) || left.name.localeCompare(right.name, "nl"));
+  const channel = areaChannels.find(c => c.id === selected) ?? areaChannels[0];
   const channelId = channel?.id;
   const [snapshot, setSnapshot] = useState<ChatSnapshot | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -136,7 +142,7 @@ export function PoortkamerChat({ room, disabled, refresh, admin = false, initial
     finally { sending.current = false; setBusy(false); }
   }
   const mentionOptions = area === "team" ? room.team.filter(m => !m.suspendedAt) : Array.from(new Map((current?.messages ?? []).filter(m => m.mentionUserId).map(m => [m.mentionUserId!, { userId: m.mentionUserId!, name: `${m.sender} · ${m.portalCode ?? "Poortwachter"}` }])).values());
-  const title = area === "team" ? "Achter de Poort" : area === "community" ? "Praatkamer" : "Van de organisatie";
+  const title = area === "team" ? channel?.name ?? "Achter de Poort" : area === "community" ? "Praatkamer" : "Van de organisatie";
   return <section className="room-chat" aria-label="Berichten">
     <nav className="workspace-tabs" aria-label="Gesprekken kiezen">
       {(["team", "community", "announcements"] as const).filter(kind => room.channels.some(c => c.kind === kind)).map(kind => <button type="button" key={kind} aria-pressed={area === kind} onClick={() => { setArea(kind); setSelected(""); setMention(""); setNotice(""); }}>
@@ -147,10 +153,10 @@ export function PoortkamerChat({ room, disabled, refresh, admin = false, initial
     <div className="chat-window">
       <header className="chat-header">
         <span className="chat-avatar"><MessageCircle size={22} /></span>
-        <div><h2>{title}</h2><p>{area === "team" ? "Jullie teamgesprek" : area === "community" ? "Tips en overleg met andere poorten" : "Korte updates voor alle poorten"} <span className="chat-connection">· {live ? "Live" : "Verbinden…"}</span></p></div>
+        <div><h2>{title}</h2><p>{area === "team" ? "Alleen zichtbaar voor jullie huisteam" : area === "community" ? "Tips en overleg met andere poorten" : "Korte updates voor alle poorten"} <span className="chat-connection">· {live ? "Live" : "Verbinden…"}</span></p></div>
         {channel && area !== "announcements" && <button type="button" className="chat-icon" title={channel.muted ? "Meldingen aanzetten" : "Meldingen dempen"} aria-label={channel.muted ? "Meldingen aanzetten" : "Meldingen dempen"} aria-pressed={channel.muted} disabled={disabled || busy} onClick={() => void action("mute", { muted: !channel.muted })}><BellOff size={18} /></button>}
       </header>
-      {area === "community" && <nav className="chat-channels" aria-label="Praatkamer kanalen">{room.channels.filter(c => c.kind === area).map(c => <button type="button" key={c.id} aria-pressed={channelId === c.id} onClick={() => { setSelected(c.id); setMention(""); setNotice(""); }}>#{c.name}{c.unread > 0 && <b>{c.unread}</b>}</button>)}</nav>}
+      {(area === "team" || area === "community") && <nav className="chat-channels" aria-label={area === "team" ? "Kamers van dit huis" : "Praatkamer kanalen"}>{areaChannels.map(c => <button type="button" key={c.id} aria-pressed={channelId === c.id} onClick={() => { setSelected(c.id); setMention(""); setNotice(""); }}>#{c.name}{c.unread > 0 && <b>{c.unread}</b>}</button>)}</nav>}
       {current?.pins.length ? <details className="chat-pins"><summary><Pin size={14} /> {current.pins.length} vastgezet</summary>{current.pins.map(pin => <p key={pin.id}>{pin.body}</p>)}</details> : null}
       {notice && <p className="chat-notice" role="status">{notice}</p>}
       <div className="chat-history" ref={scroll} role="log" aria-label="Berichtgeschiedenis" aria-live="polite" aria-relevant="additions text" onScroll={() => { const el = scroll.current; follow.current = !!el && el.scrollHeight - el.scrollTop - el.clientHeight < 100; if (follow.current) setNewMessages(false); }}>

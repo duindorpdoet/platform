@@ -2,6 +2,7 @@
 
 import { Bell, BellOff, Download, Share2, Smartphone, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { analyticsDeviceMetadata, trackProductAnalytics } from "@/lib/analytics/client";
 import { installInviteStorageKey, shouldShowInstallInvite } from "@/lib/pwa/install-invitation";
 import "./pwa-experience.css";
 
@@ -52,10 +53,12 @@ export function PwaInstallInvitation({ userId }: { userId: string }) {
     };
     const installed = () => {
       window.localStorage.setItem(`poorten:pwa-installed:${userId}`, "true");
+      void trackProductAnalytics("pwa_install_completed", undefined, analyticsDeviceMetadata());
       setVisible(false);
     };
     window.addEventListener("beforeinstallprompt", capture);
     window.addEventListener("appinstalled", installed);
+    if (standalone()) void trackProductAnalytics("pwa_standalone_opened", undefined, analyticsDeviceMetadata());
     const timer = window.setTimeout(() => {
       if (!standalone() && mobileDevice() && window.localStorage.getItem(`poorten:pwa-installed:${userId}`) !== "true" && shouldShowInstallInvite(window.localStorage, userId)) {
         window.localStorage.setItem(installInviteStorageKey(userId), "shown");
@@ -77,7 +80,10 @@ export function PwaInstallInvitation({ userId }: { userId: string }) {
     await deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
     setDeferredPrompt(null);
-    if (choice.outcome === "accepted") setVisible(false);
+    if (choice.outcome === "accepted") {
+      void trackProductAnalytics("pwa_install_prompt_accepted", undefined, analyticsDeviceMetadata());
+      setVisible(false);
+    }
   }
 
   if (!visible) return null;
@@ -98,7 +104,7 @@ export function PwaInstallInvitation({ userId }: { userId: string }) {
         <button className="btn" type="button" onClick={() => void install()}><Download aria-hidden="true" />Installeer app</button>
         <button className="btn outline" type="button" onClick={() => setVisible(false)}>Later</button>
       </div>
-      <button className="pwa-already-installed" type="button" onClick={() => { window.localStorage.setItem(`poorten:pwa-installed:${userId}`, "true"); setVisible(false); }}>Ik heb de app al geïnstalleerd</button>
+      <button className="pwa-already-installed" type="button" onClick={() => { window.localStorage.setItem(`poorten:pwa-installed:${userId}`, "true"); void trackProductAnalytics("pwa_install_manual_confirmed", undefined, analyticsDeviceMetadata()); setVisible(false); }}>Ik heb de app al geïnstalleerd</button>
       <PushNotificationSettings compact />
     </section>
   </div>;

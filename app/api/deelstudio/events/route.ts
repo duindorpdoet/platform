@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 const schema = z.object({
   publicShareId: z.string().regex(/^[a-f0-9]{32}$/).nullable().optional(),
   templateKey: z.string().regex(/^[a-z_]{3,40}$/).nullable().optional(),
-  eventType: z.enum(["studio_opened", "template_selected", "preview_generated", "image_downloaded", "caption_copied", "link_copied", "native_share_opened", "platform_fallback_opened", "public_page_viewed", "house_registration_started", "house_registration_completed", "participant_registration_started", "participant_registration_completed"]),
+  eventType: z.enum(["studio_opened", "template_selected", "preview_generated", "image_downloaded", "caption_copied", "link_copied", "native_share_opened", "native_share_completed", "platform_fallback_opened", "public_page_viewed", "house_registration_started", "house_registration_completed", "participant_registration_started", "participant_registration_completed"]),
   platform: z.enum(["native", "facebook", "instagram", "snapchat", "whatsapp", "x"]).nullable().optional(),
   sessionId: z.uuid(),
 });

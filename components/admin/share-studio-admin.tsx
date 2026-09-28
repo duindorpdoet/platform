@@ -18,7 +18,7 @@ const formatLabels: Record<string, string> = { story: "Story", feed: "Feed", squ
 const eventLabels: Record<string, string> = {
   studio_opened: "Studio geopend", template_selected: "Template gekozen", preview_generated: "Preview gemaakt",
   image_downloaded: "Gedownload", caption_copied: "Bericht gekopieerd", link_copied: "Link gekopieerd",
-  native_share_opened: "Deelmenu geopend", platform_fallback_opened: "Platformfallback", public_page_viewed: "Deelpagina bekeken",
+  native_share_opened: "Deelmenu geopend", native_share_completed: "Deelactie voltooid", platform_fallback_opened: "Platformfallback", public_page_viewed: "Deelpagina bekeken",
 };
 
 function localDate(value: string | null) {

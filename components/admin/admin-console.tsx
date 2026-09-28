@@ -8,6 +8,7 @@ import { paymentAmount, type PaymentBatch } from "@/components/payments/payment-
 import {
   AlertTriangle,
   ArrowRight,
+  BarChart3,
   CalendarClock,
   CheckCircle2,
   Database,
@@ -39,6 +40,8 @@ import { ContentManagement } from "@/components/admin/content-management";
 import { MessengerInbox } from "@/components/admin/messenger-inbox";
 import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { ShareStudioAdmin } from "@/components/admin/share-studio-admin";
+import { StatisticsDashboard } from "@/components/admin/statistics-dashboard";
+import { EnvironmentTracker } from "@/components/analytics/environment-tracker";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
 import { TogetherManagement } from "@/components/admin/together-management";
 import { PoortenboekAdmin } from "@/components/poortenboek/admin";
@@ -219,6 +222,7 @@ const labels: Record<string, string> = {
 const sectionMeta = {
   praatkamer: { kicker: "Poorten · samen praten", title: "Praatkamer", description: "Tips en overleg met de poortteams." },
   overview: { kicker: "De avond · voorbereiding", title: "De nacht in beeld.", description: "Alles wat nu aandacht vraagt, bij elkaar." },
+  statistics: { kicker: "Organisatie · inzicht", title: "Statistieken", description: "Installaties, logins, omgevingsgebruik en deelactiviteit." },
   imports: { kicker: "Beheer · gegevens", title: "Imports", description: "Controleer bronbestanden voordat gegevens worden toegepast." },
   registrations: { kicker: "Deelnemers · groepen", title: "Inschrijvingen", description: "Iedere inschrijving direct in beeld, met groep en deelnemers." },
   together: { kicker: "Deelnemers · samenloop", title: "Samenloop", description: "Beheer bevestigde samenlopen en beoordeel verzoeken om samen te lopen." },
@@ -268,6 +272,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const [section, setSection] = useState<
     | "praatkamer"
     | "overview"
+    | "statistics"
     | "imports"
     | "registrations"
     | "groups"
@@ -292,6 +297,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const canUseTickets = capabilities.includes("event_admin") || capabilities.includes("groups_manage") || capabilities.includes("live_support");
   const canUseLive = capabilities.includes("event_admin") || capabilities.includes("live_support");
   const canManageShares = capabilities.includes("event_admin") || capabilities.includes("communications_manage");
+  const canViewStatistics = capabilities.includes("event_admin");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const contentRef = useRef<HTMLElement>(null);
@@ -1121,6 +1127,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     );
   return (
     <div className="admin-shell">
+      <EnvironmentTracker surface={section === "editorial" ? "editorial" : "admin"} />
       {mobileNavOpen && <button className="admin-nav-backdrop" tabIndex={-1} aria-label="Navigatie sluiten" onClick={() => setMobileNavOpen(false)} />}
       <aside
         id="admin-navigation"
@@ -1150,6 +1157,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           <ShieldCheck />
           Cockpit
         </button>
+        {canViewStatistics && <button className={section === "statistics" ? "active" : ""} aria-current={section === "statistics" ? "page" : undefined} onClick={() => setSection("statistics")}><BarChart3 />Statistieken</button>}
         <button
           className={section === "imports" ? "active" : ""}
           aria-current={section === "imports" ? "page" : undefined}
@@ -1314,7 +1322,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           </Dialog>
         </header>
         <main ref={contentRef} id="admin-content" className="admin-content" data-admin-section={section} tabIndex={-1}>
-        {["praatkamer", "groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "share", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
+        {section === "statistics" ? null : ["praatkamer", "groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "share", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
           <div>
             <p className="kicker">{sectionMeta[section].kicker}</p>
             <h1>{sectionMeta[section].title}</h1>
@@ -1789,6 +1797,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
         {section === "editorial" && editorialEnabled && <Redactiekamer capabilities={capabilities} />}
         {section === "share" && canManageShares && <ShareStudioAdmin eventSlug={eventSlug} />}
+        {section === "statistics" && canViewStatistics && <StatisticsDashboard eventSlug={eventSlug} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
         {section === "together" && canManageTogether && <TogetherManagement eventSlug={eventSlug} />}

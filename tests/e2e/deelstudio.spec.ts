@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
 
 test("public Deelstudio selects, previews, copies and downloads without personal data", async ({ page }) => {
+  const events: string[] = [];
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.route("**/api/deelstudio/context", (route) => route.fulfill({
     contentType: "application/json",
@@ -12,7 +13,10 @@ test("public Deelstudio selects, previews, copies and downloads without personal
     status: 201, contentType: "application/json",
     body: JSON.stringify({ data: { generationId: "10000000-0000-0000-0000-000000000001", publicShareId: "0123456789abcdef0123456789abcdef", imageUrl: `data:image/png;base64,${png.toString("base64")}`, publicPageUrl: "https://duindorpdoet.nl/delen/0123456789abcdef0123456789abcdef", caption: "De poorten komen eraan. https://duindorpdoet.nl", cached: false } }),
   }));
-  await page.route("**/api/deelstudio/events", (route) => route.fulfill({ status: 202, contentType: "application/json", body: '{"data":{"accepted":true}}' }));
+  await page.route("**/api/deelstudio/events", async (route) => {
+    events.push((route.request().postDataJSON() as { eventType: string }).eventType);
+    await route.fulfill({ status: 202, contentType: "application/json", body: '{"data":{"accepted":true}}' });
+  });
 
   await page.goto("/deel-de-magie");
   await expect(page.getByRole("heading", { name: "Maak jouw deelkaart" })).toBeVisible();
@@ -26,4 +30,12 @@ test("public Deelstudio selects, previews, copies and downloads without personal
   await expect(page.getByRole("status")).toContainText("Bericht gekopieerd");
   await page.getByRole("button", { name: "Afbeelding opslaan" }).click();
   await expect(page.getByRole("status")).toContainText("Afbeelding opgeslagen");
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "canShare", { configurable: true, value: () => true });
+    Object.defineProperty(navigator, "share", { configurable: true, value: async () => undefined });
+  });
+  await page.getByRole("button", { name: "Deel nu" }).click();
+  await expect(page.getByRole("status")).toContainText("De deelactie is voltooid");
+  await expect.poll(() => events).toContain("native_share_opened");
+  await expect.poll(() => events).toContain("native_share_completed");
 });

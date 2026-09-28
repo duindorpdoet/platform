@@ -50,6 +50,21 @@ async function rpc(client: Awaited<ReturnType<typeof fixtureClient>>["client"], 
   return result.data;
 }
 
+test("event admins can inspect product statistics without exposing child names", async ({ context, page }) => {
+  requireLocalAuth();
+  await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  await selectAdminSection(page, "Statistieken");
+
+  await expect(page.getByRole("heading", { name: "Statistieken", exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("Geslaagde logins", { exact: true })).toBeVisible();
+  await expect(page.getByText("PWA-installaties", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Social funnel" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recente activiteit" })).toBeVisible();
+  await expect(page.locator("main")).not.toContainText("Testkind 1");
+  await assertReadableLayout(page);
+});
+
 test("the unified mobile participant environment keeps role navigation and payment-gated Night Pass clear", async ({ context, page }) => {
   requireLocalAuth();
   await page.setViewportSize({ width: 390, height: 844 });

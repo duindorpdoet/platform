@@ -3,8 +3,8 @@ create extension if not exists pgtap with schema extensions;
 select no_plan();
 select set_config('request.jwt.claims','{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select api.portal_room_snapshot('duindorp-halloween-2026','12000000-0000-0000-0000-000000000001') is not null;
-select set_config('test.team_channel',(select id::text from app_private.portal_room_channels where portal_id='12000000-0000-0000-0000-000000000001'),true);
-select set_config('test.community',(select id::text from app_private.portal_room_channels where kind='community' and name='Hulp gevraagd' limit 1),true);
+select set_config('test.team_channel',(select id::text from app_private.portal_room_channels where portal_id='12000000-0000-0000-0000-000000000001' and name='Achter de Poort' and archived_at is null),true);
+select set_config('test.community',(select id::text from app_private.portal_room_channels where kind='community' and name='Hulp gevraagd' and archived_at is null limit 1),true);
 select lives_ok($$select api.portal_team_command('12000000-0000-0000-0000-000000000001','invite','{"email":"parent-size-5@example.invalid","firstName":"Vijf","lastName":"Test","role":"viewer"}',gen_random_uuid())$$,'new invitation for boundary checks');
 select set_config('test.invite',(select id::text from app_private.portal_team_invites where email='parent-size-5@example.invalid'),true);
 select set_config('test.token',app_private.poortkamer_invite_token(current_setting('test.invite')::uuid),true);
@@ -56,6 +56,7 @@ select ok(not has_function_privilege('authenticated','api.worker_record_portal_p
 select set_config('request.jwt.claims','{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select lives_ok($$select api.portal_room_update('12000000-0000-0000-0000-000000000001','help','{"shareCommunity":true}',gen_random_uuid())$$,'explicit stock help share');
 select ok((select stock_help_requested_at is not null from app_private.portals where id='12000000-0000-0000-0000-000000000001'),'help request remains visible to organizer');
+select ok(exists(select 1 from app_private.portal_room_messages message join app_private.portal_room_channels channel on channel.id=message.channel_id where message.body like 'P-01 vraagt hulp%' and channel.name='Hulp gevraagd' and channel.archived_at is null),'stock help is published in the active public help room');
 select throws_ok($$select api.portal_room_update('12000000-0000-0000-0000-000000000001','help','{"shareCommunity":false}',gen_random_uuid())$$,'P0001','EXPLICIT_CONFIRMATION_REQUIRED','no community publication without confirmation');
 select lives_ok($$do $test$ begin for i in 1..15 loop perform api.portal_chat_send(current_setting('test.team_channel')::uuid,'Budgettest '||i,gen_random_uuid(),'12000000-0000-0000-0000-000000000001'); end loop; end $test$;$$,'bounded burst accepted');
 select throws_ok($$select api.portal_chat_send(current_setting('test.team_channel')::uuid,'Te snel',gen_random_uuid(),'12000000-0000-0000-0000-000000000001')$$,'P0001','RATE_LIMITED','server limits successful chat burst');

@@ -67,7 +67,7 @@ export function PortalRegistration({ eventSlug, email, hasApplication }: { event
     <p className="note">Na bevestiging vul je in Mijn huis desgewenst het adres, de aankleding en andere praktische gegevens aan.</p>
   </fieldset>;
 
-  if (!email) return <EmailOtpForm beforeRequestCode={saveIntake} onVerified={claimAfterVerification}>{fields}</EmailOtpForm>;
+  if (!email) return <EmailOtpForm analyticsSurface="homeowner" beforeRequestCode={saveIntake} onVerified={claimAfterVerification}>{fields}</EmailOtpForm>;
   return <form className="panel production-form" onSubmit={(event) => { event.preventDefault(); void saveConfirmedApplication(); }}>
     <h2>Meld jullie plek aan</h2>
     <p>Je e-mailadres is bevestigd{email ? `: ${email}` : ""}. Vul je naam en telefoonnummer in om verder te gaan.</p>

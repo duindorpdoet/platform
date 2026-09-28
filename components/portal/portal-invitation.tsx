@@ -44,6 +44,7 @@ export function PortalInvitation({ token }: { token: string }) {
           ontving. Daarna kun je bij het team.
         </p>
         <EmailOtpForm
+          analyticsSurface="homeowner"
           onVerified={accept}
           beforeRequestCode={async (email) => {
             const response = await fetch("/api/poortkamer/invitation", {

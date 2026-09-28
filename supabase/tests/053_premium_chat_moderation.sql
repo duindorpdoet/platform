@@ -8,9 +8,9 @@ select ok(not has_function_privilege('authenticated','app_private.poortkamer_cha
 select ok(not has_table_privilege('authenticated','app_private.portal_room_messages','select'),'messages are only available through authorized snapshots');
 select set_config('request.jwt.claims','{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select api.portal_room_snapshot('duindorp-halloween-2026') is not null;
-select set_config('test.team',(select id::text from app_private.portal_room_channels where portal_id='12000000-0000-0000-0000-000000000001'),true);
-select set_config('test.community',(select id::text from app_private.portal_room_channels where kind='community' and name='Hulp gevraagd' limit 1),true);
-select set_config('test.announcements',(select id::text from app_private.portal_room_channels where kind='announcements' limit 1),true);
+select set_config('test.team',(select id::text from app_private.portal_room_channels where portal_id='12000000-0000-0000-0000-000000000001' and name='Achter de Poort' and archived_at is null),true);
+select set_config('test.community',(select id::text from app_private.portal_room_channels where kind='community' and name='Hulp gevraagd' and archived_at is null limit 1),true);
+select set_config('test.announcements',(select id::text from app_private.portal_room_channels where kind='announcements' and archived_at is null limit 1),true);
 insert into app_private.portal_owners(portal_id,user_id,role,first_name,last_name) values
  ('12000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','viewer','Mila','Eigen team'),
  ('12000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000002','coadmin','Sem','Eigen team');
@@ -63,7 +63,8 @@ select is(api.portal_chat_snapshot(current_setting('test.community')::uuid)->>'c
 select lives_ok($$select api.portal_chat_action(current_setting('test.community')::uuid,'hide',jsonb_build_object('messageId',current_setting('test.public_message')))$$,'organization hides community messages');
 select set_config('test.update',api.portal_chat_send(current_setting('test.announcements')::uuid,'Denk vanavond aan warme kleding.',gen_random_uuid(),null,'{}',false)->>'id',true);
 select is(api.admin_portal_room_snapshot('duindorp-halloween-2026')->>'userId','f0000000-0000-0000-0000-000000000001','organizer chat knows its own sender');
-select is(jsonb_array_length(api.admin_portal_room_snapshot('duindorp-halloween-2026')->'channels'),5,'organizer sees only current community channels plus updates');
+select is(jsonb_array_length(api.admin_portal_room_snapshot('duindorp-halloween-2026')->'channels'),3,'organizer sees the two public rooms and announcements');
+select is((select string_agg(channel->>'name','|' order by position) from jsonb_array_elements(api.admin_portal_room_snapshot('duindorp-halloween-2026')->'channels') with ordinality item(channel,position) where channel->>'kind'='community'),'Algemeen|Hulp gevraagd','organizer Praatkamer excludes house-only rooms');
 select set_config('request.jwt.claims','{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select is(api.portal_room_snapshot('duindorp-halloween-2026')->'announcements'->0->>'body','Denk vanavond aan warme kleding.','non-urgent updates appear in the owner cockpit');
 select is((select count(*)::integer from app_private.portal_push_outbox where kind='urgent'),0,'ordinary update does not become an urgent push');

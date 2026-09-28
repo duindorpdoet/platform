@@ -237,7 +237,7 @@ export function PoortkamerOverview({ eventSlug, praatkamerOnly = false }: { even
             </article>
           ))}
           </>}
-          {(tab === "community" || tab === "announcements") && <PoortkamerChat key={tab} admin disabled={false} refresh={load} initialChannel={snapshot.channels.find(c => c.kind === tab)?.id} room={{ userId: snapshot.userId, portal: { id: null }, portalTopic: "", communityTopic: snapshot.communityTopic, channels: snapshot.channels, team: [], updatedAt: "" }} />}
+          {(tab === "community" || tab === "announcements") && <PoortkamerChat key={tab} admin disabled={false} refresh={load} initialChannel={(tab === "community" ? snapshot.channels.find(c => c.kind === tab && c.name === "Algemeen") : undefined)?.id ?? snapshot.channels.find(c => c.kind === tab)?.id} room={{ userId: snapshot.userId, portal: { id: null }, portalTopic: "", communityTopic: snapshot.communityTopic, channels: snapshot.channels, team: [], updatedAt: "" }} />}
         </>
       )}
     </section>

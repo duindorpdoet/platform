@@ -4,6 +4,7 @@ import { SupportWidget } from "@/components/support/support-widget";
 import { SignOutButton } from "@/components/auth/account-actions";
 import { getActor } from "@/lib/auth/session";
 import { serverEnv } from "@/lib/config/server-env";
+import { EnvironmentTracker } from "@/components/analytics/environment-tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -16,5 +17,5 @@ export default async function MyRegistrationPage({ searchParams }: { searchParam
     redirect(`/inloggen?next=${encodeURIComponent(destination)}`);
   }
   const eventSlug = serverEnv().EVENT_SLUG;
-  return <><div className="page wrap registration-account-page"><div className="app-heading row-between"><div><p className="kicker">Persoonlijke omgeving</p><h1>Mijn inschrijving</h1></div><SignOutButton /></div><RegistrationDashboard eventSlug={eventSlug} inviteToken={safeInviteToken} /></div><SupportWidget eventSlug={eventSlug} role="user" /></>;
+  return <><EnvironmentTracker surface="participant" /><div className="page wrap registration-account-page"><div className="app-heading row-between"><div><p className="kicker">Persoonlijke omgeving</p><h1>Mijn inschrijving</h1></div><SignOutButton /></div><RegistrationDashboard eventSlug={eventSlug} inviteToken={safeInviteToken} /></div><SupportWidget eventSlug={eventSlug} role="user" /></>;
 }

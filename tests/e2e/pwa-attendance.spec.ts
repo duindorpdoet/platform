@@ -45,14 +45,28 @@ test("the mobile invitation is daily, dismissible and exposes honest manual inst
   test.skip(testInfo.project.name !== "mobile-chromium", "Mobile installation invitation only");
   test.skip(!supabaseUrl || !publishableKey, "Requires local Supabase fixtures");
   await authenticate(context, "parent-a@example.invalid");
+  const analyticsEvents: string[] = [];
+  await page.route("**/api/analytics/events", async (route) => {
+    analyticsEvents.push((route.request().postDataJSON() as { eventType: string }).eventType);
+    await route.fulfill({ status: 202, contentType: "application/json", body: '{"data":{"accepted":true}}' });
+  });
   await page.goto("/omgeving");
   const invitation = page.getByRole("dialog", { name: "Zet De Poorten op je beginscherm" });
   await expect(invitation).toBeVisible();
   await expect(invitation.getByText("Ik wil meldingen over mijn groep of poort ontvangen")).toBeVisible();
   await invitation.getByRole("button", { name: "Installeer app" }).click();
   await expect(invitation).toContainText(/browsermenu|Deel/);
-  await invitation.getByRole("button", { name: "Later" }).click();
+  await invitation.getByRole("button", { name: "Ik heb de app al geïnstalleerd" }).click();
   await expect(invitation).toHaveCount(0);
+  await expect.poll(() => analyticsEvents).toContain("pwa_install_manual_confirmed");
   await page.reload();
   await expect(page.getByRole("dialog", { name: "Zet De Poorten op je beginscherm" })).toHaveCount(0);
+
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  const repeatedInvitation = page.getByRole("dialog", { name: "Zet De Poorten op je beginscherm" });
+  await expect(repeatedInvitation).toBeVisible();
+  await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")));
+  await expect(repeatedInvitation).toHaveCount(0);
+  await expect.poll(() => analyticsEvents).toContain("pwa_install_completed");
 });

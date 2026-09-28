@@ -139,6 +139,8 @@ export function ShareStudio() {
         setMessage("Het deelmenu is geopend.");
         track(sessionId, "native_share_opened", card, generated, "native");
         await opened;
+        setMessage("De deelactie is voltooid.");
+        track(sessionId, "native_share_completed", card, generated, "native");
         return;
       }
       await download();

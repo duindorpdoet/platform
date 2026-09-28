@@ -3,6 +3,7 @@ import { ParticipantShell, type ParticipantContext, type ParticipantRoleKey } fr
 import { getActor } from "@/lib/auth/session";
 import { serverEnv } from "@/lib/config/server-env";
 import { createClient } from "@/lib/supabase/server";
+import { EnvironmentTracker } from "@/components/analytics/environment-tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -42,13 +43,16 @@ export default async function ParticipantEnvironmentPage({
     : context.roles[0]?.key;
 
   return (
-    <ParticipantShell
-      context={context}
-      eventSlug={eventSlug}
-      userId={actor.userId}
-      role={selectedRole}
-      section={segments[1]}
-      inviteToken={inviteToken}
-    />
+    <>
+      <EnvironmentTracker surface={selectedRole === "homeowner" ? "homeowner" : selectedRole === "walker" ? "group" : "participant"} />
+      <ParticipantShell
+        context={context}
+        eventSlug={eventSlug}
+        userId={actor.userId}
+        role={selectedRole}
+        section={segments[1]}
+        inviteToken={inviteToken}
+      />
+    </>
   );
 }

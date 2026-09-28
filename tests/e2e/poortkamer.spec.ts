@@ -75,6 +75,57 @@ async function noOverflow(page: Page) {
     ),
   ).toBe(true);
 }
+async function viewportShellScrolls(page: Page) {
+  const shell = page.locator("[data-poortkamer-shell]");
+  const content = page.locator("#poortkamer-content");
+  await expect(shell).toBeVisible();
+  await expect(content).toBeVisible();
+  const before = await page.evaluate(() => {
+    const shellElement = document.querySelector<HTMLElement>(
+      "[data-poortkamer-shell]",
+    )!;
+    const contentElement = document.querySelector<HTMLElement>(
+      "#poortkamer-content",
+    )!;
+    const header = contentElement.previousElementSibling as HTMLElement;
+    const shellRect = shellElement.getBoundingClientRect();
+    return {
+      documentScroll: document.scrollingElement?.scrollTop ?? -1,
+      headerTop: header.getBoundingClientRect().top,
+      shellTop: shellRect.top,
+      shellBottom: shellRect.bottom,
+      scrollHeight: contentElement.scrollHeight,
+      clientHeight: contentElement.clientHeight,
+      overflowY: getComputedStyle(contentElement).overflowY,
+    };
+  });
+  expect(before.scrollHeight).toBeGreaterThan(before.clientHeight);
+  expect(before.overflowY).toBe("auto");
+  expect(before.shellTop).toBeGreaterThanOrEqual(-1);
+  expect(before.shellBottom).toBeLessThanOrEqual(
+    await page.evaluate(() => innerHeight + 1),
+  );
+  await content.hover();
+  await page.mouse.wheel(0, 800);
+  await expect
+    .poll(() => content.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(0);
+  const after = await page.evaluate(() => {
+    const contentElement = document.querySelector<HTMLElement>(
+      "#poortkamer-content",
+    )!;
+    const header = contentElement.previousElementSibling as HTMLElement;
+    return {
+      documentScroll: document.scrollingElement?.scrollTop ?? -1,
+      headerTop: header.getBoundingClientRect().top,
+    };
+  });
+  expect(after.documentScroll).toBe(before.documentScroll);
+  expect(Math.abs(after.headerTop - before.headerTop)).toBeLessThan(1);
+  await content.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+}
 async function screenshot(page: Page, name: string, project: string) {
   if (
     !["room-desktop", "room-samsung-chrome", "room-iphone-webkit"].includes(
@@ -156,6 +207,14 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
     guest.getByRole("button", { name: "Open", exact: true }),
   ).toHaveCount(0);
   await guest.getByRole("button", { name: /^Berichten/ }).click();
+  const privateChannels = guest
+    .getByRole("navigation", { name: "Kamers van dit huis" })
+    .getByRole("button");
+  await expect(privateChannels).toHaveCount(4);
+  await expect(privateChannels.nth(0)).toHaveText(/^#Achter de Poort/);
+  await expect(privateChannels.nth(1)).toHaveText(/^#Voorbereiding/);
+  await expect(privateChannels.nth(2)).toHaveText(/^#Decor en techniek/);
+  await expect(privateChannels.nth(3)).toHaveText(/^#Tijdens de avond/);
   await guest
     .getByLabel("Je bericht", { exact: true })
     .fill("We staan klaar bij de poort.");
@@ -192,6 +251,13 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   await guest
     .getByRole("button", { name: /^Praatkamer/ })
     .click();
+  const communityChannels = guest
+    .getByRole("navigation", { name: "Praatkamer kanalen" })
+    .getByRole("button");
+  await expect(communityChannels).toHaveCount(2);
+  await expect(communityChannels.first()).toHaveText(/^#Algemeen/);
+  await expect(communityChannels.nth(1)).toHaveText(/^#Hulp gevraagd/);
+  await expect(communityChannels.first()).toHaveAttribute("aria-pressed", "true");
   await guest
     .getByLabel("Je bericht", { exact: true })
     .fill(`Groet vanaf onze poort ${randomUUID()}`);
@@ -258,6 +324,7 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   const fixture = await owner(context);
   await page.addLocatorHandler(page.getByRole("button", { name: "Installatievenster sluiten" }), async close => close.click());
   await page.goto("/mijn-huis");
+  await viewportShellScrolls(page);
   await page.getByRole("button", { name: "Pauze", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Hervatten").selectOption("5");

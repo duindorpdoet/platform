@@ -34,7 +34,7 @@ select is(app_private.poortkamer_role((select portal_id from v2),'a0000000-0000-
 select ok(exists(select 1 from jsonb_array_elements(api.portal_room_snapshot('duindorp-halloween-2026',(select portal_id from v2))->'team') m where m->>'userId'='a0000000-0000-0000-0000-000000000002' and m->>'suspendedAt' is not null),'owner can see suspended status in team management');
 select lives_ok($$select api.portal_team_command((select portal_id from v2),'reactivate','{"userId":"a0000000-0000-0000-0000-000000000002"}',gen_random_uuid())$$,'owner safely reactivates the same membership');
 select is(app_private.poortkamer_role((select portal_id from v2),'a0000000-0000-0000-0000-000000000002'),'viewer','reactivated member regains only the existing role');
-select ok((api.portal_room_snapshot('duindorp-halloween-2026',(select portal_id from v2))->'channels')::text !~ 'Algemeen|Snoep|voorraad','V2 navigation exposes only the approved Poortenplein channels');
+select is((select string_agg(channel->>'name','|' order by position) from jsonb_array_elements(api.portal_room_snapshot('duindorp-halloween-2026',(select portal_id from v2))->'channels') with ordinality item(channel,position) where channel->>'kind'='community'),'Algemeen|Hulp gevraagd','V2 navigation exposes only the two event-wide Praatkamer channels');
 
 -- A child can change only the identity belonging to its server session.
 insert into app_private.poortenboek_codes(event_id,child_id,code_digest,ciphertext)

@@ -88,6 +88,7 @@ export function Poortkamer({
     "invite" | "pause" | "stop" | "details" | null
   >(null);
   const [qr, setQr] = useState<{ image: string; code: string } | null>(null);
+  const contentRef = useRef<HTMLElement>(null);
   const commandPending = useRef(false);
   const version = useRef(0);
   const userId = initial.userId;
@@ -166,6 +167,9 @@ export function Poortkamer({
     const timeout = window.setTimeout(clearPrivate, 5 * 60_000);
     return () => clearTimeout(timeout);
   }, [offline, clearPrivate]);
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [tab, moreSection]);
   async function command(
     operation: string,
     payload: Record<string, unknown>,
@@ -291,80 +295,89 @@ export function Poortkamer({
     });
   return (
     <div className={`${s.room} ${tab === "messages" ? s.chatMode : ""}`}>
-      <header className={s.top}>
-        <div className={s.brand}>
-          <Image
-            src="/images/logo.webp"
-            width={140}
-            height={90}
-            alt="De Duindorpse Poorten van Halloween"
-          />
-          <div>
-            <strong>De Poortkamer</strong>
-            <small>Jullie plek achter de poort</small>
-          </div>
-        </div>
-        <Link href={admin ? "/admin" : "/omgeving"}>Mijn omgeving</Link>
-      </header>
-      <div className={`${s.statusbar} ${tab !== "night" ? s.compactStatus : ""}`}>
-        <div>
-          <strong>
-            {room.portal.code} · {portalStates[room.portal.state]}
-          </strong>
-          <small> · {portalRoles[room.role]}</small>
-          {room.portal.pauseUntil && (
-            <small> · Hervat rond {portalTime(room.portal.pauseUntil)}</small>
-          )}
-        </div>
-        <div className={s.actions}>
-          {canLive && tab === "night" && (
-            <>
+      <div className={s.shell} data-poortkamer-shell>
+        <aside className={s.sidebar} aria-label="Poortkamer menu">
+          <Link className={s.brand} href="/">
+            <Image
+              src="/images/logo.webp"
+              width={140}
+              height={90}
+              alt="De Duindorpse Poorten van Halloween"
+              priority
+            />
+            <div>
+              <strong>De Poortkamer</strong>
+              <small>Jullie plek achter de poort</small>
+            </div>
+          </Link>
+          <p className={s.sidebarLabel}>Werkruimte</p>
+          <nav className={s.nav} aria-label="Poortkamer navigatie">
+            {nav.map(({ key, label, icon: Icon }) => (
               <button
-                className={s.button}
-                aria-pressed={room.portal.state === "open"}
-                disabled={disabled}
-                onClick={() => void statusAction("open")}
+                key={key}
+                aria-current={tab === key ? "page" : undefined}
+                onClick={() => {
+                  setTab(key);
+                  setNotice("");
+                }}
               >
-                <DoorOpen size={17} />
-                Open
+                <Icon size={20} />
+                <span>{label}</span>
+                {key === "messages" && unreadMessages > 0 && <b className={s.navBadge} aria-label={`${unreadMessages} ongelezen`}>{unreadMessages > 99 ? "99+" : unreadMessages}</b>}
               </button>
-              <button
-                className={s.button}
-                aria-pressed={room.portal.state === "paused"}
-                disabled={disabled}
-                onClick={() => setDialog("pause")}
-              >
-                <Pause size={17} />
-                Pauze
-              </button>
-              <button
-                className={s.button}
-                aria-pressed={room.portal.state === "closed"}
-                disabled={disabled}
-                onClick={() => setDialog("stop")}
-              >
-                Gestopt
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      <nav className={s.nav} aria-label="Poortkamer navigatie">
-        {nav.map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            aria-current={tab === key ? "page" : undefined}
-            onClick={() => {
-              setTab(key);
-              setNotice("");
-            }}
+            ))}
+          </nav>
+          <Link className={s.sidebarReturn} href={admin ? "/admin" : "/omgeving"}>Terug naar mijn omgeving</Link>
+        </aside>
+        <div className={s.workspace}>
+          <header className={s.top}>
+            <div className={s.topIdentity}>
+              <span>De Poortkamer</span>
+              <strong>
+                {room.portal.code} · {portalStates[room.portal.state]}
+              </strong>
+              <small>{portalRoles[room.role]}{room.portal.pauseUntil ? ` · Hervat rond ${portalTime(room.portal.pauseUntil)}` : ""}</small>
+            </div>
+            <div className={s.actions}>
+              {canLive && tab === "night" && (
+                <>
+                  <button
+                    className={s.button}
+                    aria-pressed={room.portal.state === "open"}
+                    disabled={disabled}
+                    onClick={() => void statusAction("open")}
+                  >
+                    <DoorOpen size={17} />
+                    Open
+                  </button>
+                  <button
+                    className={s.button}
+                    aria-pressed={room.portal.state === "paused"}
+                    disabled={disabled}
+                    onClick={() => setDialog("pause")}
+                  >
+                    <Pause size={17} />
+                    Pauze
+                  </button>
+                  <button
+                    className={s.button}
+                    aria-pressed={room.portal.state === "closed"}
+                    disabled={disabled}
+                    onClick={() => setDialog("stop")}
+                  >
+                    Gestopt
+                  </button>
+                </>
+              )}
+            </div>
+            <Link className={s.headerReturn} href={admin ? "/admin" : "/omgeving"}>Mijn omgeving</Link>
+          </header>
+          <main
+            ref={contentRef}
+            id="poortkamer-content"
+            className={`${s.scrollPane} ${tab === "messages" ? s.chatScroll : ""}`}
+            tabIndex={-1}
           >
-            <Icon size={20} />
-            <span>{label}</span>
-            {key === "messages" && unreadMessages > 0 && <b className={s.navBadge} aria-label={`${unreadMessages} ongelezen`}>{unreadMessages > 99 ? "99+" : unreadMessages}</b>}
-          </button>
-        ))}
-      </nav>
       {tab === "night" && (
         <section className={s.hero}>
           <Image
@@ -404,7 +417,7 @@ export function Poortkamer({
           </div>
         </section>
       )}
-      <main id="poortkamer-content" className={`${s.content} ${tab === "messages" ? s.chatContent : ""}`}>
+      <div className={`${s.content} ${tab === "messages" ? s.chatContent : ""}`}>
         {(tab === "messages" || tab === "more") && <h1 className="sr-only">{tab === "messages" ? "Berichten" : "Meer in jullie Poortkamer"}</h1>}
         {tab !== "messages" && <div className={s.pageTools}>
           <p>
@@ -1099,7 +1112,10 @@ export function Poortkamer({
           Hulp nodig? Gebruik Hulp & contact voor de organisatie. Bij direct
           gevaar bel je 112.
         </p>
-      </main>
+      </div>
+          </main>
+        </div>
+      </div>
       {!admin && tab !== "messages" && (
         <SupportWidget
           eventSlug={eventSlug}

@@ -4,6 +4,7 @@ import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Mail, RotateCcw } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { analyticsSurfaceForPath, trackProductAnalytics, type AnalyticsSurface } from "@/lib/analytics/client";
 import { createClient } from "@/lib/supabase/client";
 import { safeReturnPath } from "@/lib/auth/redirect";
 
@@ -15,12 +16,14 @@ export function EmailOtpForm({
   onVerified,
   beforeRequestCode,
   initialEmail = "",
+  analyticsSurface,
 }: {
   nextPath?: string;
   children?: ReactNode;
   onVerified?: () => Promise<void>;
   beforeRequestCode?: (email: string) => Promise<void>;
   initialEmail?: string;
+  analyticsSurface?: AnalyticsSurface;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState(initialEmail);
@@ -88,6 +91,7 @@ export function EmailOtpForm({
         setMessage("Deze code is onjuist of verlopen. Vraag zo nodig een nieuwe code aan.");
         return;
       }
+      await trackProductAnalytics("login_completed", analyticsSurface ?? analyticsSurfaceForPath(destination));
       if (onVerified) { await onVerified(); return; }
       router.replace(destination);
       router.refresh();
