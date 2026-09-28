@@ -345,18 +345,9 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
     }),
   );
   await page.getByRole("button", { name: "Terugblik", exact: true }).click();
-  const exported = page.waitForEvent("download");
-  await page
-    .getByRole("button", { name: "Deel ons Nachtverslag", exact: true })
-    .click();
-  const download = await exported;
-  expect(download.suggestedFilename()).toMatch(/^nachtverslag-P-\d+\.png$/);
-  const chunks: Buffer[] = [];
-  for await (const chunk of (await download.createReadStream())!)
-    chunks.push(Buffer.from(chunk));
-  const card = Buffer.concat(chunks);
-  expect(card.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
-  expect(card.byteLength).toBeGreaterThan(5000);
+  await expect(
+    page.getByRole("link", { name: "Deel ons Nachtverslag", exact: true }),
+  ).toHaveAttribute("href", "/deel-de-magie?from=poortkamer-terugblik");
   const installed = page.getByRole("button", {
     name: "Ik heb de app al geïnstalleerd",
     exact: true,
