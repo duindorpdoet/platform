@@ -36,7 +36,7 @@ async function authenticate(context: BrowserContext, email: string) {
 }
 
 async function selectAdminSection(page: Page, name: string) {
-  await expect(page.locator(".admin-page-heading")).toBeVisible();
+  await expect(page.locator(".admin-appbar")).toBeVisible();
   const more = page.getByRole("button", { name: "Meer", exact: true });
   const menu = page.getByRole("button", { name: "Organisatienavigatie openen" });
   if (await more.isVisible()) await more.click();
@@ -68,7 +68,7 @@ test("the unified mobile participant environment keeps role navigation and payme
   await bottomNavigation.getByRole("link", { name: "Nachtpas" }).click();
   await expect(page.getByRole("heading", { name: "Jullie Nachtpas" })).toBeVisible();
   await expect(page.getByText("TOEGANG ACTIEF", { exact: true })).toBeVisible();
-  await expect(page.getByText(/geen aparte QR-controle/i)).toBeVisible();
+  await expect(page.getByText("Laat deze Nachtpas zien als de organisatie daarom vraagt.")).toBeVisible();
   await expect(page.locator('img[alt*="QR-code"]')).toHaveCount(0);
   await assertReadableLayout(page);
 });
@@ -143,7 +143,7 @@ test("forged cookies fail and offline group state reveals only the current stop 
 
   await context.setOffline(true);
   await page.getByRole("button", { name: "Vernieuwen" }).click();
-  await expect(page.locator(".offline-banner")).toContainText(/laatst door de server bevestigde opdracht/i);
+  await expect(page.locator(".offline-banner")).toContainText(/laatste route-informatie, bijgewerkt om/i);
   await expect(page.getByRole("heading", { name: "Testpoort 01" })).toBeVisible();
   await expect(page.getByRole("button", { name: "QR scannen" })).toBeDisabled();
   await expect(page.getByRole("button", { name: /overslaan/i }).first()).toBeDisabled();
@@ -241,8 +241,8 @@ test("a multi-child registration draft survives refresh and submits once", async
   await page.goto("/meelopen");
   await page.getByRole("button", { name: "Opslaan en verder" }).click();
   await expect(page.locator(".wizard").getByRole("alert")).toBeFocused();
-  await expect(page.getByLabel("E-mailadres (geverifieerd account)")).toHaveValue(registrationEmail);
-  await expect(page.getByLabel("E-mailadres (geverifieerd account)")).toHaveAttribute("readonly", "");
+  await expect(page.getByLabel("E-mailadres van je account")).toHaveValue(registrationEmail);
+  await expect(page.getByLabel("E-mailadres van je account")).toHaveAttribute("readonly", "");
   await page.getByLabel("Naam verantwoordelijke volwassene").fill("Browser testouder");
   await page.getByLabel("Telefoonnummer voor de avond").fill("0612345678");
   for (const label of ["Gewenste starttijd", "Wanneer stoppen jullie met gewone poorten?"]) {
@@ -572,16 +572,17 @@ test("a group leader and organizer can exchange messages through the private sup
   await authenticate(context, "admin@example.invalid");
   await page.goto("/admin");
   await selectAdminSection(page, "Messenger");
-  const conversationButton = page.locator(".ticket-list button").filter({ hasText: "G-01" }).first();
+  const conversationButton = page.locator(".messenger-conversation").filter({ hasText: "G-01" }).first();
   await expect(conversationButton).toBeVisible();
   await conversationButton.click();
-  await expect(page.locator(".ticket-thread")).toContainText(leaderMessage);
+  await expect(page.locator(".messenger-inbox [role=log]")).toContainText(leaderMessage);
   const claimButton = page.getByRole("button", { name: "Gesprek openen" });
   if (await claimButton.isVisible()) await claimButton.click();
   await page.getByLabel("Antwoord").fill(organizerReply);
-  await page.locator(".ticket-reply").getByRole("button", { name: "Versturen" }).click();
-  await expect(page.locator(".ticket-thread")).toContainText(organizerReply);
-  await expect(page.getByRole("status")).toContainText(/verstuurd/i);
+  await page.locator(".chat-composer").getByRole("button", { name: "Versturen" }).click();
+  await expect(page.locator(".messenger-inbox [role=log]")).toContainText(organizerReply);
+  await page.getByRole("button", { name: "Terug naar gesprekken" }).click();
+  await expect(conversationButton).toBeVisible();
   await assertReadableLayout(page);
 
   await authenticate(context, "leader-a@example.invalid");
@@ -1338,6 +1339,6 @@ test("mobile admin notification bell opens actionable existing alerts and restor
   await page.screenshot({ path: testInfo.outputPath("mobile-admin-notifications.png") });
   await dialog.getByRole("button", { name: /1 samenloopverzoek/ }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.locator(".admin-page-heading h1")).toHaveText("Samenloop");
+  await expect(page.getByRole("heading", { name: "Samenloop", level: 2, exact: true })).toBeVisible();
   await expect.poll(() => page.locator("#admin-content").evaluate((el) => el.scrollTop)).toBe(0);
 });

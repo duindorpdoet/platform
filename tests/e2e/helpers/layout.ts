@@ -17,7 +17,7 @@ export async function assertReadableLayout(page: Page, doubleText = false) {
   await expect(page.locator("h1").first()).toBeVisible();
   const overflow = await page.evaluate(() => {
     const width = document.documentElement.clientWidth;
-    return [...document.querySelectorAll<HTMLElement>("main h1, main h2, main input:not([type=hidden]), main select, main textarea, main button")]
+    return [...document.querySelectorAll<HTMLElement>("main h1, main h2, main input:not([type=hidden]), main select, main textarea, main button, .site-header a, .site-header summary")]
       .filter((element) => {
         if (!element.checkVisibility() || element.closest(".honeypot")) return false;
         // MapLibre keeps focusable markers just outside the viewport while its

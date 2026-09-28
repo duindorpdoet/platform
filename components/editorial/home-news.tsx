@@ -3,7 +3,7 @@ import { newsFeed } from "@/lib/editorial/server";
 import { NewsCard } from "./news-view";
 export async function HomeNews() {
   const items = await newsFeed("website");
-  if (!items.length) return null;
+
   const featured = items.find((item) => item.featured);
   return (
     <section className="wrap editorial-feed">
@@ -16,6 +16,7 @@ export async function HomeNews() {
           Alle verhalen →
         </Link>
       </div>
+      {!items.length && <div className="news-empty"><h3>De voorpret begint hier</h3><p>Verhalen uit de wijk, nieuwe poorten en nieuws over de avond. De eerste berichten verschijnen hier zodra ze klaarstaan.</p><Link href="/nieuws" className="editorial-text-link">Naar het nieuwsoverzicht →</Link></div>}
       {featured && <NewsCard item={featured} featured />}
       <div className="editorial-grid">
         {items

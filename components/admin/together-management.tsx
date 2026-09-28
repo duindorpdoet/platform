@@ -45,7 +45,7 @@ export function TogetherManagement({ eventSlug }: { eventSlug: string }) {
   const complete = (message: string) => {
     setLinkOpen(false); setDecision(null); setNotice(message); void load();
   };
-  return <section className="panel together-management" aria-label="Samenloopbeheer">
+  return <section className="panel together-management" aria-label="Samenloopbeheer"><header className="workspace-heading"><div><p className="kicker">Samen op pad</p><h2>Samenloop</h2><p>Houd vrienden bij elkaar en beoordeel nieuwe verzoeken.</p></div></header>
     <div className="row-between together-toolbar">
       <label className="field"><span>Zoeken</span><input type="search" maxLength={200} value={query} onChange={(event) => { setQuery(event.target.value); setOffset(0); }} placeholder="Zoek op samenloopnummer, inschrijfnummer, samenloopcode, ouder, e-mail of kind…" /></label>
       <div className="actions"><button type="button" className="btn outline" aria-label="Samenlopen vernieuwen" onClick={() => void load()}><RefreshCw /></button><button type="button" className="btn" onClick={() => setLinkOpen(true)}><Plus />Samenloop koppelen</button></div>
@@ -55,7 +55,7 @@ export function TogetherManagement({ eventSlug }: { eventSlug: string }) {
       {([["confirmed", "Bevestigde samenlopen"], ["requests", "Open verzoeken"], ["problems", "Problemen"]] as const).map(([key, label]) => <button type="button" key={key} className={`btn ${tab === key ? "" : "outline"}`} aria-pressed={tab === key} onClick={() => { setTab(key); setOffset(0); }}>{label}{snapshot ? ` (${snapshot.totals[key]})` : ""}</button>)}
     </div>
     {!snapshot ? <p role="status">Samenlopen ophalen…</p> : <>
-      {tab === "problems" && <p>Deze signalen vragen controle. Er worden geen automatische reparaties uitgevoerd.</p>}
+      {tab === "problems" && <p>Bekijk deze samenlopen nog even. Open de details om te zien wat aandacht nodig heeft.</p>}
       {snapshot[tab].length === 0 && <p>Geen {tab === "confirmed" ? "bevestigde samenlopen" : tab === "requests" ? "open verzoeken" : "problemen"} gevonden.</p>}
       {tab !== "requests" ? snapshot[tab].map((party) => <PartyCard key={party.partyId} party={party} query={query} showProblems={tab === "problems"} />) : snapshot.requests.map((request) => <article className="together-card" key={request.id}>
         <strong>{request.registrationReference} wil aansluiten bij samenloopcode {request.requestedCode}</strong>

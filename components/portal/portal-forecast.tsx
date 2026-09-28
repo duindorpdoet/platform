@@ -73,8 +73,8 @@ export function PortalForecast({ portalId, systemCode, name, operationStatus }: 
       </div>
       {assigned.length > 0 && <div><p className={styles.eyebrow}><Users aria-hidden="true" />Al toegewezen</p><div className={styles.arrivals}>{assigned.map((arrival) => <article className={styles.arrival} key={`${arrival.groupCode}-${arrival.plannedArrivalAt}`}><strong>{arrival.displayName || arrival.groupCode}</strong><span>{arrival.displayName ? `${arrival.groupCode} · ` : ""}{arrival.expectedChildren} kinderen</span><span>{time(arrival.plannedArrivalAt)}–{time(arrival.plannedDepartureAt)}</span></article>)}</div></div>}
       {assigned.length === 0 && forecast.length === 0 && <p className={styles.empty}>Er staan nu geen groepen in de actuele planning voor jullie poort.</p>}
-      <p className={styles.forecastExplanation}>Toegewezen groepen hebben jullie poort al in hun serverbevestigde route. De prognose kan nog veranderen door tempo, pauzes, veiligheid en beschikbaarheid. Dit is geen live GPS.</p>
-      <div className={styles.forecastFoot}><span>{name} · ontvangstplanning</span><span>Laatst door de server bijgewerkt: {snapshot.updatedAt ? new Date(snapshot.updatedAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" }) : "nog niet beschikbaar"}</span></div>
+      <p className={styles.forecastExplanation}>De toegewezen groepen komen naar jullie poort. Hun aankomsttijd kan verschuiven door wandeltempo of een pauze. Je ziet de verwachte aankomst, niet hun locatie onderweg.</p>
+      <div className={styles.forecastFoot}><span>{name} · ontvangstplanning</span><span>Bijgewerkt om: {snapshot.updatedAt ? new Date(snapshot.updatedAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" }) : "nog niet beschikbaar"}</span></div>
     </>}
   </section>;
 }

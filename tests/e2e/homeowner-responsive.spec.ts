@@ -35,6 +35,7 @@ test("homeowner controls, profile and support fit 320, 375, 390 and 430 pixel sc
         expect(bounds?.width).toBeGreaterThanOrEqual(44);
       }
       await page.getByRole("button", { name: "Meer", exact: true }).click();
+      await page.getByRole("button", { name: "Instellingen", exact: true }).click();
       await page.getByRole("button", { name: "Poortgegevens wijzigen", exact: true }).click();
       const edit = page.getByRole("dialog", { name: "Jullie poortgegevens" });
       await expect(edit.getByLabel("Poortnaam")).toHaveCSS("font-size", "16px");

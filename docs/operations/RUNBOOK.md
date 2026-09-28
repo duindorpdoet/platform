@@ -11,7 +11,7 @@
 
 ## Registratie veilig openen
 
-Niet via een losse frontendvariabele. Eerst moeten echte operationele data, juridische versies en organisatiegoedkeuring aanwezig zijn. Pas daarna worden runtime `REGISTRATION_MODE=live` en een afzonderlijk geautoriseerd database-releasecommand samen gewijzigd. De huidige productionworkflow dwingt `closed` en `production_closed` af.
+Niet via een losse frontendvariabele. Eerst moeten echte operationele data, juridische versies en organisatiegoedkeuring aanwezig zijn. Pas daarna worden runtime `REGISTRATION_MODE=live` en een afzonderlijk geautoriseerd database-releasecommand samen gewijzigd. De huidige productionworkflow gebruikt de geautoriseerde instellingen `live` en `production_open`; de stagingworkflow gebruikt `staging_test`.
 
 ## Planning publiceren
 

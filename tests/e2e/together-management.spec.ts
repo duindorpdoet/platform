@@ -21,7 +21,7 @@ async function authenticate(context: BrowserContext, email = "admin@example.inva
   return client;
 }
 async function section(page: Page, name: string) {
-  await expect(page.locator(".admin-page-heading")).toBeVisible();
+  await expect(page.locator(".admin-appbar")).toBeVisible();
   const more = page.getByRole("button", { name: "Meer", exact: true });
   const menu = page.getByRole("button", { name: "Organisatienavigatie openen" });
   if (await more.isVisible()) await more.click();
@@ -63,7 +63,7 @@ test("confirmed clusters stay whole when searching by cluster, registration, cod
   await page.getByRole("button", { name: /^Open verzoeken/ }).click();
   await expect(page.locator(`[data-party-id="${party.partyId}"]`)).toHaveCount(0);
   await page.getByRole("button", { name: /^Problemen/ }).click();
-  await expect(page.getByText("Deze signalen vragen controle.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Bekijk deze samenlopen nog even.", { exact: false })).toBeVisible();
 });
 
 for (const variant of ["DPH + DPH", "DPH + SL", "code + DPH"] as const) {

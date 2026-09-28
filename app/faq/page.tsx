@@ -1,21 +1,6 @@
-import Link from "next/link";
-import { Mail } from "lucide-react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { PageHeading } from "@/components/brand/public-page";
-import { faq } from "@/features/content/public-content";
-
-export const metadata = { title: "Veelgestelde vragen · De Duindorpse Poorten" };
-
+import { FaqDirectory } from "@/components/brand/faq-directory";
+export const metadata = { title: "Veelgestelde vragen · De Duindorpse Poorten", description: "Uitleg over meedoen, samenlopen, het Poortenboek, de Poortkamer, betalen, de app en hulp tijdens Halloween in Duindorp." };
 export default function FaqPage() {
-  return (
-    <div className="wrap page">
-      <PageHeading eyebrow="WE HELPEN JE OP WEG" title="Alles voor een fijne avond." intro="Heldere antwoorden voor kinderen, ouders, begeleiders, bewoners en ondernemers." />
-      <div className="contact-grid">
-        <Accordion type="single" collapsible className="faq panel">
-          {faq.map(([question, answer], index) => <AccordionItem value={String(index)} key={question}><AccordionTrigger>{question}</AccordionTrigger><AccordionContent>{answer}</AccordionContent></AccordionItem>)}
-        </Accordion>
-        <aside className="panel"><Mail size={30} /><h2>Nog iets vragen?</h2><p>Al ingeschreven? Open Hulp van de organisatie in jullie persoonlijke omgeving voor een privégesprek via Messenger. Nog geen account of een algemene vraag? Stuur ons een bericht via de contactpagina.</p><Link className="btn outline" href="/contact">Stel je vraag</Link></aside>
-      </div>
-    </div>
-  );
+  return <div className="wrap page"><PageHeading eyebrow="WE HELPEN JE OP WEG" title="Een antwoord voor iedere avonturier." intro="Voor ouders, kinderen en Poortwachters. Kies een onderwerp of zoek direct naar jouw vraag." /><FaqDirectory /></div>;
 }

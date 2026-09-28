@@ -258,7 +258,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize }: { eventSlug: str
   return <div className="dashboard-stack start-schedule-board">
     {notice && <div className="form-notice" role="status">{notice}</div>}
     <section className="panel">
-      <p className="kicker">Configureerbaar · Europe/Amsterdam</p><h2>Route- en eindpoortinstellingen</h2>
+      <p className="kicker">Tijden in Nederland</p><h2>Route- en eindpoortinstellingen</h2>
       <div className="settings-grid">
         <label className="field"><span>Eerste mogelijke start</span><input type="datetime-local" value={datetimeLocal(settingsDraft.firstStartAt)} onChange={(event) => setSettingsDraft({ ...settingsDraft, firstStartAt: iso(event.target.value) })} /></label>
         <label className="field"><span>Vroeg geldt tot</span><input type="datetime-local" value={datetimeLocal(settingsDraft.earlyPreferenceLatestAt)} onChange={(event) => setSettingsDraft({ ...settingsDraft, earlyPreferenceLatestAt: iso(event.target.value) })} /></label>
@@ -291,7 +291,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize }: { eventSlug: str
       <button className="btn" disabled={busy} onClick={() => void saveSettings()}><Save />Instellingen opslaan</button>
     </section>
 
-    <section className="panel"><p className="kicker">Privé beheerkaart</p><h2>Fysieke startpunten</h2><p>Alleen beheerders zien deze adressen. Een startpunt wordt pas bruikbaar na koppeling aan een geverifieerde node in het veilige wandelnetwerk.</p>
+    <section className="panel"><p className="kicker">Privé beheerkaart</p><h2>Fysieke startpunten</h2><p>Kies een veilige verzamelplek en koppel die aan een gecontroleerd punt op de wandelkaart. Daarna kun je vertrektijden toevoegen.</p>
       {mapPoints.length > 0 && <NightMap variant="admin" portals={mapPoints} ariaLabel="Beheerkaart met geverifieerde startpunten" />}
       {snapshot.startPoints.map((point) => <article className="summary-row" key={point.id}><span><strong>{point.name}</strong><br />{point.privateAddress} · {point.verified ? "geverifieerd" : "niet geverifieerd"}<span className="start-slot-drop-list">{point.slots.length ? point.slots.map((slot) => <button type="button" className="start-slot-drop" key={slot.id} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const group = snapshot.groups.find((item) => item.id === event.dataTransfer.getData("text/group-id")); if (group) void moveGroup(group, slot.id); }} onClick={() => setNotice(`${point.name} om ${new Date(slot.startsAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}: sleep hier een groepskaart naartoe of kies dit tijdstip in het formulier.`)}>{new Date(slot.startsAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}</button>) : "nog geen tijden"}</span></span><button className="btn outline" onClick={() => void addSlot(point)}><Clock3 />Tijd toevoegen</button></article>)}
       <div className="separator" /><h3>Startpunt toevoegen</h3><div className="settings-grid">
@@ -307,7 +307,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize }: { eventSlug: str
       </div><button className="btn outline" disabled={busy || !pointDraft.name || !pointDraft.privateAddress || !pointDraft.walkingNodeId} onClick={() => void addStartPoint()}><MapPinned />Geverifieerd startpunt bewaren</button>
     </section>
 
-    <section className="panel"><p className="kicker">Geen vast aantal huizen</p><h2>Groepen en startafspraken</h2><p>Het voorstel maakt alleen groepen en reserveert finale-instroom. Gewone poorten worden pas live, één voor één, door de server gekozen.</p>
+    <section className="panel"><p className="kicker">Geen vast aantal huizen</p><h2>Groepen en startafspraken</h2><p>Dit voorstel verdeelt de startmomenten en houdt plek vrij bij de finale. Tijdens de avond krijgt iedere groep steeds een volgende poort toegewezen.</p>
       <div className="actions"><button className="btn" disabled={busy || snapshot.unassigned.length === 0} onClick={calculate}>Bereken concept</button><button className="btn outline" disabled={busy || !proposal?.groups.length || Boolean(proposal?.conflicts.length)} onClick={() => void saveProposal()}>Concept bewaren</button><button className="btn outline" disabled={busy || !scheduleIds.length} onClick={() => void publish()}><Send />Indeling bevestigen</button>{proposal && <button className="text-link" onClick={() => { setProposal(null); setScheduleIds([]); setNotice("Lokale berekening ongedaan gemaakt."); }}>Ongedaan maken</button>}</div>
       {proposal?.conflicts.map((conflict) => <div className="form-warning" key={`${conflict.code}-${conflict.subjectId}`}><AlertTriangle />{conflict.code}: {conflict.message}</div>)}
       {proposal?.groups.map((group: PlannedGroup) => {

@@ -157,7 +157,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   ).toHaveCount(0);
   await guest.getByRole("button", { name: /^Berichten/ }).click();
   await guest
-    .getByLabel("Bericht", { exact: true })
+    .getByLabel("Je bericht", { exact: true })
     .fill("We staan klaar bij de poort.");
   await guest.getByRole("button", { name: "Versturen", exact: true }).click();
   await expect(
@@ -172,17 +172,34 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
       .getByText("We staan klaar bij de poort.", { exact: true }),
   ).toBeVisible({ timeout: 25_000 });
   await screenshot(page, "berichten", info.project.name);
+  // Both nested consumers must keep the same private subscription alive.
+  const liveMessage = `Live in de teamkamer ${randomUUID()}`;
+  await guest.getByLabel("Je bericht", { exact: true }).fill(liveMessage);
+  await guest.getByRole("button", { name: "Versturen", exact: true }).click();
+  await expect(page.getByRole("log").getByText(liveMessage, { exact: true })).toBeVisible({ timeout: 5_000 });
+  await page.getByRole("button", { name: "Team", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Moderatorrechten voor Sem Privénaam" }).click();
+  await expect(page.getByRole("checkbox", { name: "Moderatorrechten voor Sem Privénaam" })).toBeChecked();
+  const moderated = guest.locator(".chat-bubble").filter({ hasText: liveMessage });
+  await moderated.getByLabel("Berichtopties").click();
+  await expect(moderated.getByRole("button", { name: "Verbergen", exact: true })).toBeVisible({ timeout: 5_000 });
+  await moderated.getByRole("button", { name: "Verbergen", exact: true }).click();
+  await guest.getByRole("dialog").getByRole("button", { name: "Verbergen", exact: true }).click();
+  await expect(guest.getByRole("log").getByText(liveMessage, { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: /^Berichten/ }).click();
+  await expect(page.getByRole("log").getByText(liveMessage, { exact: true })).toHaveCount(0);
+
   await guest
-    .getByRole("button", { name: "Het Poortplein", exact: true })
+    .getByRole("button", { name: /^Het Poortplein/ })
     .click();
   await guest
-    .getByLabel("Bericht", { exact: true })
+    .getByLabel("Je bericht", { exact: true })
     .fill(`Groet vanaf onze poort ${randomUUID()}`);
   await guest.getByRole("button", { name: "Versturen", exact: true }).click();
   await page
-    .getByRole("button", { name: "Het Poortplein", exact: true })
+    .getByRole("button", { name: /^Het Poortplein/ })
     .click();
-  const mention = page.getByLabel("Vermeld een Poortwachter uit dit gesprek");
+  const mention = page.getByLabel("Vermeld een teamlid");
   await expect(
     mention.locator(`option[value="${issued.data.user!.id}"]`),
   ).toHaveText(/Sem · P-/);
@@ -191,7 +208,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   );
   await mention.selectOption(issued.data.user!.id);
   await page
-    .getByLabel("Bericht", { exact: true })
+    .getByLabel("Je bericht", { exact: true })
     .fill("Dank je wel voor je bericht op het plein.");
   await page.getByRole("button", { name: "Versturen", exact: true }).click();
   await expect
@@ -212,6 +229,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   await expect(guest.getByRole("button", { name: /^Berichten/ })).toBeVisible({ timeout: 25_000 });
   page.once("dialog", (d) => d.accept());
   await page.getByLabel("Rol voor Sem Privénaam").selectOption("portal_manager");
+  await guest.getByRole("button", { name: "Nachtwacht", exact: true }).click();
   await expect(
     guest.getByRole("button", { name: "Open", exact: true }),
   ).toBeVisible({ timeout: 25_000 });
@@ -238,6 +256,7 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   context,
 }, info) => {
   const fixture = await owner(context);
+  await page.addLocatorHandler(page.getByRole("button", { name: "Installatievenster sluiten" }), async close => close.click());
   await page.goto("/mijn-huis");
   await page.getByRole("button", { name: "Pauze", exact: true }).click();
   const dialog = page.getByRole("dialog");
@@ -258,9 +277,13 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
     ),
   ).toBe("t");
   await page.getByRole("button", { name: "Meer", exact: true }).click();
+  await page.getByRole("button", { name: "Presentatie", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Het verhaal dat kinderen meenemen" })).toBeVisible();
+  await page.getByRole("button", { name: "Hulpvraag", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Meld wat de ontvangst belemmert" })).toBeVisible();
+  await page.getByRole("button", { name: "Oefenen", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Oefen de avond zonder echte gegevens" })).toBeVisible();
+  await page.getByRole("button", { name: "Voorbereiding", exact: true }).click();
   await expect(page.getByText(/snoepvoorraad/i)).toHaveCount(0);
   const installDismiss = page.getByRole("button", {
     name: "Ik heb de app al geïnstalleerd",
@@ -285,10 +308,10 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   await screenshot(page, "bezoeken", info.project.name);
   await page.getByRole("button", { name: /^Berichten/ }).click();
   await page
-    .getByRole("button", { name: "Het Poortplein", exact: true })
+    .getByRole("button", { name: /^Het Poortplein/ })
     .click();
   const escapedMessage = `<script>geen uitvoering ${randomUUID()}</script>`;
-  await page.getByLabel("Bericht", { exact: true }).fill(escapedMessage);
+  await page.getByLabel("Je bericht", { exact: true }).fill(escapedMessage);
   await page.getByRole("button", { name: "Versturen", exact: true }).click();
   await expect(
     page
@@ -321,6 +344,7 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
       value: undefined,
     }),
   );
+  await page.getByRole("button", { name: "Terugblik", exact: true }).click();
   const exported = page.waitForEvent("download");
   await page
     .getByRole("button", { name: "Deel ons Nachtverslag", exact: true })
@@ -338,6 +362,7 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
     exact: true,
   });
   if (await installed.isVisible()) await installed.click();
+  await page.getByRole("button", { name: "Instellingen", exact: true }).click();
   await page.getByRole("button", { name: /Uitloggen/ }).click();
   await page.goBack();
   await expect(page.getByText("De Lantaarnpoort", { exact: true })).toHaveCount(
@@ -379,4 +404,49 @@ test("standalone presentation and offline reload never recover cached private da
     0,
   );
   await context.setOffline(false);
+});
+
+test("organization updates reach the cockpit live and only organization moderates Poortplein", async ({ page, context, browser }, info) => {
+  await owner(context);
+  await page.goto("/mijn-huis");
+  await expect(page.getByText(/^Live · Bijgewerkt/)).toBeVisible({ timeout: 15_000 });
+  const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+  const signed = await client.auth.signInWithPassword({ email: "admin@example.invalid", password: "local-test-only" });
+  expect(signed.error).toBeNull();
+  const adminContext = await browser.newContext({ ...info.project.use, baseURL: origin, ignoreHTTPSErrors: true });
+  const name = `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0]}-auth-token`;
+  const value = `base64-${Buffer.from(JSON.stringify(signed.data.session)).toString("base64url")}`;
+  const chunks = value.length <= 3180 ? [{ name, value }] : Array.from({ length: Math.ceil(value.length / 3180) }, (_, i) => ({ name: `${name}.${i}`, value: value.slice(i * 3180, (i + 1) * 3180) }));
+  await adminContext.addCookies(chunks.map(chunk => ({ ...chunk, url: origin, secure: true, sameSite: "Lax" as const })));
+  const organization = await adminContext.newPage();
+  await organization.goto("/admin");
+  await expect(organization.locator(".admin-appbar")).toBeVisible();
+  const menu = organization.getByRole("button", { name: "Organisatienavigatie openen" });
+  if (await menu.isVisible()) await menu.click();
+  await organization.locator(".admin-nav").getByRole("button", { name: "Poorten", exact: true }).click();
+  await organization.getByRole("tab", { name: /Poortkamers en moderatie/ }).click();
+  await organization.getByRole("button", { name: "Korte updates", exact: true }).click();
+  const update = `Vanavond nemen we een lampje mee ${randomUUID()}`;
+  await organization.getByLabel("Je bericht", { exact: true }).fill(update);
+  await organization.getByRole("button", { name: "Versturen", exact: true }).click();
+  await expect(page.getByText(update, { exact: true })).toBeVisible({ timeout: 5_000 });
+  await screenshot(page, "organisatie-update", info.project.name);
+
+  await page.getByRole("button", { name: /^Berichten/ }).click();
+  await page.getByRole("button", { name: /^Het Poortplein/ }).click();
+  const message = `Een voorbeeld voor moderatie ${randomUUID()}`;
+  await page.getByLabel("Je bericht", { exact: true }).fill(message);
+  await page.getByRole("button", { name: "Versturen", exact: true }).click();
+  const own = page.locator(".chat-bubble").filter({ hasText: message });
+  await expect(own).toBeVisible();
+  await expect(own.getByRole("button", { name: "Verbergen", exact: true })).toHaveCount(0);
+  await organization.getByRole("button", { name: "Poortplein", exact: true }).click();
+  const received = organization.locator(".chat-bubble").filter({ hasText: message });
+  await expect(received).toBeVisible();
+  await received.getByLabel("Berichtopties").click();
+  await received.getByRole("button", { name: "Verbergen", exact: true }).click();
+  await organization.getByRole("dialog").getByRole("button", { name: "Verbergen", exact: true }).click();
+  await expect(page.getByRole("log").getByText(message, { exact: true })).toHaveCount(0, { timeout: 5_000 });
+  await noOverflow(organization);
+  await adminContext.close();
 });

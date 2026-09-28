@@ -61,8 +61,8 @@ export function TeamIdentityWorkshop({
         <p className="pb-eyebrow">Jouw verschijning</p>
         <h2>Kies wie jij bent in de nacht</h2>
         <p>
-          Deze keuze is alleen van jou. Reisgenootjes zien je voornaam en jouw
-          medaillon, nooit een foto of privégegevens.
+          Welk avontuur past bij jou? Kies je verschijning en laat je lantaarn
+          stralen in jouw favoriete kleur.
         </p>
         <fieldset className="pb-v2-choice-grid">
           <legend>Avonturenrol</legend>
@@ -163,8 +163,7 @@ export function TeamBannerWorkshop({
         <p className="pb-eyebrow">Het gezamenlijke vaandel</p>
         <h2>{result ? "Jullie vaandel is gekozen" : "Geef het vaandel jouw vonk"}</h2>
         <p>
-          Ieder reisgenootje kiest onderdelen. Alleen de aantallen worden
-          geteld; individuele keuzes blijven verborgen.
+          Welke kleuren en tekens passen bij jullie? Kies wat jij mooi vindt. Samen maken jullie één vaandel.
         </p>
         <TeamBanner choices={shown} level={snapshot.journey.upgradeLevel} />
         <p className="pb-team-progress">
@@ -341,7 +340,7 @@ export function PracticeGate({
         />
       </div>
       <div>
-        <p className="pb-eyebrow">Oefenpoort · geen echt bezoek</p>
+        <p className="pb-eyebrow">Probeer de magie</p>
         <h2>{completed ? "Jij kent het geheim" : "Laat de oefenpoort ontwaken"}</h2>
         <p>
           Houd de knop even vast. Deze oefening geeft één oefenzegel en telt
@@ -430,8 +429,7 @@ export function JourneyBook({ snapshot }: { snapshot: BookSnapshot }) {
           </div>
         ) : (
           <p>
-            Na een bevestigd bezoek verschijnt hier precies één zegel. De
-            Poortkamer kan dit niet zelf toevoegen.
+            Na jullie bezoek aan een poort verschijnt hier een nieuwe zegel. Welke wereld ontdek jij als eerste?
           </p>
         )}
       </section>
@@ -518,7 +516,7 @@ export function JourneyStatus({ snapshot }: { snapshot: BookSnapshot }) {
     if (snapshot.journey.visitedCount)
       return `${snapshot.journey.visitedCount} poorten hebben een zegel achtergelaten`;
     if (snapshot.practice.completed) return "De oefenpoort is geopend";
-    return "Open eerst de oefenpoort";
+    return "De eerste poort wacht op jou";
   }, [snapshot]);
   return (
     <section className="pb-v2-journey-status pb-panel">
@@ -527,7 +525,7 @@ export function JourneyStatus({ snapshot }: { snapshot: BookSnapshot }) {
         <p className="pb-eyebrow">Jouw boek groeit mee</p>
         <h2>{label}</h2>
         <p>
-          {snapshot.journey.visitedCount} van {snapshot.journey.assignedCount || "de"} toegewezen poorten bevestigd.
+          {snapshot.journey.visitedCount > 0 ? `${snapshot.journey.visitedCount} zegels verzameld. Iedere poort vertelt een nieuw verhaal.` : "Jouw eerste zegel wacht op je. Probeer alvast hoe de magie werkt."}
         </p>
         <Link className="pb-button" href="/poortenboek/boek">
           Bekijk mijn paspoort <BookOpen />

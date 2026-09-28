@@ -36,7 +36,7 @@ async function authenticate(context: BrowserContext, email: string) {
 }
 async function redactie(page: Page) {
   await page.goto("/admin");
-  await expect(page.locator(".admin-page-heading")).toBeVisible();
+  await expect(page.locator(".admin-appbar")).toBeVisible();
   const more = page.getByRole("button", { name: "Meer", exact: true });
   const menu = page.getByRole("button", {
     name: "Organisatienavigatie openen",

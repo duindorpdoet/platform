@@ -31,6 +31,7 @@ import {
   PushNotificationSettings,
 } from "@/components/pwa/pwa-experience";
 import { SupportWidget } from "@/components/support/support-widget";
+import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
 import { createClient } from "@/lib/supabase/client";
 import {
   canEditPortal,
@@ -75,6 +76,7 @@ export function Poortkamer({
 }) {
   const [room, setRoom] = useState<PortalRoom | null>(initial);
   const [portalId, setPortalId] = useState(initial.portal.id);
+  const [moreSection, setMoreSection] = useState("preparation");
   const [tab, setTab] = useState<Tab>("night");
   const [visitTab, setVisitTab] = useState<"next" | "expected" | "past">(
     "next",
@@ -82,8 +84,6 @@ export function Poortkamer({
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [offline, setOffline] = useState(false);
-  const [live, setLive] = useState(false);
-  const [onlineMembers, setOnlineMembers] = useState<string[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const [dialog, setDialog] = useState<
     "invite" | "pause" | "stop" | "details" | null
@@ -96,13 +96,11 @@ export function Poortkamer({
     version.current += 1;
     setRoom(null);
     setQr(null);
-    setOnlineMembers([]);
   }, []);
   const load = useCallback(async () => {
     if (document.hidden) return;
     if (!navigator.onLine) {
       setOffline(true);
-      setLive(false);
       return;
     }
     const client = createClient();
@@ -129,7 +127,6 @@ export function Poortkamer({
       setOffline(false);
     } catch {
       setOffline(true);
-      setLive(false);
     }
   }, [eventSlug, portalId, userId, clearPrivate]);
   useEffect(() => {
@@ -146,7 +143,6 @@ export function Poortkamer({
     const refresh = () => void load();
     const disconnected = () => {
       setOffline(true);
-      setLive(false);
     };
     window.addEventListener("pagehide", clearPrivate);
     window.addEventListener("beforeunload", clearPrivate);
@@ -164,43 +160,8 @@ export function Poortkamer({
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [load, clearPrivate, userId]);
-  useEffect(() => {
-    const client = createClient();
-    if (!client || !room) return;
-    let disposed = false;
-    let channel: ReturnType<typeof client.channel> | null = null;
-    let community: ReturnType<typeof client.channel> | null = null;
-    void (async () => {
-      const { data } = await client.auth.getSession();
-      if (disposed || !data.session || data.session.user.id !== userId) return;
-      await client.realtime.setAuth(data.session.access_token);
-      if (disposed) return;
-      channel = client
-        .channel(room.portalTopic, {
-          config: { private: true, presence: { key: userId } },
-        })
-        .on("broadcast", { event: "snapshot_changed" }, () => void load())
-        .on("presence", { event: "sync" }, () =>
-          setOnlineMembers(Object.keys(channel?.presenceState() ?? {})),
-        )
-        .subscribe((status: string) => {
-          if (disposed) return;
-          setLive(status === "SUBSCRIBED");
-          if (status === "SUBSCRIBED") void channel?.track({ userId });
-        });
-      community = client
-        .channel(room.communityTopic, { config: { private: true } })
-        .on("broadcast", { event: "snapshot_changed" }, () => void load())
-        .subscribe();
-    })();
-    return () => {
-      disposed = true;
-      if (channel) void client.removeChannel(channel);
-      if (community) void client.removeChannel(community);
-    };
-    // Topic changes invalidate old membership channels; snapshot updates alone do not reconnect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room?.portalTopic, room?.communityTopic, userId, load]);
+  const live = usePrivateBroadcast(room?.portalTopic, () => void load());
+  usePrivateBroadcast(room?.communityTopic, () => void load());
   useEffect(() => {
     if (!offline) return;
     const timeout = window.setTimeout(clearPrivate, 5 * 60_000);
@@ -236,7 +197,7 @@ export function Poortkamer({
         await load();
         return false;
       }
-      setNotice("Opgeslagen. Iedereen in jullie team ziet de actuele stand.");
+      setNotice("Opgeslagen. Jullie team is weer bijgepraat.");
       setDialog(null);
       await load();
       return true;
@@ -294,8 +255,7 @@ export function Poortkamer({
         <div className={s.errorPage}>
           <h1>Open je Poortkamer opnieuw</h1>
           <p>
-            Je sessie of toegang is gewijzigd. Eerdere privégegevens zijn van
-            dit scherm verwijderd.
+            Log opnieuw in om verder te gaan naar jullie Poortkamer.
           </p>
           <Link className={s.button} href="/mijn-huis">
             Opnieuw openen
@@ -316,6 +276,7 @@ export function Poortkamer({
       (Date.parse(`${room.eventDate}T17:00:00+01:00`) - now) / 86_400_000,
     ),
   );
+  const unreadMessages = room.channels.reduce((total, channel) => total + channel.unread, 0);
   const ended = Date.parse(`${room.eventDate}T23:59:59+01:00`) < now;
   const disabled = offline || busy;
   const statusAction = (
@@ -330,7 +291,7 @@ export function Poortkamer({
       reason,
     });
   return (
-    <div className={s.room}>
+    <div className={`${s.room} ${tab === "messages" ? s.chatMode : ""}`}>
       <header className={s.top}>
         <div className={s.brand}>
           <Image
@@ -346,7 +307,7 @@ export function Poortkamer({
         </div>
         <Link href={admin ? "/admin" : "/omgeving"}>Mijn omgeving</Link>
       </header>
-      <div className={s.statusbar}>
+      <div className={`${s.statusbar} ${tab !== "night" ? s.compactStatus : ""}`}>
         <div>
           <strong>
             {room.portal.code} · {portalStates[room.portal.state]}
@@ -357,7 +318,7 @@ export function Poortkamer({
           )}
         </div>
         <div className={s.actions}>
-          {canLive && (
+          {canLive && tab === "night" && (
             <>
               <button
                 className={s.button}
@@ -400,13 +361,8 @@ export function Poortkamer({
             }}
           >
             <Icon size={20} />
-            <span>
-              {label}
-              {key === "messages" &&
-              room.channels.reduce((total, c) => total + c.unread, 0) > 0
-                ? ` (${room.channels.reduce((total, c) => total + c.unread, 0)})`
-                : ""}
-            </span>
+            <span>{label}</span>
+            {key === "messages" && unreadMessages > 0 && <b className={s.navBadge} aria-label={`${unreadMessages} ongelezen`}>{unreadMessages > 99 ? "99+" : unreadMessages}</b>}
           </button>
         ))}
       </nav>
@@ -449,22 +405,22 @@ export function Poortkamer({
           </div>
         </section>
       )}
-      <main id="poortkamer-content" className={s.content}>
-        <div className={s.row}>
+      <main id="poortkamer-content" className={`${s.content} ${tab === "messages" ? s.chatContent : ""}`}>
+        {(tab === "messages" || tab === "more") && <h1 className="sr-only">{tab === "messages" ? "Berichten" : "Meer in jullie Poortkamer"}</h1>}
+        {tab !== "messages" && <div className={s.pageTools}>
           <p>
             <span className={s.liveDot} />
             {offline
               ? "Offline · laatste bevestigde stand"
               : live
                 ? "Live"
-                : "Verbinden · verversen blijft actief"}
+                : "Verbinding herstellen…"}
             <small> · Bijgewerkt om {portalTime(room.updatedAt)}</small>
           </p>
-          <button className={s.button} onClick={() => void load()}>
+          <button className={s.button} aria-label="Vernieuwen" title="Vernieuwen" onClick={() => void load()}>
             <RefreshCw size={16} />
-            Vernieuwen
           </button>
-        </div>
+        </div>}
         {offline && (
           <p className={`${s.notice} ${s.offline}`} role="alert">
             <WifiOff size={18} /> Je ziet tijdelijk de laatste stand. Er kunnen
@@ -494,7 +450,7 @@ export function Poortkamer({
             </select>
           </label>
         )}
-        {room.urgentAnnouncement && (
+        {room.urgentAnnouncement && tab !== "night" && (
           <aside className={s.notice}>
             <strong>De Omroeper · belangrijk</strong>
             <p>{room.urgentAnnouncement.body}</p>
@@ -510,6 +466,10 @@ export function Poortkamer({
         )}
         {tab === "night" && (
           <>
+            <section className={`${s.card} ${s.organizerUpdates}`} aria-label="Updates van de organisatie">
+              <div className={s.row}><div><p className={s.eyebrow}>Van de organisatie</p><h2>Kort bijgepraat</h2></div><button type="button" className={s.linkButton} onClick={() => setTab("messages")}>Alle berichten</button></div>
+              {(room.announcements ?? []).length ? room.announcements!.map(update => <article key={update.id}><span className={s.updateDot} /><div>{update.urgent && <strong>Belangrijk</strong>}<p>{update.body}</p><time dateTime={update.createdAt}>{new Date(update.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "long" })} · {portalTime(update.createdAt)}</time></div></article>) : <p className={s.muted}>Je bent helemaal bij. Nieuwe aanwijzingen van de organisatie verschijnen hier.</p>}
+            </section>
             <div className={s.metrics}>
               <Metric
                 value={room.visits.recap.groups}
@@ -517,7 +477,7 @@ export function Poortkamer({
               />
               <Metric
                 value={room.visits.recap.children}
-                label="Bevestigde kinderen"
+                label="Kinderen ontvangen"
               />
               <Metric
                 value={metrics.remainingGroups}
@@ -555,14 +515,14 @@ export function Poortkamer({
                         {portalTime(metrics.next.plannedDepartureAt)}
                       </p>
                       <p className={s.muted}>
-                        Aankomst kan verschuiven. Dit is de serverplanning, geen
-                        live locatie.
+                        Dit is de verwachte aankomsttijd. Een groep kan onderweg
+                        wat eerder of later zijn.
                       </p>
                     </>
                   ) : (
                     <p>
-                      Er is nog geen volgende groep toegewezen. Zodra de planner
-                      een groep bevestigt, verschijnt die hier.
+                      Er is nog geen volgende groep bekend. Zodra er een groep
+                      naar jullie poort komt, zie je die hier.
                     </p>
                   )}
                   <p>
@@ -575,7 +535,7 @@ export function Poortkamer({
                 </section>
                 <section className={s.card}>
                   <p className={s.eyebrow}>Samen gereed</p>
-                  <h2>{metrics.ready} van 9 voorbereid</h2>
+                  <h2>{metrics.ready} van {readinessItems.length} voorbereid</h2>
                   <p>
                     {room.portal.locationVerified
                       ? "Locatie gecontroleerd"
@@ -586,22 +546,18 @@ export function Poortkamer({
                       : "Openingstijd nog niet vastgesteld"}
                   </p>
                   <p>
-                    De planner gebruikt een goedgekeurde, geverifieerde en
-                    beschikbare poort die Open staat. Deze gereedcheck is een
-                    hulpmiddel en blokkeert Open niet.
+                    Loop samen de voorbereiding na. Klaar voor bezoek? Zet jullie poort bovenaan op Open.
                   </p>
                   <progress
                     aria-label="Gereedheid"
-                    max={9}
+                    max={readinessItems.length}
                     value={metrics.ready}
                   />
                   <p>
                     {
-                      onlineMembers.filter((id) =>
-                        room.team.some((m) => m.userId === id),
-                      ).length
+                      room.team.filter(m => m.lastSeenAt && now - Date.parse(m.lastSeenAt) < 90_000).length
                     }{" "}
-                    teamleden nu verbonden
+                    teamleden recent actief
                   </p>
                   <button className={s.button} onClick={() => setTab("more")}>
                     <CheckCircle2 size={17} />
@@ -727,10 +683,10 @@ export function Poortkamer({
                     </p>
                     <small
                       className={
-                        onlineMembers.includes(m.userId) ? s.online : ""
+                        Boolean(m.lastSeenAt && now - Date.parse(m.lastSeenAt) < 90_000) ? s.online : ""
                       }
                     >
-                      {onlineMembers.includes(m.userId) ? "Online" : "Offline"}
+                      {Boolean(m.lastSeenAt && now - Date.parse(m.lastSeenAt) < 90_000) ? "Recent actief" : ""}
                       {m.lastSeenAt
                         ? ` · laatst actief ${new Intl.DateTimeFormat("nl-NL", { dateStyle: "short", timeStyle: "short" }).format(new Date(m.lastSeenAt))}`
                         : ""}
@@ -759,6 +715,10 @@ export function Poortkamer({
                               <option value="live">Live bediening en voorbereiding</option>
                               <option value="manage">Ook vaste poortgegevens beheren</option>
                             </select>
+                          </label>
+                          <label className={s.check}>
+                            <input type="checkbox" aria-label={`Moderatorrechten voor ${m.name}`} checked={m.chatModerator ?? false} disabled={disabled || Boolean(m.suspendedAt)} onChange={e => void command("chat_moderator", { userId: m.userId, enabled: e.target.checked }, true)} />
+                            Moderator in jullie teamchat
                           </label>
                           <button
                             className={s.button}
@@ -933,7 +893,7 @@ export function Poortkamer({
                   room.v2.teamHistory.map((entry, index) => (
                     <article className={s.row} key={`${entry.action}-${entry.at}-${index}`}>
                       <div>
-                        <strong>{entry.action.replace("portal.team.", "").replaceAll("_", " ")}</strong>
+                        <strong>{({ invite: "Teamlid uitgenodigd", role: "Rol aangepast", revoke: "Toegang ingetrokken", transfer: "Hoofdpoortwachter gewijzigd", task: "Taak verdeeld", access: "Toegangsniveau aangepast", suspend: "Toegang gepauzeerd", reactivate: "Toegang hersteld", resend: "Uitnodiging opnieuw verstuurd", revoke_invite: "Uitnodiging ingetrokken", chat_moderator: "Chatrechten aangepast" } as Record<string, string>)[entry.action.replace("portal.team.", "")] ?? "Teamgegevens bijgewerkt"}</strong>
                         <small>
                           {new Intl.DateTimeFormat("nl-NL", {
                             dateStyle: "medium",
@@ -956,17 +916,18 @@ export function Poortkamer({
             admin={admin}
           />
         )}
-        {tab === "more" && <Link href="/omgeving/communicatie">Nachtpost en communicatievoorkeuren →</Link>}
+        {tab === "more" && <nav className={s.tabs} aria-label="Poortkamer instellingen">{[["preparation", "Voorbereiding"], ["presentation", "Presentatie"], ["incident", "Hulpvraag"], ["simulation", "Oefenen"], ["settings", "Instellingen"], ["recap", "Terugblik"]].map(([key, label]) => <button type="button" key={key} className={s.button} aria-pressed={moreSection === key} onClick={() => setMoreSection(key)}>{label}</button>)}</nav>}
         {tab === "more" && (
           <div className={s.moreGrid}>
             <PoortkamerManagementV2
+              section={moreSection}
               room={room}
               busy={busy}
               disabled={disabled}
               canEdit={canEdit}
               command={(operation, payload) => command(operation, payload)}
             />
-            <section className={s.card}>
+            {moreSection === "preparation" &&             <section className={s.card}>
               <Image
                 className={s.cardImage}
                 src="/images/poortkamer/ready-for-the-night.webp"
@@ -1005,7 +966,9 @@ export function Poortkamer({
                   );
                 })}
               </div>
-            </section>
+            </section>}
+            {moreSection === "settings" && <>
+            <Link className={s.button} href="/omgeving/communicatie">Nachtpost en communicatievoorkeuren →</Link>
             <section className={s.card}>
               <h2>
                 <Bell size={22} /> Meldingen en app
@@ -1116,10 +1079,10 @@ export function Poortkamer({
                 </div>
               )}
             </section>
-            <NightRecap room={room} />
+
             <section className={s.card}>
               <ShieldCheck size={24} />
-              <h2>Jullie besloten omgeving</h2>
+              <h2>Je account</h2>
               <p>
                 Alleen actieve Poortwachters zien jullie team. Het Poortplein
                 toont buiten jullie team alleen voornaam en poortnaam. Chat
@@ -1127,6 +1090,8 @@ export function Poortkamer({
               </p>
               <SignOutButton />
             </section>
+            </>}
+            {moreSection === "recap" && <NightRecap room={room} />}
           </div>
         )}
         <p className={s.footerNote}>
@@ -1134,7 +1099,7 @@ export function Poortkamer({
           gevaar bel je 112.
         </p>
       </main>
-      {!admin && (
+      {!admin && tab !== "messages" && (
         <SupportWidget
           eventSlug={eventSlug}
           role="homeowner"
@@ -1161,9 +1126,9 @@ export function Poortkamer({
             {dialog === "invite"
               ? "Alleen dit geverifieerde e-mailadres kan de sleutel aannemen."
               : dialog === "pause"
-                ? "Nieuwe toewijzingen stoppen. De bestaande afspraken voor groepen die al onderweg zijn blijven gelden."
+                ? "Er vertrekken even geen nieuwe groepen naar jullie poort. Groepen die al onderweg zijn, blijven jullie verwachten."
                 : dialog === "stop"
-                  ? "De planner behandelt nog lopende bezoeken volgens het bestaande stopbeleid. Bevestig alleen als ontvangst niet meer mogelijk is."
+                  ? "De organisatie ziet dat jullie geen nieuwe groepen kunnen ontvangen. Stop alleen als verder ontvangen niet meer mogelijk is."
                   : "Deze wijziging wordt voor jullie poort opgeslagen."}
           </DialogDescription>
           <form

@@ -51,6 +51,7 @@ async function dashboard(page: Page) {
 }
 async function screenshot(page: Page, name: string, project: string) {
   if (project !== "book-desktop" && project !== "book-samsung-chrome") return;
+  if (["nu", "team", "boek"].includes(name)) await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   mkdirSync("docs/screenshots/poortenboek", { recursive: true });
   await page.screenshot({
     path: `docs/screenshots/poortenboek/${project}-${name}.png`,
@@ -145,7 +146,7 @@ test("staging presentation: V2 identity, favourites, banner, practice and passpo
   await dashboard(page);
   await noOverflow(page);
   await screenshot(page, "nu", info.project.name);
-  await expect(page.getByRole("heading", { name: "Open eerst de oefenpoort" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "De eerste poort wacht op jou" })).toBeVisible();
   await page.goto("/poortenboek/team");
   await expect(
     page.getByRole("heading", { name: "Kies jullie favoriete namen" }),
@@ -171,9 +172,11 @@ test("staging presentation: V2 identity, favourites, banner, practice and passpo
   await expect(
     page.getByText("3 van de 5 reisgenootjes hebben gekozen", { exact: true }).first(),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Ons vaandel", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Geef het vaandel jouw vonk" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Kies wie jij bent in de nacht" })).toBeVisible();
+  await page.getByRole("button", { name: "Oefenpoort", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Laat de oefenpoort ontwaken" })).toBeVisible();
+  await page.getByRole("button", { name: "Vrienden & naam", exact: true }).click();
   await page
     .getByRole("button", { name: "Allemaal gestemd", exact: true })
     .click();
@@ -187,6 +190,9 @@ test("staging presentation: V2 identity, favourites, banner, practice and passpo
   await expect(page.locator(".pb-book-cover")).toContainText("De Nachtlopers");
   await screenshot(page, "boek", info.project.name);
   await page.goto("/poortenboek/ik");
+  await page.getByRole("button", { name: "Verschijning & lantaarn", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Kies wie jij bent in de nacht" })).toBeVisible();
+  await page.getByRole("button", { name: "Mijn boek & instellingen", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Geluid uit", exact: true }),
   ).toHaveAttribute("aria-pressed", "false");

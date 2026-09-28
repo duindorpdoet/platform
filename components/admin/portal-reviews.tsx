@@ -15,6 +15,7 @@ import {
   type PortalRegistrationStatus,
 } from "@/lib/domain/admin-portals";
 import { parseLatitudeLongitude } from "@/lib/maps/coordinates";
+import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
 import { createClient } from "@/lib/supabase/client";
 
 type World = { id: string; slug: string; name: string };
@@ -73,7 +74,7 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
   const [activeTab, setActiveTab] = useState<"registrations" | "active" | "rooms">("registrations");
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [realtimeConnected, setRealtimeConnected] = useState(false);
+
 
   const load = useCallback(async () => {
     const client = createClient();
@@ -85,25 +86,13 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
+  const realtimeConnected = usePrivateBroadcast(snapshot.realtimeTopic, () => void load());
   useEffect(() => {
-    const client = createClient();
-    if (!client || !snapshot.realtimeTopic) return;
-    let refreshTimer: number | undefined;
-    const scheduleRefresh = () => {
-      window.clearTimeout(refreshTimer);
-      refreshTimer = window.setTimeout(() => void load(), 180);
-    };
-    const channel = client.channel(snapshot.realtimeTopic, { config: { private: true } })
-      .on("broadcast", { event: "snapshot_changed" }, scheduleRefresh)
-      .subscribe((status: string) => setRealtimeConnected(status === "SUBSCRIBED"));
-    const poll = window.setInterval(() => void load(), 60_000);
-    const onFocus = () => void load();
-    window.addEventListener("focus", onFocus);
-    return () => {
-      window.clearTimeout(refreshTimer); window.clearInterval(poll); window.removeEventListener("focus", onFocus);
-      setRealtimeConnected(false); void client.removeChannel(channel);
-    };
-  }, [load, snapshot.realtimeTopic]);
+    const poll = setInterval(() => { if (!document.hidden) void load(); }, 30_000);
+    const refresh = () => void load();
+    window.addEventListener("focus", refresh);
+    return () => { clearInterval(poll); window.removeEventListener("focus", refresh); };
+  }, [load]);
 
   const registrationCounts = useMemo(() => snapshot.registrations.reduce<Record<PortalRegistrationStatus, number>>((counts, item) => {
     counts[item.status] += 1; return counts;
@@ -190,13 +179,13 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
 
   return <section className="panel portal-management">
     <header className="portal-management-head">
-      <div><p className="kicker">Privé poortregie</p><h2>Van eerste aanmelding tot actieve poort.</h2><p>Intake en aanvraag staan samen op één regel. Contactgegevens zijn alleen beschikbaar binnen deze bevoegde beheeromgeving.</p></div>
-      <div className="portal-live-state" data-connected={realtimeConnected}><span><Radio />{realtimeConnected ? "Realtime verbonden" : "Verbinding wordt hersteld"}</span><button className="btn outline" type="button" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div>
+      <div><p className="kicker">Poorten & teams</p><h2>Jullie poorten</h2><p>Beoordeel aanmeldingen, help poortteams en houd de avond in de gaten.</p></div>
+      <div className="portal-live-state" data-connected={realtimeConnected}><span><Radio />{realtimeConnected ? "Live" : "Verbinding wordt hersteld"}</span><button className="btn outline" type="button" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div>
     </header>
 
     <div className="portal-management-stats" aria-label="Overzicht poortaanmeldingen">
       <span><strong>{snapshot.registrations.length}</strong> totaal aangemeld</span>
-      <span><strong>{registrationCounts.awaiting_otp}</strong> wacht op OTP</span>
+      <span><strong>{registrationCounts.awaiting_otp}</strong> wacht op e-mailbevestiging</span>
       <span><strong>{registrationCounts.ready_for_review}</strong> te beoordelen</span>
       <span><strong>{snapshot.activePortals.length}</strong> actieve poorten</span>
     </div>
@@ -210,7 +199,7 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
 
     {activeTab === "rooms" && <PoortkamerOverview eventSlug={eventSlug} />}
     {activeTab === "registrations" && <div role="tabpanel" className="portal-list-panel">
-      <div className="portal-list-intro"><div><p className="kicker">Iedere binnengekomen intake</p><h3>Aangemelde poorten</h3></div><p>Concepten blijven zichtbaar vanaf stap 1, ook vóór activatie van de poortomgeving.</p></div>
+      <div className="portal-list-intro"><div><p className="kicker">Aanmeldingen</p><h3>Aangemelde poorten</h3></div><p>Bekijk hoe ver een aanmelding is en open deze voor de gegevens en beoordeling.</p></div>
       {snapshot.registrations.length === 0 ? <div className="portal-empty"><Home /><p>Er zijn nog geen huisaanmeldingen binnengekomen.</p></div> : <div className="portal-premium-list">
         {snapshot.registrations.map((registration) => {
           const progress = countPortalRegistrationProgress(registration.progress);

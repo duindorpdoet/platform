@@ -3,14 +3,15 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { PortalIntroductions } from "@/components/brand/portal-introductions";
 import { HomeExperience } from "@/components/poorten-home";
 import { PublicMap } from "@/components/maps/public-map";
-import { faq } from "@/features/content/public-content";
+import { featuredFaq } from "@/features/content/faq";
 
 function HomeFaq() {
   return (
     <Accordion type="single" collapsible className="faq">
-      {faq.slice(0, 4).map(([question, answer], index) => (
+      {featuredFaq.map(({ question, answer }, index) => (
         <AccordionItem key={question} value={String(index)}>
           <AccordionTrigger>{question}</AccordionTrigger>
           <AccordionContent>{answer}</AccordionContent>
@@ -38,6 +39,7 @@ export function HomePage({ news }: { news?: React.ReactNode }) {
       map={<PublicMap compact />}
       faq={<HomeFaq />}
       news={news}
+      portals={<PortalIntroductions />}
     />
   );
 }

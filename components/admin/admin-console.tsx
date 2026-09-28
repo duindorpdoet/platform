@@ -226,7 +226,7 @@ const sectionMeta = {
   editorial: { kicker: "Verhalen · nieuws · Nachtpost", title: "Redactiekamer", description: "Schrijf het verhaal van de nacht en bereik de juiste mensen." },
   content: { kicker: "Website · redactie", title: "Content & sponsors", description: "Beheer zichtbare informatie en partners." },
   access: { kicker: "Organisatie · toegang", title: "Beheerders", description: "Bepaal wie welk onderdeel van de nacht mag beheren." },
-  live: { kicker: "De avond · live", title: "Avondcockpit", description: "Volg alleen serverbevestigde voortgang en handel uitzonderingen af." },
+  live: { kicker: "De avond · live", title: "Avondcockpit", description: "Volg de groepen en poorten en help waar dat nodig is." },
   tickets: { kicker: "Eén doorlopend gesprek", title: "Messenger", description: "Nieuwe berichten, lopende gesprekken en antwoorden in één inbox." },
   updates: { kicker: "Communicatie · gericht", title: "Gerichte updates", description: "Bereik precies de groepen of huizen waarvoor een wijziging geldt." },
   simulation: { kicker: "Veilig testen", title: "Avondsimulatie", description: "Controleer de actuele plannercondities voordat de avond live gaat." },
@@ -452,7 +452,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   }, [load, loadLive, section]);
   useEffect(() => {
     const client = createClient();
-    if (!client || !portalRealtimeTopic || ["together", "groups", "registrations"].includes(section)) return;
+    if (!client || !portalRealtimeTopic || !["overview", "live"].includes(section)) return;
     const channel = client.channel(portalRealtimeTopic, { config: { private: true } })
       .on("broadcast", { event: "snapshot_changed" }, () => void loadLive())
       .subscribe((status: string) => setLiveConnection(status === "SUBSCRIBED" ? "live" : status === "CHANNEL_ERROR" || status === "TIMED_OUT" ? "offline" : "connecting"));
@@ -753,7 +753,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
       return setNotice("Bedrag en externe referentie zijn verplicht.");
     if (
       !window.confirm(
-        `${command === "refund" ? "Terugbetaling" : "Betaling"} van € ${(amountCents / 100).toFixed(2).replace(".", ",")} append-only vastleggen?`,
+        `${command === "refund" ? "Terugbetaling" : "Betaling"} van € ${(amountCents / 100).toFixed(2).replace(".", ",")} vastleggen?`,
       )
     )
       return;
@@ -801,7 +801,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     setNotice(
       result.error
         ? `Betaalmutatie geweigerd: ${result.error.message}`
-        : "Betaalmutatie append-only opgeslagen en geaudit.",
+        : "De betaling is vastgelegd in de betalingshistorie.",
     );
     await Promise.all([loadPayments(), load()]);
     } catch { setNotice("De verbinding is onderbroken. Vernieuw het overzicht en controleer de ontvangst voordat je opnieuw bevestigt."); }
@@ -1000,7 +1000,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
       return setNotice("Kies een ander geldig en geverifieerd accountadres.");
     if (
       !window.confirm(
-        `Leider van ${run.groupCode} direct vervangen door ${email}? De oude sessie verliest meteen mutatierecht.`,
+        `Leider van ${run.groupCode} direct vervangen door ${email}? De vorige groepsleider kan daarna geen wijzigingen meer doen.`,
       )
     )
       return;
@@ -1017,7 +1017,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     setNotice(
       error
         ? `Leiderwissel geweigerd: ${error.message}`
-        : "Leider vervangen; de vorige leider heeft direct geen mutatierecht meer.",
+        : "Leider vervangen; de vorige groepsleider kan geen wijzigingen meer doen.",
     );
     await loadLive();
   }
@@ -1302,8 +1302,8 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             </DialogContent>
           </Dialog>
         </header>
-        <main ref={contentRef} id="admin-content" className="admin-content" tabIndex={-1}>
-        <header className="app-heading admin-page-heading row-between">
+        <main ref={contentRef} id="admin-content" className="admin-content" data-admin-section={section} tabIndex={-1}>
+        {["groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
           <div>
             <p className="kicker">{sectionMeta[section].kicker}</p>
             <h1>{sectionMeta[section].title}</h1>
@@ -1313,7 +1313,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             <RefreshCw />
             Vernieuwen
           </button>
-        </header>
+        </header>}
         {notice && (
           <div className="form-notice" role="status">
             {notice}
@@ -1326,7 +1326,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
               <div className="row-between registration-controls-heading">
                 <div>
                   <h2>Open ieder kanaal op het juiste moment.</h2>
-                  <p>Laat bijvoorbeeld eerst woningen, portieken en bedrijven aanmelden en open de groepsinschrijving pas later. Wijzigingen gelden direct en komen in de auditlog.</p>
+                  <p>Laat bijvoorbeeld eerst woningen, portieken en bedrijven aanmelden en open de groepsinschrijving pas later. Wijzigingen gelden direct.</p>
                 </div>
               </div>
               <div className="settings-grid">
@@ -1396,7 +1396,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
                 )}
                 {capabilities.includes("event_admin") && <article className="panel registration-channel">
                   <BellRing />
-                  <div><h3>Staging-testmelding</h3><p>Zet meldingen op dit apparaat aan en verstuur daarna een neutrale test. De server weigert deze actie buiten staging.</p></div>
+                  <div><h3>Staging-testmelding</h3><p>Zet meldingen op dit apparaat aan en verstuur daarna een neutrale test. Deze test is beschikbaar in de testomgeving.</p></div>
                   <PushNotificationSettings />
                   <button className="btn outline" type="button" onClick={() => void sendTestPush()}>Testmelding versturen</button>
                 </article>}
@@ -1471,7 +1471,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
               <div className="simulation-icon"><Play /></div>
               <p className="kicker">Veilig testen met actuele condities</p>
               <h2>Repetitie van de nacht.</h2>
-              <p>Deze schaduwcontrole verandert geen routes en verstuurt geen berichten. Ze laat zien of de actuele poorten, groepen en signalen klaarstaan voor een proefavond op staging.</p>
+              <p>Controleer of jullie poorten en groepen klaarstaan voor de avond. Dit overzicht gebruikt de huidige stand; het start geen echte tocht.</p>
               <button className="btn" onClick={() => void loadLive()}><Play />Proefbeeld opnieuw berekenen</button>
               <div className="simulation-steps">
                 <span className={dashboard.counts.groups > 0 ? "ready" : ""}><CheckCircle2 />Groepen ingedeeld</span>

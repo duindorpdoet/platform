@@ -24,6 +24,8 @@ type Command = (
   payload: Record<string, unknown>,
 ) => Promise<boolean>;
 
+const simulationLabels: Record<string, string> = { quiet: "Nog rustig", open: "Poort open", approaching: "Groep onderweg", arrived: "Groep aangekomen", busy: "Drukte bij de poort", paused: "Even pauze", stopped: "Poort gesloten", incident: "Hulp vragen", chat: "Bericht proberen", seal: "Zegel ontvangen", finale: "De laatste poort", completed: "Oefening klaar" };
+
 const incidentLabels = {
   crowding: "Drukte bij de poort",
   lingering: "Groep blijft te lang",
@@ -43,11 +45,10 @@ export function PoortkamerLiveV2({ room }: { room: PortalRoom }) {
         alt="De nachtwacht kijkt vanuit een verlichte poort over Duindorp"
       />
       <div className={s.v2LiveBody}>
-        <p className={s.eyebrow}>Nachtwacht · alleen meekijken</p>
+        <p className={s.eyebrow}>De avond in beeld</p>
         <h2>De stroom door jullie poort</h2>
         <p>
-          De routeplanner bepaalt de bezoeken. Hier zie je de actuele
-          verwachting; je kunt een groep niet aankomen, afronden of verplaatsen.
+          Hier zie je wie er onderweg is en welke groepen al bij jullie zijn geweest.
         </p>
         <div className={s.v2Queue}>
           <div>
@@ -80,13 +81,13 @@ export function PoortkamerLiveV2({ room }: { room: PortalRoom }) {
               <div>
                 <strong>{entry.groupCode}</strong>
                 <small>
-                  {entry.children} bevestigde kinderen · {portalTime(entry.visitedAt)}
+                  {entry.children} kinderen · {portalTime(entry.visitedAt)}
                 </small>
               </div>
             </article>
           ))}
           {!room.v2.liveLog.length && (
-            <p className={s.muted}>Nog geen bevestigd bezoek. Dit log vult zich vanuit de centrale routeafhandeling.</p>
+            <p className={s.muted}>De eerste bezoekers moeten nog komen. Hier zie je straks de groepen die jullie hebben ontvangen.</p>
           )}
         </div>
       </div>
@@ -100,7 +101,9 @@ export function PoortkamerManagementV2({
   disabled,
   canEdit,
   command,
+  section,
 }: {
+  section: string;
   room: PortalRoom;
   busy: boolean;
   disabled: boolean;
@@ -109,18 +112,20 @@ export function PoortkamerManagementV2({
 }) {
   return (
     <>
-      <PresentationCard
+      {section === "presentation" && <PresentationCard
         room={room}
         disabled={disabled}
         canEdit={canEdit}
         command={command}
       />
-      <IncidentCard room={room} disabled={disabled} command={command} />
-      <SimulationCard
+      }
+      {section === "incident" && <IncidentCard room={room} disabled={disabled} command={command} />}
+      {section === "simulation" && <SimulationCard
         room={room}
         disabled={disabled || busy}
         command={command}
       />
+      }
     </>
   );
 }
@@ -331,16 +336,15 @@ function SimulationCard({
   return (
     <section className={`${s.card} ${s.v2Feature} ${s.simulation}`}>
       <img className={s.cardImage} src="/images/poortkamer-v2/simulation-hero-wide.webp" alt="Een oefensituatie achter een verlichte poort" />
-      <p className={s.eyebrow}>Oefenstand · Simulation</p>
+      <p className={s.eyebrow}>Oefen de avond</p>
       <h2>Oefen de avond zonder echte gegevens</h2>
       <p>
-        De oefenstand heeft een eigen simulation_run_id. Hij schrijft geen echte
-        bezoeken, berichten, uitnodigingen, statistieken of pushmeldingen.
+        Probeer rustig wat er gebeurt als een groep aankomt of jullie even pauze nodig hebben. In deze oefening is alles verzonnen en ontvangt niemand een echt bericht.
       </p>
-      {sim && <p className={s.v2SimulationLabel}><FlaskConical /> Simulation · {sim.phase} · {sim.state}</p>}
+      {sim && <p className={s.v2SimulationLabel}><FlaskConical /> Oefenstand · {simulationLabels[sim.phase] ?? sim.phase}</p>}
       {active && sim.scenario && (
         <div className={s.v2Queue}>
-          <div><strong>{sim.scenario.visits}</strong><span>dummybezoeken</span></div>
+          <div><strong>{sim.scenario.visits}</strong><span>oefenbezoeken</span></div>
           <div><strong>{sim.scenario.children}</strong><span>fictieve kinderen</span></div>
         </div>
       )}
@@ -353,7 +357,7 @@ function SimulationCard({
         <div className={s.actions}>
           {(["open", "approaching", "arrived", "busy", "paused", "stopped", "incident", "chat", "seal", "finale", "completed"] as const).map((phase) => (
             <button className={s.button} key={phase} disabled={disabled} onClick={() => void command("simulation_step", { simulationRunId: sim.id, phase })}>
-              {phase} <ChevronRight />
+              {simulationLabels[phase] ?? phase} <ChevronRight />
             </button>
           ))}
           <ul className={s.muted}>

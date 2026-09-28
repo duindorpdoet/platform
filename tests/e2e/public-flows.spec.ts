@@ -169,7 +169,7 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
     test.setTimeout(90_000);
     await page.setViewportSize({ width: size.width, height: 844 });
     await page.emulateMedia({ reducedMotion: "reduce" });
-    for (const path of ["/", "/verhaal", "/werelden", "/werelden/heksenrijk", "/werelden/dodenrijk", "/werelden/circuswereld", "/werelden/besmette-zone", "/werelden/geestenwereld", "/werelden/vampierrijk", "/kaart", "/meelopen", "/huis-aanmelden", "/faq", "/sponsoren", "/contact", "/privacy", "/voorwaarden", "/toegankelijkheid", "/inloggen"]) {
+    for (const path of ["/", "/verhaal", "/werelden", "/werelden/heksenrijk", "/werelden/dodenrijk", "/werelden/circuswereld", "/werelden/besmette-zone", "/werelden/geestenwereld", "/werelden/vampierrijk", "/kaart", "/meelopen", "/huis-aanmelden", "/faq", "/ontdek", "/nieuws", "/sponsoren", "/contact", "/privacy", "/voorwaarden", "/toegankelijkheid", "/inloggen"]) {
       await page.goto(path);
       await assertReadableLayout(page, size.doubleText);
     }
@@ -278,4 +278,25 @@ test("motion preference lives in accessibility settings and persists without flo
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(page.getByRole("button", { name: "Animaties uit volgens je apparaatinstelling" })).toBeDisabled();
   await expect(page.locator("html")).toHaveClass(/motion-off/);
+});
+
+
+test("home features lead to a searchable, categorized FAQ", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".home-portal-card")).toHaveCount(2);
+  await expect(page.locator(".home-portal-card").filter({ hasText: "Poortenboek" }).getByRole("link", { name: /Open/ })).toHaveAttribute("href", "/poortenboek/inloggen");
+  await expect(page.locator(".evening-questions [data-slot=accordion-item]")).toHaveCount(5);
+  await page.getByRole("button", { name: "Alle vragen en antwoorden" }).click();
+  await expect(page).toHaveURL(/\/faq$/);
+  await expect(page.locator(".faq-category")).toHaveCount(6);
+  await page.getByLabel("Zoek in veelgestelde vragen").fill("kindcode");
+  await expect(page.getByRole("status")).toContainText("antwoorden gevonden");
+  const question = page.locator(".faq-category [data-slot=accordion-trigger]").first();
+  await question.click();
+  await expect(question).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator(".faq-category [data-slot=accordion-content]").first()).toBeVisible();
+  await page.getByLabel("Zoek in veelgestelde vragen").fill("onvindbaar-xyz");
+  await expect(page.getByRole("status")).toHaveText("0 antwoorden gevonden");
+  await page.getByLabel("Zoek in veelgestelde vragen").fill("");
+  await expect(page.locator(".faq-category")).toHaveCount(6);
 });

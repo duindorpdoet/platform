@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, CalendarDays, Menu, UserRound } from "lucide-react";
 import { MotionAtmosphere, MotionToggle } from "@/components/poorten-cinematic";
@@ -11,6 +12,7 @@ const navigation = [
   ["De werelden", "/werelden"],
   ["De kaart", "/kaart"],
   ["Meedoen", "/meelopen"],
+  ["De app", "/ontdek"],
   ["Vragen", "/faq"],
   ["Nieuws", "/nieuws"],
 ] as const;
@@ -19,6 +21,8 @@ const protectedPrefixes = ["/mijn-groep", "/mijn-huis", "/mijn-inschrijving", "/
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const mobileMenu = useRef<HTMLDetailsElement>(null);
+  useEffect(() => { if (mobileMenu.current) mobileMenu.current.open = false; }, [pathname]);
   const isHome = pathname === "/";
   const isPortal = protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
   const isParticipantEnvironment = pathname.startsWith("/omgeving");
@@ -53,17 +57,18 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
         </Link>
         <nav aria-label="Hoofdnavigatie">
           {navigation.map(([label, href]) => (
-            <Link key={href} className={pathname === href ? "active" : ""} href={href}>{label}</Link>
+            <Link key={href} className={pathname === href ? "active" : ""} aria-current={pathname === href ? "page" : undefined} href={href}>{label}</Link>
           ))}
         </nav>
         <div className="header-actions">
           <PoortenboekLink />
           <Link className="group-link" href="/omgeving"><UserRound size={16} /><span>Mijn omgeving</span></Link>
           <Link className="btn header-signup" href="/meelopen">Bekijk deelname <ArrowUpRight size={16} /></Link>
-          <details className="mobile-navigation">
+          <details className="mobile-navigation" ref={mobileMenu} onKeyDown={event => { if (event.key === "Escape" && mobileMenu.current?.open) { mobileMenu.current.open = false; mobileMenu.current.querySelector("summary")?.focus(); } }}>
             <summary className="menu-btn" aria-label="Menu openen"><Menu /></summary>
-            <div className="mobile-navigation-panel">
+            <div className="mobile-navigation-panel" onClick={event => { if ((event.target as Element).closest("a") && mobileMenu.current) mobileMenu.current.open = false; }}>
               {navigation.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
+              <Link href="/mijn-huis">De Poortkamer</Link>
               <Link href="/huis-aanmelden">Plek aanmelden</Link>
               <Link href="/sponsoren">Sponsoren</Link>
               <Link href="/omgeving">Mijn omgeving</Link>
@@ -82,6 +87,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               <Link href="/huis-aanmelden">Plek aanmelden</Link>
               <Link href="/sponsoren">Sponsoren & doneren</Link>
               <Link href="/contact">Contact</Link>
+              <Link href="/ontdek">Poortenboek & Poortkamer</Link>
             </div>
             <div><CalendarDays size={20} /><strong>31 oktober 2026</strong><span>Duindorp, Den Haag</span></div>
           </div>

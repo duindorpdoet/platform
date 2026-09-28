@@ -65,6 +65,8 @@ export function Poortenboek({
   const [offline, setOffline] = useState(false);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [teamTab, setTeamTab] = useState("friends");
+  const [profileTab, setProfileTab] = useState("settings");
   const [now, setNow] = useState(() => Date.now());
   const pending = useRef(false);
   const sequence = useRef(0);
@@ -361,7 +363,7 @@ export function Poortenboek({
                   </p>
                 )}
                 <span className="pb-chip">
-                  {snapshot.start ? "Gepubliceerd" : "Nog even geheim"}
+                  {snapshot.start ? "Dit is jullie afspraak" : "Je hoort het zodra het bekend is"}
                 </span>
               </section>
             </div>
@@ -414,9 +416,7 @@ export function Poortenboek({
                   </p>
                 )}
                 <p className="pb-small">
-                  Dit is jouw persoonlijke voorbereiding. Je groepsleider
-                  controleert tijdens de avond wie er aanwezig is. Deze lijst
-                  verandert je deelname, betaling of route niet.
+                  Deze lijst helpt jou om klaar te staan. Bij het vertrek kijkt je groepsleider nog even of iedereen er is.
                 </p>
               </div>
             </section>
@@ -469,6 +469,10 @@ export function Poortenboek({
                 </p>
               </div>
             </section>
+            <nav className="pb-section-links" aria-label="In de teamkamer">
+              {[["friends", "Vrienden & naam"], ["banner", "Ons vaandel"], ["practice", "Oefenpoort"]].map(([key, label]) => <button type="button" key={key} aria-pressed={teamTab === key} onClick={() => setTeamTab(key)}>{label}</button>)}
+            </nav>
+            {teamTab === "friends" && <>
             <section className="pb-panel">
               <p className="pb-eyebrow">Samen door Duindorp</p>
               <h2>Jouw reisgenootjes</h2>
@@ -496,21 +500,21 @@ export function Poortenboek({
                 })
               }
             />
+            </>}
+            {teamTab === "banner" &&
             <TeamBannerWorkshop
               snapshot={snapshot}
               busy={busy}
               act={(action, payload) => void act(action, payload)}
             />
-            <TeamIdentityWorkshop
-              snapshot={snapshot}
-              busy={busy}
-              act={(action, payload) => void act(action, payload)}
-            />
+            }
+            {teamTab === "practice" &&
             <PracticeGate
               completed={snapshot.practice.completed}
               busy={busy}
               act={(action, payload) => void act(action, payload)}
             />
+            }
           </>
         )}
         {section === "boek" && (
@@ -559,6 +563,15 @@ export function Poortenboek({
               <p className="pb-eyebrow">Jouw plek in het verhaal</p>
               <h1>Ik ben {snapshot.firstName}</h1>
             </div>
+            <nav className="pb-section-links" aria-label="Mijn Poortenboek instellingen">
+              {[["settings", "Mijn boek & instellingen"], ["appearance", "Verschijning & lantaarn"]].map(([key, label]) => <button type="button" key={key} aria-pressed={profileTab === key} onClick={() => setProfileTab(key)}>{label}</button>)}
+            </nav>
+            {profileTab === "appearance" && <TeamIdentityWorkshop
+              snapshot={snapshot}
+              busy={busy}
+              act={(action, payload) => void act(action, payload)}
+            />}
+            {profileTab === "settings" &&
             <section className="pb-panel pb-profile">
               <img
                 className="pb-profile-avatar"
@@ -574,15 +587,14 @@ export function Poortenboek({
                 <div>
                   <strong>Beweging</strong>
                   <p>
-                    Jouw apparaatvoorkeur voor minder beweging gaat altijd voor.
+                    Liever een rustig scherm? Zet de beweging uit.
                   </p>
                   <MotionToggle inline />
                 </div>
                 <div>
                   <strong>Geluid</strong>
                   <p>
-                    Geluid staat standaard uit. Je mist geen informatie als het
-                    uit staat.
+                    Wil je geluid bij je avontuur? Jij kiest. Zonder geluid werkt je boek ook.
                   </p>
                   <button
                     className="pb-button secondary"
@@ -616,10 +628,9 @@ export function Poortenboek({
                 Poortenboek sluiten
               </button>
               <p className="pb-small">
-                Je Poortenboek laat alleen jouw avontuur en je bevestigde
-                reisgenootjes zien.
+                Dit is jouw boek, met jouw avontuur en je reisgenootjes.
               </p>
-            </section>
+            </section>}
           </>
         )}
         <p className="pb-updated">
@@ -804,7 +815,7 @@ function ElectionCard({
       </h2>
       <p>
         {maxChoices === 3
-          ? "Kies maximaal drie verschillende favorieten. Iedere gekozen naam telt één keer. Je kunt nog veranderen zolang de stemming open is."
+          ? "Kies tot drie namen die jij het leukst vindt. Je mag nog wisselen zolang je team aan het kiezen is."
           : "Kies de naam die het beste bij jullie avontuur past."}
       </p>
       <p className="pb-team-progress">
@@ -891,7 +902,7 @@ function ElectionCard({
           {election.ownChoices.length > 0 && (
             <p className="pb-success" role="status">
               <Check />
-              Jouw keuze is bewaard. Alleen jij kunt jouw stemkeuzes zien.
+              Jouw keuze is bewaard. Samen ontdekken jullie straks welke naam wint!
             </p>
           )}
         </>

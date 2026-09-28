@@ -2,9 +2,15 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
+import { PoortkamerChat } from "@/components/portal/poortkamer-chat";
+import type { RoomChannel } from "@/lib/domain/poortkamer";
 import { portalTime } from "@/lib/domain/poortkamer";
 type Snapshot = {
   realtimeTopic: string;
+  userId: string;
+  communityTopic: string;
+  channels: RoomChannel[];
   portals: Array<{
     id: string;
     code: string;
@@ -48,6 +54,7 @@ type Snapshot = {
 export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [notice, setNotice] = useState("");
+  const [tab, setTab] = useState("rooms");
   const load = useCallback(async () => {
     if (document.hidden) return;
     const client = createClient();
@@ -69,27 +76,7 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
       clearInterval(poll);
     };
   }, [load]);
-  useEffect(() => {
-    const client = createClient();
-    if (!client || !snapshot?.realtimeTopic) return;
-    let disposed = false;
-    let channel: ReturnType<typeof client.channel> | undefined;
-    const topic = snapshot.realtimeTopic;
-    void (async () => {
-      const { data } = await client.auth.getSession();
-      if (disposed || !data.session) return;
-      await client.realtime.setAuth(data.session.access_token);
-      if (disposed) return;
-      channel = client
-        .channel(topic, { config: { private: true } })
-        .on("broadcast", { event: "snapshot_changed" }, () => void load())
-        .subscribe();
-    })();
-    return () => {
-      disposed = true;
-      if (channel) void client.removeChannel(channel);
-    };
-  }, [snapshot?.realtimeTopic, load]);
+  usePrivateBroadcast(snapshot?.realtimeTopic, () => void load());
   async function moderate(
     channelId: string,
     messageId: number,
@@ -133,18 +120,14 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
     await load();
   }
   return (
-    <section className="panel">
-      <h2>Poortkamers</h2>
-      <p>
-        Teamtoegang, gereedheid, presentaties en operationele meldingen. Open
-        een poort voor rollen, uitnodigingen, berichten en de Omroeper.
-      </p>
+    <section className="portal-room-overview">
+      <nav className="workspace-tabs portal-room-admin-tabs" aria-label="Poortkamers beheren">{[["rooms", "Teams & toegang"], ["review", "Presentaties"], ["incidents", "Hulpvragen"], ["community", "Poortplein"], ["announcements", "Korte updates"], ["reports", "Moderatie"]].map(([key, label]) => <button type="button" key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>)}</nav>
       {notice && <p role="status">{notice}</p>}
       {!snapshot ? (
         <p>Ophalen…</p>
       ) : (
         <>
-          <div className="portal-registration-list">
+          {tab === "rooms" && <div className="portal-registration-list">
             {snapshot.portals.map((p) => (
               <article className="portal-list-row" key={p.id}>
                 <h3>
@@ -163,12 +146,14 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
               </article>
             ))}
           </div>
+          }
+          {tab === "review" && <>
           <h3>Poortpresentaties ter beoordeling ({snapshot.presentations.length})</h3>
           {snapshot.presentations.length === 0 && <p>Er wachten geen presentaties op beoordeling.</p>}
           {snapshot.presentations.map((presentation) => (
             <article className="panel" key={presentation.id}>
               <h4>{presentation.portalCode} · {presentation.publicName}</h4>
-              <p>Versie {presentation.version} · {presentation.status.replace("_", " ")}</p>
+              <p>Versie {presentation.version} · {({ submitted: "Wacht op beoordeling", changes_requested: "Aanpassing gevraagd" }[presentation.status] ?? "Ter beoordeling")}</p>
               <div className="actions">
                 <button className="btn primary" onClick={() => void v2Command("presentation_approve", presentation.id)}>
                   Goedkeuren
@@ -196,13 +181,15 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
               </div>
             </article>
           ))}
+          </>}
+          {tab === "incidents" && <>
           <h3>Operationele meldingen ({snapshot.incidents.length})</h3>
           {snapshot.incidents.length === 0 && <p>Er zijn geen open operationele meldingen.</p>}
           {snapshot.incidents.map((incident) => (
             <article className="panel" key={incident.id}>
               <h4>{incident.portalCode} · {incident.portalName}</h4>
               <p role={incident.urgency === "high" ? "alert" : undefined}>
-                <strong>{incident.urgency === "high" ? "Hoge urgentie" : "Normaal"}</strong> · {incident.category.replaceAll("_", " ")} · {portalTime(incident.createdAt)}
+                <strong>{incident.urgency === "high" ? "Hoge urgentie" : "Normaal"}</strong> · {({ crowding: "Drukte", lingering: "Groep blijft langer", technical: "Techniek", nuisance: "Overlast", unsafe: "Onveilig", contact_requested: "Contactverzoek", other: "Overige vraag" }[incident.category] ?? "Hulpvraag")} · {portalTime(incident.createdAt)}
               </p>
               <p>{incident.description}</p>
               {incident.callbackRequested && <p><strong>Terugbelverzoek</strong></p>}
@@ -221,6 +208,8 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
               </div>
             </article>
           ))}
+          </>}
+          {tab === "reports" && <>
           <h3>Gemelde berichten ({snapshot.reports.length})</h3>
           {snapshot.reports.length === 0 && <p>Er zijn geen open meldingen.</p>}
           {snapshot.reports.map((r) => (
@@ -247,6 +236,8 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
               </div>
             </article>
           ))}
+          </>}
+          {(tab === "community" || tab === "announcements") && <PoortkamerChat key={tab} admin disabled={false} refresh={load} initialChannel={snapshot.channels.find(c => c.kind === tab)?.id} room={{ userId: snapshot.userId, portal: { id: null }, portalTopic: "", communityTopic: snapshot.communityTopic, channels: snapshot.channels, team: [], updatedAt: "" }} />}
         </>
       )}
     </section>

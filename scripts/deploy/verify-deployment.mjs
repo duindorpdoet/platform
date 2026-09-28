@@ -37,7 +37,7 @@ if (
   throw new Error("The health response does not match the deployed release contract.");
 }
 
-for (const path of ["/", "/verhaal", "/werelden", "/kaart", "/faq", "/contact", "/sponsoren", "/privacy", "/voorwaarden", "/toegankelijkheid"]) {
+for (const path of ["/", "/verhaal", "/werelden", "/kaart", "/ontdek", "/faq", "/contact", "/sponsoren", "/privacy", "/voorwaarden", "/toegankelijkheid"]) {
   const response = await get(path);
   if (!response.ok) throw new Error(`Public smoke test failed for ${path} (${response.status}).`);
   await response.arrayBuffer();

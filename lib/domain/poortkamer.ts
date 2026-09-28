@@ -56,6 +56,7 @@ export type PortalMember = {
   lastSeenAt: string | null;
   accessLevel: "read" | "live" | "manage";
   suspendedAt: string | null;
+  chatModerator?: boolean;
 };
 export type PortalPresentation = {
   id: string;
@@ -143,6 +144,7 @@ export type PortalRoom = {
   }>;
   channels: RoomChannel[];
   visits: { arrivals: Arrival[]; visits: Visit[]; recap: NightRecap };
+  announcements?: Array<{ id: number; body: string; urgent: boolean; createdAt: string }>;
   urgentAnnouncement: { id: number; body: string; createdAt: string } | null;
   preferences: Record<keyof typeof notificationLabels, boolean>;
   v2: {
@@ -192,6 +194,9 @@ export type RoomMessage = {
 };
 export type ChatSnapshot = {
   channelId: string;
+  canModerate: boolean;
+  canPin: boolean;
+  canPost: boolean;
   retainedUntil: string;
   messages: RoomMessage[];
   pins: Array<{ id: number; body: string }>;
