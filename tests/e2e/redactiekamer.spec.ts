@@ -64,6 +64,14 @@ async function screenshot(page: Page, name: string, project: string) {
     ),
   ).toBe(true);
 }
+async function expectActionsBelowForm(page: Page) {
+  await page.locator(".editorial-compose input").first().scrollIntoViewIfNeeded();
+  const form = await page.locator(".editorial-compose").boundingBox();
+  const actions = await page.locator(".editorial-footer").boundingBox();
+  expect(form).not.toBeNull();
+  expect(actions).not.toBeNull();
+  expect(actions!.y).toBeGreaterThanOrEqual(form!.y + form!.height);
+}
 test("editor publishes selective news and prepares an immutable deduplicated Nachtpost", async ({
   page,
   context,
@@ -92,6 +100,7 @@ test("editor publishes selective news and prepares an immutable deduplicated Nac
   await page
     .getByRole("button", { name: "Nieuw bericht", exact: true })
     .click();
+  await expectActionsBelowForm(page);
   await page
     .getByLabel("Titel", { exact: true })
     .fill(`De poorten ontwaken ${suffix}`);
@@ -257,6 +266,7 @@ test("editor publishes selective news and prepares an immutable deduplicated Nac
     .fill(suffix);
   const row = page.locator(".editorial-row").filter({ hasText: suffix });
   await row.getByRole("button", { name: "Voeg toe aan Nachtpost" }).click();
+  await expectActionsBelowForm(page);
   await page.getByLabel("Interne campagnenaam").fill(`Nachtpost ${suffix}`);
   await page.getByLabel("Onderwerpregel").fill("De nacht komt dichterbij");
   await page
@@ -280,18 +290,34 @@ test("editor publishes selective news and prepares an immutable deduplicated Nac
   await screenshot(page, "nachtpost-preview", info.project.name);
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Testmail naar mij" }).click();
-  await expect(page.getByText(/Testmail staat in de wachtrij/)).toBeVisible();
+  await expect(page.getByText(/Testmail aangevraagd voor/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Verzending controleren" })).toBeDisabled();
   const cv = sql(
     `select v.id from app_private.content_versions v where v.content_kind='newsletter' and v.structured_content->>'internalName'='Nachtpost ${suffix}' order by version desc limit 1`,
   );
   // Local provider fixture: capture and acknowledge only this isolated test row.
   // The worker's signing/provider/receipt boundaries have separate integration tests.
   sql(
-    `update app_private.email_outbox set status='accepted',provider_id='local-editorial-capture' where message_type='nachtpost' and payload->>'versionId'='${cv}' and payload->>'test'='true'`,
+    `update app_private.email_outbox set status='delivered',provider_id='local-editorial-capture' where message_type='nachtpost' and payload->>'versionId'='${cv}' and payload->>'test'='true'`,
   );
-  await expect(page.getByText("✓ Testmail geaccepteerd")).toBeVisible({
+  // Returning from the mail app must refresh the received result immediately.
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page.getByText(/✓ Testmail afgeleverd/)).toBeVisible({
     timeout: 20000,
   });
+  // Editing and restoring the same content must not create a new untested version.
+  await page.getByLabel("Onderwerpregel").fill("Tijdelijke wijziging");
+  await expect(page.getByRole("button", { name: "Verzending controleren" })).toBeDisabled();
+  await page.getByLabel("Onderwerpregel").fill("De nacht komt dichterbij");
+  await page.getByRole("button", { name: "Opslaan", exact: true }).click();
+  await expect(page.getByText("Nachtpost opgeslagen en klaar voor controle.")).toBeVisible();
+  expect(sql(`select count(*) from app_private.content_versions where campaign_id=(select campaign_id from app_private.content_versions where id='${cv}')`)).toBe("1");
+  await expect(page.getByRole("button", { name: "Opslaan", exact: true })).toBeDisabled();
+  // Reopen with no in-memory preview/counts: review must fetch recipients itself.
+  await page.getByRole("button", { name: "← Nachtpostoverzicht" }).click();
+  await page.locator(".editorial-row").filter({ hasText: `Nachtpost ${suffix}` }).getByRole("button", { name: "Openen", exact: true }).click();
+  await expect(page.getByText(/✓ Testmail afgeleverd/)).toBeVisible();
+  await expectActionsBelowForm(page);
   await page.getByRole("button", { name: "Verzending controleren" }).click();
   await expect(
     dialog.getByRole("heading", { name: "Definitief verzenden bevestigen" }),

@@ -79,6 +79,8 @@ type Campaign = {
   scheduledAt: string | null;
   counts: Counts | null;
   testAccepted: boolean;
+  testStatus?: string | null;
+  testedVersion?: number | null;
   delivery: Record<string, number>;
   events: Record<string, number>;
 };
@@ -878,7 +880,7 @@ function NewsComposer({
           )}
         </aside>
       </div>
-      <div className="editorial-sticky">
+      <div className="editorial-footer">
         <span className="editorial-small">
           {changed
             ? "Je hebt niet-opgeslagen wijzigingen"
@@ -1197,6 +1199,28 @@ function CampaignComposer({
   const frozen = !!current && !["draft", "ready"].includes(current.status);
   const editable = rights.compose && !frozen;
   const testKey = useRef(crypto.randomUUID());
+  const stale = !!current && current.versionId !== saved.versionId;
+  const testAccepted = !stale && !!current?.testAccepted;
+  const testPending = ["pending", "processing", "deferred"].includes(
+    current?.testStatus ?? "",
+  );
+  const testMessage = changed
+    ? "Sla je wijzigingen op voordat je de testmail en verzending controleert."
+    : stale
+      ? "Dit concept is elders gewijzigd. Open het opnieuw vanuit het Nachtpostoverzicht."
+      : frozen
+        ? "Deze Nachtpost is vastgelegd."
+        : testAccepted
+          ? current?.testStatus === "delivered"
+            ? "✓ Testmail afgeleverd. Je kunt de verzending controleren."
+            : "✓ Testmail verstuurd. Je kunt de verzending controleren."
+          : testPending
+            ? "Je testmail wordt verstuurd. De status verschijnt hier automatisch."
+            : current?.testStatus === "failed" || current?.testStatus === "suppressed"
+              ? "De testmail kon niet worden verstuurd. Controleer de verzendhistorie en probeer het opnieuw."
+              : current?.testStatus === "unknown"
+                ? "De verzendstatus is nog niet bevestigd. Vernieuw de status of bekijk de verzendhistorie."
+                : "Stuur eerst een testmail. Daarna kun je de verzending controleren.";
   function update(value: CampaignContent) {
     setContent(value);
     setChanged(true);
@@ -1209,29 +1233,33 @@ function CampaignComposer({
     dirty(true);
     setCounts(null);
   }
+  async function saveDraft() {
+    const valid = campaignSchema.parse(content);
+    const result = await command<{
+      id: string;
+      revision: number;
+      versionId: string;
+    }>({
+      action: "saveCampaign",
+      ...saved,
+      content: valid,
+      audience,
+      ready: true,
+    });
+    setSaved(result);
+    setChanged(false);
+    dirty(false);
+    testKey.current = crypto.randomUUID();
+    setMessage("Nachtpost opgeslagen en klaar voor controle.");
+    await reload();
+    return result;
+  }
   async function save() {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     try {
-      const valid = campaignSchema.parse(content);
-      const result = await command<{
-        id: string;
-        revision: number;
-        versionId: string;
-      }>({
-        action: "saveCampaign",
-        ...saved,
-        content: valid,
-        audience,
-        ready: true,
-      });
-      setSaved(result);
-      setChanged(false);
-      dirty(false);
-      testKey.current = crypto.randomUUID();
-      setMessage("Nachtpost opgeslagen en klaar voor controle.");
-      await reload();
-      return result;
+      await saveDraft();
     } catch (cause) {
       setMessage(errorMessage(cause));
       return null;
@@ -1239,15 +1267,14 @@ function CampaignComposer({
       setBusy(false);
     }
   }
-  async function review(showPreview: boolean) {
+  async function review(mode: "preview" | "recipients" | "send") {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     try {
       let version = saved;
       if (changed) {
-        const result = await save();
-        if (!result) return;
-        version = result;
+        version = await saveDraft();
       }
       const data = await command<Counts & { html: string }>({
         action: "previewCampaign",
@@ -1255,7 +1282,8 @@ function CampaignComposer({
       });
       setCounts(data);
       setHtml(data.html);
-      if (showPreview) setPreview(true);
+      if (mode === "preview") setPreview(true);
+      if (mode === "send") setConfirm(true);
     } catch (cause) {
       setMessage(errorMessage(cause));
     } finally {
@@ -1263,6 +1291,7 @@ function CampaignComposer({
     }
   }
   async function testMail() {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     try {
@@ -1275,8 +1304,9 @@ function CampaignComposer({
         versionId: saved.versionId,
         key: testKey.current,
       });
+      testKey.current = crypto.randomUUID();
       setMessage(
-        "Testmail staat in de wachtrij voor je eigen beheeradres. De verzendhistorie wordt automatisch bijgewerkt.",
+        "Testmail aangevraagd voor je eigen beheeradres. Hieronder zie je de actuele verzendstatus.",
       );
       await reload();
     } catch (cause) {
@@ -1453,7 +1483,7 @@ function CampaignComposer({
           <button
             className="btn outline"
             disabled={busy || (!rights.compose && !rights.send)}
-            onClick={() => void review(false)}
+            onClick={() => void review("recipients")}
           >
             Ontvangers controleren
           </button>
@@ -1476,16 +1506,12 @@ function CampaignComposer({
           )}
         </aside>
       </div>
-      <div className="editorial-sticky">
-        <span className="editorial-small">
-          {current?.testAccepted
-            ? "✓ Testmail geaccepteerd"
-            : "Testmail van deze versie vereist"}
-        </span>
+      <div className="editorial-footer" aria-label="Nachtpostacties">
+        <p className="editorial-small" role="status">{testMessage}</p>
         <div className="editorial-actions">
           <button
             className="btn outline"
-            disabled={busy || !editable}
+            disabled={busy || !editable || !changed || stale}
             onClick={() => void save()}
           >
             <Save size={16} />
@@ -1494,7 +1520,7 @@ function CampaignComposer({
           <button
             className="btn outline"
             disabled={busy || !content.subject}
-            onClick={() => void review(true)}
+            onClick={() => void review("preview")}
           >
             <Eye size={16} />
             Voorbeeld
@@ -1505,6 +1531,8 @@ function CampaignComposer({
               busy ||
               !rights.send ||
               frozen ||
+              stale ||
+              testPending ||
               changed ||
               !saved.versionId ||
               !snapshot.sending.email
@@ -1515,17 +1543,28 @@ function CampaignComposer({
             Testmail naar mij
           </button>
           <button
-            className="btn"
+            className="btn outline"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              void reload()
+                .catch((cause) => setMessage(errorMessage(cause)))
+                .finally(() => setBusy(false));
+            }}
+          >
+            Status vernieuwen
+          </button>
+          <button
+            className="btn editorial-send"
             disabled={
               busy ||
               !rights.send ||
               frozen ||
               changed ||
-              !counts ||
-              !current?.testAccepted ||
+              !testAccepted ||
               !snapshot.sending.email
             }
-            onClick={() => setConfirm(true)}
+            onClick={() => void review("send")}
           >
             <Send size={16} />
             Verzending controleren
@@ -1797,14 +1836,16 @@ export function Redactiekamer({ capabilities }: { capabilities: string[] }) {
     text: string;
     action: () => Promise<void>;
   } | null>(null);
+  const loadSequence = useRef(0);
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     const response = await fetch("/api/editorial/admin", { cache: "no-store" });
     const body = await response.json();
     if (!response.ok)
       throw new Error(
         body.error?.message ?? "De Redactiekamer is niet bereikbaar.",
       );
-    setSnapshot(body.data);
+    if (sequence === loadSequence.current) setSnapshot(body.data);
   }, []);
   useEffect(() => {
     const timer = setTimeout(
@@ -1815,9 +1856,17 @@ export function Redactiekamer({ capabilities }: { capabilities: string[] }) {
       if (document.visibilityState === "visible")
         void load().catch(() => undefined);
     }, 15000);
+    const refreshVisible = () => {
+      if (document.visibilityState === "visible")
+        void load().catch(() => undefined);
+    };
+    window.addEventListener("focus", refreshVisible);
+    document.addEventListener("visibilitychange", refreshVisible);
     return () => {
       clearTimeout(timer);
       clearInterval(poll);
+      window.removeEventListener("focus", refreshVisible);
+      document.removeEventListener("visibilitychange", refreshVisible);
     };
   }, [load]);
   useEffect(() => {
