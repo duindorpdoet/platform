@@ -1084,7 +1084,7 @@ export function Poortkamer({
               <ShieldCheck size={24} />
               <h2>Je account</h2>
               <p>
-                Alleen actieve Poortwachters zien jullie team. Het Poortplein
+                Alleen actieve Poortwachters zien jullie team. De Praatkamer
                 toont buiten jullie team alleen voornaam en poortnaam. Chat
                 wordt één maand na het evenement verwijderd.
               </p>

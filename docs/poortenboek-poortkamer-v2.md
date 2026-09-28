@@ -28,7 +28,7 @@ De Poortkamer ondersteunt Hoofdbeheerder, Poortbeheerder, Acteur, Ontvangst, Tec
 
 ## Communicatie en configuratie
 
-Er zijn geen nieuwe environmentvariabelen of externe diensten nodig. De bestaande mail-outbox, pushvoorkeuren, private realtime-topics en feature-instellingen blijven leidend. Simulatie verstuurt geen echte mail of push. De Poortenpleinkanalen zijn Mededelingen, Voorbereiding, Decor en techniek, Hulp gevraagd en Tijdens de avond; historische kanaaldata blijft bewaard.
+Er zijn geen nieuwe environmentvariabelen of externe diensten nodig. De bestaande mail-outbox, pushvoorkeuren, private realtime-topics en feature-instellingen blijven leidend. Simulatie verstuurt geen echte mail of push. De Praatkamerkanalen zijn Mededelingen, Voorbereiding, Decor en techniek, Hulp gevraagd en Tijdens de avond; historische kanaaldata blijft bewaard.
 
 ## Assets
 

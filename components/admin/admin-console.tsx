@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AdminAccessManagement } from "@/components/admin/admin-access-management";
+import { PoortkamerOverview } from "@/components/admin/poortkamer-overview";
 import { PortalReviews } from "@/components/admin/portal-reviews";
 import { Redactiekamer } from "@/components/editorial/redactiekamer";
 import { ContentManagement } from "@/components/admin/content-management";
@@ -214,6 +215,7 @@ const labels: Record<string, string> = {
   openTickets: "Open gesprekken",
 };
 const sectionMeta = {
+  praatkamer: { kicker: "Poorten · samen praten", title: "Praatkamer", description: "Tips en overleg met de poortteams." },
   overview: { kicker: "De avond · voorbereiding", title: "De nacht in beeld.", description: "Alles wat nu aandacht vraagt, bij elkaar." },
   imports: { kicker: "Beheer · gegevens", title: "Imports", description: "Controleer bronbestanden voordat gegevens worden toegepast." },
   registrations: { kicker: "Deelnemers · groepen", title: "Inschrijvingen", description: "Iedere inschrijving direct in beeld, met groep en deelnemers." },
@@ -261,6 +263,7 @@ const requiredColumns: Record<string, string[]> = {
 export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false }: { eventSlug: string; capabilities: string[]; editorialEnabled?: boolean }) {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [section, setSection] = useState<
+    | "praatkamer"
     | "overview"
     | "imports"
     | "registrations"
@@ -279,6 +282,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     | "simulation"
     | "settings"
   >(editorialEnabled && !capabilities.some((c) => ["event_admin", "registration_manage", "portals_manage", "groups_manage", "live_support"].includes(c)) ? "editorial" : "overview");
+  const canUsePraatkamer = capabilities.some(c => ["event_admin", "portals_manage", "live_support"].includes(c));
   const canManageGroups = capabilities.includes("event_admin") || capabilities.includes("groups_manage");
   const canManageTogether = canManageGroups || capabilities.includes("registration_manage");
   const canUseTickets = capabilities.includes("event_admin") || capabilities.includes("groups_manage") || capabilities.includes("live_support");
@@ -1165,6 +1169,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           <span>Inschrijvingen</span>
           {dashboard.counts.registrations > 0 && <b aria-hidden="true">{dashboard.counts.registrations}</b>}
         </button>
+        {canUsePraatkamer && <button className={section === "praatkamer" ? "active" : ""} aria-current={section === "praatkamer" ? "page" : undefined} onClick={() => setSection("praatkamer")}><MessageSquare />Praatkamer</button>}
         {canManageTogether && <button className={section === "together" ? "active" : ""} aria-current={section === "together" ? "page" : undefined} onClick={() => setSection("together")}><UsersRound />Samenloop</button>}
         {canManageGroups && <button className={section === "poortenboek" ? "active" : ""} aria-current={section === "poortenboek" ? "page" : undefined} onClick={() => setSection("poortenboek")}><Sparkles />Poortenboek</button>}
         {(capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && (
@@ -1303,7 +1308,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           </Dialog>
         </header>
         <main ref={contentRef} id="admin-content" className="admin-content" data-admin-section={section} tabIndex={-1}>
-        {["groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
+        {["praatkamer", "groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
           <div>
             <p className="kicker">{sectionMeta[section].kicker}</p>
             <h1>{sectionMeta[section].title}</h1>
@@ -1774,6 +1779,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             capabilities.includes("live_support")) && (
             <ParticipantUpdates eventSlug={eventSlug} />
           )}
+        {section === "praatkamer" && canUsePraatkamer && <PoortkamerOverview eventSlug={eventSlug} praatkamerOnly />}
         {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
         {section === "editorial" && editorialEnabled && <Redactiekamer capabilities={capabilities} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
@@ -1817,7 +1823,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         </main>
         <nav className="admin-bottomnav" aria-label="Snelle organisatienavigatie">
           <button className={section === "overview" ? "active" : ""} aria-current={section === "overview" ? "page" : undefined} onClick={() => setSection("overview")}><House /><span>Home</span></button>
-          {canManageGroups && <button className={section === "groups" ? "active" : ""} aria-current={section === "groups" ? "page" : undefined} onClick={() => setSection("groups")}><UsersRound /><span>Groepen</span></button>}
+          {canUsePraatkamer && <button className={section === "praatkamer" ? "active" : ""} aria-current={section === "praatkamer" ? "page" : undefined} onClick={() => setSection("praatkamer")}><MessageSquare /><span>Chat</span></button>}
           {canUseLive && <button className={section === "live" ? "active" : ""} aria-current={section === "live" ? "page" : undefined} onClick={() => { setSection("live"); void loadLive(); }}><LifeBuoy /><span>Cockpit</span></button>}
           {canUseTickets && <button className={section === "tickets" ? "active" : ""} aria-current={section === "tickets" ? "page" : undefined} onClick={() => setSection("tickets")}><MessageSquare /><span>Berichten</span></button>}
           <button ref={bottomNavMoreButtonRef} className="admin-bottomnav-more" aria-expanded={mobileNavOpen} aria-controls="admin-navigation" onClick={() => { navigationOpenerRef.current = bottomNavMoreButtonRef.current; setMobileNavOpen(true); }}><Menu /><span>Meer</span></button>

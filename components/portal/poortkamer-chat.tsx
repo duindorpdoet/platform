@@ -136,11 +136,11 @@ export function PoortkamerChat({ room, disabled, refresh, admin = false, initial
     finally { sending.current = false; setBusy(false); }
   }
   const mentionOptions = area === "team" ? room.team.filter(m => !m.suspendedAt) : Array.from(new Map((current?.messages ?? []).filter(m => m.mentionUserId).map(m => [m.mentionUserId!, { userId: m.mentionUserId!, name: `${m.sender} · ${m.portalCode ?? "Poortwachter"}` }])).values());
-  const title = area === "team" ? "Achter de Poort" : area === "community" ? "Het Poortplein" : "Van de organisatie";
+  const title = area === "team" ? "Achter de Poort" : area === "community" ? "Praatkamer" : "Van de organisatie";
   return <section className="room-chat" aria-label="Berichten">
     <nav className="workspace-tabs" aria-label="Gesprekken kiezen">
       {(["team", "community", "announcements"] as const).filter(kind => room.channels.some(c => c.kind === kind)).map(kind => <button type="button" key={kind} aria-pressed={area === kind} onClick={() => { setArea(kind); setSelected(""); setMention(""); setNotice(""); }}>
-        {kind === "team" ? "Achter de Poort" : kind === "community" ? "Het Poortplein" : "De Omroeper"}
+        {kind === "team" ? "Achter de Poort" : kind === "community" ? "Praatkamer" : "De Omroeper"}
         {room.channels.filter(c => c.kind === kind).reduce((sum, c) => sum + c.unread, 0) > 0 && <span className="chat-unread">{room.channels.filter(c => c.kind === kind).reduce((sum, c) => sum + c.unread, 0)}</span>}
       </button>)}
     </nav>
@@ -150,7 +150,7 @@ export function PoortkamerChat({ room, disabled, refresh, admin = false, initial
         <div><h2>{title}</h2><p>{area === "team" ? "Jullie teamgesprek" : area === "community" ? "Tips en overleg met andere poorten" : "Korte updates voor alle poorten"} <span className="chat-connection">· {live ? "Live" : "Verbinden…"}</span></p></div>
         {channel && area !== "announcements" && <button type="button" className="chat-icon" title={channel.muted ? "Meldingen aanzetten" : "Meldingen dempen"} aria-label={channel.muted ? "Meldingen aanzetten" : "Meldingen dempen"} aria-pressed={channel.muted} disabled={disabled || busy} onClick={() => void action("mute", { muted: !channel.muted })}><BellOff size={18} /></button>}
       </header>
-      {area === "community" && <nav className="chat-channels" aria-label="Poortplein kanalen">{room.channels.filter(c => c.kind === area).map(c => <button type="button" key={c.id} aria-pressed={channelId === c.id} onClick={() => { setSelected(c.id); setMention(""); setNotice(""); }}>#{c.name}{c.unread > 0 && <b>{c.unread}</b>}</button>)}</nav>}
+      {area === "community" && <nav className="chat-channels" aria-label="Praatkamer kanalen">{room.channels.filter(c => c.kind === area).map(c => <button type="button" key={c.id} aria-pressed={channelId === c.id} onClick={() => { setSelected(c.id); setMention(""); setNotice(""); }}>#{c.name}{c.unread > 0 && <b>{c.unread}</b>}</button>)}</nav>}
       {current?.pins.length ? <details className="chat-pins"><summary><Pin size={14} /> {current.pins.length} vastgezet</summary>{current.pins.map(pin => <p key={pin.id}>{pin.body}</p>)}</details> : null}
       {notice && <p className="chat-notice" role="status">{notice}</p>}
       <div className="chat-history" ref={scroll} role="log" aria-label="Berichtgeschiedenis" aria-live="polite" aria-relevant="additions text" onScroll={() => { const el = scroll.current; follow.current = !!el && el.scrollHeight - el.scrollTop - el.clientHeight < 100; if (follow.current) setNewMessages(false); }}>
@@ -178,7 +178,7 @@ export function PoortkamerChat({ room, disabled, refresh, admin = false, initial
         <div className="chat-compose-tools">{area !== "announcements" && mentionOptions.some(m => m.userId !== room.userId) && <label><AtSign size={15} /><span className="sr-only">Vermeld een teamlid</span><select aria-label="Vermeld een teamlid" value={mention} onChange={e => setMention(e.target.value)}><option value="">Iemand vermelden</option>{mentionOptions.filter(m => m.userId !== room.userId).map(m => <option key={m.userId} value={m.userId}>{m.name}</option>)}</select></label>}{area === "announcements" && admin && <label><input type="checkbox" checked={urgent} onChange={e => setUrgent(e.target.checked)} /> Belangrijk · stuur ook een melding</label>}<small>{body.length}/1000</small></div>
       </form> : current && <p className="chat-readonly">{area === "announcements" ? "Een vraag over een update? Stuur de organisatie een privébericht via Hulp." : "Je kunt dit gesprek lezen. Berichten sturen is tijdelijk uitgezet."}</p>}
     </div>
-    <p className="chat-guidance"><ShieldCheck size={14} />{area === "team" ? "Voor jullie eigen team. Houd het gezellig." : "De organisatie houdt een oogje op het Poortplein. Houd rekening met elkaar."}</p>
+    <p className="chat-guidance"><ShieldCheck size={14} />{area === "team" ? "Voor jullie eigen team. Houd het gezellig." : "De organisatie houdt toezicht in de Praatkamer. Houd rekening met elkaar."}</p>
     <Dialog open={!!moderation} onOpenChange={open => { if (!open && !busy) { setModeration(null); setReason(""); } }}><DialogContent className="chat-dialog"><DialogTitle>{moderation?.operation === "hide" ? "Bericht verbergen?" : moderation?.operation === "mute_author" ? "24 uur spreekpauze" : "Bericht melden"}</DialogTitle><DialogDescription>{moderation?.operation === "hide" ? "De tekst verdwijnt uit het gesprek. De andere berichten blijven staan." : "Vertel kort waarom dit bericht aandacht nodig heeft."}</DialogDescription><form onSubmit={e => { e.preventDefault(); if (moderation) void action(moderation.operation, { messageId: moderation.message.id, reason }); }}>{moderation?.operation !== "hide" && <label className="field">Reden<textarea required minLength={5} maxLength={500} value={reason} onChange={e => setReason(e.target.value)} /></label>}<div className="actions"><button type="button" className="btn outline" disabled={busy} onClick={() => setModeration(null)}>Annuleren</button><button type="submit" className="btn" disabled={busy}>{moderation?.operation === "hide" ? "Verbergen" : "Bevestigen"}</button></div></form></DialogContent></Dialog>
   </section>;
 }

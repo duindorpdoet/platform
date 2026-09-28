@@ -247,6 +247,6 @@ export function roomError(message: string) {
   if (message.includes("STALE_VERSION"))
     return "De poort is intussen gewijzigd. Bekijk de actuele gegevens en probeer opnieuw.";
   if (message.includes("COMMUNITY_MUTED"))
-    return "De organisatie heeft het plaatsen op het Poortplein tijdelijk gepauzeerd voor jouw account. Je teamchat blijft beschikbaar.";
+    return "De organisatie heeft het plaatsen in de Praatkamer tijdelijk gepauzeerd voor jouw account. Je teamchat blijft beschikbaar.";
   return "De wijziging is niet bevestigd. Controleer je verbinding en probeer opnieuw.";
 }

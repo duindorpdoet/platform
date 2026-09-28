@@ -51,10 +51,10 @@ type Snapshot = {
     submittedAt: string | null;
   }>;
 };
-export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
+export function PoortkamerOverview({ eventSlug, praatkamerOnly = false }: { eventSlug: string; praatkamerOnly?: boolean }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [notice, setNotice] = useState("");
-  const [tab, setTab] = useState("rooms");
+  const [tab, setTab] = useState(praatkamerOnly ? "community" : "rooms");
   const load = useCallback(async () => {
     if (document.hidden) return;
     const client = createClient();
@@ -121,7 +121,7 @@ export function PoortkamerOverview({ eventSlug }: { eventSlug: string }) {
   }
   return (
     <section className="portal-room-overview">
-      <nav className="workspace-tabs portal-room-admin-tabs" aria-label="Poortkamers beheren">{[["rooms", "Teams & toegang"], ["review", "Presentaties"], ["incidents", "Hulpvragen"], ["community", "Poortplein"], ["announcements", "Korte updates"], ["reports", "Moderatie"]].map(([key, label]) => <button type="button" key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>)}</nav>
+      {!praatkamerOnly && <nav className="workspace-tabs portal-room-admin-tabs" aria-label="Poortkamers beheren">{[["rooms", "Teams & toegang"], ["review", "Presentaties"], ["incidents", "Hulpvragen"], ["community", "Praatkamer"], ["announcements", "Korte updates"], ["reports", "Moderatie"]].map(([key, label]) => <button type="button" key={key} aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>)}</nav>}
       {notice && <p role="status">{notice}</p>}
       {!snapshot ? (
         <p>Ophalen…</p>

@@ -39,7 +39,7 @@ Er zijn geen nieuwe secrets, diensten of featureflags nodig. De bestaande produc
 | Ouder/deelnemer | Inschrijving, kinderen en betalen, samenloop, direct kind openen, Nu, Route, Groep, Nachtpas, Meer, profiel en communicatie |
 | Meekijker | Beperkte groepsvoortgang, uitnodiging en toegang |
 | Poortenboek | Login, welkom, Nu, Team/naam, vaandel, oefenpoort, Mijn boek, Ik/instellingen, verschijning, ouderbeheer en gedeeld toestel |
-| Poortkamer | Nachtwacht, bezoeken, team/toegang, eigen chat, Poortplein, Omroeper, voorbereiding, presentatie, hulpvraag, oefenen, instellingen en terugblik |
+| Poortkamer | Nachtwacht, bezoeken, team/toegang, eigen chat, Praatkamer, Omroeper, voorbereiding, presentatie, hulpvraag, oefenen, instellingen en terugblik |
 | Nachtregie | Cockpit, imports, inschrijvingen, groepen, samenloop, Poortenboek, Messenger, updates, betalingen, poorten, planner, content/sponsors, beheerders, avondregie, simulatie en instellingen |
 | Redactiekamer | Nieuws, voorvertoning, plaatsingen, Nachtpost, media, voorkeuren en afleverhistorie |
 

@@ -83,10 +83,10 @@ Overzicht van De Duindorpse Poorten van Halloween, bijgewerkt op 28 september 20
 - Toegangsniveau los van taak/rol instellen; toegang tijdelijk pauzeren, herstellen of intrekken; hoofdpoortwachterschap overdragen.
 - Taken verdelen, recente teamactiviteit, openstaande uitnodigingen en toegangsgeschiedenis bekijken.
 - **Achter de Poort**: realtime teamchat met berichtballonnen, afzender, tijd, datum, geschiedenis en een vaste schrijfbalk.
-- **Het Poortplein**: realtime overleg tussen poortteams in kanalen voor voorbereiding, decor/techniek, hulp en de avond.
+- **De Praatkamer**: realtime overleg tussen poortteams in kanalen voor voorbereiding, decor/techniek, hulp en de avond.
 - Teamleden vermelden, emoji-reacties plaatsen, berichten melden, kanalen dempen en vastgezette berichten bekijken.
 - Hoofdpoortwachter modereert de eigen teamchat en kan een teamlid moderator maken. Een moderator kan intern vastzetten, verbergen en meldingen afhandelen. Bestaande mede-beheerders behouden hun recht om vast te zetten.
-- De organisatie modereert het gezamenlijke Poortplein en kan daar een tijdelijke spreekpauze opleggen.
+- De organisatie modereert de gezamenlijke Praatkamer en kan daar een tijdelijke spreekpauze opleggen.
 - **De Omroeper** voor organisatieberichten. De laatste vijf gewone of belangrijke updates verschijnen ook op de Nachtwacht; belangrijke updates kunnen een melding opleveren.
 - **Meer** met aparte pagina's voor voorbereiding, poortpresentatie, hulpvraag, oefenen, instellingen en terugblik.
 - Gedeelde voorbereiding, poortgegevens, QR-codebeheer, installatiehulp en meldingsinstellingen.
@@ -110,7 +110,7 @@ Overzicht van De Duindorpse Poorten van Halloween, bijgewerkt op 28 september 20
 - Inschrijvingswijzigingen en annuleringen beoordelen.
 - Poortaanmeldingen beoordelen en locaties controleren; actieve poorten en teams beheren.
 - Poortpresentaties goedkeuren, afwijzen of terugsturen; hulpvragen en moderatiemeldingen afhandelen.
-- Poortpleinchat beheren en korte organisatie-updates publiceren vanuit Poortkamers en moderatie.
+- Praatkamerchat beheren en korte organisatie-updates publiceren vanuit Poortkamers en moderatie.
 - Poortenboekbeheer met duidelijk overzicht, beschikbare teamnamen, stemtijden, herkenbare kindteams en opnieuw laten kiezen.
 - Schermvullende Messenger: doorzoekbare gesprekkenlijst, ongelezen/afgerond-filter, gesprek openen, claimen, beantwoorden en terug naar de lijst.
 - Beschikbaarheid voor Messenger, live verversing en bewaarde gespreksgeschiedenis.

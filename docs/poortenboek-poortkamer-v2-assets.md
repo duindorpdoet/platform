@@ -25,7 +25,7 @@ Alle bestanden zijn WebP. Tekst en persoonlijke gegevens worden nooit in het bee
 |---|---|---|---|
 | `nightwatch-live-hero-wide.webp` | Live dashboard | Nachtwacht over Duindorp | Breed, midden |
 | `house-team-hero-wide.webp` | Huisteam | Decoratief huisteam | Breed, midden |
-| `poortenplein-community-wide.webp` | Poortenplein | Volwassen poortteams op het plein | Breed, midden |
+| `poortenplein-community-wide.webp` | Praatkamer | Volwassen poortteams op het plein | Breed, midden |
 | `incident-control-wide.webp` | Incidentmodule | Verlichte operationele meldkamer | Breed, midden |
 | `simulation-hero-wide.webp` | Simulatiemodus | Oefensituatie achter een poort | Breed, midden |
 | `gate-presentation-hero-wide.webp` | Poortpresentatie | Zorgvuldig gepresenteerde Halloweenpoort | Breed, midden |

@@ -27,6 +27,6 @@ Releasevolgorde: eerst de volledige PR-CI, daarna staging inclusief mailacceptat
 
 ## Realtime bij intrekking
 
-Realtime berekent autorisatie bij toetreden. Daarom hebben Poortkamer en Poortplein een membership-generatie in hun topic. Een wijziging in rechten verstuurt één identifier-only invalidatie naar het oude topic; volgende berichten gebruiken een nieuwe generatie. Iedere RPC controleert de actieve membership opnieuw. Een oude WebSocket ontvangt dus geen nieuwe chatdata of nieuwe aanwezigheidsupdates. De publieke/legacy `portal:`-signalen blijven beperkte identifiers voor bestaande functionaliteit.
+Realtime berekent autorisatie bij toetreden. Daarom hebben Poortkamer en Praatkamer een membership-generatie in hun topic. Een wijziging in rechten verstuurt één identifier-only invalidatie naar het oude topic; volgende berichten gebruiken een nieuwe generatie. Iedere RPC controleert de actieve membership opnieuw. Een oude WebSocket ontvangt dus geen nieuwe chatdata of nieuwe aanwezigheidsupdates. De publieke/legacy `portal:`-signalen blijven beperkte identifiers voor bestaande functionaliteit.
 
 Bronnen: [Realtime Authorization](https://supabase.com/docs/guides/realtime/authorization), [Presence](https://supabase.com/docs/guides/realtime/presence).

@@ -190,14 +190,14 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   await expect(page.getByRole("log").getByText(liveMessage, { exact: true })).toHaveCount(0);
 
   await guest
-    .getByRole("button", { name: /^Het Poortplein/ })
+    .getByRole("button", { name: /^Praatkamer/ })
     .click();
   await guest
     .getByLabel("Je bericht", { exact: true })
     .fill(`Groet vanaf onze poort ${randomUUID()}`);
   await guest.getByRole("button", { name: "Versturen", exact: true }).click();
   await page
-    .getByRole("button", { name: /^Het Poortplein/ })
+    .getByRole("button", { name: /^Praatkamer/ })
     .click();
   const mention = page.getByLabel("Vermeld een teamlid");
   await expect(
@@ -308,7 +308,7 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   await screenshot(page, "bezoeken", info.project.name);
   await page.getByRole("button", { name: /^Berichten/ }).click();
   await page
-    .getByRole("button", { name: /^Het Poortplein/ })
+    .getByRole("button", { name: /^Praatkamer/ })
     .click();
   const escapedMessage = `<script>geen uitvoering ${randomUUID()}</script>`;
   await page.getByLabel("Je bericht", { exact: true }).fill(escapedMessage);
@@ -406,7 +406,7 @@ test("standalone presentation and offline reload never recover cached private da
   await context.setOffline(false);
 });
 
-test("organization updates reach the cockpit live and only organization moderates Poortplein", async ({ page, context, browser }, info) => {
+test("organization updates reach the cockpit live and only organization moderates Praatkamer", async ({ page, context, browser }, info) => {
   await owner(context);
   await page.goto("/mijn-huis");
   await expect(page.getByText(/^Live · Bijgewerkt/)).toBeVisible({ timeout: 15_000 });
@@ -433,14 +433,22 @@ test("organization updates reach the cockpit live and only organization moderate
   await screenshot(page, "organisatie-update", info.project.name);
 
   await page.getByRole("button", { name: /^Berichten/ }).click();
-  await page.getByRole("button", { name: /^Het Poortplein/ }).click();
+  await page.getByRole("button", { name: /^Praatkamer/ }).click();
   const message = `Een voorbeeld voor moderatie ${randomUUID()}`;
   await page.getByLabel("Je bericht", { exact: true }).fill(message);
   await page.getByRole("button", { name: "Versturen", exact: true }).click();
   const own = page.locator(".chat-bubble").filter({ hasText: message });
   await expect(own).toBeVisible();
   await expect(own.getByRole("button", { name: "Verbergen", exact: true })).toHaveCount(0);
-  await organization.getByRole("button", { name: "Poortplein", exact: true }).click();
+  const bottomNavigation = organization.getByRole("navigation", { name: "Snelle organisatienavigatie" });
+  if (await bottomNavigation.isVisible()) {
+    await expect(bottomNavigation.getByRole("button", { name: "Groepen", exact: true })).toHaveCount(0);
+    await bottomNavigation.getByRole("button", { name: "Chat", exact: true }).click();
+    await expect(bottomNavigation.getByRole("button", { name: "Chat", exact: true })).toHaveAttribute("aria-current", "page");
+  } else {
+    await organization.locator(".admin-nav").getByRole("button", { name: "Praatkamer", exact: true }).click();
+  }
+  await expect(organization.getByRole("heading", { name: "Praatkamer", level: 2 })).toBeVisible();
   const received = organization.locator(".chat-bubble").filter({ hasText: message });
   await expect(received).toBeVisible();
   await received.getByLabel("Berichtopties").click();
