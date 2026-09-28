@@ -83,8 +83,7 @@ const navigation: Record<ParticipantRoleKey, NavItem[]> = {
     { key: "meer", label: "Meer", icon: Settings2 },
   ],
   homeowner: [
-    { key: "mijn-poort", label: "Mijn poort", icon: DoorOpen },
-    { key: "verwacht", label: "Verwacht", icon: Clock3 },
+    { key: "mijn-poort", label: "Poortkamer", icon: DoorOpen },
     { key: "updates", label: "Updates", icon: Bell },
     { key: "meer", label: "Meer", icon: Settings2 },
   ],
@@ -399,23 +398,13 @@ function HomeownerSection({ context, eventSlug, userId, role, section }: { conte
     }
   }, [eventSlug, role.portalId]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
-  if (role.portalId || portal?.portal) return <ParticipantPageFrame eyebrow="Jullie plek achter de poort" title="De Poortkamer"><p>Nachtwacht, bezoeken, jullie team en berichten komen samen in De Poortkamer.</p><Link className="btn" href="/mijn-huis">Open De Poortkamer</Link></ParticipantPageFrame>;
   if (section === "updates") return <UpdatesPanel eventSlug={eventSlug} role="homeowner" />;
   if (section === "meer") return <MorePage context={context} eventSlug={eventSlug} userId={userId} role="homeowner" />;
-  if (section === "verwacht") return <ArrivalsPage arrivals={arrivals} />;
+  if (role.portalId || portal?.portal) return <ParticipantPageFrame eyebrow="Jullie plek achter de poort" title="De Poortkamer"><p>Nachtwacht, bezoeken, jullie team en berichten komen samen in De Poortkamer.</p><Link className="btn" href="/mijn-huis">Open De Poortkamer</Link></ParticipantPageFrame>;
   return <ParticipantPageFrame eyebrow="Mijn huis · jullie plek in de nacht" title={portal?.portal?.name || "Mijn poort"}>
     <div className="cockpit-metrics owner-summary-metrics"><StatusCard icon={Users} label="Verwacht totaal" value={arrivals ? `${arrivals.expectedTotal} kinderen` : "Wordt berekend"} /><StatusCard icon={Clock3} label="Volgend venster" value={arrivals?.arrivals.find((item) => item.state !== "completed") ? `${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedArrivalAt)}–${formatTime(arrivals.arrivals.find((item) => item.state !== "completed")!.plannedDepartureAt)}` : "Geen open venster"} /></div>
     <div className="planned-not-live owner-arrival-note"><Clock3 /><span><strong>Dit is de verwachte aankomsttijd.</strong>Groepen kunnen eerder of later lopen. Gebruik Pauze zodra ontvangst tijdelijk niet veilig of mogelijk is.</span></div>
     <PortalDashboard eventSlug={eventSlug} /><PortalNews channel="houses" compact />
-  </ParticipantPageFrame>;
-}
-
-function ArrivalsPage({ arrivals }: { arrivals: ArrivalsSnapshot | null }) {
-  return <ParticipantPageFrame eyebrow="Geplande routevensters" title="Wie kun je verwachten?">
-    <section className="participant-card arrivals-card"><div className="section-title"><div><p className="participant-eyebrow">Avondplanning</p><h2>{arrivals?.expectedTotal ?? 0} kinderen verdeeld over {arrivals?.arrivals.length ?? 0} groepen</h2></div><Clock3 /></div>
-      <p>Groepen kunnen wat eerder of later komen dan gepland.</p>
-      <div className="arrival-timeline">{arrivals?.arrivals.map((arrival) => <article key={`${arrival.groupCode}-${arrival.plannedArrivalAt}`} className={arrival.state}><time>{formatTime(arrival.plannedArrivalAt)}</time><span /><div><strong>Groep {arrival.groupCode}</strong><p>{arrival.expectedChildren} kinderen · venster tot {formatTime(arrival.plannedDepartureAt)}</p><small>{arrival.state === "completed" ? "Bezoek afgerond" : arrival.state === "active" ? "Vrijgegeven in groepsroute" : "Gepland"}</small></div></article>)}{!arrivals?.arrivals.length && <p>Er zijn nog geen bezoeken aangekondigd.</p>}</div>
-    </section>
   </ParticipantPageFrame>;
 }
 

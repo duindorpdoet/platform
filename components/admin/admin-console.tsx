@@ -1148,7 +1148,8 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           <Image src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" width={180} height={76} priority />
           <span>Nachtregie · organisatie</span>
         </Link>
-        <p className="admin-nav-label">Werkruimte</p>
+        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-overview">
+        <p className="admin-nav-label" id="admin-nav-overview">Overzicht</p>
         <button
           className={section === "overview" ? "active" : ""}
           aria-current={section === "overview" ? "page" : undefined}
@@ -1158,14 +1159,9 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           Cockpit
         </button>
         {canViewStatistics && <button className={section === "statistics" ? "active" : ""} aria-current={section === "statistics" ? "page" : undefined} onClick={() => setSection("statistics")}><BarChart3 />Statistieken</button>}
-        <button
-          className={section === "imports" ? "active" : ""}
-          aria-current={section === "imports" ? "page" : undefined}
-          onClick={() => setSection("imports")}
-        >
-          <Database />
-          Imports
-        </button>
+        </div>
+        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-participants">
+        <p className="admin-nav-label" id="admin-nav-participants">Deelnemers</p>
         <button
           className={section === "registrations" ? "active" : ""}
           aria-current={section === "registrations" ? "page" : undefined}
@@ -1182,9 +1178,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           <span>Inschrijvingen</span>
           {dashboard.counts.registrations > 0 && <b aria-hidden="true">{dashboard.counts.registrations}</b>}
         </button>
-        {canUsePraatkamer && <button className={section === "praatkamer" ? "active" : ""} aria-current={section === "praatkamer" ? "page" : undefined} onClick={() => setSection("praatkamer")}><MessageSquare />Praatkamer</button>}
         {canManageTogether && <button className={section === "together" ? "active" : ""} aria-current={section === "together" ? "page" : undefined} onClick={() => setSection("together")}><UsersRound />Samenloop</button>}
-        {canManageGroups && <button className={section === "poortenboek" ? "active" : ""} aria-current={section === "poortenboek" ? "page" : undefined} onClick={() => setSection("poortenboek")}><Sparkles />Poortenboek</button>}
         {(capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && (
           <button
             className={section === "groups" ? "active" : ""}
@@ -1195,6 +1189,41 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             Groepsindeling
           </button>
         )}
+        {canManageGroups && <button className={section === "poortenboek" ? "active" : ""} aria-current={section === "poortenboek" ? "page" : undefined} onClick={() => setSection("poortenboek")}><Sparkles />Poortenboek</button>}
+        <button
+          className={section === "payments" ? "active" : ""}
+          aria-current={section === "payments" ? "page" : undefined}
+          onClick={() => {
+            setSection("payments");
+            void loadPayments();
+          }}
+        >
+          <WalletCards />
+          Betalingen
+        </button>
+        </div>
+        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-planning">
+        <p className="admin-nav-label" id="admin-nav-planning">Poorten & planning</p>
+        <button
+          className={section === "portals" ? "active" : ""}
+          aria-current={section === "portals" ? "page" : undefined}
+          onClick={() => setSection("portals")}
+        >
+          <House />
+          Poorten
+        </button>
+        <button
+          className={section === "planner" ? "active" : ""}
+          aria-current={section === "planner" ? "page" : undefined}
+          onClick={() => setSection("planner")}
+        >
+          <MapPinned />
+          Startpunten en indeling
+        </button>
+        </div>
+        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-communication">
+        <p className="admin-nav-label" id="admin-nav-communication">Communicatie</p>
+        {canUsePraatkamer && <button className={section === "praatkamer" ? "active" : ""} aria-current={section === "praatkamer" ? "page" : undefined} onClick={() => setSection("praatkamer")}><MessageSquare />Praatkamer</button>}
         {(capabilities.includes("event_admin") ||
           capabilities.includes("groups_manage") ||
           capabilities.includes("live_support")) && (
@@ -1219,33 +1248,6 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             Deelnemersupdates
           </button>
         )}
-        <button
-          className={section === "payments" ? "active" : ""}
-          aria-current={section === "payments" ? "page" : undefined}
-          onClick={() => {
-            setSection("payments");
-            void loadPayments();
-          }}
-        >
-          <WalletCards />
-          Betalingen
-        </button>
-        <button
-          className={section === "portals" ? "active" : ""}
-          aria-current={section === "portals" ? "page" : undefined}
-          onClick={() => setSection("portals")}
-        >
-          <House />
-          Poorten
-        </button>
-        <button
-          className={section === "planner" ? "active" : ""}
-          aria-current={section === "planner" ? "page" : undefined}
-          onClick={() => setSection("planner")}
-        >
-          <MapPinned />
-          Startpunten en indeling
-        </button>
         {editorialEnabled && capabilities.some((c) => ["event_admin", "content_manage", "content_publish", "communications_manage", "communications_send"].includes(c)) && <button className={section === "editorial" ? "active" : ""} aria-current={section === "editorial" ? "page" : undefined} onClick={() => setSection("editorial")}><FileText />Redactiekamer</button>}
         {canManageShares && <button className={section === "share" ? "active" : ""} aria-current={section === "share" ? "page" : undefined} onClick={() => setSection("share")}><Share2 />Deelstudio</button>}
         <button
@@ -1256,16 +1258,9 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           <FileText />
           Content & sponsors
         </button>
-        {capabilities.includes("event_admin") && (
-          <button
-            className={section === "access" ? "active" : ""}
-          aria-current={section === "access" ? "page" : undefined}
-            onClick={() => setSection("access")}
-          >
-            <UserCog />
-            Beheerders
-          </button>
-        )}
+        </div>
+        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-live">
+        <p className="admin-nav-label" id="admin-nav-live">Live & oefenen</p>
         <button
           className={section === "live" ? "active" : ""}
           aria-current={section === "live" ? "page" : undefined}
@@ -1288,6 +1283,27 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           <Play />
           Avondsimulatie
         </button>
+        </div>
+        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-management">
+        <p className="admin-nav-label" id="admin-nav-management">Beheer</p>
+        <button
+          className={section === "imports" ? "active" : ""}
+          aria-current={section === "imports" ? "page" : undefined}
+          onClick={() => setSection("imports")}
+        >
+          <Database />
+          Imports
+        </button>
+        {capabilities.includes("event_admin") && (
+          <button
+            className={section === "access" ? "active" : ""}
+          aria-current={section === "access" ? "page" : undefined}
+            onClick={() => setSection("access")}
+          >
+            <UserCog />
+            Beheerders
+          </button>
+        )}
         <button
           className={section === "settings" ? "active" : ""}
           aria-current={section === "settings" ? "page" : undefined}
@@ -1296,6 +1312,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           <SlidersHorizontal />
           Instellingen
         </button>
+        </div>
       </aside>
       <div className="admin-workspace" inert={mobileNavOpen}>
         <header className="admin-appbar" aria-label="Nachtregie werkbalk">
@@ -1838,10 +1855,10 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         )}
         </main>
         <nav className="admin-bottomnav" aria-label="Snelle organisatienavigatie">
-          <button className={section === "overview" ? "active" : ""} aria-current={section === "overview" ? "page" : undefined} onClick={() => setSection("overview")}><House /><span>Home</span></button>
-          {canUsePraatkamer && <button className={section === "praatkamer" ? "active" : ""} aria-current={section === "praatkamer" ? "page" : undefined} onClick={() => setSection("praatkamer")}><MessageSquare /><span>Chat</span></button>}
-          {canUseLive && <button className={section === "live" ? "active" : ""} aria-current={section === "live" ? "page" : undefined} onClick={() => { setSection("live"); void loadLive(); }}><LifeBuoy /><span>Cockpit</span></button>}
-          {canUseTickets && <button className={section === "tickets" ? "active" : ""} aria-current={section === "tickets" ? "page" : undefined} onClick={() => setSection("tickets")}><MessageSquare /><span>Berichten</span></button>}
+          <button className={section === "overview" ? "active" : ""} aria-current={section === "overview" ? "page" : undefined} onClick={() => setSection("overview")}><House /><span>Overzicht</span></button>
+          {canUsePraatkamer && <button className={section === "praatkamer" ? "active" : ""} aria-current={section === "praatkamer" ? "page" : undefined} onClick={() => setSection("praatkamer")}><UsersRound /><span>Praatkamer</span></button>}
+          {canUseLive && <button className={section === "live" ? "active" : ""} aria-current={section === "live" ? "page" : undefined} onClick={() => { setSection("live"); void loadLive(); }}><LifeBuoy /><span>Live</span></button>}
+          {canUseTickets && <button className={section === "tickets" ? "active" : ""} aria-current={section === "tickets" ? "page" : undefined} onClick={() => setSection("tickets")}><MessageSquare /><span>Inbox</span></button>}
           <button ref={bottomNavMoreButtonRef} className="admin-bottomnav-more" aria-expanded={mobileNavOpen} aria-controls="admin-navigation" onClick={() => { navigationOpenerRef.current = bottomNavMoreButtonRef.current; setMobileNavOpen(true); }}><Menu /><span>Meer</span></button>
         </nav>
       </div>

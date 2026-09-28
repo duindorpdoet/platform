@@ -93,6 +93,12 @@ test("the homeowner cockpit labels schedules as planned rather than live ETA", a
   await authenticate(context, "owner@example.invalid");
   await page.addLocatorHandler(page.getByRole("button", { name: "Installatievenster sluiten" }), async (close) => close.click());
   await page.goto("/omgeving/huiseigenaar/mijn-poort");
+  const navigation = page.locator("nav.participant-nav:visible, nav.participant-bottomnav:visible");
+  await expect(navigation.getByRole("link", { name: "Poortkamer", exact: true })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Verwacht", exact: true })).toHaveCount(0);
+  await navigation.getByRole("link", { name: "Updates", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Updates", exact: true })).toBeVisible();
+  await navigation.getByRole("link", { name: "Poortkamer", exact: true }).click();
   await page.getByRole("link", { name: "Open De Poortkamer", exact: true }).click();
   await expect(page.getByRole("button", { name: "Open" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Pauze", exact: true })).toBeVisible();
@@ -1051,6 +1057,10 @@ for (const width of [320, 375, 390, 430, 900]) {
     await opener.click();
     await expect(navigation).toHaveAttribute("aria-modal", "true");
     await expect(page.getByRole("button", { name: "Menu sluiten", exact: true })).toBeFocused();
+    await expect(navigation.getByRole("group")).toHaveCount(6);
+    for (const group of ["Overzicht", "Deelnemers", "Poorten & planning", "Communicatie", "Live & oefenen", "Beheer"]) {
+      await expect(navigation.getByRole("group", { name: group, exact: true })).toBeVisible();
+    }
     await expect(navigation.getByRole("button", { name: "Cockpit", exact: true })).toHaveAttribute("aria-current", "page");
     await expect(navigation.locator("button b").first()).toBeVisible();
     expect(await page.evaluate(() => document.body.style.overflow)).toBe("hidden");

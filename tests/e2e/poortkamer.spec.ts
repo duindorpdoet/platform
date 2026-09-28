@@ -346,11 +346,12 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   await page.getByRole("button", { name: "Meer", exact: true }).click();
   await page.getByRole("button", { name: "Presentatie", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Het verhaal dat kinderen meenemen" })).toBeVisible();
-  await page.getByRole("button", { name: "Hulpvraag", exact: true }).click();
+  await page.getByRole("button", { name: "Hulp & contact", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Meld wat de ontvangst belemmert" })).toBeVisible();
+  await page.getByRole("button", { name: "Voorbereiden", exact: true }).click();
   await page.getByRole("button", { name: "Oefenen", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Oefen de avond zonder echte gegevens" })).toBeVisible();
-  await page.getByRole("button", { name: "Voorbereiding", exact: true }).click();
+  await page.getByRole("button", { name: "Checklist", exact: true }).click();
   await expect(page.getByText(/snoepvoorraad/i)).toHaveCount(0);
   const installDismiss = page.getByRole("button", {
     name: "Ik heb de app al geïnstalleerd",
@@ -501,8 +502,8 @@ test("organization updates reach the cockpit live and only organization moderate
   const bottomNavigation = organization.getByRole("navigation", { name: "Snelle organisatienavigatie" });
   if (await bottomNavigation.isVisible()) {
     await expect(bottomNavigation.getByRole("button", { name: "Groepen", exact: true })).toHaveCount(0);
-    await bottomNavigation.getByRole("button", { name: "Chat", exact: true }).click();
-    await expect(bottomNavigation.getByRole("button", { name: "Chat", exact: true })).toHaveAttribute("aria-current", "page");
+    await bottomNavigation.getByRole("button", { name: "Praatkamer", exact: true }).click();
+    await expect(bottomNavigation.getByRole("button", { name: "Praatkamer", exact: true })).toHaveAttribute("aria-current", "page");
   } else {
     await organization.locator(".admin-nav").getByRole("button", { name: "Praatkamer", exact: true }).click();
   }

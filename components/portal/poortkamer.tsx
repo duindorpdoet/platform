@@ -76,6 +76,7 @@ export function Poortkamer({
   const [room, setRoom] = useState<PortalRoom | null>(initial);
   const [portalId, setPortalId] = useState(initial.portal.id);
   const [moreSection, setMoreSection] = useState("preparation");
+  const [preparationSection, setPreparationSection] = useState("checklist");
   const [tab, setTab] = useState<Tab>("night");
   const [visitTab, setVisitTab] = useState<"next" | "expected" | "past">(
     "next",
@@ -929,18 +930,19 @@ export function Poortkamer({
             admin={admin}
           />
         )}
-        {tab === "more" && <nav className={s.tabs} aria-label="Poortkamer instellingen">{[["preparation", "Voorbereiding"], ["presentation", "Presentatie"], ["incident", "Hulpvraag"], ["simulation", "Oefenen"], ["settings", "Instellingen"], ["recap", "Terugblik"]].map(([key, label]) => <button type="button" key={key} className={s.button} aria-pressed={moreSection === key} onClick={() => setMoreSection(key)}>{label}</button>)}</nav>}
+        {tab === "more" && <nav className={`${s.tabs} ${s.moreTabs}`} aria-label="Meer in De Poortkamer">{[["preparation", "Voorbereiden"], ["incident", "Hulp & contact"], ["settings", "Instellingen"], ["recap", "Terugblik"]].map(([key, label]) => <button type="button" key={key} className={s.button} aria-pressed={moreSection === key} onClick={() => setMoreSection(key)}>{label}</button>)}</nav>}
         {tab === "more" && (
           <div className={s.moreGrid}>
+            {moreSection === "preparation" && <nav className={`${s.tabs} ${s.subTabs}`} aria-label="Voorbereiden">{[["checklist", "Checklist"], ["presentation", "Presentatie"], ["simulation", "Oefenen"]].map(([key, label]) => <button type="button" key={key} className={s.button} aria-pressed={preparationSection === key} onClick={() => setPreparationSection(key)}>{label}</button>)}</nav>}
             <PoortkamerManagementV2
-              section={moreSection}
+              section={moreSection === "preparation" ? preparationSection : moreSection}
               room={room}
               busy={busy}
               disabled={disabled}
               canEdit={canEdit}
               command={(operation, payload) => command(operation, payload)}
             />
-            {moreSection === "preparation" &&             <section className={s.card}>
+            {moreSection === "preparation" && preparationSection === "checklist" &&             <section className={s.card}>
               <Image
                 className={s.cardImage}
                 src="/images/poortkamer/ready-for-the-night.webp"
