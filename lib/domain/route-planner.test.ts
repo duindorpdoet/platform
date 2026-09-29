@@ -84,19 +84,19 @@ describe("group and finale planner", () => {
     expect(result.groups[0].warnings).toContain("PAYMENT_NOT_CONFIRMED");
   });
 
-  it("spreads dozens of groups over fifteen physical start points at 17:30 and 18:30", () => {
+  it("spreads one hundred groups over fifteen physical start points at 17:30 and 18:30", () => {
     const starts = Array.from({ length: 15 }, (_, index) => ({
       id: `start-${String(index + 1).padStart(2, "0")}`,
       startPointId: `point-${String(index + 1).padStart(2, "0")}`,
       startsAt: index % 2 === 0 ? "2026-10-31T17:30:00+01:00" : "2026-10-31T18:30:00+01:00",
-      maxGroups: 5,
-      maxChildren: 5,
+      maxGroups: 7,
+      maxChildren: 7,
     }));
     const result = proposePlan({
       ...base,
       targetGroupSize: 1,
       maxGroupSize: 1,
-      parties: Array.from({ length: 75 }, (_, index) => ({ id: `party-${String(index + 1).padStart(2, "0")}`, childCount: 1, paymentEligible: true })),
+      parties: Array.from({ length: 100 }, (_, index) => ({ id: `party-${String(index + 1).padStart(3, "0")}`, childCount: 1, paymentEligible: true })),
       starts,
       finaleShowSeconds: 60,
       finaleMaxGroups: 10,
@@ -104,7 +104,7 @@ describe("group and finale planner", () => {
     });
 
     expect(result.conflicts).toEqual([]);
-    expect(result.groups).toHaveLength(75);
+    expect(result.groups).toHaveLength(100);
     expect(new Set(result.groups.map((group) => group.startId))).toEqual(new Set(starts.map((start) => start.id)));
     expect(result.groups.every((group) => Date.parse(group.expectedFinaleArrivalAt) <= Date.parse(base.finaleLastArrivalAt))).toBe(true);
   });
