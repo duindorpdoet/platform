@@ -190,3 +190,32 @@ export function dividedPartyIds(
       .map(([partyId]) => partyId),
   );
 }
+
+/** Mirrors the repair RPC's deterministic target choice for a clear preview. */
+export function splitPartyRepairTarget(
+  columns: Array<{ id: string; registrations: CompositionRegistration[] }>,
+  partyId: string,
+) {
+  return columns
+    .map((column, order) => {
+      const members = column.registrations.filter(
+        (registration) => registration.partyId === partyId,
+      );
+      return {
+        id: column.id,
+        order,
+        memberCount: members.length,
+        childCount: members.reduce(
+          (total, registration) => total + registration.childCount,
+          0,
+        ),
+      };
+    })
+    .filter((candidate) => candidate.id !== "unassigned" && candidate.memberCount)
+    .sort(
+      (a, b) =>
+        b.memberCount - a.memberCount ||
+        b.childCount - a.childCount ||
+        a.order - b.order,
+    )[0]?.id ?? null;
+}

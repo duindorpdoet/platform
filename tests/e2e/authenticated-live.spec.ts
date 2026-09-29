@@ -1111,10 +1111,39 @@ async function openFixtureBoard(page: Page, context: BrowserContext, width = 390
   const snapshot = boardFixture();
   const moves: Array<Record<string, unknown>> = [];
   const creates: Array<Record<string, unknown>> = [];
+  const repairs: Array<Record<string, unknown>> = [];
   await page.route("**/rest/v1/rpc/admin_group_composition_snapshot", (route) => route.fulfill({ json: snapshot }));
   await page.route("**/rest/v1/rpc/admin_group_move_registration", async (route) => {
     moves.push(route.request().postDataJSON());
     await route.fulfill({ json: { movedRegistrations: 1 } });
+  });
+  await page.route("**/rest/v1/rpc/admin_group_repair_split_party", async (route) => {
+    repairs.push(route.request().postDataJSON());
+    const members = [
+      ...snapshot.unassigned,
+      ...snapshot.groups.flatMap((group) => group.registrations),
+    ].filter((registration) => registration.partyId === "split");
+    snapshot.unassigned = snapshot.unassigned.filter(
+      (registration) => registration.partyId !== "split",
+    );
+    const target = snapshot.groups.find((group) => group.id === "a")!;
+    target.registrations = [
+      ...target.registrations.filter(
+        (registration) => registration.partyId !== "split",
+      ),
+      ...members,
+    ];
+    target.childCount = target.registrations.reduce(
+      (total, registration) => total + registration.childCount,
+      0,
+    );
+    await route.fulfill({
+      json: {
+        movedRegistrations: members.length,
+        targetGroupId: target.id,
+        targetSystemCode: target.systemCode,
+      },
+    });
   });
   await page.route("**/rest/v1/rpc/admin_group_create", async (route) => {
     creates.push(route.request().postDataJSON());
@@ -1127,7 +1156,7 @@ async function openFixtureBoard(page: Page, context: BrowserContext, width = 390
   await page.goto("/admin");
   await selectAdminSection(page, "Groepsindeling");
   await expect(page.locator(".group-composition-column")).toHaveCount(5);
-  return { moves, creates };
+  return { moves, creates, repairs };
 }
 
 async function expectColumnAligned(page: Page, id: string) {
@@ -1192,6 +1221,46 @@ test("group board preference filters preserve complete parties and combine with 
   await page.getByRole("button", { name: "Toepassen" }).click();
   await expect(page.locator(".group-registration-card").filter({ hasText: "TEST-assigned" })).toHaveCount(0);
   await expect(page.locator(".group-registration-card").filter({ hasText: "TEST-published" })).toHaveCount(1);
+});
+
+test("group board offers one safe correction into the party majority group", async ({ page, context }) => {
+  const { repairs } = await openFixtureBoard(page, context);
+  const split = page
+    .locator('[data-column-id="unassigned"] .group-registration-card')
+    .filter({ hasText: "TEST-split-a" });
+  const correction = split.getByRole("button", {
+    name: "SL-2026-K7M4PQ samenvoegen in G-a",
+  });
+  await expect(correction).toBeVisible();
+  await correction.click();
+  let dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("heading", { name: "Samenloop samenvoegen?" }),
+  ).toBeVisible();
+  await expect(dialog).toContainText("Alle 2 inschrijvingen met 2 kinderen");
+  await expect(dialog).toContainText("G-a · Groep a");
+  await expect(dialog).toContainText("Daarna 3/4 kinderen");
+  await expect(dialog.getByRole("button", { name: "Annuleren" })).toBeFocused();
+  await dialog.getByRole("button", { name: "Annuleren" }).click();
+  expect(repairs).toHaveLength(0);
+
+  await correction.click();
+  dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Samenvoegen in G-a" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(() => repairs.length).toBe(1);
+  expect(repairs[0]).toEqual({
+    _event_slug: "duindorp-halloween-2026",
+    _party_id: "split",
+  });
+  await expect(page.getByRole("status")).toContainText(
+    "2 inschrijvingen samengevoegd in G-a.",
+  );
+  await expect(
+    page.getByText("Samenloop verdeeld over meerdere groepen."),
+  ).toHaveCount(0);
+  await expectColumnAligned(page, "a");
+  await assertReadableLayout(page);
 });
 
 test("group dialogs trap focus, cancel safely and submit once before revealing the new group", async ({ page, context }) => {

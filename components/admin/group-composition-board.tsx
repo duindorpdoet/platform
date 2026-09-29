@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  GitMerge,
   GripVertical,
   LockKeyhole,
   Plus,
@@ -32,6 +33,7 @@ import {
   itemMatchesPreference,
   itemRepresentative,
   preferenceSummary,
+  splitPartyRepairTarget,
   type CompositionItem,
   type CompositionRegistration,
   type MoveCheck,
@@ -57,6 +59,14 @@ type Snapshot = {
   groups: Group[];
   unassigned: Registration[];
 };
+type RepairCandidate = {
+  partyId: string;
+  label: string;
+  target: Group;
+  registrationCount: number;
+  childCount: number;
+  projectedGroupChildren: number;
+};
 const clock = (value: string | null) =>
   value
     ? new Intl.DateTimeFormat("nl-NL", {
@@ -65,6 +75,21 @@ const clock = (value: string | null) =>
         timeZone: "Europe/Amsterdam",
       }).format(new Date(value))
     : "geen voorkeur";
+const repairErrorMessage = (message: string) => {
+  if (message.includes("GROUP_SIZE_LIMIT_EXCEEDED"))
+    return "De gekozen groep heeft niet genoeg ruimte voor de volledige samenloop.";
+  if (message.includes("GROUPS_FINALIZED"))
+    return "Een betrokken groep is inmiddels definitief of gepubliceerd.";
+  if (message.includes("PARTY_NOT_SPLIT"))
+    return "Deze samenloop is inmiddels al gecorrigeerd. Vernieuw de indeling.";
+  if (
+    message.includes("PARTY_NOT_FOUND") ||
+    message.includes("PARTY_NOT_REPAIRABLE") ||
+    message.includes("PARTY_REPAIR_TARGET_NOT_FOUND")
+  )
+    return "Deze samenloop kan niet automatisch worden gecorrigeerd. Vernieuw de indeling.";
+  return `Corrigeren geweigerd: ${message}`;
+};
 
 export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -84,6 +109,9 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [createOpen, setCreateOpen] = useState(false);
+  const [repairCandidate, setRepairCandidate] =
+    useState<RepairCandidate | null>(null);
+  const [repairError, setRepairError] = useState("");
   const [newName, setNewName] = useState("");
   const [activeColumnId, setActiveColumnId] = useState("unassigned");
   const [revealRequest, setRevealRequest] = useState(0);
@@ -248,6 +276,40 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
         closeCreate();
         setNotice(`Nieuwe groep ${created?.systemCode ?? ""} aangemaakt.`);
       }
+    } finally {
+      mutationPending.current = false;
+      setBusy(false);
+    }
+  };
+  const repairSplitParty = async () => {
+    if (!repairCandidate || mutationPending.current) return;
+    const client = createClient();
+    if (!client) return;
+    mutationPending.current = true;
+    setBusy(true);
+    setRepairError("");
+    try {
+      const { data, error } = await client
+        .schema("api")
+        .rpc("admin_group_repair_split_party", {
+          _event_slug: eventSlug,
+          _party_id: repairCandidate.partyId,
+        });
+      if (error) {
+        setRepairError(repairErrorMessage(error.message));
+        return;
+      }
+      const repaired = data as {
+        movedRegistrations?: number;
+        targetGroupId?: string;
+        targetSystemCode?: string;
+      } | null;
+      revealColumn.current = repaired?.targetGroupId ?? repairCandidate.target.id;
+      await load();
+      setRepairCandidate(null);
+      setNotice(
+        `${repaired?.movedRegistrations ?? repairCandidate.registrationCount} inschrijvingen samengevoegd in ${repaired?.targetSystemCode ?? repairCandidate.target.systemCode}.`,
+      );
     } finally {
       mutationPending.current = false;
       setBusy(false);
@@ -496,29 +558,90 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
               className="group-composition-dropzone"
               aria-label={`${column.title}: inschrijvingen`}
             >
-              {column.items.map((item) => (
-                <Card
-                  key={item.id}
-                  item={item}
-                  current={column.id === "unassigned" ? null : column.id}
-                  inconsistent={Boolean(
-                    item.partyId && dividedParties.has(item.partyId),
-                  )}
-                  moveCheck={(target) =>
-                    checkMove(item, column, target?.id ?? null)
-                  }
-                  groups={snapshot.groups}
-                  expanded={Boolean(expanded[item.id])}
-                  toggle={() =>
-                    setExpanded((value) => ({
-                      ...value,
-                      [item.id]: !value[item.id],
-                    }))
-                  }
-                  move={move}
-                  busy={busy}
-                />
-              ))}
+              {column.items.map((item) => {
+                const inconsistent = Boolean(
+                  item.partyId && dividedParties.has(item.partyId),
+                );
+                const targetId =
+                  item.partyId && inconsistent
+                    ? splitPartyRepairTarget(columns, item.partyId)
+                    : null;
+                const target = snapshot.groups.find(
+                  (group) => group.id === targetId,
+                );
+                const partyMembers = item.partyId
+                  ? columns.flatMap((candidate) =>
+                      candidate.registrations.filter(
+                        (registration) =>
+                          registration.partyId === item.partyId,
+                      ),
+                    )
+                  : [];
+                const targetPartyChildren = target
+                  ? target.registrations
+                      .filter(
+                        (registration) =>
+                          registration.partyId === item.partyId,
+                      )
+                      .reduce(
+                        (total, registration) =>
+                          total + registration.childCount,
+                        0,
+                      )
+                  : 0;
+                const repair =
+                  item.partyId && target
+                    ? {
+                        partyId: item.partyId,
+                        label: itemIdentity({
+                          id: `party:${item.partyId}`,
+                          partyId: item.partyId,
+                          registrations: partyMembers,
+                        }),
+                        target,
+                        registrationCount: partyMembers.length,
+                        childCount: partyMembers.reduce(
+                          (total, registration) =>
+                            total + registration.childCount,
+                          0,
+                        ),
+                        projectedGroupChildren:
+                          target.childCount -
+                          targetPartyChildren +
+                          partyMembers.reduce(
+                            (total, registration) =>
+                              total + registration.childCount,
+                            0,
+                          ),
+                      }
+                    : null;
+                return (
+                  <Card
+                    key={item.id}
+                    item={item}
+                    current={column.id === "unassigned" ? null : column.id}
+                    inconsistent={inconsistent}
+                    repair={repair}
+                    requestRepair={() => {
+                      setRepairError("");
+                      setRepairCandidate(repair);
+                    }}
+                    moveCheck={(targetGroup) =>
+                      checkMove(item, column, targetGroup?.id ?? null)
+                    }
+                    groups={snapshot.groups}
+                    expanded={Boolean(expanded[item.id])}
+                    toggle={() =>
+                      setExpanded((value) => ({
+                        ...value,
+                        [item.id]: !value[item.id],
+                      }))
+                    }
+                    move={move}
+                    busy={busy}
+                  />
+                );
+              })}
               {!column.items.length && (
                 <div className="group-composition-empty">
                   <UsersRound />
@@ -669,6 +792,67 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
           </form>
         </AdminDialog>
       )}
+      {repairCandidate && (
+        <AdminDialog
+          labelledBy="group-repair-title"
+          close={() => {
+            if (!mutationPending.current) setRepairCandidate(null);
+          }}
+        >
+          <button
+            className="group-dialog-close"
+            type="button"
+            aria-label="Sluiten"
+            disabled={busy}
+            onClick={() => setRepairCandidate(null)}
+          >
+            <X />
+          </button>
+          <p className="kicker">Correctie groepsindeling</p>
+          <h2 id="group-repair-title">Samenloop samenvoegen?</h2>
+          <p>
+            Alle {repairCandidate.registrationCount} inschrijvingen met{" "}
+            {repairCandidate.childCount} kinderen van{" "}
+            <strong>{repairCandidate.label}</strong> gaan naar de groep waar de
+            meeste al in zitten.
+          </p>
+          <div className="group-repair-preview">
+            <GitMerge />
+            <span>
+              Doelgroep
+              <strong>
+                {repairCandidate.target.systemCode} ·{" "}
+                {repairCandidate.target.displayName || "Naam volgt"}
+              </strong>
+              <small>
+                Daarna {repairCandidate.projectedGroupChildren}/
+                {snapshot.maxGroupSize} kinderen in deze groep
+              </small>
+            </span>
+          </div>
+          {repairError && <p role="alert">{repairError}</p>}
+          <div className="actions">
+            <button
+              data-initial-focus
+              type="button"
+              className="btn outline"
+              disabled={busy}
+              onClick={() => setRepairCandidate(null)}
+            >
+              Annuleren
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={busy}
+              onClick={() => void repairSplitParty()}
+            >
+              <GitMerge />
+              Samenvoegen in {repairCandidate.target.systemCode}
+            </button>
+          </div>
+        </AdminDialog>
+      )}
     </section>
   );
 }
@@ -676,6 +860,8 @@ function Card({
   item,
   current,
   inconsistent,
+  repair,
+  requestRepair,
   moveCheck,
   groups,
   expanded,
@@ -686,6 +872,8 @@ function Card({
   item: CompositionItem;
   current: string | null;
   inconsistent: boolean;
+  repair: RepairCandidate | null;
+  requestRepair: () => void;
   moveCheck: (target: Group | null) => MoveCheck;
   groups: Group[];
   expanded: boolean;
@@ -731,9 +919,20 @@ function Card({
             : `Voorkeur ${clock(rep.preferredStartAt)}`}
         </small>
         {inconsistent && (
-          <small className="form-warning">
-            Samenloop verdeeld over meerdere groepen. Vernieuw eerst.
-          </small>
+          <span className="group-repair-warning">
+            <small>Samenloop verdeeld over meerdere groepen.</small>
+            {repair && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={requestRepair}
+                aria-label={`${repair.label} samenvoegen in ${repair.target.systemCode}`}
+              >
+                <GitMerge />
+                Corrigeer naar {repair.target.systemCode}
+              </button>
+            )}
+          </span>
         )}
       </div>
       <button

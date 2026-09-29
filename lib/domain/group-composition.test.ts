@@ -10,6 +10,7 @@ import {
   itemMatchesPreference,
   itemRepresentative,
   preferenceSummary,
+  splitPartyRepairTarget,
 } from "./group-composition";
 const registration = (
   id: string,
@@ -156,5 +157,43 @@ describe("group composition clusters", () => {
     ).toBe(true);
     expect(groupMatches("G-02", "Maanwandelaars", "maan")).toBe(true);
     expect(groupMatches("G-02", "Maanwandelaars", "g-02")).toBe(true);
+  });
+  it("previews the split-party repair target by members, children, then group order", () => {
+    expect(
+      splitPartyRepairTarget(
+        [
+          { id: "unassigned", registrations: [registration("1", "p", 8)] },
+          {
+            id: "a",
+            registrations: [
+              registration("2", "p", 1),
+              registration("3", "p", 1),
+            ],
+          },
+          { id: "b", registrations: [registration("4", "p", 9)] },
+        ],
+        "p",
+      ),
+    ).toBe("a");
+    expect(
+      splitPartyRepairTarget(
+        [
+          { id: "unassigned", registrations: [] },
+          { id: "a", registrations: [registration("1", "p", 1)] },
+          { id: "b", registrations: [registration("2", "p", 2)] },
+        ],
+        "p",
+      ),
+    ).toBe("b");
+    expect(
+      splitPartyRepairTarget(
+        [
+          { id: "unassigned", registrations: [] },
+          { id: "a", registrations: [registration("1", "p", 1)] },
+          { id: "b", registrations: [registration("2", "p", 1)] },
+        ],
+        "p",
+      ),
+    ).toBe("a");
   });
 });
