@@ -230,7 +230,7 @@ const sectionMeta = {
   groups: { kicker: "Deelnemers · indeling", title: "Groepsindeling", description: "Maak wandelgroepen en zie direct hoeveel kinderen iedere groep telt." },
   payments: { kicker: "Deelnemers · betalingen", title: "Betalingen", description: "Betaallinks, ontvangsten en uitzonderingen per kind." },
   portals: { kicker: "De avond · voorbereiding", title: "Poorten", description: "Beoordeel huizen en houd hun gegevens actueel." },
-  planner: { kicker: "De avond · voorbereiding", title: "Startpuntregie", description: "Verdeel groepen veilig over de wijk en de beschikbare tijden." },
+  planner: { kicker: "De avond · voorbereiding", title: "Startregie", description: "Verdeel routegroepen veilig over startpunten en beschikbare tijden." },
   editorial: { kicker: "Verhalen · nieuws · Nachtpost", title: "Redactiekamer", description: "Schrijf het verhaal van de nacht en bereik de juiste mensen." },
   share: { kicker: "Communicatie · delen", title: "Deelstudio", description: "Beheer deelkaarten, campagneperiodes en privacyvriendelijke funnels." },
   content: { kicker: "Website · redactie", title: "Content & sponsors", description: "Beheer zichtbare informatie en partners." },
@@ -1218,7 +1218,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           onClick={() => setSection("planner")}
         >
           <MapPinned />
-          Startpunten en indeling
+          Startregie
         </button>
         </div>
         <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-communication">
@@ -1820,7 +1820,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         {section === "together" && canManageTogether && <TogetherManagement eventSlug={eventSlug} />}
         {section === "poortenboek" && canManageGroups && <PoortenboekAdmin />}
         {section === "groups" && (capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && <GroupCompositionBoard eventSlug={eventSlug} />}
-        {section === "planner" && <StartScheduleBoard eventSlug={eventSlug} maxGroupSize={dashboard.event.maxGroupSize} />}
+        {section === "planner" && <StartScheduleBoard eventSlug={eventSlug} maxGroupSize={dashboard.event.maxGroupSize} onOpenPortals={() => setSection("portals")} />}
         {section === "live" && (
           <div className="admin-live-cockpit">
             <section className="panel">

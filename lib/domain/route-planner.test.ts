@@ -108,4 +108,41 @@ describe("group and finale planner", () => {
     expect(new Set(result.groups.map((group) => group.startId))).toEqual(new Set(starts.map((start) => start.id)));
     expect(result.groups.every((group) => Date.parse(group.expectedFinaleArrivalAt) <= Date.parse(base.finaleLastArrivalAt))).toBe(true);
   });
+
+  it("marks an exact 18:30 preference green and explains the choice", () => {
+    const result = proposePlan({
+      ...base,
+      parties: [{ id: "exact", childCount: 3, preferredStartAt: "2026-10-31T18:30:00+01:00", paymentEligible: true }],
+      preferenceGreenMinutes: 15,
+      preferenceAmberMinutes: 30,
+    });
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups[0]).toMatchObject({ startId: "start-b", preferenceMatch: "good" });
+    expect(result.groups[0].explanation).toContain("exact op de voorkeur");
+  });
+
+  it("marks a deviation over thirty minutes red", () => {
+    const result = proposePlan({
+      ...base,
+      starts: [base.starts[0]],
+      parties: [{ id: "late", childCount: 3, preferredStartAt: "2026-10-31T18:30:00+01:00", paymentEligible: true }],
+      preferenceGreenMinutes: 15,
+      preferenceAmberMinutes: 30,
+    });
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups[0].preferenceMatch).toBe("large_deviation");
+  });
+
+  it("never proposes a linked start portal before its planned opening", () => {
+    const result = proposePlan({
+      ...base,
+      starts: [
+        { ...base.starts[0], portalOpensAt: "2026-10-31T18:00:00+01:00", pointName: "Poort P-08" },
+        { ...base.starts[1], portalOpensAt: "2026-10-31T18:00:00+01:00", pointName: "Poort P-08" },
+      ],
+      parties: [{ id: "early", childCount: 3, startPreference: "early", paymentEligible: true }],
+    });
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups[0].startId).toBe("start-b");
+  });
 });

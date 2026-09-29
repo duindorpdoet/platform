@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { PoortkamerOverview } from "./poortkamer-overview";
+import { ManualPortalManager } from "./manual-portal-manager";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2, ChevronDown, Clock3, FileSearch, Home, Mail, MapPinCheck,
-  MessageCircle, Phone, Radio, RefreshCw, RotateCcw, ShieldCheck, UserRound, XCircle,
+  MessageCircle, Phone, Plus, Radio, RefreshCw, RotateCcw, ShieldCheck, UserRound, XCircle,
 } from "lucide-react";
 import {
   countPortalRegistrationProgress,
@@ -71,7 +72,7 @@ function emailHref(registration: PortalRegistration, requestData = false) {
 
 export function PortalReviews({ eventSlug }: { eventSlug: string }) {
   const [snapshot, setSnapshot] = useState<Snapshot>({ realtimeTopic: null, worlds: [], registrations: [], activePortals: [] });
-  const [activeTab, setActiveTab] = useState<"registrations" | "active" | "rooms">("registrations");
+  const [activeTab, setActiveTab] = useState<"registrations" | "active" | "rooms" | "manual">("registrations");
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -180,7 +181,7 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
   return <section className="panel portal-management">
     <header className="portal-management-head">
       <div><p className="kicker">Poorten & teams</p><h2>Jullie poorten</h2><p>Beoordeel aanmeldingen, help poortteams en houd de avond in de gaten.</p></div>
-      <div className="portal-live-state" data-connected={realtimeConnected}><span><Radio />{realtimeConnected ? "Live" : "Verbinding wordt hersteld"}</span><button className="btn outline" type="button" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div>
+      <div className="portal-management-actions"><div className="portal-live-state" data-connected={realtimeConnected}><span><Radio />{realtimeConnected ? "Live" : "Verbinding wordt hersteld"}</span><button className="btn outline" type="button" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div><button className="btn" type="button" onClick={() => setActiveTab("manual")}><Plus />Poort toevoegen</button></div>
     </header>
 
     <div className="portal-management-stats" aria-label="Overzicht poortaanmeldingen">
@@ -194,10 +195,12 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
       <button type="button" role="tab" aria-selected={activeTab === "registrations"} className={activeTab === "registrations" ? "active" : ""} onClick={() => setActiveTab("registrations")}>Aangemelde poorten <span>{snapshot.registrations.length}</span></button>
       <button type="button" role="tab" aria-selected={activeTab === "rooms"} className={activeTab === "rooms" ? "active" : ""} onClick={() => setActiveTab("rooms")}>Poortkamers en moderatie</button>
       <button type="button" role="tab" aria-selected={activeTab === "active"} className={activeTab === "active" ? "active" : ""} onClick={() => setActiveTab("active")}>Actieve poorten <span>{snapshot.activePortals.length}</span></button>
+      <button type="button" role="tab" aria-selected={activeTab === "manual"} className={activeTab === "manual" ? "active" : ""} onClick={() => setActiveTab("manual")}>Handmatig beheer</button>
     </div>
     {notice && <div className="form-notice" role="status">{notice}</div>}
 
     {activeTab === "rooms" && <PoortkamerOverview eventSlug={eventSlug} />}
+    {activeTab === "manual" && <ManualPortalManager eventSlug={eventSlug} worlds={snapshot.worlds} onChanged={() => void load()} />}
     {activeTab === "registrations" && <div role="tabpanel" className="portal-list-panel">
       <div className="portal-list-intro"><div><p className="kicker">Aanmeldingen</p><h3>Aangemelde poorten</h3></div><p>Bekijk hoe ver een aanmelding is en open deze voor de gegevens en beoordeling.</p></div>
       {snapshot.registrations.length === 0 ? <div className="portal-empty"><Home /><p>Er zijn nog geen huisaanmeldingen binnengekomen.</p></div> : <div className="portal-premium-list">

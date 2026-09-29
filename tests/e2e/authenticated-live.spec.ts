@@ -65,6 +65,49 @@ test("event admins can inspect product statistics without exposing child names",
   await assertReadableLayout(page);
 });
 
+test("Startregie keeps planning, start points, map and publication controls task-oriented", async ({ context, page }, testInfo) => {
+  requireLocalAuth();
+  await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  await selectAdminSection(page, "Startregie");
+
+  await expect(page.getByRole("heading", { name: "Startregie", exact: true, level: 2 })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("tab", { name: "Indeling" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("actieve startpunten", { exact: true })).toBeVisible();
+  await expect(page.getByText("binnen voorkeur", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Maak planningsvoorstel/ })).toBeVisible();
+  await expect(page.locator(".planning-workspace")).toBeVisible();
+  await expect(page.locator(".unassigned-route-groups")).toBeVisible();
+  await expect(page.locator(".planning-board-scroll")).toBeVisible();
+  await assertReadableLayout(page);
+
+  await page.getByRole("tab", { name: "Startpunten" }).click();
+  await expect(page.getByRole("button", { name: "Startpunt toevoegen" })).toBeVisible();
+  await page.getByRole("tab", { name: "Kaart" }).click();
+  await expect(page.getByLabel("Locatie bewerken")).toBeVisible();
+  await page.getByRole("tab", { name: "Kaders" }).click();
+  await expect(page.getByRole("heading", { name: "Evenement, route en eindpoort" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Kaders opslaan" })).toBeVisible();
+  await assertReadableLayout(page);
+  await page.getByRole("tab", { name: "Indeling" }).click();
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+    document.querySelector<HTMLElement>(".admin-content")?.scrollTo(0, 0);
+  });
+  await page.screenshot({ path: `test-results/startregie-${testInfo.project.name}.png`, fullPage: false });
+});
+
+test("portal management exposes safe manual creation as a primary action", async ({ context, page }) => {
+  requireLocalAuth();
+  await authenticate(context, "admin@example.invalid");
+  await page.goto("/admin");
+  await selectAdminSection(page, "Poorten");
+  await expect(page.getByRole("button", { name: "Poort toevoegen" })).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("tab", { name: "Handmatig beheer" }).click();
+  await expect(page.getByRole("heading", { name: "Handmatig geregistreerde poorten" })).toBeVisible();
+  await assertReadableLayout(page);
+});
+
 test("the unified mobile participant environment keeps role navigation and payment-gated Night Pass clear", async ({ context, page }) => {
   requireLocalAuth();
   await page.setViewportSize({ width: 390, height: 844 });
@@ -684,7 +727,7 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
         if (path === "/admin") {
           await selectAdminSection(page, "Instellingen");
           await expect(page.getByRole("switch", { name: /Open · klik om te sluiten/i })).toHaveCount(2);
-          for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Groepsindeling", "Samenloop", "Poortenboek", "Messenger", "Deelnemersupdates", "Betalingen", "Poorten", "Startpunten en indeling", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
+          for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Groepsindeling", "Samenloop", "Poortenboek", "Messenger", "Deelnemersupdates", "Betalingen", "Poorten", "Startregie", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
             await page.goto("/admin");
             await selectAdminSection(page, section);
             await expect(page.locator(".admin-nav").getByText(section, { exact: true }).locator("xpath=ancestor-or-self::button[1]")).toHaveClass("active");

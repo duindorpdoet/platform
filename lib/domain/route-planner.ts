@@ -6,6 +6,8 @@ export type PlanningParty = {
   startPreference?: StartTimePreference;
   requestedStopAt?: string | null;
   paymentEligible?: boolean;
+  preferredStartAt?: string | null;
+  desiredEndAt?: string | null;
   togetherKey?: string;
   togetherOverride?: boolean;
 };
@@ -16,6 +18,12 @@ export type PlanningStart = {
   startsAt: string;
   maxGroups: number;
   maxChildren: number;
+  pointName?: string;
+  availableFrom?: string | null;
+  availableUntil?: string | null;
+  portalOpensAt?: string | null;
+  portalClosesAt?: string | null;
+  markerValid?: boolean;
 };
 
 export type PlanningConflict = { code: string; subjectId?: string; message: string };
@@ -29,6 +37,7 @@ export type PlannedGroup = {
   expectedFinaleArrivalAt: string;
   preferenceMatch: PreferenceMatch;
   warnings: string[];
+  explanation: string;
 };
 
 export type PlanningInput = {
@@ -47,6 +56,8 @@ export type PlanningInput = {
   finaleMaxChildren: number;
   earlyPreferenceLatestAt?: string | null;
   laterPreferenceEarliestAt?: string | null;
+  preferenceGreenMinutes?: number;
+  preferenceAmberMinutes?: number;
 };
 
 function stable<T extends { id: string }>(items: T[]) {
@@ -64,7 +75,8 @@ function groupPreference(parties: PlanningParty[]): StartTimePreference | "confl
   return values.values().next().value ?? "indifferent";
 }
 
-function preferenceScore(preference: StartTimePreference, startAt: number, input: PlanningInput) {
+function preferenceScore(preference: StartTimePreference, startAt: number, input: PlanningInput, preferredStartAt?: number | null) {
+  if (preferredStartAt !== null && preferredStartAt !== undefined) return Math.abs(startAt - preferredStartAt);
   if (preference === "indifferent") return 0;
   const earlyLimit = millis(input.earlyPreferenceLatestAt);
   const laterLimit = millis(input.laterPreferenceEarliestAt);
@@ -76,7 +88,13 @@ function preferenceScore(preference: StartTimePreference, startAt: number, input
   return startAt >= laterLimit ? 0 : laterLimit - startAt;
 }
 
-function matchFor(preference: StartTimePreference, startAt: number, input: PlanningInput): PreferenceMatch {
+function matchFor(preference: StartTimePreference, startAt: number, input: PlanningInput, preferredStartAt?: number | null): PreferenceMatch {
+  if (preferredStartAt !== null && preferredStartAt !== undefined) {
+    const deviation = Math.abs(startAt - preferredStartAt) / 60_000;
+    if (deviation <= (input.preferenceGreenMinutes ?? 15)) return "good";
+    if (deviation <= (input.preferenceAmberMinutes ?? 30)) return "small_deviation";
+    return "large_deviation";
+  }
   if (preference === "indifferent") return "neutral";
   const earlyLimit = millis(input.earlyPreferenceLatestAt);
   const laterLimit = millis(input.laterPreferenceEarliestAt);
@@ -102,7 +120,18 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   if (input.finaleShowSeconds < 60 || input.finaleMaxGroups < 1 || input.finaleMaxChildren < 1) conflicts.push({ code: "INVALID_FINALE_CAPACITY", message: "De eindpoortcapaciteit is niet geldig." });
   if (conflicts.length) return { groups: [], conflicts };
 
-  const starts = [...input.starts].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt) || a.id.localeCompare(b.id));
+  const starts = input.starts.filter((start) => {
+    const value = Date.parse(start.startsAt);
+    const availableFrom = millis(start.availableFrom);
+    const availableUntil = millis(start.availableUntil);
+    const portalOpensAt = millis(start.portalOpensAt);
+    const portalClosesAt = millis(start.portalClosesAt);
+    return start.markerValid !== false
+      && (availableFrom === null || value >= availableFrom)
+      && (availableUntil === null || value <= availableUntil)
+      && (portalOpensAt === null || value >= portalOpensAt)
+      && (portalClosesAt === null || value <= portalClosesAt);
+  }).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt) || a.id.localeCompare(b.id));
   const clusters = new Map<string, PlanningParty[]>();
   for (const party of stable(input.parties)) {
     const key = party.togetherKey ? `together:${party.togetherKey}` : `party:${party.id}`;
@@ -144,12 +173,16 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   const groups: PlannedGroup[] = [];
   const serviceMs = (input.finaleShowSeconds + input.finaleTurnoverSeconds) * 1_000;
   for (const group of draftGroups) {
+    const preferredStarts = group.parties.map((party) => millis(party.preferredStartAt)).filter((value): value is number => value !== null);
+    const preferredStartAt = preferredStarts.length
+      ? Math.round(preferredStarts.reduce((sum, value) => sum + value, 0) / preferredStarts.length)
+      : null;
     const selected = [...starts]
       .filter((start) => {
         const load = startLoads.get(start.id)!;
         return load.groups < start.maxGroups && load.children + group.childCount <= start.maxChildren;
       })
-      .sort((a, b) => preferenceScore(group.preference, Date.parse(a.startsAt), input) - preferenceScore(group.preference, Date.parse(b.startsAt), input)
+      .sort((a, b) => preferenceScore(group.preference, Date.parse(a.startsAt), input, preferredStartAt) - preferenceScore(group.preference, Date.parse(b.startsAt), input, preferredStartAt)
         || Date.parse(a.startsAt) - Date.parse(b.startsAt) || a.id.localeCompare(b.id))[0];
     if (!selected) {
       conflicts.push({ code: "START_CAPACITY_EXCEEDED", subjectId: group.key, message: `Geen passend geverifieerd startmoment voor ${group.key}.` });
@@ -178,6 +211,12 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     load.children += group.childCount;
     const warnings: string[] = [];
     if (group.parties.some((party) => party.paymentEligible === false)) warnings.push("PAYMENT_NOT_CONFIRMED");
+    const selectedStart = Date.parse(selected.startsAt);
+    const deviationMinutes = preferredStartAt === null ? null : Math.round(Math.abs(selectedStart - preferredStartAt) / 60_000);
+    const remainingChildren = selected.maxChildren - load.children;
+    const preferenceReason = deviationMinutes === null
+      ? group.preference === "indifferent" ? "Er is geen vaste startvoorkeur" : "Dit moment past bij de gekozen tijdsvoorkeur"
+      : deviationMinutes === 0 ? "Dit moment ligt exact op de voorkeur" : `Dit moment wijkt ${deviationMinutes} minuten af van de voorkeur`;
     groups.push({
       key: group.key,
       partyIds: group.parties.map((party) => party.id).sort(),
@@ -185,8 +224,9 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
       startId: selected.id,
       effectiveStopAt: new Date(effectiveStop).toISOString(),
       expectedFinaleArrivalAt: new Date(finaleArrival).toISOString(),
-      preferenceMatch: matchFor(group.preference, Date.parse(selected.startsAt), input),
+      preferenceMatch: matchFor(group.preference, selectedStart, input, preferredStartAt),
       warnings,
+      explanation: `${preferenceReason}; ${selected.pointName ?? "het startpunt"} heeft daarna nog ruimte voor ${Math.max(0, remainingChildren)} kinderen.`,
     });
   }
   return conflicts.length ? { groups: [], conflicts } : { groups, conflicts: [] };
