@@ -90,6 +90,28 @@ const repairErrorMessage = (message: string) => {
     return "Deze samenloop kan niet automatisch worden gecorrigeerd. Vernieuw de indeling.";
   return `Corrigeren geweigerd: ${message}`;
 };
+const boardColumns = (board: HTMLDivElement) =>
+  [...board.children].filter(
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement && Boolean(child.dataset.columnId),
+  );
+const pinnedColumn = (board: HTMLDivElement) => {
+  const unassigned = boardColumns(board).find(
+    (column) => column.dataset.columnId === "unassigned",
+  );
+  return unassigned && getComputedStyle(unassigned).position === "sticky"
+    ? unassigned
+    : null;
+};
+const boardGap = (board: HTMLDivElement) =>
+  Number.parseFloat(getComputedStyle(board).columnGap) || 0;
+const columnAnchor = (board: HTMLDivElement) => {
+  const pinned = pinnedColumn(board);
+  return pinned
+    ? pinned.getBoundingClientRect().right + boardGap(board)
+    : board.getBoundingClientRect().left +
+        (Number.parseFloat(getComputedStyle(board).paddingLeft) || 0);
+};
 
 export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -120,6 +142,8 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   const pendingAlignment = useRef<string | null>(null);
   const request = useRef(0);
   const boardRef = useRef<HTMLDivElement>(null);
+  const dragScrollFrame = useRef<number | null>(null);
+  const dragScrollSpeed = useRef(0);
 
   const load = useCallback(async () => {
     const client = createClient();
@@ -375,19 +399,75 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   );
   const scrollToColumn = (id: string, behavior: ScrollBehavior) => {
     const board = boardRef.current;
-    const element =
-      board &&
-      [...board.children].find(
-        (child) => (child as HTMLElement).dataset.columnId === id,
-      );
-    if (!board || !element || !board.firstElementChild) return;
+    if (!board) return;
+    const element = boardColumns(board).find(
+      (child) => child.dataset.columnId === id,
+    );
+    if (!element) return;
+    const pinned = pinnedColumn(board);
+    const targetLeft =
+      element === pinned
+        ? board.getBoundingClientRect().left
+        : columnAnchor(board);
     board.scrollTo({
       left:
+        board.scrollLeft +
         element.getBoundingClientRect().left -
-        board.firstElementChild.getBoundingClientRect().left,
+        targetLeft,
       behavior,
     });
   };
+  const stopDragAutoScroll = useCallback(() => {
+    dragScrollSpeed.current = 0;
+    if (dragScrollFrame.current !== null) {
+      cancelAnimationFrame(dragScrollFrame.current);
+      dragScrollFrame.current = null;
+    }
+  }, []);
+  const startDragAutoScroll = useCallback(() => {
+    if (dragScrollFrame.current !== null) return;
+    const step = () => {
+      const board = boardRef.current;
+      const speed = dragScrollSpeed.current;
+      if (!board || speed === 0) {
+        dragScrollFrame.current = null;
+        return;
+      }
+      const previous = board.scrollLeft;
+      board.scrollLeft += speed;
+      if (board.scrollLeft === previous) {
+        stopDragAutoScroll();
+        return;
+      }
+      dragScrollFrame.current = requestAnimationFrame(step);
+    };
+    dragScrollFrame.current = requestAnimationFrame(step);
+  }, [stopDragAutoScroll]);
+  const updateDragAutoScroll = useCallback((clientX: number) => {
+    const board = boardRef.current;
+    if (!board || board.scrollWidth <= board.clientWidth) {
+      stopDragAutoScroll();
+      return;
+    }
+    const bounds = board.getBoundingClientRect();
+    const pinned = pinnedColumn(board);
+    const left = pinned
+      ? pinned.getBoundingClientRect().right + boardGap(board)
+      : bounds.left;
+    const width = Math.max(0, bounds.right - left);
+    const edge = Math.min(110, Math.max(64, width * 0.12));
+    let speed = 0;
+    if (clientX < left + edge) {
+      speed = -Math.ceil(5 + 19 * (1 - Math.max(0, clientX - left) / edge));
+    } else if (clientX > bounds.right - edge) {
+      speed = Math.ceil(
+        5 + 19 * (1 - Math.max(0, bounds.right - clientX) / edge),
+      );
+    }
+    dragScrollSpeed.current = speed;
+    if (speed === 0) stopDragAutoScroll();
+    else startDragAutoScroll();
+  }, [startDragAutoScroll, stopDragAutoScroll]);
   const selectColumn = (index: number) => {
     const column = visibleColumns[index];
     if (!column) return;
@@ -418,6 +498,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
       observer.disconnect();
     };
   }, [visibleColumnOrder, revealRequest]);
+  useEffect(() => () => stopDragAutoScroll(), [stopDragAutoScroll]);
   if (!snapshot)
     return (
       <section className="panel loading-state">
@@ -507,19 +588,36 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
         ref={boardRef}
         className="group-composition-board"
         aria-label="Groepskolommen"
+        onDragOver={(event) => {
+          event.preventDefault();
+          updateDragAutoScroll(event.clientX);
+        }}
+        onDragLeave={(event) => {
+          if (
+            !event.relatedTarget ||
+            !event.currentTarget.contains(event.relatedTarget as Node)
+          )
+            stopDragAutoScroll();
+        }}
+        onDragEnd={stopDragAutoScroll}
+        onDrop={stopDragAutoScroll}
         onScroll={(event) => {
           if (pendingAlignment.current) return;
           const board = event.currentTarget;
-          const elements = [...board.children] as HTMLElement[];
-          const first = elements[0];
-          if (!first) return;
-          const nearest = elements.reduce((best, element) => {
+          const elements = boardColumns(board);
+          const pinned = pinnedColumn(board);
+          const candidates = pinned
+            ? elements.filter((element) => element !== pinned)
+            : elements;
+          if (!candidates.length) {
+            if (pinned?.dataset.columnId)
+              setActiveColumnId(pinned.dataset.columnId);
+            return;
+          }
+          const anchor = columnAnchor(board);
+          const nearest = candidates.reduce((best, element) => {
             const distance = (node: HTMLElement) =>
-              Math.abs(
-                node.getBoundingClientRect().left -
-                  first.getBoundingClientRect().left -
-                  board.scrollLeft,
-              );
+              Math.abs(node.getBoundingClientRect().left - anchor);
             return distance(element) < distance(best) ? element : best;
           });
           if (nearest.dataset.columnId)
@@ -528,7 +626,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
       >
         {visibleColumns.map((column) => (
           <section
-            className={`group-composition-column${column.locked ? " locked" : ""}`}
+            className={`group-composition-column${column.id === "unassigned" ? " unassigned" : ""}${column.locked ? " locked" : ""}`}
             key={column.id}
             data-column-id={column.id}
             onDragOver={(e) => e.preventDefault()}

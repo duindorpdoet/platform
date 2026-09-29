@@ -1105,9 +1105,14 @@ function boardFixture() {
   };
 }
 
-async function openFixtureBoard(page: Page, context: BrowserContext, width = 390) {
+async function openFixtureBoard(
+  page: Page,
+  context: BrowserContext,
+  width = 390,
+  height = 1000,
+) {
   requireLocalAuth();
-  await page.setViewportSize({ width, height: 1000 });
+  await page.setViewportSize({ width, height });
   const snapshot = boardFixture();
   const moves: Array<Record<string, unknown>> = [];
   const creates: Array<Record<string, unknown>> = [];
@@ -1194,6 +1199,61 @@ test("group board keeps swipes, filtered picker and previous/next aligned across
   await expect(page.getByRole("button", { name: "Vorige groep" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Volgende groep" })).toBeDisabled();
   await expect(page.getByText("Geen groepen binnen deze filters.")).toBeVisible();
+});
+
+test("group board pins the waiting lane, fits its scrollbar and auto-scrolls while dragging", async ({ page, context }) => {
+  await openFixtureBoard(page, context, 1440, 760);
+  const board = page.getByLabel("Groepskolommen");
+  const waiting = page.locator('[data-column-id="unassigned"]');
+  const firstGroup = page.locator('[data-column-id="a"]');
+
+  await expect.poll(() => board.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  const initial = await page.evaluate(() => {
+    const boardElement = document.querySelector<HTMLElement>('[aria-label="Groepskolommen"]')!;
+    const waitingElement = document.querySelector<HTMLElement>('[data-column-id="unassigned"]')!;
+    const groupElement = document.querySelector<HTMLElement>('[data-column-id="a"]')!;
+    const content = document.querySelector<HTMLElement>('.admin-content')!;
+    return {
+      boardBottom: boardElement.getBoundingClientRect().bottom,
+      contentBottom: content.getBoundingClientRect().bottom,
+      viewportHeight: window.innerHeight,
+      waitingLeft: waitingElement.getBoundingClientRect().left,
+      groupLeft: groupElement.getBoundingClientRect().left,
+      columnsFit: [...boardElement.children].every((column) => {
+        const bounds = column.getBoundingClientRect();
+        const boardBounds = boardElement.getBoundingClientRect();
+        return bounds.top >= boardBounds.top - 1 && bounds.bottom <= boardBounds.bottom + 1;
+      }),
+    };
+  });
+  expect(initial.boardBottom).toBeLessThanOrEqual(initial.contentBottom + 1);
+  expect(initial.boardBottom).toBeLessThanOrEqual(initial.viewportHeight);
+  expect(initial.columnsFit).toBe(true);
+
+  await board.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth;
+  });
+  await expect.poll(() => waiting.evaluate((element) => element.getBoundingClientRect().left)).toBeCloseTo(initial.waitingLeft, 0);
+  await expect.poll(() => firstGroup.evaluate((element) => element.getBoundingClientRect().left)).toBeLessThan(initial.groupLeft - 100);
+
+  await board.evaluate((element) => {
+    element.scrollLeft = 0;
+  });
+  const transfer = await page.evaluateHandle(() => new DataTransfer());
+  const rightEdge = await board.evaluate((element) => element.getBoundingClientRect().right - 4);
+  await board.dispatchEvent("dragover", { clientX: rightEdge, dataTransfer: transfer });
+  await expect.poll(() => board.evaluate((element) => element.scrollLeft)).toBeGreaterThan(30);
+  await board.dispatchEvent("dragend", { dataTransfer: transfer });
+
+  await board.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth;
+  });
+  const beforeLeftScroll = await board.evaluate((element) => element.scrollLeft);
+  const groupsLeftEdge = await waiting.evaluate((element) => element.getBoundingClientRect().right + 8);
+  await board.dispatchEvent("dragover", { clientX: groupsLeftEdge, dataTransfer: transfer });
+  await expect.poll(() => board.evaluate((element) => element.scrollLeft)).toBeLessThan(beforeLeftScroll - 30);
+  await board.dispatchEvent("dragend", { dataTransfer: transfer });
+  await transfer.dispose();
 });
 
 test("group board preference filters preserve complete parties and combine with assignment filters", async ({ page, context }) => {
