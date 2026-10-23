@@ -78,6 +78,8 @@ begin
     app_private.has_capability(event_record.id, 'portals_manage', actor)
     or app_private.has_capability(event_record.id, 'event_admin', actor)
   ) then raise exception 'NOT_AUTHORIZED' using errcode = '42501'; end if;
+  -- Share the dispatch mutex before locking a portal so a concurrent route cannot select a removed record.
+  perform pg_advisory_xact_lock(hashtextextended(event_record.id::text || ':route-dispatch', 0));
   select * into world_record from app_private.worlds
     where event_id = event_record.id and slug = _payload ->> 'worldSlug';
   if world_record.id is null or lifecycle not in ('concept', 'registered', 'approved', 'active', 'archived')
@@ -212,6 +214,7 @@ begin
   if actor is null or v_event_id is null or not (app_private.has_capability(v_event_id,'portals_manage',actor)
     or app_private.has_capability(v_event_id,'event_admin',actor)) then raise exception 'NOT_AUTHORIZED' using errcode='42501'; end if;
   perform 1 from app_private.events where id=v_event_id for update;
+  perform pg_advisory_xact_lock(hashtextextended(v_event_id::text || ':route-dispatch', 0));
   select * into portal_record from app_private.portals where id = _portal_id for update;
   if actor is null or portal_record.id is null or not (
     app_private.has_capability(portal_record.event_id, 'portals_manage', actor)
