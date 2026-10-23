@@ -10,7 +10,7 @@ try {
   const before=JSON.parse(openBackup(await readFile(process.env.RELEASE_PRIVATE_BASELINE_FILE),key,context+':migration-baseline').toString());
   const [response,metadata]=await Promise.all([
     management('/database/query',{read_only:true,query:fingerprintQuery(before.catalog)}),
-    management('/database/query',{read_only:true,query:releaseMetadataQuery()}),
+    management('/database/query',{read_only:true,query:releaseMetadataQuery(before)}),
   ]);
   const after={rows:response.map(row=>row.fingerprint),...metadata[0].metadata},reconciliation=reconcileReleaseMetadata(before,after,before.expectedMigrationVersions);
   const metadataTables=new Set(['supabase_migrations.schema_migrations','cron.job_run_details']);
