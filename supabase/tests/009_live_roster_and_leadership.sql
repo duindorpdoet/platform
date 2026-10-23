@@ -128,6 +128,7 @@ select lives_ok(
   $$ select api.run_bulk_skip_pending((select run_seven from live_values), (select stop_seven from live_values), 2, 'Aanwezige statussen overslaan voor test', 'bulk-missing', 'bulk-missing-hash') $$,
   'existing pending status can be resolved without fabricating a missing row'
 );
+select api.run_scan((select run_seven from live_values),(select stop_seven from live_values),2,(select credential_token from live_values),'qr');
 select throws_ok(
   $$ select api.run_complete_stop((select run_seven from live_values), (select stop_seven from live_values), 2, true, 'missing-complete', 'missing-complete-hash') $$,
   '23514', 'INCOMPLETE_STATUS_SET', 'missing participant status row blocks completion at the table invariant'

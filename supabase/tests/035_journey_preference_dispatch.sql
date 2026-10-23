@@ -1,5 +1,9 @@
 begin;
 create extension if not exists pgtap with schema extensions;
+create function pg_temp.rehearsal_short_code(stopid uuid) returns text language sql security definer set search_path='' as $$
+ select 'TEST-'||right(coalesce(s.portal_id,p.portal_id)::text,2) from app_private.run_stops s left join app_private.route_plan_stops p on p.id=s.plan_stop_id where s.id=stopid
+$$;
+grant execute on function pg_temp.rehearsal_short_code(uuid) to authenticated;
 select plan(6);
 create temporary table dynamic_state(
   child_id uuid,
@@ -69,6 +73,7 @@ select throws_ok($$select api.group_journey_preference_save('23000000-0000-0000-
 do $$ declare s jsonb; begin
 s:=api.group_snapshot('23000000-0000-0000-0000-000000000001');
 perform api.run_bulk_skip_pending((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,version}')::integer,'Test veilig samen overslaan','pref-skip','pref-skip');
+perform api.run_scan((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,version}')::integer,pg_temp.rehearsal_short_code((s#>>'{run,currentStop,id}')::uuid),'short_code');
 perform api.run_complete_stop((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,version}')::integer,true,'pref-skip-done','pref-skip-done');
 end $$;
 select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,currentStop,kind}','ordinary','a skipped stop is not counted as a visited house');

@@ -52,6 +52,7 @@ select lives_ok(
           format('last-stop-bulk-%s', stop_number),
           format('last-stop-bulk-hash-%s', stop_number)
         );
+        perform api.run_scan(run_identifier,active_stop_id,active_run_version,format('TEST-%s',lpad(stop_number::text,2,'0')),'short_code');
         completion := api.run_complete_stop(
           run_identifier,
           active_stop_id,
@@ -70,7 +71,7 @@ select lives_ok(
     end
     $do$
   $test$,
-  'leader advances through all six published stops using explicit all-skip confirmation'
+  'leader advances through all six published stops after confirmed arrival and explicit all-skip confirmation'
 );
 select is((select final_result->>'status' from completion_values), 'completed', 'last stop completes the run');
 select is((select final_result->>'hasNextStop' from completion_values), 'false', 'last stop reports no next destination');

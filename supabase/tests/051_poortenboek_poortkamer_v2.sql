@@ -93,7 +93,14 @@ create temp table v2_stop as with inserted as (
 ) select id from inserted;
 insert into app_private.stop_participant_statuses(run_stop_id,run_participant_id,status,decided_at)
 select v2_stop.id,p.id,'visited',now() from v2_stop,app_private.run_participants p where p.run_id=(select id from v2_run);
-update app_private.run_stops set state='completed',outcome='visited',completed_at=now() where id=(select id from v2_stop);
+insert into app_private.scan_evidence(run_stop_id,credential_id,credential_version,actor_id,validation_method)
+select v2_stop.id,c.id,c.version,'c0000000-0000-0000-0000-000000000001','qr' from v2_stop,v2 join app_private.portal_credentials c on c.portal_id=v2.portal_id and c.revoked_at is null;
+insert into app_private.run_stop_arrivals(event_id,run_id,run_stop_id,run_participant_id,child_id,scan_evidence_id,arrived,arrived_at,actor_id)
+select v2.event_id,v2_run.id,v2_stop.id,p.id,rc.child_id,e.id,true,now(),e.actor_id from v2 cross join v2_run cross join v2_stop
+join app_private.scan_evidence e on e.run_stop_id=v2_stop.id
+join app_private.run_participants p on p.run_id=v2_run.id
+join app_private.registration_children rc on rc.id=p.registration_child_id;
+update app_private.run_stops set state='completed',outcome='visited' ,completed_at=now() where id=(select id from v2_stop);
 select is((select count(*) from app_private.poortenboek_passport_seals where run_stop_id=(select id from v2_stop)),(select count(*) from v2_children),'one seal per active visited child');
 select is((select count(*) from app_private.poortenboek_team_progress where run_stop_id=(select id from v2_stop)),1::bigint,'team progress counts the visit exactly once');
 select is((select count(*) from app_private.poortenboek_story_chapters where chapter=2 and child_id in(select child_id from v2_children)),(select count(*) from v2_children),'first visit unlocks chapter two once per child');

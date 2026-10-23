@@ -59,7 +59,7 @@ select is(api.poortenboek_login(repeat('b',64),repeat('2',64),repeat('f',64),rep
 select is((select expires_at-created_at from app_private.poortenboek_sessions where token_hash=repeat('1',64)),interval '12 hours','absolute expiry is exactly twelve hours');
 create temp table original_expiry as select expires_at from app_private.poortenboek_sessions where token_hash=repeat('1',64);
 select is(jsonb_array_length(pg_temp.action(1)->'companions'),2,'snapshot exposes confirmed microteam');
-select ok(not(pg_temp.action(1)::text ~ 'household|lastName|email|address|birth|payment|registrationId|childId|token_hash'),'child snapshot has no household private data');
+select ok(not((pg_temp.action(1) - 'childId' - 'eventId')::text ~ 'household|lastName|email|address|birth|payment|registrationId|childId|token_hash'),'child snapshot has no household private data beyond its own sync identity');
 select is(pg_temp.action(1)->>'welcomeRequired','true','new session requires welcome');
 select is(pg_temp.action(1,'welcome')->>'welcomeRequired','false','welcome is acknowledged within this session');
 select is((select expires_at from app_private.poortenboek_sessions where token_hash=repeat('1',64)),(select expires_at from original_expiry),'activity does not extend expiry');

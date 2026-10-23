@@ -1,5 +1,9 @@
 begin;
 create extension if not exists pgtap with schema extensions;
+create function pg_temp.rehearsal_short_code(stopid uuid) returns text language sql security definer set search_path='' as $$
+ select 'TEST-'||right(coalesce(s.portal_id,p.portal_id)::text,2) from app_private.run_stops s left join app_private.route_plan_stops p on p.id=s.plan_stop_id where s.id=stopid
+$$;
+grant execute on function pg_temp.rehearsal_short_code(uuid) to authenticated;
 select plan(20);
 
 create temporary table dynamic_state(
@@ -137,6 +141,7 @@ begin
       (snapshot #>> '{run,version}')::integer, 'Testgroep slaat deze gewone poort veilig samen over',
       'dynamic-skip-' || i, 'dynamic-skip-hash-' || i
     );
+    perform api.run_scan((snapshot #>> '{run,id}')::uuid,(snapshot #>> '{run,currentStop,id}')::uuid,(snapshot #>> '{run,version}')::integer,pg_temp.rehearsal_short_code((snapshot #>> '{run,currentStop,id}')::uuid),'short_code');
     perform api.run_complete_stop(
       (snapshot #>> '{run,id}')::uuid, (snapshot #>> '{run,currentStop,id}')::uuid,
       (snapshot #>> '{run,version}')::integer, true,
@@ -189,7 +194,7 @@ select throws_ok(
     (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,version}')::integer,
     true, 'finale-skip-denied', 'finale-skip-denied-hash'
   ) $$,
-  '23514', 'FINAL_PORTAL_REQUIRED', 'the terminal finale cannot be completed as an all-skip stop'
+  '23514', 'SCAN_REQUIRED', 'even an all-skip finale requires confirmed physical arrival'
 );
 
 set local role postgres;
