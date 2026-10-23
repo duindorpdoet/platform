@@ -1,3 +1,4 @@
+import {sql} from "../../scripts/acceptance/together-fixtures.mjs";
 import {prepareStartedLegacyFixtures} from "../../scripts/acceptance/started-fixtures.mjs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
@@ -108,8 +109,8 @@ test("portal management exposes safe manual creation as a primary action", async
   await page.goto("/admin");
   await selectAdminSection(page, "Poorten");
   await expect(page.getByRole("button", { name: "Poort toevoegen" })).toBeVisible({ timeout: 15_000 });
-  await page.getByRole("tab", { name: "Handmatig beheer" }).click();
-  await expect(page.getByRole("heading", { name: "Handmatig geregistreerde poorten" })).toBeVisible();
+  await page.getByRole("tab", { name: "Poorten beheren" }).click();
+  await expect(page.getByRole("heading", { name: "Poorten beheren" })).toBeVisible();
   await assertReadableLayout(page);
 });
 
@@ -1552,4 +1553,69 @@ test("mobile admin notification bell opens actionable existing alerts and restor
   await expect(dialog).toBeHidden();
   await expect(page.getByRole("heading", { name: "Samenloop", level: 2, exact: true })).toBeVisible();
   await expect.poll(() => page.locator("#admin-content").evaluate((el) => el.scrollTop)).toBe(0);
+});
+
+test("organization edits and removes resident portals while preserving existing details", async ({ context, page }) => {
+  requireLocalAuth();
+  test.setTimeout(90_000);
+  const client = await authenticate(context, "admin@example.invalid");
+  const event = "duindorp-halloween-2026";
+  const snapshot = await rpc(client, "admin_startregie_snapshot", { _event_slug: event });
+  const name = `Fictieve beheerpoort ${crypto.randomUUID().slice(0, 8)}`;
+  const created = await rpc(client, "admin_manual_portal_save", { _event_slug: event, _portal_id: null, _expected_version: null,
+    _reason: "Geïsoleerde browserproef voor poortgegevens", _payload: {
+      name, worldSlug: snapshot.portals[0].worldSlug, intensity: 3,
+      street: "Fictieve Lange Straat", houseNumber: "12", addition: "B", postalCode: "2583AA", city: "Den Haag",
+      contactName: "Fictief contact", contactPhone: "0701234567", contactEmail: "portal-edit@example.invalid",
+      accessibilityNotes: "Bestaande toegang behouden", internalNotes: "Bestaande notitie behouden",
+      plannedOpensAt: "2026-10-31T17:00:31+01:00", plannedClosesAt: "2026-10-31T20:00:42+01:00",
+      visitMinutes: 9, bufferMinutes: 4, maxGroups: 2, maxChildren: 18,
+    } });
+  // The SQL helper refuses every non-local URL and non-Supabase container.
+  expect(created.id).toMatch(/^[0-9a-f-]{36}$/);
+  sql(`update app_private.portals set record_source='resident_registration' where id='${created.id}'`);
+  await page.goto("/admin"); await selectAdminSection(page, "Poorten");
+  await page.getByRole("tab", { name: "Poorten beheren", exact: true }).click();
+  let card = page.locator(".manual-portal-list > article").filter({ hasText: name });
+  await expect(card).toContainText("Bewonersaanmelding");
+  await card.getByRole("button", { name: "Bewerken", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("textbox", { name: "Straat", exact: true })).toHaveValue("Fictieve Lange Straat");
+  await expect(dialog.getByRole("textbox", { name: "Huisnummer", exact: true })).toHaveValue("12");
+  await expect(dialog.getByRole("textbox", { name: "Toevoeging", exact: true })).toHaveValue("B");
+  await expect(dialog.getByRole("spinbutton", { name: "Spanningsniveau" })).toHaveValue("3");
+  await expect(dialog.getByRole("spinbutton", { name: "Bezoekduur" })).toHaveValue("9");
+  await expect(dialog.getByRole("spinbutton", { name: "Buffer", exact: true })).toHaveValue("4");
+  await expect(dialog.getByRole("textbox", { name: "Interne notities" })).toHaveValue("Bestaande notitie behouden");
+  const updated = `${name} gewijzigd`;
+  await dialog.getByRole("textbox", { name: "Poortnaam", exact: true }).fill(updated);
+  await dialog.getByRole("textbox", { name: "Telefoonnummer", exact: true }).fill("0707654321");
+  await assertReadableLayout(page);
+  await page.screenshot({ path: `test-results/portal-editor-${test.info().project.name}.png` });
+  await dialog.getByRole("button", { name: "Poort opslaan", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Poort bijgewerkt");
+  const saved = (await rpc(client, "admin_portal_editor_snapshot", { _event_slug: event })).portals.find((portal: { id: string }) => portal.id === created.id);
+  expect(Date.parse(saved.plannedOpensAt)).toBe(Date.parse("2026-10-31T17:00:31+01:00"));
+  expect(Date.parse(saved.plannedClosesAt)).toBe(Date.parse("2026-10-31T20:00:42+01:00"));
+  await page.reload(); await selectAdminSection(page, "Poorten");
+  await page.getByRole("tab", { name: "Poorten beheren", exact: true }).click();
+  card = page.locator(".manual-portal-list > article").filter({ hasText: updated });
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "Bewerken", exact: true }).click();
+  await expect(dialog.getByRole("textbox", { name: "Telefoonnummer", exact: true })).toHaveValue("0707654321");
+  await expect(dialog.getByRole("textbox", { name: "Toevoeging", exact: true })).toHaveValue("B");
+  await expect(dialog.getByRole("textbox", { name: "Toegankelijkheid", exact: true })).toHaveValue("Bestaande toegang behouden");
+  page.once("dialog", (confirmation) => confirmation.dismiss());
+  await dialog.getByRole("button", { name: "Poort verwijderen", exact: true }).click();
+  await expect(dialog).toBeVisible();
+  page.once("dialog", (confirmation) => confirmation.accept());
+  await dialog.getByRole("button", { name: "Poort verwijderen", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(card).not.toBeVisible();
+  await expect(page.getByRole("status")).toContainText("historische relaties zijn bewaard");
+  expect(sql(`select lifecycle_status from app_private.portals where id='${created.id}'`)).toBe("archived");
+  await page.reload(); await selectAdminSection(page, "Poorten");
+  await page.getByRole("tab", { name: "Poorten beheren", exact: true }).click();
+  await expect(page.locator(".manual-portal-list > article").filter({ hasText: updated })).toHaveCount(0);
 });

@@ -22,6 +22,7 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261023161100_push_delivery_revalidation.sql',
   '20261023161200_bounded_push_claims.sql',
   '20261023161300_reviewed_portal_walking_connections.sql',
+  '20261023222934_portal_management_hotfix.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

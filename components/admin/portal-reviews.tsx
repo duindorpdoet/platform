@@ -25,6 +25,7 @@ type TimelineEntry = { label: string; at: string };
 type PortalRegistration = {
   id: string; intakeId: string | null; applicationId: string | null; portalId: string | null; code: string;
   status: PortalRegistrationStatus;
+  portalArchived?: boolean;
   applicationStatus: "draft" | "submitted" | "changes_requested" | "approved" | "rejected" | "withdrawn" | null;
   applicationVersion: number | null; email: string | null; contactName: string | null; phone: string | null;
   address: Address; requestedWorldSlug: string | null; reviewFeedback: string | null; lastActivityAt: string;
@@ -73,6 +74,7 @@ function emailHref(registration: PortalRegistration, requestData = false) {
 export function PortalReviews({ eventSlug }: { eventSlug: string }) {
   const [snapshot, setSnapshot] = useState<Snapshot>({ realtimeTopic: null, worlds: [], registrations: [], activePortals: [] });
   const [activeTab, setActiveTab] = useState<"registrations" | "active" | "rooms" | "manual">("registrations");
+  const [editingPortalId, setEditingPortalId] = useState<string | undefined>();
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -195,12 +197,12 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
       <button type="button" role="tab" aria-selected={activeTab === "registrations"} className={activeTab === "registrations" ? "active" : ""} onClick={() => setActiveTab("registrations")}>Aangemelde poorten <span>{snapshot.registrations.length}</span></button>
       <button type="button" role="tab" aria-selected={activeTab === "rooms"} className={activeTab === "rooms" ? "active" : ""} onClick={() => setActiveTab("rooms")}>Poortkamers en moderatie</button>
       <button type="button" role="tab" aria-selected={activeTab === "active"} className={activeTab === "active" ? "active" : ""} onClick={() => setActiveTab("active")}>Actieve poorten <span>{snapshot.activePortals.length}</span></button>
-      <button type="button" role="tab" aria-selected={activeTab === "manual"} className={activeTab === "manual" ? "active" : ""} onClick={() => setActiveTab("manual")}>Handmatig beheer</button>
+      <button type="button" role="tab" aria-selected={activeTab === "manual"} className={activeTab === "manual" ? "active" : ""} onClick={() => setActiveTab("manual")}>Poorten beheren</button>
     </div>
     {notice && <div className="form-notice" role="status">{notice}</div>}
 
     {activeTab === "rooms" && <PoortkamerOverview eventSlug={eventSlug} />}
-    {activeTab === "manual" && <ManualPortalManager eventSlug={eventSlug} worlds={snapshot.worlds} onChanged={() => void load()} />}
+    {activeTab === "manual" && <ManualPortalManager key={editingPortalId ?? "all"} initialPortalId={editingPortalId} eventSlug={eventSlug} worlds={snapshot.worlds} onChanged={() => void load()} />}
     {activeTab === "registrations" && <div role="tabpanel" className="portal-list-panel">
       <div className="portal-list-intro"><div><p className="kicker">Aanmeldingen</p><h3>Aangemelde poorten</h3></div><p>Bekijk hoe ver een aanmelding is en open deze voor de gegevens en beoordeling.</p></div>
       {snapshot.registrations.length === 0 ? <div className="portal-empty"><Home /><p>Er zijn nog geen huisaanmeldingen binnengekomen.</p></div> : <div className="portal-premium-list">
@@ -244,11 +246,12 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
               </div>
               <aside className="portal-timeline"><h4>Tijdlijn</h4>{registration.timeline.length === 0 ? <p>Nog geen tijdlijn beschikbaar.</p> : registration.timeline.map((entry, index) => <div key={`${entry.label}-${entry.at}-${index}`}><span /><p><strong>{entry.label}</strong><time dateTime={entry.at}>{formatDate(entry.at)}</time></p></div>)}</aside>
               <div className="portal-row-actions">
+                {registration.portalId && !registration.portalArchived && <button className="btn outline" type="button" onClick={() => { setEditingPortalId(registration.portalId!); setActiveTab("manual"); }}>Gegevens bewerken</button>}
                 {registration.phone && <a className="btn outline" href={`tel:${registration.phone.replace(/\s/g, "")}`}><Phone />Bellen</a>}
                 {registration.email && <a className="btn outline" href={emailHref(registration)}><Mail />Bericht sturen</a>}
                 {registration.email && registration.status !== "approved" && <a className="btn outline" href={emailHref(registration, true)}><FileSearch />Gegevens opvragen</a>}
                 {canReview && <><button className="btn" type="button" disabled={busyId === registration.id} onClick={() => void review(registration, "approved")}><CheckCircle2 />Goedkeuren</button><button className="btn outline" type="button" disabled={busyId === registration.id} onClick={() => void review(registration, "changes_requested")}><RotateCcw />Aanpassing vragen</button><button className="btn outline" type="button" disabled={busyId === registration.id} onClick={() => void review(registration, "rejected")}><XCircle />Afwijzen</button></>}
-                {registration.applicationStatus === "approved" && registration.portal && !registration.portal.locationVerified && <button className="btn" type="button" disabled={busyId === registration.id} onClick={() => void verifyLocation(registration)}><MapPinCheck />Locatie verifiëren</button>}
+                {!registration.portalArchived && registration.applicationStatus === "approved" && registration.portal && !registration.portal.locationVerified && <button className="btn" type="button" disabled={busyId === registration.id} onClick={() => void verifyLocation(registration)}><MapPinCheck />Locatie verifiëren</button>}
               </div>
             </div>
           </details>;
@@ -263,7 +266,7 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
           <summary><span className="portal-code">{portal.systemCode}</span><span className="portal-primary"><strong>{portal.name}</strong><small>{portal.world} · {portal.contactName || "Contactpersoon niet ingevuld"}</small></span><span className="portal-phone">{portal.phone ? <a href={`tel:${portal.phone.replace(/\s/g, "")}`} onClick={(event) => event.stopPropagation()}><Phone />{portal.phone}</a> : "Geen telefoonnummer"}</span><span className={`portal-status-badge operation-${portal.operationStatus}`}>{operationLabels[portal.operationStatus]}</span><span className="portal-arrivals"><strong>{portal.activeReservations}</strong> groepen · <strong>{portal.expectedChildren}</strong> kinderen</span><ChevronDown className="portal-expand-icon" /></summary>
           <div className="portal-row-details active-portal-details">
             <div className="portal-detail-grid"><div><span><UserRound />Contactpersoon</span><strong>{portal.contactName || "Niet ingevuld"}</strong></div><div><span><Mail />E-mail</span><strong>{portal.email ? <a href={`mailto:${portal.email}`}>{portal.email}</a> : "Niet ingevuld"}</strong></div><div><span><Phone />Telefoon</span><strong>{portal.phone ? <a href={`tel:${portal.phone.replace(/\s/g, "")}`}>{portal.phone}</a> : "Niet ingevuld"}</strong></div><div><span><Home />Adres</span><strong>{portal.formattedAddress || "Niet ingevuld"}</strong></div><div><span><MapPinCheck />Locatiecontrole</span><strong>{portal.locationVerified ? "Geverifieerd" : "Nog te verifiëren"}</strong></div><div><span><Radio />Verwachte instroom</span><strong>{portal.activeReservations} groepen · {portal.expectedChildren} kinderen</strong></div></div>
-            <div className="portal-row-actions"><Link className="btn outline" href={`/admin/poortkamer/${portal.portalId}`}>Team en Poortkamer</Link>{portal.phone && <a className="btn outline" href={`tel:${portal.phone.replace(/\s/g, "")}`}><Phone />Bellen</a>}<button className="btn outline" type="button" disabled={busyId === portal.portalId} onClick={() => void sendPortalMessage(portal)}><MessageCircle />Bericht sturen</button></div>
+            <div className="portal-row-actions"><button className="btn outline" type="button" onClick={() => { setEditingPortalId(portal.portalId); setActiveTab("manual"); }}>Gegevens bewerken</button><Link className="btn outline" href={`/admin/poortkamer/${portal.portalId}`}>Team en Poortkamer</Link>{portal.phone && <a className="btn outline" href={`tel:${portal.phone.replace(/\s/g, "")}`}><Phone />Bellen</a>}<button className="btn outline" type="button" disabled={busyId === portal.portalId} onClick={() => void sendPortalMessage(portal)}><MessageCircle />Bericht sturen</button></div>
             <div className="portal-operation-actions" role="group" aria-label={`Operationele status van ${portal.systemCode}`}><button type="button" className={portal.operationStatus === "open" ? "active" : ""} disabled={busyId === portal.portalId || portal.operationStatus === "open"} onClick={() => void setPortalState(portal, "open")}>Open</button><button type="button" className={portal.operationStatus === "paused" ? "active" : ""} disabled={busyId === portal.portalId || portal.operationStatus === "paused"} onClick={() => void setPortalState(portal, "paused")}>Pauze</button><button type="button" className={portal.operationStatus === "closed" ? "active" : ""} disabled={busyId === portal.portalId || portal.operationStatus === "closed"} onClick={() => void setPortalState(portal, "closed")}>Gestopt</button></div>
           </div>
         </details>)}
