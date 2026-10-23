@@ -7,6 +7,7 @@ const checks = [
   { label: "SendGrid credential", pattern: /SG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/ },
   { label: "fixture QR credential", pattern: /TEST-PORTAL-[0-9]{2}-TOKEN/ },
   { label: "fixture account password", pattern: /local-test-only/ },
+  { label: "prototype child-book hash route", pattern: /\/#\/poortenboek/ },
 ];
 
 for (const name of ["SENDGRID_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY", "CRON_SECRET", "PORTAL_CODE_PEPPER", "ABUSE_HASH_SECRET", "SEND_EMAIL_HOOK_SECRET", "CHILD_CODE_PEPPER", "CHILD_CODE_ENCRYPTION_KEY", "EDITORIAL_TOKEN_SECRET", "VAPID_PRIVATE_KEY"]) {
