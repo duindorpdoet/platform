@@ -130,9 +130,10 @@ async function main() {
     if(appliedMigrations.some(version=>!knownVersions.has(version))||repositoryMigrations.filter(name=>!name.startsWith('20261023')).some(name=>!appliedMigrations.includes(name.split('_')[0])))throw new Error('LIVE_MIGRATION_HISTORY_DRIFT');
     const before=(await sourceQuery(fingerprintQuery(catalog),snapshot)).split('\n').map(JSON.parse);
     const roles=JSON.parse(await sourceQuery("select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper,'eventTriggerOwner',exists(select 1 from pg_event_trigger where evtowner=pg_roles.oid))) from pg_roles where rolname not like 'pg_%'",snapshot));
+    const memberships=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(jsonb_build_object('role',r.rolname,'member',m.rolname,'adminOption',a.admin_option,'inheritOption',a.inherit_option,'setOption',a.set_option)),'[]') from pg_auth_members a join pg_roles r on r.oid=a.roleid join pg_roles m on m.oid=a.member",snapshot));
     const objects=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]') from storage.objects o",snapshot));
     const settings={project,auth:await api('/config/auth'),rest:await api('/postgrest'),backups:await api('/database/backups')};
-    await save('catalog.aes',catalog);await save('inventory.aes',before);await save('roles.aes',roles);await save('settings.aes',settings);await save('objects.aes',objects);
+    await save('catalog.aes',catalog);await save('inventory.aes',before);await save('roles.aes',roles);await save('role-memberships.aes',memberships);await save('settings.aes',settings);await save('objects.aes',objects);
     const dump=processCommand('docker',[...clientArgs,'pg_dump','--format=custom','--no-subscriptions','--lock-wait-timeout=3000',`--snapshot=${snapshot}`],sourceEnv);
     dump.child.stdin.end();
     await Promise.all([encryptStream(dump.child.stdout,join(directory,'database.aes'),key,context+':database.aes'),dump.done]);
@@ -169,6 +170,7 @@ async function main() {
     console.log('Isolated PostgreSQL version: '+await localQuery("select current_setting('server_version')"));
     console.log('Isolated preload libraries: '+await localQuery("select current_setting('shared_preload_libraries')"));
     for(const role of roles)await localQuery(`do $role$ begin if not exists(select 1 from pg_roles where rolname=${literal(role.name)}) then execute ${literal('create role '+quote(role.name)+' nologin '+(role.inherit?'inherit':'noinherit')+(role.bypassrls?' bypassrls':''))};end if;end $role$`);
+    for(const membership of memberships)await localQuery('grant '+quote(membership.role)+' to '+quote(membership.member)+' with admin '+membership.adminOption+', inherit '+membership.inheritOption+', set '+membership.setOption);
     // Managed Supabase roles can own event triggers after their superuser
     // privilege has been removed. PostgreSQL requires that privilege while
     // replaying ALTER EVENT TRIGGER OWNER. Grant it only inside this networkless
@@ -193,9 +195,17 @@ async function main() {
     const migrated=(await localQuery(fingerprintQuery(catalog))).split('\n').map(JSON.parse);
     const migrationDifferences=compareFingerprints(before,migrated);
     if(migrationDifferences.length)throw new Error('MIGRATION_DATA_MISMATCH: '+migrationDifferences.join(', '));
+    // Preview historical exceptions only on the restored copy. Installing the
+    // migrations and producing this report never starts an automatic backfill.
+    const backfillPreview=JSON.parse(await localQuery("select coalesce(jsonb_agg(jsonb_build_object('eventId',e.id,'eventSlug',e.slug,'candidates',coalesce((select jsonb_agg(to_jsonb(c)) from app_private.arrival_backfill_candidates(e.id) c),'[]'))),'[]') from app_private.events e"));
+    const candidates=backfillPreview.flatMap(event=>event.candidates);
+    const backfill={applied:false,candidates:candidates.length,eligible:candidates.filter(row=>row.eligible===true).length,excluded:candidates.filter(row=>row.eligible!==true).length,reasons:{}};
+    for(const candidate of candidates)backfill.reasons[candidate.reason]=(backfill.reasons[candidate.reason]??0)+1;
+    await save('backfill-preview.aes',backfillPreview);
+    const legacyPrint=JSON.parse(await localQuery("select jsonb_build_object('activeCredentials',count(*),'hashOnly',count(*) filter(where not exists(select 1 from app_private.portal_print_material m where m.credential_id=c.id))) from app_private.portal_credentials c where c.revoked_at is null and c.valid_from<=now() and (c.valid_until is null or c.valid_until>now())"));
     const files=[];
     for(const name of (await readdir(directory)).filter(name=>name.endsWith('.aes')).sort())files.push({name,...await fileDigest(join(directory,name))});
-    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,tables:catalog.length,objects:objects.length,migrations,files,
+    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,tables:catalog.length,objects:objects.length,migrations,backfill,legacyPrint,files,
       limits:['Provider runtime secrets remain in the existing secret store.','No live database configuration, migration, credential, or row was changed by this job.','Isolated SQL restore is not an Auth/mail/browser acceptance result.']};
     proof.signature=createHmac('sha256',key).update(JSON.stringify(proof)).digest('hex');
     await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});
