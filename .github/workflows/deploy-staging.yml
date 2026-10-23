@@ -106,6 +106,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Validate staging configuration
         run: node scripts/deploy/validate-environment.mjs staging
+      - name: Protect redesign migrations with private preflight and restore gate
+        run: node scripts/deploy/redesign-preflight.mjs
       - name: Validate application
         run: pnpm verify
       - name: Link and migrate staging database

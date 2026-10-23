@@ -107,6 +107,8 @@ jobs:
         run: node scripts/deploy/require-staging-success.mjs
       - name: Validate production configuration
         run: node scripts/deploy/validate-environment.mjs production
+      - name: Protect redesign migrations with private preflight and restore gate
+        run: node scripts/deploy/redesign-preflight.mjs
       - name: Validate application
         run: pnpm verify
       - name: Link and migrate production database

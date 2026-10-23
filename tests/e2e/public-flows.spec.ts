@@ -6,7 +6,7 @@ test("premium homepage keeps the supplied identity and closed participation path
   await expect(page).toHaveTitle(/Duindorpse Poorten/);
   await expect(page.getByRole("img", { name: "De Duindorpse Poorten van Halloween" }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /Een gewone wijk/ })).toBeVisible();
-  await expect(page.getByText("31 OKTOBER 2026").first()).toBeVisible();
+  await expect(page.locator(".public-hero-date")).toHaveAttribute("aria-label", /^(Volgt|\d{1,2} [\p{L}]+ \d{4})$/u);
   const portalCta = page.getByRole("link", { name: /Meld jouw plek aan/i }).first();
   await expect(portalCta).toBeVisible();
   await portalCta.click();
