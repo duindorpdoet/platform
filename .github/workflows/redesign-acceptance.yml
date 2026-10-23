@@ -6,6 +6,7 @@ on:
       - 'app/**'
       - 'components/**'
       - 'lib/**'
+      - 'modern/**'
       - 'tests/**'
       - '.github/workflows/redesign-acceptance.yml'
 permissions:
@@ -40,7 +41,9 @@ jobs:
         run: |
           eval "$(pnpm exec supabase status -o env)"
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: |
+          bash scripts/acceptance/prepare-browser-runner.sh
+          pnpm exec playwright install --with-deps chromium
       - name: Exercise authenticated navigation and privacy before the full regression suite
         run: |
           eval "$(pnpm exec supabase status -o env)"
@@ -83,7 +86,9 @@ jobs:
         run: |
           eval "$(pnpm exec supabase status -o env)"
           NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: |
+          bash scripts/acceptance/prepare-browser-runner.sh
+          pnpm exec playwright install --with-deps chromium
       - name: Exercise real child sessions, identity switches and first-use guides
         run: |
           eval "$(pnpm exec supabase status -o env)"

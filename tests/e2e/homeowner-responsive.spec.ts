@@ -28,7 +28,7 @@ test("homeowner controls, profile and support fit 320, 375, 390 and 430 pixel sc
         await expect(page.getByRole("link", { name: "Open De Poortkamer", exact: true })).toBeVisible();
         await page.getByRole("link", { name: "Open De Poortkamer", exact: true }).click();
       }
-      await expect(page.getByRole("heading", { name: "De nacht wacht op jullie.", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Samen klaar voor de nacht.", exact: true })).toBeVisible();
       await assertReadableLayout(page);
       for (const label of ["Open", "Pauze", "Gestopt"]) {
         const button = page.getByRole("button", { name: label, exact: true });

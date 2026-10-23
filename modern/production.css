@@ -9,3 +9,13 @@
   .modern-ui .public-map-live-actions { flex-wrap: wrap; }
   .modern-ui .public-map-live-actions .btn { white-space: normal; }
 }
+
+/* The workspace owns scrolling. Reserve the mobile dock in its flex layout
+   so complete panels and their last controls remain above the navigation. */
+@media (max-width: 1100px) {
+  .modern-ui .admin-bottomnav { position: static; }
+  .modern-ui .admin-content { padding-bottom: 24px !important; }
+}
+@media (max-width: 700px) {
+  .modern-ui .modern-participant .child-tikkie-action { min-height: 44px; }
+}
