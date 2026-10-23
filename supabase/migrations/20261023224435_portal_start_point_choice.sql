@@ -31,10 +31,9 @@ begin
       lat,lon,lat,lon,node_id,true,coalesce(w.max_groups,1),coalesce(w.max_children,app_private.event_group_size_limit(p.event_id)),
       w.opens_at,w.closes_at,p.contact_name,p.contact_phone) returning * into sp;
   else
-    update app_private.start_points set active=true,name=p.name,latitude=lat,longitude=lon,
-      geocoded_latitude=lat,geocoded_longitude=lon,walking_node_id=node_id,
-      private_address=nullif(concat_ws(' ',l.street,l.house_number,l.addition),''),
-      contact_name=p.contact_name,contact_phone=p.contact_phone,version=version+1,updated_at=statement_timestamp()
+    -- A yes/no toggle changes availability only. Existing names, locations,
+    -- capacities and published appointments keep their configured values.
+    update app_private.start_points set active=true,version=version+1,updated_at=statement_timestamp()
       where id=sp.id returning * into sp;
   end if;
   return sp.id;
