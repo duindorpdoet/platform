@@ -159,6 +159,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
     timeout: 15_000,
   });
   await screenshot(page, "nachtwacht", info.project.name);
+  await page.getByText("Bezoeklog en verwachte instroom", { exact: true }).click();
   await expect(page.getByRole("heading", { name: "De stroom door jullie poort" })).toBeVisible();
   await page.getByRole("button", { name: "Team", exact: true }).click();
   await page.getByRole("button", { name: "Deel een sleutel" }).click();
@@ -222,7 +223,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   await expect(
     guest.getByRole("button", { name: "Open", exact: true }),
   ).toHaveCount(0);
-  await guest.getByRole("button", { name: /^Berichten/ }).click();
+  await guest.getByRole("navigation", { name: "Poortkamer navigatie" }).getByRole("button", { name: /^Berichten/ }).click();
   const privateChannels = guest
     .getByRole("navigation", { name: "Kamers van dit huis" })
     .getByRole("button");
@@ -240,7 +241,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
       .getByLabel("Berichtgeschiedenis")
       .getByText("We staan klaar bij de poort.", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: /^Berichten/ }).click();
+  await page.getByRole("navigation", { name: "Poortkamer navigatie" }).getByRole("button", { name: /^Berichten/ }).click();
   await expect(
     page
       .getByLabel("Berichtgeschiedenis")
@@ -261,7 +262,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   await moderated.getByRole("button", { name: "Verbergen", exact: true }).click();
   await guest.getByRole("dialog").getByRole("button", { name: "Verbergen", exact: true }).click();
   await expect(guest.getByRole("log").getByText(liveMessage, { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: /^Berichten/ }).click();
+  await page.getByRole("navigation", { name: "Poortkamer navigatie" }).getByRole("button", { name: /^Berichten/ }).click();
   await expect(page.getByRole("log").getByText(liveMessage, { exact: true })).toHaveCount(0);
 
   await guest
@@ -308,7 +309,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   ).toBeVisible({ timeout: 25_000 });
   await page.getByRole("button", { name: "Toegang activeren", exact: true }).click();
   await guest.reload();
-  await expect(guest.getByRole("button", { name: /^Berichten/ })).toBeVisible({ timeout: 25_000 });
+  await expect(guest.getByRole("navigation", { name: "Poortkamer navigatie" }).getByRole("button", { name: /^Berichten/ })).toBeVisible({ timeout: 25_000 });
   page.once("dialog", (d) => d.accept());
   await page.getByLabel("Rol voor Sem Privénaam").selectOption("portal_manager");
   await guest.getByRole("button", { name: "Nachtwacht", exact: true }).click();
@@ -391,7 +392,7 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
     page.getByText("Er is nog geen groep toegewezen. Je hoeft niets te doen."),
   ).toBeVisible();
   await screenshot(page, "bezoeken", info.project.name);
-  await page.getByRole("button", { name: /^Berichten/ }).click();
+  await page.getByRole("navigation", { name: "Poortkamer navigatie" }).getByRole("button", { name: /^Berichten/ }).click();
   await page
     .getByRole("button", { name: /^Praatkamer/ })
     .click();
@@ -507,7 +508,7 @@ test("organization updates reach the cockpit live and only organization moderate
   await expect(page.getByText(update, { exact: true })).toBeVisible({ timeout: 5_000 });
   await screenshot(page, "organisatie-update", info.project.name);
 
-  await page.getByRole("button", { name: /^Berichten/ }).click();
+  await page.getByRole("navigation", { name: "Poortkamer navigatie" }).getByRole("button", { name: /^Berichten/ }).click();
   await page.getByRole("button", { name: /^Praatkamer/ }).click();
   const message = `Een voorbeeld voor moderatie ${randomUUID()}`;
   await page.getByLabel("Je bericht", { exact: true }).fill(message);
