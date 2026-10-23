@@ -5,6 +5,11 @@ on:
     branches:
       - production
   workflow_dispatch:
+    inputs:
+      readonly_baseline:
+        description: Capture read-only schema and preservation fingerprints; no deployment
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -16,6 +21,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  readonly-baseline:
+    name: Read-only production evening baseline
+    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && github.ref != 'refs/heads/production'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Inventory through read-only queries
+        env:
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node scripts/deploy/evening-baseline.mjs
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: evening-production-baseline-${{ github.run_id }}
+          path: ${{ runner.temp }}/duindorp-evening-baseline/
+          retention-days: 30
+          if-no-files-found: error
   backup-restore:
     name: Encrypted production backup and isolated restore
     if: github.ref == 'refs/heads/production'
