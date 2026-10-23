@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { createTogetherFixtures, requireLocalTogetherDatabase, sql } from "../../scripts/acceptance/together-fixtures.mjs";
+import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { assertReadableLayout } from "./helpers/layout";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,20 +15,15 @@ async function authenticate(context: BrowserContext, email = "admin@example.inva
   const client = createClient(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
   const result = await client.auth.signInWithPassword({ email, password: "local-test-only" });
   expect(result.error).toBeNull();
+  await prepareFixtureGuidance(client);
   const value = `base64-${Buffer.from(JSON.stringify(result.data.session)).toString("base64url")}`;
   const name = `sb-${new URL(url!).hostname.split(".")[0]}-auth-token`;
   const chunks = value.length <= 3180 ? [{ name, value }] : Array.from({ length: Math.ceil(value.length / 3180) }, (_, i) => ({ name: `${name}.${i}`, value: value.slice(i * 3180, (i + 1) * 3180) }));
   await context.addCookies(chunks.map((chunk) => ({ ...chunk, url: "http://127.0.0.1:3100", sameSite: "Lax" as const })));
   return client;
 }
-async function section(page: Page, name: string) {
-  await expect(page.locator(".admin-appbar")).toBeVisible();
-  const more = page.getByRole("button", { name: "Meer", exact: true });
-  const menu = page.getByRole("button", { name: "Organisatienavigatie openen" });
-  if (await more.isVisible()) await more.click();
-  else if (await menu.isVisible()) await menu.click();
-  await page.locator(".admin-nav").getByRole("button", { name, exact: true }).click();
-}
+const section = selectOrganizationSection;
+
 async function open(page: Page, context: BrowserContext) {
   const client = await authenticate(context);
   await page.goto("/admin"); await section(page, "Samenloop");

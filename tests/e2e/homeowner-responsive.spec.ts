@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import { prepareFixtureGuidance } from "./helpers/guidance";
 import { assertReadableLayout } from "./helpers/layout";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -13,6 +14,7 @@ test("homeowner controls, profile and support fit 320, 375, 390 and 430 pixel sc
   const result = await client.auth.signInWithPassword({ email: "owner@example.invalid", password: "local-test-only" });
   expect(result.error).toBeNull();
   expect(result.data.session).toBeTruthy();
+  await prepareFixtureGuidance(client);
   const cookieName = `sb-${new URL(supabaseUrl!).hostname.split(".")[0]}-auth-token`;
   const value = `base64-${Buffer.from(JSON.stringify(result.data.session)).toString("base64url")}`;
   const chunks = value.length <= 3180 ? [{ name: cookieName, value }] : Array.from({ length: Math.ceil(value.length / 3180) }, (_, index) => ({ name: `${cookieName}.${index}`, value: value.slice(index * 3180, (index + 1) * 3180) }));

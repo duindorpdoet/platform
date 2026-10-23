@@ -298,7 +298,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     | "simulation"
     | "thanks"
     | "settings"
-  >(()=>{const requested=new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("view");return requested&&requested in sectionMeta&&sectionAllowed(requested)?requested as keyof typeof sectionMeta:(Object.keys(sectionMeta).find(sectionAllowed)??"overview") as keyof typeof sectionMeta});
+  >(()=>{const requested=new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("view");return requested&&requested in sectionMeta&&sectionAllowed(requested)?requested as keyof typeof sectionMeta:(sectionAllowed("overview")?"overview":Object.keys(sectionMeta).find(sectionAllowed)??"overview") as keyof typeof sectionMeta});
   const canUsePraatkamer = capabilities.some(c => ["event_admin", "portals_manage", "live_support"].includes(c));
   const canManageGroups = capabilities.includes("event_admin") || capabilities.includes("groups_manage");
   const canManageTogether = canManageGroups || capabilities.includes("registration_manage");

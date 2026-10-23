@@ -29,6 +29,7 @@ export function compareFingerprints(before,after) {
 }
 function processCommand(command,args,env={}) {
   const child=spawn(command,args,{env:{...process.env,...env},stdio:['pipe','pipe','pipe']});
+  child.stdin.on('error',()=>{});
   let errorBytes=0,firstError='';
   child.stderr.on('data',chunk=>{errorBytes+=chunk.length;if(firstError.length<2048)firstError+=chunk.toString();});
   const done=new Promise((resolve,reject)=>{
@@ -101,7 +102,7 @@ async function main() {
   const image='supabase/postgres:'+version;
   await capture('docker',['pull',image]);
   const poolerUser=pooler.db_user==='postgres'?'postgres.'+process.env.SUPABASE_PROJECT_REF:pooler.db_user;
-  const sourceEnv={PGHOST:pooler.db_host,PGPORT:'5432',PGDATABASE:pooler.db_name,PGUSER:poolerUser,PGPASSWORD:process.env.SUPABASE_DB_PASSWORD,PGSSLMODE:'require',PGOPTIONS:'-c statement_timeout=300000 -c lock_timeout=3000'};
+  const sourceEnv={PGHOST:pooler.db_host,PGPORT:'5432',PGDATABASE:pooler.db_name,PGUSER:poolerUser,PGPASSWORD:process.env.SUPABASE_DB_PASSWORD,PGSSLMODE:'require',PGCONNECT_TIMEOUT:'30',PGOPTIONS:'-c statement_timeout=300000 -c lock_timeout=3000'};
   const clientArgs=['run','--rm','-i','--network','host',...Object.keys(sourceEnv).flatMap(name=>['--env',name]),image];
   const sourceQuery=async(sql,snapshot)=>{
     const prefix="begin isolation level repeatable read read only;"+(snapshot?`set transaction snapshot ${literal(snapshot)};`:'')+"set local timezone='UTC';set local datestyle='ISO';";
@@ -113,7 +114,10 @@ async function main() {
     holder.child.stdout.on('data',chunk=>{value+=chunk.toString();const match=value.match(/^([0-9a-f]+-[0-9a-f]+-\d+)$/im);if(match){clearTimeout(timer);resolve(match[1]);}});
     holder.done.catch(error=>{clearTimeout(timer);reject(error);});
     holder.child.stdin.write('begin isolation level repeatable read read only;select pg_catalog.pg_export_snapshot();\n');
-  });
+  }).catch(error=>{holder.child.stdin.end();holder.child.kill();throw error;});
+  const keepAlive=setInterval(()=>{
+    if(!holder.child.stdin.destroyed&&!holder.child.stdin.writableEnded)holder.child.stdin.write('select 1;\n');
+  },20000);
   const container=`duindorp-restore-${run}-${process.env.GITHUB_RUN_ATTEMPT??'1'}`;
   let localStarted=false;
   try {
@@ -156,7 +160,9 @@ async function main() {
     const localQuery=sql=>capture('docker',['exec','-i',container,'psql','-X','-qAt','-U','supabase_admin','-d','postgres','-v','ON_ERROR_STOP=1'],"set timezone='UTC';set datestyle='ISO';"+sql+';');
     for(const role of roles)await localQuery(`do $role$ begin if not exists(select 1 from pg_roles where rolname=${literal(role.name)}) then execute ${literal('create role '+quote(role.name)+' nologin '+(role.inherit?'inherit':'noinherit')+(role.bypassrls?' bypassrls':''))};end if;end $role$`);
     const restore=processCommand('docker',['exec','-i',container,'pg_restore','--clean','--if-exists','--exit-on-error','--no-tablespaces','--username=supabase_admin','--dbname=postgres']);
-    await Promise.all([pipeline(createReadStream(join(directory,'database.aes'),{start:32}),await decryptor(join(directory,'database.aes'),key,context+':database.aes'),restore.child.stdin),restore.done]);
+    const restoredStreams=await Promise.allSettled([pipeline(createReadStream(join(directory,'database.aes'),{start:32}),await decryptor(join(directory,'database.aes'),key,context+':database.aes'),restore.child.stdin),restore.done]);
+    if(restoredStreams[1].status==='rejected')throw restoredStreams[1].reason;
+    if(restoredStreams[0].status==='rejected')throw restoredStreams[0].reason;
     const restored=(await localQuery(fingerprintQuery(catalog))).split('\n').map(JSON.parse);
     if(compareFingerprints(before,restored).length)throw new Error('RESTORE_DATA_MISMATCH');
     console.log(`Isolated restore preserved all ${catalog.length} table fingerprints.`);
@@ -177,6 +183,7 @@ async function main() {
     await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});
     console.log(JSON.stringify({backupAndRestore:'passed',environment,revision,tables:catalog.length,objects:objects.length,migrationDryRun:'passed'}));
   } finally {
+    clearInterval(keepAlive);
     holder.child.stdin.end();holder.child.kill();
     if(localStarted)await capture('docker',['rm','--force',container]);
   }

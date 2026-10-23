@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { assertReadableLayout } from "./helpers/layout";
 import { readFile, writeFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
@@ -30,19 +31,13 @@ async function fixtureClient(email = "leader-a@example.invalid") {
 
 async function authenticate(context: BrowserContext, email: string) {
   const authenticated = await fixtureClient(email);
+  await prepareFixtureGuidance(authenticated.client);
   await context.clearCookies();
   await context.addCookies(sessionCookies(authenticated.session));
   return authenticated.client;
 }
 
-async function selectAdminSection(page: Page, name: string) {
-  await expect(page.locator(".admin-appbar")).toBeVisible();
-  const more = page.getByRole("button", { name: "Meer", exact: true });
-  const menu = page.getByRole("button", { name: "Organisatienavigatie openen" });
-  if (await more.isVisible()) await more.click();
-  else if (await menu.isVisible()) await menu.click();
-  await page.locator(".admin-nav").getByRole("button", { name, exact: true }).click();
-}
+const selectAdminSection = selectOrganizationSection;
 
 async function rpc(client: Awaited<ReturnType<typeof fixtureClient>>["client"], name: string, args: Record<string, unknown>) {
   const result = await client.schema("api").rpc(name, args);
@@ -114,7 +109,7 @@ test("the unified mobile participant environment keeps role navigation and payme
   await authenticate(context, "parent-size-5@example.invalid");
   await page.goto("/omgeving/meeloper/nu");
 
-  await expect(page.getByRole("heading", { name: "Klaar voor de nacht?" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "Alles voor jullie Halloweenavond." })).toBeVisible({ timeout: 15_000 });
   const bottomNavigation = page.getByRole("navigation", { name: "Mobiele omgevingsnavigatie" });
   await expect(bottomNavigation.getByRole("link", { name: "Nu" })).toBeVisible();
   await expect(bottomNavigation.getByRole("link", { name: "Route" })).toBeVisible();
@@ -1100,15 +1095,16 @@ for (const width of [320, 375, 390, 430, 900]) {
     await opener.click();
     await expect(navigation).toHaveAttribute("aria-modal", "true");
     await expect(page.getByRole("button", { name: "Menu sluiten", exact: true })).toBeFocused();
-    await expect(navigation.getByRole("group")).toHaveCount(6);
-    for (const group of ["Overzicht", "Deelnemers", "Poorten & planning", "Communicatie", "Live & oefenen", "Beheer"]) {
-      await expect(navigation.getByRole("group", { name: group, exact: true })).toBeVisible();
+    const primary = navigation.getByRole("navigation", { name: "Hoofdonderdelen organisatie" });
+    await expect(primary.getByRole("button")).toHaveCount(7);
+    for (const group of ["Overzicht", "Deelnemers", "Poorten", "Startregie", "Communicatie", "De avond", "Beheer"]) {
+      await expect(primary.getByRole("button", { name: new RegExp('^'+group+'(?:\\s*\\d+)?$') })).toBeVisible();
     }
-    await expect(navigation.getByRole("button", { name: "Cockpit", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(primary.getByRole("button", { name: "Overzicht", exact: true })).toHaveAttribute("aria-current", "page");
     await expect(navigation.locator("button b").first()).toBeVisible();
     expect(await page.evaluate(() => document.body.style.overflow)).toBe("hidden");
     await page.keyboard.press("Shift+Tab");
-    await expect(navigation.getByRole("button", { name: "Instellingen", exact: true })).toBeFocused();
+    await expect(navigation.locator(".modern-admin-profile")).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Menu sluiten", exact: true })).toBeFocused();
     await page.keyboard.press("Escape");
@@ -1116,7 +1112,7 @@ for (const width of [320, 375, 390, 430, 900]) {
     await expect(opener).toBeFocused();
     expect(await page.evaluate(() => document.body.style.overflow)).not.toBe("hidden");
     await opener.click();
-    await navigation.getByRole("button", { name: "Instellingen", exact: true }).click();
+    await navigation.getByRole("button", { name: "Beheer", exact: true }).click();
     await expect(navigation).toBeHidden();
     await expect(page.locator(".admin-page-heading h1")).toContainText("Instellingen");
     await assertReadableLayout(page);

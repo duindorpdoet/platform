@@ -1,5 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import { prepareFixtureGuidance } from "./helpers/guidance";
 import { assertReadableLayout } from "./helpers/layout";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -11,6 +12,7 @@ async function authenticate(context: BrowserContext, email: string) {
   const { data, error } = await client.auth.signInWithPassword({ email, password: "local-test-only" });
   expect(error).toBeNull();
   expect(data.session).toBeTruthy();
+  await prepareFixtureGuidance(client);
   const name = `sb-${new URL(supabaseUrl!).hostname.split(".")[0]}-auth-token`;
   const value = `base64-${Buffer.from(JSON.stringify(data.session)).toString("base64url")}`;
   const chunks = value.length <= 3180 ? [{ name, value }] : Array.from({ length: Math.ceil(value.length / 3180) }, (_, index) => ({ name: `${name}.${index}`, value: value.slice(index * 3180, (index + 1) * 3180) }));
