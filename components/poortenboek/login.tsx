@@ -49,7 +49,7 @@ export function BookLogin({ demo = false }: { demo?: boolean }) {
         return;
       }
       setDigits(Array(6).fill(""));
-      window.location.assign("/#/poortenboek");
+      window.location.assign("/poortenboek");
     } catch {
       setError(LOGIN_ERROR);
     } finally {

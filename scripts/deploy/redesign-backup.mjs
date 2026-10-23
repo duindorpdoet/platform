@@ -35,7 +35,8 @@ function processCommand(command,args,env={}) {
   const done=new Promise((resolve,reject)=>{
     child.once('error',()=>reject(new Error('BACKUP_TOOL_UNAVAILABLE')));
     child.once('close',code=>{
-      const hint=firstError.split(/[\r\n]/)[0].replace(/'[^']*'|"[^"]*"|https?:\/\/\S+|[A-Za-z0-9_-]{32,}/g,'[redacted]').slice(0,180);
+      const parameter=firstError.match(/unrecognized configuration parameter "([a-z0-9_.]+)"/i)?.[1];
+      const hint=parameter?'unrecognized configuration parameter '+parameter:firstError.split(/[\r\n]/)[0].replace(/'[^']*'|"[^"]*"|https?:\/\/\S+|[A-Za-z0-9_-]{32,}/g,'[redacted]').slice(0,180);
       return code===0?resolve():reject(new Error(`BACKUP_TOOL_FAILED_${code}_${errorBytes}: ${hint}`));
     });
   });
@@ -158,6 +159,7 @@ async function main() {
       catch{if(attempt>=60)throw new Error('ISOLATED_POSTGRES_NOT_READY');await new Promise(resolve=>setTimeout(resolve,1000));}
     }
     const localQuery=sql=>capture('docker',['exec','-i',container,'psql','-X','-qAt','-U','supabase_admin','-d','postgres','-v','ON_ERROR_STOP=1'],"set timezone='UTC';set datestyle='ISO';"+sql+';');
+    console.log('Isolated PostgreSQL version: '+await localQuery("select current_setting('server_version')"));
     for(const role of roles)await localQuery(`do $role$ begin if not exists(select 1 from pg_roles where rolname=${literal(role.name)}) then execute ${literal('create role '+quote(role.name)+' nologin '+(role.inherit?'inherit':'noinherit')+(role.bypassrls?' bypassrls':''))};end if;end $role$`);
     const restore=processCommand('docker',['exec','-i',container,'pg_restore','--clean','--if-exists','--exit-on-error','--no-tablespaces','--username=supabase_admin','--dbname=postgres']);
     const restoredStreams=await Promise.allSettled([pipeline(createReadStream(join(directory,'database.aes'),{start:32}),await decryptor(join(directory,'database.aes'),key,context+':database.aes'),restore.child.stdin),restore.done]);

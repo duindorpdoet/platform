@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { createClient } from "@supabase/supabase-js";
 import { mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -20,6 +21,7 @@ async function authenticate(context: BrowserContext, email: string) {
     password: "local-test-only",
   });
   expect(login.error).toBeNull();
+  await prepareFixtureGuidance(client);
   const name = `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0]}-auth-token`;
   const value = `base64-${Buffer.from(JSON.stringify(login.data.session)).toString("base64url")}`;
   await context.clearCookies();
@@ -36,17 +38,7 @@ async function authenticate(context: BrowserContext, email: string) {
 }
 async function redactie(page: Page) {
   await page.goto("/admin");
-  await expect(page.locator(".admin-appbar")).toBeVisible();
-  const more = page.getByRole("button", { name: "Meer", exact: true });
-  const menu = page.getByRole("button", {
-    name: "Organisatienavigatie openen",
-  });
-  if (await more.isVisible()) await more.click();
-  else if (await menu.isVisible()) await menu.click();
-  await page
-    .locator(".admin-nav")
-    .getByRole("button", { name: "Redactiekamer", exact: true })
-    .click();
+  await selectOrganizationSection(page,"Redactiekamer");
   await expect(
     page.getByRole("tab", { name: "Nieuwsberichten" }),
   ).toBeVisible();

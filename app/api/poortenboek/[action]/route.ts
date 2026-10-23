@@ -335,6 +335,15 @@ export async function POST(request: Request, context: Context) {
       return response({ ok: true });
     }
     if (demo) {
+      if (action === "tutorial") {
+        const current=demo.tutorial??{version:1,completedAt:null,lastStep:0};
+        if(input.step>current.lastStep+1||(input.completed&&(input.step!==8||current.lastStep<8)))throw new Error("TUTORIAL_STEP_REQUIRED");
+        demo.tutorial={version:1,lastStep:Math.max(current.lastStep,input.step),completedAt:input.completed?(current.completedAt??new Date().toISOString()):current.completedAt};
+      }
+      if (action === "chapter_read") {
+        if(!demoSnapshot(demo).journey.chapters.some(chapter=>chapter.chapter===input.chapter))throw new Error("CHAPTER_LOCKED");
+        demo.readChapters=[...new Set([...(demo.readChapters??[]),input.chapter])];
+      }
       if (action === "welcome") demo.welcomeSeen = true;
       if (action === "checklist") demo.checklist = input.values;
       if (action === "sound") demo.sound = input.enabled;

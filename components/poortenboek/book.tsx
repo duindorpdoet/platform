@@ -87,7 +87,7 @@ export function Poortenboek({
       if (current !== sequence.current) return;
       if (result.status === 401) {
         setSnapshot(null);
-        window.location.replace("/#/poortenboek/inloggen");
+        window.location.replace("/poortenboek/inloggen");
         return;
       }
       if (!result.ok) throw new Error("offline");
@@ -165,7 +165,7 @@ export function Poortenboek({
     const timer = window.setTimeout(
       () => {
         setSnapshot(null);
-        window.location.replace("/#/poortenboek/inloggen");
+        window.location.replace("/poortenboek/inloggen");
       },
       Math.max(0, new Date(snapshot.expiresAt).getTime() - Date.now()),
     );
@@ -198,7 +198,7 @@ export function Poortenboek({
         }
         if (result.status === 401) {
           setSnapshot(null);
-          window.location.replace("/#/poortenboek/inloggen");
+          window.location.replace("/poortenboek/inloggen");
           return;
         }
         if (!result.ok) {
@@ -208,7 +208,7 @@ export function Poortenboek({
         }
         if (action === "logout") {
           setSnapshot(null);
-          window.location.replace("/#/poortenboek/inloggen");
+          window.location.replace("/poortenboek/inloggen");
           return;
         }
         setSnapshot(data as BookSnapshot);

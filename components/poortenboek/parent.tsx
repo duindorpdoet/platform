@@ -35,7 +35,7 @@ export function ParentPoortenboek() {
         );
         return;
       }
-      window.location.assign("/#/poortenboek");
+      window.location.assign("/poortenboek");
       leaving = true;
     } catch {
       setNotice("Maak verbinding om het Poortenboek te openen.");

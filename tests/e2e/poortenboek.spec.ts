@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { prepareFixtureGuidance } from "./helpers/guidance";
 import { createClient } from "@supabase/supabase-js";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
@@ -39,12 +40,19 @@ async function login(page: Page, code: string, demo = false) {
   await page
     .getByRole("button", { name: "Open mijn Poortenboek", exact: true })
     .click();
+  await page.getByRole("button", { name: "Dit is mijn boek", exact: true }).click();
   await expect(page.getByRole("heading", { name: /^Welkom, / })).toBeVisible();
 }
 async function dashboard(page: Page) {
   await page
     .getByRole("button", { name: "Open mijn boek", exact: true })
     .click();
+  // Follow the real nine-step guide before unrelated book interactions.
+  const guide=page.locator('.pb-kid-guide-dialog');
+  await expect(guide).toBeVisible();
+  for(let step=0;step<8;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
+  await guide.getByRole('button',{name:'Ik ben klaar voor mijn avontuur!',exact:true}).click();
+  await expect(guide).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "De wijk wordt wakker" }),
   ).toBeVisible();
@@ -96,6 +104,7 @@ async function realFamily(context: BrowserContext) {
     password: "local-poortenboek-only",
   });
   expect(signed.error).toBeNull();
+  await prepareFixtureGuidance(client);
   // Auth and PostgREST run in separate local containers. Wait until the newly
   // issued fixture JWT is accepted before the browser's one-shot initial load.
   await expect.poll(async () => {

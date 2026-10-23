@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { prepareFixtureGuidance } from "./helpers/guidance";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
@@ -38,6 +39,7 @@ async function owner(context: BrowserContext) {
     password: "local-room-only",
   });
   expect(signed.error).toBeNull();
+  await prepareFixtureGuidance(client);
   await expect
     .poll(
       async () =>

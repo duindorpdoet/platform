@@ -15,6 +15,8 @@ export type DemoSession = {
   bannerVote: Record<string, string>;
   practiceCompleted: boolean;
   nonce: string;
+  tutorial?: { version: number; completedAt: string | null; lastStep: number };
+  readChapters?: number[];
 };
 export function newDemoSession(now: number): DemoSession {
   return {
@@ -53,6 +55,8 @@ export function demoSnapshot(session: DemoSession): BookSnapshot {
     expiresAt: new Date(session.expiresAt).toISOString(),
     welcomeRequired: !session.welcomeSeen,
     demo: true,
+    tutorial: session.tutorial ?? { version: 1, completedAt: null, lastStep: 0 },
+    reading: { readChapters: session.readChapters ?? [], stories: [] },
     eventDate: "2026-10-31",
     eventPhase: "registration_open",
     checklist: session.checklist,
