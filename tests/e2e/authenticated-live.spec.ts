@@ -1602,6 +1602,15 @@ test("organization edits and removes resident portals while preserving existing 
   await page.getByRole("tab", { name: "Poorten beheren", exact: true }).click();
   card = page.locator(".manual-portal-list > article").filter({ hasText: updated });
   await expect(card).toBeVisible();
+  const startChoice = card.getByRole("combobox", { name: `Startpunt voor ${created.code}` });
+  await startChoice.selectOption("yes");
+  await expect(startChoice).toHaveValue("yes");
+  await expect(page.getByRole("status")).toContainText(`Startpunt voor ${created.code}: ja`);
+  const enabled = await rpc(client, "admin_startregie_snapshot", { _event_slug: event });
+  expect(enabled.startPoints.some((point: { linkedPortalId: string; active: boolean }) => point.linkedPortalId === created.id && point.active)).toBe(true);
+  await startChoice.selectOption("no");
+  await expect(startChoice).toHaveValue("no");
+  await expect(page.getByRole("status")).toContainText(`Startpunt voor ${created.code}: nee`);
   await card.getByRole("button", { name: "Bewerken", exact: true }).click();
   await expect(dialog.getByRole("textbox", { name: "Telefoonnummer", exact: true })).toHaveValue("0707654321");
   await expect(dialog.getByRole("textbox", { name: "Toevoeging", exact: true })).toHaveValue("B");

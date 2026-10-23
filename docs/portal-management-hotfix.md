@@ -9,3 +9,6 @@ Unrelated edits retain existing availability rows, IDs and unexposed total capac
 The additive migration changes function definitions and privileges only. It performs no data backfill, deletion, reset or credential rotation, and is included in the reviewed encrypted-backup/isolated-restore release manifest.
 
 Validation: full unit and pgTAP suites, SQL error-level lint, lint/typecheck/build/client-artifact scan, real Auth/API desktop and mobile browser edit/reload/cancel-removal/confirmed-removal flows, plus GitHub CI and staging/production backup and deployment gates. The browser fixture and SQL contracts are restricted to isolated synthetic local data. Actual production portal records are changed only by an authorized organization user through these controls.
+
+
+Portal start selection is a direct `Startpunt: Ja/Nee` control. Yes creates or enables the linked start point from existing portal data; no disables it for new assignments without deleting immutable published appointments. Portal-linked starts no longer require a safe-approach text, physical-inspection checkbox or 75 m confirmation. Existing coordinates and routing nodes are reused without recording a fabricated physical verification. Independent gathering points retain their existing settings.

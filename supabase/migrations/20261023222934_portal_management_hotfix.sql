@@ -33,7 +33,7 @@ begin
         'markerUpdatedAt', location.marker_updated_at,
         'plannedOpensAt', portal_window.opens_at, 'plannedClosesAt', portal_window.closes_at,
         'maxGroups', portal_window.max_concurrent_groups, 'maxChildren', portal_window.max_children_per_visit,
-        'candidateStartPoint', portal.candidate_start_point,
+        'candidateStartPoint', exists(select 1 from app_private.start_points sp where sp.linked_portal_id=portal.id and sp.active),
         'isFinal', portal.id = settings.final_portal_id, 'version', portal.version
       ) order by portal.system_number)
       from app_private.portals portal
@@ -73,7 +73,7 @@ declare
   system_number_input integer := nullif(_payload ->> 'systemNumber', '')::integer;
   node_id uuid; current_window record;
 begin
-  select * into event_record from app_private.events where slug = _event_slug for update;
+  select * into event_record from app_private.events where slug = _event_slug for no key update;
   if actor is null or event_record.id is null or not (
     app_private.has_capability(event_record.id, 'portals_manage', actor)
     or app_private.has_capability(event_record.id, 'event_admin', actor)
@@ -187,6 +187,9 @@ begin
     update app_private.event_route_settings set final_portal_id = portal_record.id, updated_at = now(), updated_by = actor,
       version = version + 1 where event_id = event_record.id;
   end if;
+  if _payload ? 'candidateStartPoint' then
+    perform app_private.sync_portal_start_choice(portal_record.id,coalesce((_payload->>'candidateStartPoint')::boolean,false));
+  end if;
   insert into app_private.audit_events(event_id, actor_id, action, resource_type, resource_id, minimal_change)
   values (event_record.id, actor, case when _portal_id is null then 'portal.manual_created' else 'portal.admin_updated' end,
     'portal', portal_record.id, jsonb_build_object('code', portal_record.system_code, 'lifecycle', portal_record.lifecycle_status,
@@ -213,7 +216,7 @@ begin
   select event_id into v_event_id from app_private.portals where id=_portal_id;
   if actor is null or v_event_id is null or not (app_private.has_capability(v_event_id,'portals_manage',actor)
     or app_private.has_capability(v_event_id,'event_admin',actor)) then raise exception 'NOT_AUTHORIZED' using errcode='42501'; end if;
-  perform 1 from app_private.events where id=v_event_id for update;
+  perform 1 from app_private.events where id=v_event_id for no key update;
   perform pg_advisory_xact_lock(hashtextextended(v_event_id::text || ':route-dispatch', 0));
   select * into portal_record from app_private.portals where id = _portal_id for update;
   if actor is null or portal_record.id is null or not (
