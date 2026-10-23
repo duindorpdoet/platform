@@ -113,3 +113,70 @@ jobs:
       - name: Stop isolated Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup
+  downstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [poortkamer, editorial]
+    env:
+      APP_ENVIRONMENT: staging
+      REGISTRATION_MODE: staging_test
+      APP_URL: https://127.0.0.1:3443
+      NEXT_PUBLIC_SITE_URL: https://127.0.0.1:3443
+      ALLOWED_ORIGINS: https://127.0.0.1:3443,http://127.0.0.1:3100
+      ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+      - name: Start isolated real Supabase services and synthetic fixtures
+        run: |
+          pnpm exec supabase start >/tmp/duindorp-supabase-start.log 2>&1
+          pnpm exec supabase db reset
+      - run: |
+          bash scripts/acceptance/prepare-browser-runner.sh
+          pnpm exec playwright install --with-deps chromium webkit
+      - name: Exercise Poortkamer permissions, invitations, chat and viewport layouts
+        if: matrix.suite == 'poortkamer'
+        env:
+          POORTENBOEK_DEMO_ENABLED: 'true'
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+          node scripts/acceptance/poortkamer-concurrency.mjs
+          NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 pnpm build
+          pnpm exec playwright test --config playwright.poortkamer.config.ts --max-failures=8
+      - name: Exercise editorial publication, newsletter, push and concurrency
+        if: matrix.suite == 'editorial'
+        env:
+          REDACTIEKAMER_ENABLED: 'true'
+          NEWSLETTER_SENDING_ENABLED: 'true'
+          WEB_PUSH_SENDING_ENABLED: 'true'
+          EDITORIAL_ALLOWED_RECIPIENTS: admin@example.invalid,parent-a@example.invalid
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export EDITORIAL_TOKEN_SECRET="$(openssl rand -hex 32)"
+          node scripts/acceptance/editorial-concurrency.mjs
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 pnpm build
+          pnpm exec playwright test --config playwright.editorial.config.ts --max-failures=8
+      - name: Save only synthetic fixture screenshots
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: redesign-${{ matrix.suite }}-fixture-screenshots
+          path: test-results/**/*.png
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Stop isolated Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
