@@ -77,3 +77,16 @@ test('push HTTP boundary counts malformed requests, enforces quota and returns m
  const rate=await post({endpoint:material[0].endpoint,keys:{p256dh:material[0].p256dh,auth:material[0].auth}});expect(rate.status()).toBe(429);
  const metadata=await page.request.get('/api/push/subscription');expect(metadata.status()).toBe(200);const text=await metadata.text();for(const entry of material){expect(text).not.toContain(entry.endpoint);expect(text).not.toContain(entry.p256dh);expect(text).not.toContain(entry.auth);}
 });
+
+test('mobile point errors remain inside the keyboard-accessible dialog without a write',async({context,page})=>{
+ await login(context);await page.setViewportSize({width:360,height:844});await page.goto('/admin');await selectOrganizationSection(page,'Startregie');
+ await page.getByRole('tab',{name:'Startpunten',exact:true}).click();const opener=page.getByRole('button',{name:'Startpunt toevoegen',exact:true});await opener.click();
+ const dialog=page.getByRole('dialog');await dialog.getByRole('textbox',{name:'Interne naam',exact:true}).fill('Een heel lange fictieve verzamelpleknaam voor de mobiele controle');
+ await dialog.getByText('Technische locatiegegevens',{exact:true}).click();await dialog.getByRole('textbox',{name:'Adres-breedtegraad'}).fill('52.1');await dialog.getByRole('textbox',{name:'Adres-lengtegraad'}).fill('4.3');
+ await dialog.getByLabel('Beschikbaar vanaf',{exact:true}).fill('2026-03-29T02:30');await dialog.getByLabel('Beschikbaar tot',{exact:true}).fill('2026-03-29T04:00');
+ const writes:string[]=[];page.on('request',request=>{if(request.url().includes('/rpc/admin_startregie_start_point_save'))writes.push(request.url());});
+ await dialog.getByRole('button',{name:'Startpunt toevoegen',exact:true}).click();await expect(dialog.getByRole('alert')).toContainText('geldige Nederlandse tijd');await expect(dialog.getByLabel('Beschikbaar vanaf',{exact:true})).toHaveValue('2026-03-29T02:30');expect(writes).toHaveLength(0);
+ await assertReadableLayout(page);await page.screenshot({path:'docs/ops/screenshots/point-invalid-time-360.png'});
+ await dialog.getByRole('button',{name:'Sluiten',exact:true}).focus();await page.keyboard.press('Shift+Tab');await expect(dialog.getByRole('button',{name:'Startpunt toevoegen',exact:true})).toBeFocused();await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(opener).toBeFocused();
+ await selectOrganizationSection(page,'Push & beveiliging');await expect(page.getByRole('heading',{name:'Meldingen met duidelijke grenzen.',exact:true})).toBeVisible();await assertReadableLayout(page);await page.screenshot({path:'docs/ops/screenshots/push-security-360.png'});
+});

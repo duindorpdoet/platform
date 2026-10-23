@@ -120,6 +120,8 @@ jobs:
           eval "$(pnpm exec supabase status -o env)"
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/group-size-policy.mjs
           pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/start-ops-concurrency.mjs
+          pnpm exec supabase db reset
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/start-ops.spec.ts --project=desktop-chromium --workers=1
           pnpm exec supabase db reset
       - name: Run offline, reconnect and private-payload browser acceptance
@@ -158,6 +160,9 @@ jobs:
           node scripts/acceptance/poortenboek-concurrency.mjs
           NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 pnpm build
           pnpm exec playwright test --config playwright.poortenboek.config.ts
+          pnpm exec supabase db reset
+          pnpm exec playwright test --config playwright.ops-chain.config.ts
+          pnpm exec supabase db reset
           node scripts/acceptance/poortkamer-concurrency.mjs
           pnpm exec playwright test --config playwright.poortkamer.config.ts
       - name: Run editorial publication, newsletter and push acceptance

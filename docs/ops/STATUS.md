@@ -2,7 +2,7 @@
 
 De productie-uitgangssituatie voor deze uitbreiding is `401abf29869b241f1c90e1bdad04be001ef514f3`. Het eerdere volledige redesign is op 23 oktober 2026 als exact geslaagde stagingversie gepromoveerd: [PR 35](https://github.com/duindorpdoet/platform/pull/35), [productie-uitrol](https://github.com/duindorpdoet/platform/actions/runs/39984512314). De live healthcontrole en publieke/beschermde routecontroles bevestigden deze versie. De oorspronkelijke overdrachtbaseline `bc2b3796` is historische herkomst.
 
-Deze aanvullende wijziging is nog in verificatie. Dit bestand is geen productieacceptatie voor de uitbreiding.
+De aanvullende wijziging staat in [PR 36](https://github.com/duindorpdoet/platform/pull/36). De lokale integratieproeven hieronder zijn geslaagd. CI, de beschermde herstelproef en de exacte staging-/productiepromotie moeten nog worden afgerond; dit bestand is nog geen productieacceptatie voor de uitbreiding.
 
 ## Overgenomen bron en gedrag
 
@@ -27,9 +27,13 @@ De geïsoleerde lokale proeven gebruiken uitsluitend het eigen Supabase-project 
 
 ## Huidig bewijs en nog uit te voeren
 
-Na een volledige opbouw vanuit alle migraties: 1.814 databasecontroles in 67 bestanden geslaagd. Daarin zitten 42 nieuwe Startregiegrenscontroles, 49 pushservercontroles en 25 proeven voor nieuwe huizen en tijdinvoer. Verder slagen 355 unitcontroles in 52 bestanden, ESLint en TypeScript. De echte Auth-/API-proef voor het groepsbeleid bewees eerder 14 + 12 kinderen bij limiet 30, weigering bij 25, behoud bij verlaging en één commit bij twee gelijktijdige beheerders.
+Na een volledige opbouw vanuit alle 22 gereviewde releasemigraties: **1.840 databasecontroles in 69 bestanden geslaagd**. Daarin zitten 42 Startregiegrenscontroles, 49 pushservercontroles, 25 nieuwe-huis-/tijdproeven, 17 controles voor de volledige 45-kindketen en 8 voor het gekoppelde starthuis. Verder slagen 355 unitcontroles in 52 bestanden, ESLint, TypeScript en de productiebuild.
 
-Deze aantallen zijn een tussenstand, geen aftekening van alle acceptatiegevallen. Aanvullende browser-, groepsketen-, parallelle planning-, staging- en databehoudproeven moeten nog worden vastgelegd. Productiepromotie van deze uitbreiding volgt pas op de exact geslaagde staging-SHA. De expliciet overgeslagen echte IMAP-ontvangsttest wordt niet als geslaagd gerapporteerd; de standaardtest blijft ingeschakeld voor gewone deploys.
+Echte Auth-/API-proeven slagen voor 14 + 12 kinderen bij limiet 30, weigering bij 25, behoud bij verlaging en één beleidscommit bij twee gelijktijdige beheerders. De afzonderlijke Startregie-raceproef gebruikt twee echte Auth-clients: één plancommit en één stale-input-conflict, veilige exacte replay, geen gedeeltelijk gemengd plan, behoud bij onmogelijke fysieke capaciteitsverlaging, precies één publicatie bij twee schrijvers en atomaire afwijzing van een onvolledige batch.
+
+Drie echte browserproeven slagen voor concept/bevestiging/publicatie/herladen, privé-route en ouderpayload, groepsbeleid 30/45/impact, push-HTTP-quota/rate/metadata en de mobiele fout-/focusbediening. Een afzonderlijke HTTPS-browsertest bewijst de echte mobiele lijst met 45 kinderen, een eigen boek met één daadwerkelijk verdiend zegel en een gedownloade persoonlijke PDF. Desktopbeelden zijn 1348 × 926; mobiele beelden zijn 390 en 360 breed. Zie [validatiemapping en bewuste visuele verschillen](VALIDATIE.md).
+
+Deze lokale proeven vervangen geen stagingacceptatie. De volledige bestaande regressies draaien in CI. Productiepromotie volgt uitsluitend op de exact geslaagde staging-SHA en de versleutelde backup-/herstelproef met vergelijking van oorspronkelijke data. De expliciet overgeslagen echte IMAP-ontvangsttest wordt niet als geslaagd gerapporteerd; de standaardtest blijft ingeschakeld voor gewone deploys.
 
 Fysieke looproutecontrole, QR-camera-/printerproeven en bezorging op afzonderlijke echte testapparaten zijn niet uitgevoerd in deze ontwikkelomgeving. Een gecontroleerde node/edge in een synthetische fixture is geen straatproef.
 
