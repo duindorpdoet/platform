@@ -87,6 +87,26 @@ async function api(path,body) {
   if(!response.ok)throw new Error(`BACKUP_API_${response.status}`);
   return response.json();
 }
+export async function startIsolatedRestore(image,container,rootKey) {
+  if(!/^supabase\/postgres:\d+\.\d+\.\d+\.\d+$/.test(image)||!/^duindorp-restore-[a-z0-9-]+$/.test(container)||!/^([a-f0-9]{64})$/.test(rootKey))throw new Error('INVALID_ISOLATED_RESTORE_CONTEXT');
+  let created=false;
+  try {
+    // The project root key travels only over stdin into this private tmpfs.
+    // It never appears in argv, Docker configuration, logs or a plaintext file
+    // on the runner disk. Cron and every outbound network remain disabled.
+    const waitForKey='while [ ! -f /run/duindorp-vault/ready ]; do sleep 0.1; done; exec /usr/local/bin/docker-entrypoint.sh "$@"';
+    await capture('docker',['run','--detach','--name',container,'--network','none','--tmpfs','/run/duindorp-vault:rw,exec,nosuid,nodev,size=64k,mode=0700','--env','POSTGRES_USER=supabase_admin','--env','POSTGRES_DB=postgres','--env','POSTGRES_PASSWORD='+randomBytes(32).toString('hex'),'--entrypoint','sh',image,'-c',waitForKey,'isolated-restore','postgres','-c','shared_preload_libraries=pg_stat_statements,pg_cron,pg_net,supabase_vault','-c','vault.getkey_script=/run/duindorp-vault/getkey','-c','cron.database_name=postgres','-c','cron.launch_active_jobs=off']);
+    created=true;
+    const installKey="umask 077; cat > /run/duindorp-vault/root.key; printf '#!/bin/sh\\ncat /run/duindorp-vault/root.key\\n' > /run/duindorp-vault/getkey; chown -R postgres:postgres /run/duindorp-vault; chmod 700 /run/duindorp-vault/getkey; chmod 600 /run/duindorp-vault/root.key; touch /run/duindorp-vault/ready";
+    await capture('docker',['exec','-i',container,'sh','-c',installKey],rootKey+'\n');
+    for(let attempt=0;;attempt++) {
+      // Ignore the temporary Unix-socket server used during initialization.
+      try{await capture('docker',['exec',container,'pg_isready','-h','127.0.0.1','-U','supabase_admin','-d','postgres']);break;}
+      catch{if(attempt>=60)throw new Error('ISOLATED_POSTGRES_NOT_READY');await new Promise(resolve=>setTimeout(resolve,1000));}
+    }
+  } catch(error) {if(created)await capture('docker',['rm','--force',container]);throw error;}
+}
+const vaultFingerprint="select coalesce(jsonb_agg(jsonb_build_object('id',id,'sha256',encode(sha256(convert_to(decrypted_secret,'UTF8')),'hex')) order by id),'[]') from vault.decrypted_secrets";
 async function main() {
   const environment=process.env.APP_ENVIRONMENT,revision=process.env.GITHUB_SHA,run=process.env.GITHUB_RUN_ID;
   if(!['staging','production'].includes(environment)||!/^[a-f0-9]{40}$/.test(revision??'')||!/^\d+$/.test(run??''))throw new Error('DEPLOYMENT_CONTEXT_REQUIRED');
@@ -133,7 +153,11 @@ async function main() {
     const memberships=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(jsonb_build_object('role',r.rolname,'member',m.rolname,'adminOption',a.admin_option,'inheritOption',a.inherit_option,'setOption',a.set_option)),'[]') from pg_auth_members a join pg_roles r on r.oid=a.roleid join pg_roles m on m.oid=a.member",snapshot));
     const objects=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]') from storage.objects o",snapshot));
     const settings={project,auth:await api('/config/auth'),rest:await api('/postgrest'),backups:await api('/database/backups')};
+    const vaultKey=await api('/pgsodium');
+    if(!/^[a-f0-9]{64}$/.test(vaultKey.root_key??''))throw new Error('VAULT_RESTORE_KEY_REQUIRED');
+    const vaultBefore=JSON.parse(await sourceQuery(vaultFingerprint,snapshot));
     await save('catalog.aes',catalog);await save('inventory.aes',before);await save('roles.aes',roles);await save('role-memberships.aes',memberships);await save('settings.aes',settings);await save('objects.aes',objects);
+    await save('vault-root-key.aes',vaultKey);await save('vault-inventory.aes',vaultBefore);
     const dump=processCommand('docker',[...clientArgs,'pg_dump','--format=custom','--no-subscriptions','--lock-wait-timeout=3000',`--snapshot=${snapshot}`],sourceEnv);
     dump.child.stdin.end();
     await Promise.all([encryptStream(dump.child.stdout,join(directory,'database.aes'),key,context+':database.aes'),dump.done]);
@@ -157,15 +181,8 @@ async function main() {
     holder.child.stdin.end('commit;\n');await holder.done;
     // No network is attached to the restore database. Its cron launcher is
     // disabled, so restored jobs/messages cannot contact live services.
-    await capture('docker',['run','--detach','--name',container,'--network','none','--env','POSTGRES_USER=supabase_admin','--env','POSTGRES_DB=postgres','--env','POSTGRES_PASSWORD='+randomBytes(32).toString('hex'),image,'postgres','-c','shared_preload_libraries=pg_stat_statements,pg_cron,pg_net,supabase_vault','-c','cron.database_name=postgres','-c','cron.launch_active_jobs=off']);
+    await startIsolatedRestore(image,container,vaultKey.root_key);
     localStarted=true;
-    for(let attempt=0;;attempt++) {
-      // The image opens a temporary Unix-socket server during initialization.
-      // Only TCP readiness proves that initialization has finished and the
-      // final postmaster is running with its actual extension configuration.
-      try{await capture('docker',['exec',container,'pg_isready','-h','127.0.0.1','-U','supabase_admin','-d','postgres']);break;}
-      catch{if(attempt>=60)throw new Error('ISOLATED_POSTGRES_NOT_READY');await new Promise(resolve=>setTimeout(resolve,1000));}
-    }
     const localQuery=sql=>capture('docker',['exec','-i',container,'psql','-X','-qAt','-U','supabase_admin','-d','postgres','-v','ON_ERROR_STOP=1'],"set timezone='UTC';set datestyle='ISO';"+sql+';');
     console.log('Isolated PostgreSQL version: '+await localQuery("select current_setting('server_version')"));
     console.log('Isolated preload libraries: '+await localQuery("select current_setting('shared_preload_libraries')"));
@@ -184,6 +201,8 @@ async function main() {
     const restored=(await localQuery(fingerprintQuery(catalog))).split('\n').map(JSON.parse);
     const restoreDifferences=compareFingerprints(before,restored);
     if(restoreDifferences.length)throw new Error('RESTORE_DATA_MISMATCH: '+restoreDifferences.join(', '));
+    const vaultAfter=JSON.parse(await localQuery(vaultFingerprint));
+    if(JSON.stringify(vaultBefore)!==JSON.stringify(vaultAfter))throw new Error('VAULT_RESTORE_DATA_MISMATCH');
     console.log(`Isolated restore preserved all ${catalog.length} table fingerprints.`);
     const migrations=[];
     for(const filename of (await readdir('supabase/migrations')).filter(name=>/^20261023.*\.sql$/.test(name)).sort()) {
@@ -205,7 +224,7 @@ async function main() {
     const legacyPrint=JSON.parse(await localQuery("select jsonb_build_object('activeCredentials',count(*),'hashOnly',count(*) filter(where not exists(select 1 from app_private.portal_print_material m where m.credential_id=c.id))) from app_private.portal_credentials c where c.revoked_at is null and c.valid_from<=now() and (c.valid_until is null or c.valid_until>now())"));
     const files=[];
     for(const name of (await readdir(directory)).filter(name=>name.endsWith('.aes')).sort())files.push({name,...await fileDigest(join(directory,name))});
-    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,tables:catalog.length,objects:objects.length,migrations,backfill,legacyPrint,files,
+    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,vaultVerified:true,vaultSecrets:vaultBefore.length,tables:catalog.length,objects:objects.length,migrations,backfill,legacyPrint,files,
       limits:['Provider runtime secrets remain in the existing secret store.','No live database configuration, migration, credential, or row was changed by this job.','Isolated SQL restore is not an Auth/mail/browser acceptance result.']};
     proof.signature=createHmac('sha256',key).update(JSON.stringify(proof)).digest('hex');
     await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});

@@ -1381,7 +1381,7 @@
  :global(.modern-ui) .topIdentity strong{font-size:12px}
  :global(.modern-ui) .topIdentity small{font-size:9px}
  :global(.modern-ui) .top .receptionControls{width:100%;gap:4px;padding:3px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
- :global(.modern-ui) .top .receptionControls .button{font-size:10px;min-height:31px;padding:6px;flex:1}
+ :global(.modern-ui) .top .receptionControls .button{font-size:10px;min-height:44px;min-width:44px;padding:6px;flex:1}
  :global(.modern-ui) .receptionControls svg{height:14px;width:14px}
  :global(.modern-ui) .top .receptionControls:empty{display:none}
  :global(.modern-ui) .top:has(.receptionControls:empty){min-height:65px}

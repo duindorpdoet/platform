@@ -33,10 +33,10 @@ function currentHash() { const hash = window.location.pathname + window.location
 
 function initialTour(snapshot: TutorialSnapshot, childId: string): Session {
   const session = readSession(childId);
-  if (session?.active && snapshot.tutorial?.completedAt) return {...session,mandatory:false};
   const complete = snapshot.tutorial?.version === VERSION && Boolean(snapshot.tutorial.completedAt);
   const resumable = snapshot.tutorial?.version === VERSION && Number.isInteger(snapshot.tutorial.lastStep);
-  return { active: !complete, mandatory: !complete, index: resumable ? Math.max(0, Math.min(steps.length - 1, snapshot.tutorial?.lastStep ?? 0)) : 0, returnHash: currentHash(), completed: complete };
+  if(session?.active&&complete)return {...session,mandatory:false};
+  return { active: !complete, mandatory: !complete, index: resumable ? Math.max(0, Math.min(steps.length - 1, snapshot.tutorial?.lastStep ?? 0)) : 0, returnHash: session?.active?session.returnHash:currentHash(), completed: complete };
 }
 
 export function KidGuide({ snapshot, section, onComplete }: { snapshot: TutorialSnapshot; section: BookSection; onComplete?: () => void | Promise<void> }) {

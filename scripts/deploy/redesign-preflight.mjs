@@ -69,7 +69,7 @@ async function main() {
   const {signature,...unsigned}=proof;
   const expected=createHmac('sha256',key).update(JSON.stringify(unsigned)).digest();
   if(!/^[a-f0-9]{64}$/.test(signature??'')||!timingSafeEqual(expected,Buffer.from(signature,'hex')))throw new Error('INVALID_RESTORE_PROOF');
-  if(proof.revision!==revision||proof.environment!==environment||proof.restoreVerified!==true||proof.storageVerified!==true||proof.migrationDryRunVerified!==true||proof.migrations?.length!==4)throw new Error('BACKUP_AND_ISOLATED_RESTORE_NOT_PROVEN');
+  if(proof.revision!==revision||proof.environment!==environment||proof.restoreVerified!==true||proof.storageVerified!==true||proof.vaultVerified!==true||proof.migrationDryRunVerified!==true||proof.migrations?.length!==4)throw new Error('BACKUP_AND_ISOLATED_RESTORE_NOT_PROVEN');
   const {verifyBackupFile,fingerprintQuery}=await import('./redesign-backup.mjs');
   for(const migration of proof.migrations) {
     if(!/^20261023[a-z0-9_]+\.sql$/.test(migration.file))throw new Error('INVALID_MIGRATION_PROOF');
