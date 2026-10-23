@@ -1,6 +1,6 @@
-# Redesign: implementatie aanwezig, acceptatie nog open
+# Redesign: productiepromotie in uitvoering
 
-Stand: 23 oktober 2026. **Niet gereed voor uitrol.** Er is geen nieuwe stagingdeployment of productiedeployment uitgevoerd. De volledige opdracht is pas voltooid nadat de hieronder genoemde bewijzen beschikbaar zijn.
+Stand: 23 oktober 2026. De gebruiker heeft expliciet opdracht gegeven alles naar productie te promoveren. De vier additieve migraties staan op staging; de appuitrol wacht nog op alle releasecontroles. Productie is nog niet gepromoveerd. Deze status is geen volledige visuele of fysieke acceptatie.
 
 ## Bron en basis
 
@@ -39,12 +39,18 @@ Zie [validation/results.json](validation/results.json) voor de geteste applicati
 
 Elke regel van de 66 acceptatiegevallen staat in [acceptance.csv](acceptance.csv). Lokale deelbewijzen zijn afzonderlijk vermeld; geen regel is als volledig op staging geaccepteerd afgetekend.
 
-## Blokkerende ontbrekende bewijzen
+## Aanvullend bewezen tijdens de promotie
 
-1. De gekoppelde Supabase-account toont niet de echte Halloween-projecten. Bevoorrechte projecttoegang bestaat in de bestaande GitHub Actions-omgevingen, maar is hier niet beschikbaar. De daadwerkelijk toegepaste migratiestand, RLS, storage, flags, nulmeting en historische uitzonderingen zijn daarom niet live geïnventariseerd.
-2. Er is geen consistente versleutelde productiebackup gemaakt of naar een geïsoleerde omgeving hersteld. Geen productie- of stagingmigraties zijn gestart. Gebruik [UITROL.md](UITROL.md) voordat de branch naar staging gaat; de bestaande stagingworkflow migreert automatisch na een merge.
-3. Er is geen nieuwe exact geteste staging-SHA. Alle 66 gevallen moeten op echte stagingservices worden doorlopen, inclusief echte gelijktijdigheid, OTP/sessies en netwerkherstel.
-4. Pixelperfecte gelijkheid is niet aangetoond. Publieke geometrie is deels gemeten; fontmetriek wijkt af. Voor ingelogde omgevingen en belangrijke dialogen ontbreken passende captures. Zie [VISUEEL.md](VISUEEL.md).
-5. Fysieke zwart-witafdruk, telefoon/camera, mobiel bereik, iOS/PWA en volledige toegankelijkheidscontrole staan open.
+- Geldige projecttoegang is beschikbaar binnen de bestaande beschermde GitHub Actions-omgevingen. Er zijn geen privileges of geheimen uit die omgevingen naar de ontwikkelmachine gekopieerd.
+- [Stagingherstelproef 39959674132](https://github.com/duindorpdoet/platform/actions/runs/39959674132): echte PostgreSQL `17.6.1.166`, 56 bestaande migraties, alle 169 gecontroleerde tabellen identiek hersteld en 12 opslagobjecten versleuteld veiliggesteld. De vier migraties duurden op de kopie respectievelijk 85, 79, 64 en 64 ms; de bestaande rijen bleven gelijk.
+- [Herhaalde herstelproef 39961001628](https://github.com/duindorpdoet/platform/actions/runs/39961001628): na de expand-stap 176 tabellen identiek hersteld, 12 opslagobjecten en alle vier migraties opnieuw geslaagd. Volledige uitrol van deze tussentijdse SHA was niet geslaagd; een herstelproef is afzonderlijk bewijs.
+- De backupstroom en opslagobjecten zijn AES-256-GCM-versleuteld; het getekende bewijs bevat hashes van precies de geteste migraties. Alleen versleutelde bestanden en het niet-gevoelige bewijs gaan naar Actions-artifacts. De dedicated deployrunner bewaart daarnaast een privéversie onder het eigen account.
+- [Applicatiecontrole a401b138](https://github.com/duindorpdoet/platform/actions/runs/39958925378): lint, TypeScript, 274 unitcontroles in 47 bestanden, productiebouw, artifactscan en 50 publieke browsercontroles geslaagd. De andere job van die workflow is later vervangen door een nieuwere SHA; de gehele workflow geldt dus niet als geslaagd.
+- [Gerichte ingelogde controle a401b138](https://github.com/duindorpdoet/platform/actions/runs/39958922902): negen mobiele/navigatie-/privacycontroles met echte lokale Supabase-services geslaagd. De uitgebreidere suites blijven afzonderlijk vereist.
+- De volledige SQL-suite is ook op echte lokale Supabase-services in Actions uitgevoerd: 62 bestanden, 1.652 controles geslaagd. OTP, echte parallelle transacties, samenloopconcurrentie en de 200-clientproef zijn geslaagd. Dit is geen fysieke telefoonproef of gehoste productieacceptatie.
 
-Geen live data is voor dit werk gereset, geseed, geroteerd of gemigreerd. Dat is geen garantie dat een toekomstige migratie gegevensverlies onmogelijk maakt: de nulmeting, hersteltest en vergelijking blijven vereist.
+## Openstaande acceptatie
+
+De volledige opdracht heeft ruimere acceptatievoorwaarden dan alleen een geslaagde deployment. Alle 66 regels zijn nog niet integraal op gehoste staging afgetekend. Pixelperfecte gelijkheid is niet aangetoond: publieke geometrie is deels gemeten, maar fontmetriek wijkt af en passende beelden ontbreken nog voor een deel van de ingelogde toestanden. Zie [VISUEEL.md](VISUEEL.md). Fysieke zwart-witafdruk, camera/papier, mobiel bereik en de volledige toegankelijkheidscontrole staan eveneens open. Vermeld deze grenzen bij de uiteindelijke oplevering.
+
+Er zijn geen live databases gereset of geseed en geen bestaande credentials geroteerd. Op staging zijn de vier expand-migraties toegepast; historische backfill wordt niet automatisch uitgevoerd. Iedere onverklaarde wijziging van bestaande domeingegevens blijft de appuitrol blokkeren. Migratiehistorie en normale cronactiviteit worden apart gereconcilieerd, met behoud van bestaande historie.

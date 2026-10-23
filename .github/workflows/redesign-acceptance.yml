@@ -44,7 +44,7 @@ jobs:
       - name: Exercise authenticated navigation and privacy before the full regression suite
         run: |
           eval "$(pnpm exec supabase status -o env)"
-          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts tests/e2e/homeowner-responsive.spec.ts tests/e2e/participant-mobile-polish.spec.ts tests/e2e/together-management.spec.ts --project=desktop-chromium --workers=1 --retries=0 --max-failures=5
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts tests/e2e/homeowner-responsive.spec.ts tests/e2e/participant-mobile-polish.spec.ts tests/e2e/together-management.spec.ts --project=desktop-chromium --workers=1 --retries=0 --max-failures=12
       - name: Save only synthetic fixture screenshots
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -83,13 +83,20 @@ jobs:
         run: |
           eval "$(pnpm exec supabase status -o env)"
           NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm build
-      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm exec playwright install --with-deps chromium
       - name: Exercise real child sessions, identity switches and first-use guides
         run: |
           eval "$(pnpm exec supabase status -o env)"
           export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
           export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
-          pnpm exec playwright test --config playwright.poortenboek.config.ts --retries=0 --max-failures=4
+          pnpm exec playwright test --config playwright.poortenboek.config.ts --project=book-desktop --project=book-samsung-chrome --project=book-narrow-reduced-motion --retries=0 --max-failures=6
+      - run: pnpm exec playwright install --with-deps webkit
+      - name: Exercise the child book on iPhone WebKit
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+          pnpm exec playwright test --config playwright.poortenboek.config.ts --project=book-iphone-webkit --retries=0
       - name: Save only synthetic fixture screenshots
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f

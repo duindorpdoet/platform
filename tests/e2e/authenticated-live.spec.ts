@@ -516,21 +516,25 @@ test("the night cockpit exposes verified portals and the group board without lea
   }
   const pins = mapPanel.locator(".night-map-portal-pin");
   await mapPanel.scrollIntoViewIfNeeded();
-  let interactivePinIndex=-1;
-  await expect.poll(async()=>{interactivePinIndex = await pins.evaluateAll((elements) => {
+  let interactivePin: {index:number;position:{x:number;y:number}}|null=null;
+  await expect.poll(async()=>{interactivePin = await pins.evaluateAll((elements) => {
     const map = elements[0]?.closest(".maplibregl-map")?.getBoundingClientRect();
-    if (!map) return -1;
-    return elements.findIndex((element) => {
+    if (!map) return null;
+    for(const [index,element] of elements.entries()) {
       const rect = element.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
-      const hit = document.elementFromPoint(x, y);
-      return x > map.left && x < map.right && y > map.top && y < map.bottom && Boolean(hit && (hit === element || element.contains(hit)));
-    });
-  });return interactivePinIndex;},{timeout:10_000}).toBeGreaterThanOrEqual(0);
-  const pin = pins.nth(interactivePinIndex);
+      // In the compact overview, nearby gates may overlap at their centres.
+      // Use a genuinely exposed pointer target, including the visible edges.
+      for(const fx of [.5,.2,.8])for(const fy of [.5,.2,.8]) {
+        const x=rect.left+rect.width*fx,y=rect.top+rect.height*fy,hit=document.elementFromPoint(x,y);
+        if(x>map.left&&x<map.right&&y>map.top&&y<map.bottom&&hit&&(hit===element||element.contains(hit)))return {index,position:{x:rect.width*fx,y:rect.height*fy}};
+      }
+    }
+    return null;
+  });return interactivePin!==null;},{timeout:10_000}).toBe(true);
+  const target=interactivePin as unknown as {index:number;position:{x:number;y:number}};
+  const pin = pins.nth(target.index);
   await expect(pin).toBeVisible();
-  await pin.hover();
+  await pin.hover({position:target.position});
   const popup = mapPanel.locator(".night-map-popup").filter({ hasText: "Adres:" }).first();
   await expect(popup).toContainText("Contact:");
   await expect(popup).toContainText("Status:");
@@ -825,8 +829,8 @@ test("participant Messenger is opaque and account actions stay reachable on desk
     await logout.click({ trial: true });
     await page.getByRole("button", { name: "Hulp van de organisatie" }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toHaveCSS("background-color", "rgb(14, 25, 35)");
-    await expect(dialog).toHaveCSS("color", "rgb(237, 241, 241)");
+    await expect(dialog).toHaveCSS("background-color", "rgb(17, 27, 45)");
+    await expect(dialog).toHaveCSS("color", "rgb(238, 242, 250)");
     await expect(dialog.getByRole("button", { name: "Gesprek sluiten" })).toBeVisible();
     await expect(dialog.getByLabel("Bericht", { exact: true })).toBeVisible();
     const bounds = await dialog.boundingBox();

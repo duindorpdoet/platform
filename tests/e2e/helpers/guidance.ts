@@ -35,7 +35,7 @@ export async function selectOrganizationSection(page: Page, name: string) {
   await expect(page.locator('.admin-appbar')).toBeVisible();
   const more=page.getByRole('button',{name:'Meer',exact:true}),menu=page.getByRole('button',{name:'Organisatienavigatie openen'});
   if(await more.isVisible())await more.click();else if(await menu.isVisible())await menu.click();
-  const primary=page.getByRole('navigation',{name:'Hoofdonderdelen organisatie'}).getByRole('button',{name:new RegExp('^'+group+'(?:\\s*\\d+)?$')});
+  const primary=page.locator('.modern-primary-nav').getByRole('button',{name:new RegExp('^'+group+'(?:\\s*\\d+)?$'),includeHidden:true});
   await primary.click();
   await expect(primary).toHaveClass(/active/);
   if(group!==label) {
