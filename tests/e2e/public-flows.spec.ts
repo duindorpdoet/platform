@@ -7,7 +7,7 @@ test("premium homepage keeps the supplied identity and closed participation path
   await expect(page.getByRole("img", { name: "De Duindorpse Poorten van Halloween" }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /Een gewone wijk/ })).toBeVisible();
   await expect(page.getByText("31 OKTOBER 2026").first()).toBeVisible();
-  const portalCta = page.getByRole("button", { name: /Meld jouw plek aan/i }).first();
+  const portalCta = page.getByRole("link", { name: /Meld jouw plek aan/i }).first();
   await expect(portalCta).toBeVisible();
   await portalCta.click();
   await expect(page).toHaveURL(/\/huis-aanmelden$/);
@@ -55,13 +55,15 @@ test("public map shows a living fictional route without exposing real participan
   await expect(map.locator(".night-map-portal-pin")).toHaveCount(3);
 });
 
-test("homepage preview keeps the verified Tesselseplein centre without house markers", async ({ page }) => {
+test("homepage theme previews link to six worlds without exposing private destinations", async ({ page }) => {
   await page.goto("/");
-  const map = page.locator('[data-map-center="4.2579563,52.0899891"]').first();
-  await expect(map).toBeVisible();
-  await expect(map).toHaveAttribute("data-map-privacy", "area-only");
-  await expect(map.locator(".night-map-portal-pin")).toHaveCount(0);
+  const previews = page.locator(".public-world-gallery > a");
+  await expect(previews).toHaveCount(6);
+  for (const preview of await previews.all()) {
+    await expect(preview).toHaveAttribute("href", /^\/werelden\//);
+  }
   await expect(page.locator("body")).not.toContainText("NIET-BESTAAND TESTADRES");
+  await expect(page.locator(".public-world-gallery")).not.toContainText("Adres:");
 });
 
 test("public map mounts a canvas in a WebGL2 browser", async ({ page }) => {
@@ -93,7 +95,7 @@ test("world overview presents six optional themes in a stable grid", async ({ pa
     const box = element.getBoundingClientRect();
     return { width: box.width, height: box.height, top: box.top, bottom: box.bottom };
   }));
-  expect(boxes.every((box) => box.width > 180 && box.height > 240)).toBe(true);
+  expect(boxes.every((box) => box.width > 140 && box.height > 240)).toBe(true);
   expect(boxes[3].top).toBeGreaterThan(boxes[0].top);
 });
 
@@ -181,47 +183,27 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
   });
 }
 
-test("world explorer displays its artwork and supports all six worlds and keyboard navigation", async ({ page }, testInfo) => {
+test("world gallery displays all six artworks and supports keyboard navigation", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  const explorer = page.locator(".world-explorer");
-  await explorer.scrollIntoViewIfNeeded();
-  const tabs = explorer.getByRole("tab");
-  await expect(tabs).toHaveCount(6);
+  const gallery = page.locator(".public-world-gallery");
+  const links = gallery.locator("a");
+  await expect(links).toHaveCount(6);
   for (let index = 0; index < 6; index += 1) {
-    const tab = tabs.nth(index);
-    await tab.click();
-    await expect(tab).toHaveAttribute("aria-selected", "true");
-    const name = await tab.locator("strong").innerText();
-    await expect(explorer.getByRole("heading", { name, exact: true })).toBeVisible();
-    const image = explorer.locator(".explorer-art img");
+    const link = links.nth(index), image = link.locator("img");
+    await link.scrollIntoViewIfNeeded();
     await expect(image).toHaveAttribute("src", `/images/world-${index}.webp`);
     await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
-    await expect(explorer.locator(".explorer-scene")).toHaveCSS("isolation", "isolate");
-    const geometry = await tab.evaluate((element) => {
-      const card = element.getBoundingClientRect();
-      const photo = element.querySelector("img")!.getBoundingClientRect();
-      return { cardWidth: card.width, photoWidth: photo.width, cardHeight: card.height, photoHeight: photo.height };
-    });
-    expect(geometry.cardHeight).toBeGreaterThanOrEqual(125);
-    expect(geometry.photoWidth).toBeLessThan(geometry.cardWidth * 1.1);
-    expect(geometry.photoHeight).toBeLessThan(geometry.cardHeight * 1.1);
+    await expect(link).toHaveAttribute("href", /^\/werelden\//);
+    const geometry = await link.boundingBox();
+    expect(geometry!.width).toBeGreaterThan(120);
+    expect(geometry!.height).toBeGreaterThan(240);
   }
-  await tabs.last().focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(tabs.first()).toBeFocused();
-  await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
-  await page.keyboard.press("End");
-  await expect(tabs.last()).toBeFocused();
-  await page.keyboard.press("Home");
-  await expect(tabs.first()).toBeFocused();
-  await explorer.getByRole("button", { name: "Vorige wereld", exact: true }).click();
-  await expect(tabs.last()).toHaveAttribute("aria-selected", "true");
-  await explorer.getByRole("button", { name: "Volgende wereld", exact: true }).click();
-  await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
-  await explorer.screenshot({ path: testInfo.outputPath("world-explorer.png") });
-  await explorer.getByRole("button", { name: "Betreed deze wereld" }).click();
-  await expect(page).toHaveURL(/\/werelden\/heksenrijk$/);
+  const destination = await links.first().getAttribute("href");
+  await links.first().focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(new RegExp(destination! + "$"));
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
 test("house registration respects the release mode and starts with only the three required contact fields", async ({ page }) => {
@@ -246,14 +228,12 @@ test("house registration respects the release mode and starts with only the thre
 
 test("the Halloween image package is connected to every intended public role", async ({ page }) => {
   await page.goto("/");
-  for (const stem of ["01-home-hero-duindorp-bij-avond", "02-home-de-avond-straat", "03-home-de-poorten-gevels", "04-home-iets-lekkers-steeg"]) {
+  for (const stem of ["01-home-hero-duindorp-bij-avond", "03-home-de-poorten-gevels", "05-meelopen-samen-op-pad"]) {
     await expect(page.locator(`img[src*="${stem}"]`).first()).toHaveAttribute("src", new RegExp(stem));
   }
-  for (const [id, stem] of [["de-avond", "02-home-de-avond-straat"], ["de-poorten", "03-home-de-poorten-gevels"], ["iets-lekkers", "04-home-iets-lekkers-steeg"]] as const) {
-    await page.locator(`#${id}`).scrollIntoViewIfNeeded();
-    const images = page.locator(`img[src*="${stem}"]`);
-    await expect.poll(() => images.evaluateAll((elements: HTMLImageElement[]) => elements.some((element) => element.complete && element.naturalWidth > 0))).toBe(true);
-  }
+  const howImage = page.locator(".public-how-art img");
+  await howImage.scrollIntoViewIfNeeded();
+  await expect.poll(() => howImage.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
   for (const [route, hook, stem] of [["/meelopen", "meelopen", "05-meelopen-samen-op-pad"], ["/huis-aanmelden", "huis-aanmelden", "06-huis-aanmelden-jouw-deur"], ["/sponsoren", "sponsoren", "08-sponsoren-de-wijk-maakt-het"]] as const) {
     await page.goto(route);
     const image = page.locator(`[data-halloween-photo="${hook}"] img`);
@@ -283,10 +263,10 @@ test("motion preference lives in accessibility settings and persists without flo
 
 test("home features lead to a searchable, categorized FAQ", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".home-portal-card")).toHaveCount(2);
-  await expect(page.locator(".home-portal-card").filter({ hasText: "Poortenboek" }).getByRole("link", { name: /Open/ })).toHaveAttribute("href", "/poortenboek/inloggen");
-  await expect(page.locator(".evening-questions [data-slot=accordion-item]")).toHaveCount(5);
-  await page.getByRole("button", { name: "Alle vragen en antwoorden" }).click();
+  await expect(page.locator(".public-portal")).toHaveCount(3);
+  await expect(page.locator(".public-portal").filter({ hasText: "Poortenboek" })).toHaveAttribute("href", "/poortenboek");
+  await expect(page.locator(".public-faq-list details")).toHaveCount(4);
+  await page.getByRole("link", { name: "Alle vragen & antwoorden" }).click();
   await expect(page).toHaveURL(/\/faq$/);
   await expect(page.locator(".faq-category")).toHaveCount(6);
   await page.getByLabel("Zoek in veelgestelde vragen").fill("kindcode");

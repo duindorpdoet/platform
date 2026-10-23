@@ -1,1 +1,11 @@
 :root.modern-ui { --prototype-bar-height: 0px; }
+
+/* Keep the supplied layout usable when text is enlarged beyond its default
+   metrics, and let tablet map actions wrap instead of being clipped. */
+.modern-ui .contact-grid > * { min-width: 0; }
+.modern-ui .contact-grid :is(h1, h2) { overflow-wrap: anywhere; }
+@media (min-width: 701px) and (max-width: 960px) {
+  .modern-ui .public-map-livebar { display: grid; }
+  .modern-ui .public-map-live-actions { flex-wrap: wrap; }
+  .modern-ui .public-map-live-actions .btn { white-space: normal; }
+}
