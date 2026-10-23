@@ -15,9 +15,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  backup-restore:
+    name: Encrypted backup and isolated restore before migration
+    if: github.ref == 'refs/heads/staging'
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APP_ENVIRONMENT: staging
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CHILD_CODE_ENCRYPTION_KEY: ${{ secrets.CHILD_CODE_ENCRYPTION_KEY }}
+    outputs:
+      artifact: ${{ steps.artifact.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Snapshot, encrypt, restore and dry-run exact migrations
+        run: node scripts/deploy/redesign-backup.mjs
+      - name: Retain only encrypted backup files and signed proof
+        id: artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: redesign-backup-staging-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/duindorp-release-backup/
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
   deploy:
     name: Validate, migrate, deploy and accept
     if: github.ref == 'refs/heads/staging'
+    needs: backup-restore
     environment:
       name: staging
       url: https://staging-halloween.duindorpdoet.nl
@@ -51,6 +86,7 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/duindorp-release-backup
       SENDGRID_API: ${{ secrets.SENDGRID_API }}
       SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
       SENDGRID_FROM_NAME: De Duindorpse Poorten van Halloween
@@ -106,6 +142,12 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Validate staging configuration
         run: node scripts/deploy/validate-environment.mjs staging
+      - name: Fetch encrypted release backup for private retention
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          artifact-ids: ${{ needs.backup-restore.outputs.artifact }}
+          path: ${{ runner.temp }}/duindorp-release-backup
+          merge-multiple: true
       - name: Protect redesign migrations with private preflight and restore gate
         run: node scripts/deploy/redesign-preflight.mjs
       - name: Validate application
@@ -116,6 +158,8 @@ jobs:
           pnpm exec supabase link --project-ref "${SUPABASE_PROJECT_REF}" --password "${SUPABASE_DB_PASSWORD}"
           pnpm exec supabase db push --linked --include-all --yes
           pnpm exec supabase db query --linked --file scripts/deploy/nachtpost-activation-report.sql --output json
+      - name: Compare existing data before deploying the application
+        run: node scripts/deploy/redesign-postmigration.mjs
       - name: Deploy SendGrid Auth hook
         run: |
           set -euo pipefail

@@ -1,5 +1,6 @@
-import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { chmod, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -22,7 +23,7 @@ export function openBackup(value,key,context) {
   cipher.setAAD(Buffer.from(context));cipher.setAuthTag(value.subarray(16,32));
   return Buffer.concat([cipher.update(value.subarray(32)),cipher.final()]);
 }
-async function management(path,body) {
+export async function management(path,body) {
   const response=await fetch(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_REF}${path}`,{
     method:body?'POST':'GET',headers:{Authorization:`Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,'Content-Type':'application/json'},
     ...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(60000),
@@ -61,9 +62,32 @@ async function main() {
   console.log(JSON.stringify({environment,revision,privateEncryptedInventorySaved:true,databaseVersion:project.database?.version,tools,
     extensions:inventory?.[0]?.extensions,appliedMigrationCount:inventory?.[0]?.applied_migrations?.length,
     backupMetadataShape:Object.keys(backups),poolerMetadataShape:Array.isArray(pooler)?pooler.map(row=>Object.keys(row)):Object.keys(pooler)}));
-  // Fail closed until a complete database/object backup and isolated restore
-  // have been performed. Installing this probe never authorizes migrations.
-  throw new Error('BACKUP_AND_ISOLATED_RESTORE_NOT_YET_PROVEN');
+  const backupDirectory=process.env.RELEASE_BACKUP_DIRECTORY;
+  if(!backupDirectory)throw new Error('BACKUP_AND_ISOLATED_RESTORE_NOT_YET_PROVEN');
+  const proof=JSON.parse(await readFile(join(backupDirectory,'proof.json'),'utf8'));
+  const {signature,...unsigned}=proof;
+  const expected=createHmac('sha256',key).update(JSON.stringify(unsigned)).digest();
+  if(!/^[a-f0-9]{64}$/.test(signature??'')||!timingSafeEqual(expected,Buffer.from(signature,'hex')))throw new Error('INVALID_RESTORE_PROOF');
+  if(proof.revision!==revision||proof.environment!==environment||proof.restoreVerified!==true||proof.storageVerified!==true||proof.migrationDryRunVerified!==true||proof.migrations?.length!==4)throw new Error('BACKUP_AND_ISOLATED_RESTORE_NOT_PROVEN');
+  const {verifyBackupFile,fingerprintQuery}=await import('./redesign-backup.mjs');
+  for(const migration of proof.migrations) {
+    if(!/^20261023[a-z0-9_]+\.sql$/.test(migration.file))throw new Error('INVALID_MIGRATION_PROOF');
+    const digest=createHash('sha256').update(await readFile(join('supabase','migrations',migration.file))).digest('hex');
+    if(digest!==migration.sha256)throw new Error('MIGRATION_PROOF_REVISION_MISMATCH');
+  }
+  for(const file of proof.files) {
+    if(!/^[a-z0-9.-]+\.aes$/.test(file.name))throw new Error('INVALID_BACKUP_FILENAME');
+    await verifyBackupFile(join(backupDirectory,file.name),key,proof.context+':'+file.name);
+    await copyFile(join(backupDirectory,file.name),join(directory,file.name),constants.COPYFILE_EXCL);
+    await chmod(join(directory,file.name),0o600);
+  }
+  await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});
+  const catalog=JSON.parse(openBackup(await readFile(join(directory,'catalog.aes')),key,proof.context+':catalog.aes').toString());
+  const current=await management('/database/query',{read_only:true,query:fingerprintQuery(catalog)});
+  const baseline=join(directory,'migration-baseline.aes');
+  await writeFile(baseline,sealBackup(Buffer.from(JSON.stringify({catalog,rows:current.map(row=>row.fingerprint)})),key,context+':migration-baseline'),{flag:'wx',mode:0o600});
+  await writeFile(process.env.GITHUB_ENV,`RELEASE_PRIVATE_BASELINE_FILE=${baseline}\n`,{flag:'a'});
+  console.log(JSON.stringify({environment,revision,backupRetainedPrivately:true,restoreVerified:true,migrationDryRunVerified:true,tables:proof.tables,objects:proof.objects}));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href) {
   main().catch(error=>{console.error(error.message);process.exitCode=1;});
