@@ -18,7 +18,10 @@ export async function GET(request: Request, context: Context) {
     if (action === 'guidance') result = await client.schema('api').rpc('participant_guidance', { _event_slug: serverEnv().EVENT_SLUG });
     else if (action === 'thanks') result = await client.schema('api').rpc('portal_thanks_snapshot', { _event_slug: serverEnv().EVENT_SLUG, _scope: z.enum(['family', 'house', 'admin']).parse(params.get('scope') ?? 'family'), _portal_id: params.has('portalId') ? z.uuid().parse(params.get('portalId')) : null });
     else throw new ApiError(404, 'NOT_FOUND', 'Niet gevonden.');
-    if (result.error) throw new ApiError(403, 'NOT_AUTHORIZED', 'Dit onderdeel is niet beschikbaar voor jouw account.');
+    if (result.error) {
+      if(result.error.message==='NOT_AUTHORIZED'||result.error.code==='42501')throw new ApiError(403, 'NOT_AUTHORIZED', 'Dit onderdeel is niet beschikbaar voor jouw account.');
+      throw new ApiError(500,'FETCH_FAILED','Dit onderdeel kon niet worden opgehaald. Probeer opnieuw.');
+    }
     return response(result.data);
   } catch (error) { return apiFailure(error, correlationId(request)); }
 }

@@ -8,14 +8,18 @@ import { MagicLantern } from '@/components/poortenboek/magic-lantern';
 import '../../modern/book-farewell.css';
 
 const ACK_KEY = 'poortenboek-confirmed-identity-v1';
-export function bookIdentityKey(snapshot: BookSnapshot) {
-  return `${snapshot.eventDate}:${snapshot.childId ?? snapshot.medallion}:${snapshot.firstName}`;
+export function bookIdentitySource(snapshot: BookSnapshot) {
+  return `${snapshot.eventDate}:${snapshot.childId ?? 'staging-demo-book'}`;
+}
+export async function bookIdentityKey(snapshot: BookSnapshot) {
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(bookIdentitySource(snapshot)));
+  return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
 }
 export function readConfirmedBookIdentity() {
-  try { return sessionStorage.getItem(ACK_KEY) ?? ''; } catch { return ''; }
+  try { const value=sessionStorage.getItem(ACK_KEY)??'';if(/^[a-f0-9]{64}$/.test(value))return value;sessionStorage.removeItem(ACK_KEY);return ''; } catch { return ''; }
 }
 export function saveConfirmedBookIdentity(key: string) {
-  try { sessionStorage.setItem(ACK_KEY, key); } catch { /* The mounted book still keeps the acknowledgement. */ }
+  try { if(/^[a-f0-9]{64}$/.test(key))sessionStorage.setItem(ACK_KEY,key);else sessionStorage.removeItem(ACK_KEY); } catch { /* The mounted book still keeps the acknowledgement. */ }
 }
 
 /** Name-first confirmation prevents accidentally continuing in a sibling's book. */

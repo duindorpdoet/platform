@@ -382,6 +382,8 @@ test("a multi-child registration draft survives refresh and submits once", async
   expect(snapshot.registration.togetherCount).toBe(1);
   expect(snapshot.registration.togetherRequest).toMatchObject({ status: "pending", requestedCode: sharedTogetherCode });
 
+  // The newly submitted registration has just acquired its participant role.
+  await prepareFixtureGuidance(client);
   await page.goto("/mijn-inschrijving");
   await expect(page.getByText("Eerste testkind")).toBeVisible();
   await expect(page.getByText("Wacht op betaallink", { exact: true })).toBeVisible();
@@ -513,7 +515,9 @@ test("the night cockpit exposes verified portals and the group board without lea
     await page.waitForTimeout(550);
   }
   const pins = mapPanel.locator(".night-map-portal-pin");
-  const interactivePinIndex = await pins.evaluateAll((elements) => {
+  await mapPanel.scrollIntoViewIfNeeded();
+  let interactivePinIndex=-1;
+  await expect.poll(async()=>{interactivePinIndex = await pins.evaluateAll((elements) => {
     const map = elements[0]?.closest(".maplibregl-map")?.getBoundingClientRect();
     if (!map) return -1;
     return elements.findIndex((element) => {
@@ -523,8 +527,7 @@ test("the night cockpit exposes verified portals and the group board without lea
       const hit = document.elementFromPoint(x, y);
       return x > map.left && x < map.right && y > map.top && y < map.bottom && Boolean(hit && (hit === element || element.contains(hit)));
     });
-  });
-  expect(interactivePinIndex).toBeGreaterThanOrEqual(0);
+  });return interactivePinIndex;},{timeout:10_000}).toBeGreaterThanOrEqual(0);
   const pin = pins.nth(interactivePinIndex);
   await expect(pin).toBeVisible();
   await pin.hover();
@@ -726,7 +729,6 @@ for (const size of [{ width: 320, doubleText: false }, { width: 390, doubleText:
           for (const section of ["Cockpit", "Imports", "Inschrijvingen", "Groepsindeling", "Samenloop", "Poortenboek", "Messenger", "Deelnemersupdates", "Betalingen", "Poorten", "Startregie", "Content & sponsors", "Beheerders", "Avond live", "Avondsimulatie", "Instellingen"]) {
             await page.goto("/admin");
             await selectAdminSection(page, section);
-            await expect(page.locator(".admin-nav").getByText(section, { exact: true }).locator("xpath=ancestor-or-self::button[1]")).toHaveClass("active");
             await assertReadableLayout(page, doubleText);
           }
         }

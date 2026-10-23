@@ -23,17 +23,24 @@ export async function prepareFixtureGuidance(client: SupabaseClient) {
 }
 
 export async function selectOrganizationSection(page: Page, name: string) {
+  const aliases:Record<string,string>={Cockpit:'Overzicht',Samenloop:'Samenlopen',Live:'Livecockpit',Berichten:'Inbox',Messenger:'Inbox',Toegangen:'Beheerders',Deelnemersupdates:'Updates','Content & sponsors':'Website & sponsors','Avond live':'Livecockpit',Avondsimulatie:'Generale'};
+  const label=aliases[name]??name;
   const groups: Record<string,string>={
     Inschrijvingen:'Deelnemers',Samenloop:'Deelnemers',Samenlopen:'Deelnemers',Groepsindeling:'Deelnemers',Betalingen:'Deelnemers',Poortenboek:'Deelnemers',
     Inbox:'Communicatie',Berichten:'Communicatie',Messenger:'Communicatie',Updates:'Communicatie',Praatkamer:'Communicatie',Redactiekamer:'Communicatie',Deelstudio:'Communicatie','Website & sponsors':'Communicatie',
     Cockpit:'Overzicht',Live:'De avond',Livecockpit:'De avond',Generale:'De avond',Bedankjes:'De avond',
     Instellingen:'Beheer',Beheerders:'Beheer',Toegangen:'Beheer',Imports:'Beheer',Statistieken:'Beheer',
   };
-  const group=groups[name]??name;
+  const group=groups[label]??label;
   await expect(page.locator('.admin-appbar')).toBeVisible();
   const more=page.getByRole('button',{name:'Meer',exact:true}),menu=page.getByRole('button',{name:'Organisatienavigatie openen'});
   if(await more.isVisible())await more.click();else if(await menu.isVisible())await menu.click();
-  await page.getByRole('navigation',{name:'Hoofdonderdelen organisatie'}).getByRole('button',{name:new RegExp('^'+group+'(?:\\s*\\d+)?$')}).click();
-  const label=name==='Samenloop'?'Samenlopen':name==='Live'?'Livecockpit':['Berichten','Messenger'].includes(name)?'Inbox':name==='Toegangen'?'Beheerders':name;
-  if(group!==label&&name!=='Cockpit')await page.locator('.modern-admin-subnav').getByRole('button',{name:label,exact:true}).click();
+  const primary=page.getByRole('navigation',{name:'Hoofdonderdelen organisatie'}).getByRole('button',{name:new RegExp('^'+group+'(?:\\s*\\d+)?$')});
+  await primary.click();
+  await expect(primary).toHaveClass(/active/);
+  if(group!==label) {
+    const secondary=page.locator('.modern-admin-subnav').getByRole('button',{name:label,exact:true});
+    await secondary.click();
+    await expect(secondary).toHaveClass(/active/);
+  }
 }

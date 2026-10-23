@@ -22,7 +22,7 @@ import {
 import { KidGuide } from "./kid-guide";
 import { BookArrivalSync } from "@/components/redesign/arrival-sync-ui";
 import { BookFarewell, hasBookFarewell } from "@/components/redesign/book-farewell";
-import { BookIdentityCheck, bookIdentityKey, readConfirmedBookIdentity, saveConfirmedBookIdentity } from "@/components/redesign/book-identity-check";
+import { BookIdentityCheck, bookIdentityKey, bookIdentitySource, readConfirmedBookIdentity, saveConfirmedBookIdentity } from "@/components/redesign/book-identity-check";
 import { MotionToggle } from "@/components/poorten-cinematic";
 import {
   checklistLabels,
@@ -70,6 +70,7 @@ export function Poortenboek({
   const [snapshot, setSnapshot] = useState<BookSnapshot | null>(initial);
   const [offline, setOffline] = useState(false);
   const [confirmedIdentity, setConfirmedIdentity] = useState(readConfirmedBookIdentity);
+  const [identity, setIdentity] = useState<{source:string;key:string}|null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [teamTab, setTeamTab] = useState("friends");
@@ -77,6 +78,13 @@ export function Poortenboek({
   const [now, setNow] = useState(() => Date.now());
   const pending = useRef(false);
   const sequence = useRef(0);
+  useEffect(()=>{
+    if(!snapshot)return;
+    let active=true;
+    const source=bookIdentitySource(snapshot);
+    void bookIdentityKey(snapshot).then(key=>{if(active)setIdentity({source,key});}).catch(()=>{if(active)setIdentity({source,key:'memory:'+source});});
+    return()=>{active=false;};
+  },[snapshot]);
   const load = useCallback(async () => {
     if (document.hidden) return;
     const current = ++sequence.current;
@@ -247,8 +255,9 @@ export function Poortenboek({
         </button>
       </main>
     );
-  if (confirmedIdentity !== bookIdentityKey(snapshot))
-    return <BookIdentityCheck snapshot={snapshot} onConfirm={() => { const identity = bookIdentityKey(snapshot); saveConfirmedBookIdentity(identity); setConfirmedIdentity(identity); }}/>;
+  if(!identity||identity.source!==bookIdentitySource(snapshot))return <main className="pb-neutral" id="poortenboek-content"><h1>Je boek wordt geopend</h1><p>Een ogenblik geduld.</p></main>;
+  if (confirmedIdentity !== identity.key)
+    return <BookIdentityCheck snapshot={snapshot} onConfirm={() => { saveConfirmedBookIdentity(identity.key); setConfirmedIdentity(identity.key); }}/>;
   if (snapshot.welcomeRequired)
     return (
       <Welcome

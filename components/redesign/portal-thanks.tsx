@@ -16,7 +16,7 @@ import '../../modern/portal-thanks.css';
 
 function useThanks(scope:'family'|'house'|'admin',portalId?:string){
  const [snapshot,setSnapshot]=useState<ThanksSnapshot>({}),[error,setError]=useState('');
- const load=useCallback(async()=>{try{const query=new URLSearchParams({scope,...(portalId?{portalId}:{})});const response=await fetch('/api/redesign/thanks?'+query,{cache:'no-store'});if(!response.ok)throw new Error();setSnapshot(await response.json());setError('');}catch{setError('De bedankjes konden niet worden opgehaald. Probeer opnieuw.');}},[scope,portalId]);
+ const load=useCallback(async()=>{try{const query=new URLSearchParams({scope,...(portalId?{portalId}:{})});const response=await fetch('/api/redesign/thanks?'+query,{cache:'no-store'});if(scope==='family'&&response.status===403){setSnapshot({finished:false});setError('');return;}if(!response.ok)throw new Error();setSnapshot(await response.json());setError('');}catch{setError('De bedankjes konden niet worden opgehaald. Probeer opnieuw.');}},[scope,portalId]);
  useEffect(()=>{const timer=setTimeout(()=>void load(),0),refresh=setInterval(()=>{if(document.visibilityState==='visible')void load();},30000);return()=>{clearTimeout(timer);clearInterval(refresh);};},[load]);
  return {main:snapshot,thanks:snapshot.thanks??[],familyCount:snapshot.familyCount??0,error,load};
 }
