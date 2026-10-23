@@ -129,7 +129,7 @@ async function main() {
     const knownVersions=new Set(repositoryMigrations.map(name=>name.split('_')[0]));
     if(appliedMigrations.some(version=>!knownVersions.has(version))||repositoryMigrations.filter(name=>!name.startsWith('20261023')).some(name=>!appliedMigrations.includes(name.split('_')[0])))throw new Error('LIVE_MIGRATION_HISTORY_DRIFT');
     const before=(await sourceQuery(fingerprintQuery(catalog),snapshot)).split('\n').map(JSON.parse);
-    const roles=JSON.parse(await sourceQuery("select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls)) from pg_roles where rolname not like 'pg_%'",snapshot));
+    const roles=JSON.parse(await sourceQuery("select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper,'eventTriggerOwner',exists(select 1 from pg_event_trigger where evtowner=pg_roles.oid))) from pg_roles where rolname not like 'pg_%'",snapshot));
     const objects=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]') from storage.objects o",snapshot));
     const settings={project,auth:await api('/config/auth'),rest:await api('/postgrest'),backups:await api('/database/backups')};
     await save('catalog.aes',catalog);await save('inventory.aes',before);await save('roles.aes',roles);await save('settings.aes',settings);await save('objects.aes',objects);
@@ -169,12 +169,19 @@ async function main() {
     console.log('Isolated PostgreSQL version: '+await localQuery("select current_setting('server_version')"));
     console.log('Isolated preload libraries: '+await localQuery("select current_setting('shared_preload_libraries')"));
     for(const role of roles)await localQuery(`do $role$ begin if not exists(select 1 from pg_roles where rolname=${literal(role.name)}) then execute ${literal('create role '+quote(role.name)+' nologin '+(role.inherit?'inherit':'noinherit')+(role.bypassrls?' bypassrls':''))};end if;end $role$`);
+    // Managed Supabase roles can own event triggers after their superuser
+    // privilege has been removed. PostgreSQL requires that privilege while
+    // replaying ALTER EVENT TRIGGER OWNER. Grant it only inside this networkless
+    // disposable restore and return every affected role to its source setting.
+    for(const role of roles.filter(role=>role.eventTriggerOwner))await localQuery('alter role '+quote(role.name)+' superuser');
     const restore=processCommand('docker',['exec','-i',container,'pg_restore','--clean','--if-exists','--exit-on-error','--no-tablespaces','--username=supabase_admin','--dbname=postgres']);
     const restoredStreams=await Promise.allSettled([pipeline(createReadStream(join(directory,'database.aes'),{start:32}),await decryptor(join(directory,'database.aes'),key,context+':database.aes'),restore.child.stdin),restore.done]);
     if(restoredStreams[1].status==='rejected')throw restoredStreams[1].reason;
     if(restoredStreams[0].status==='rejected')throw restoredStreams[0].reason;
+    for(const role of roles.filter(role=>role.eventTriggerOwner&&!role.superuser))await localQuery('alter role '+quote(role.name)+' nosuperuser');
     const restored=(await localQuery(fingerprintQuery(catalog))).split('\n').map(JSON.parse);
-    if(compareFingerprints(before,restored).length)throw new Error('RESTORE_DATA_MISMATCH');
+    const restoreDifferences=compareFingerprints(before,restored);
+    if(restoreDifferences.length)throw new Error('RESTORE_DATA_MISMATCH: '+restoreDifferences.join(', '));
     console.log(`Isolated restore preserved all ${catalog.length} table fingerprints.`);
     const migrations=[];
     for(const filename of (await readdir('supabase/migrations')).filter(name=>/^20261023.*\.sql$/.test(name)).sort()) {
@@ -184,7 +191,8 @@ async function main() {
     }
     if(migrations.length!==4)throw new Error('REVIEWED_MIGRATION_SET_CHANGED');
     const migrated=(await localQuery(fingerprintQuery(catalog))).split('\n').map(JSON.parse);
-    if(compareFingerprints(before,migrated).length)throw new Error('MIGRATION_DATA_MISMATCH');
+    const migrationDifferences=compareFingerprints(before,migrated);
+    if(migrationDifferences.length)throw new Error('MIGRATION_DATA_MISMATCH: '+migrationDifferences.join(', '));
     const files=[];
     for(const name of (await readdir(directory)).filter(name=>name.endsWith('.aes')).sort())files.push({name,...await fileDigest(join(directory,name))});
     const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,tables:catalog.length,objects:objects.length,migrations,files,
