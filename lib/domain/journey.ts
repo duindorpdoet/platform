@@ -16,7 +16,7 @@ export function evaluateStopCompletion(
 
   const visited = required.filter((item) => item.status === "visited").length;
   const skipped = required.filter((item) => item.status === "skipped").length;
-  if (visited > 0 && !scanAccepted) return { allowed: false, code: "SCAN_REQUIRED" };
+  if (!scanAccepted) return { allowed: false, code: "SCAN_REQUIRED" };
   if (visited === 0 && !allSkipConfirmed) return { allowed: false, code: "ALL_SKIP_CONFIRMATION_REQUIRED" };
   if (visited > 0 && skipped > 0) return { allowed: true, outcome: "mixed" };
   return { allowed: true, outcome: visited > 0 ? "visited" : "all_skipped" };

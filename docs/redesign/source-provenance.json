@@ -1,0 +1,75 @@
+{
+  "sourceCommit": "0a0d2edc6b371859ba014c2c279a91759f3e9112",
+  "productionBase": "bc2b3796d39f79f7f6dc5ef5bd4978a304eb125b",
+  "archiveChecksumVerified": 468,
+  "files": [
+    {
+      "path": "components/admin/admin-console.tsx",
+      "referenceSha256": "0a51bdd7ee401655a69f015ad447ee892d1b466a9767bd28a818bf0b2f5957a0"
+    },
+    {
+      "path": "components/brand/home-page.tsx",
+      "referenceSha256": "5ba8acc21aa7e50de8cd8f5cde36ebb24781c1a62283c1d5bb5c4db4643bc4ef"
+    },
+    {
+      "path": "components/brand/site-chrome.tsx",
+      "referenceSha256": "155388a887c254f0d6bcda9d662fb42e6cc5d014833014129875e2e6ada9c666"
+    },
+    {
+      "path": "components/group/group-experience.tsx",
+      "referenceSha256": "9def15787a3ae6706661eaee2b052724e3a053e588a6ab35aba6bae8cfe3eed7"
+    },
+    {
+      "path": "components/participant/participant-shell.tsx",
+      "referenceSha256": "f2eeea590b0c35657841619e917a8140cc55a8850cb34d7cde6fab1387fca069"
+    },
+    {
+      "path": "components/poortenboek/book.tsx",
+      "referenceSha256": "4f5f8963775019fac726737008ef27c5ed2d427a574674102f8fb4ce0e90d3ec"
+    },
+    {
+      "path": "components/poortenboek/kid-guide.tsx",
+      "referenceSha256": "78ea3fbd7c96bcffcb8a9d9882867c60f7e987379ab29ec6c2192e59b820f466"
+    },
+    {
+      "path": "components/poortenboek/magic-lantern.tsx",
+      "referenceSha256": "7ea9ce363f02c663c06809219c9cdbfa4dafe17bc21287d1468531cdcee0b1d5"
+    },
+    {
+      "path": "components/poortenboek/story-reader.tsx",
+      "referenceSha256": "a8b1616d5b0cc25293ce707c892552b0135ea8088d832aafb226490d5c59da82"
+    },
+    {
+      "path": "components/poortenboek/login.tsx",
+      "referenceSha256": "700d91eb0d6336a06bfc0d6c87600e0e04b845a43b7257d5e668d931e79ab8e2"
+    },
+    {
+      "path": "components/poortenboek/parent.tsx",
+      "referenceSha256": "c3339d3ff85fa36ccd1c657ae6d1cd9c32ed13a5cd59f0ef701b5f472c5acbfc"
+    },
+    {
+      "path": "components/poortenboek/v2-experience.tsx",
+      "referenceSha256": "d57258af39117df86278ecaabfd2156fdff7834a5f8cb18dcbf794fc0ae8f0f1"
+    },
+    {
+      "path": "components/portal/poortkamer.module.css",
+      "referenceSha256": "a2fedd7fa038dd9a6151a61394045a4cd4232f2299be6f370a0f07df9ea872a5"
+    },
+    {
+      "path": "components/portal/poortkamer.tsx",
+      "referenceSha256": "82f5d0589a84bf75fc57d7f79cc6b241f87b7b192854818d691564f8c75d585a"
+    },
+    {
+      "path": "lib/domain/poortkamer.ts",
+      "referenceSha256": "7c6af26bdf4c761c3be3cce85197da2ac1fc290b08d06795b1f400b288971494"
+    },
+    {
+      "path": "lib/poortenboek/model.ts",
+      "referenceSha256": "373a0c1db9b655e65b706ac708659893ebba3aa50aa2e793778be1a393ab99a8"
+    },
+    {
+      "path": "lib/poortenboek/story-content.ts",
+      "referenceSha256": "3fe43a224f06344a7f7d30501f50dfae271411802eb898ea931a234a83628898"
+    }
+  ]
+}

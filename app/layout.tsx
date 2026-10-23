@@ -8,11 +8,21 @@ import "./maps.css";
 import "./worlds.css";
 import "./portal-design.css";
 import "maplibre-gl/dist/maplibre-gl.css";
+import "@/modern/global.css";
+import "@/modern/admin.css";
+import "@/modern/participant.css";
+import "@/modern/rooms.css";
+import "@/modern/book.css";
+import "@/modern/public.css";
+import "@/modern/production.css";
+import { GuidanceHost } from "@/components/redesign/participant-guidance";
+import { EventProvider } from "@/components/redesign/event-details";
+import { publicEvent } from "@/lib/redesign/event";
 import { SiteChrome } from "@/components/brand/site-chrome";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 
 export const metadata: Metadata = {
-  title: "De Duindorpse Poorten van Halloween · 31 oktober 2026",
+  title: "De Duindorpse Poorten van Halloween",
   description: "Een magische Halloween-avondloop door Duindorp op 31 oktober 2026. Loop samen langs versierde huizen, portieken en buurtbedrijven.",
   manifest: "/manifest.webmanifest",
   icons: {
@@ -62,16 +72,20 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const event=await publicEvent();
   return (
-    <html lang="nl" className="dark">
+    <html lang="nl" className="dark modern-ui">
       <body className="antialiased">
         <ServiceWorkerRegistration />
+        <EventProvider value={event}>
+        <GuidanceHost />
         <SiteChrome>{children}</SiteChrome>
+        </EventProvider>
       </body>
     </html>
   );

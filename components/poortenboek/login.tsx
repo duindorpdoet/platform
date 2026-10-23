@@ -47,7 +47,7 @@ export function BookLogin({ demo = false }: { demo?: boolean }) {
         return;
       }
       setDigits(Array(6).fill(""));
-      window.location.assign("/poortenboek");
+      window.location.assign("/#/poortenboek");
     } catch {
       setError(LOGIN_ERROR);
     } finally {
@@ -180,7 +180,7 @@ export function BookLogin({ demo = false }: { demo?: boolean }) {
         </p>
         {demo && (
           <p className="pb-demo-hint">
-            Ontdek de fictieve reis van Mila met democode{" "}
+            Ontdek de fictieve reis van Luna met democode{" "}
             <strong>DEMO26</strong>.
           </p>
         )}

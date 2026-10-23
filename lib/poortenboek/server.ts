@@ -1,4 +1,5 @@
 import "server-only";
+import { withBookStories } from "./serialization";
 import { cookies } from "next/headers";
 import { createPrivilegedClient } from "@/lib/supabase/privileged";
 import { serverEnv } from "@/lib/config/server-env";
@@ -42,7 +43,7 @@ export async function childRpc(name: string, args: Record<string, unknown>) {
     throw Object.assign(new Error(result.error.message), {
       code: result.error.code,
     });
-  return result.data;
+  return withBookStories(result.data);
 }
 export async function readDemo() {
   if (!canDemo()) return null;
@@ -76,7 +77,7 @@ export async function writeDemo(session: DemoSession) {
 }
 export async function childSnapshot(): Promise<BookSnapshot | null> {
   const demo = await readDemo();
-  if (demo) return demoSnapshot(demo);
+  if (demo) return withBookStories(demoSnapshot(demo));
   const token = (await cookies()).get(CHILD_COOKIE)?.value;
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
   try {

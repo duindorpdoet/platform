@@ -1,12 +1,15 @@
 "use client";
+import {HousePortalThanks} from "@/components/redesign/portal-thanks";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { PortalNews } from "@/components/editorial/portal-news";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ArrowRight,
+  CalendarDays,
   Bell,
-  CheckCircle2,
+  ChevronRight,
   DoorOpen,
   Footprints,
   KeyRound,
@@ -48,6 +51,8 @@ import {
 import { PoortkamerChat } from "./poortkamer-chat";
 import { PoortkamerLiveV2, PoortkamerManagementV2 } from "./poortkamer-v2";
 import s from "./poortkamer.module.css";
+import { GatePoster } from "@/components/redesign/gate-poster";
+import { QrCode } from "lucide-react";
 
 type Tab = "night" | "visits" | "team" | "messages" | "more";
 const nav = [
@@ -88,7 +93,6 @@ export function Poortkamer({
   const [dialog, setDialog] = useState<
     "invite" | "pause" | "stop" | "details" | null
   >(null);
-  const [qr, setQr] = useState<{ image: string; code: string } | null>(null);
   const contentRef = useRef<HTMLElement>(null);
   const commandPending = useRef(false);
   const version = useRef(0);
@@ -96,7 +100,6 @@ export function Poortkamer({
   const clearPrivate = useCallback(() => {
     version.current += 1;
     setRoom(null);
-    setQr(null);
   }, []);
   const load = useCallback(async () => {
     if (document.hidden) return;
@@ -171,6 +174,16 @@ export function Poortkamer({
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0;
   }, [tab, moreSection]);
+  useEffect(() => {
+    const open = (event: Event) => {
+      const detail = (event as CustomEvent).detail || {};
+      if (detail.tab) setTab(detail.tab);
+      if (detail.moreSection) setMoreSection(detail.moreSection);
+      if (detail.preparationSection) setPreparationSection(detail.preparationSection);
+    };
+    window.addEventListener("poorten-guide-navigate", open);
+    return () => window.removeEventListener("poorten-guide-navigate", open);
+  }, []);
   async function command(
     operation: string,
     payload: Record<string, unknown>,
@@ -215,44 +228,6 @@ export function Poortkamer({
       setBusy(false);
     }
   }
-  async function rotateQr() {
-    if (
-      !room ||
-      busy ||
-      offline ||
-      !window.confirm(
-        "Een nieuwe QR-code maakt de vorige direct ongeldig. Nieuwe code maken?",
-      )
-    )
-      return;
-    const client = createClient();
-    if (!client) return;
-    setBusy(true);
-    try {
-      const { data, error } = await client
-        .schema("api")
-        .rpc("portal_rotate_credential", {
-          _portal_id: room.portal.id,
-          _expected_portal_version: room.portal.version,
-          _reason: "QR-code vernieuwd in De Poortkamer",
-        });
-      if (error) {
-        setNotice(roomError(error.message));
-        return;
-      }
-      const { default: QRCode } = await import("qrcode");
-      setQr({
-        image: await QRCode.toDataURL(data.credential, {
-          width: 640,
-          margin: 3,
-        }),
-        code: data.shortCode,
-      });
-    } finally {
-      setBusy(false);
-      await load();
-    }
-  }
   if (!room)
     return (
       <div className={s.room}>
@@ -295,7 +270,7 @@ export function Poortkamer({
       reason,
     });
   return (
-    <div className={`${s.room} ${tab === "messages" ? s.chatMode : ""}`}>
+    <div className={`${s.room} ${tab === "messages" ? s.chatMode : ""}`} data-workspace="poortkamer" data-current-tab={tab}>
       <div className={s.shell} data-poortkamer-shell>
         <aside className={s.sidebar} aria-label="Poortkamer menu">
           <Link className={s.brand} href="/">
@@ -308,10 +283,11 @@ export function Poortkamer({
             />
             <div>
               <strong>De Poortkamer</strong>
-              <small>Jullie plek achter de poort</small>
+              <small>Duindorp · 31 oktober 2026</small>
             </div>
           </Link>
-          <p className={s.sidebarLabel}>Werkruimte</p>
+          <div className={s.gateIdentity}><span className={s.gateIcon}><DoorOpen size={22} /></span><div><small>{room.portal.code} · {room.portal.world}</small><strong>{room.portal.name}</strong><span className={s.gateStatus} data-state={room.portal.state}><i />{portalStates[room.portal.state]}</span></div></div>
+          <p className={s.sidebarLabel}>Jullie werkruimte</p>
           <nav className={s.nav} aria-label="Poortkamer navigatie">
             {nav.map(({ key, label, icon: Icon }) => (
               <button
@@ -328,22 +304,23 @@ export function Poortkamer({
               </button>
             ))}
           </nav>
-          <Link className={s.sidebarReturn} href={admin ? "/admin" : "/omgeving"}>Terug naar mijn omgeving</Link>
+          <div className={s.sidebarFoot}><span className={s.sidebarDate}><CalendarDays size={16} />31 oktober · 17:00–21:00</span><Link className={s.sidebarReturn} href={admin ? "/admin" : "/omgeving"}>Mijn omgeving <ArrowRight size={15} /></Link></div>
         </aside>
         <div className={s.workspace}>
           <header className={s.top}>
             <div className={s.topIdentity}>
-              <span>De Poortkamer</span>
+              <span>Poortteam / {nav.find(item => item.key === tab)?.label}</span>
               <strong>
-                {room.portal.code} · {portalStates[room.portal.state]}
+                {room.portal.name}
               </strong>
               <small>{portalRoles[room.role]}{room.portal.pauseUntil ? ` · Hervat rond ${portalTime(room.portal.pauseUntil)}` : ""}</small>
             </div>
-            <div className={s.actions}>
-              {canLive && tab === "night" && (
+            <div className={`${s.actions} ${s.receptionControls}`} aria-label="Ontvangststatus" data-guide="house-status">
+              {canLive && (
                 <>
                   <button
                     className={s.button}
+                    data-state="open"
                     aria-pressed={room.portal.state === "open"}
                     disabled={disabled}
                     onClick={() => void statusAction("open")}
@@ -353,6 +330,7 @@ export function Poortkamer({
                   </button>
                   <button
                     className={s.button}
+                    data-state="paused"
                     aria-pressed={room.portal.state === "paused"}
                     disabled={disabled}
                     onClick={() => setDialog("pause")}
@@ -362,6 +340,7 @@ export function Poortkamer({
                   </button>
                   <button
                     className={s.button}
+                    data-state="closed"
                     aria-pressed={room.portal.state === "closed"}
                     disabled={disabled}
                     onClick={() => setDialog("stop")}
@@ -404,10 +383,10 @@ export function Poortkamer({
               {ended
                 ? "De nacht leeft voort."
                 : days > 0
-                  ? "De nacht wacht op jullie."
+                  ? "Samen klaar voor de nacht."
                   : "Welkom op de Nachtwacht."}
             </h1>
-            <p>{room.portal.name}</p>
+            <p>De voorbereiding, jullie team en de volgende bezoekers. Alles voor een fijne avond, op één plek.</p>
             <span className={s.badge}>
               {ended
                 ? "Dank je wel, Poortwachters"
@@ -479,113 +458,43 @@ export function Poortkamer({
         )}
         {tab === "night" && (
           <>
-            <section className={s.card}><p className={s.eyebrow}>Deel de magie</p><h2>Laat jullie Poort stralen</h2><p>Maak een deelkaart met alleen goedgekeurde, openbare gegevens. Een adres of contactgegeven komt nooit in beeld.</p><Link className={s.button} href="/deel-de-magie?from=poortkamer">Maak een deelkaart</Link></section>
+            <div className={s.metrics} data-guide="house-overview" aria-label="De avond in cijfers">
+              <Metric value={room.visits.recap.groups} label="Groepen ontvangen" />
+              <Metric value={room.visits.recap.children} label="Kinderen ontvangen" />
+              <Metric value={metrics.remainingGroups} label="Groepen verwacht" />
+              <Metric value={metrics.remainingChildren} label="Kinderen verwacht" />
+            </div>
+            {ended ? <NightRecap room={room} /> : <div className={s.nightGrid}>
+              <section className={`${s.card} ${s.nextArrival}`}>
+                <div className={s.sectionTop}><div><p className={s.eyebrow}>De volgende bezoekers</p><h2>{metrics.next ? "Er komt een groep aan" : "Nog even rustig"}</h2></div><span className={s.smallIcon}><Footprints size={21} /></span></div>
+                {metrics.next ? <><div className={s.arrivalIdentity}><span className={s.groupCode}>{metrics.next.groupCode}</span><div><strong>{metrics.next.expectedChildren} kinderen</strong><small>{metrics.next.state === "active" ? "Bestemming vrijgegeven" : "Verwachte groep"}</small></div><span className={s.arrivalTime}>{portalTime(metrics.next.plannedArrivalAt)}<small>tot {portalTime(metrics.next.plannedDepartureAt)}</small></span></div><p className={s.muted}>Dit is een gepland aankomstvenster. Onderweg kan de groep wat eerder of later zijn.</p></> : <p>Er is nog geen volgende groep toegewezen. Zodra jullie bezoekers onderweg zijn, verschijnt hun groep hier.</p>}
+                <div className={s.cardAction}><span>{metrics.nextHalfHour} groepen in het komende halfuur</span><button className={`${s.button} ${s.primary}`} onClick={() => setTab("visits")}>Alle bezoeken <ArrowRight size={16} /></button></div>
+              </section>
+              <section className={`${s.card} ${s.readinessCard}`}>
+                <div className={s.sectionTop}><div><p className={s.eyebrow}>Goed voorbereid</p><h2>Jullie zijn al goed op weg</h2></div><span className={s.smallIcon}><ShieldCheck size={21} /></span></div>
+                <div className={s.readinessValue}><strong>{metrics.ready}<small>/{readinessItems.length}</small></strong><span>punten afgerond</span></div>
+                <progress aria-label="Gereedheid" max={readinessItems.length} value={metrics.ready} />
+                <p className={s.muted}>{room.portal.locationVerified ? "Locatie gecontroleerd" : "Locatie wacht op controle"} · {room.portal.opensAt ? `Ontvangst vanaf ${portalTime(room.portal.opensAt)}` : "Openingstijd volgt"}</p>
+                <button className={s.linkButton} onClick={() => {setMoreSection("preparation");setPreparationSection("checklist");setTab("more");}}>Bekijk de voorbereiding <ArrowRight size={16} /></button>
+              </section>
+            </div>}
+            <section className="gate-poster-shortcut" data-guide="house-qr-shortcut"><QrCode size={30}/><div><strong>Hang jullie QR-code bij de deur.</strong><p>Download de A4-poster in zwart-wit of kleur. Zo bevestigen groepen hun aankomst en krijgen ze hun volgende bestemming.</p></div><button className="btn" onClick={() => {setMoreSection("qr");setTab("more");}}>QR-code & printen <ArrowRight size={16}/></button></section>
+            <nav className={s.quickActions} aria-label="Snel geregeld">
+              <button onClick={() => setTab("team")}><span><Users size={21} /></span><strong>Jullie team<small>Rollen en taken verdelen</small></strong><ArrowRight size={17} /></button>
+              <button onClick={() => setTab("messages")}><span><MessageCircle size={21} /></span><strong>Berichten<small>{unreadMessages ? `${unreadMessages} ongelezen berichten` : "Spreek elkaar even bij"}</small></strong><ArrowRight size={17} /></button>
+              <button onClick={() => {setMoreSection("incident");setTab("more");}}><span><ShieldCheck size={21} /></span><strong>Hulp nodig?<small>Bereik de organisatie</small></strong><ArrowRight size={17} /></button>
+            </nav>
             <section className={`${s.card} ${s.organizerUpdates}`} aria-label="Updates van de organisatie">
-              <div className={s.row}><div><p className={s.eyebrow}>Van de organisatie</p><h2>Kort bijgepraat</h2></div><button type="button" className={s.linkButton} onClick={() => setTab("messages")}>Alle berichten</button></div>
+              <div className={s.sectionTop}><div><p className={s.eyebrow}>Van de organisatie</p><h2>Goed om te weten</h2></div><button type="button" className={s.linkButton} onClick={() => setTab("messages")}>Alle berichten <ArrowRight size={15} /></button></div>
               {(room.announcements ?? []).length ? room.announcements!.map(update => <article key={update.id}><span className={s.updateDot} /><div>{update.urgent && <strong>Belangrijk</strong>}<p>{update.body}</p><time dateTime={update.createdAt}>{new Date(update.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "long" })} · {portalTime(update.createdAt)}</time></div></article>) : <p className={s.muted}>Je bent helemaal bij. Nieuwe aanwijzingen van de organisatie verschijnen hier.</p>}
             </section>
-            <div className={s.metrics}>
-              <Metric
-                value={room.visits.recap.groups}
-                label="Groepen ontvangen"
-              />
-              <Metric
-                value={room.visits.recap.children}
-                label="Kinderen ontvangen"
-              />
-              <Metric
-                value={metrics.remainingGroups}
-                label="Groepen nog verwacht"
-              />
-              <Metric
-                value={metrics.remainingChildren}
-                label="Kinderen nog verwacht"
-              />
-            </div>
-            {ended ? (
-              <NightRecap room={room} />
-            ) : (
-              <div className={s.grid}>
-                <section className={s.card}>
-                  <p className={s.eyebrow}>De volgende voetstappen</p>
-                  <h2>
-                    {metrics.next
-                      ? metrics.next.groupCode
-                      : "De wijk maakt zich klaar"}
-                  </h2>
-                  {metrics.next ? (
-                    <>
-                      <p>
-                        <strong>
-                          {metrics.next.expectedChildren} kinderen
-                        </strong>{" "}
-                        ·{" "}
-                        {metrics.next.state === "active"
-                          ? "Vrijgegeven groep"
-                          : "Gepland venster"}
-                      </p>
-                      <p>
-                        {portalTime(metrics.next.plannedArrivalAt)}–
-                        {portalTime(metrics.next.plannedDepartureAt)}
-                      </p>
-                      <p className={s.muted}>
-                        Dit is de verwachte aankomsttijd. Een groep kan onderweg
-                        wat eerder of later zijn.
-                      </p>
-                    </>
-                  ) : (
-                    <p>
-                      Er is nog geen volgende groep bekend. Zodra er een groep
-                      naar jullie poort komt, zie je die hier.
-                    </p>
-                  )}
-                  <p>
-                    {metrics.nextHalfHour} groepen gepland in het komende
-                    halfuur.
-                  </p>
-                  <button className={s.button} onClick={() => setTab("visits")}>
-                    Bekijk de bezoeken
-                  </button>
-                </section>
-                <section className={s.card}>
-                  <p className={s.eyebrow}>Samen gereed</p>
-                  <h2>{metrics.ready} van {readinessItems.length} voorbereid</h2>
-                  <p>
-                    {room.portal.locationVerified
-                      ? "Locatie gecontroleerd"
-                      : "Locatie wacht op verificatie"}{" "}
-                    ·{" "}
-                    {room.portal.opensAt
-                      ? `Beschikbaar vanaf ${portalTime(room.portal.opensAt)}`
-                      : "Openingstijd nog niet vastgesteld"}
-                  </p>
-                  <p>
-                    Loop samen de voorbereiding na. Klaar voor bezoek? Zet jullie poort bovenaan op Open.
-                  </p>
-                  <progress
-                    aria-label="Gereedheid"
-                    max={readinessItems.length}
-                    value={metrics.ready}
-                  />
-                  <p>
-                    {
-                      room.team.filter(m => m.lastSeenAt && now - Date.parse(m.lastSeenAt) < 90_000).length
-                    }{" "}
-                    teamleden recent actief
-                  </p>
-                  <button className={s.button} onClick={() => setTab("more")}>
-                    <CheckCircle2 size={17} />
-                    Gereed voor de nacht
-                  </button>
-                </section>
-              </div>
-            )}
-            <PoortkamerLiveV2 room={room} />
+            <details className={`${s.card} ${s.liveDetails}`}><summary><span><Footprints size={19} />Bezoeklog en verwachte instroom</span><ChevronRight size={18} /></summary><PoortkamerLiveV2 room={room} /></details>
+            <section className={s.shareStrip}><div><p className={s.eyebrow}>Deel de magie</p><strong>Laat jullie poort stralen.</strong><p>Een mooie deelkaart, zonder adres of contactgegevens.</p></div><Link className={s.button} href="/deel-de-magie?from=poortkamer">Maak een deelkaart <ArrowRight size={16} /></Link></section>
           </>
         )}
-        {tab === "night" && <PortalNews channel="houses" compact />}
+        {tab === "night" && <><HousePortalThanks key={room.portal.id} portalId={room.portal.id}/><PortalNews channel="houses" compact /></>}
         {tab === "visits" && (
-          <section className={s.card}>
+          <section className={s.card} data-guide="house-visits">
             <p className={s.eyebrow}>Voetstappen door jullie poort</p>
             <h1>Bezoeken</h1>
             <p>
@@ -930,18 +839,19 @@ export function Poortkamer({
             admin={admin}
           />
         )}
-        {tab === "more" && <nav className={`${s.tabs} ${s.moreTabs}`} aria-label="Meer in De Poortkamer">{[["preparation", "Voorbereiden"], ["incident", "Hulp & contact"], ["settings", "Instellingen"], ["recap", "Terugblik"]].map(([key, label]) => <button type="button" key={key} className={s.button} aria-pressed={moreSection === key} onClick={() => setMoreSection(key)}>{label}</button>)}</nav>}
+        {tab === "more" && <nav className={`${s.tabs} ${s.moreTabs}`} aria-label="Meer in De Poortkamer">{[["preparation", "Voorbereiden"], ["qr", "QR & printen"], ["incident", "Hulp & contact"], ["settings", "Instellingen"], ["recap", "Terugblik"]].map(([key, label]) => <button type="button" key={key} className={s.button} aria-pressed={moreSection === key} onClick={() => setMoreSection(key)}>{label}</button>)}</nav>}
         {tab === "more" && (
-          <div className={s.moreGrid}>
+          <div className={s.moreGrid} data-guide="house-more">
+            {moreSection === "qr" && <GatePoster key={room.portal.id} portal={room.portal} canRotate={canEdit} disabled={disabled} onRefresh={load}/> }
             {moreSection === "preparation" && <nav className={`${s.tabs} ${s.subTabs}`} aria-label="Voorbereiden">{[["checklist", "Checklist"], ["presentation", "Presentatie"], ["simulation", "Oefenen"]].map(([key, label]) => <button type="button" key={key} className={s.button} aria-pressed={preparationSection === key} onClick={() => setPreparationSection(key)}>{label}</button>)}</nav>}
-            <PoortkamerManagementV2
+            {moreSection !== "qr" && <PoortkamerManagementV2
               section={moreSection === "preparation" ? preparationSection : moreSection}
               room={room}
               busy={busy}
               disabled={disabled}
               canEdit={canEdit}
               command={(operation, payload) => command(operation, payload)}
-            />
+            />}
             {moreSection === "preparation" && preparationSection === "checklist" &&             <section className={s.card}>
               <Image
                 className={s.cardImage}
@@ -1063,37 +973,13 @@ export function Poortkamer({
                   <button
                     className={s.button}
                     disabled={disabled}
-                    onClick={() => void rotateQr()}
+                    onClick={() => {setMoreSection("qr");setTab("more");}}
                   >
-                    QR-code vernieuwen
+                    QR-code & printen
                   </button>
                 </div>
               )}
-              {qr && (
-                <div>
-                  <Image
-                    src={qr.image}
-                    alt="Nieuwe QR-code voor jullie poort"
-                    width={280}
-                    height={280}
-                    unoptimized
-                  />
-                  <p>
-                    Bezoekcode: <strong>{qr.code}</strong>
-                  </p>
-                  <a
-                    className={s.button}
-                    href={qr.image}
-                    download="poort-bezoekcode.png"
-                  >
-                    Download QR
-                  </a>
-                  <button className={s.button} onClick={() => setQr(null)}>
-                    Verwijder van scherm
-                  </button>
-                  <p>Alleen nu zichtbaar. Bewaar de code veilig.</p>
-                </div>
-              )}
+
             </section>
 
             <section className={s.card}>

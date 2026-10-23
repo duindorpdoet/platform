@@ -55,6 +55,11 @@ export type Election = {
   open: boolean;
 };
 export type BookSnapshot = {
+  reading?: { readChapters: number[]; stories: import("./story-content").StoryChapterContent[] };
+  childId?: string;
+  farewell?: { endedAt: string; reason: 'early' | 'completed' } | null;
+  tutorial?: { version: number; completedAt: string | null; lastStep: number };
+  eventId?: string;
   firstName: string;
   medallion: number;
   expiresAt: string;
@@ -101,6 +106,7 @@ export type BookSnapshot = {
     complete: boolean;
     chapters: Array<{ chapter: number; unlockedAt: string }>;
     seals: Array<{
+      stopId?: string;
       portalId: string;
       worldId: string;
       earnedAt: string;

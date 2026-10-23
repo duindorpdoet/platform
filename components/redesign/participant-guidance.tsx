@@ -1,0 +1,163 @@
+"use client";
+/* eslint-disable react-hooks/set-state-in-effect -- The persistent guide follows external Next routes and server progress without mutating event data. */
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Dialog as Primitive } from 'radix-ui';
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, ChevronDown, ExternalLink, HelpCircle, MessageCircle, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import {configureArrivalSync} from '@/lib/redesign/arrival-sync';
+import { createClient } from '@/lib/supabase/client';
+import { amsterdamDay, GUIDANCE_VERSION, guidanceRole, type GuidanceRecord } from '@/lib/redesign/guidance-state';
+import '../../modern/guidance.css';
+
+export const GENERAL_WHATSAPP = 'https://chat.whatsapp.com/KwdGfmllTNW5tPU4widIhg';
+export const HOUSE_WHATSAPP = 'https://chat.whatsapp.com/EaFlwGROVpW3N7YazyTx47';
+type HouseView = { tab: string; moreSection?: string; preparationSection?: string };
+type Step = { label: string; title: string; text: string; tip: string; path: string; target: string; houseView?: HouseView };
+const parentSteps: Step[] = [
+  { label: 'Welkom', title: 'Jullie hele avond op één plek', text: 'Dit is jullie persoonlijke omgeving. Hier vind je de deelnemende kinderen, de startafspraak, jullie groep en straks de route. Je hoeft geen adressen te onthouden.', tip: 'Deze rondleiding wijzigt geen inschrijving of betaling. Met Verder bekijken we steeds een echt scherm.', path: '/omgeving/meeloper/nu', target: '#participant-content' },
+  { label: 'Inschrijving', title: 'Controleer wie er meegaan', text: 'Bij jullie inschrijving staan de kinderen en de deelnamegegevens. Controleer de namen en laat een correctie of afmelding via de omgeving aan de organisatie weten.', tip: 'Een wijzigingsverzoek wordt eerst beoordeeld. Kijk daarna of de organisatie de wijziging heeft bevestigd.', path: '/mijn-inschrijving', target: '.registration-dashboard, .registration-card, #main-content' },
+  { label: 'Betaling', title: 'Een betaalstatus per kind', text: 'In de Nachtpas zie je welke kinderen zijn aangemeld en of hun betaling is bevestigd. Een verstuurde betaallink of een eigen betaalmelding is nog geen bevestigde ontvangst.', tip: 'Is iets nog niet bevestigd? Neem contact op met de organisatie; betaal niet opnieuw zonder overleg.', path: '/omgeving/meeloper/nachtpas', target: '.participant-children-card, .night-pass' },
+  { label: 'Startafspraak', title: 'Kijk naar jullie eigen tijd en plek', text: 'Bij Mijn groep staan het toegewezen startmoment, de startplek en de groepscode. Ga naar die afspraak en houd rekening met de kinderen die nog moeten aansluiten.', tip: 'Tijdsvoorkeuren zijn wensen. De gepubliceerde startafspraak van de organisatie is leidend.', path: '/omgeving/meeloper/groep', target: '.group-summary' },
+  { label: 'Samenlopen', title: 'Samen is pas samen na bevestiging', text: 'Een samenloopcode helpt de organisatie om groepen bij elkaar in te delen. Een verzoek betekent nog niet dat de indeling al is aangepast.', tip: 'Controleer de definitieve groep en startafspraak. De organisatie houdt rekening met beschikbare ruimte en veilige groepsgrootte.', path: '/mijn-inschrijving', target: '.together-card, .registration-dashboard, #main-content' },
+  { label: 'Mijn groep', title: 'Houd jullie groep bij elkaar', text: 'Mijn groep toont de gekoppelde deelnemers en de voortgang. Spreek af wie de telefoon en route bedient, zodat jullie niet tegelijk verschillende handelingen uitvoeren.', tip: 'Kinderen blijven bij hun eigen verantwoordelijke volwassene. Meekijkers volgen alleen de beperkte voortgang.', path: '/omgeving/meeloper/groep', target: '.group-summary, #participant-content' },
+  { label: 'Vertrekken', title: 'Controleer de aanwezigheid', text: 'Voor vertrek bevestigt de groepsleider welke kinderen er werkelijk zijn. Pas na de aanwezigheidscontrole kan de tocht beginnen. Tijdens een lopende tocht zie je hier de actuele opdracht.', tip: 'Start pas als iedereen klaarstaat en de toegewezen starttijd is bereikt. Wacht bij een blokkade op hulp van de organisatie.', path: '/omgeving/meeloper/route', target: '.attendance-panel, .group-pre-event, .group-route-context' },
+  { label: 'De route', title: 'Je ziet steeds de huidige bestemming', text: 'De naam, het adres en de wereld van de vrijgegeven poort staan bovenaan. De volgende adressen verschijnen stap voor stap, zodat de groepen netjes over de wijk worden verdeeld.', tip: 'Werkt de kaart niet? Het adres blijft leesbaar. Blijf bij je groep en vraag hulp als je de locatie niet kunt vinden.', path: '/omgeving/meeloper/route', target: '#route-destination' },
+  { label: 'Aankomst scannen', title: 'Scan de poster bij de juiste poort', text: 'Gebruik QR scannen bij de deur. De korte bezoekcode op de poster werkt ook. Controleer de aankomst en de kinderen in het bevestigingsscherm; daarna verschijnt de volgende poort.', tip: 'Alleen de code van jullie huidige poort werkt. Scannen van een oude of andere poort mag de route nooit overslaan.', path: '/omgeving/meeloper/route', target: '#route-scan' },
+  { label: 'Meedoen mag, hoeft niet', title: 'Een kind mag altijd een stap overslaan', text: 'Een te spannende beleving hoeft niet. Ieder kind dat met de groep bij de poort aankomt, krijgt na de scan gewoon een zegel. Ook als het buiten blijft of liever niet meedoet.', tip: 'Laat een kind niet alleen wachten. Blijf samen; bij een gesloten poort of onveilige situatie neem je contact op met de organisatie.', path: '/omgeving/meeloper/route', target: '#route-children' },
+  { label: 'Nachtpas', title: 'Jullie deelname blijft bij de hand', text: 'De Nachtpas bundelt de kinderen, groepscode, startinformatie en deelnamestatus. Laat hem zien als de organisatie daarom vraagt.', tip: 'De Nachtpas is geen toegang om op eigen initiatief andere poorten te bezoeken. Volg steeds de vrijgegeven route.', path: '/omgeving/meeloper/nachtpas', target: '.night-pass' },
+  { label: 'Poortenboek', title: 'Een eigen avontuur voor de kinderen', text: 'Via de snelkoppeling open je het kinderpoortenboek. Daar zijn de eigen verschijning, reisgenootjes, voorbereiding, verhalen en verzamelde zegels te vinden.', tip: 'Een kind heeft geen eigen telefoon nodig. Bewaar de persoonlijke boekcode veilig en wissel op een gedeeld apparaat zorgvuldig van kind.', path: '/omgeving/meeloper/nu', target: '.member-shortcuts' },
+  { label: 'Updates', title: 'Lees wijzigingen van de organisatie', text: 'In Meer staan de organisatie-updates en jullie voorkeuren. Controleer deze berichten ook als je WhatsApp gebruikt: de actuele opdracht en startafspraak blijven in de omgeving staan.', tip: 'De WhatsApp-community is handig voor informatie en contact. Voor een verzoek over jouw eigen groep gebruik je de hulpknop.', path: '/omgeving/meeloper/meer', target: '.embedded-updates' },
+  { label: 'Hulp & klaar', title: 'Je bent klaar om samen op pad te gaan', text: 'Gebruik Hulp van de organisatie voor een probleem onderweg. Beschrijf jullie groepscode, poort en wat er misgaat. Bij direct gevaar bel je 112.', tip: 'Via Hulp & community kun je deze rondleiding altijd opnieuw bekijken en de WhatsApp-links terugvinden.', path: '/omgeving/meeloper/meer', target: '.participant-contact-compact' },
+];
+function houseStep(label: string, title: string, text: string, tip: string, view: HouseView, target = '#poortkamer-content'): Step { return { label, title, text, tip, path: '/mijn-huis', target, houseView: view }; }
+const houseSteps: Step[] = [
+  houseStep('Welkom', 'Dit is jullie Poortkamer', 'Hier bereid je de poort voor en ontvang je de groepen. Je ziet jullie status, de verwachte bezoekers, het team en berichten van de organisatie bij elkaar.', 'De rondleiding wijzigt geen ontvangststatus of gegevens. Met Verder gaan we door jullie echte schermen.', { tab: 'night' }, '[data-guide="house-overview"], #poortkamer-content'),
+  houseStep('Nachtwacht', 'Een rustig overzicht tijdens de avond', 'De Nachtwacht laat zien hoeveel groepen en kinderen jullie al hebben ontvangen en hoeveel er nog worden verwacht. De eerstvolgende groep staat apart in beeld.', 'Een verwacht tijdvenster is een planning. Een groep kan onderweg iets eerder of later zijn; ververs bij twijfel.', { tab: 'night' }, '[data-guide="house-overview"], #poortkamer-content'),
+  houseStep('Bezoeken', 'Bekijk de volgende groep', 'Bij Bezoeken kun je wisselen tussen wat nu komt, de verwachte instroom en eerdere bezoeken. Gebruik dit om de ontvangst klaar te zetten.', 'De planning is geen openbare adressenlijst. Deel informatie over groepen en kinderen niet buiten het eigen poortteam.', { tab: 'visits' }, '[data-guide="house-visits"], #poortkamer-content'),
+  houseStep('Ontvangststatus', 'Open, Pauze of Gestopt', 'Open betekent dat de poort kan ontvangen. Pauze gebruik je voor een tijdelijke onderbreking. Gestopt betekent dat je geen nieuwe bezoeken meer kunt ontvangen.', 'Geef een wijziging direct door in de Poortkamer. Overleg met de organisatie over groepen die al onderweg zijn.', { tab: 'night' }, '[data-guide="house-status"], [aria-label="Ontvangststatus"]'),
+  houseStep('QR-poster', 'Print de code van jullie eigen poort', 'Bij QR & print staat jullie unieke poster. Kies kleur of zwart-wit en download de PDF op A4. De QR-code en korte bezoekcode blijven op beide varianten hetzelfde.', 'Hang hem droog, vlak en goed zichtbaar bij de ingang. Test de leesbaarheid met een telefoon en zorg dat de code goed is verlicht.', { tab: 'more', moreSection: 'qr' }, '[data-tutorial="gate-qr"], #poortkamer-content'),
+  houseStep('Scannen', 'De groep bevestigt zelf de aankomst', 'De groepsleider scant jullie poster, controleert wie de poort bezoekt en bevestigt de aankomst. Daarna komt de volgende bestemming beschikbaar voor die groep.', 'Een nieuwe QR-code maakt een oude poster ongeldig. Vernieuw de code alleen als dat nodig is en print daarna de nieuwe poster.', { tab: 'more', moreSection: 'qr' }, '[data-tutorial="gate-qr"], #poortkamer-content'),
+  houseStep('Team', 'Verdeel rollen en taken', 'Bij Team staan de gekoppelde poortwachters. De hoofdpoortwachter beheert de toegang; rollen en taken helpen om ontvangst, acteren, veiligheid en techniek te verdelen.', 'Geef alleen de toegang die iemand nodig heeft. Trek een oude uitnodiging of toegang in als iemand niet meer helpt.', { tab: 'team' }, '[data-guide="house-team"], #poortkamer-content'),
+  houseStep('Checklist', 'Controleer de voorbereiding samen', 'De voorbereidingslijst helpt om locatie, ontvangst, team en praktische afspraken langs te lopen. Rond de punten bewust af in overleg met jullie team.', 'Zorg voor een vrije ingang, voldoende verlichting en duidelijke afspraken over rook, geluid en eventuele allergenen.', { tab: 'more', moreSection: 'preparation', preparationSection: 'checklist' }),
+  houseStep('Presentatie', 'Zo verschijnt jullie poort in het verhaal', 'Bij Presentatie bekijk je de naam, wereld en voorstelling van jullie poort. Dit helpt om wat kinderen in hun Poortenboek zien te laten aansluiten op de ontvangst.', 'Gebruik passende beelden en eenvoudige, vriendelijke informatie. Vermeld aandachtspunten zoals rook of flitsen duidelijk.', { tab: 'more', moreSection: 'preparation', preparationSection: 'presentation' }),
+  houseStep('Oefenen', 'Probeer het vooraf rustig uit', 'Gebruik Oefenen om de bediening en aankomststappen te leren kennen vóór de drukte begint. Spreek met je team af wie de telefoon bedient.', 'Een oefening is geen echte bezoekregistratie. Controleer vlak voor de avond nogmaals de actuele poortstatus.', { tab: 'more', moreSection: 'preparation', preparationSection: 'simulation' }),
+  houseStep('Berichten', 'Overleg op de juiste plek', 'Bij Berichten lees je de organisatie-updates en spreek je met het team. De WhatsApp-community voor huizen is een extra plek voor praktische informatie.', 'Jullie speciale huizenlink staat bij Hulp & community. Deel persoonlijke groeps- of kindgegevens alleen waar dat nodig is.', { tab: 'messages' }, '[data-guide="house-messages"], #poortkamer-content'),
+  houseStep('Hulp', 'Meld een probleem direct', 'Bij Hulp & contact kun je de organisatie bereiken of een incident melden. Geef jullie poortcode en de situatie door en zet de ontvangst zo nodig op Pauze.', 'Bij direct gevaar bel je 112. Gebruik WhatsApp niet als vervanging voor spoedhulp.', { tab: 'more', moreSection: 'incident' }),
+  houseStep('Instellingen', 'Houd jullie gegevens en voorkeuren actueel', 'Controleer de omschrijving en gegevens van de poort. Kies welke meldingen jullie willen ontvangen en wie gegevens mag aanpassen.', 'Toestemming voor pushmeldingen hangt ook af van de telefoon. Controleer daarom tijdens de avond zelf de Poortkamer.', { tab: 'more', moreSection: 'settings' }),
+  houseStep('Terugblik & klaar', 'Sluit de avond samen netjes af', 'Na de laatste ontvangst zet je de poort op de juiste eindstatus en bekijk je de terugblik. Meld eventuele bijzonderheden aan de organisatie.', 'Deze rondleiding blijft beschikbaar via Hulp & community. Je bent klaar om de poort samen te openen!', { tab: 'more', moreSection: 'recap' }),
+];
+type Tour = { role: 'parent' | 'house'; mandatory: boolean; index: number; returnPath: string };
+type Rect = { top: number; left: number; width: number; height: number };
+function CommunityLinks({ house }: { house: boolean }) {
+  return <div className="guidance-community-links"><a className="guidance-community-link" href={GENERAL_WHATSAPP} target="_blank" rel="noopener noreferrer"><span className="guidance-link-icon"><MessageCircle size={23}/></span><span><strong>Alle deelnemers</strong><small>Duindorpse Poorten · algemene community</small></span><ExternalLink size={17}/></a>{house && <a className="guidance-community-link house" href={HOUSE_WHATSAPP} target="_blank" rel="noopener noreferrer"><span className="guidance-link-icon"><ShieldCheck size={23}/></span><span><strong>Speciaal voor huizen & poortteams</strong><small>Praktisch overleg achter de poorten</small></span><ExternalLink size={17}/></a>}</div>;
+}
+
+export function ParticipantGuidance({ path, initial }: { path: string; initial: GuidanceRecord }) {
+  const router = useRouter();
+  const navigate = useCallback((destination: string) => router.push(destination),[router]);
+  const requested = guidanceRole(path);
+  const role = requested && initial.roles.includes(requested) ? requested : initial.roles.includes('parent') ? 'parent' : initial.roles.includes('viewer') ? 'viewer' : 'house';
+  const [record, setRecord] = useState<GuidanceRecord>(initial);
+  const [saving,setSaving]=useState(false),[saveError,setSaveError]=useState('');
+  async function save(input: Record<string,unknown>) {
+    setSaving(true);setSaveError('');
+    try { const response=await fetch('/api/redesign/guidance',{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(input)});if(!response.ok)throw new Error();const next=await response.json() as GuidanceRecord;setRecord(next);return true; }
+    catch {setSaveError('Dit kon niet worden bewaard. Controleer de verbinding en probeer opnieuw.');return false;}
+    finally {setSaving(false);}
+  }
+  const [today, setToday] = useState(amsterdamDay);
+  const [communityOpen, setCommunityOpen] = useState(false);
+  const [dockOpen, setDockOpen] = useState(false);
+  const [tour, setTour] = useState<Tour | null>(null);
+  const [rect, setRect] = useState<Rect | null>(null);
+  const [targetFound, setTargetFound] = useState(false);
+  const tourTitle = useRef<HTMLHeadingElement>(null);
+  const dailyDue = Boolean(role && record.acknowledgedDay !== today);
+  const showCommunity = Boolean(role && (dailyDue || communityOpen));
+  const guidanceActive = showCommunity || Boolean(tour) || Boolean(role && role !== 'viewer' && record.completed[role] !== GUIDANCE_VERSION);
+  const steps = tour?.role === 'house' ? houseSteps : parentSteps;
+  const step = tour ? steps[tour.index] : null;
+
+  useEffect(() => { setRecord(initial); }, [initial]);
+  useLayoutEffect(() => {
+    document.documentElement.dataset.participantGuidanceActive = String(guidanceActive);
+    window.dispatchEvent(new Event('poorten-guidance-status'));
+    return () => {
+      document.documentElement.dataset.participantGuidanceActive = 'false';
+      window.dispatchEvent(new Event('poorten-guidance-status'));
+    };
+  }, [guidanceActive]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setToday(amsterdamDay()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    if (!role || role === 'viewer' || dailyDue || communityOpen || tour) return;
+    if (record.completed[role] !== GUIDANCE_VERSION) {
+      const saved = record.progress?.[role];
+      const count = role === 'house' ? houseSteps.length : parentSteps.length;
+      const resumable = saved?.version === GUIDANCE_VERSION && saved.index < count;
+      const start = { role, mandatory: true, index: resumable ? saved.index : 0, returnPath: resumable ? saved.returnPath : window.location.pathname + window.location.search };
+      const next = { ...record, progress: { ...record.progress, [role]: { version: GUIDANCE_VERSION, index: start.index, returnPath: start.returnPath } } };
+      setRecord(next); setTour(start);
+    }
+  }, [role, dailyDue, communityOpen, record, path, tour]);
+  useEffect(() => {
+    if (!tour || !step) { setRect(null); return; }
+    setRect(null); setTargetFound(false);
+    if (path !== step.path) navigate(step.path);
+    let attempts = 0;
+    let scrolled = false;
+    const update = () => {
+      if (step.houseView) window.dispatchEvent(new CustomEvent('poorten-guide-navigate', { detail: step.houseView }));
+      const target = document.querySelector<HTMLElement>(step.target);
+      if (!target || target.getBoundingClientRect().width < 1) { setRect(null); return; }
+      if (!scrolled) { scrolled = true; target.scrollIntoView({ behavior: 'instant', block: 'center' }); }
+      const box = target.getBoundingClientRect();
+      setTargetFound(true);
+      setRect({ top: Math.max(40, box.top - 6), left: Math.max(6, box.left - 6), width: Math.min(box.width + 12, window.innerWidth - 12), height: Math.max(30, Math.min(box.height + 12, window.innerHeight - Math.max(40, box.top) - 12)) });
+    };
+    const timeout = window.setTimeout(() => { update(); tourTitle.current?.focus(); }, 80);
+    const retry = window.setInterval(() => { update(); attempts++; if (attempts > 8) clearInterval(retry); }, 200);
+    window.addEventListener('resize', update); window.addEventListener('scroll', update, true);
+    return () => { clearTimeout(timeout); clearInterval(retry); window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
+  }, [tour, step, path, navigate]);
+  async function acknowledge() {
+    if(saving)return;
+    if(!dailyDue || await save({action:'acknowledge'})){setCommunityOpen(false);setDockOpen(false);}
+  }
+  function replay() {
+    const nextRole = role === 'house' ? 'house' : 'parent';
+    setDockOpen(false); setTour({role:nextRole,mandatory:false,index:0,returnPath:window.location.pathname+window.location.search});
+  }
+  async function finish() {
+    if (!tour || saving || tour.index !== steps.length - 1) return;
+    if(tour.mandatory && !await save({action:'tutorial',role:tour.role,version:GUIDANCE_VERSION,index:tour.index,returnPath:tour.returnPath,completed:true}))return;
+    const back=tour.returnPath;setTour(null);navigate(back);
+  }
+  async function moveStep(index:number) {
+    if(!tour||saving||index<0||index>=steps.length)return;
+    if(tour.mandatory && !await save({action:'tutorial',role:tour.role,version:GUIDANCE_VERSION,index,returnPath:tour.returnPath}))return;
+    setTour({...tour,index});
+  }
+  function closeReplay() { if (tour && !tour.mandatory) { const back = tour.returnPath; setTour(null); navigate(back); } }
+  if (!role && !tour) return null;
+  return <>
+    <div className="guidance-dock"><button className="guidance-dock-toggle" type="button" aria-label="Hulp & community" aria-expanded={dockOpen} aria-controls="guidance-help-card" onClick={() => setDockOpen(!dockOpen)}><HelpCircle size={18}/><span>Hulp & community</span><ChevronDown size={13}/></button>{dockOpen && <aside id="guidance-help-card" className="guidance-help-card" aria-label="Rondleiding en WhatsApp"><div className="guidance-help-heading"><strong>Samen goed op pad</strong><button aria-label="Hulpkaart sluiten" onClick={() => setDockOpen(false)}><X size={17}/></button></div><CommunityLinks house={role === 'house'}/><button className="guidance-replay" onClick={replay}><BookOpen size={18}/><span><strong>Bekijk de rondleiding opnieuw</strong><small>{role === 'house' ? '14 stappen door jullie Poortkamer' : '14 stappen door de ouderomgeving'}</small></span><ArrowRight size={17}/></button><button className="guidance-text-button" onClick={() => { setCommunityOpen(true); setDockOpen(false); }}>Bekijk de community-melding</button></aside>}</div>
+    <Primitive.Root open={showCommunity} onOpenChange={open => { if (!dailyDue) setCommunityOpen(open); }}><Primitive.Portal><Primitive.Overlay className="guidance-backdrop"/><Primitive.Content className="guidance-community-dialog" onEscapeKeyDown={e => { if (dailyDue) e.preventDefault(); }} onPointerDownOutside={e => { if (dailyDue) e.preventDefault(); }}><div className="guidance-dialog-symbol"><MessageCircle size={30}/></div><p className="guidance-kicker">Samen maken we de avond</p><Primitive.Title className="guidance-community-title">Blijf op de hoogte via WhatsApp</Primitive.Title><Primitive.Description className="guidance-community-intro">Er is een WhatsApp-community voor alle deelnemers van de Duindorpse Poorten van Halloween. Voor informatie, vragen en contact rondom de avond.</Primitive.Description><CommunityLinks house={role === 'house'}/><div className="guidance-community-note"><ShieldCheck size={18}/><p>De startafspraak, route en officiële status blijven in je persoonlijke omgeving staan. Bij direct gevaar bel je 112.</p></div><p className="guidance-joining-note">De melding lezen is verplicht. Deelnemen aan WhatsApp is jouw keuze.</p>{saveError&&<p role="alert">{saveError}</p>}<button className="guidance-primary" disabled={saving} onClick={()=>void acknowledge()}><Check size={18}/>{dailyDue ? 'Gelezen, verder naar mijn omgeving' : 'Melding sluiten'}</button>{dailyDue && <p className="guidance-daily-caption">Je krijgt deze melding één keer per dag te zien · Nederlandse tijd</p>}</Primitive.Content></Primitive.Portal></Primitive.Root>
+    <Primitive.Root open={Boolean(tour) && !showCommunity} onOpenChange={open => { if (!open) closeReplay(); }}><Primitive.Portal><Primitive.Overlay className="guidance-tour-backdrop"/>{rect && <div className="guidance-spotlight" style={rect} aria-hidden="true"/>}<Primitive.Content className="guidance-tour-dialog" onEscapeKeyDown={e => { if (tour?.mandatory) e.preventDefault(); }} onPointerDownOutside={e => e.preventDefault()} onOpenAutoFocus={e => { e.preventDefault(); tourTitle.current?.focus(); }}>{tour && step && <><div className="guidance-tour-top"><span><Sparkles size={16}/>{tour.role === 'house' ? 'Rondleiding voor poortteams' : 'Rondleiding voor ouders'}</span>{!tour.mandatory && <button aria-label="Rondleiding sluiten" onClick={closeReplay}><X size={18}/></button>}</div><div className="guidance-progress" role="progressbar" aria-label="Voortgang rondleiding" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={tour.index + 1}><span style={{ width: `${(tour.index + 1) / steps.length * 100}%` }}/></div><p className="guidance-step-count">Stap {tour.index + 1} van {steps.length} <span>{step.label}</span></p><Primitive.Title ref={tourTitle} tabIndex={-1} className="guidance-tour-title">{step.title}</Primitive.Title><Primitive.Description className="guidance-tour-copy">{step.text}</Primitive.Description><div className="guidance-tip"><CheckCircle2 size={18}/><p>{step.tip}</p></div><p className="guidance-screen-indicator"><span className={targetFound ? 'is-ready' : ''}/>{targetFound ? 'Dit onderdeel staat achter de uitleg in beeld.' : 'Deze stap hoort bij dit scherm. De inhoud kan per fase van de avond verschillen.'}</p>{saveError&&<p role="alert">{saveError}</p>}<div className="guidance-tour-actions"><button className="guidance-secondary" disabled={saving || tour.index === 0} onClick={() => moveStep(tour.index - 1)}><ArrowLeft size={16}/>Vorige</button>{tour.index < steps.length - 1 ? <button className="guidance-primary" disabled={saving} onClick={() => void moveStep(tour.index + 1)}>Verder<ArrowRight size={17}/></button> : <button className="guidance-primary" disabled={saving} onClick={()=>void finish()}><Check size={17}/>Rondleiding afronden</button>}</div>{tour.mandatory && <p className="guidance-required-note">Bekijk alle stappen één keer. Je voortgang blijft bewaard; je kunt de uitleg later opnieuw openen.</p>}</>}</Primitive.Content></Primitive.Portal></Primitive.Root>
+  </>;
+}
+
+export function GuidanceHost(){
+ const path=usePathname();const [record,setRecord]=useState<GuidanceRecord|null>(null);
+ useEffect(()=>{
+  let active=true;
+  document.documentElement.dataset.participantGuidanceActive='true';
+  async function load(){try{const response=await fetch('/api/redesign/guidance',{cache:'no-store'});if(!active)return;if(response.ok){const next=await response.json() as GuidanceRecord;setRecord(next);if(next.groupId)void configureArrivalSync({accountId:next.userId,eventId:next.eventId,groupId:next.groupId}).catch(()=>{});}else if(response.status===401||response.status===403){setRecord(null);document.documentElement.dataset.participantGuidanceActive='false';window.dispatchEvent(new Event('poorten-guidance-status'));}}
+  catch { /* Required participant information is retried on reconnect. */ }}
+  void load();const client=createClient();const auth=client?.auth.onAuthStateChange(()=>{if(active)void load();});const timer=setInterval(()=>void load(),30000);window.addEventListener('online',load);
+  return()=>{active=false;auth?.data.subscription.unsubscribe();clearInterval(timer);window.removeEventListener('online',load);};
+ },[]);
+ return record?<ParticipantGuidance key={record.userId+record.eventId} path={path} initial={record}/>:null;
+}

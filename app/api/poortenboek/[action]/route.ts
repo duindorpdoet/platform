@@ -1,3 +1,4 @@
+import { withBookStories } from "@/lib/poortenboek/serialization";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -38,7 +39,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ action: string }> };
 const response = (data: unknown, status = 200) =>
-  NextResponse.json(data, { status, headers: privateHeaders });
+  NextResponse.json(withBookStories(data), { status, headers: privateHeaders });
 const errorResponse = (message: string, status: number) =>
   response({ error: message }, status);
 async function body(request: Request) {
@@ -256,10 +257,14 @@ export async function POST(request: Request, context: Context) {
         "identity",
         "practice",
         "banner_vote",
+        "tutorial",
+        "chapter_read",
         "demo-phase",
       ].includes(action)
     )
       return errorResponse("Niet gevonden", 404);
+    if (action === "tutorial") z.object({ version: z.literal(1), step: z.number().int().min(0).max(8), completed: z.boolean().optional() }).parse(input);
+    if (action === "chapter_read") z.object({ chapter: z.number().int().min(1).max(6) }).parse(input);
     if (action === "checklist")
       z.object({ values: z.array(z.boolean()).length(6) }).parse(input);
     if (action === "sound") z.object({ enabled: z.boolean() }).parse(input);

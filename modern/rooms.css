@@ -1,0 +1,15 @@
+/* Shared finishing touches for the gate workspace and its dialogs. */
+.modern-ui [data-workspace="poortkamer"]{font-variant-numeric:tabular-nums}
+.modern-ui [data-workspace="poortkamer"] .room-chat{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.modern-ui [data-workspace="poortkamer"] .room-chat h2,.modern-ui [data-workspace="poortkamer"] .room-chat h3{font-family:inherit;letter-spacing:-.02em}
+.modern-ui [data-workspace="poortkamer"] .workspace-tabs{background:#0c1423;border:1px solid #29354b;border-radius:10px;padding:4px;gap:4px}
+.modern-ui [data-workspace="poortkamer"] .workspace-tabs button{font-size:11px;min-height:35px;border-radius:7px}
+.modern-ui [data-workspace="poortkamer"] .workspace-tabs button.active,.modern-ui [data-workspace="poortkamer"] .workspace-tabs button[aria-pressed="true"]{background:#a3afff19;color:#c5cdff;border-color:transparent}
+.modern-ui [data-workspace="poortkamer"] .chat-window{background:#0c1423;border-color:#29354b;border-radius:12px}
+.modern-ui [data-workspace="poortkamer"] .chat-composer textarea{background:#111a2a;border-color:#31405b;border-radius:10px;color:#d8e1ef}
+.modern-ui [data-workspace="poortkamer"] .editorial-feed{padding-top:6px}
+.modern-ui [data-workspace="poortkamer"] .editorial-section-heading h2{font:600 18px/1.4 Inter,ui-sans-serif,sans-serif;letter-spacing:-.02em;color:#e8edf7}
+.modern-ui [data-workspace="poortkamer"] .editorial-grid{gap:15px}
+.modern-ui [data-workspace="poortkamer"] .editorial-card{background:#111a2a;border:1px solid #29354b;border-radius:12px;padding:20px}
+.modern-ui [data-workspace="poortkamer"] .editorial-card h2{font:600 16px/1.4 Inter,ui-sans-serif,sans-serif}
+.modern-ui [data-workspace="poortkamer"] .editorial-card p{font-size:12px;color:#91a1b9}

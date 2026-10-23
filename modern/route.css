@@ -1,0 +1,156 @@
+.modern-ui .route-workspace{--group-gold:#f5ae69;display:flex;flex-direction:column;gap:18px;min-width:0;color:#eef2fb}
+.modern-ui .route-workspace :is(h1,h2,h3){font-family:inherit;letter-spacing:-.035em;font-weight:650}
+.modern-ui .route-workspace h2{font-size:22px;line-height:1.25}
+.modern-ui .route-workspace .kicker{font-size:10px;font-weight:650;line-height:1.5;letter-spacing:.15em;color:#9eacc1;margin:0 0 6px}
+.modern-ui .route-workspace .route-workspace-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 0 2px}
+.modern-ui .route-workspace .route-workspace-heading h2{font-size:19px;color:#c5d0e3;letter-spacing:-.02em;font-weight:500}
+.modern-ui .route-workspace .route-group-badge{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid #8193ad26;background:#111a2c;border-radius:9px;color:#cbd4e4;font-size:12px;white-space:nowrap}
+.modern-ui .route-workspace .group-route-context{display:flex;gap:12px;padding:0;border:0;background:none;box-shadow:none;min-height:35px}
+.modern-ui .route-workspace .group-route-code{display:none}
+.modern-ui .route-workspace .group-route-phase{font-size:12px;color:#9aabc2}
+.modern-ui .route-workspace .group-route-phase.is-active{color:#93d9b4}
+.modern-ui .route-workspace .group-route-phase::before{width:6px;height:6px;box-shadow:0 0 0 4px #87cda40e}
+.modern-ui .route-workspace .group-route-refresh{margin-left:auto;background:#111a2c;border:1px solid #93a6c022;padding:8px 12px;border-radius:9px;color:#b6c4d9;font-size:11px;min-height:36px}
+.modern-ui .route-workspace .group-route-refresh svg{width:14px;height:14px}
+.modern-ui .route-workspace .route-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:6px;background:#0b1220;border:1px solid #8698b221;border-radius:14px}
+.modern-ui .route-workspace .route-steps button{display:flex;align-items:center;gap:10px;text-align:left;min-width:0;padding:12px 10px;background:transparent;border:1px solid transparent;border-radius:10px;color:#6f819e;line-height:1.4;cursor:pointer}
+.modern-ui .route-workspace .route-steps button>span{display:grid;place-items:center;height:31px;width:31px;flex:0 0 31px;border-radius:9px;background:#172134;color:#8495b1}
+.modern-ui .route-workspace .route-steps button div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.modern-ui .route-workspace .route-steps small{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:inherit}
+.modern-ui .route-workspace .route-steps strong{font-size:11px;font-weight:550;line-height:1.4;color:inherit}
+.modern-ui .route-workspace .route-steps button.is-done{color:#9ccab5}
+.modern-ui .route-workspace .route-steps button.is-done>span{color:#a1d9bc;background:#15332975}
+.modern-ui .route-workspace .route-steps button.is-current{color:#f8ca9b;background:#f5ae690c;border-color:#f5ae6926}
+.modern-ui .route-workspace .route-steps button.is-current>span{background:#f5ae6926;color:#f5ae69}
+.modern-ui .route-workspace .route-steps button:hover{background:#ffffff08}
+.modern-ui .route-workspace .group-route-metrics{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;padding:12px 16px;background:#10192a;border:1px solid #93a6c021;border-radius:11px;font-size:11px;box-shadow:none}
+.modern-ui .route-workspace .group-route-metrics>span{display:flex;align-items:center;gap:7px;font-size:11px;line-height:1.5;padding:0;border:0;color:#8f9fb7;background:none;min-height:0}
+.modern-ui .route-workspace .group-route-metrics>span:first-child{color:#f5b77e}
+.modern-ui .route-workspace .group-route-metrics>span svg{color:#7f91ad}
+.modern-ui .route-workspace .group-route-metrics .route-update-time{display:none}
+.modern-ui .route-workspace .group-route-metrics .text-link{padding:2px 0;margin-left:auto;font-size:11px;color:#b1b9d7;min-height:24px}
+.modern-ui .route-workspace .panel{border:1px solid #7e91ad26;border-radius:16px;background:#111a2c;padding:24px;box-shadow:0 5px 30px #0000000c;margin:0}
+.modern-ui .route-workspace .live-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:stretch;gap:18px;min-width:0}
+.modern-ui .route-workspace .group-destination{position:relative;isolation:isolate;min-height:300px;overflow:hidden;display:flex;align-items:stretch;border:1px solid #9a8b932a;border-radius:16px;background:#121b2c}
+.modern-ui .route-workspace .group-destination>img{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;z-index:-2;opacity:.65}
+.modern-ui .route-workspace .group-destination::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#0b1220ee,#0c142b7d),linear-gradient(0deg,#0c142af2,transparent)}
+.modern-ui .route-workspace .active-portal-copy{position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:0;padding:28px;background:none;max-width:none;min-height:300px}
+.modern-ui .route-workspace .active-portal-copy .kicker{color:#d9b48d}
+.modern-ui .route-workspace .active-portal-copy h2{font-size:clamp(25px,2.7vw,36px);max-width:420px;line-height:1.12;letter-spacing:-.045em;font-weight:650;margin:2px 0 12px}
+.modern-ui .route-workspace .active-portal-copy>p:not(.kicker){font-size:12px;line-height:1.65;max-width:440px;color:#a1acc0}
+.modern-ui .route-workspace .group-destination-details{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.modern-ui .route-workspace .group-destination-details>span{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:7px;background:#06101dab;border:1px solid #acbbcc23;color:#d4deed;font-size:10px;line-height:1.4;min-width:0}
+.modern-ui .route-workspace .route-map-card{display:flex;flex-direction:column;gap:12px;padding:18px;min-width:0;min-height:0}
+.modern-ui .route-workspace .route-map-heading{display:flex;gap:9px;align-items:center;color:#a9b7cf}
+.modern-ui .route-workspace .route-map-heading h3{font-size:13px;letter-spacing:-.02em;margin:0;color:#d9e0ee}
+.modern-ui .route-workspace .route-map-heading .kicker{font-size:8px;margin-bottom:2px;color:#778ba9}
+.modern-ui .route-workspace .route-map-card .night-map{height:165px;min-height:165px;border-radius:10px}
+.modern-ui .route-workspace .route-map-card .night-map-canvas{min-height:165px}
+.modern-ui .route-workspace .route-map-card .night-map-fallback{min-height:165px;padding:18px;gap:7px}
+.modern-ui .route-workspace .route-map-card .night-map-fallback>svg{height:20px;width:20px}
+.modern-ui .route-workspace .route-map-card .night-map-fallback h3{font-size:15px}
+.modern-ui .route-workspace .route-map-card .night-map-fallback p{font-size:10px}
+.modern-ui .route-workspace .route-map-card .route-instruction{display:flex;gap:8px;border:0;padding:0;background:none;font-size:10px;line-height:1.5;color:#8395af}
+.modern-ui .route-workspace .route-map-card .route-instruction>svg{height:16px;width:16px;color:#d4a572;flex-shrink:0}
+.modern-ui .route-workspace .route-map-card .route-instruction strong{color:#a5b5ca;font-weight:500}
+.modern-ui .route-workspace .route-map-card .next-hidden{display:none}
+.modern-ui .route-workspace .route-section-title{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.modern-ui .route-workspace .route-step-number{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border:1px solid #8998b32c;background:#182236;border-radius:10px;color:#b4bdd4;font-size:11px;font-weight:600;line-height:1}
+.modern-ui .route-workspace .route-section-title .kicker{font-size:9px;margin-bottom:3px}
+.modern-ui .route-workspace .route-section-title h2{font-size:18px;letter-spacing:-.03em}
+.modern-ui .route-workspace .scan-panel>p{margin:12px 0 18px;color:#8f9fb7;font-size:12px;line-height:1.6}
+.modern-ui .route-workspace .scan-panel .actions{display:grid;grid-template-columns:auto minmax(120px,1fr) auto;gap:10px}
+.modern-ui .route-workspace .scan-panel .actions :is(input,.btn){min-height:44px;max-width:100%;margin:0;font-size:12px;min-width:0}
+.modern-ui .route-workspace .scan-panel .actions input{border:1px solid #93a6c02e;border-radius:10px;background:#0a1221;padding:10px 14px;color:#e7eaf6;letter-spacing:.08em;font-weight:550}
+.modern-ui .route-workspace .scan-panel .actions input::placeholder{font-weight:400;letter-spacing:0;color:#70829c}
+.modern-ui .route-workspace .scan-panel.is-confirmed{border-color:#7fd2a53d;background:linear-gradient(110deg,#17312755,#111a2c 65%)}
+.modern-ui .route-workspace .route-confirmed-icon{margin-left:auto;color:#8edab2;width:24px;height:24px}
+.modern-ui .route-workspace .scan-panel .success-line{margin:12px 0 0;font-size:11px;color:#8edab2;display:flex;gap:7px;align-items:center}
+.modern-ui .route-workspace .route-checked-count{border:1px solid #a5b4cf25;background:#182236;border-radius:8px;color:#a9bad1;font-size:10px;padding:6px 9px;white-space:nowrap}
+.modern-ui .route-workspace .route-visit-progress{height:4px;background:#24314a;border-radius:8px;overflow:hidden;margin:18px 0 16px}
+.modern-ui .route-workspace .route-visit-progress>span{display:block;height:100%;background:linear-gradient(90deg,#8aa4ff,#a4d5bf);transition:width .3s ease;border-radius:8px}
+.modern-ui .route-workspace .route-inline-guide{display:flex;align-items:center;gap:7px;font-size:11px;line-height:1.55;background:#8c9cff0a;border:1px solid #9eafff1d;border-radius:9px;padding:9px 11px;color:#9faece;margin:0 0 8px}
+.modern-ui .route-workspace .participant-row{display:grid;grid-template-columns:34px minmax(70px,1fr) auto auto;gap:12px;padding:14px 0;align-items:center;border-bottom:1px solid #91a2bc18;margin:0}
+.modern-ui .route-workspace .participant-row .avatar{display:grid;place-items:center;background:#1c2942;border:1px solid #8aa3e52e;color:#aebfea;width:34px;height:34px;font-size:12px;border-radius:10px}
+.modern-ui .route-workspace .participant-row strong{font-size:13px;color:#e3e8f2;font-weight:550;display:block}
+.modern-ui .route-workspace .participant-row small{font-size:10px;color:#7285a2;display:block;margin-top:3px}
+.modern-ui .route-workspace .participant-row>.status{font-size:10px;border-radius:7px;padding:5px 8px;background:#182238;color:#8697b2;border:1px solid #7f91ac22}
+.modern-ui .route-workspace .participant-row>.status.visited{color:#94d1af;background:#17402f3b;border-color:#6ac28e30}
+.modern-ui .route-workspace .participant-row>.status.skipped{color:#d1b180;background:#61491e30;border-color:#c5a06830}
+.modern-ui .route-workspace .participant-actions{display:flex;align-items:center;gap:8px;padding:0}
+.modern-ui .route-workspace .participant-actions button{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid #8f9fb52b;background:#1b283e;color:#c8d3e4;border-radius:8px;padding:8px 10px;min-height:36px;font-size:10px;line-height:1.4;white-space:nowrap}
+.modern-ui .route-workspace .participant-actions button:first-child{color:#a6d7be;border-color:#6da58b32;background:#1e3c3033}
+.modern-ui .route-workspace .participant-actions button:disabled{opacity:.3}
+.modern-ui .route-workspace .participant-panel>.btn.outline.full{width:auto;padding:8px 12px;min-height:35px;margin-top:16px;font-size:10px;background:transparent;border:1px solid #9caac429;color:#8394af;box-shadow:none}
+.modern-ui .route-workspace .route-next-block{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:22px;padding:20px;background:#0b1323;border:1px solid #9baac31a;border-radius:12px}
+.modern-ui .route-workspace .route-next-block>div{display:flex;gap:12px;align-items:center;min-width:0}
+.modern-ui .route-workspace .route-next-block strong{font-size:12px;font-weight:550;color:#c6d2e7}
+.modern-ui .route-workspace .route-next-block p{font-size:10px;color:#7c8fac;line-height:1.5;margin:4px 0 0}
+.modern-ui .route-workspace .route-finish-button{width:auto;min-width:185px;min-height:44px;padding:11px 16px;margin:0;flex-shrink:0;font-size:12px;gap:12px}
+.modern-ui .route-workspace .route-finish-button:disabled{background:#263047;border-color:#38435b;color:#72809c;opacity:.65;box-shadow:none}
+.modern-ui .route-workspace .group-pre-event{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:18px;align-items:start}
+.modern-ui .route-workspace .pre-art{min-height:260px;border-radius:16px;overflow:hidden;border:1px solid #93a6c021}
+.modern-ui .route-workspace .pre-art>img{height:100%;min-height:260px;object-fit:cover}
+.modern-ui .route-workspace .pre-art>div{min-height:260px;padding:26px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(0deg,#0b1424f2,transparent)}
+.modern-ui .route-workspace .pre-art h2{font-size:22px;margin-bottom:10px;line-height:1.2}
+.modern-ui .route-workspace .pre-art p:last-child{font-size:12px;color:#a5b2c9}
+.modern-ui .route-workspace .attendance-progress{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:12px;background:#0c1425;border-radius:9px;margin:16px 0 6px}
+.modern-ui .route-workspace .attendance-progress strong{font-size:11px;color:#bdcde2}
+.modern-ui .route-workspace .attendance-progress span{font-size:10px;color:#7890b1}
+.modern-ui .route-workspace .attendance-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:0;border-bottom:1px solid #92a1b821;padding:12px 0;margin:0;min-width:0}
+.modern-ui .route-workspace .attendance-row legend{float:left;display:flex;flex-direction:column;gap:4px;padding:0;font-size:12px;min-width:0}
+.modern-ui .route-workspace .attendance-row legend small{font-size:10px;color:#7e91b0}
+.modern-ui .route-workspace .attendance-row>div{display:flex;gap:6px;min-width:0}
+.modern-ui .route-workspace .attendance-row label{border:1px solid #a1aec52b;border-radius:7px;padding:8px;font-size:10px;display:flex;align-items:center;gap:5px;color:#899cb9;background:#172034;min-height:36px;cursor:pointer}
+.modern-ui .route-workspace .attendance-row label.selected.present{color:#98d1b4;background:#2144344d;border-color:#74b9946b}
+.modern-ui .route-workspace .attendance-row label.selected.absent{color:#e0c197;background:#5943263b;border-color:#bd975b6b}
+.modern-ui .route-workspace .attendance-row input{width:12px;height:12px;accent-color:#b7c7f7}
+.modern-ui .route-workspace .finish-screen{padding:40px 24px;border-radius:16px;background:radial-gradient(ellipse at top,#33524c55,transparent 70%),#111e2b;border:1px solid #7ec4aa3b}
+.modern-ui .route-workspace .finish-screen h2{font-size:30px;margin:14px 0}
+.modern-ui .route-workspace .finish-screen p{font-size:13px}
+.modern-ui .route-workspace .group-route-history h2{font-size:18px}
+.modern-ui .route-workspace .group-route-history .summary-row{font-size:11px;padding:14px 0;gap:12px;line-height:1.5;border-color:#96a3bc1a}
+.modern-ui .route-workspace :is(.offline-banner,.form-warning){font-size:12px;padding:14px 16px;border-radius:11px;border:1px solid #bc925744;background:#b27d2414;line-height:1.65}
+.modern-ui .route-workspace :is(#route-destination,#route-scan,#route-children,#route-next){scroll-margin-top:calc(var(--prototype-bar-height,36px) + 90px)}
+@media(max-width:1120px){.modern-ui .route-workspace .route-steps button{gap:7px;padding:10px 7px}.modern-ui .route-workspace .route-steps strong{font-size:10px}.modern-ui .route-workspace .group-route-metrics .route-finale-time{display:none}.modern-ui .route-workspace .route-map-card .route-instruction{display:none}}
+@media(max-width:850px){.modern-ui .route-workspace .route-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.modern-ui .route-workspace .route-steps button{padding:10px}.modern-ui .route-workspace .route-steps strong{font-size:11px}.modern-ui .route-workspace .live-grid{grid-template-columns:minmax(0,1fr)}.modern-ui .route-workspace .route-next-block{align-items:stretch;flex-direction:column}.modern-ui .route-workspace .route-finish-button{width:100%}.modern-ui .route-workspace .group-pre-event{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){
+.modern-ui .route-workspace{gap:14px}.modern-ui .route-workspace>*{order:0}.modern-ui .route-workspace .route-workspace-heading{display:none}.modern-ui .route-workspace .group-route-context{margin-top:-8px;min-height:32px}.modern-ui .route-workspace .group-route-phase{font-size:10px}.modern-ui .route-workspace .group-route-refresh{min-height:32px;width:32px;padding:7px}.modern-ui .route-workspace .group-route-refresh span{display:none}.modern-ui .route-workspace .route-steps{order:1;gap:3px;padding:4px;border-radius:12px}.modern-ui .route-workspace .route-steps button{padding:9px 6px;gap:7px}.modern-ui .route-workspace .route-steps button>span{height:28px;width:28px;flex-basis:28px;border-radius:8px}.modern-ui .route-workspace .route-steps small{font-size:8px}.modern-ui .route-workspace .route-steps strong{font-size:9px}.modern-ui .route-workspace .group-route-metrics{order:2;gap:9px 13px;padding:11px 12px}.modern-ui .route-workspace .group-route-metrics>span{font-size:10px}.modern-ui .route-workspace .group-route-metrics .route-stop-time{display:none}.modern-ui .route-workspace .group-route-metrics .text-link{font-size:9px;min-height:25px}.modern-ui .route-workspace .live-grid{display:contents}.modern-ui .route-workspace .group-destination{order:3;min-height:215px;width:100%}.modern-ui .route-workspace .active-portal-copy{padding:20px;min-height:215px}.modern-ui .route-workspace .active-portal-copy h2{font-size:27px;margin-bottom:10px}.modern-ui .route-workspace .active-portal-copy>p:not(.kicker){font-size:11px;line-height:1.55}.modern-ui .route-workspace .group-destination-details{margin-top:12px;gap:6px}.modern-ui .route-workspace .group-destination-details>span{font-size:9px;padding:6px 8px}.modern-ui .route-workspace .scan-panel{order:4}.modern-ui .route-workspace .participant-panel{order:5}.modern-ui .route-workspace .route-map-card{order:6;width:100%}.modern-ui .route-workspace .group-route-history{order:7}.modern-ui .route-workspace .panel{padding:18px;border-radius:14px}.modern-ui .route-workspace .route-section-title{gap:10px}.modern-ui .route-workspace .route-section-title h2{font-size:16px}.modern-ui .route-workspace .route-section-title .kicker{font-size:8px}.modern-ui .route-workspace .route-step-number{width:29px;height:29px;flex-basis:29px;border-radius:8px;font-size:10px}.modern-ui .route-workspace .scan-panel>p{font-size:11px;margin-top:12px;margin-bottom:14px}.modern-ui .route-workspace .scan-panel .actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.modern-ui .route-workspace .scan-panel .actions>.btn:first-child{grid-column:1/-1}.modern-ui .route-workspace .scan-panel .actions :is(input,.btn){font-size:11px;min-height:44px;width:100%}.modern-ui .route-workspace .scan-panel .actions input{font-size:16px;padding:9px 10px;letter-spacing:0}.modern-ui .route-workspace .participant-panel>.row-between{flex-wrap:nowrap;align-items:center;gap:8px}.modern-ui .route-workspace .route-checked-count{font-size:9px;padding:5px 6px}.modern-ui .route-workspace .route-inline-guide{font-size:10px;align-items:flex-start;padding:9px}.modern-ui .route-workspace .route-inline-guide>svg{flex-shrink:0;margin-top:2px}.modern-ui .route-workspace .participant-row{grid-template-columns:32px minmax(0,1fr) auto;gap:9px;padding:12px 0}.modern-ui .route-workspace .participant-row .avatar{width:32px;height:32px;border-radius:9px}.modern-ui .route-workspace .participant-row strong{font-size:12px}.modern-ui .route-workspace .participant-row small{font-size:9px}.modern-ui .route-workspace .participant-row>.status{font-size:9px;padding:4px 6px}.modern-ui .route-workspace .participant-actions{grid-column:2/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:0}.modern-ui .route-workspace .participant-actions:empty{display:none}.modern-ui .route-workspace .participant-actions button{min-height:42px;font-size:10px;flex:none;width:100%;padding:8px;white-space:normal}.modern-ui .route-workspace .route-next-block{margin-top:17px;padding:14px;gap:15px}.modern-ui .route-workspace .route-next-block strong{font-size:11px}.modern-ui .route-workspace .route-next-block p{font-size:10px}.modern-ui .route-workspace .route-finish-button{min-height:46px;font-size:12px}.modern-ui .route-workspace .route-map-card .route-instruction{display:flex}.modern-ui .route-workspace .attendance-progress{align-items:flex-start;flex-direction:column;gap:5px}.modern-ui .route-workspace .attendance-row{grid-template-columns:minmax(0,1fr)}.modern-ui .route-workspace .attendance-row>div{width:100%}.modern-ui .route-workspace .attendance-row label{flex:1;justify-content:center;min-height:42px}.modern-ui .route-workspace .finish-screen h2{font-size:25px}.modern-ui .route-workspace .finish-screen{padding:30px 20px}
+}
+@media(prefers-reduced-motion:reduce){.modern-ui .route-workspace .route-visit-progress>span{transition:none}}
+
+.modern-ui .route-workspace .night-map-fallback>strong{font-family:inherit;font-size:13px;line-height:1.3;font-weight:550}.modern-ui .route-workspace .night-map-fallback .btn{font-size:9px;min-height:28px;padding:5px 8px}.modern-ui .route-workspace .night-map-fallback-addresses p{padding:5px 9px;font-size:9px;line-height:1.45}
+/* The legacy cinematic layout adds 51px above every group app. This workspace
+   already has its own page heading, so that offset creates an empty band. */
+.modern-ui .route-workspace{padding-top:0}
+@media(max-width:650px){
+ .modern-ui .modern-participant .participant-page.compact{row-gap:12px}
+ .modern-ui .route-workspace .scan-panel>p,
+ .modern-ui .route-workspace .active-portal-copy>p:not(.kicker),
+ .modern-ui .route-workspace .route-inline-guide,
+ .modern-ui .route-workspace .route-next-block p{font-size:12px;line-height:1.65}
+ .modern-ui .route-workspace .participant-actions button,
+ .modern-ui .route-workspace .scan-panel .actions .btn,
+ .modern-ui .route-workspace .attendance-row label{font-size:12px}
+ .modern-ui .route-workspace .participant-row strong{font-size:13px}
+ .modern-ui .route-workspace .route-steps strong{font-size:11px}
+ .modern-ui .route-workspace .route-steps small{font-size:9px;letter-spacing:.06em}
+}
+
+/* Arrival is a single, explicit confirmation; scanning alone never advances. */
+.modern-ui .gate-arrival-dialog{display:flex;flex-direction:column;gap:14px;width:min(550px,calc(100vw - 28px));max-width:550px;max-height:calc(100dvh - 60px);overflow-y:auto;border:1px solid #9caec535;border-radius:20px;padding:30px;background:#101a2c;color:#e9effa;box-shadow:0 30px 120px #0009;font-family:var(--ui-font,system-ui);z-index:900}
+.modern-ui .gate-arrival-dialog [data-slot="dialog-title"]{font-family:inherit;font-size:25px;line-height:1.2;letter-spacing:-.04em;margin:0}
+.modern-ui .gate-arrival-dialog [data-slot="dialog-description"]{font-size:13px;line-height:1.7;color:#a2b1c9;margin:0}
+.modern-ui .gate-arrival-dialog .kicker{font-size:10px;line-height:1.4;letter-spacing:.13em;color:#efb87f;margin:0}
+.modern-ui .gate-arrival-icon{display:grid;place-items:center;width:49px;height:49px;border:1px solid #f5ae6944;background:#f5ae6912;color:#f5ae69;border-radius:14px}
+.modern-ui .gate-arrival-children{display:grid;margin:3px 0;border:1px solid #8ba0bd20;border-radius:12px;overflow:hidden}
+.modern-ui .gate-arrival-children label{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border-bottom:1px solid #8ba0bd20;min-height:64px;background:#0d1727}
+.modern-ui .gate-arrival-children label:last-child{border:0}
+.modern-ui .gate-arrival-children strong{display:block;font-size:14px;font-weight:600;color:#e2eafa}
+.modern-ui .gate-arrival-children small{display:block;margin-top:3px;font-size:11px;color:#7890b0}
+.modern-ui .gate-arrival-children label>span:last-child{display:flex;align-items:center;gap:9px;font-size:12px;white-space:nowrap;color:#a6d4bd}
+.modern-ui .gate-arrival-children input{width:19px;height:19px;accent-color:#85d5ad}
+.modern-ui .gate-arrival-note{font-size:12px;line-height:1.6;color:#8b9fbc;margin:0}
+.modern-ui .gate-arrival-confirm{width:100%;min-height:49px;font-size:13px!important;white-space:normal;line-height:1.5;justify-content:center;gap:10px}
+.modern-ui .gate-arrival-separate{font-size:12px;line-height:1.5;color:#8ea5c5;padding:8px;background:none;border:0;text-decoration:underline;text-underline-offset:4px;min-height:36px}
+@media(max-width:600px){.modern-ui .gate-arrival-dialog{padding:24px 20px;gap:13px;border-radius:16px}.modern-ui .gate-arrival-dialog [data-slot="dialog-title"]{font-size:23px}.modern-ui .gate-arrival-dialog [data-slot="dialog-description"]{font-size:12px}.modern-ui .gate-arrival-children label{padding:12px}.modern-ui .gate-arrival-confirm{font-size:12px!important}}

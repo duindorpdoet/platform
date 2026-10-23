@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, Flame, LockKeyhole, TriangleAlert } from "lucide-react";
 import { getWorld, worlds } from "@/features/content/public-content";
 
 export function generateStaticParams() {
@@ -17,19 +16,8 @@ export default async function WorldPage({ params }: { params: Promise<{ slug: st
     <div className="world-detail" style={{ "--world": world.color } as React.CSSProperties}>
       <img className="detail-art world-detail-art" src={`/images/world-${index}.webp`} alt={world.name} />
       <div className="wrap detail-layout">
-        <Link className="back" href="/werelden"><ArrowLeft size={16} /> Alle werelden</Link>
-        <div className="detail-copy">
-          <p className="kicker">WERELD {String(index + 1).padStart(2, "0")} · {world.subtitle}</p>
-          <h1>{world.name}</h1>
-          <p className="lead">{world.story}</p>
-          <div className="panel">
-            <span className="label">SPANNINGSNIVEAU</span>
-            <div className="threat"><Flame /> {world.intensity} / 4</div>
-            <div className="warning-tags">{world.warnings.map((warning) => <span key={warning}><TriangleAlert size={14} />{warning}</span>)}</div>
-          </div>
-          <p className="muted"><LockKeyhole size={17} /> De echte poorten en hun adressen blijven nog even geheim. Zo blijft de ontdekking op 31 oktober extra leuk.</p>
-          <Link className="btn" href="/meelopen">Bekijk deelname <ArrowRight size={16} /></Link>
-        </div>
+        <Link className="back" href="/werelden">← Alle werelden</Link>
+        <div className="detail-copy"><p className="kicker">{world.subtitle}</p><h1>{world.name}</h1><p className="lead">{world.story}</p><div className="panel"><span className="label">Spanningsniveau</span><h3>{world.intensity} / 4</h3><div className="warning-tags">{world.warnings.map(warning=><span key={warning}>{warning}</span>)}</div></div><Link className="btn" href="/meelopen">Bekijk deelname →</Link></div>
       </div>
     </div>
   );

@@ -1,0 +1,266 @@
+/* Participant workspace: same tasks, a calmer hierarchy. */
+.modern-ui .modern-participant{--role:#f5ae69;--role-soft:#f5ae6912;--role-line:#f5ae6938;--member-line:#263146;background:#0b1220;min-height:calc(100dvh - var(--prototype-bar-height,36px));font-family:var(--font-ui,Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif);color:#eaf0f8}
+.modern-ui .modern-participant.role-viewer{--role:#88d1d7;--role-soft:#88d1d712;--role-line:#88d1d738}
+.modern-ui .modern-participant.role-homeowner{--role:#b3a5ee;--role-soft:#b3a5ee12;--role-line:#b3a5ee38}
+.modern-ui .modern-participant:before{display:none}
+.modern-ui .modern-participant h1,.modern-ui .modern-participant h2,.modern-ui .modern-participant h3,.modern-ui .modern-participant strong{font-family:var(--font-ui,Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif)}
+.modern-ui .modern-participant .participant-sidebar{width:244px;padding:25px 16px 18px;top:var(--prototype-bar-height,36px);height:calc(100dvh - var(--prototype-bar-height,36px));background:#0b111e;border-right:1px solid #202b3d;backdrop-filter:none}
+.modern-ui .modern-participant .participant-sidebar:after{display:none}
+.modern-ui .modern-participant .participant-brand{display:flex;gap:10px;align-items:center;width:auto;margin:0 2px 27px;text-align:left}
+.modern-ui .modern-participant .participant-brand img{width:55px;height:47px;object-fit:contain;filter:none}
+.modern-ui .modern-participant .participant-brand>span{font-size:17px;letter-spacing:-.04em;color:#f0eee9;font-weight:750;line-height:1.25}
+.modern-ui .modern-participant .participant-brand small{display:block;margin-top:4px;font-size:9px;color:#7e8ea7;font-weight:500;letter-spacing:.015em}
+.modern-ui .modern-participant .role-identity{position:relative;gap:11px;margin:0 0 27px;padding:12px 11px;border-radius:12px;border:1px solid #2a354b;background:#121c2d}
+.modern-ui .modern-participant .role-identity>span:first-child{width:35px;height:35px;flex:0 0 auto;border:0;border-radius:9px;background:var(--role-soft);color:var(--role)}
+.modern-ui .modern-participant .role-identity>div{gap:4px}
+.modern-ui .modern-participant .role-identity small{font-size:9px;line-height:1;color:#7e8fa8;letter-spacing:.02em}
+.modern-ui .modern-participant .role-identity strong{font-size:12px;font-weight:650;letter-spacing:0;line-height:1.2}
+.modern-ui .modern-participant .role-identity .member-role-dot{width:6px;height:6px;margin-left:auto;border:0;background:#76cfad;box-shadow:0 0 0 3px #76cfad10;border-radius:50%}
+.modern-ui .modern-participant .participant-sidebar-caption{font-size:9px;font-weight:650;letter-spacing:.14em;text-transform:uppercase;margin:0 12px 12px;color:#61738f;line-height:1.2}
+.modern-ui .modern-participant .participant-nav{gap:5px}
+.modern-ui .modern-participant .participant-nav a{position:relative;min-height:44px;padding:11px 13px;gap:12px;color:#8b9ab2;font-size:12px;border-radius:9px;font-weight:550;box-shadow:none;background:none}
+.modern-ui .modern-participant .participant-nav a svg{width:17px;height:17px;stroke-width:1.8;flex-shrink:0}
+.modern-ui .modern-participant .participant-nav a:hover{background:#131f32;color:#e5edf7}
+.modern-ui .modern-participant .participant-nav a.active{background:#f5ae6914;color:#f5bf8c;box-shadow:none}
+.modern-ui .modern-participant .member-nav-indicator{margin-left:auto;width:5px;height:5px;background:#f5ae69;border-radius:50%}
+.modern-ui .modern-participant .member-sidebar-event{display:flex;align-items:center;gap:10px;margin:auto 0 16px;padding:15px 12px;border:1px solid #273248;background:linear-gradient(115deg,#172033,#111a28);border-radius:12px}
+.modern-ui .modern-participant .member-sidebar-event>svg{width:18px;height:18px;color:#d2a67f;flex-shrink:0}
+.modern-ui .modern-participant .member-sidebar-event strong{display:block;color:#d8e0ec;font-size:10px;font-weight:600;line-height:1.3}
+.modern-ui .modern-participant .member-sidebar-event span{display:block;font-size:9px;color:#7f90aa;margin-top:5px;line-height:1.25}
+.modern-ui .modern-participant .participant-sidebar-foot{margin:0;padding:15px 10px 0;border-color:#202b3d;display:grid;gap:12px}
+.modern-ui .modern-participant .member-sidebar-link{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#8b9ab2}
+.modern-ui .modern-participant .participant-sidebar-foot .account-signout{min-height:32px;padding:0;margin:0;font-size:11px;border:0;background:none;color:#71839c;box-shadow:none}
+.modern-ui .modern-participant .participant-sidebar-foot .account-signout>svg{width:15px;height:15px}
+.modern-ui .modern-participant .participant-main{margin-left:244px;min-height:calc(100dvh - var(--prototype-bar-height,36px))}
+.modern-ui .modern-participant .participant-topbar{height:76px;min-height:76px;padding:14px 32px;gap:14px;background:#0c1422eb;backdrop-filter:blur(20px);border-bottom:1px solid #233046;top:var(--prototype-bar-height,36px)}
+.modern-ui .modern-participant .participant-topbar>.participant-topbar-identity{display:flex;align-items:center;gap:11px;min-width:0}
+.modern-ui .modern-participant .participant-topbar-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;border:1px solid #33405a;background:#152236;color:#f1b783;flex-shrink:0}
+.modern-ui .modern-participant .participant-topbar-mark svg{width:17px;height:17px}
+.modern-ui .modern-participant .participant-topbar-identity>div{display:grid;gap:4px}
+.modern-ui .modern-participant .participant-topbar .participant-eyebrow{display:flex;gap:8px;align-items:center;color:#70819c;font-size:9px!important;letter-spacing:.035em;text-transform:none;font-weight:500}
+.modern-ui .modern-participant .participant-topbar strong{font-size:13px;color:#e4ebf5;font-weight:650;letter-spacing:-.015em;line-height:1.25}
+.modern-ui .modern-participant .member-topbar-actions{display:flex;align-items:center;gap:16px}
+.modern-ui .modern-participant .member-event-chip{display:flex;align-items:center;gap:7px;font-size:10px;color:#8899b3;white-space:nowrap}
+.modern-ui .modern-participant .member-event-chip>span{width:5px;height:5px;background:#b9a57d;border-radius:50%}
+.modern-ui .modern-participant .role-switcher{gap:8px;font-size:10px}
+.modern-ui .modern-participant .role-switcher>span{font-size:10px;color:#71839d;letter-spacing:.01em}
+.modern-ui .modern-participant .role-switcher select{min-height:36px;height:36px;padding:8px 29px 8px 11px;font-size:10px;border-radius:8px;border:1px solid #2f3d54;background:#121e30;color:#d5dfed;max-width:140px}
+.modern-ui .modern-participant .member-profile-shortcut{display:grid;place-items:center;width:35px;height:35px;border:1px solid #344057;border-radius:50%;background:#1c283d;color:#c3d0e3}
+.modern-ui .modern-participant .participant-content{width:min(1280px,100%);padding:32px 32px 100px}
+.modern-ui .modern-participant .participant-page{gap:20px;max-width:none}
+.modern-ui .modern-participant .participant-page-head{margin:0 0 3px;padding:0}
+.modern-ui .modern-participant .participant-page-head h1{margin:9px 0 0;font-size:clamp(24px,2.9vw,34px);line-height:1.15;letter-spacing:-.05em;font-weight:650;max-width:none}
+.modern-ui .modern-participant .participant-eyebrow{color:#b0a087;font-size:9px!important;letter-spacing:.14em!important;font-weight:650;line-height:1.5!important}
+.modern-ui .modern-participant .participant-card{padding:22px;border:1px solid #2a354a;border-radius:15px;background:#111b2c;box-shadow:none;min-width:0}
+.modern-ui .modern-participant .participant-card h2{font-size:17px;font-weight:650;letter-spacing:-.025em;line-height:1.3;margin:4px 0 11px}
+.modern-ui .modern-participant .participant-card h3{font-size:15px;font-weight:650;letter-spacing:-.02em}
+.modern-ui .modern-participant .participant-card p{font-size:12px;line-height:1.7;color:#8c9db5}
+.modern-ui .modern-participant .section-title{gap:16px;align-items:center;margin-bottom:6px}
+.modern-ui .modern-participant .section-title>svg{width:20px;height:20px;color:#8d9dbc}
+.modern-ui .modern-participant .participant-stat-grid{gap:13px;margin:0}
+.modern-ui .modern-participant .status-card{gap:12px;padding:19px 20px;background:#111b2c;border-color:#2a354a;min-height:88px}
+.modern-ui .modern-participant .status-card>span{width:37px;height:37px;flex-shrink:0;background:#1c2b43;border:0;border-radius:10px;color:#a2b0ca}
+.modern-ui .modern-participant .status-card>span>svg{width:18px;height:18px}
+.modern-ui .modern-participant .status-card small{font-size:9px;letter-spacing:.06em;color:#71849f;text-transform:none}
+.modern-ui .modern-participant .status-card strong{font-size:12px;font-weight:650;line-height:1.45;color:#e0e8f4;margin-top:6px}
+.modern-ui .modern-participant .status-card.good>span{background:#6ec7a614;color:#79cdae}
+.modern-ui .modern-participant .member-live-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(255px,1fr);gap:18px}
+.modern-ui .modern-participant .member-destination{position:relative;min-height:334px;overflow:hidden;border-radius:17px;border:1px solid #3a3943;background:#172235;isolation:isolate;display:flex;align-items:flex-end}
+.modern-ui .modern-participant .member-destination>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:saturate(.8) brightness(.7)}
+.modern-ui .modern-participant .member-destination-overlay{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#0b132014 0%,#0b14207a 35%,#0b1320f5 100%),linear-gradient(90deg,#0b132045,#0b132000)}
+.modern-ui .modern-participant .member-destination-copy{padding:25px;width:100%;display:flex;align-items:flex-start;flex-direction:column}
+.modern-ui .modern-participant .member-state-pill{display:inline-flex;align-items:center;gap:7px;min-height:26px;padding:5px 9px;border-radius:6px;font-size:9px;font-weight:600;letter-spacing:.01em;color:#e9c398;background:#131c29a8;border:1px solid #b6a18a3b;line-height:1.3;backdrop-filter:blur(10px)}
+.modern-ui .modern-participant .member-state-pill>span{width:5px;height:5px;border-radius:50%;background:#f6b16c;box-shadow:0 0 8px #f6b16c80}
+.modern-ui .modern-participant .member-state-pill.subtle{color:#98a9c0;background:#111d30;border-color:#29364c}
+.modern-ui .modern-participant .member-destination h2{margin:14px 0 10px;font-size:clamp(26px,3vw,36px);line-height:1.12;letter-spacing:-.045em;font-weight:650;color:#fff4e6;max-width:470px}
+.modern-ui .modern-participant .member-destination p{display:flex;gap:8px;align-items:center;color:#b9c4d4;margin:0;font-size:11px}
+.modern-ui .modern-participant .member-destination-meta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:15px 0 23px;color:#a5b2c5;font-size:9px}
+.modern-ui .modern-participant .member-destination-meta>span{display:flex;gap:6px;align-items:center}
+.modern-ui .modern-participant .member-destination-action{min-height:43px;padding:11px 16px;gap:20px;font-size:11px;border-radius:8px;min-width:210px;margin:0;justify-content:space-between}
+.modern-ui .modern-participant .member-evening-aside{display:grid;gap:16px;align-content:stretch}
+.modern-ui .modern-participant .member-evening-aside>.participant-card{padding:20px}
+.modern-ui .modern-participant .member-evening-aside .section-title h2{font-size:15px;margin-bottom:0;max-width:180px}
+.modern-ui .modern-participant .member-group-chip{font-size:9px;color:#a4afc4;white-space:nowrap;padding:5px 7px;border:1px solid #39475f;border-radius:6px;background:#1b2941}
+.modern-ui .modern-participant .member-mini-metrics{display:grid;grid-template-columns:repeat(3,1fr);margin:19px 0 17px}
+.modern-ui .modern-participant .member-mini-metrics>div{display:grid;gap:5px;padding-left:14px;border-left:1px solid #2d394e}
+.modern-ui .modern-participant .member-mini-metrics>div:first-child{padding-left:0;border:0}
+.modern-ui .modern-participant .member-mini-metrics strong{font-size:23px;line-height:1.1;font-weight:650;color:#e6e9ee;letter-spacing:-.055em}
+.modern-ui .modern-participant .member-mini-metrics span{font-size:9px;color:#7689a6}
+.modern-ui .modern-participant .member-inline-link{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid #29354a;font-size:10px;color:#bca38a}
+.modern-ui .modern-participant .member-times>.participant-eyebrow{margin-bottom:14px}
+.modern-ui .modern-participant .member-time-row{display:flex;gap:11px;align-items:center;margin-top:12px}
+.modern-ui .modern-participant .member-time-icon{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;background:#f5ae6912;color:#e6ac78;border-radius:8px}
+.modern-ui .modern-participant .member-time-icon.violet{background:#a3afff13;color:#a3afff}
+.modern-ui .modern-participant .member-time-row small{display:block;font-size:9px;color:#7e90ad}
+.modern-ui .modern-participant .member-time-row strong{display:block;font-size:12px;margin-top:5px;color:#d7e0ed;font-weight:650;line-height:1}
+.modern-ui .modern-participant .member-times .member-soft-note{font-size:9px;color:#637793;line-height:1.6;margin:14px 0 0}
+.modern-ui .modern-participant .member-safety-strip{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;border:1px solid #29384a;border-radius:11px;background:#111e2c;color:#819bb0;font-size:10px;line-height:1.5}
+.modern-ui .modern-participant .member-safety-strip>span{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.modern-ui .modern-participant .member-safety-strip>span>svg{color:#79b4aa;flex-shrink:0}
+.modern-ui .modern-participant .member-safety-strip strong{font-weight:600;color:#a5c2cc}
+.modern-ui .modern-participant .member-safety-strip>a{display:inline-flex;gap:8px;align-items:center;white-space:nowrap;color:#b9a68d;font-size:9px}
+.modern-ui .modern-participant .member-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.modern-ui .modern-participant .member-shortcuts>a{display:flex;align-items:center;gap:12px;min-height:81px;padding:17px 18px;border:1px solid #27344a;border-radius:12px;background:#101b2c;transition:background .18s,border-color .18s,transform .18s;min-width:0}
+.modern-ui .modern-participant .member-shortcuts>a:hover{background:#16243b;border-color:#596581;transform:translateY(-2px)}
+.modern-ui .modern-participant .member-shortcuts>a>svg:first-child{width:20px;height:20px;color:#a3afff;flex-shrink:0}
+.modern-ui .modern-participant .member-shortcuts>a>svg:last-child{width:15px;height:15px;margin-left:auto;color:#687e9f;flex-shrink:0}
+.modern-ui .modern-participant .member-shortcuts strong{display:block;font-size:11px;font-weight:600;color:#d9e1ec;line-height:1.3}
+.modern-ui .modern-participant .member-shortcuts small{display:block;font-size:9px;color:#6f829f;margin-top:5px;line-height:1.4}
+.modern-ui .modern-participant .member-news-section{margin-top:30px}
+.modern-ui .modern-participant .editorial-section-heading{margin-bottom:17px;gap:15px}
+.modern-ui .modern-participant .editorial-section-heading h2{font-family:var(--font-ui,system-ui,sans-serif);font-size:20px;font-weight:650;letter-spacing:-.04em;color:#dce4ef;margin:6px 0 0}
+.modern-ui .modern-participant .editorial-section-heading .kicker{font-size:8px;color:#71829e;letter-spacing:.13em;margin:0}
+.modern-ui .modern-participant .editorial-text-link{font-size:10px;color:#bda58e}
+.modern-ui .modern-participant .editorial-grid{gap:14px}
+.modern-ui .modern-participant .editorial-card{background:#111b2c;border-color:#29364b;border-radius:13px;box-shadow:none}
+.modern-ui .modern-participant .editorial-card h2{font-size:15px;font-weight:600;line-height:1.4;letter-spacing:-.02em;font-family:var(--font-ui,system-ui,sans-serif)}
+.modern-ui .modern-participant .editorial-card p{font-size:11px;line-height:1.7;color:#7f91ad}
+.modern-ui .modern-participant .editorial-card>a,.modern-ui .modern-participant .editorial-card .editorial-card-content{padding:18px}
+.modern-ui .modern-participant .editorial-card .editorial-meta{font-size:8px}
+.modern-ui .modern-participant .member-prepare-hero,.modern-ui .modern-participant .member-viewer-hero,.modern-ui .modern-participant .member-gate-entry{display:grid;grid-template-columns:1.05fr 1fr;position:relative;min-height:280px;overflow:hidden;background:#162237;border:1px solid #3b4051;border-radius:17px;isolation:isolate}
+.modern-ui .modern-participant .member-prepare-hero>div,.modern-ui .modern-participant .member-viewer-hero>div,.modern-ui .modern-participant .member-gate-entry>div{padding:28px 30px;position:relative;z-index:2;background:linear-gradient(90deg,#162237 75%,#16223700);margin-right:-30px}
+.modern-ui .modern-participant .member-prepare-hero>img,.modern-ui .modern-participant .member-viewer-hero>img,.modern-ui .modern-participant .member-gate-entry>img{width:100%;height:100%;object-fit:cover;filter:brightness(.7) saturate(.8);min-height:280px}
+.modern-ui .modern-participant .member-prepare-hero h2,.modern-ui .modern-participant .member-viewer-hero h2,.modern-ui .modern-participant .member-gate-entry h2{font-size:clamp(23px,2.8vw,32px);font-weight:650;line-height:1.13;letter-spacing:-.04em;margin:16px 0 10px;color:#f1e7dc}
+.modern-ui .modern-participant .member-prepare-hero p,.modern-ui .modern-participant .member-viewer-hero p,.modern-ui .modern-participant .member-gate-entry p{max-width:390px;font-size:11px;line-height:1.8;color:#94a4bb;margin:0}
+.modern-ui .modern-participant .countdown-grid{display:flex;gap:24px;margin:23px 0 0}
+.modern-ui .modern-participant .countdown-grid span{font-size:8px;color:#7d8faa;letter-spacing:.05em;gap:5px;text-transform:none}
+.modern-ui .modern-participant .countdown-grid strong{font-family:var(--font-ui,system-ui,sans-serif);font-size:29px;font-weight:600;line-height:1;color:#e7c8a6;letter-spacing:-.05em}
+.modern-ui .modern-participant .member-icon-tile{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:#f5ae6914;color:#e6ad78;flex-shrink:0}
+.modern-ui .modern-participant .member-icon-tile.violet{background:#a3afff16;color:#a3afff}
+.modern-ui .modern-participant .member-icon-tile svg{width:19px;height:19px}
+.modern-ui .modern-participant .member-attention-card{display:flex;align-items:center;gap:15px;padding:17px 20px;border:1px solid #b386564d;border-radius:12px;background:#f5ae6909}
+.modern-ui .modern-participant .member-attention-card strong{font-size:12px;color:#e7c29d;font-weight:650}
+.modern-ui .modern-participant .member-attention-card p{font-size:10px;color:#9b907f;margin:5px 0 0;line-height:1.6}
+.modern-ui .modern-participant .member-attention-card>svg{width:18px;height:18px;color:#a4896b;margin-left:auto;flex-shrink:0}
+.modern-ui .modern-participant .member-start-appointment{display:flex;align-items:center;gap:16px}
+.modern-ui .modern-participant .member-start-appointment>div{flex:1;min-width:0}
+.modern-ui .modern-participant .member-start-appointment h2{margin-bottom:5px}
+.modern-ui .modern-participant .member-start-appointment p{margin:0}
+.modern-ui .modern-participant .member-start-appointment>.btn{min-height:39px;font-size:10px;white-space:nowrap;border-radius:8px;padding:10px 13px}
+.modern-ui .modern-participant .participant-preparation-grid,.modern-ui .modern-participant .participant-group-grid{gap:18px;align-items:start}
+.modern-ui .modern-participant .child-payment-row{padding:15px 0;border-color:#26354b;gap:11px}
+.modern-ui .modern-participant .participant-avatar{width:34px;height:34px;background:#213049;border:1px solid #35435d;color:#c7b198;font-size:12px}
+.modern-ui .modern-participant .child-payment-name-action>strong{font-size:12px;color:#dae4f1}
+.modern-ui .modern-participant .child-tikkie-action{min-height:27px;padding:5px 8px;border-radius:6px;font-size:8px;border-color:#3a4c60}
+.modern-ui .modern-participant .child-tikkie-action:disabled{color:#91a6b8;background:#1d2b3b;border-color:#304257}
+.modern-ui .modern-participant .child-payment-main>small{font-size:9px;color:#6e829e}
+.modern-ui .modern-participant .prep-list>button{min-height:49px;grid-template-columns:23px 1fr auto;gap:10px;border-color:#26354b;padding:11px 0}
+.modern-ui .modern-participant .prep-list>button:first-of-type{margin-top:12px}
+.modern-ui .modern-participant .prep-list>button>span{width:21px;height:21px;border-radius:6px;border-color:#43506a;color:#0c1925}
+.modern-ui .modern-participant .prep-list>button>span svg{width:12px;height:12px}
+.modern-ui .modern-participant .prep-list>button.done>span{background:#70bf9f;border-color:#70bf9f}
+.modern-ui .modern-participant .prep-list>button strong{font-size:10px;font-weight:500;color:#aebbd0;line-height:1.5}
+.modern-ui .modern-participant .prep-list>button:disabled{opacity:1}
+.modern-ui .modern-participant .prep-list>button small{font-size:7px;letter-spacing:.05em;color:#586e8a}
+.modern-ui .modern-participant .member-viewer-progress{display:flex;align-items:center;gap:14px;margin-top:25px}
+.modern-ui .modern-participant .member-viewer-progress>strong{font-size:42px;line-height:1;font-weight:600;letter-spacing:-.06em;color:#a5d6da}
+.modern-ui .modern-participant .member-viewer-progress>span{font-size:11px;color:#d1dce8}
+.modern-ui .modern-participant .member-viewer-progress small{display:block;font-size:9px;color:#778ca6;margin-top:5px}
+.modern-ui .modern-participant .member-section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:4px}
+.modern-ui .modern-participant .member-section-heading h2{font-size:18px;font-weight:600;letter-spacing:-.03em;margin-top:7px}
+.modern-ui .modern-participant .member-gate-entry .btn{margin-top:23px;min-height:42px;padding:10px 15px;border-radius:8px;font-size:11px;gap:20px}
+.modern-ui .modern-participant .member-recap-hero{position:relative;padding:35px;min-height:280px;border-radius:17px;overflow:hidden;border:1px solid #354257;isolation:isolate;background:#111c2e}
+.modern-ui .modern-participant .member-recap-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.28) saturate(.7);z-index:-1}
+.modern-ui .modern-participant .member-recap-hero h2{font-size:34px;font-weight:650;letter-spacing:-.05em;line-height:1.15;margin:18px 0 12px}
+.modern-ui .modern-participant .member-recap-hero p{font-size:12px;line-height:1.8;color:#a7b5c8;max-width:490px;margin:0 0 24px}
+.modern-ui .modern-participant .member-recap-hero .btn{min-height:42px;font-size:11px;border-radius:8px;padding:10px 15px;gap:20px}
+.modern-ui .modern-participant .member-action-card{display:flex;align-items:center;gap:16px}
+.modern-ui .modern-participant .member-action-card>div{flex:1}
+.modern-ui .modern-participant .member-action-card>svg{width:19px;color:#8194b2}
+.modern-ui .modern-participant .group-summary{padding:22px;gap:18px}
+.modern-ui .modern-participant .group-summary-icon{width:40px;height:40px;border-radius:10px;background:#f5ae6914;color:#f5ae69}
+.modern-ui .modern-participant .group-code{font-size:28px;font-weight:550;letter-spacing:-.05em;white-space:nowrap}
+.modern-ui .modern-participant .participant-list>div{padding:13px 0;border-color:#26354b}
+.modern-ui .modern-participant .participant-list strong{font-size:12px;font-weight:600}
+.modern-ui .modern-participant .participant-list small,.modern-ui .modern-participant .participant-list em{font-size:9px}
+.modern-ui .modern-participant .participant-alert{padding:13px 15px;border-radius:10px;font-size:11px;line-height:1.6;border-color:#6a533a;background:#bd865512;color:#d6b99c}
+.modern-ui .modern-participant .participant-alert.subtle{border-color:#314155;background:#132134;color:#8fa6bf}
+.modern-ui .modern-participant .night-pass{padding:28px;border-radius:18px;background:linear-gradient(120deg,#24303e,#152436);border:1px solid #78614c;box-shadow:none}
+.modern-ui .modern-participant .night-pass h2{font-size:26px;font-weight:600;letter-spacing:-.045em;margin:25px 0}
+.modern-ui .modern-participant .night-pass-top{font-size:10px}
+.modern-ui .modern-participant .night-pass-grid{gap:23px}
+.modern-ui .modern-participant .night-pass-grid>span{font-size:9px;color:#8095ad}
+.modern-ui .modern-participant .night-pass-grid strong{font-size:12px;color:#d6e3f1;line-height:1.6;font-weight:550;margin-top:6px}
+.modern-ui .modern-participant .night-pass-warning,.modern-ui .modern-participant .night-pass-valid{font-size:10px;line-height:1.7;margin-top:22px;padding:14px;border-radius:9px}
+.modern-ui .modern-participant .practical ul{font-size:12px;line-height:1.9;color:#8b9cb4;padding-left:18px}
+.modern-ui .modern-participant .participant-field input,.modern-ui .modern-participant .participant-field select,.modern-ui .modern-participant .participant-field textarea{background:#0e1727;color:#d5dfed;border:1px solid #34425a;min-height:42px;font:12px var(--font-ui,system-ui,sans-serif);padding:10px 12px;border-radius:8px;min-width:0;max-width:100%}
+.modern-ui .modern-participant .participant-field>span{font-size:10px;color:#91a1bb;margin-bottom:7px}
+.modern-ui .modern-participant .participant-card .btn{font-size:11px;min-height:40px;padding:10px 14px;border-radius:8px;gap:11px}
+.modern-ui .modern-participant .access-email{padding:14px;margin:17px 0;border-radius:9px;background:#0d1727;border-color:#27364c;font-size:11px}
+.modern-ui .modern-participant .access-email strong{font-size:11px;overflow-wrap:anywhere}
+.modern-ui .modern-participant .preference-list label{font-size:11px;padding:14px 0;border-color:#29364b;gap:20px}
+.modern-ui .modern-participant .preference-list input{accent-color:#efad72}
+.modern-ui .modern-participant .role-access-list{gap:10px;margin-top:22px}
+.modern-ui .modern-participant .role-access-list>span{font-size:10px;padding:9px;border-radius:7px;background:#17283c}
+.modern-ui .modern-participant .participant-account{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.modern-ui .modern-participant .participant-account h2{margin-top:0}
+.modern-ui .modern-participant .participant-contact-compact{gap:14px;align-items:center}
+.modern-ui .modern-participant .participant-contact-compact strong{font-size:12px}
+.modern-ui .modern-participant .participant-contact-compact a{font-size:11px}
+.modern-ui .modern-participant .participant-contact-compact>svg{width:22px;height:22px}
+.modern-ui .modern-participant .update-item h2{font-size:17px;line-height:1.4}
+.modern-ui .modern-participant .update-item .text-link{font-size:10px;padding-bottom:0}
+.modern-ui .modern-participant .update-icon{width:37px;height:37px;background:#1c2a40;border-radius:10px;color:#a1b0cf}
+.modern-ui .modern-participant .stamp-rail{gap:12px}
+.modern-ui .modern-participant .stamp-rail article{padding:17px;background:#111e30;border-color:#2d3a50;border-radius:12px;box-shadow:none;gap:12px}
+.modern-ui .modern-participant .stamp-rail article>span{width:33px;height:33px;border-radius:50%;background:#182e31;border:1px solid #3b6860;color:#83cbb5}
+.modern-ui .modern-participant .stamp-rail h3{font-size:12px;font-weight:600;margin:4px 0}
+.modern-ui .modern-participant .stamp-rail p,.modern-ui .modern-participant .stamp-rail small{font-size:9px;line-height:1.6}
+.modern-ui .modern-participant .participant-notice{margin:20px 32px 0;padding:13px 16px;font-size:11px;line-height:1.6;border-radius:10px}
+.modern-ui .modern-participant .participant-loading{min-height:280px;font-size:12px;color:#7e91ad}
+.modern-ui .modern-participant .participant-bottomnav{display:none}
+@media(max-width:1170px){.modern-ui .modern-participant .member-event-chip{display:none}.modern-ui .modern-participant .participant-topbar{padding-inline:24px}.modern-ui .modern-participant .participant-content{padding-inline:24px}.modern-ui .modern-participant .member-live-grid{grid-template-columns:minmax(0,1.2fr) minmax(240px,1fr)}.modern-ui .modern-participant .member-destination h2{font-size:28px}.modern-ui .modern-participant .member-destination-copy{padding:22px}.modern-ui .modern-participant .member-shortcuts{gap:9px}.modern-ui .modern-participant .member-shortcuts>a{padding:14px 12px;gap:9px}.modern-ui .modern-participant .member-shortcuts strong{font-size:10px}.modern-ui .modern-participant .member-shortcuts small{font-size:8px}.modern-ui .modern-participant .member-prepare-hero>div,.modern-ui .modern-participant .member-viewer-hero>div,.modern-ui .modern-participant .member-gate-entry>div{padding:25px}}
+@media(max-width:950px){.modern-ui .modern-participant .participant-sidebar{display:none}.modern-ui .modern-participant .participant-main{margin-left:0}.modern-ui .modern-participant .participant-topbar{height:67px;min-height:67px;padding:12px 24px}.modern-ui .modern-participant .participant-content{padding-top:27px;padding-bottom:125px}.modern-ui .modern-participant .participant-bottomnav{display:flex;position:fixed;inset:auto 0 0;z-index:45;background:#0b1423f5;backdrop-filter:blur(20px);border-top:1px solid #2b3a51;padding:7px 10px calc(7px + env(safe-area-inset-bottom));gap:2px;justify-content:space-around}.modern-ui .modern-participant .participant-bottomnav>a{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;flex-direction:column;padding:8px 6px;min-height:50px;font-size:9px;font-weight:550;color:#6e83a1;border-radius:9px;white-space:nowrap}.modern-ui .modern-participant .participant-bottomnav>a>svg{width:18px;height:18px}.modern-ui .modern-participant .participant-bottomnav>a.active{color:#efb57f;background:#e4a16a0c}.modern-ui .modern-participant .participant-bottomnav>a.active:before{display:none}}
+@media(max-width:650px){.modern-ui .modern-participant .participant-topbar{padding-inline:17px;height:63px;min-height:63px;gap:9px}.modern-ui .modern-participant .participant-topbar .participant-eyebrow{font-size:8px!important}.modern-ui .modern-participant .participant-topbar strong{font-size:12px}.modern-ui .modern-participant .participant-topbar-identity{gap:9px!important}.modern-ui .modern-participant .participant-topbar-mark{width:31px;height:31px;border-radius:8px}.modern-ui .modern-participant .member-topbar-actions{gap:9px}.modern-ui .modern-participant .role-switcher>span,.modern-ui .modern-participant .member-profile-shortcut{display:none}.modern-ui .modern-participant .role-switcher select{font-size:9px;min-height:34px;height:34px;padding:8px 21px 8px 9px;max-width:112px}.modern-ui .modern-participant .participant-content{padding:24px 17px 125px}.modern-ui .modern-participant .participant-page{gap:16px}.modern-ui .modern-participant .participant-page-head h1{font-size:25px;line-height:1.2;margin-top:8px}.modern-ui .modern-participant .participant-page-head .participant-eyebrow{font-size:8px!important;letter-spacing:.1em!important}.modern-ui .modern-participant .member-live-grid{grid-template-columns:1fr;gap:14px}.modern-ui .modern-participant .member-destination{min-height:320px;border-radius:14px}.modern-ui .modern-participant .member-destination-copy{padding:22px}.modern-ui .modern-participant .member-destination h2{font-size:29px;max-width:270px;margin-top:15px}.modern-ui .modern-participant .member-destination p{font-size:10px}.modern-ui .modern-participant .member-destination-meta{gap:12px;font-size:9px;margin-bottom:21px}.modern-ui .modern-participant .member-destination-action{width:100%;font-size:11px;min-height:44px;justify-content:space-between}.modern-ui .modern-participant .member-evening-aside{grid-template-columns:1fr;gap:13px}.modern-ui .modern-participant .member-evening-aside>.participant-card{padding:19px}.modern-ui .modern-participant .member-mini-metrics{margin-block:18px}.modern-ui .modern-participant .member-mini-metrics strong{font-size:25px}.modern-ui .modern-participant .member-mini-metrics span{font-size:10px}.modern-ui .modern-participant .member-times{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.modern-ui .modern-participant .member-times>.participant-eyebrow,.modern-ui .modern-participant .member-times>.member-soft-note{grid-column:1/-1}.modern-ui .modern-participant .member-time-row{gap:9px;margin-top:5px}.modern-ui .modern-participant .member-time-row small{font-size:8px;line-height:1.5}.modern-ui .modern-participant .member-time-row strong{font-size:12px}.modern-ui .modern-participant .member-times>.member-soft-note{margin-top:14px;font-size:9px}.modern-ui .modern-participant .member-safety-strip{align-items:flex-start;padding:14px 15px;font-size:10px;flex-direction:column;gap:10px}.modern-ui .modern-participant .member-safety-strip>span{display:block;line-height:1.8}.modern-ui .modern-participant .member-safety-strip>span>svg{display:inline-block;margin-right:8px;vertical-align:middle}.modern-ui .modern-participant .member-safety-strip strong{margin-right:3px}.modern-ui .modern-participant .member-shortcuts{grid-template-columns:1fr;gap:9px}.modern-ui .modern-participant .member-shortcuts>a{min-height:67px;padding:14px 17px;gap:13px}.modern-ui .modern-participant .member-shortcuts strong{font-size:11px}.modern-ui .modern-participant .member-shortcuts small{font-size:9px}.modern-ui .modern-participant .member-news-section{margin-top:26px}.modern-ui .modern-participant .editorial-section-heading h2{font-size:19px}.modern-ui .modern-participant .editorial-grid{grid-template-columns:1fr}.modern-ui .modern-participant .editorial-card h2{font-size:15px}.modern-ui .modern-participant .member-prepare-hero,.modern-ui .modern-participant .member-viewer-hero,.modern-ui .modern-participant .member-gate-entry{grid-template-columns:1fr;min-height:0}.modern-ui .modern-participant .member-prepare-hero>div,.modern-ui .modern-participant .member-viewer-hero>div,.modern-ui .modern-participant .member-gate-entry>div{padding:24px;margin:0;background:none}.modern-ui .modern-participant .member-prepare-hero>img,.modern-ui .modern-participant .member-viewer-hero>img,.modern-ui .modern-participant .member-gate-entry>img{position:absolute;inset:0;width:100%;height:100%;z-index:-1;filter:brightness(.18) saturate(.7);min-height:0}.modern-ui .modern-participant .member-prepare-hero h2,.modern-ui .modern-participant .member-viewer-hero h2,.modern-ui .modern-participant .member-gate-entry h2{font-size:27px;max-width:260px}.modern-ui .modern-participant .member-prepare-hero p,.modern-ui .modern-participant .member-viewer-hero p,.modern-ui .modern-participant .member-gate-entry p{font-size:11px;color:#a5b2c6}.modern-ui .modern-participant .countdown-grid{gap:30px;margin-top:25px}.modern-ui .modern-participant .countdown-grid strong{font-size:32px}.modern-ui .modern-participant .participant-stat-grid{grid-template-columns:1fr;gap:9px}.modern-ui .modern-participant .status-card{padding:15px 17px;min-height:73px}.modern-ui .modern-participant .status-card strong{font-size:12px;margin-top:4px}.modern-ui .modern-participant .status-card small{font-size:9px}.modern-ui .modern-participant .participant-card{padding:19px;border-radius:12px}.modern-ui .modern-participant .participant-preparation-grid,.modern-ui .modern-participant .participant-group-grid{grid-template-columns:1fr;gap:14px}.modern-ui .modern-participant .member-attention-card{padding:15px;gap:11px}.modern-ui .modern-participant .member-attention-card>svg{width:15px}.modern-ui .modern-participant .member-attention-card strong{font-size:11px}.modern-ui .modern-participant .member-attention-card p{font-size:10px;line-height:1.7}.modern-ui .modern-participant .member-icon-tile{width:35px;height:35px}.modern-ui .modern-participant .member-start-appointment{flex-wrap:wrap;gap:13px}.modern-ui .modern-participant .member-start-appointment>div{min-width:calc(100% - 60px)}.modern-ui .modern-participant .member-start-appointment>.btn{width:100%;font-size:11px;min-height:43px;justify-content:space-between}.modern-ui .modern-participant .child-tikkie-action{min-height:34px;font-size:9px}.modern-ui .modern-participant .child-payment-main>small{font-size:10px}.modern-ui .modern-participant .child-payment-report{min-height:40px}.modern-ui .modern-participant .prep-list>button{min-height:49px}.modern-ui .modern-participant .prep-list>button strong{font-size:11px}.modern-ui .modern-participant .prep-list>button small{font-size:7px}.modern-ui .modern-participant .member-section-heading{align-items:flex-start}.modern-ui .modern-participant .member-section-heading h2{font-size:17px}.modern-ui .modern-participant .member-section-heading>.member-state-pill{font-size:8px;max-width:115px;line-height:1.5}.modern-ui .modern-participant .member-recap-hero{padding:25px;min-height:300px}.modern-ui .modern-participant .member-recap-hero h2{font-size:29px}.modern-ui .modern-participant .group-summary{flex-wrap:wrap;gap:12px}.modern-ui .modern-participant .group-summary>div{min-width:0;flex:1}.modern-ui .modern-participant .group-summary h2{font-size:17px}.modern-ui .modern-participant .group-summary .group-code{font-size:22px;margin-left:auto}.modern-ui .modern-participant .night-pass{padding:22px}.modern-ui .modern-participant .night-pass h2{font-size:22px;overflow-wrap:anywhere}.modern-ui .modern-participant .night-pass-grid{grid-template-columns:1fr 1fr;gap:20px 16px}.modern-ui .modern-participant .night-pass-grid strong{font-size:11px}.modern-ui .modern-participant .night-pass-warning{align-items:flex-start;font-size:10px;gap:10px}.modern-ui .modern-participant .night-pass-top{font-size:9px;gap:10px}.modern-ui .modern-participant .participant-account{align-items:flex-start;flex-wrap:wrap}.modern-ui .modern-participant .participant-contact-compact{align-items:flex-start}.modern-ui .modern-participant .participant-notice{margin-inline:17px}.modern-ui .modern-participant .participant-bottomnav>a{font-size:8px;min-width:0;padding-inline:3px;min-height:51px}.modern-ui .modern-participant .participant-bottomnav>a>svg{width:18px;height:18px}}
+@media(prefers-reduced-motion:reduce){.modern-ui .modern-participant .member-shortcuts>a{transition:none;transform:none!important}}
+/* Readable working sizes; secondary labels stay quiet without shrinking actions. */
+.modern-ui .modern-participant .participant-card p{font-size:13px}
+.modern-ui .modern-participant .participant-card h2{font-size:18px}
+.modern-ui .modern-participant .participant-eyebrow{font-size:10px!important}
+.modern-ui .modern-participant .participant-nav a{font-size:13px}
+.modern-ui .modern-participant .role-identity strong{font-size:13px}
+.modern-ui .modern-participant .participant-topbar strong{font-size:14px}
+.modern-ui .modern-participant .role-switcher select{font-size:12px}
+.modern-ui .modern-participant .member-state-pill{font-size:10px}
+.modern-ui .modern-participant .member-destination p{font-size:12px}
+.modern-ui .modern-participant .member-destination-meta{font-size:11px}
+.modern-ui .modern-participant .member-destination-action{font-size:12px;min-height:44px}
+.modern-ui .modern-participant .member-mini-metrics span{font-size:10px}
+.modern-ui .modern-participant .member-time-row small{font-size:10px}
+.modern-ui .modern-participant .member-time-row strong{font-size:14px}
+.modern-ui .modern-participant .member-safety-strip{font-size:11px}
+.modern-ui .modern-participant .member-shortcuts strong{font-size:12px}
+.modern-ui .modern-participant .member-shortcuts small{font-size:10px}
+.modern-ui .modern-participant .status-card small{font-size:10px}
+.modern-ui .modern-participant .status-card strong{font-size:13px}
+.modern-ui .modern-participant .member-attention-card strong{font-size:13px}
+.modern-ui .modern-participant .member-attention-card p{font-size:11px}
+.modern-ui .modern-participant .member-prepare-hero p,.modern-ui .modern-participant .member-viewer-hero p,.modern-ui .modern-participant .member-gate-entry p{font-size:13px}
+.modern-ui .modern-participant .child-payment-name-action>strong{font-size:13px}
+.modern-ui .modern-participant .child-payment-main>small{font-size:11px}
+.modern-ui .modern-participant .child-tikkie-action{font-size:10px;min-height:32px}
+.modern-ui .modern-participant .prep-list>button strong{font-size:12px}
+.modern-ui .modern-participant .participant-field input,.modern-ui .modern-participant .participant-field select,.modern-ui .modern-participant .participant-field textarea{font-size:14px}
+.modern-ui .modern-participant .participant-field>span{font-size:12px}
+.modern-ui .modern-participant .participant-card .btn{font-size:12px;min-height:44px}
+.modern-ui .modern-participant .preference-list label{font-size:12px}
+.modern-ui .modern-participant .participant-list strong{font-size:13px}
+.modern-ui .modern-participant .participant-list small,.modern-ui .modern-participant .participant-list em{font-size:11px}
+.modern-ui .modern-participant .night-pass-grid strong{font-size:13px}
+.modern-ui .modern-participant .editorial-card p{font-size:12px}
+@media(max-width:650px){
+ .modern-ui .modern-participant .participant-topbar .participant-eyebrow{font-size:8px!important}
+ .modern-ui .modern-participant .participant-page-head .participant-eyebrow{font-size:9px!important}
+ .modern-ui .modern-participant .participant-card p{font-size:12px}
+ .modern-ui .modern-participant .member-destination-meta{font-size:10px}
+ .modern-ui .modern-participant .member-destination p{font-size:11px}
+ .modern-ui .modern-participant .member-prepare-hero p,.modern-ui .modern-participant .member-viewer-hero p,.modern-ui .modern-participant .member-gate-entry p{font-size:12px}
+ .modern-ui .modern-participant .member-time-row small{font-size:9px}
+ .modern-ui .modern-participant .member-shortcuts strong{font-size:12px}
+ .modern-ui .modern-participant .member-shortcuts small{font-size:10px}
+ .modern-ui .modern-participant .member-destination-action{font-size:12px}
+ .modern-ui .modern-participant .participant-field input,.modern-ui .modern-participant .participant-field select,.modern-ui .modern-participant .participant-field textarea{font-size:16px;min-height:46px}
+ .modern-ui .modern-participant .role-switcher select{font-size:11px;min-height:38px;height:38px}
+ .modern-ui .modern-participant .child-tikkie-action{min-height:40px}
+ .modern-ui .modern-participant .prep-list>button strong{font-size:12px}
+}

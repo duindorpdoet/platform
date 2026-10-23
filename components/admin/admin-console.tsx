@@ -1,4 +1,7 @@
 "use client";
+import {useEventDetails} from "@/components/redesign/event-details";
+import {VirtualRehearsal} from "@/components/redesign/virtual-rehearsal";
+import {AdminPortalThanks} from "@/components/redesign/portal-thanks";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -8,28 +11,25 @@ import { paymentAmount, type PaymentBatch } from "@/components/payments/payment-
 import {
   AlertTriangle,
   ArrowRight,
-  BarChart3,
   CalendarClock,
   CheckCircle2,
-  Database,
-  FileText,
   House,
   LifeBuoy,
   BellRing,
   Play,
   SlidersHorizontal,
-  MapPinned,
   MessageSquare,
   Menu,
   X,
   RefreshCw,
-  ShieldCheck,
-  Sparkles,
-  Share2,
   Upload,
-  UserCog,
   UsersRound,
-  WalletCards,
+  Search,
+  LayoutDashboard,
+  ChevronRight,
+  ArrowUpRight,
+  CalendarDays,
+  DoorOpen,
 } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AdminAccessManagement } from "@/components/admin/admin-access-management";
@@ -221,7 +221,7 @@ const labels: Record<string, string> = {
 };
 const sectionMeta = {
   praatkamer: { kicker: "Poorten · samen praten", title: "Praatkamer", description: "Tips en overleg met de poortteams." },
-  overview: { kicker: "De avond · voorbereiding", title: "De nacht in beeld.", description: "Alles wat nu aandacht vraagt, bij elkaar." },
+  overview: { kicker: "De avond · voorbereiding", title: "Jouw evenement, helder in beeld.", description: "De voorbereidingen, je deelnemers en de volgende stap. Allemaal op één plek." },
   statistics: { kicker: "Organisatie · inzicht", title: "Statistieken", description: "Installaties, logins, omgevingsgebruik en deelactiviteit." },
   imports: { kicker: "Beheer · gegevens", title: "Imports", description: "Controleer bronbestanden voordat gegevens worden toegepast." },
   registrations: { kicker: "Deelnemers · groepen", title: "Inschrijvingen", description: "Iedere inschrijving direct in beeld, met groep en deelnemers." },
@@ -238,7 +238,8 @@ const sectionMeta = {
   live: { kicker: "De avond · live", title: "Avondcockpit", description: "Volg de groepen en poorten en help waar dat nodig is." },
   tickets: { kicker: "Eén doorlopend gesprek", title: "Messenger", description: "Nieuwe berichten, lopende gesprekken en antwoorden in één inbox." },
   updates: { kicker: "Communicatie · gericht", title: "Gerichte updates", description: "Bereik precies de groepen of huizen waarvoor een wijziging geldt." },
-  simulation: { kicker: "Veilig testen", title: "Avondsimulatie", description: "Controleer de actuele plannercondities voordat de avond live gaat." },
+  simulation: { kicker: "Samen oefenen", title: "Generale repetitie", description: "Test de hele tocht virtueel met een eigen testgroep, van eerste scan tot laatste zegel." },
+  thanks: { kicker: "Een warm bedankje", title: "Bedankjes", description: "Bekijk de dankwoorden van gezinnen voor de poortbewoners." },
   settings: { kicker: "Grenzen en toegang", title: "Instellingen", description: "Beheer inschrijfkanalen, groepsgrenzen en operationele voorbereiding." },
 } as const;
 const paymentStatusLabels: Record<string, string> = {
@@ -268,7 +269,13 @@ const requiredColumns: Record<string, string[]> = {
 };
 
 export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false }: { eventSlug: string; capabilities: string[]; editorialEnabled?: boolean }) {
+  const event=useEventDetails();
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const sectionAllowed=(key:string)=>{
+    const can=(...items:string[])=>capabilities.includes('event_admin')||items.some(item=>capabilities.includes(item));
+    const allowed:Record<string,boolean>={overview:can('registration_manage','portals_manage','groups_manage','live_support'),registrations:can('registration_manage'),together:can('registration_manage','groups_manage'),groups:can('groups_manage'),payments:can('payments_manage'),poortenboek:can('groups_manage'),portals:can('portals_manage'),planner:can('groups_manage'),tickets:can('groups_manage','live_support'),updates:can('content_manage','live_support'),praatkamer:can('portals_manage','live_support'),editorial:editorialEnabled&&can('content_manage','content_publish','communications_manage','communications_send'),share:can('communications_manage'),content:can('content_manage','content_publish'),live:can('live_support'),simulation:can('live_support'),thanks:can('live_support'),settings:can(),access:can(),imports:can('registration_manage','portals_manage','groups_manage'),statistics:can()};
+    return allowed[key]??false;
+  };
   const [section, setSection] = useState<
     | "praatkamer"
     | "overview"
@@ -289,8 +296,9 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     | "tickets"
     | "updates"
     | "simulation"
+    | "thanks"
     | "settings"
-  >(editorialEnabled && !capabilities.some((c) => ["event_admin", "registration_manage", "portals_manage", "groups_manage", "live_support"].includes(c)) ? "editorial" : "overview");
+  >(()=>{const requested=new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("view");return requested&&requested in sectionMeta&&sectionAllowed(requested)?requested as keyof typeof sectionMeta:(Object.keys(sectionMeta).find(sectionAllowed)??"overview") as keyof typeof sectionMeta});
   const canUsePraatkamer = capabilities.some(c => ["event_admin", "portals_manage", "live_support"].includes(c));
   const canManageGroups = capabilities.includes("event_admin") || capabilities.includes("groups_manage");
   const canManageTogether = canManageGroups || capabilities.includes("registration_manage");
@@ -300,6 +308,9 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const canViewStatistics = capabilities.includes("event_admin");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [commandQuery, setCommandQuery] = useState("");
+  useEffect(() => { const key=(event:KeyboardEvent)=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="k"){event.preventDefault();setCommandOpen(value=>!value)}};window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key)},[]);
   const contentRef = useRef<HTMLElement>(null);
   useEffect(() => { contentRef.current?.scrollTo({ top: 0 }); }, [section]);
   const navigationRef = useRef<HTMLElement>(null);
@@ -1125,9 +1136,23 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         Beheergegevens ophalen…
       </div>
     );
+  const navGroups=[
+    {key:"overview",label:"Overzicht",icon:LayoutDashboard,sections:["overview"]},
+    {key:"participants",label:"Deelnemers",icon:UsersRound,sections:["registrations","together","groups","payments","poortenboek"]},
+    {key:"portals",label:"Poorten",icon:DoorOpen,sections:["portals"]},
+    {key:"planning",label:"Startregie",icon:CalendarClock,sections:["planner"]},
+    {key:"communications",label:"Communicatie",icon:MessageSquare,sections:["tickets","updates","praatkamer",...(editorialEnabled?["editorial"]:[]),"share","content"]},
+    {key:"evening",label:"De avond",icon:LifeBuoy,sections:["live","simulation","thanks"]},
+    {key:"management",label:"Beheer",icon:SlidersHorizontal,sections:["settings","access","imports","statistics"]}
+  ];
+  const permittedNavGroups=navGroups.map(item=>({...item,sections:item.sections.filter(sectionAllowed)})).filter(item=>item.sections.length>0);
+  const activeGroup=permittedNavGroups.find(item=>item.sections.includes(section))??permittedNavGroups[0]??navGroups[0];
+  function openSection(next:keyof typeof sectionMeta){if(!sectionAllowed(next))return;setSection(next);setMobileNavOpen(false);setCommandOpen(false);setCommandQuery("");history.replaceState(null,"",`/admin?view=${next}`);if(next==="registrations")void Promise.all([loadRegistrations(),loadRegistrationChanges(),loadTogetherRequests()]);if(next==="payments")void loadPayments();if(next==="live"||next==="simulation")void loadLive();}
+  const commandResults=Object.entries(sectionMeta).filter(([key,value])=>sectionAllowed(key)&&(!commandQuery||`${value.title} ${value.description}`.toLowerCase().includes(commandQuery.toLowerCase())));
   return (
-    <div className="admin-shell">
+    <div className="admin-shell modern-admin-shell">
       <EnvironmentTracker surface={section === "editorial" ? "editorial" : "admin"} />
+      <Dialog open={commandOpen} onOpenChange={setCommandOpen}><DialogContent className="modern-command-dialog"><DialogTitle>Waar wil je naartoe?</DialogTitle><DialogDescription>Zoek een onderdeel van je evenement.</DialogDescription><div className="modern-command-input"><Search/><input autoFocus type="search" value={commandQuery} onChange={event=>setCommandQuery(event.target.value)} placeholder="Zoek inschrijvingen, startregie, berichten…" aria-label="Zoek onderdeel"/><kbd>ESC</kbd></div><div className="modern-command-results">{commandResults.map(([key,value])=><button key={key} onClick={()=>openSection(key as keyof typeof sectionMeta)}><span><strong>{value.title}</strong><small>{value.description}</small></span><ArrowUpRight/></button>)}{commandResults.length===0&&<p>Geen onderdeel gevonden. Probeer een andere zoekterm.</p>}</div></DialogContent></Dialog>
       {mobileNavOpen && <button className="admin-nav-backdrop" tabIndex={-1} aria-label="Navigatie sluiten" onClick={() => setMobileNavOpen(false)} />}
       <aside
         id="admin-navigation"
@@ -1144,182 +1169,22 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
           <span>Nachtregie</span>
           <button ref={closeMenuRef} type="button" aria-label="Menu sluiten" onClick={() => setMobileNavOpen(false)}><X aria-hidden="true" /></button>
         </div>
-        <Link className="admin-brand" href="/">
-          <Image src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" width={180} height={76} priority />
-          <span>Nachtregie · organisatie</span>
+        <Link className="admin-brand modern-admin-brand" href="/">
+          <Image src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" width={64} height={44} priority />
+          <span><strong>De Poorten<span className="modern-brand-spark">✦</span></strong><small>ORGANISATIE</small></span>
         </Link>
-        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-overview">
-        <p className="admin-nav-label" id="admin-nav-overview">Overzicht</p>
-        <button
-          className={section === "overview" ? "active" : ""}
-          aria-current={section === "overview" ? "page" : undefined}
-          onClick={() => setSection("overview")}
-        >
-          <ShieldCheck />
-          Cockpit
-        </button>
-        {canViewStatistics && <button className={section === "statistics" ? "active" : ""} aria-current={section === "statistics" ? "page" : undefined} onClick={() => setSection("statistics")}><BarChart3 />Statistieken</button>}
-        </div>
-        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-participants">
-        <p className="admin-nav-label" id="admin-nav-participants">Deelnemers</p>
-        <button
-          className={section === "registrations" ? "active" : ""}
-          aria-current={section === "registrations" ? "page" : undefined}
-          onClick={() => {
-            setSection("registrations");
-            void Promise.all([
-              loadRegistrations(),
-              loadRegistrationChanges(),
-              loadTogetherRequests(),
-            ]);
-          }}
-        >
-          <UsersRound />
-          <span>Inschrijvingen</span>
-          {dashboard.counts.registrations > 0 && <b aria-hidden="true">{dashboard.counts.registrations}</b>}
-        </button>
-        {canManageTogether && <button className={section === "together" ? "active" : ""} aria-current={section === "together" ? "page" : undefined} onClick={() => setSection("together")}><UsersRound />Samenloop</button>}
-        {(capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && (
-          <button
-            className={section === "groups" ? "active" : ""}
-            aria-current={section === "groups" ? "page" : undefined}
-            onClick={() => setSection("groups")}
-          >
-            <UsersRound />
-            Groepsindeling
-          </button>
-        )}
-        {canManageGroups && <button className={section === "poortenboek" ? "active" : ""} aria-current={section === "poortenboek" ? "page" : undefined} onClick={() => setSection("poortenboek")}><Sparkles />Poortenboek</button>}
-        <button
-          className={section === "payments" ? "active" : ""}
-          aria-current={section === "payments" ? "page" : undefined}
-          onClick={() => {
-            setSection("payments");
-            void loadPayments();
-          }}
-        >
-          <WalletCards />
-          Betalingen
-        </button>
-        </div>
-        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-planning">
-        <p className="admin-nav-label" id="admin-nav-planning">Poorten & planning</p>
-        <button
-          className={section === "portals" ? "active" : ""}
-          aria-current={section === "portals" ? "page" : undefined}
-          onClick={() => setSection("portals")}
-        >
-          <House />
-          Poorten
-        </button>
-        <button
-          className={section === "planner" ? "active" : ""}
-          aria-current={section === "planner" ? "page" : undefined}
-          onClick={() => setSection("planner")}
-        >
-          <MapPinned />
-          Startregie
-        </button>
-        </div>
-        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-communication">
-        <p className="admin-nav-label" id="admin-nav-communication">Communicatie</p>
-        {canUsePraatkamer && <button className={section === "praatkamer" ? "active" : ""} aria-current={section === "praatkamer" ? "page" : undefined} onClick={() => setSection("praatkamer")}><MessageSquare />Praatkamer</button>}
-        {(capabilities.includes("event_admin") ||
-          capabilities.includes("groups_manage") ||
-          capabilities.includes("live_support")) && (
-          <button
-            className={section === "tickets" ? "active" : ""}
-          aria-current={section === "tickets" ? "page" : undefined}
-            onClick={() => setSection("tickets")}
-          >
-            <MessageSquare />
-            Messenger
-          </button>
-        )}
-        {(capabilities.includes("event_admin") ||
-          capabilities.includes("content_manage") ||
-          capabilities.includes("live_support")) && (
-          <button
-            className={section === "updates" ? "active" : ""}
-          aria-current={section === "updates" ? "page" : undefined}
-            onClick={() => setSection("updates")}
-          >
-            <BellRing />
-            Deelnemersupdates
-          </button>
-        )}
-        {editorialEnabled && capabilities.some((c) => ["event_admin", "content_manage", "content_publish", "communications_manage", "communications_send"].includes(c)) && <button className={section === "editorial" ? "active" : ""} aria-current={section === "editorial" ? "page" : undefined} onClick={() => setSection("editorial")}><FileText />Redactiekamer</button>}
-        {canManageShares && <button className={section === "share" ? "active" : ""} aria-current={section === "share" ? "page" : undefined} onClick={() => setSection("share")}><Share2 />Deelstudio</button>}
-        <button
-          className={section === "content" ? "active" : ""}
-          aria-current={section === "content" ? "page" : undefined}
-          onClick={() => setSection("content")}
-        >
-          <FileText />
-          Content & sponsors
-        </button>
-        </div>
-        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-live">
-        <p className="admin-nav-label" id="admin-nav-live">Live & oefenen</p>
-        <button
-          className={section === "live" ? "active" : ""}
-          aria-current={section === "live" ? "page" : undefined}
-          onClick={() => {
-            setSection("live");
-            void loadLive();
-          }}
-        >
-          <LifeBuoy />
-          Avond live
-        </button>
-        <button
-          className={section === "simulation" ? "active" : ""}
-          aria-current={section === "simulation" ? "page" : undefined}
-          onClick={() => {
-            setSection("simulation");
-            void loadLive();
-          }}
-        >
-          <Play />
-          Avondsimulatie
-        </button>
-        </div>
-        <div className="admin-nav-group" role="group" aria-labelledby="admin-nav-management">
-        <p className="admin-nav-label" id="admin-nav-management">Beheer</p>
-        <button
-          className={section === "imports" ? "active" : ""}
-          aria-current={section === "imports" ? "page" : undefined}
-          onClick={() => setSection("imports")}
-        >
-          <Database />
-          Imports
-        </button>
-        {capabilities.includes("event_admin") && (
-          <button
-            className={section === "access" ? "active" : ""}
-          aria-current={section === "access" ? "page" : undefined}
-            onClick={() => setSection("access")}
-          >
-            <UserCog />
-            Beheerders
-          </button>
-        )}
-        <button
-          className={section === "settings" ? "active" : ""}
-          aria-current={section === "settings" ? "page" : undefined}
-          onClick={() => setSection("settings")}
-        >
-          <SlidersHorizontal />
-          Instellingen
-        </button>
-        </div>
+        <div className="modern-event-select"><span className="modern-event-date"><strong>{event.day}</strong>{event.monthShort.toUpperCase()}</span><div><strong>Halloween {event.year}</strong><small>Duindorp · Den Haag</small></div><ChevronRight /></div>
+        <p className="modern-nav-heading">WERKRUIMTE</p>
+        <nav className="modern-primary-nav" aria-label="Hoofdonderdelen organisatie">{permittedNavGroups.map(item=><button key={item.key} className={activeGroup.key===item.key?"active":""} aria-current={activeGroup.key===item.key?"page":undefined} onClick={()=>openSection(item.sections[0] as keyof typeof sectionMeta)}><item.icon/><span>{item.label}</span>{item.key==="participants"&&dashboard.counts.registrations>0?<b>{dashboard.counts.registrations}</b>:item.key==="communications"&&(dashboard.counts.openTickets??0)>0?<i/>:null}</button>)}</nav>
+        <div className="modern-admin-sidebar-bottom"><div className="modern-night-card"><span>DE NACHT KOMT DICHTERBIJ</span><strong>Samen maken<br/>we de magie.</strong><small>{event.dateShort} · {event.times}</small><button onClick={()=>openSection("simulation")}><Play size={14}/> Generale openen <ArrowUpRight size={14}/></button></div><Link className="modern-public-link" href="/"><ArrowUpRight/> Bekijk de website</Link><button className="modern-admin-profile" onClick={()=>openSection("settings")}><span>DS</span><div><strong>Organisatie</strong><small>De Duindorpse Poorten</small></div><SlidersHorizontal/></button></div>
       </aside>
       <div className="admin-workspace" inert={mobileNavOpen}>
         <header className="admin-appbar" aria-label="Nachtregie werkbalk">
           <button ref={headerMenuButtonRef} className="admin-menu-toggle" type="button" aria-label="Organisatienavigatie openen" aria-controls="admin-navigation" aria-expanded={mobileNavOpen} onClick={() => { navigationOpenerRef.current = headerMenuButtonRef.current; setMobileNavOpen(true); }}>
             <Menu aria-hidden="true" /><span>Menu</span>
           </button>
-          <Link href="/omgeving" className="admin-appbar-brand">Nachtregie</Link>
+          <div className="modern-admin-breadcrumb"><span>Organisatie</span><ChevronRight/><strong>{activeGroup.label}</strong></div>
+          <button className="modern-command-trigger" aria-label="Zoek een onderdeel" onClick={()=>setCommandOpen(true)}><Search/><span>Zoek een onderdeel…</span><kbd>⌘ K</kbd></button><span className="modern-event-pill"><CalendarDays/>{event.dateLong}</span>
           <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <DialogTrigger asChild>
               <button type="button" className="admin-notifications-button" aria-label={`Meldingen openen${notificationCount ? `, ${notificationCount} open aandachtspunten` : ""}`}>
@@ -1338,6 +1203,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             </DialogContent>
           </Dialog>
         </header>
+        {activeGroup.sections.length>1&&<nav className="modern-admin-subnav" aria-label={`${activeGroup.label} onderdelen`}>{activeGroup.sections.map(key=><button key={key} className={section===key?"active":""} aria-current={section===key?"page":undefined} onClick={()=>openSection(key as keyof typeof sectionMeta)}>{({registrations:"Inschrijvingen",together:"Samenlopen",groups:"Groepsindeling",payments:"Betalingen",poortenboek:"Poortenboek",tickets:"Inbox",updates:"Updates",praatkamer:"Praatkamer",editorial:"Redactiekamer",share:"Deelstudio",content:"Website & sponsors",live:"Livecockpit",simulation:"Generale",thanks:"Bedankjes",settings:"Instellingen",access:"Beheerders",imports:"Imports",statistics:"Statistieken"} as Record<string,string>)[key]}</button>)}</nav>}
         <main ref={contentRef} id="admin-content" className="admin-content" data-admin-section={section} tabIndex={-1}>
         {section === "statistics" ? null : ["praatkamer", "groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "share", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
           <div>
@@ -1345,10 +1211,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             <h1>{sectionMeta[section].title}</h1>
             <p>{sectionMeta[section].description}</p>
           </div>
-          <button className="btn outline" onClick={() => void Promise.all([load(), section === "registrations" ? loadRegistrations() : Promise.resolve()])}>
-            <RefreshCw />
-            Vernieuwen
-          </button>
+          <div className="actions">{section==="overview"&&<button className="btn" onClick={()=>openSection("live")}><LifeBuoy/>Open avondcockpit<ArrowUpRight/></button>}<button className="btn outline modern-refresh-button" aria-label="Overzicht vernieuwen" onClick={() => void Promise.all([load(), section === "registrations" ? loadRegistrations() : Promise.resolve()])}><RefreshCw /></button></div>
         </header>}
         {notice && (
           <div className="form-notice" role="status">
@@ -1455,6 +1318,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
                 </div>
               ))}
             </div>
+            <div className="modern-overview-actions"><button onClick={()=>openSection("together")}><span className="modern-shortcut-icon violet"><UsersRound/></span><span><strong>Samen op pad</strong><small>{dashboard.counts.pendingTogetherRequests??0} samenloopverzoek(en) beoordelen</small></span><ArrowUpRight/></button><button onClick={()=>openSection("planner")}><span className="modern-shortcut-icon amber"><CalendarClock/></span><span><strong>Iedereen een goede start</strong><small>Open de startindeling</small></span><ArrowUpRight/></button><button onClick={()=>openSection("tickets")}><span className="modern-shortcut-icon mint"><MessageSquare/></span><span><strong>Even contact</strong><small>{dashboard.counts.openTickets??0} open gesprek(ken)</small></span><ArrowUpRight/></button></div>
             <div className="cockpit-live-grid">
               <section className="panel cockpit-map-panel">
                 <div className="row-between">
@@ -1474,14 +1338,14 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
               </section>
               <div className="cockpit-side-stack">
                 <section className="panel cockpit-action-panel">
-                  <div className="row-between"><div><p className="kicker">Direct handelen</p><h2>Dit vraagt nu aandacht.</h2></div><span className="registration-total">{liveAlerts.length + (dashboard.counts.pendingTogetherRequests ?? 0)} open</span></div>
+                  <div className="row-between"><div><p className="kicker">Direct handelen</p><h2>Even jouw aandacht</h2></div><span className="registration-total">{liveAlerts.length + (dashboard.counts.pendingTogetherRequests ?? 0)} open</span></div>
                   {liveAlerts.length === 0 && !(dashboard.counts.pendingTogetherRequests ?? 0) ? <p className="form-notice">Geen veiligheidsmeldingen of samenloopverzoeken die nu actie vragen.</p> : <>
                     {liveAlerts.slice(0, 3).map((alert) => <div className="cockpit-action-row" key={alert.id}><AlertTriangle /><div><strong>{alert.code}</strong><span>{alert.message}</span></div><button className="text-link" onClick={() => setSection("live")}>Bekijk <ArrowRight /></button></div>)}
                     {(dashboard.counts.pendingTogetherRequests ?? 0) > 0 && <div className="cockpit-action-row"><UsersRound /><div><strong>{dashboard.counts.pendingTogetherRequests} samenloopverzoek(en)</strong><span>Controleer groepsgrootte en de gezamenlijke indeling.</span></div><button className="text-link" onClick={() => { setSection("together"); }}>Bekijk <ArrowRight /></button></div>}
                   </>}
                 </section>
                 <section className="panel cockpit-live-log">
-                  <div className="row-between"><div><p className="kicker">Binnenkomend</p><h2>Live log</h2></div><button className="text-link" onClick={() => void Promise.all([load(), loadLive()])}>Vernieuwen <RefreshCw /></button></div>
+                  <div className="row-between"><div><p className="kicker">Binnenkomend</p><h2>Laatste activiteit</h2></div><button className="text-link" onClick={() => void Promise.all([load(), loadLive()])}>Vernieuwen <RefreshCw /></button></div>
                   {dashboard.recentActivity.length ? dashboard.recentActivity.slice(0, 6).map((item, index) => {
                     const activity = normalizeActivity(item.action, item.resourceType);
                     return <div className={`activity-row activity-${activity.tone}`} key={`${item.createdAt}-${index}`}><CheckCircle2 aria-hidden="true" /><div><strong>{activity.message}</strong><small>{activity.source} · {new Date(item.createdAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}</small></div></div>;
@@ -1496,37 +1360,13 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
               </section>
               <section className="panel">
                 <div className="row-between"><div><p className="kicker">Onderweg</p><h2>Groepen in beweging</h2></div><button className="text-link" onClick={() => setSection("live")}>Avond live <ArrowRight /></button></div>
-                <div className="cockpit-group-list">{liveRuns.length === 0 ? <p>Nog geen groepen onderweg.</p> : liveRuns.slice(0, 6).map((run) => <article key={run.groupId}><span>{run.systemCode || run.groupCode}</span><div><strong>{run.displayName || "Groep " + run.groupCode}</strong><small>{run.currentPortal || "Wacht op volgende bestemming"} · {run.childCount} kinderen</small></div><b>{run.runStatus || run.status}</b></article>)}</div>
+                <div className="cockpit-group-list">{liveRuns.length === 0 ? <p>Nog geen groepen onderweg.</p> : liveRuns.slice(0, 6).map((run) => <article key={run.groupId}><span>{run.systemCode || run.groupCode}</span><div><strong>{run.displayName || "Groep " + run.groupCode}</strong><small>{run.currentPortal || "Wacht op volgende bestemming"} · {run.childCount} kinderen</small></div><b>{({live:"Onderweg",ready:"Voor vertrek",paused:"Gepauzeerd",draft:"Concept",completed:"Afgerond"} as Record<string,string>)[run.runStatus || run.status] || run.status}</b></article>)}</div>
               </section>
             </div>
           </>
         )}
-        {section === "simulation" && (
-          <div className="admin-simulation-grid">
-            <section className="panel simulation-main">
-              <div className="simulation-icon"><Play /></div>
-              <p className="kicker">Veilig testen met actuele condities</p>
-              <h2>Repetitie van de nacht.</h2>
-              <p>Controleer of jullie poorten en groepen klaarstaan voor de avond. Dit overzicht gebruikt de huidige stand; het start geen echte tocht.</p>
-              <button className="btn" onClick={() => void loadLive()}><Play />Proefbeeld opnieuw berekenen</button>
-              <div className="simulation-steps">
-                <span className={dashboard.counts.groups > 0 ? "ready" : ""}><CheckCircle2 />Groepen ingedeeld</span>
-                <span className={dashboard.counts.approvedPortals > 0 ? "ready" : ""}><CheckCircle2 />Poorten beschikbaar</span>
-                <span className="ready"><CheckCircle2 />Capaciteit bewaakt</span>
-                <span className={liveAlerts.length === 0 ? "ready" : "attention"}><CheckCircle2 />Veiligheidssignalen</span>
-                <span className="ready"><CheckCircle2 />Laatste poort vereist</span>
-              </div>
-            </section>
-            <section className="panel simulation-result">
-              <p className="kicker">Wat ziet de planner?</p>
-              <h2>Veilig door de wijk.</h2>
-              <div><strong>{livePortals.filter((portal) => portal.operationStatus === "open").length}</strong><span>poorten open voor nieuwe groepen</span></div>
-              <div><strong>{liveRuns.length}</strong><span>groepen in het actuele proefbeeld</span></div>
-              <div><strong>{liveAlerts.length}</strong><span>signalen die eerst aandacht vragen</span></div>
-              <p className={liveAlerts.length ? "form-warning" : "form-notice"}>{liveAlerts.length ? "Los de zichtbare signalen op voordat de avond live gaat." : "De actuele schaduwcontrole bevat geen open veiligheidssignalen."}</p>
-            </section>
-          </div>
-        )}
+        {section === "simulation" && <VirtualRehearsal/>}
+        {section === "thanks" && <AdminPortalThanks/>}
         {section === "imports" && (
           <section className="panel">
             <p className="kicker">Altijd eerst valideren</p>

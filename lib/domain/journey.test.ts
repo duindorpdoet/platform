@@ -17,8 +17,10 @@ describe("stop completion", () => {
 
   it("requires explicit confirmation when everybody skips", () => {
     const statuses = [{ status: "skipped" as const, required: true }];
-    expect(evaluateStopCompletion(statuses, false, false)).toEqual({ allowed: false, code: "ALL_SKIP_CONFIRMATION_REQUIRED" });
-    expect(evaluateStopCompletion(statuses, false, true)).toEqual({ allowed: true, outcome: "all_skipped" });
+    expect(evaluateStopCompletion(statuses, false, false)).toEqual({ allowed: false, code: "SCAN_REQUIRED" });
+    expect(evaluateStopCompletion(statuses, true, false)).toEqual({ allowed: false, code: "ALL_SKIP_CONFIRMATION_REQUIRED" });
+    expect(evaluateStopCompletion(statuses, false, true)).toEqual({ allowed: false, code: "SCAN_REQUIRED" });
+    expect(evaluateStopCompletion(statuses, true, true)).toEqual({ allowed: true, outcome: "all_skipped" });
   });
 
   it("does not let a parent mark another child or record a visit", () => {

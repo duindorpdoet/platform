@@ -1,45 +1,23 @@
 "use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { PortalIntroductions } from "@/components/brand/portal-introductions";
-import { HomeExperience } from "@/components/poorten-home";
-import { PublicMap } from "@/components/maps/public-map";
-import { featuredFaq } from "@/features/content/faq";
-
-function HomeFaq() {
-  return (
-    <Accordion type="single" collapsible className="faq">
-      {featuredFaq.map(({ question, answer }, index) => (
-        <AccordionItem key={question} value={String(index)}>
-          <AccordionTrigger>{question}</AccordionTrigger>
-          <AccordionContent>{answer}</AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
-  );
-}
-
-export function HomePage({ news }: { news?: React.ReactNode }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add("visible")),
-      { threshold: 0.08 },
-    );
-    document.querySelectorAll(".reveal, .chapter").forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <HomeExperience
-      go={(path) => router.push(path)}
-      map={<PublicMap compact />}
-      faq={<HomeFaq />}
-      news={news}
-      portals={<PortalIntroductions />}
-    />
-  );
-}
+import {useEventDetails} from '@/components/redesign/event-details';
+import type {ReactNode,CSSProperties} from 'react';
+import Link from 'next/link';
+import {ArrowRight,ArrowUpRight,BookOpen,CalendarDays,ChevronDown,Clock3,DoorOpen,Footprints,Heart,MapPin,ShieldCheck,Sparkles} from 'lucide-react';
+import {worlds} from '@/features/content/public-content';
+import {featuredFaq} from '@/features/content/faq';
+const paths=[
+ {label:'Voor ouders & kinderen',title:'Wij lopen mee.',copy:'Schrijf je avonturiers in. Wij regelen jullie groep, startafspraak en een avond vol verrassingen.',href:'/meelopen',link:'Schrijf je kinderen in',Icon:Footprints,color:'amber'},
+ {label:'Voor bewoners & bedrijven',title:'Onze deur gaat open.',copy:'Een woning, portiek of buurtzaak: maak van jullie plek een bijzondere poort naar een andere wereld.',href:'/huis-aanmelden',link:'Meld jullie plek aan',Icon:DoorOpen,color:'violet'},
+ {label:'De voorpret begint hier',title:'Open jouw Poortenboek.',copy:'Kies je verschijning, ontmoet je reisgenootjes en maak je klaar voor het verhaal van de nacht.',href:'/poortenboek',link:'Ontdek je eigen avontuur',Icon:BookOpen,color:'teal'},
+];
+export function HomePage({news}:{news?:ReactNode}){const event=useEventDetails();return <div className="public-home">
+ <section className="public-container public-hero" aria-labelledby="public-hero-title"><div className="public-hero-art"><img src="/images/01-home-hero-duindorp-bij-avond.webp" alt="Sfeerbeeld van de verlichte Duindorpse wijk bij avond" fetchPriority="high" width="1672" height="941"/></div><div className="public-hero-glow" aria-hidden="true"/><div className="public-hero-copy"><span className="public-overline"><i/>DE DUINDORPSE POORTEN VAN HALLOWEEN</span><h1 id="public-hero-title">Een gewone wijk.<br/><span>Een magische<br/>avond.</span></h1><p>Als de avond valt, gaan de poorten open. Wandel samen door Duindorp en ontdek de werelden achter de deuren.</p><div className="public-hero-actions"><Link className="public-button" href="/meelopen">Wij lopen mee<ArrowUpRight size={18}/></Link><Link className="public-button public-button-outline" href="/huis-aanmelden">Meld jouw poort aan<DoorOpen size={17}/></Link></div><p className="public-hero-assurance"><ShieldCheck size={15}/>Met een volwassene op pad · overslaan mag altijd</p></div><div className="public-hero-date" aria-label={event.dateLong}><span>{event.weekday.toUpperCase()}</span><strong>{event.day}<span>/{event.month}</span></strong><small>{event.year} · DUINDORP</small></div><div className="public-hero-story"><span className="public-story-symbol"><Sparkles size={21}/></span><div><span>ACHTER IEDERE DEUR</span><strong>Een wereld die je nog niet kent.</strong><p>Een beetje kippenvel. Een grote glimlach.</p></div></div></section>
+ <div className="public-container public-event-facts" aria-label="Praktische evenementinformatie"><div><CalendarDays/><span>Wanneer<strong>{event.dateLong}</strong></span></div><div><Clock3/><span>De avond<strong>{event.times}{event.startsAt&&event.endsAt?' uur':''}</strong></span></div><div><MapPin/><span>Gewoon om de hoek<strong>Duindorp, Den Haag</strong></span></div><div><Heart/><span>Bijdrage voor snoep<strong>{event.price} per kind</strong></span></div></div>
+ <section className="public-container public-paths" aria-label="Kies jouw avontuur">{paths.map(({label,title,copy,href,link,Icon,color})=><Link href={href} className={`public-path public-path-${color}`} key={href}><div className="public-path-top"><span className="public-path-icon"><Icon size={22}/></span><ArrowUpRight className="public-path-arrow" size={19}/></div><p className="public-eyebrow">{label}</p><h2>{title}</h2><p>{copy}</p><span className="public-path-link">{link}<ArrowRight size={15}/></span></Link>)}</section>
+ <section className="public-container public-section" aria-labelledby="public-worlds-title"><div className="public-section-heading"><div><p className="public-eyebrow">ZES WERELDEN. ÉÉN BIJZONDERE NACHT.</p><h2 id="public-worlds-title">Waar brengt de volgende<br/><span>poort jullie naartoe?</span></h2></div><div><p>Van zachte magie tot spannende schaduwen. Ontdek samen wat past bij jullie avonturiers.</p><Link className="public-text-link" href="/werelden">Verken alle werelden<ArrowUpRight size={16}/></Link></div></div><div className="public-world-gallery">{worlds.map((world,i)=><Link href={`/werelden/${world.slug}`} className="public-world-tile" style={{'--world-accent':world.color} as CSSProperties} key={world.slug}><img src={`/images/world-${i}.webp`} alt={world.name} loading="lazy" width="768" height="1024"/><div className="public-world-top"><span>WERELD 0{i+1}</span><ArrowUpRight size={20}/></div><div className="public-world-bottom"><p>{world.subtitle}</p><h3>{world.name}</h3><div className="public-world-intensity"><span>Spanningsniveau</span><span className="public-intensity-dots" aria-label={`${world.intensity} van 4`}>{[1,2,3,4].map(n=><i key={n} data-on={n<=world.intensity}/>)}</span></div></div></Link>)}</div><p className="public-section-note"><ShieldCheck size={16}/>Jullie kiezen samen. Een te spannende poort overslaan is altijd goed.</p></section>
+ <section className="public-container public-how-section" aria-labelledby="public-how-title"><div className="public-how-art"><img src="/images/05-meelopen-samen-op-pad.webp" alt="Sfeerbeeld van kinderen en een begeleider samen op pad" loading="lazy" width="1672" height="941"/><div><span className="public-photo-location"><MapPin size={14}/>DUINDORP BIJ AVOND</span><p>Kleine voetstappen.<br/><strong>Grote herinneringen.</strong></p></div></div><div className="public-how-copy"><p className="public-eyebrow">EEN KLEIN BEETJE REGELEN</p><h2 id="public-how-title">De voorpret begint thuis.<br/><span>Wij helpen met de rest.</span></h2><div className="public-steps">{[{n:'01',title:'Meld je avonturiers aan',text:'Schrijf de kinderen in en geef jullie tijdsvoorkeuren en samenloopwens door.'},{n:'02',title:'Jullie eigen startafspraak',text:'De organisatie deelt de groepen in. Jullie starttijd en startpunt staan daarna klaar in de app.'},{n:'03',title:'Van poort naar poort',text:'Verkleed, met een snoepemmertje en een volwassene op pad. De route onthult zich onderweg.'}].map(({n,title,text})=><div key={n}><span>{n}</span><div><h3>{title}</h3><p>{text}</p></div></div>)}</div><Link className="public-button" href="/meelopen">Ja, wij lopen mee<ArrowRight size={17}/></Link></div></section>
+ <section className="public-container public-section public-portals-section" aria-labelledby="public-app-title"><div className="public-section-heading"><div><p className="public-eyebrow">DE HELE AVOND BIJ DE HAND</p><h2 id="public-app-title">Voor ieder avontuur<br/><span>een eigen omgeving.</span></h2></div><Link className="public-text-link" href="/ontdek">Ontdek de app<ArrowUpRight size={16}/></Link></div><div className="public-portal-grid">{[{href:'/omgeving/meeloper/nu',image:'/images/03-home-de-poorten-gevels.webp',label:'OUDERS & BEGELEIDERS',Icon:Footprints,title:'Jullie avond. Op één plek.',text:'De inschrijving, betaalinformatie, startafspraak en route overzichtelijk bij elkaar.',link:'Open mijn omgeving'},{href:'/poortenboek',image:'/images/poortenboek-v2/team-hero-wide.webp',label:'KINDEREN',Icon:BookOpen,title:'Het boek van jouw nacht.',text:'Maak een vaandel, kies je lantaarn en verzamel de verhalen en zegels van de poorten.',link:'Open mijn Poortenboek'},{href:'/mijn-huis',image:'/images/poortkamer-v2/house-team-hero-wide.webp',label:'BEWONERS & POORTTEAMS',Icon:DoorOpen,title:'Samen achter de poort.',text:'Bereid de ontvangst voor, overleg met het team en zie wie er onderweg is.',link:'Open de Poortkamer'}].map(({href,image,label,Icon,title,text,link})=><Link href={href} className="public-portal" key={href}><div className="public-portal-art"><img src={image} alt="" loading="lazy"/><span><Icon size={17}/>{label}</span></div><div className="public-portal-copy"><h3>{title}</h3><p>{text}</p><span>{link}<ArrowUpRight size={17}/></span></div></Link>)}</div></section>
+ {news&&<section className="public-container public-section public-news-section">{news}</section>}
+ <section className="public-container public-section public-faq-section" aria-labelledby="public-faq-title"><div><p className="public-eyebrow">VOOR JULLIE DE DEUR UITGAAN</p><h2 id="public-faq-title">Kleine vragen.<br/><span>Grote voorpret.</span></h2><p>Alles wat je wilt weten over samenlopen, spanning en een fijne avond in de wijk.</p><Link className="public-text-link" href="/faq">Alle vragen & antwoorden<ArrowUpRight size={16}/></Link></div><div className="public-faq-list">{featuredFaq.slice(0,4).map(({question,answer},i)=><details key={question}><summary><span className="public-faq-number">0{i+1}</span><span>{question}</span><ChevronDown size={17}/></summary><p>{answer}</p></details>)}</div></section>
+ <section className="public-container public-neighbor-cta"><div className="public-cta-icon"><DoorOpen size={29}/></div><div><p className="public-eyebrow">DE WIJK MAAKT DE MAGIE</p><h2>De mooiste poort is misschien wel die van jou.</h2><p>Doe de deur open. Maak de avond mee.</p></div><Link className="public-button" href="/huis-aanmelden">Meld jouw plek aan<ArrowUpRight size={17}/></Link></section>
+ </div>}

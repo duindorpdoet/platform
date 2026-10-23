@@ -226,6 +226,8 @@ export function roomMetrics(room: PortalRoom, now = Date.now()) {
   };
 }
 export function portalTime(value: string | null | undefined) {
+  if (value && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return value;
+  if (value && !Number.isFinite(new Date(value).getTime())) return "Nog niet bekend";
   return value
     ? new Intl.DateTimeFormat("nl-NL", {
         hour: "2-digit",

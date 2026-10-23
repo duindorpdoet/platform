@@ -1,0 +1,19 @@
+.pb-magic-lantern{--lantern-light:#ffc36c;--lantern-halo:#ffc36c28;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;width:min(100%,280px);margin:22px auto 26px;padding:0;border:0;isolation:isolate;overflow:visible;color:#e8edf9}
+.pb-magic-lantern:before{content:"";position:absolute;inset:15% 1% 13%;z-index:-1;border-radius:50%;background:radial-gradient(ellipse,var(--lantern-halo),transparent 68%);transition:background .25s}
+.pb-magic-lantern svg{display:block;max-width:100%;width:240px;height:auto;overflow:visible;flex:none}
+.pb-magic-lantern .pb-lantern-object{transform-origin:120px 245px;animation:pb-lantern-sway 7s ease-in-out infinite}
+.pb-magic-lantern .pb-lantern-flame{transform-origin:120px 170px;animation:pb-lantern-flicker 3.3s ease-in-out infinite}
+.pb-magic-lantern .pb-lantern-halo{animation:pb-lantern-breathe 4s ease-in-out infinite}
+.pb-magic-lantern .pb-lantern-sparks>*{transform-box:fill-box;transform-origin:center;animation:pb-lantern-spark 4.8s ease-in-out infinite}
+.pb-magic-lantern .pb-lantern-sparks .spark-b{animation-delay:-1.9s}.pb-magic-lantern .pb-lantern-sparks .spark-c{animation-delay:-3.3s}.pb-magic-lantern .pb-lantern-sparks .spark-d{animation-delay:-.8s}.pb-magic-lantern .pb-lantern-sparks .spark-e{animation-delay:-2.8s}
+.pb-magic-lantern figcaption{display:flex;align-items:center;flex-direction:column;gap:4px;margin-top:4px;text-align:center;line-height:1.45;letter-spacing:0}
+.pb-magic-lantern figcaption>span{font-size:14px;font-weight:600;color:#dce5f6}.pb-magic-lantern figcaption>small{font-size:12px;color:#899ebc;text-transform:capitalize}
+.pb-magic-lantern.compact{display:inline-flex;width:76px;min-width:0;margin:0;vertical-align:middle}.pb-magic-lantern.compact svg{width:76px}.pb-magic-lantern.compact:before{inset:10% -10% 8%}
+@keyframes pb-lantern-sway{0%,100%{transform:rotate(-1.2deg) translateY(0)}50%{transform:rotate(1.2deg) translateY(-4px)}}
+@keyframes pb-lantern-flicker{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.88;transform:scale(.96,1.03)}}
+@keyframes pb-lantern-breathe{0%,100%{opacity:.8}50%{opacity:1}}
+@keyframes pb-lantern-spark{0%,100%{opacity:.15;transform:translateY(5px) scale(.75)}45%{opacity:.9;transform:translateY(-7px) scale(1.05)}}
+@media(max-width:600px){.pb-magic-lantern{width:220px;max-width:100%;margin:18px auto 22px}.pb-magic-lantern svg{width:205px}.pb-magic-lantern.compact,.pb-magic-lantern.compact svg{width:64px}}
+@media(prefers-reduced-motion:reduce){.pb-magic-lantern .pb-lantern-object,.pb-magic-lantern .pb-lantern-flame,.pb-magic-lantern .pb-lantern-halo,.pb-magic-lantern .pb-lantern-sparks>*{animation:none!important}.pb-magic-lantern:before{transition:none}}
+[data-reduced-motion="true"] .pb-magic-lantern .pb-lantern-object,[data-reduced-motion="true"] .pb-magic-lantern .pb-lantern-flame,[data-reduced-motion="true"] .pb-magic-lantern .pb-lantern-halo,[data-reduced-motion="true"] .pb-magic-lantern .pb-lantern-sparks>*{animation:none!important}
+.motion-off .pb-magic-lantern .pb-lantern-object,.motion-off .pb-magic-lantern .pb-lantern-flame,.motion-off .pb-magic-lantern .pb-lantern-halo,.motion-off .pb-magic-lantern .pb-lantern-sparks>*,[data-reduce-motion="true"] .pb-magic-lantern .pb-lantern-object,[data-reduce-motion="true"] .pb-magic-lantern .pb-lantern-flame,[data-reduce-motion="true"] .pb-magic-lantern .pb-lantern-halo,[data-reduce-motion="true"] .pb-magic-lantern .pb-lantern-sparks>*{animation:none!important}

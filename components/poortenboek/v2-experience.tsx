@@ -2,13 +2,15 @@
 
 import { useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import {MagicLantern} from "./magic-lantern";
+import {StoryChapters} from "./story-reader";
+import {BookKeepsake} from "@/components/redesign/book-keepsake";
+import {BookFarewell, hasBookFarewell} from "@/components/redesign/book-farewell";
 import {
   BookOpen,
   Check,
-  Download,
   Flame,
   KeyRound,
-  LockKeyhole,
   Shield,
   Sparkles,
 } from "lucide-react";
@@ -18,7 +20,6 @@ import {
   bannerOptionLabels,
   lanternColors,
   lanternShapes,
-  storyChapters,
   type BannerCategory,
   type BannerChoices,
 } from "@/lib/poortenboek/v2";
@@ -109,7 +110,7 @@ export function TeamIdentityWorkshop({
             </select>
           </label>
         </div>
-        <img className="pb-lantern-preview" src="/images/poortenboek-v2/lanterns/lantern-base.webp" alt="Jouw gekozen magische lantaarn" />
+        <MagicLantern shape={lanternShape} color={lanternColor}/>
         <button
           className="pb-button"
           type="button"
@@ -374,28 +375,14 @@ export function PracticeGate({
 }
 
 export function JourneyBook({ snapshot }: { snapshot: BookSnapshot }) {
-  const chapters = new Set(snapshot.journey.chapters.map((item) => item.chapter));
-  const result = snapshot.banner.result ?? defaultBanner(snapshot);
-  const chronologicalSeals = [...snapshot.journey.seals].sort(
-    (a, b) => new Date(a.earnedAt).getTime() - new Date(b.earnedAt).getTime(),
-  );
-  const firstVisit = chronologicalSeals.at(0)?.earnedAt;
-  const lastVisit = chronologicalSeals.at(-1)?.earnedAt;
-  const visitTime = (value: string | undefined) =>
-    value
-      ? new Intl.DateTimeFormat("nl-NL", {
-          dateStyle: "medium",
-          timeStyle: "short",
-          timeZone: "Europe/Amsterdam",
-        }).format(new Date(value))
-      : "Nog niet bekend";
   return (
     <>
+      {hasBookFarewell(snapshot) && <BookFarewell snapshot={snapshot}/>}
       <section className="pb-v2-passport pb-panel">
         <div className="pb-section-heading">
           <div>
             <p className="pb-eyebrow">Live Poortenpaspoort</p>
-            <h2>{snapshot.journey.visitedCount} poorten in jouw verhaal</h2>
+            <h2>{snapshot.journey.visitedCount} {snapshot.journey.visitedCount === 1 ? "poort" : "poorten"} in jouw verhaal</h2>
           </div>
           <Shield />
         </div>
@@ -428,73 +415,11 @@ export function JourneyBook({ snapshot }: { snapshot: BookSnapshot }) {
             ))}
           </div>
         ) : (
-          <p>
-            Na jullie bezoek aan een poort verschijnt hier een nieuwe zegel. Welke wereld ontdek jij als eerste?
-          </p>
+          <p>{hasBookFarewell(snapshot) ? "Dit is jouw eigen verhaal. Ook samen op pad zijn en de voorpret horen erbij." : "Na jullie aankomst bij een poort verschijnt hier een nieuwe zegel. Welke wereld ontdek jij als eerste?"}</p>
         )}
       </section>
-      <section className="pb-story-grid">
-        {storyChapters.map((chapter) => {
-          const unlocked = chapters.has(chapter.chapter);
-          return (
-            <article className={`pb-story-card ${unlocked ? "unlocked" : ""}`} key={chapter.chapter}>
-              <img src={`/images/poortenboek-v2/${chapter.image}`} alt="" loading="lazy" />
-              <div>
-                <span>{unlocked ? <BookOpen /> : <LockKeyhole />}</span>
-                <p>Hoofdstuk {chapter.chapter}</p>
-                <h3>{chapter.title}</h3>
-                <small>{unlocked ? "Ontwaakt" : "Slaapt nog"}</small>
-              </div>
-            </article>
-          );
-        })}
-      </section>
-      {snapshot.journey.complete && (
-        <section className="pb-v2-recap pb-panel">
-          <img src="/images/poortenboek-v2/recap-hero-wide.webp" alt="" />
-          <div>
-            <p className="pb-eyebrow">Jouw nacht in Duindorp</p>
-            <h2>Een verhaal om te bewaren</h2>
-            <p>
-              {snapshot.firstName}, jij en je reisgenootjes bezochten {snapshot.journey.visitedCount}{" "}
-              poorten. Jouw zegels, hoofdstukken, lantaarn en teamvaandel zijn compleet.
-            </p>
-            <div className="pb-recap-facts">
-              <div>
-                <img src={avatarImage(snapshot.identity.avatarId)} alt="" />
-                <span>Jouw verschijning</span>
-                <strong>{avatarOptions.find((item) => item.id === snapshot.identity.avatarId)?.label}</strong>
-              </div>
-              <div>
-                <span>Eerste bezoek</span>
-                <strong>{visitTime(firstVisit)}</strong>
-                <span>Laatste bezoek</span>
-                <strong>{visitTime(lastVisit)}</strong>
-              </div>
-            </div>
-            <p>
-              <strong>Reisgenootjes:</strong>{" "}
-              {snapshot.companions.map((companion) => companion.firstName).join(", ")}.
-            </p>
-            <p>
-              <strong>Bezochte werelden:</strong>{" "}
-              {[...new Set(snapshot.journey.seals.map((seal) => seal.presentation.world))].join(", ")}.
-            </p>
-            <TeamBanner choices={result} level={4} />
-            <div className="pb-child-certificate">
-              <img src="/images/poortenboek-v2/certificates/child-certificate-background.webp" alt="" />
-              <div>
-                <span>Deelnamecertificaat</span>
-                <strong>{snapshot.firstName}</strong>
-                <small>{snapshot.election.winner ?? "Avonturier van de Duindorpse Poorten"}</small>
-              </div>
-            </div>
-            <button className="pb-button" type="button" onClick={() => window.print()}>
-              <Download /> Bewaarkaart afdrukken
-            </button>
-          </div>
-        </section>
-      )}
+      <StoryChapters snapshot={snapshot}/>
+      {!hasBookFarewell(snapshot) && <BookKeepsake snapshot={snapshot}/>}
     </>
   );
 }

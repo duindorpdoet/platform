@@ -18,6 +18,10 @@ import {
   VolumeX,
   X,
 } from "lucide-react";
+import { KidGuide } from "./kid-guide";
+import { BookArrivalSync } from "@/components/redesign/arrival-sync-ui";
+import { BookFarewell, hasBookFarewell } from "@/components/redesign/book-farewell";
+import { BookIdentityCheck, bookIdentityKey, readConfirmedBookIdentity, saveConfirmedBookIdentity } from "@/components/redesign/book-identity-check";
 import { MotionToggle } from "@/components/poorten-cinematic";
 import {
   checklistLabels,
@@ -63,6 +67,7 @@ export function Poortenboek({
 }) {
   const [snapshot, setSnapshot] = useState<BookSnapshot | null>(initial);
   const [offline, setOffline] = useState(false);
+  const [confirmedIdentity, setConfirmedIdentity] = useState(readConfirmedBookIdentity);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [teamTab, setTeamTab] = useState("friends");
@@ -80,7 +85,7 @@ export function Poortenboek({
       if (current !== sequence.current) return;
       if (result.status === 401) {
         setSnapshot(null);
-        window.location.replace("/poortenboek/inloggen");
+        window.location.replace("/#/poortenboek/inloggen");
         return;
       }
       if (!result.ok) throw new Error("offline");
@@ -96,6 +101,11 @@ export function Poortenboek({
         document.documentElement.removeAttribute("data-pb-hidden");
       }
     }
+  }, []);
+  useEffect(() => {
+    const guide = (event: Event) => { const detail=(event as CustomEvent).detail; if(["friends","banner","practice"].includes(detail?.teamTab))setTeamTab(detail.teamTab); if(["settings","appearance"].includes(detail?.profileTab))setProfileTab(detail.profileTab); };
+    window.addEventListener("poortenboek-guide-navigate",guide);
+    return () => window.removeEventListener("poortenboek-guide-navigate",guide);
   }, []);
   useEffect(() => {
     const hide = () => {
@@ -119,10 +129,12 @@ export function Poortenboek({
     window.addEventListener("online", refresh);
     window.addEventListener("offline", lost);
     window.addEventListener("focus", refresh);
+
+    window.addEventListener("storage", refresh);
     document.addEventListener("visibilitychange", visible);
     const timer = window.setInterval(() => {
       setNow(Date.now());
-      if (section === "team" && !document.hidden) void load();
+      if (["team", "boek", "nu"].includes(section) && !document.hidden) void load();
     }, 12_000);
     return () => {
       window.clearInterval(timer);
@@ -131,6 +143,8 @@ export function Poortenboek({
       window.removeEventListener("online", refresh);
       window.removeEventListener("offline", lost);
       window.removeEventListener("focus", refresh);
+
+      window.removeEventListener("storage", refresh);
       document.removeEventListener("visibilitychange", visible);
       document.documentElement.removeAttribute("data-pb-hidden");
     };
@@ -149,7 +163,7 @@ export function Poortenboek({
     const timer = window.setTimeout(
       () => {
         setSnapshot(null);
-        window.location.replace("/poortenboek/inloggen");
+        window.location.replace("/#/poortenboek/inloggen");
       },
       Math.max(0, new Date(snapshot.expiresAt).getTime() - Date.now()),
     );
@@ -182,7 +196,7 @@ export function Poortenboek({
         }
         if (result.status === 401) {
           setSnapshot(null);
-          window.location.replace("/poortenboek/inloggen");
+          window.location.replace("/#/poortenboek/inloggen");
           return;
         }
         if (!result.ok) {
@@ -192,7 +206,7 @@ export function Poortenboek({
         }
         if (action === "logout") {
           setSnapshot(null);
-          window.location.replace("/poortenboek/inloggen");
+          window.location.replace("/#/poortenboek/inloggen");
           return;
         }
         setSnapshot(data as BookSnapshot);
@@ -227,6 +241,8 @@ export function Poortenboek({
         </button>
       </main>
     );
+  if (confirmedIdentity !== bookIdentityKey(snapshot))
+    return <BookIdentityCheck snapshot={snapshot} onConfirm={() => { const identity = bookIdentityKey(snapshot); saveConfirmedBookIdentity(identity); setConfirmedIdentity(identity); }}/>;
   if (snapshot.welcomeRequired)
     return (
       <Welcome
@@ -238,6 +254,7 @@ export function Poortenboek({
   const ready = snapshot.checklist.filter(Boolean).length;
   return (
     <div className="pb-app">
+      <KidGuide snapshot={snapshot} section={section} onComplete={load}/>
       <header className="pb-header">
         <a href="/poortenboek" aria-label="Het Poortenboek, naar Nu">
           <img
@@ -260,20 +277,27 @@ export function Poortenboek({
             </a>
           ))}
         </nav>
-        {snapshot.demo && (
-          <span className="pb-demo-badge">
-            <Sparkles size={13} />
-            Demomodus
-          </span>
-        )}
+        <div className="pb-header-identity"><a className="pb-switch-book" href="/poortenboek/inloggen" aria-label="Ander Poortenboek openen">Ander boek</a>
+          {snapshot.demo && <span className="pb-demo-badge"><Sparkles size={12} />Demo</span>}
+          <a className="pb-header-profile" href="/poortenboek/ik" aria-label={`Het profiel van ${snapshot.firstName}`}>
+            <img src={`/images/poortenboek-v2/avatars/${snapshot.identity.avatarId}.webp`} alt="" />
+            <span>{snapshot.firstName}</span>
+          </a>
+        </div>
       </header>
       <main id="poortenboek-content" className="pb-content">
+        <div className="pb-workspace-context">
+          <span><BookOpen size={15} /> Jouw avontuur <ChevronRight size={13} /> <strong>{sections.find(([key]) => key === section)?.[1] ?? "Nu"}</strong></span>
+          <span><Moon size={13} /> 31 oktober 2026</span>
+        </div>
+        <BookArrivalSync childId={snapshot.childId} confirmedStopIds={snapshot.journey.seals.flatMap(seal=>seal.stopId?[seal.stopId]:[])}/>
         {notice && (
           <p role="status" className="pb-error">
             {notice}
           </p>
         )}
-        {section === "nu" && (
+        {section === "nu" && hasBookFarewell(snapshot) && <BookFarewell snapshot={snapshot} home/>}
+        {section === "nu" && !hasBookFarewell(snapshot) && (
           <>
             <section className="pb-hero">
               <picture>
@@ -295,14 +319,15 @@ export function Poortenboek({
                 <p>Jouw verhaal wacht achter de poorten.</p>
                 <div className="pb-countdown">
                   <Moon />
-                  <span>
-                    Nog <strong>{nightsUntil(snapshot.eventDate, now)}</strong>{" "}
-                    nachten
-                  </span>
-                  <small>tot 31 oktober 2026</small>
+                  {["live", "paused"].includes(snapshot.eventPhase)
+                    ? <span>Jouw avontuur is <strong>begonnen</strong></span>
+                    : snapshot.eventPhase === "completed"
+                      ? <span>Een avond vol <strong>herinneringen</strong></span>
+                      : <><span>Nog <strong>{nightsUntil(snapshot.eventDate, now)}</strong> nachten</span><small>tot Halloween</small></>}
                 </div>
                 <a
                   className="pb-button"
+                  onClick={(event) => { if (snapshot.election.winner) { event.preventDefault(); document.getElementById("voorbereiding")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); } }}
                   href={
                     snapshot.election.winner
                       ? "#voorbereiding"
@@ -319,6 +344,11 @@ export function Poortenboek({
                 Duindorp · Eén nacht, jouw avontuur
               </span>
             </section>
+            <nav className="pb-next-steps" aria-label="Jouw volgende stappen">
+              <a href="/poortenboek/team"><span className="pb-step-icon"><Users size={20} /></span><span><small>JOUW TEAM</small><strong>{snapshot.election.winner ?? "Kies samen jullie naam"}</strong><span>{snapshot.companions.length} reisgenootjes</span></span><ArrowRight size={16} /></a>
+              <a href="#voorbereiding" onClick={(event) => { event.preventDefault(); document.getElementById("voorbereiding")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); }}><span className="pb-step-icon"><Check size={21} /></span><span><small>VOORBEREIDING</small><strong>{ready === 6 ? "Helemaal klaar voor de nacht" : `${ready} van 6 stappen klaar`}</strong><span>Een lampje, snoeptas en zin in avontuur</span></span><ArrowRight size={16} /></a>
+              <a href="/poortenboek/boek"><span className="pb-step-icon"><BookOpen size={20} /></span><span><small>JOUW POORTENBOEK</small><strong>{snapshot.journey.seals.length} poortzegels verzameld</strong><span>Jouw verhalen, zegels en herinneringen</span></span><ArrowRight size={16} /></a>
+            </nav>
             <div className="pb-dashboard-grid">
               <section className="pb-panel">
                 <div className="pb-section-heading">
@@ -420,14 +450,10 @@ export function Poortenboek({
                 </p>
               </div>
             </section>
-            <section className="pb-prologue pb-panel">
-              <p className="pb-eyebrow">Proloog · de nacht die op jou wacht</p>
-              <h2>Er beweegt iets achter de poorten…</h2>
-              <p>{prologue}</p>
-              <a className="pb-text-link" href="/poortenboek/boek">
-                Open jouw boek <ArrowRight size={17} />
-              </a>
-            </section>
+            <details className="pb-prologue pb-panel">
+              <summary><span><span className="pb-eyebrow">Het verhaal begint hier</span><strong>Er beweegt iets achter de poorten…</strong></span><ChevronRight size={20} /></summary>
+              <div><p>{prologue}</p><a className="pb-text-link" href="/poortenboek/boek">Lees verder in jouw boek <ArrowRight size={17} /></a></div>
+            </details>
             <a className="pb-book-invitation" href="/poortenboek/boek">
               <img
                 src="/images/poortenboek/book-cover.webp"
@@ -502,7 +528,7 @@ export function Poortenboek({
             />
             </>}
             {teamTab === "banner" &&
-            <TeamBannerWorkshop
+            <TeamBannerWorkshop key={snapshot.childId??snapshot.firstName}
               snapshot={snapshot}
               busy={busy}
               act={(action, payload) => void act(action, payload)}
@@ -566,7 +592,7 @@ export function Poortenboek({
             <nav className="pb-section-links" aria-label="Mijn Poortenboek instellingen">
               {[["settings", "Mijn boek & instellingen"], ["appearance", "Verschijning & lantaarn"]].map(([key, label]) => <button type="button" key={key} aria-pressed={profileTab === key} onClick={() => setProfileTab(key)}>{label}</button>)}
             </nav>
-            {profileTab === "appearance" && <TeamIdentityWorkshop
+            {profileTab === "appearance" && <TeamIdentityWorkshop key={snapshot.childId??snapshot.firstName}
               snapshot={snapshot}
               busy={busy}
               act={(action, payload) => void act(action, payload)}
