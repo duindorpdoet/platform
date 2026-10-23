@@ -40,7 +40,6 @@ declare
   recipient record;
   child_count integer;
   published_count integer := 0;
-  service_interval interval;
 begin
   select id into v_event_id from app_private.events where slug = _event_slug for update;
   if v_event_id is null or not app_private.has_capability(v_event_id, 'groups_manage', actor) then raise exception 'NOT_AUTHORIZED' using errcode = '42501'; end if;
@@ -49,7 +48,6 @@ begin
   if settings.planner_mode <> 'dynamic' or not settings.finale_available or settings.final_portal_id is null then
     raise exception 'DYNAMIC_PLANNER_NOT_READY' using errcode = '23514';
   end if;
-  service_interval := make_interval(secs => settings.finale_show_seconds + settings.finale_turnover_seconds);
 
   if exists (
     select 1 from app_private.group_schedule_revisions candidate

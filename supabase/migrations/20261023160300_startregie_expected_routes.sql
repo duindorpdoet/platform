@@ -16,7 +16,7 @@ returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare g app_private.walking_groups; s app_private.group_schedule_revisions; point app_private.start_points;
   slot app_private.start_slots; settings app_private.event_route_settings; r app_private.group_runs;
   source_node uuid; last_lon numeric; last_lat numeric; at_time timestamptz; start_time timestamptz;
-  stops jsonb:='[]'; warnings jsonb:='[]'; chosen uuid[]:='{}'; candidate record; path record;
+  stops jsonb:='[]'::jsonb; warnings jsonb:='[]'::jsonb; chosen uuid[]:='{}'::uuid[]; candidate record;
   meters bigint:=0; seconds bigint:=0; walk_m bigint; walk_s bigint; provisional boolean:=false;
   remaining integer; visited integer:=0; child_count integer; final_node uuid; fixed_portal uuid;
   preserved_portal uuid; eligible integer; step_free boolean;
@@ -38,7 +38,7 @@ begin
   last_lat:=coalesce(point.marker_latitude,point.geocoded_latitude,point.latitude);
   start_time:=slot.starts_at; at_time:=slot.starts_at;
   if r.id is not null then
-    at_time:=greatest(at_time,clock_timestamp());
+    at_time:=greatest(at_time,statement_timestamp());
     select coalesce(array_agg(coalesce(rs.portal_id,ps.portal_id)),array[]::uuid[]),
       count(*) filter(where coalesce(rs.stop_kind::text,'ordinary')='ordinary' and rs.outcome in ('visited','mixed','all_skipped') and exists(select 1 from app_private.scan_evidence evidence where evidence.run_stop_id=rs.id))
     into chosen,visited from app_private.run_stops rs left join app_private.route_plan_stops ps on ps.id=rs.plan_stop_id
@@ -129,7 +129,7 @@ begin
   else warnings:=warnings||jsonb_build_array('Er ontbreekt een gecontroleerde finale.'); end if;
   if provisional then warnings:=warnings||jsonb_build_array('Deels geografisch geschat. De stippellijnen zijn geen gecontroleerde straatafslagroute; live vertrek vereist goedgekeurde wandelverbindingen.'); end if;
   if jsonb_array_length(stops)-1<least(remaining+jsonb_array_length(stops)-1,eligible) then warnings:=warnings||jsonb_build_array('Niet ieder beschikbaar huis past binnen de gekozen bezoekgrens en tijdvensters.'); end if;
-  return jsonb_build_object('groupId',g.id,'revision',app_private.start_ops_route_revision(g.event_id),'generatedAt',clock_timestamp(),
+  return jsonb_build_object('groupId',g.id,'revision',app_private.start_ops_route_revision(g.event_id),'generatedAt',statement_timestamp(),
     'start',jsonb_build_object('pointId',point.id,'name',point.name,'address',point.private_address,'coordinate',jsonb_build_array(
       coalesce(point.marker_longitude,point.geocoded_longitude,point.longitude),coalesce(point.marker_latitude,point.geocoded_latitude,point.latitude)),'startsAt',start_time),
     'stops',stops,'totalMeters',meters,'totalMinutes',ceil(seconds/60.0),'eligiblePortalCount',eligible,'warnings',warnings,

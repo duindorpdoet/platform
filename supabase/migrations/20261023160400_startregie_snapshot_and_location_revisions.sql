@@ -32,7 +32,7 @@ begin
       'confirmedAt',case when s.state='published' or app_private.is_start_confirmation_current(s.id) then s.confirmed_at end,'timePublishedAt',pub.published_at,
       'addressReleaseAt',slot.starts_at-interval '1 hour','publishedStartsAt',pub.starts_at,
       'publishedRevision',pub.revision,'publishedAddressReleaseAt',pub.starts_at-interval '1 hour',
-      'addressReleased',clock_timestamp()>=pub.starts_at-interval '1 hour','routeRevision',app_private.start_ops_route_revision(e.id)) order by g.system_code),'[]'::jsonb)
+      'addressReleased',statement_timestamp()>=pub.starts_at-interval '1 hour','routeRevision',app_private.start_ops_route_revision(e.id)) order by g.system_code),'[]'::jsonb)
     into groups from app_private.walking_groups g
     left join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id
     left join app_private.start_slots slot on slot.id=coalesce(s.start_slot_id,g.start_slot_id)
@@ -49,7 +49,7 @@ begin
       where a.group_id=r.group_id and a.superseded_at is null),'[]'::jsonb))),'[]'::jsonb)
     into reservations from app_private.start_schedule_reservations(e.id) r
     join app_private.event_route_settings settings on settings.event_id=e.id;
-  return base||jsonb_build_object('ops',jsonb_build_object('now',clock_timestamp(),'clockMode','server',
+  return base||jsonb_build_object('ops',jsonb_build_object('now',statement_timestamp(),'clockMode','server',
     'routeRevision',app_private.start_ops_route_revision(e.id),'inputHash',app_private.start_planning_input_hash(e.id),'groups',groups,'routes',routes,'walkingNodes','[]'::jsonb,'existingSchedules',reservations));
 end;
 $$;

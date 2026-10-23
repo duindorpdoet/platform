@@ -1,5 +1,5 @@
 create or replace function app_private.parse_amsterdam_instant(_value text)
-returns timestamptz language plpgsql immutable set search_path='' as $$
+returns timestamptz language plpgsql stable set search_path='' as $$
 declare result timestamptz; wall timestamp;
 begin
   if _value is null or _value='' then return null; end if;

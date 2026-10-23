@@ -144,7 +144,7 @@ revoke all on function app_private.start_schedule_reservations(uuid),app_private
 create or replace function api.admin_startregie_confirm_starts(
   _event_slug text,_expected_revisions jsonb,_expected_settings_version integer)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare item jsonb; g uuid; result jsonb:='[]';
+declare item jsonb; g uuid; result jsonb:='[]'::jsonb;
 begin
   if jsonb_typeof(_expected_revisions) is distinct from 'array'
     or jsonb_array_length(_expected_revisions) not between 1 and 500 then raise exception 'VALIDATION_ERROR' using errcode='22023'; end if;
