@@ -53,8 +53,8 @@ select throws_ok(
     (api.admin_dashboard('duindorp-halloween-2026') #>> '{event,settingsVersion}')::integer,
     'Bestaande groepen mogen niet stilzwijgend breken'
   ) $$,
-  '23514', 'GROUP_SIZE_LIMIT_BELOW_ACTIVE_PARTY',
-  'lowering the limit cannot invalidate an existing non-overridden party'
+  '23514', 'GROUP_SIZE_IMPACT_REVIEW_REQUIRED',
+  'lowering below an existing party requires an explicit impact review'
 );
 
 select set_config('request.jwt.claims', '{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);

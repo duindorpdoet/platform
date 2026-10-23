@@ -278,7 +278,7 @@ export function RegistrationDashboard({
     if (message.includes("STALE_VERSION")) return "De inschrijving is intussen gewijzigd. De actuele gegevens zijn opgehaald.";
     if (message.includes("CHILDREN_LOCKED")) return "De groepen zijn definitief gekoppeld. Vraag de organisatie om deze wijziging.";
     if (message.includes("CHILD_ALREADY_PAID")) return "Dit kind is al betaald of de betaling wordt gecontroleerd. Vraag de organisatie om de wijziging.";
-    if (message.includes("GROUP_SIZE_LIMIT_EXCEEDED")) return `Deze groep mag maximaal ${snapshot?.event?.maxGroupSize ?? 20} kinderen bevatten.`;
+    if (message.includes("GROUP_SIZE_LIMIT_EXCEEDED")) return `Deze groep mag maximaal ${snapshot?.event?.maxGroupSize ?? "het actuele evenementmaximum"} kinderen bevatten.`;
     if (message.includes("EVENT_CAPACITY_REACHED")) return "Het maximale aantal deelnemers voor deze avond is bereikt.";
     if (message.includes("LEGACY_PAYMENT_REQUIRES_ORGANIZER")) return "Door de bestaande betaling moet de organisatie dit kind toevoegen.";
     return "De wijziging kon niet worden verwerkt. Probeer het opnieuw.";

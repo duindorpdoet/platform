@@ -28,6 +28,25 @@ export type PlanningStart = {
 
 export type PlanningConflict = { code: string; subjectId?: string; message: string };
 export type PreferenceMatch = "good" | "small_deviation" | "large_deviation" | "neutral";
+export type PartyPreferenceDetail = {
+  partyId: string;
+  preferredStartAt: string | null;
+  startPreference: StartTimePreference;
+  deviationMinutes: number | null;
+  match: PreferenceMatch;
+};
+export type ExistingPlanningSchedule = {
+  /** Stable schedule ID: a duplicate snapshot row must not consume capacity twice. */
+  id: string;
+  /** Current draft and still-published revision can reserve two starts for the same physical group. */
+  groupId?: string;
+  startId: string;
+  childCount: number;
+  expectedFinaleArrivalAt: string;
+  finaleEndsAt?: string | null;
+  /** Already assigned households are excluded from a later proposal. */
+  partyIds?: string[];
+};
 export type PlannedGroup = {
   key: string;
   partyIds: string[];
@@ -36,6 +55,8 @@ export type PlannedGroup = {
   effectiveStopAt: string;
   expectedFinaleArrivalAt: string;
   preferenceMatch: PreferenceMatch;
+  preferenceDetails: PartyPreferenceDetail[];
+  maxPreferenceDeviationMinutes: number | null;
   warnings: string[];
   explanation: string;
 };
@@ -58,6 +79,8 @@ export type PlanningInput = {
   laterPreferenceEarliestAt?: string | null;
   preferenceGreenMinutes?: number;
   preferenceAmberMinutes?: number;
+  /** Existing active draft/published reservations, once per schedule ID. Never pass reduced slot maxima too. */
+  existingSchedules?: ExistingPlanningSchedule[];
 };
 
 function stable<T extends { id: string }>(items: T[]) {
@@ -88,7 +111,9 @@ function preferenceScore(preference: StartTimePreference, startAt: number, input
   return startAt >= laterLimit ? 0 : laterLimit - startAt;
 }
 
-function matchFor(preference: StartTimePreference, startAt: number, input: PlanningInput, preferredStartAt?: number | null): PreferenceMatch {
+function matchFor(preference: StartTimePreference, startAt: number, input: Pick<PlanningInput,
+  "earlyPreferenceLatestAt" | "laterPreferenceEarliestAt" | "preferenceGreenMinutes" | "preferenceAmberMinutes"
+>, preferredStartAt?: number | null): PreferenceMatch {
   if (preferredStartAt !== null && preferredStartAt !== undefined) {
     const deviation = Math.abs(startAt - preferredStartAt) / 60_000;
     if (deviation <= (input.preferenceGreenMinutes ?? 15)) return "good";
@@ -108,6 +133,29 @@ function matchFor(preference: StartTimePreference, startAt: number, input: Plann
   return "large_deviation";
 }
 
+/** Report the least satisfied household, while the selection score may still use a soft group average. */
+export function evaluatePartyPreferences(parties: PlanningParty[], startsAt: string | number, input: Pick<PlanningInput,
+  "earlyPreferenceLatestAt" | "laterPreferenceEarliestAt" | "preferenceGreenMinutes" | "preferenceAmberMinutes"
+>): { preferenceMatch: PreferenceMatch; preferenceDetails: PartyPreferenceDetail[]; maxPreferenceDeviationMinutes: number | null } {
+  const startAt = typeof startsAt === "number" ? startsAt : Date.parse(startsAt);
+  const preferenceDetails = stable(parties).map((party): PartyPreferenceDetail => {
+    const preferred = millis(party.preferredStartAt);
+    const preference = party.startPreference ?? "indifferent";
+    const boundary = preference === "early" ? millis(input.earlyPreferenceLatestAt) : preference === "later" ? millis(input.laterPreferenceEarliestAt) : null;
+    const deviation = preferred !== null ? Math.abs(startAt - preferred)
+      : boundary === null ? null : preference === "early" ? Math.max(0, startAt - boundary) : Math.max(0, boundary - startAt);
+    return {
+      partyId: party.id, preferredStartAt: party.preferredStartAt ?? null, startPreference: preference,
+      deviationMinutes: deviation === null ? null : Math.ceil(deviation / 60_000),
+      match: matchFor(preference, startAt, input, preferred),
+    };
+  });
+  const ranks: Record<PreferenceMatch, number> = { neutral: 0, good: 1, small_deviation: 2, large_deviation: 3 };
+  const preferenceMatch = preferenceDetails.reduce<PreferenceMatch>((worst, detail) => ranks[detail.match] > ranks[worst] ? detail.match : worst, "neutral");
+  const deviations = preferenceDetails.flatMap((detail) => detail.deviationMinutes === null ? [] : [detail.deviationMinutes]);
+  return { preferenceMatch, preferenceDetails, maxPreferenceDeviationMinutes: deviations.length ? Math.max(...deviations) : null };
+}
+
 export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; conflicts: PlanningConflict[] } {
   const conflicts: PlanningConflict[] = [];
   const globalStop = millis(input.globalOrdinaryStopAt);
@@ -115,9 +163,28 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   const finaleLast = millis(input.finaleLastArrivalAt);
   const finaleClose = millis(input.finaleClosesAt);
   if (!input.starts.length) conflicts.push({ code: "NO_START_SLOTS", message: "Voeg ten minste één geverifieerd startpunt met een exact tijdstip toe." });
-  if (input.maxGroupSize > 20 || input.targetGroupSize < 1 || input.targetGroupSize > input.maxGroupSize) conflicts.push({ code: "INVALID_GROUP_LIMIT", message: "De gewenste groepsgrootte valt buiten de grens." });
+  if (![input.maxGroupSize,input.targetGroupSize].every(value=>Number.isSafeInteger(value)&&value>=1&&value<=2147483647) || input.targetGroupSize > input.maxGroupSize) conflicts.push({ code: "INVALID_GROUP_LIMIT", message: "De gewenste groepsgrootte valt buiten de grens." });
   if ([globalStop, finaleOpen, finaleLast, finaleClose].some((value) => value === null)) conflicts.push({ code: "ROUTE_CONFIGURATION_INCOMPLETE", message: "Vul de stopgrens en alle eindpoortvensters in." });
   if (input.finaleShowSeconds < 60 || input.finaleMaxGroups < 1 || input.finaleMaxChildren < 1) conflicts.push({ code: "INVALID_FINALE_CAPACITY", message: "De eindpoortcapaciteit is niet geldig." });
+  const serviceMs = (input.finaleShowSeconds + input.finaleTurnoverSeconds) * 1_000;
+  const existingSchedules = new Map<string, ExistingPlanningSchedule>();
+  for (const schedule of input.existingSchedules ?? []) {
+    const arrival = millis(schedule.expectedFinaleArrivalAt);
+    const end = schedule.finaleEndsAt ? millis(schedule.finaleEndsAt) : arrival === null ? null : arrival + serviceMs;
+    if (!schedule.id || !schedule.startId || !Number.isInteger(schedule.childCount) || schedule.childCount < 0 || arrival === null || end === null || end <= arrival) {
+      conflicts.push({ code: "INVALID_EXISTING_RESERVATION", subjectId: schedule.id, message: "Een bestaande afspraak heeft ongeldige capaciteitsgegevens. Controleer de opgeslagen planning." });
+      continue;
+    }
+    const previous = existingSchedules.get(schedule.id);
+    if (previous && (previous.groupId !== schedule.groupId || previous.startId !== schedule.startId || previous.childCount !== schedule.childCount
+      || millis(previous.expectedFinaleArrivalAt) !== arrival
+      || (previous.finaleEndsAt ? millis(previous.finaleEndsAt) : millis(previous.expectedFinaleArrivalAt)! + serviceMs) !== end
+      || JSON.stringify([...(previous.partyIds ?? [])].sort()) !== JSON.stringify([...(schedule.partyIds ?? [])].sort()))) {
+      conflicts.push({ code: "EXISTING_SCHEDULE_CONFLICT", subjectId: schedule.id, message: "Dezelfde bestaande afspraak heeft verschillende revisiegegevens. Vernieuw de planning." });
+      continue;
+    }
+    existingSchedules.set(schedule.id, schedule);
+  }
   if (conflicts.length) return { groups: [], conflicts };
 
   const starts = input.starts.filter((start) => {
@@ -126,14 +193,15 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     const availableUntil = millis(start.availableUntil);
     const portalOpensAt = millis(start.portalOpensAt);
     const portalClosesAt = millis(start.portalClosesAt);
-    return start.markerValid !== false
+    return Number.isFinite(value) && start.markerValid !== false
       && (availableFrom === null || value >= availableFrom)
       && (availableUntil === null || value <= availableUntil)
       && (portalOpensAt === null || value >= portalOpensAt)
       && (portalClosesAt === null || value <= portalClosesAt);
   }).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt) || a.id.localeCompare(b.id));
   const clusters = new Map<string, PlanningParty[]>();
-  for (const party of stable(input.parties)) {
+  const assignedPartyIds = new Set([...existingSchedules.values()].flatMap((schedule) => schedule.partyIds ?? []));
+  for (const party of stable(input.parties).filter((party) => !assignedPartyIds.has(party.id))) {
     const key = party.togetherKey ? `together:${party.togetherKey}` : `party:${party.id}`;
     clusters.set(key, [...(clusters.get(key) ?? []), party]);
   }
@@ -146,7 +214,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   })).sort((a, b) => b.size - a.size || a.key.localeCompare(b.key));
 
   for (const bundle of bundles) {
-    if (bundle.size > 20 || (bundle.size > input.maxGroupSize && !bundle.capacityOverride)) conflicts.push({ code: "TOGETHER_PARTY_TOO_LARGE", subjectId: bundle.key, message: `${bundle.key} bevat ${bundle.size} kinderen; maximaal ${input.maxGroupSize}.` });
+    if (bundle.size > input.maxGroupSize) conflicts.push({ code: "TOGETHER_PARTY_TOO_LARGE", subjectId: bundle.key, message: `${bundle.key} bevat ${bundle.size} kinderen; maximaal ${input.maxGroupSize}.` });
     if (bundle.preference === "conflict") conflicts.push({ code: "START_PREFERENCE_CONFLICT", subjectId: bundle.key, message: `${bundle.key} bevat zowel een vroege als late voorkeur. Stem een gezamenlijke afspraak af of splits bewust.` });
   }
   if (conflicts.length) return { groups: [], conflicts };
@@ -169,9 +237,21 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   }
 
   const startLoads = new Map(starts.map((start) => [start.id, { groups: 0, children: 0 }]));
-  const finaleReservations: Array<{ startsAt: number; endsAt: number; children: number }> = [];
+  const finaleReservations: Array<{ groupKey: string; startsAt: number; endsAt: number; children: number }> = [];
+  const existingStartReservations = new Map<string, { startId: string; children: number }>();
+  for (const schedule of existingSchedules.values()) {
+    const groupKey = `existing:${schedule.groupId ?? schedule.id}`;
+    const reservationKey = `${groupKey}:${schedule.startId}`;
+    const previous = existingStartReservations.get(reservationKey);
+    existingStartReservations.set(reservationKey, { startId: schedule.startId, children: Math.max(previous?.children ?? 0, schedule.childCount) });
+    const startsAt = millis(schedule.expectedFinaleArrivalAt)!;
+    finaleReservations.push({ groupKey, startsAt, endsAt: schedule.finaleEndsAt ? millis(schedule.finaleEndsAt)! : startsAt + serviceMs, children: schedule.childCount });
+  }
+  for (const reservation of existingStartReservations.values()) {
+    const load = startLoads.get(reservation.startId);
+    if (load) { load.groups += 1; load.children += reservation.children; }
+  }
   const groups: PlannedGroup[] = [];
-  const serviceMs = (input.finaleShowSeconds + input.finaleTurnoverSeconds) * 1_000;
   for (const group of draftGroups) {
     const preferredStarts = group.parties.map((party) => millis(party.preferredStartAt)).filter((value): value is number => value !== null);
     const preferredStartAt = preferredStarts.length
@@ -194,9 +274,12 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     let reserved = false;
     while (finaleArrival <= finaleLast! && finaleArrival + serviceMs <= finaleClose!) {
       const overlapping = finaleReservations.filter((reservation) => finaleArrival < reservation.endsAt && finaleArrival + serviceMs > reservation.startsAt);
-      if (overlapping.length < input.finaleMaxGroups
-        && overlapping.reduce((sum, reservation) => sum + reservation.children, 0) + group.childCount <= input.finaleMaxChildren) {
-        finaleReservations.push({ startsAt: finaleArrival, endsAt: finaleArrival + serviceMs, children: group.childCount });
+      // A draft and a still-published appointment are alternatives for one group, not two actual groups.
+      const occupiedGroups = new Map<string, number>();
+      for (const reservation of overlapping) occupiedGroups.set(reservation.groupKey, Math.max(occupiedGroups.get(reservation.groupKey) ?? 0, reservation.children));
+      if (occupiedGroups.size < input.finaleMaxGroups
+        && [...occupiedGroups.values()].reduce((sum, children) => sum + children, 0) + group.childCount <= input.finaleMaxChildren) {
+        finaleReservations.push({ groupKey: `proposal:${group.key}`, startsAt: finaleArrival, endsAt: finaleArrival + serviceMs, children: group.childCount });
         reserved = true;
         break;
       }
@@ -212,11 +295,14 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     const warnings: string[] = [];
     if (group.parties.some((party) => party.paymentEligible === false)) warnings.push("PAYMENT_NOT_CONFIRMED");
     const selectedStart = Date.parse(selected.startsAt);
-    const deviationMinutes = preferredStartAt === null ? null : Math.round(Math.abs(selectedStart - preferredStartAt) / 60_000);
+    const preferenceResult = evaluatePartyPreferences(group.parties, selectedStart, input);
+    const deviationMinutes = preferenceResult.maxPreferenceDeviationMinutes;
+    if (preferenceResult.preferenceMatch === "large_deviation") warnings.push("HOUSEHOLD_START_PREFERENCE_DEVIATION");
+    else if (preferenceResult.preferenceMatch === "small_deviation") warnings.push("HOUSEHOLD_START_PREFERENCE_CHECK");
     const remainingChildren = selected.maxChildren - load.children;
     const preferenceReason = deviationMinutes === null
-      ? group.preference === "indifferent" ? "Er is geen vaste startvoorkeur" : "Dit moment past bij de gekozen tijdsvoorkeur"
-      : deviationMinutes === 0 ? "Dit moment ligt exact op de voorkeur" : `Dit moment wijkt ${deviationMinutes} minuten af van de voorkeur`;
+      ? group.preference === "indifferent" ? "Er is geen vaste startvoorkeur" : "Er is geen exacte starttijd opgegeven; controleer de tijdsvoorkeur"
+      : deviationMinutes === 0 ? "Dit moment ligt exact op de voorkeur van ieder gezin met een opgegeven tijdsvoorkeur" : `De grootste afwijking voor een gezin is ${deviationMinutes} minuten; controleer de voorkeur per inschrijving`;
     groups.push({
       key: group.key,
       partyIds: group.parties.map((party) => party.id).sort(),
@@ -224,7 +310,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
       startId: selected.id,
       effectiveStopAt: new Date(effectiveStop).toISOString(),
       expectedFinaleArrivalAt: new Date(finaleArrival).toISOString(),
-      preferenceMatch: matchFor(group.preference, selectedStart, input, preferredStartAt),
+      ...preferenceResult,
       warnings,
       explanation: `${preferenceReason}; ${selected.pointName ?? "het startpunt"} heeft daarna nog ruimte voor ${Math.max(0, remainingChildren)} kinderen.`,
     });

@@ -23,11 +23,34 @@ const base: PlanningInput = {
 };
 
 describe("group and finale planner", () => {
-  it("rejects a configured size above the absolute twenty-child maximum", () => {
-    expect(proposePlan({ ...base, maxGroupSize: 21 }).conflicts).toContainEqual(expect.objectContaining({ code: "INVALID_GROUP_LIMIT" }));
+  it("plans an intact 26-child together bundle under an organizer maximum of 30", () => {
+    const configured={...base,maxGroupSize:30,targetGroupSize:30,starts:base.starts.map(start=>({...start,maxChildren:60})),finaleMaxChildren:60,parties:[
+      {id:"family-a",childCount:14,togetherKey:"together",paymentEligible:true},
+      {id:"family-b",childCount:12,togetherKey:"together",paymentEligible:true},
+    ]};
+    const result=proposePlan(configured);
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups).toHaveLength(1);
+    expect(result.groups[0]).toMatchObject({childCount:26,partyIds:["family-a","family-b"]});
+    expect(proposePlan({...configured,maxGroupSize:25,targetGroupSize:25}).conflicts).toContainEqual(expect.objectContaining({code:"TOGETHER_PARTY_TOO_LARGE"}));
   });
 
-  it("keeps the twenty-child ceiling even with a legacy capacity override", () => {
+  it("accepts forty-five when configured and still respects a physical start capacity of twenty", () => {
+    const configured={...base,maxGroupSize:45,targetGroupSize:45,starts:base.starts.map(start=>({...start,maxChildren:60})),finaleMaxChildren:60,parties:[{id:"large-family",childCount:45,paymentEligible:true}]};
+    expect(proposePlan(configured).groups[0]?.childCount).toBe(45);
+    expect(proposePlan({...configured,starts:base.starts}).groups).toEqual([]);
+    expect(proposePlan({...configured,parties:[{id:"too-large",childCount:46,paymentEligible:true}]}).conflicts).toContainEqual(expect.objectContaining({code:"TOGETHER_PARTY_TOO_LARGE"}));
+  });
+
+  it.each([0,-1,12.5,Number.NaN,Number.POSITIVE_INFINITY,2147483648])("rejects an invalid integer policy %s",maximum=>{
+    expect(proposePlan({...base,maxGroupSize:maximum,targetGroupSize:1}).conflicts).toContainEqual(expect.objectContaining({code:"INVALID_GROUP_LIMIT"}));
+  });
+
+  it("rejects invalid event limits independently of the previous twenty-child policy", () => {
+    expect(proposePlan({ ...base, maxGroupSize: 0 }).conflicts).toContainEqual(expect.objectContaining({ code: "INVALID_GROUP_LIMIT" }));
+  });
+
+  it("does not trust a legacy override flag to bypass the current event limit", () => {
     const result = proposePlan({ ...base, maxGroupSize: 20, parties: [
       { id: "large", childCount: 21, togetherOverride: true, paymentEligible: true },
     ] });

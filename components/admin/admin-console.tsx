@@ -42,6 +42,7 @@ import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { ShareStudioAdmin } from "@/components/admin/share-studio-admin";
 import { StatisticsDashboard } from "@/components/admin/statistics-dashboard";
 import { EnvironmentTracker } from "@/components/analytics/environment-tracker";
+import { GroupSizePolicy } from "@/components/admin/group-size-policy";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
 import { TogetherManagement } from "@/components/admin/together-management";
 import { PoortenboekAdmin } from "@/components/poortenboek/admin";
@@ -62,6 +63,8 @@ type Dashboard = {
     groupRegistrationOpen: boolean;
     portalRegistrationOpen: boolean;
     maxGroupSize: number;
+    targetGroupSize?: number;
+    targetFollowsMaximum?: boolean;
   };
   counts: Record<string, number>;
   imports: Array<{
@@ -433,7 +436,6 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const registrationChildCount = registrations.reduce((total, registration) => total + registration.childCount, 0);
   const [togetherRequests, setTogetherRequests] = useState<TogetherRequest[]>([]);
-  const [groupSizeLimit, setGroupSizeLimit] = useState(10);
   const load = useCallback(async () => {
     const client = createClient();
     if (!client) return;
@@ -442,7 +444,6 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
       .rpc("admin_dashboard", { _event_slug: eventSlug });
     const next = data as Dashboard;
     setDashboard(next);
-    setGroupSizeLimit(next.event.maxGroupSize);
   }, [eventSlug]);
   const loadLive = useCallback(async () => {
     const client = createClient();
@@ -621,35 +622,11 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     setTogetherRequests(data as TogetherRequest[]);
   }
 
-  async function saveGroupSizeLimit() {
-    if (!dashboard || groupSizeLimit < 2 || groupSizeLimit > 20)
-      return setNotice("Kies een maximum tussen 2 en 20 kinderen.");
-    const client = createClient();
-    if (!client) return;
-    const { error } = await client
-      .schema("api")
-      .rpc("admin_set_group_size_limit", {
-        _event_slug: eventSlug,
-        _max_group_size: groupSizeLimit,
-        _expected_settings_version: dashboard.event.settingsVersion,
-        _reason: "Maximale groepsgrootte gewijzigd via beheeromgeving",
-      });
-    setNotice(
-      error
-        ? error.message.includes("GROUP_SIZE_LIMIT_BELOW_ACTIVE_PARTY")
-          ? "Er bestaat al een grotere samenloopgroep. Verhoog de limiet of laat de bestaande groepsgrens staan."
-          : "De limiet kon niet worden gewijzigd; de actuele instellingen zijn opgehaald."
-        : `De maximale groepsgrootte is nu ${groupSizeLimit} kinderen.`,
-    );
-    await Promise.all([load(), loadTogetherRequests()]);
-  }
 
   async function decideTogetherRequest(
     request: TogetherRequest,
     decision: "accept" | "reject",
   ) {
-    if (decision === "accept" && request.projectedChildren > 20)
-      return setNotice("Een groep mag maximaal 20 kinderen hebben. Deel deze gezinnen in afzonderlijke groepen in.");
     const override =
       decision === "accept" &&
       request.projectedChildren > request.maxGroupSize;
@@ -1265,37 +1242,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
                 </article>
                 {(capabilities.includes("event_admin") ||
                   capabilities.includes("groups_manage")) && (
-                  <article className="panel registration-channel group-limit-control">
-                    <UsersRound />
-                    <div>
-                      <h3>Maximale groepsgrootte</h3>
-                      <p>
-                        Geldt voor het totaal aantal kinderen dat via een
-                        samenloopcode wordt verbonden én voor de routeplanner.
-                      </p>
-                    </div>
-                    <label className="field">
-                      <span>Aantal kinderen</span>
-                      <input
-                        type="number"
-                        min={2}
-                        max={20}
-                        value={groupSizeLimit}
-                        onChange={(event) =>
-                          setGroupSizeLimit(Number(event.target.value))
-                        }
-                      />
-                    </label>
-                    <button
-                      className="btn outline"
-                      disabled={
-                        groupSizeLimit === dashboard.event.maxGroupSize
-                      }
-                      onClick={() => void saveGroupSizeLimit()}
-                    >
-                      Limiet opslaan
-                    </button>
-                  </article>
+                  <GroupSizePolicy eventSlug={eventSlug} maximum={dashboard.event.maxGroupSize} target={dashboard.event.targetGroupSize??dashboard.event.maxGroupSize} followsMaximum={dashboard.event.targetFollowsMaximum??true} settingsVersion={dashboard.event.settingsVersion} onSaved={async()=>{await Promise.all([load(),loadTogetherRequests()]);}} onOpenGroups={()=>openSection('groups')}/>
                 )}
                 {capabilities.includes("event_admin") && <article className="panel registration-channel">
                   <BellRing />
@@ -1563,12 +1510,12 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
                     <div className="actions">
                       <button
                         className="btn"
-                        disabled={request.projectedChildren > 20}
+
                         onClick={() =>
                           void decideTogetherRequest(request, "accept")
                         }
                       >
-                        {request.projectedChildren > 20 ? "Meer dan 20 kinderen" : request.projectedChildren > request.maxGroupSize
+                        {request.projectedChildren > (dashboard?.event.maxGroupSize ?? request.maxGroupSize)
                           ? "Accepteren met uitzondering"
                           : "Accepteren"}
                       </button>

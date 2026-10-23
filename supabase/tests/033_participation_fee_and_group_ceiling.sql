@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(15);
 
 select is((select price_cents from app_private.events where slug = 'duindorp-halloween-2026'), 250,
   'new registrations use 250 cents per child');
@@ -13,10 +13,10 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select is(api.registration_preferences_snapshot('duindorp-halloween-2026') #>> '{event,priceCents}', '250',
   'the registration UI gets the current authoritative contribution');
-select throws_ok($$ select api.admin_set_group_size_limit('duindorp-halloween-2026', 21,
+select throws_ok($$ select api.admin_set_group_size_limit('duindorp-halloween-2026', 0,
   (api.admin_dashboard('duindorp-halloween-2026') #>> '{event,settingsVersion}')::integer,
   'Een te grote groep voor de nieuwe avond') $$,
-  '22023', 'VALIDATION_ERROR', 'even an administrator cannot configure more than twenty children');
+  '22023', 'VALIDATION_ERROR', 'an administrator must configure a positive whole group limit');
 select set_config('request.jwt.claims', '{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select throws_ok($test$
   select api.registration_save_draft('duindorp-halloween-2026',
@@ -80,13 +80,14 @@ with request as (
 ) insert into rejected_merge_request select id from request;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-select throws_ok($test$
+select lives_ok($test$
   select api.admin_decide_together_request((select id from rejected_merge_request), 1, 'accept', true,
-    'Deze expliciete uitzondering mag twintig niet overschrijden')
-$test$, '23514', 'GROUP_SIZE_LIMIT_EXCEEDED', 'an audited override cannot accept a twenty-one-child merge');
+    'Deze exacte samenloop bewust beoordeeld als beleidsuitzondering')
+$test$, 'an explicit reviewed bundle is no longer subject to an absolute twenty-child ceiling');
 reset role;
 select is((select status from app_private.together_join_requests where id = (select id from rejected_merge_request)),
-  'pending', 'a rejected over-capacity merge rolls back its membership and decision changes');
+  'accepted', 'the explicit exception records the reviewed decision');
+select is((select count(*)::integer from app_private.group_size_override_commands where approved_children=21 and transaction_id=txid_current()),1,'the permission is limited to the exact twenty-one-child bundle and current transaction');
 
 select is((select count(*)::integer from app_private.registration_children child join app_private.registrations registration on registration.id = child.registration_id
   where registration.reference = 'FIXTURE-10' and child.participation_status = 'active'), 20,
