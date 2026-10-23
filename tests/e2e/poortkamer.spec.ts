@@ -317,9 +317,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
     guest.getByRole("button", { name: "Open", exact: true }),
   ).toBeVisible({ timeout: 25_000 });
   await guest.getByRole("button", { name: "Open", exact: true }).click();
-  await expect(page.getByText(/P-\d+ · Open/, { exact: false })).toBeVisible({
-    timeout: 25_000,
-  });
+  await expect(page.getByRole("button", { name: "Open", exact: true })).toHaveAttribute("aria-pressed", "true", { timeout: 25_000 });
   await screenshot(page, "team", info.project.name);
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Toegang intrekken" }).click();
