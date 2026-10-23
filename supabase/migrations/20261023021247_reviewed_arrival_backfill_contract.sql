@@ -24,7 +24,10 @@ language sql stable security definer set search_path='' as $$
  join app_private.registration_children rc on rc.id=rp.registration_child_id
  join app_private.registrations reg on reg.id=rc.registration_id
  left join app_private.scan_evidence e on e.run_stop_id=s.id
- where s.state='completed' and not exists(select 1 from app_private.poortenboek_passport_seals p where p.event_id=_event_id and p.child_id=rc.child_id and p.run_stop_id=s.id)
+ -- Existing legacy seals must also acquire proven arrival facts: otherwise a
+ -- family with an old valid seal could never thank that reached gate. The
+ -- shared recorder preserves each existing seal and its original timestamp.
+ where s.state='completed' and not exists(select 1 from app_private.run_stop_arrivals a where a.event_id=_event_id and a.run_participant_id=rp.id and a.run_stop_id=s.id)
 $$;
 revoke all on function app_private.arrival_backfill_candidates(uuid) from public,anon,authenticated;
 
