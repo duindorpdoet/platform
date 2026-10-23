@@ -152,7 +152,9 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
 export function GuidanceHost(){
  const path=usePathname();const [record,setRecord]=useState<GuidanceRecord|null>(null);
  const childBook=path==='/poortenboek'||path.startsWith('/poortenboek/');
- useLayoutEffect(()=>{if(childBook){document.documentElement.dataset.participantGuidanceActive='false';window.dispatchEvent(new Event('poorten-guidance-status'));}},[childBook]);
+ // A child screen has no adult arrival controls. Keep pending adult arrivals
+ // gated until the adult returns and completes any required information.
+ useLayoutEffect(()=>{if(childBook){document.documentElement.dataset.participantGuidanceActive='true';window.dispatchEvent(new Event('poorten-guidance-status'));}},[childBook]);
  useEffect(()=>{
   let active=true;
   document.documentElement.dataset.participantGuidanceActive='true';
