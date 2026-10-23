@@ -20,11 +20,11 @@ function promote(workflowPassed: boolean, exactSha = true) {
   });
 }
 
-describe("production mail acceptance gate", () => {
+describe("production staging workflow gate", () => {
   it("rejects a successful deployment when mailbox acceptance failed", () => {
     const result = promote(false);
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("including real mailbox acceptance");
+    expect(result.stderr).toContain("mailbox acceptance or an explicitly selected dispatch waiver");
   });
   it("rejects success for another revision", () => {
     expect(promote(true, false).status).not.toBe(0);
