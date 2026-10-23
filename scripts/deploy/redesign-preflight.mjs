@@ -50,6 +50,7 @@ async function main() {
     const result=spawnSync('sh',['-c','command -v "$1"','probe',name],{encoding:'utf8',env:{PATH:process.env.PATH}});
     return [name,result.status===0];
   }));
+  tools.dockerDaemon=spawnSync('docker',['info','--format','{{.ServerVersion}}'],{encoding:'utf8',timeout:15000}).status===0;
   const context=`duindorp-release:${environment}:${revision}:${process.env.GITHUB_RUN_ID}`;
   const directory=join(homedir(),'.local','share','duindorp-release-backups',environment,`${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT??'1'}`);
   await mkdir(directory,{recursive:true,mode:0o700});
@@ -58,6 +59,7 @@ async function main() {
   await writeFile(filename,sealBackup(plaintext,key,context),{mode:0o600,flag:'wx'});
   if(!openBackup(await readFile(filename),key,context).equals(plaintext))throw new Error('ENCRYPTED_INVENTORY_VERIFICATION_FAILED');
   console.log(JSON.stringify({environment,revision,privateEncryptedInventorySaved:true,databaseVersion:project.database?.version,tools,
+    extensions:inventory?.[0]?.extensions,appliedMigrationCount:inventory?.[0]?.applied_migrations?.length,
     backupMetadataShape:Object.keys(backups),poolerMetadataShape:Array.isArray(pooler)?pooler.map(row=>Object.keys(row)):Object.keys(pooler)}));
   // Fail closed until a complete database/object backup and isolated restore
   // have been performed. Installing this probe never authorizes migrations.
