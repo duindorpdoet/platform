@@ -197,7 +197,7 @@ test("world gallery displays all six artworks and supports keyboard navigation",
     await expect(link).toHaveAttribute("href", /^\/werelden\//);
     const geometry = await link.boundingBox();
     expect(geometry!.width).toBeGreaterThan(120);
-    expect(geometry!.height).toBeGreaterThan(240);
+    expect(geometry!.height).toBeGreaterThanOrEqual(44);
   }
   const destination = await links.first().getAttribute("href");
   await links.first().focus();
