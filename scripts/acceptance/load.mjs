@@ -1,3 +1,4 @@
+import {prepareStartedLegacyFixtures} from "./started-fixtures.mjs";
 import { createClient } from "@supabase/supabase-js";
 import { writeFile } from "node:fs/promises";
 
@@ -7,6 +8,7 @@ if (!url || !key || !["localhost", "127.0.0.1", "[::1]"].includes(new URL(url).h
   throw new Error("Load acceptance requires an explicitly configured local Supabase instance");
 }
 const groupId = "23000000-0000-0000-0000-000000000001";
+prepareStartedLegacyFixtures();
 const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 const login = await client.auth.signInWithPassword({ email: "leader-a@example.invalid", password: "local-test-only" });
 if (login.error) throw new Error(`Fixture login failed: ${login.error.code}`);

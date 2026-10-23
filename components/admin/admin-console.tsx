@@ -42,6 +42,7 @@ import { ParticipantUpdates } from "@/components/admin/participant-updates";
 import { ShareStudioAdmin } from "@/components/admin/share-studio-admin";
 import { StatisticsDashboard } from "@/components/admin/statistics-dashboard";
 import { EnvironmentTracker } from "@/components/analytics/environment-tracker";
+import { PushSecurity } from "@/components/admin/push-security";
 import { GroupSizePolicy } from "@/components/admin/group-size-policy";
 import { StartScheduleBoard } from "@/components/admin/start-schedule-board";
 import { TogetherManagement } from "@/components/admin/together-management";
@@ -223,6 +224,7 @@ const labels: Record<string, string> = {
   openTickets: "Open gesprekken",
 };
 const sectionMeta = {
+  security: {kicker:"Beheer · apparaatmeldingen",title:"Push & beveiliging",description:"Apparaten en grenzen voor beveiligde pushmeldingen."},
   praatkamer: { kicker: "Poorten · samen praten", title: "Praatkamer", description: "Tips en overleg met de poortteams." },
   overview: { kicker: "De avond · voorbereiding", title: "Jouw evenement, helder in beeld.", description: "De voorbereidingen, je deelnemers en de volgende stap. Allemaal op één plek." },
   statistics: { kicker: "Organisatie · inzicht", title: "Statistieken", description: "Installaties, logins, omgevingsgebruik en deelactiviteit." },
@@ -276,7 +278,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const sectionAllowed=(key:string)=>{
     const can=(...items:string[])=>capabilities.includes('event_admin')||items.some(item=>capabilities.includes(item));
-    const allowed:Record<string,boolean>={overview:can('registration_manage','portals_manage','groups_manage','live_support'),registrations:can('registration_manage'),together:can('registration_manage','groups_manage'),groups:can('groups_manage'),payments:can('payments_manage'),poortenboek:can('groups_manage'),portals:can('portals_manage'),planner:can('groups_manage'),tickets:can('groups_manage','live_support'),updates:can('content_manage','live_support'),praatkamer:can('portals_manage','live_support'),editorial:editorialEnabled&&can('content_manage','content_publish','communications_manage','communications_send'),share:can('communications_manage'),content:can('content_manage','content_publish'),live:can('live_support'),simulation:can('live_support'),thanks:can('live_support'),settings:can(),access:can(),imports:can('registration_manage','portals_manage','groups_manage'),statistics:can()};
+    const allowed:Record<string,boolean>={overview:can('registration_manage','portals_manage','groups_manage','live_support'),registrations:can('registration_manage'),together:can('registration_manage','groups_manage'),groups:can('groups_manage'),payments:can('payments_manage'),poortenboek:can('groups_manage'),portals:can('portals_manage'),planner:can('groups_manage'),tickets:can('groups_manage','live_support'),updates:can('content_manage','live_support'),praatkamer:can('portals_manage','live_support'),editorial:editorialEnabled&&can('content_manage','content_publish','communications_manage','communications_send'),share:can('communications_manage'),content:can('content_manage','content_publish'),live:can('live_support'),simulation:can('live_support'),thanks:can('live_support'),settings:can(),security:can(),access:can(),imports:can('registration_manage','portals_manage','groups_manage'),statistics:can()};
     return allowed[key]??false;
   };
   const [section, setSection] = useState<
@@ -301,6 +303,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     | "simulation"
     | "thanks"
     | "settings"
+    | "security"
   >(()=>{const requested=new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("view");return requested&&requested in sectionMeta&&sectionAllowed(requested)?requested as keyof typeof sectionMeta:(sectionAllowed("overview")?"overview":Object.keys(sectionMeta).find(sectionAllowed)??"overview") as keyof typeof sectionMeta});
   const canUsePraatkamer = capabilities.some(c => ["event_admin", "portals_manage", "live_support"].includes(c));
   const canManageGroups = capabilities.includes("event_admin") || capabilities.includes("groups_manage");
@@ -1121,7 +1124,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     {key:"planning",label:"Startregie",icon:CalendarClock,sections:["planner"]},
     {key:"communications",label:"Communicatie",icon:MessageSquare,sections:["tickets","updates","praatkamer",...(editorialEnabled?["editorial"]:[]),"share","content"]},
     {key:"evening",label:"De avond",icon:LifeBuoy,sections:["live","simulation","thanks"]},
-    {key:"management",label:"Beheer",icon:SlidersHorizontal,sections:["settings","access","imports","statistics"]}
+    {key:"management",label:"Beheer",icon:SlidersHorizontal,sections:["settings","security","access","imports","statistics"]}
   ];
   const permittedNavGroups=navGroups.map(item=>({...item,sections:item.sections.filter(sectionAllowed)})).filter(item=>item.sections.length>0);
   const activeGroup=permittedNavGroups.find(item=>item.sections.includes(section))??permittedNavGroups[0]??navGroups[0];
@@ -1184,7 +1187,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             </DialogContent>
           </Dialog>
         </header>
-        {activeGroup.sections.length>1&&<nav className="modern-admin-subnav" aria-label={`${activeGroup.label} onderdelen`}>{activeGroup.sections.map(key=><button key={key} className={section===key?"active":""} aria-current={section===key?"page":undefined} onClick={()=>openSection(key as keyof typeof sectionMeta)}>{({registrations:"Inschrijvingen",together:"Samenlopen",groups:"Groepsindeling",payments:"Betalingen",poortenboek:"Poortenboek",tickets:"Inbox",updates:"Updates",praatkamer:"Praatkamer",editorial:"Redactiekamer",share:"Deelstudio",content:"Website & sponsors",live:"Livecockpit",simulation:"Generale",thanks:"Bedankjes",settings:"Instellingen",access:"Beheerders",imports:"Imports",statistics:"Statistieken"} as Record<string,string>)[key]}</button>)}</nav>}
+        {activeGroup.sections.length>1&&<nav className="modern-admin-subnav" aria-label={`${activeGroup.label} onderdelen`}>{activeGroup.sections.map(key=><button key={key} className={section===key?"active":""} aria-current={section===key?"page":undefined} onClick={()=>openSection(key as keyof typeof sectionMeta)}>{({registrations:"Inschrijvingen",together:"Samenlopen",groups:"Groepsindeling",payments:"Betalingen",poortenboek:"Poortenboek",tickets:"Inbox",updates:"Updates",praatkamer:"Praatkamer",editorial:"Redactiekamer",share:"Deelstudio",content:"Website & sponsors",live:"Livecockpit",simulation:"Generale",thanks:"Bedankjes",settings:"Instellingen",security:"Push & beveiliging",access:"Beheerders",imports:"Imports",statistics:"Statistieken"} as Record<string,string>)[key]}</button>)}</nav>}
         <main ref={contentRef} id="admin-content" className="admin-content" data-admin-section={section} tabIndex={-1}>
         {section === "statistics" ? null : ["praatkamer", "groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "share", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
           <div>
@@ -1199,6 +1202,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             {notice}
           </div>
         )}
+        {section === "security" && <PushSecurity/>}
         {section === "settings" && (
           <>
             <section className="panel registration-controls">

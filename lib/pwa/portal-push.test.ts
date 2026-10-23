@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 const mocks = vi.hoisted(() => ({ send: vi.fn(), rpc: vi.fn() }));
-vi.mock("web-push", () => ({
-  default: { setVapidDetails: vi.fn(), sendNotification: mocks.send },
-}));
+vi.mock("./push-delivery",()=>({deliverScopedPush:async(target:unknown,_scope:unknown,payload:string)=>{
+  try {await mocks.send(target,payload);return {success:true,deactivate:false,error:null};}
+  catch(cause) {const code=Number((cause as {statusCode?:number}).statusCode??0);return {success:false,deactivate:[404,410].includes(code),error:`HTTP_${code}`};}
+}}));
 vi.mock("@/lib/config/server-env", () => ({
   serverEnv: () => ({
     APP_ENVIRONMENT: "staging",
@@ -20,6 +21,7 @@ vi.mock("@/lib/supabase/privileged", () => ({
 import { deliverPortalPush, deliverPortalPushBatch } from "./portal-push";
 const target = {
   subscriptionId: "device",
+  fingerprint:"fixture-hash",
   endpoint: "https://push.example.invalid/endpoint",
   p256dh: "key",
   auth: "auth",
@@ -31,7 +33,7 @@ describe("Poortkamer uses existing push delivery contracts", () => {
   it("sends bounded generic copy and a dedupe tag without portal contacts", async () => {
     mocks.send.mockResolvedValue({});
     expect(
-      (await deliverPortalPush(target, "mention", "event-id")).success,
+      (await deliverPortalPush(target, "mention", "event-id", {notificationId:"event-id",claimToken:"lease"},new AbortController().signal)).success,
     ).toBe(true);
     const payload = JSON.parse(mocks.send.mock.calls[0][1]);
     expect(payload).toEqual({
@@ -43,12 +45,12 @@ describe("Poortkamer uses existing push delivery contracts", () => {
   });
   it("deactivates gone devices, retains transient failures for retry", async () => {
     mocks.send.mockRejectedValue({ statusCode: 410 });
-    expect(await deliverPortalPush(target, "arrived", "id")).toMatchObject({
+    expect(await deliverPortalPush(target, "arrived", "id", {notificationId:"id",claimToken:"lease"},new AbortController().signal)).toMatchObject({
       success: false,
       deactivate: true,
     });
     mocks.send.mockRejectedValue({ statusCode: 503 });
-    expect(await deliverPortalPush(target, "arrived", "id")).toMatchObject({
+    expect(await deliverPortalPush(target, "arrived", "id", {notificationId:"id",claimToken:"lease"},new AbortController().signal)).toMatchObject({
       success: false,
       deactivate: false,
     });
@@ -57,7 +59,7 @@ describe("Poortkamer uses existing push delivery contracts", () => {
     mocks.rpc.mockImplementation(async (name: string) =>
       name === "worker_claim_portal_push"
         ? {
-            data: [{ id: "event", kind: "urgent", targets: [target] }],
+            data: [{ id: "event", claimToken:"lease", kind: "urgent", targets: [target] }],
             error: null,
           }
         : { error: null },
@@ -68,6 +70,7 @@ describe("Poortkamer uses existing push delivery contracts", () => {
       _id: "event",
       _delivered: ["device"],
       _failed: false,
+      _token:"lease",
     });
   });
 });

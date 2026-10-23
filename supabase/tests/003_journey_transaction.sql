@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/legacy-start-available.inc
 create extension if not exists pgtap with schema extensions;
 select plan(9);
 

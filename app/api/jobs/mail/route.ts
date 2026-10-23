@@ -1,3 +1,4 @@
+import { createPushBatchBudget } from "@/lib/pwa/push-security";
 import { editorialTick } from "@/lib/editorial/worker";
 import { renderNewsletter, type NewsletterMaterial } from "@/lib/editorial/mail";
 import { deliverPortalPushBatch } from "@/lib/pwa/portal-push";
@@ -54,8 +55,9 @@ export async function POST(request: Request) {
     }
   }
 
-  await editorialTick().catch(() => console.error("editorial_worker_failed", { code: "WORKER_UNAVAILABLE" }));
-  await deliverPortalPushBatch().catch(() => console.error("portal_push_worker_failed", { code: "DELIVERY_UNAVAILABLE" }));
+  const pushBudget=createPushBatchBudget();
+  await editorialTick(pushBudget).catch(() => console.error("editorial_worker_failed", { code: "WORKER_UNAVAILABLE" }));
+  await deliverPortalPushBatch(pushBudget).catch(() => console.error("portal_push_worker_failed", { code: "DELIVERY_UNAVAILABLE" }));
   await cleanupSocialShareAssets().catch(() => console.error("social_share_cleanup_failed", { code: "CLEANUP_UNAVAILABLE" }));
   if (env.MAIL_MODE === "disabled") {
     return NextResponse.json({ claimed: 0, reason: "mail-disabled" });
@@ -86,6 +88,15 @@ export async function POST(request: Request) {
 
   for (const row of rows) {
     try {
+      if (["group_schedule_published", "group_schedule_corrected"].includes(row.message_type)) {
+        const appointment = await supabase.schema("api").rpc("worker_group_schedule_mail_payload", { _outbox_id: row.id });
+        if (appointment.error) throw new ApiError(503, "APPOINTMENT_MATERIAL_UNAVAILABLE", "Probeer het later opnieuw.");
+        if (!appointment.data) {
+          await supabase.schema("api").rpc("worker_update_outbox", { _id: row.id, _status: "suppressed", _provider_id: null, _error_code: "APPOINTMENT_SUPERSEDED", _next_attempt_at: null });
+          continue;
+        }
+        row.payload = appointment.data;
+      }
       if (row.message_type === "portal_team_invite") {
         const material = await supabase.schema("api").rpc("portal_invitation_mail_payload", { _invite_id: row.payload.inviteId });
         if (material.error) throw material.error;

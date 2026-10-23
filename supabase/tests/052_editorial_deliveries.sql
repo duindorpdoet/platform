@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/push-keys.inc
 create extension if not exists pgtap with schema extensions;
 select
   no_plan ();
@@ -22,9 +23,9 @@ insert into app_private.push_subscriptions (id, user_id, endpoint, p256dh, auth_
 select
   ('b8200000-0000-0000-0000-00000000000' || n)::uuid,
   'a0000000-0000-0000-0000-000000000001',
-  'https://push.example.invalid/editorial-' || n,
-  repeat('a', 32),
-  repeat('b', 16)
+  'https://fcm.googleapis.com/fcm/send/editorial-' || n,
+  pg_temp.push_fixture_key(),
+  repeat('A',22)
 from
   generate_series(1, 2) n;
 insert into app_private.portal_owners (portal_id, user_id, role)
@@ -101,7 +102,7 @@ select
     '[]'::jsonb,
     'planned push not claimed early');
 insert into app_private.push_subscriptions (id, user_id, endpoint, p256dh, auth_secret)
-  values ('b8200000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'https://push.example.invalid/editorial-3', repeat('a', 32), repeat('b', 16));
+  values ('b8200000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'https://fcm.googleapis.com/fcm/send/editorial-3', pg_temp.push_fixture_key(), repeat('A',22));
 select
   api.worker_editorial_tick (false);
 select

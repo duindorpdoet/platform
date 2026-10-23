@@ -1,3 +1,4 @@
+import {syntheticPushMaterial} from "../../scripts/acceptance/push-fixtures.mjs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { createClient } from "@supabase/supabase-js";
@@ -85,8 +86,9 @@ test("editor publishes selective news and prepares an immutable deduplicated Nac
   });
   expect(prefs.error).toBeNull();
   const device = randomUUID();
+  const deviceMaterial=syntheticPushMaterial(device);
   sql(
-    `delete from app_private.push_subscriptions where user_id='a0000000-0000-0000-0000-000000000001'; insert into app_private.push_preferences(user_id,enabled) values('a0000000-0000-0000-0000-000000000001',true) on conflict(user_id) do update set enabled=true; insert into app_private.push_subscriptions(id,user_id,endpoint,p256dh,auth_secret) values('${device}','a0000000-0000-0000-0000-000000000001','https://push.example.invalid/${device}','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','bbbbbbbbbbbbbbbb');`,
+    `delete from app_private.push_subscriptions where user_id='a0000000-0000-0000-0000-000000000001'; insert into app_private.push_preferences(user_id,enabled) values('a0000000-0000-0000-0000-000000000001',true) on conflict(user_id) do update set enabled=true; insert into app_private.push_subscriptions(id,user_id,endpoint,p256dh,auth_secret) values('${device}','a0000000-0000-0000-0000-000000000001','${deviceMaterial.endpoint}','${deviceMaterial.p256dh}','${deviceMaterial.auth}');`,
   );
   await redactie(page);
   await page

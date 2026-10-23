@@ -1,4 +1,5 @@
-import webPush from "web-push";
+import { deliverScopedPush } from "@/lib/pwa/push-delivery";
+import { runBoundedPushBatch } from "@/lib/pwa/push-security";
 import { ApiError, apiFailure, apiSuccess, assertTrustedOrigin, correlationId } from "@/lib/http/api";
 import { getActor } from "@/lib/auth/session";
 import { serverEnv } from "@/lib/config/server-env";
@@ -8,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Target = { endpoint: string; p256dh: string; auth_secret: string };
+type Target = { subscriptionId: string; fingerprint: string; endpoint: string; p256dh: string; auth_secret: string };
 
 export async function POST(request: Request) {
   const requestId = correlationId(request);
@@ -34,32 +35,16 @@ export async function POST(request: Request) {
     const targets = (targetResult.data ?? []) as Target[];
     if (targets.length === 0) throw new ApiError(409, "NO_ACTIVE_SUBSCRIPTION", "Zet meldingen eerst aan op dit apparaat.");
 
-    webPush.setVapidDetails(env.VAPID_SUBJECT, env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
-    let delivered = 0;
-    for (const target of targets) {
-      let success = false;
-      let deactivate = false;
-      let errorCode: string | null = null;
-      try {
-        await webPush.sendNotification({
-          endpoint: target.endpoint,
-          keys: { p256dh: target.p256dh, auth: target.auth_secret },
-        }, JSON.stringify({
-          title: "Testmelding van De Poorten",
-          body: "Meldingen voor dit apparaat werken. Open je omgeving voor meer informatie.",
-        }));
-        success = true;
-        delivered += 1;
-      } catch (cause) {
-        const statusCode = typeof cause === "object" && cause && "statusCode" in cause ? Number(cause.statusCode) : 0;
-        deactivate = statusCode === 404 || statusCode === 410;
-        errorCode = statusCode ? `HTTP_${statusCode}` : "DELIVERY_FAILED";
-      }
-      await privileged.schema("api").rpc("push_subscription_delivery_record", {
-        _endpoint: target.endpoint,
-        _success: success,
-        _error_code: errorCode,
-        _deactivate: deactivate,
+    const results=await runBoundedPushBatch(targets,(target,signal)=>deliverScopedPush(target,
+      {notificationId:null,claimToken:null,testUserId:actor.userId},JSON.stringify({
+        title:"Testmelding van De Poorten",body:"Meldingen voor dit apparaat werken. Open je omgeving voor meer informatie.",
+      }),signal));
+    let delivered=0;
+    for (const [target,result] of results) {
+      if (result.success) delivered++;
+      if (result.deferred) continue;
+      await privileged.schema("api").rpc("push_subscription_delivery_record",{
+        _endpoint:target.endpoint,_success:result.success,_error_code:result.error,_deactivate:result.deactivate,
       });
     }
 

@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process';
 import { Readable, Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { pathToFileURL } from 'node:url';
+import { REVIEWED_RELEASE_MIGRATIONS,reviewedRepositoryMigrations } from './release-migrations.mjs';
 import { backupKey, sealBackup } from './redesign-preflight.mjs';
 
 const quote=value=>'"'+value.replaceAll('"','""')+'"';
@@ -145,9 +146,11 @@ async function main() {
     console.log('Private repeatable-read database snapshot opened.');
     const catalog=JSON.parse(await sourceQuery(catalogSQL,snapshot));
     const repositoryMigrations=(await readdir('supabase/migrations')).filter(name=>name.endsWith('.sql')).sort();
+    const reviewedMigrations=reviewedRepositoryMigrations(repositoryMigrations);
+    const reviewedSet=new Set(reviewedMigrations);
     const appliedMigrations=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(version::text order by version),'[]') from supabase_migrations.schema_migrations",snapshot));
     const knownVersions=new Set(repositoryMigrations.map(name=>name.split('_')[0]));
-    if(appliedMigrations.some(version=>!knownVersions.has(version))||repositoryMigrations.filter(name=>!name.startsWith('20261023')).some(name=>!appliedMigrations.includes(name.split('_')[0])))throw new Error('LIVE_MIGRATION_HISTORY_DRIFT');
+    if(appliedMigrations.some(version=>!knownVersions.has(version))||repositoryMigrations.filter(name=>!reviewedSet.has(name)).some(name=>!appliedMigrations.includes(name.split('_')[0])))throw new Error('LIVE_MIGRATION_HISTORY_DRIFT');
     const before=(await sourceQuery(fingerprintQuery(catalog),snapshot)).split('\n').map(JSON.parse);
     const roles=JSON.parse(await sourceQuery("select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper,'eventTriggerOwner',exists(select 1 from pg_event_trigger where evtowner=pg_roles.oid))) from pg_roles where rolname not like 'pg_%'",snapshot));
     const memberships=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(jsonb_build_object('role',r.rolname,'member',m.rolname,'adminOption',a.admin_option,'inheritOption',a.inherit_option,'setOption',a.set_option)),'[]') from pg_auth_members a join pg_roles r on r.oid=a.roleid join pg_roles m on m.oid=a.member",snapshot));
@@ -205,12 +208,12 @@ async function main() {
     if(JSON.stringify(vaultBefore)!==JSON.stringify(vaultAfter))throw new Error('VAULT_RESTORE_DATA_MISMATCH');
     console.log(`Isolated restore preserved all ${catalog.length} table fingerprints.`);
     const migrations=[];
-    for(const filename of (await readdir('supabase/migrations')).filter(name=>/^20261023.*\.sql$/.test(name)).sort()) {
+    for(const filename of reviewedMigrations) {
       const sql=await readFile(join('supabase/migrations',filename),'utf8');
       const started=Date.now();await localQuery("begin;set local lock_timeout='3s';set local statement_timeout='5min';"+sql+';commit');
       migrations.push({file:filename,sha256:createHash('sha256').update(sql).digest('hex'),durationMs:Date.now()-started});
     }
-    if(migrations.length!==4)throw new Error('REVIEWED_MIGRATION_SET_CHANGED');
+    if(migrations.length!==REVIEWED_RELEASE_MIGRATIONS.length)throw new Error('REVIEWED_MIGRATION_SET_CHANGED');
     const migrated=(await localQuery(fingerprintQuery(catalog))).split('\n').map(JSON.parse);
     const migrationDifferences=compareFingerprints(before,migrated);
     if(migrationDifferences.length)throw new Error('MIGRATION_DATA_MISMATCH: '+migrationDifferences.join(', '));

@@ -1,3 +1,4 @@
+import {prepareStartedLegacyFixtures} from "../../scripts/acceptance/started-fixtures.mjs";
 import { expect, test, type BrowserContext } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { prepareFixtureGuidance } from './helpers/guidance';
@@ -20,6 +21,7 @@ async function authenticate(context: BrowserContext, email: string) {
 
 test("a leader must decide attendance for every child without preselection", async ({ context, page }) => {
   test.skip(!supabaseUrl || !publishableKey, "Requires local Supabase fixtures");
+  prepareStartedLegacyFixtures();
   await authenticate(context, "leader-a@example.invalid");
   await page.goto("/mijn-groep");
   const rows = page.locator(".attendance-row");

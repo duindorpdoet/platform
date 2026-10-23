@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Check, Clock, DoorOpen, Download, Mail, MapPin, Pause, Phone, QrCode, RefreshCw, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -22,6 +23,7 @@ export function PortalDashboard({ eventSlug }: { eventSlug: string }) {
   const [notice, setNotice] = useState("");
   const [statePending, setStatePending] = useState(false);
   const load = useCallback(async () => { const client = createClient(); if (!client) return; const { data, error } = await client.schema("api").rpc("portal_snapshot", { _event_slug: eventSlug }); if (error) { setNotice("Jullie gegevens konden niet worden opgehaald. Vernieuw de pagina om opnieuw te proberen."); return; } setSnapshot(data as Snapshot | null); setLoaded(true); }, [eventSlug]);
+  useSnapshotRefresh(load);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
   async function setState(state: "open" | "paused" | "closed") {
     const client = createClient(); if (!client || !snapshot?.portal || statePending) return;

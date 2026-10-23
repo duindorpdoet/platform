@@ -1,6 +1,19 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(15);
+create function pg_temp.publish_current_schedule(_ids uuid[],_reason text) returns jsonb language plpgsql security definer set search_path='' as $$
+declare expected jsonb; version integer;
+begin
+ select jsonb_agg(jsonb_build_object('id',id,'revision',revision) order by id) into expected from app_private.group_schedule_revisions where id=any(_ids);
+ select settings_version into version from app_private.events where slug='duindorp-halloween-2026';
+ return api.admin_startregie_publish_times('duindorp-halloween-2026',_ids,expected,version,gen_random_uuid()::text,_reason);
+end $$;
+grant execute on function pg_temp.publish_current_schedule(uuid[],text) to authenticated;
+create function pg_temp.event_settings_version() returns integer language sql security definer set search_path='' as $$select settings_version from app_private.events where slug='duindorp-halloween-2026'$$;
+grant execute on function pg_temp.event_settings_version() to authenticated;
+select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+do $$begin perform api.admin_startregie_verify_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',1,true,'Fictieve veilige testaanloop via het zebrapad'); end $$;
+
 
 create temporary table schedule_state(first_id uuid, correction_id uuid) on commit drop;
 insert into schedule_state default values;
@@ -39,8 +52,8 @@ from schedule_state state where walking_group.id = '23000000-0000-0000-0000-0000
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select is(
-  api.group_snapshot('23000000-0000-0000-0000-000000000001') -> 'group' -> 'start',
-  'null'::jsonb,
+  api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{group,start,address}',
+  null::text,
   'a household cannot retrieve a concept start through the direct group API'
 );
 
@@ -51,8 +64,8 @@ where registration_id = '22000000-0000-0000-0000-000000000001';
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select throws_ok(
-  $$ select api.admin_publish_group_schedules(
-    'duindorp-halloween-2026', array[(select first_id from schedule_state)],
+  $$ select pg_temp.publish_current_schedule(
+    array[(select first_id from schedule_state)],
     'Publicatiepoging voor nog niet betaalde groep'
   ) $$,
   '23514', 'PAYMENT_NOT_CONFIRMED', 'unpaid applications can be estimated but never published'
@@ -64,9 +77,10 @@ where registration_id = '22000000-0000-0000-0000-000000000001';
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+do $$begin perform api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000001',1,pg_temp.event_settings_version());end $$;
 select lives_ok(
-  $$ select api.admin_publish_group_schedules(
-    'duindorp-halloween-2026', array[(select first_id from schedule_state)],
+  $$ select pg_temp.publish_current_schedule(
+    array[(select first_id from schedule_state)],
     'Eerste groepsindeling gecontroleerd en bevestigd'
   ) $$,
   'an authorized organizer explicitly publishes the paid group schedule'
@@ -75,8 +89,8 @@ select lives_ok(
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select is(
   api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{group,start,address}',
-  'NIET-BESTAAND TESTADRES',
-  'the private start address becomes visible to the assigned household after publication'
+  null::text,
+  'time publication still withholds the private address before T minus 60'
 );
 select is(
   api.registration_preferences_snapshot('duindorp-halloween-2026') #>> '{confirmedSchedule,startsAt}',
@@ -110,6 +124,7 @@ from app_private.events event where event.slug = 'duindorp-halloween-2026';
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+do $$begin perform api.admin_startregie_verify_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000002',1,true,'Tweede fictieve veilige testaanloop via het zebrapad');end $$;
 select lives_ok(
   $$ update schedule_state set correction_id = (
     api.admin_save_group_schedule(
@@ -125,15 +140,16 @@ select lives_ok(
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select is(
   api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{group,start,address}',
-  'NIET-BESTAAND TESTADRES',
-  'the unconfirmed correction does not replace the last published participant instruction'
+  null::text,
+  'an unconfirmed correction cannot expose a new participant address'
 );
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+do $$begin perform api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000001',2,pg_temp.event_settings_version());end $$;
 select lives_ok(
-  $$ select api.admin_publish_group_schedules(
-    'duindorp-halloween-2026', array[(select correction_id from schedule_state)],
+  $$ select pg_temp.publish_current_schedule(
+    array[(select correction_id from schedule_state)],
     'Gecorrigeerde groepsstart opnieuw gecontroleerd en bevestigd'
   ) $$,
   'the organizer can publish the correction without double-counting its superseded schedule'
@@ -142,8 +158,8 @@ select lives_ok(
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select is(
   api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{group,start,address}',
-  'TWEEDE BESLOTEN TESTADRES',
-  'the corrected private start replaces the old instruction only after confirmation'
+  null::text,
+  'the corrected start time still respects the address release boundary'
 );
 
 set local role postgres;

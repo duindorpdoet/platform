@@ -1,0 +1,19 @@
+import {readFileSync,readdirSync} from "node:fs";
+import {describe,expect,it} from "vitest";
+import {assertReviewedReleaseMigrations,REVIEWED_RELEASE_MIGRATIONS,reviewedRepositoryMigrations} from "./release-migrations.mjs";
+describe("the signed restore proof covers the entire reviewed release",()=>{
+  it("matches the exact ordered repository expand set",()=>{
+    const actual=reviewedRepositoryMigrations(readdirSync("supabase/migrations").filter(file=>file.endsWith(".sql")));
+    expect(actual).toEqual(REVIEWED_RELEASE_MIGRATIONS);
+    for (const file of actual) expect(readFileSync(`supabase/migrations/${file}`,"utf8").length).toBeGreaterThan(100);
+  });
+  it("rejects an incomplete, duplicated, reordered or unreviewed migration proof",()=>{
+    for (const proof of [REVIEWED_RELEASE_MIGRATIONS.slice(1),[...REVIEWED_RELEASE_MIGRATIONS,REVIEWED_RELEASE_MIGRATIONS[0]],
+      [...REVIEWED_RELEASE_MIGRATIONS].reverse(),[...REVIEWED_RELEASE_MIGRATIONS,"20261024000000_unreviewed.sql"]]) {
+      expect(()=>assertReviewedReleaseMigrations(proof)).toThrow("REVIEWED_MIGRATION_SET_CHANGED");
+    }
+  });
+  it("cannot silently omit a future pending file because its date differs",()=>{
+    expect(()=>reviewedRepositoryMigrations([...REVIEWED_RELEASE_MIGRATIONS,"20261024000000_pending.sql"])).toThrow();
+  });
+});

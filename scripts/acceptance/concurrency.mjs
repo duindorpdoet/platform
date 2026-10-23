@@ -1,3 +1,4 @@
+import {prepareStartedLegacyFixtures} from "./started-fixtures.mjs";
 import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.SUPABASE_URL;
@@ -6,6 +7,7 @@ if (!url || !key) throw new Error("Local Supabase URL and public key are require
 
 const eventSlug = "duindorp-halloween-2026";
 const groupId = "23000000-0000-0000-0000-000000000001";
+prepareStartedLegacyFixtures();
 
 function check(condition, message) {
   if (!condition) throw new Error(message);

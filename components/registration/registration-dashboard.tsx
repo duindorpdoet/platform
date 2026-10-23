@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./registration-dashboard.css";
 import { ParticipantTogether } from "@/components/registration/participant-together";
@@ -78,7 +79,7 @@ type PreferenceSnapshot = {
   desiredEndAt: string | null;
   editable: boolean;
   changeStatus: "editable" | "locked" | "change_requested";
-  confirmedSchedule?: { startsAt: string; startPoint: string; startAddress: string; effectiveOrdinaryStopAt: string; expectedFinaleArrivalAt: string; revision: number } | null;
+  confirmedSchedule?: { startsAt: string; startPoint: string; startAddress: string; addressReleased?:boolean; addressReleaseAt?:string; effectiveOrdinaryStopAt: string; expectedFinaleArrivalAt: string; revision: number } | null;
   event: { firstStartAt?: string | null; globalOrdinaryStopAt?: string | null; allowedStopTimes: string[]; allowedStartTimes: string[]; allowedEndTimes: string[] };
 };
 
@@ -171,6 +172,7 @@ export function RegistrationDashboard({
       setPreferenceDraft({ preferredStartAt: next.preferredStartAt ?? "", desiredEndAt: next.desiredEndAt ?? next.ordinaryStopAt ?? "" });
     }
   }, [eventSlug]);
+  useSnapshotRefresh(load);
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
@@ -426,7 +428,7 @@ export function RegistrationDashboard({
       </section>
       {preferences && <section className="panel">
         <p className="kicker">Start en einde</p><h2>Jullie voorkeuren</h2>
-        {preferences.confirmedSchedule && <div className="form-notice"><strong>Bevestigde indeling · revisie {preferences.confirmedSchedule.revision}</strong><br />Start: {new Date(preferences.confirmedSchedule.startsAt).toLocaleString("nl-NL", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Amsterdam" })} bij {preferences.confirmedSchedule.startPoint}, {preferences.confirmedSchedule.startAddress}.<br />Geen nieuwe gewone poorten vanaf {new Date(preferences.confirmedSchedule.effectiveOrdinaryStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}; verwachte aankomst laatste poort circa {new Date(preferences.confirmedSchedule.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}.</div>}
+        {preferences.confirmedSchedule && <div className="form-notice"><strong>Bevestigde starttijd · revisie {preferences.confirmedSchedule.revision}</strong><br />Start: {new Date(preferences.confirmedSchedule.startsAt).toLocaleString("nl-NL", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Amsterdam" })}.<br />{preferences.confirmedSchedule.addressReleased === false ? <>Het eerste adres verschijnt {preferences.confirmedSchedule.addressReleaseAt ? `op ${new Date(preferences.confirmedSchedule.addressReleaseAt).toLocaleString("nl-NL", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}` : "één uur voor vertrek"}, één uur voor jullie start.</> : <>Startplek: {preferences.confirmedSchedule.startPoint}{preferences.confirmedSchedule.startAddress ? ` · ${preferences.confirmedSchedule.startAddress}` : ""}.</>}<br />Geen nieuwe gewone poorten vanaf {new Date(preferences.confirmedSchedule.effectiveOrdinaryStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}; verwachte aankomst laatste poort circa {new Date(preferences.confirmedSchedule.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}.</div>}
         <label className="field"><span>Gewenste starttijd</span><select value={preferenceDraft.preferredStartAt} onChange={(event) => setPreferenceDraft({ ...preferenceDraft, preferredStartAt: event.target.value })}><option value="">Maakt niet uit</option>{preferences.event.allowedStartTimes.map((value) => <option value={value} key={value}>{new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}</option>)}</select><small>Dit blijft een voorkeur totdat de organisatie een exacte start bevestigt.</small></label>
         <label className="field"><span>Wanneer stoppen jullie met gewone poorten?</span><select required value={preferenceDraft.desiredEndAt} onChange={(event) => setPreferenceDraft({ ...preferenceDraft, desiredEndAt: event.target.value })}><option value="">Kies een tijd</option>{preferences.event.allowedEndTimes.map((value) => <option value={value} key={value} disabled={Boolean(preferences.confirmedSchedule && new Date(value) <= new Date(preferences.confirmedSchedule.startsAt))}>{new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}</option>)}</select><small>Het bezoek aan de laatste poort volgt daarna nog.</small></label>
         <button className="btn outline" onClick={() => void savePreferences()}>{preferences.editable ? "Voorkeuren opslaan" : "Wijziging aanvragen"}</button>

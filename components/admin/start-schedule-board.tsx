@@ -4,16 +4,26 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, Archive, CalendarClock, Check, CheckCircle2, ChevronRight, CircleGauge,
   Clock3, Eye, Filter, Map as MapIcon, MapPin, MapPinned, Plus, Radio, RefreshCw, Save, Send,
-  Settings2, ShieldAlert, Sparkles, Undo2, UsersRound, X,
+  Settings2, ShieldAlert, ShieldCheck, Sparkles, Undo2, UsersRound, X,
 } from "lucide-react";
 import { LocationEditor, type LocationSave } from "@/components/admin/location-editor";
 import { NightMap } from "@/components/maps/night-map";
 import { proposePlan, type PlannedGroup, type PlanningInput, type PreferenceMatch } from "@/lib/domain/route-planner";
+import { PortalWalkingConnection } from "@/components/admin/portal-walking-connection";
+import { AmsterdamDateTime } from "@/components/forms/amsterdam-date-time";
+import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
+import { useDialogFocus } from "@/lib/ui/use-dialog-focus";
 import { createClient } from "@/lib/supabase/client";
+import { amsterdamDateTimeInput, amsterdamInputToIso } from "@/lib/time/amsterdam";
+import { StartOpsWorkspace, type StartOpsSnapshot } from "@/components/admin/start-ops-workspace";
+import "../../modern/start-ops.css";
 
 type RouteSettings = {
+  maxGroupSize:number;
   version: number;
+  targetGroupSize?: number;
+  eventSettingsVersion?: number;
   plannerMode: "disabled" | "shadow" | "dynamic";
   firstStartAt: string | null;
   earlyPreferenceLatestAt: string | null;
@@ -56,10 +66,10 @@ type StartPoint = {
   latitude: number | null; longitude: number | null; locationSource: "address" | "manual"; markerReason: string | null;
   markerDistanceMeters: number | null; markerUpdatedAt: string | null; walkingNodeId: string | null; walkingNodeUpdatedAt: string | null;
   verified: boolean; accessible: boolean | null; accessibilityNotes: string | null; maxGroups: number; maxChildren: number;
-  active: boolean; version: number; slots: Slot[];
+  active: boolean; version: number; slots: Slot[]; walkingDistanceMeters?: number; nearestNodeDistanceMeters?: number;
 };
 
-type Portal = {
+type Portal = { walkingConnectionVerified?:boolean;
   id: string; code: string; systemCode: string; name: string; world: string; worldSlug: string; color: string | null;
   description: string; approvalStatus: string; lifecycleStatus: string; operationStatus: string; recordSource: string;
   contactName: string | null; phone: string | null; email: string | null; address: string | null; postalCode: string | null;
@@ -93,7 +103,7 @@ type Stats = {
 };
 type Snapshot = {
   eventId: string; realtimeTopic: string | null; settings: RouteSettings; startPoints: StartPoint[]; portals: Portal[];
-  groups: Group[]; unassigned: Unassigned[]; finaleFlow: Array<{ window: string; groups: number; children: number }>;
+  groups: Group[]; unassigned: Unassigned[]; ops?: StartOpsSnapshot; finaleFlow: Array<{ window: string; groups: number; children: number }>;
   warnings: Warning[]; stats: Stats; planningVersions: Array<{ id: string; version: number; state: string; publishedAt: string; reason: string }>;
 };
 
@@ -122,13 +132,8 @@ const emptyPoint: PointDraft = {
   geocodedLatitude: "", geocodedLongitude: "", markerLatitude: "", markerLongitude: "", markerReason: "", active: true,
 };
 
-function datetimeLocal(value: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-}
-
-function iso(value: string) { return value ? new Date(value).toISOString() : null; }
+const datetimeLocal = amsterdamDateTimeInput;
+const iso = amsterdamInputToIso;
 function timeLabel(value: string | null | undefined) {
   return value ? new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "–";
 }
@@ -193,14 +198,14 @@ function readableError(message: string) {
   return mappings.find(([code]) => message.includes(code))?.[1] ?? message;
 }
 
-function GroupCard({ group, points, times, visitCycleSeconds, compact = false, onMove }: {
-  group: Group; points: StartPoint[]; times: string[]; visitCycleSeconds: number; compact?: boolean; onMove: (group: Group, target: MoveTarget) => void;
+function GroupCard({ group, points, times, visitCycleSeconds, compact = false, onMove, greenMinutes = 15, amberMinutes = 30 }: {
+  group: Group; points: StartPoint[]; times: string[]; visitCycleSeconds: number; compact?: boolean; greenMinutes?: number; amberMinutes?: number; onMove: (group: Group, target: MoveTarget) => void;
 }) {
   const location = groupLocation(group, points);
   const [target, setTarget] = useState(location ? `${location.point.id}|${location.slot.startsAt}` : "");
-  const match = group.schedule?.preferenceMatch ?? "neutral";
-  const Icon = matchIcons[match];
   const deviation = location ? groupDeviation(group, location.slot.startsAt) : null;
+  const match: PreferenceMatch = deviation === null ? "neutral" : deviation <= greenMinutes ? "good" : deviation <= amberMinutes ? "small_deviation" : "large_deviation";
+  const Icon = matchIcons[match];
   const preferred = group.registrations.find((registration) => registration.preferredStartAt)?.preferredStartAt;
   const desiredEnd = group.registrations.map((registration) => registration.desiredEndAt).filter(Boolean).sort()[0] ?? null;
   const estimatedStops = desiredEnd && (location?.slot.startsAt ?? preferred)
@@ -236,13 +241,17 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
   const [settingsDraft, setSettingsDraft] = useState<RouteSettings | null>(null);
   const [tab, setTab] = useState<PlanningTab>("planning");
   const [pointEditor, setPointEditor] = useState<PointDraft | null>(null);
+  const [pointError, setPointError] = useState("");
   const [mapSelection, setMapSelection] = useState<{ kind: "start" | "portal"; id: string } | null>(null);
+  const [proposalCommand,setProposalCommand]=useState<{key:string;inputHash:string}|null>(null);
   const [proposal, setProposal] = useState<ReturnType<typeof proposePlan> | null>(null);
   const [scheduleIds, setScheduleIds] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  useDialogFocus(Boolean(pointEditor),".start-point-editor",()=>setPointEditor(null),busy);
   const [undoMove, setUndoMove] = useState<UndoMove | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [pointChecked, setPointChecked] = useState<Record<string, boolean>>({});
   const [filters, setFilters] = useState({ time: "", point: "", preference: "", status: "", warning: false });
 
   const load = useCallback(async () => {
@@ -251,10 +260,12 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     if (error) return setNotice(`Startregie ophalen mislukt: ${readableError(error.message)}`);
     const next = data as Snapshot;
     setSnapshot(next);
-    setSettingsDraft((current) => current && current.version !== next.settings.version ? current : next.settings);
+    setScheduleIds(current => current.filter(id => next.groups.some(group => group.schedule?.id === id && ["draft", "confirmed", "published"].includes(group.schedule.state))));
+    setSettingsDraft(current => current ?? next.settings);
   }, [eventSlug]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
   const realtimeConnected = usePrivateBroadcast(snapshot?.realtimeTopic, () => void load());
+  useSnapshotRefresh(load);
 
   const times = useMemo(() => snapshot ? planningTimes(snapshot.settings) : [], [snapshot]);
   const activePoints = useMemo(() => snapshot?.startPoints.filter((point) => point.active) ?? [], [snapshot]);
@@ -293,12 +304,12 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     const client = createClient(); if (!client) return;
     setBusy(true);
     const { error } = await client.schema("api").rpc("admin_startregie_settings_save", {
-      _event_slug: eventSlug, _settings: settingsDraft, _expected_version: snapshot.settings.version,
+      _event_slug: eventSlug, _settings: settingsDraft, _expected_version: settingsDraft.version,
       _reason: "Startregie-kaders bijgewerkt via de beheeromgeving",
     });
     setBusy(false);
     setNotice(error ? `Kaders opslaan geweigerd: ${readableError(error.message)}` : "De planningskaders zijn versieerbaar opgeslagen.");
-    if (!error) await load();
+    if (!error) { setSettingsDraft(null); await load(); }
   }
 
   async function calculate() {
@@ -310,8 +321,12 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     });
     setBusy(false);
     if (prepared.error) return setNotice(`Startmomenten voorbereiden mislukt: ${readableError(prepared.error.message)}`);
+    const current=await client.schema("api").rpc("admin_startregie_snapshot",{_event_slug:eventSlug});
+    if (current.error) return setNotice("Het voorstel kon niet op actuele gegevens worden gebaseerd. Vernieuw en probeer opnieuw.");
+    const planningSnapshot=current.data as Snapshot;
+    setSnapshot(planningSnapshot);
     const preparedStarts = (prepared.data as { starts: Array<{ id: string; startPointId: string; startsAt: string; maxGroups: number; maxChildren: number }> }).starts;
-    const portalById = new Map(snapshot.portals.map((portal) => [portal.id, portal]));
+    const portalById = new Map(planningSnapshot.portals.map((portal) => [portal.id, portal]));
     const pointById = new Map(activePoints.map((point) => [point.id, point]));
     const starts = preparedStarts.flatMap((start) => {
       const point = pointById.get(start.startPointId);
@@ -324,14 +339,15 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
         markerValid: point.verified,
       }];
     });
-    const settings = snapshot.settings;
+    const settings = planningSnapshot.settings;
     const input: PlanningInput = {
-      parties: snapshot.unassigned.map((party) => ({
+      parties: planningSnapshot.unassigned.map((party) => ({
         id: party.id, childCount: party.childCount, startPreference: party.startPreference,
         requestedStopAt: party.ordinaryStopAt, preferredStartAt: party.preferredStartAt, desiredEndAt: party.desiredEndAt,
         togetherKey: party.togetherKey ?? undefined, paymentEligible: party.paymentEligible,
       })),
-      starts, targetGroupSize: Math.min(7, maxGroupSize), maxGroupSize,
+      existingSchedules: planningSnapshot.ops?.existingSchedules ?? planningSnapshot.groups.filter(group => group.schedule && ["draft", "published", "confirmed"].includes(group.schedule.state)).map(group => ({ id: group.schedule!.id, startId: group.schedule!.startSlotId, childCount: group.childCount, expectedFinaleArrivalAt: group.schedule!.expectedFinaleArrivalAt, partyIds: group.registrations.map(registration => registration.id) })),
+      starts, targetGroupSize: settings.targetGroupSize ?? settings.maxGroupSize, maxGroupSize:settings.maxGroupSize,
       globalOrdinaryStopAt: settings.globalOrdinaryStopAt ?? "", finaleOpensAt: settings.finaleOpensAt ?? "",
       finaleLastArrivalAt: settings.finaleLastArrivalAt ?? "", finaleClosesAt: settings.finaleClosesAt ?? "",
       finaleShowSeconds: settings.finaleShowSeconds, finaleTurnoverSeconds: settings.finaleTurnoverSeconds,
@@ -341,16 +357,17 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       preferenceAmberMinutes: settings.preferenceAmberMinutes,
     };
     const result = proposePlan(input);
+    setProposalCommand({key:crypto.randomUUID(),inputHash:planningSnapshot.ops?.inputHash??""});
     setProposal(result); setScheduleIds([]);
     setNotice(result.conflicts.length ? "Het voorstel bevat conflicten die eerst moeten worden opgelost." : "Conceptvoorstel berekend. Er is nog niets gepubliceerd of gemaild.");
   }
 
   async function saveProposal() {
-    if (!proposal?.groups.length || proposal.conflicts.length) return;
+    if (!proposal?.groups.length || proposal.conflicts.length || !proposalCommand) return;
     const client = createClient(); if (!client) return;
-    const key = crypto.randomUUID(); setBusy(true);
+    const key = proposalCommand.key; setBusy(true);
     const { data, error } = await client.schema("api").rpc("admin_apply_dynamic_plan", {
-      _event_slug: eventSlug, _proposal: proposal, _input_hash: await digest(proposal),
+      _event_slug: eventSlug, _proposal: proposal, _input_hash: proposalCommand.inputHash,
       _idempotency_key: key, _request_hash: await digest({ proposal, key }),
     });
     setBusy(false);
@@ -365,16 +382,17 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     if (snapshot.warnings.some((warning) => ["CAPACITY", "MISSING_MARKER", "PORTAL_UNAVAILABLE"].includes(warning.code))) {
       return setNotice("Los de blokkerende marker-, capaciteit- en poortwaarschuwingen op vóór publicatie.");
     }
-    if (!window.confirm(`Publiceer ${scheduleIds.length} nieuwe of gewijzigde startafspraak/afspraken? Alleen deze wijzigingen worden verzonden.`)) return;
+    if (!window.confirm(`Bevestig ${scheduleIds.length} geselecteerde startindeling(en)? Starttijden publiceren blijft daarna een aparte stap.`)) return;
     const client = createClient(); if (!client) return;
     setBusy(true);
-    const { data, error } = await client.schema("api").rpc("admin_startregie_publish", {
-      _event_slug: eventSlug, _schedule_ids: scheduleIds,
+    const { data, error } = await client.schema("api").rpc("admin_startregie_confirm_starts", {
+      _event_slug: eventSlug, _expected_settings_version: snapshot.settings.eventSettingsVersion,
+      _expected_revisions: snapshot.groups.filter(group => group.schedule && scheduleIds.includes(group.schedule.id)).map(group => ({ id: group.schedule!.id, revision: group.schedule!.revision })),
       _reason: "Startplanning gecontroleerd, conflicten opgelost en wijzigingen expliciet gepubliceerd",
     });
     setBusy(false);
     const result = data as { planningVersion?: number } | null;
-    setNotice(error ? `Publicatie geblokkeerd: ${readableError(error.message)}` : `Planning gepubliceerd${result?.planningVersion ? ` als versie ${result.planningVersion}` : ""}. Alleen werkelijk gewijzigde toewijzingen zijn verzonden.`);
+    setNotice(error ? `Publicatie geblokkeerd: ${readableError(error.message)}` : `Startindeling bevestigd${result?.planningVersion ? ` als versie ${result.planningVersion}` : ""}. Publiceer de starttijd apart via het groepenoverzicht.`);
     if (!error) { setScheduleIds([]); setProposal(null); await load(); }
   }
 
@@ -413,10 +431,14 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
   async function savePoint() {
     if (!pointEditor) return;
     const client = createClient(); if (!client) return;
+    setPointError("");
+    const from = iso(pointEditor.availableFrom), until = iso(pointEditor.availableUntil);
+    if ((pointEditor.availableFrom && !from) || (pointEditor.availableUntil && !until)) return setPointError("Kies een geldige Nederlandse tijd. Een ontbrekend of dubbel uur bij de klokwissel kan niet worden opgeslagen.");
+    if (from && until && Date.parse(until) <= Date.parse(from)) return setPointError("De eindtijd moet na de begintijd liggen. Je invoer is bewaard.");
     setBusy(true);
     const payload = {
       ...pointEditor, linkedPortalId: pointEditor.pointType === "portal" ? pointEditor.linkedPortalId : null,
-      availableFrom: iso(pointEditor.availableFrom), availableUntil: iso(pointEditor.availableUntil),
+      availableFrom: from, availableUntil: until,
       maxGroups: Number(pointEditor.maxGroups), maxChildren: Number(pointEditor.maxChildren),
       accessible: pointEditor.accessible === "" ? null : pointEditor.accessible === "true",
     };
@@ -426,8 +448,18 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       _reason: pointEditor.id ? "Startpuntgegevens bijgewerkt via Startregie" : "Nieuw startpunt toegevoegd via Startregie",
     });
     setBusy(false);
-    setNotice(error ? `Startpunt opslaan geweigerd: ${readableError(error.message)}` : pointEditor.id ? "Startpunt bijgewerkt." : "Startpunt aangemaakt. De wandelkoppeling is automatisch berekend.");
+    if (error) setPointError(`Startpunt opslaan geweigerd: ${readableError(error.message)}`);
+    else setNotice("Startpunt opgeslagen. Controleer de loopaansluiting voordat je dit punt voor groepen bevestigt.");
     if (!error) { setPointEditor(null); await load(); }
+  }
+
+  async function verifyPoint(point: StartPoint) {
+    const client = createClient(); if (!client || !pointChecked[point.id]) return;
+    setBusy(true);
+    const { error } = await client.schema("api").rpc("admin_startregie_verify_point", { _event_slug: eventSlug, _point_id: point.id, _expected_version: point.version, _safe_connection_checked: true, _safe_approach: point.safeApproach ?? "" });
+    setBusy(false);
+    setNotice(error ? "Controle geweigerd. Vul een veilige aanloop in en kies een bestaande wandelkoppeling binnen 75 meter." : "Veilige loopaansluiting bevestigd. Het startpunt is nu routeklaar.");
+    await load();
   }
 
   async function archivePoint(point: StartPoint) {
@@ -449,7 +481,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       _reason: change.reason, _restore_from_address: change.restoreFromAddress, _expected_version: resource.version,
     });
     setBusy(false);
-    setNotice(error ? `Locatie opslaan geweigerd: ${readableError(error.message)}` : "Routingmarker opgeslagen, wandelnode opnieuw berekend en routecache ongeldig gemaakt.");
+    setNotice(error ? `Locatie opslaan geweigerd: ${readableError(error.message)}` : "Locatie opgeslagen. De loopaansluiting moet opnieuw worden gecontroleerd voordat dit startpunt routeklaar is.");
     if (!error) await load();
   }
 
@@ -457,21 +489,10 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
 
   const publicationStep = scheduleIds.length ? 3 : proposal?.groups.length ? 2 : snapshot.stats.plannedGroups ? 1 : 0;
   return <div className="start-regie">
-    <header className="start-regie-heading">
-      <div><p className="kicker">Startpunten · tijden · routegroepen</p><h2>Startregie</h2><p>Plan iedere routegroep op een veilige plek en een haalbaar moment, controleer het concept en publiceer uitsluitend bewuste wijzigingen.</p></div>
-      <div className="start-regie-live" data-connected={realtimeConnected}><Radio />{realtimeConnected ? "Live gesynchroniseerd" : "Verbinding herstellen…"}<button type="button" className="btn outline" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div>
-    </header>
-
-    <section className="start-regie-cockpit" aria-label="Actuele kengetallen Startregie">
-      <article><MapPinned /><strong>{snapshot.stats.activeStartPoints}</strong><span>actieve startpunten</span></article>
-      <article><UsersRound /><strong>{snapshot.stats.plannedGroups}</strong><span>groepen gepland</span></article>
-      <article className={snapshot.stats.unassignedGroups ? "needs-attention" : ""}><Clock3 /><strong>{snapshot.stats.unassignedGroups}</strong><span>nog niet ingedeeld</span></article>
-      <article><CheckCircle2 /><strong>{snapshot.stats.withinPreferencePercent}%</strong><span>binnen voorkeur</span></article>
-      <article className={snapshot.stats.capacityConflicts ? "is-danger" : ""}><UsersRound /><strong>{snapshot.stats.capacityConflicts}</strong><span>capaciteitsconflicten</span></article>
-      <article className={snapshot.stats.missingMarkers ? "needs-attention" : ""}><MapPin /><strong>{snapshot.stats.missingMarkers}</strong><span>markers ongeldig</span></article>
-      <article className={snapshot.stats.unavailableLinkedPortals ? "is-danger" : ""}><ShieldAlert /><strong>{snapshot.stats.unavailableLinkedPortals}</strong><span>startpoorten niet beschikbaar</span></article>
-      <article className="publication-stat"><Send /><strong>{snapshot.stats.publicationStatus}</strong><span>publicatiestatus</span></article>
-    </section>
+    {tab !== "planning" && <header className="start-regie-heading">
+      <div><p className="kicker">Startregie</p><h1>{tab === "points" ? "Veilige startpunten" : tab === "map" ? "Startpunten op de kaart" : "Planningskaders"}</h1><p>Indelen, controleren en tijdig informeren.</p></div>
+      <div className="start-regie-live" data-connected={realtimeConnected}><Radio />{realtimeConnected ? "Live gesynchroniseerd" : "Elke 15 seconden vernieuwd"}<button type="button" className="btn outline" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div>
+    </header>}
 
     {snapshot.warnings.length > 0 && <section className="start-regie-warnings" aria-label="Waarschuwingen">
       <header><div><p className="kicker">Direct herstellen</p><h3>{snapshot.warnings.length} aandachtspunt(en)</h3></div><AlertTriangle /></header>
@@ -489,18 +510,20 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       ] as const).map(([value, Icon, label]) => <button key={value} type="button" role="tab" aria-selected={tab === value} className={tab === value ? "active" : ""} onClick={() => setTab(value)}><Icon />{label}</button>)}
     </nav>
 
-    {tab === "planning" && <PlanningPanel snapshot={snapshot} activePoints={activePoints} times={times} visibleTimes={visibleTimes}
+    {tab === "planning" && <StartOpsWorkspace snapshot={snapshot} eventSlug={eventSlug} busy={busy} setBusy={setBusy} onReload={load} onNotice={setNotice} onMove={async (group,target)=>{const current=snapshot.groups.find(item=>item.id===group.id);if(current)await moveGroup(current,target);}} onOpenPoints={() => setTab("points")} selectedIds={scheduleIds} onSelectedIds={setScheduleIds} />}
+    {tab === "planning" && <details className="start-ops-advanced"><summary><Settings2 /> Automatisch voorstel en uitgebreid planbord</summary><PlanningPanel snapshot={snapshot} activePoints={activePoints} times={times} visibleTimes={visibleTimes}
       visiblePoints={visiblePoints} visibleGroups={visibleGroups} filters={filters} setFilters={setFilters}
       filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} busy={busy} proposal={proposal}
       scheduleIds={scheduleIds} publicationStep={publicationStep} calculate={calculate} saveProposal={saveProposal}
-      publish={publish} moveGroup={moveGroup} maxGroupSize={maxGroupSize} />}
+      publish={publish} moveGroup={moveGroup} maxGroupSize={snapshot.settings.maxGroupSize??maxGroupSize} /></details>}
 
     {tab === "points" && <section className="start-regie-tab" role="tabpanel">
-      <div className="start-points-heading"><div><p className="kicker">Veilige verzamelplekken</p><h3>Startpunten</h3><p>Een startpunt kan een zelfstandig hof of plein zijn, of gekoppeld zijn aan een bestaande poort.</p></div><button className="btn" type="button" onClick={() => setPointEditor({ ...emptyPoint })}><Plus />Startpunt toevoegen</button></div>
+      <div className="start-points-heading"><div><p className="kicker">Veilige verzamelplekken</p><h3>Startpunten</h3><p>Een startpunt kan een zelfstandig hof of plein zijn, of gekoppeld zijn aan een bestaande poort.</p></div><button className="btn" type="button" onClick={() => { setPointError(""); setPointEditor({ ...emptyPoint }); }}><Plus />Startpunt toevoegen</button></div>
       <div className="start-point-list">{snapshot.startPoints.map((point) => <article className={`start-point-card${point.active ? "" : " is-archived"}`} key={point.id}>
         <header><span className={`start-point-symbol type-${point.pointType}`}>{point.pointType === "portal" ? "P" : "S"}</span><div><strong>{point.name}</strong><small>{point.publicLabel} · {point.pointType === "portal" ? "startpoort" : "zelfstandig verzamelpunt"}</small></div><span className={`route-ready ${point.verified ? "ready" : "warning"}`}>{point.verified ? <Check /> : <AlertTriangle />}{point.verified ? "Routeklaar" : "Marker controleren"}</span></header>
         <dl><div><dt>Beschikbaar</dt><dd>{point.availableFrom || point.availableUntil ? `${timeLabel(point.availableFrom)}–${timeLabel(point.availableUntil)}` : "Volledig startvenster"}</dd></div><div><dt>Capaciteit</dt><dd>{point.maxGroups} groepen · {point.maxChildren} kinderen</dd></div><div><dt>Aankomst</dt><dd>{point.publicArrivalInstructions || "Nog geen publieke instructie"}</dd></div><div><dt>Routing</dt><dd>{point.locationSource === "manual" ? `Handmatige marker${point.markerDistanceMeters ? ` · ${point.markerDistanceMeters} m van adres` : ""}` : "Vanaf officieel adres"}</dd></div></dl>
-        <div className="actions"><button className="btn outline" type="button" onClick={() => setPointEditor(pointDraft(point))}><Settings2 />Bewerken</button><button className="btn outline" type="button" onClick={() => { setMapSelection({ kind: "start", id: point.id }); setTab("map"); }}><MapPin />Marker</button>{point.linkedPortalId && <button className="btn outline" type="button" onClick={onOpenPortals}>Gekoppelde poort</button>}{point.active && <button className="text-link danger" type="button" onClick={() => void archivePoint(point)}><Archive />Archiveren</button>}</div>
+        {!point.verified && <div className="start-ops-point-verification"><p>De loopaansluiting moet veilig en op maximaal 75 meter van een geverifieerde wandelkoppeling liggen.{Number.isFinite(point.walkingDistanceMeters) ? ` Afstand nu: ${point.walkingDistanceMeters} meter.` : ""}</p><label className="check-row"><input type="checkbox" checked={!!pointChecked[point.id]} onChange={event => setPointChecked({ ...pointChecked, [point.id]: event.target.checked })} /><span>Ik heb de veilige loopaansluiting gecontroleerd.</span></label><button type="button" className="btn outline" disabled={busy || !pointChecked[point.id]} onClick={() => void verifyPoint(point)}><ShieldCheck />Loopaansluiting bevestigen</button></div>}
+        <div className="actions"><button className="btn outline" type="button" onClick={() => { setPointError(""); setPointEditor(pointDraft(point)); }}><Settings2 />Bewerken</button><button className="btn outline" type="button" onClick={() => { setMapSelection({ kind: "start", id: point.id }); setTab("map"); }}><MapPin />Marker</button>{point.linkedPortalId && <button className="btn outline" type="button" onClick={onOpenPortals}>Gekoppelde poort</button>}{point.active && <button className="text-link danger" type="button" onClick={() => void archivePoint(point)}><Archive />Archiveren</button>}</div>
       </article>)}</div>
     </section>}
 
@@ -515,6 +538,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
         markerKind="start" reason={selectedMapResource.markerReason} busy={busy}
         onSave={(change) => saveMarker("start", selectedMapResource, change)}
       />}
+      {selectedMapResource && mapSelection?.kind === "portal" && "systemCode" in selectedMapResource && <PortalWalkingConnection eventSlug={eventSlug} portal={selectedMapResource} onChanged={load}/>}
       {selectedMapResource && mapSelection?.kind === "portal" && "systemCode" in selectedMapResource && <LocationEditor
         key={`portal-${selectedMapResource.id}-${selectedMapResource.version}`} label={`${selectedMapResource.systemCode} · ${selectedMapResource.name}`}
         coordinate={coordinate(selectedMapResource.longitude, selectedMapResource.latitude)}
@@ -527,7 +551,18 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
 
     {tab === "settings" && <SettingsPanel snapshot={snapshot} settingsDraft={settingsDraft} setSettingsDraft={setSettingsDraft} busy={busy} saveSettings={saveSettings} />}
 
-    {pointEditor && <PointEditor draft={pointEditor} setDraft={setPointEditor} snapshot={snapshot} busy={busy} savePoint={savePoint} />}
+    <details className="start-ops-stats"><summary><CircleGauge /> Alle planningscijfers</summary><section className="start-regie-cockpit" aria-label="Actuele kengetallen Startregie">
+      <article><MapPinned /><strong>{snapshot.stats.activeStartPoints}</strong><span>actieve startpunten</span></article>
+      <article><UsersRound /><strong>{snapshot.stats.plannedGroups}</strong><span>groepen gepland</span></article>
+      <article className={snapshot.stats.unassignedGroups ? "needs-attention" : ""}><Clock3 /><strong>{snapshot.stats.unassignedGroups}</strong><span>nog niet ingedeeld</span></article>
+      <article><CheckCircle2 /><strong>{snapshot.stats.withinPreferencePercent}%</strong><span>binnen voorkeur</span></article>
+      <article className={snapshot.stats.capacityConflicts ? "is-danger" : ""}><UsersRound /><strong>{snapshot.stats.capacityConflicts}</strong><span>capaciteitsconflicten</span></article>
+      <article className={snapshot.stats.missingMarkers ? "needs-attention" : ""}><MapPin /><strong>{snapshot.stats.missingMarkers}</strong><span>markers ongeldig</span></article>
+      <article className={snapshot.stats.unavailableLinkedPortals ? "is-danger" : ""}><ShieldAlert /><strong>{snapshot.stats.unavailableLinkedPortals}</strong><span>startpoorten niet beschikbaar</span></article>
+      <article className="publication-stat"><Send /><strong>{snapshot.stats.publicationStatus}</strong><span>publicatiestatus</span></article>
+    </section></details>
+
+    {pointEditor && <PointEditor error={pointError} draft={pointEditor} setDraft={setPointEditor} snapshot={snapshot} busy={busy} savePoint={savePoint} />}
   </div>;
 }
 
@@ -549,7 +584,7 @@ function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoi
       <label className="field"><span>Tijd</span><select value={filters.time} onChange={(event) => setFilters({ ...filters, time: event.target.value })}><option value="">Alle tijden</option>{times.map((value) => <option key={value} value={value}>{timeLabel(value)}</option>)}</select></label>
       <label className="field"><span>Startpunt</span><select value={filters.point} onChange={(event) => setFilters({ ...filters, point: event.target.value })}><option value="">Alle startpunten</option>{activePoints.map((point) => <option key={point.id} value={point.id}>{point.publicLabel}</option>)}</select></label>
       <label className="field"><span>Voorkeur</span><select value={filters.preference} onChange={(event) => setFilters({ ...filters, preference: event.target.value })}><option value="">Alle voorkeuren</option>{Object.entries(matchLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-      <label className="field"><span>Status</span><select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}><option value="">Concept en gepubliceerd</option><option value="draft">Concept</option><option value="published">Gepubliceerd</option></select></label>
+      <label className="field"><span>Status</span><select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}><option value="">Alle indelingen</option><option value="draft">Concept</option><option value="confirmed">Start bevestigd</option><option value="published">Starttijd gepubliceerd</option></select></label>
       <label className="check-row"><input type="checkbox" checked={filters.warning} onChange={(event) => setFilters({ ...filters, warning: event.target.checked })} /><span>Alleen met waarschuwing</span></label>
       <button type="button" className="text-link" onClick={() => setFilters({ time: "", point: "", preference: "", status: "", warning: false })}><X />Wis filters</button>
     </div>}
@@ -557,7 +592,7 @@ function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoi
     <div className="planning-workspace">
       <aside className="unassigned-route-groups">
         <header><span><strong>Nog niet ingedeeld</strong><small>{snapshot.groups.filter((group) => !group.schedule).length} routegroepen</small></span><UsersRound /></header>
-        <div>{snapshot.groups.filter((group) => !group.schedule).map((group) => <GroupCard key={group.id} group={group} points={activePoints} times={times} visitCycleSeconds={snapshot.settings.ordinaryVisitSeconds + snapshot.settings.bufferSeconds} compact onMove={(item, target) => void moveGroup(item, target)} />)}
+        <div>{snapshot.groups.filter((group) => !group.schedule).map((group) => <GroupCard key={group.id} group={group} points={activePoints} times={times} visitCycleSeconds={snapshot.settings.ordinaryVisitSeconds + snapshot.settings.bufferSeconds} greenMinutes={snapshot.settings.preferenceGreenMinutes} amberMinutes={snapshot.settings.preferenceAmberMinutes} compact onMove={(item, target) => void moveGroup(item, target)} />)}
           {snapshot.groups.every((group) => group.schedule) && <div className="planning-empty"><CheckCircle2 /><p>Alle bestaande routegroepen hebben een startafspraak.</p></div>}
         </div>
       </aside>
@@ -578,7 +613,7 @@ function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoi
                 onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }}
                 onDrop={(event) => { event.preventDefault(); const group = snapshot.groups.find((item) => item.id === event.dataTransfer.getData("text/group-id")); if (group) void moveGroup(group, { pointId: point.id, startsAt }); }}>
                 <div className="planning-cell-load"><span>{groups.length}/{point.maxGroups} groepen</span><span>{children}/{point.maxChildren} kinderen</span></div>
-                {groups.map((group) => <GroupCard key={group.id} group={group} points={activePoints} times={times} visitCycleSeconds={snapshot.settings.ordinaryVisitSeconds + snapshot.settings.bufferSeconds} compact onMove={(item, target) => void moveGroup(item, target)} />)}
+                {groups.map((group) => <GroupCard key={group.id} group={group} points={activePoints} times={times} visitCycleSeconds={snapshot.settings.ordinaryVisitSeconds + snapshot.settings.bufferSeconds} greenMinutes={snapshot.settings.preferenceGreenMinutes} amberMinutes={snapshot.settings.preferenceAmberMinutes} compact onMove={(item, target) => void moveGroup(item, target)} />)}
                 {!groups.length && <span className="planning-drop-hint">Sleep hierheen</span>}
               </div>;
             }),
@@ -588,11 +623,11 @@ function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoi
     </div>
 
     <section className="planning-proposal">
-      <header><div><p className="kicker">Controleer vóór publicatie</p><h3>Voorstel en publicatie</h3></div><div className="publication-steps" aria-label={`Publicatiestap ${publicationStep + 1} van 5`}>{["Berekenen", "Conflicten", "Controleren", "Voorbeeld", "Publiceren"].map((label, index) => <span key={label} className={index <= publicationStep ? "active" : ""}><b>{index + 1}</b>{label}</span>)}</div></header>
-      <div className="actions"><button className="btn" type="button" disabled={busy || snapshot.unassigned.length === 0} onClick={() => void calculate()}><Sparkles />Concept berekenen</button><button className="btn outline" type="button" disabled={busy || !proposal?.groups.length || Boolean(proposal?.conflicts.length)} onClick={() => void saveProposal()}><Save />Concept opslaan</button><button className="btn outline" type="button" disabled={busy || !scheduleIds.length} onClick={() => void publish()}><Send />{scheduleIds.length ? `${scheduleIds.length} wijziging(en) publiceren` : "Planning publiceren"}</button></div>
+      <header><div><p className="kicker">Controleer vóór publicatie</p><h3>Voorstel en bevestiging</h3></div><div className="publication-steps" aria-label={`Publicatiestap ${publicationStep + 1} van 5`}>{["Berekenen", "Conflicten", "Controleren", "Voorbeeld", "Bevestigen"].map((label, index) => <span key={label} className={index <= publicationStep ? "active" : ""}><b>{index + 1}</b>{label}</span>)}</div></header>
+      <div className="actions"><button className="btn" type="button" disabled={busy || snapshot.unassigned.length === 0} onClick={() => void calculate()}><Sparkles />Concept berekenen</button><button className="btn outline" type="button" disabled={busy || !proposal?.groups.length || Boolean(proposal?.conflicts.length)} onClick={() => void saveProposal()}><Save />Concept opslaan</button><button className="btn outline" type="button" disabled={busy || !scheduleIds.length} onClick={() => void publish()}><Send />{scheduleIds.length ? `${scheduleIds.length} indeling(en) bevestigen` : "Indeling bevestigen"}</button></div>
       {proposal?.conflicts.map((conflict) => <div className="form-warning" key={`${conflict.code}-${conflict.subjectId}`}><AlertTriangle /><span><strong>{conflict.code}</strong>{conflict.message}</span></div>)}
       {proposal?.groups.map((group: PlannedGroup) => <article className={`proposal-row match-${group.preferenceMatch}`} key={group.key}><span className="proposal-icon">{(() => { const Icon = matchIcons[group.preferenceMatch]; return <Icon />; })()}</span><div><strong>{group.key} · {group.childCount} kinderen</strong><p>{matchLabels[group.preferenceMatch]} · gewone poorten tot {timeLabel(group.effectiveStopAt)} · finale circa {timeLabel(group.expectedFinaleArrivalAt)}</p><small><b>Waarom hier?</b> {group.explanation}</small></div></article>)}
-      {scheduleIds.length > 0 && <details className="publication-preview" open><summary><Eye />Voorbeeld van {scheduleIds.length} te publiceren wijziging(en)</summary><p>Alleen nieuwe conceptrevisies worden definitief. De bestaande bevestigingstemplate wordt uitsluitend voor werkelijk gewijzigde groepen klaargezet. In simulatie en staging worden echte deelnemers niet benaderd.</p></details>}
+      {scheduleIds.length > 0 && <details className="publication-preview" open><summary><Eye />Voorbeeld van {scheduleIds.length} te publiceren wijziging(en)</summary><p>Alleen geselecteerde conceptrevisies worden bevestigd. De starttijd wordt pas gedeeld na de aparte publicatiestap bovenaan. Het adres blijft verborgen tot één uur voor vertrek.</p></details>}
     </section>
   </section>;
 }
@@ -600,26 +635,27 @@ function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoi
 function SettingsPanel({ snapshot, settingsDraft, setSettingsDraft, busy, saveSettings }: {
   snapshot: Snapshot; settingsDraft: RouteSettings; setSettingsDraft: (settings: RouteSettings) => void; busy: boolean; saveSettings: () => Promise<void>;
 }) {
+  const [timeValidity,setTimeValidity]=useState<Record<string,boolean>>({});
   return <section className="start-regie-tab start-settings-tab" role="tabpanel">
     <div><p className="kicker">Planningskaders</p><h3>Evenement, route en eindpoort</h3><p>Deze grenzen sturen het bord, de voorkeursbeoordeling en de servervalidatie. Technische routegegevens blijven verborgen.</p></div>
     <div className="settings-section-grid">
-      <section><h4>Startvenster</h4><div className="settings-grid"><label className="field"><span>Eerste mogelijke start</span><input type="datetime-local" value={datetimeLocal(settingsDraft.firstStartAt)} onChange={(event) => setSettingsDraft({ ...settingsDraft, firstStartAt: iso(event.target.value) })} /></label><label className="field"><span>Interval</span><select value={settingsDraft.startIntervalMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, startIntervalMinutes: Number(event.target.value) })}>{[5, 10, 15, 20, 30, 60].map((value) => <option key={value} value={value}>{value} minuten</option>)}</select></label><label className="field"><span>Vroeg geldt tot</span><input type="datetime-local" value={datetimeLocal(settingsDraft.earlyPreferenceLatestAt)} onChange={(event) => setSettingsDraft({ ...settingsDraft, earlyPreferenceLatestAt: iso(event.target.value) })} /></label><label className="field"><span>Later geldt vanaf</span><input type="datetime-local" value={datetimeLocal(settingsDraft.laterPreferenceEarliestAt)} onChange={(event) => setSettingsDraft({ ...settingsDraft, laterPreferenceEarliestAt: iso(event.target.value) })} /></label></div></section>
-      <section><h4>Voorkeursbeoordeling</h4><div className="settings-grid"><label className="field"><span>Groen tot en met</span><input type="number" min={0} max={120} value={settingsDraft.preferenceGreenMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, preferenceGreenMinutes: Number(event.target.value) })} /><small>minuten afwijking</small></label><label className="field"><span>Amber tot en met</span><input type="number" min={1} max={180} value={settingsDraft.preferenceAmberMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, preferenceAmberMinutes: Number(event.target.value) })} /><small>daarboven wordt rood</small></label><label className="field"><span>Geen gewone poorten meer vanaf</span><input type="datetime-local" value={datetimeLocal(settingsDraft.globalOrdinaryStopAt)} onChange={(event) => setSettingsDraft({ ...settingsDraft, globalOrdinaryStopAt: iso(event.target.value) })} /></label><label className="field"><span>Plannerstand</span><select value={settingsDraft.plannerMode} onChange={(event) => setSettingsDraft({ ...settingsDraft, plannerMode: event.target.value as RouteSettings["plannerMode"] })}><option value="disabled">Uit</option><option value="shadow">Alleen voorstellen</option><option value="dynamic">Dynamisch plannen</option></select></label></div></section>
+      <section><h4>Startvenster</h4><div className="settings-grid"><AmsterdamDateTime key={`firstStartAt:${settingsDraft.version}`} label="Eerste mogelijke start" value={settingsDraft.firstStartAt} onChange={value=>setSettingsDraft({...settingsDraft,firstStartAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,firstStartAt:valid}))}/><label className="field"><span>Interval</span><select value={settingsDraft.startIntervalMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, startIntervalMinutes: Number(event.target.value) })}>{[5, 10, 15, 20, 30, 60].map((value) => <option key={value} value={value}>{value} minuten</option>)}</select></label><AmsterdamDateTime key={`earlyPreferenceLatestAt:${settingsDraft.version}`} label="Vroeg geldt tot" value={settingsDraft.earlyPreferenceLatestAt} onChange={value=>setSettingsDraft({...settingsDraft,earlyPreferenceLatestAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,earlyPreferenceLatestAt:valid}))}/><AmsterdamDateTime key={`laterPreferenceEarliestAt:${settingsDraft.version}`} label="Later geldt vanaf" value={settingsDraft.laterPreferenceEarliestAt} onChange={value=>setSettingsDraft({...settingsDraft,laterPreferenceEarliestAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,laterPreferenceEarliestAt:valid}))}/></div></section>
+      <section><h4>Voorkeursbeoordeling</h4><div className="settings-grid"><label className="field"><span>Groen tot en met</span><input type="number" min={0} max={120} value={settingsDraft.preferenceGreenMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, preferenceGreenMinutes: Number(event.target.value) })} /><small>minuten afwijking</small></label><label className="field"><span>Amber tot en met</span><input type="number" min={1} max={180} value={settingsDraft.preferenceAmberMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, preferenceAmberMinutes: Number(event.target.value) })} /><small>daarboven wordt rood</small></label><AmsterdamDateTime key={`globalOrdinaryStopAt:${settingsDraft.version}`} label="Geen gewone poorten meer vanaf" value={settingsDraft.globalOrdinaryStopAt} onChange={value=>setSettingsDraft({...settingsDraft,globalOrdinaryStopAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,globalOrdinaryStopAt:valid}))}/><label className="field"><span>Plannerstand</span><select value={settingsDraft.plannerMode} onChange={(event) => setSettingsDraft({ ...settingsDraft, plannerMode: event.target.value as RouteSettings["plannerMode"] })}><option value="disabled">Uit</option><option value="shadow">Alleen voorstellen</option><option value="dynamic">Dynamisch plannen</option></select></label></div></section>
       <section><h4>Routebelasting</h4><div className="settings-grid"><label className="field"><span>Gemiddeld poortbezoek</span><input type="number" min={60} value={settingsDraft.ordinaryVisitSeconds} onChange={(event) => setSettingsDraft({ ...settingsDraft, ordinaryVisitSeconds: Number(event.target.value) })} /><small>seconden</small></label><label className="field"><span>Veiligheidsbuffer</span><input type="number" min={0} value={settingsDraft.bufferSeconds} onChange={(event) => setSettingsDraft({ ...settingsDraft, bufferSeconds: Number(event.target.value) })} /><small>seconden per stap</small></label></div></section>
-      <section><h4>Laatste poort</h4><div className="settings-grid"><label className="field"><span>Aangewezen laatste poort</span><select value={settingsDraft.finalPortalId ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finalPortalId: event.target.value || null })}><option value="">Kies een actieve poort</option>{snapshot.portals.filter((portal) => portal.lifecycleStatus === "active").map((portal) => <option key={portal.id} value={portal.id}>{portal.systemCode} · {portal.name}</option>)}</select></label><label className="check-row"><input type="checkbox" checked={settingsDraft.finaleAvailable} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleAvailable: event.target.checked })} /><span>Laatste poort veilig beschikbaar</span></label><label className="field"><span>Opening</span><input type="datetime-local" value={datetimeLocal(settingsDraft.finaleOpensAt)} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleOpensAt: iso(event.target.value) })} /></label><label className="field"><span>Laatste aankomst</span><input type="datetime-local" value={datetimeLocal(settingsDraft.finaleLastArrivalAt)} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleLastArrivalAt: iso(event.target.value) })} /></label><label className="field"><span>Sluiting</span><input type="datetime-local" value={datetimeLocal(settingsDraft.finaleClosesAt)} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleClosesAt: iso(event.target.value) })} /></label><label className="field"><span>Groepen tegelijk</span><input type="number" min={1} value={settingsDraft.finaleMaxGroups} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleMaxGroups: Number(event.target.value) })} /></label><label className="field"><span>Kinderen tegelijk</span><input type="number" min={1} value={settingsDraft.finaleMaxChildren} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleMaxChildren: Number(event.target.value) })} /></label></div></section>
+      <section><h4>Laatste poort</h4><div className="settings-grid"><label className="field"><span>Aangewezen laatste poort</span><select value={settingsDraft.finalPortalId ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finalPortalId: event.target.value || null })}><option value="">Kies een actieve poort</option>{snapshot.portals.filter((portal) => portal.lifecycleStatus === "active").map((portal) => <option key={portal.id} value={portal.id}>{portal.systemCode} · {portal.name}</option>)}</select></label><label className="check-row"><input type="checkbox" checked={settingsDraft.finaleAvailable} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleAvailable: event.target.checked })} /><span>Laatste poort veilig beschikbaar</span></label><AmsterdamDateTime key={`finaleOpensAt:${settingsDraft.version}`} label="Opening" value={settingsDraft.finaleOpensAt} onChange={value=>setSettingsDraft({...settingsDraft,finaleOpensAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,finaleOpensAt:valid}))}/><AmsterdamDateTime key={`finaleLastArrivalAt:${settingsDraft.version}`} label="Laatste aankomst" value={settingsDraft.finaleLastArrivalAt} onChange={value=>setSettingsDraft({...settingsDraft,finaleLastArrivalAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,finaleLastArrivalAt:valid}))}/><AmsterdamDateTime key={`finaleClosesAt:${settingsDraft.version}`} label="Sluiting" value={settingsDraft.finaleClosesAt} onChange={value=>setSettingsDraft({...settingsDraft,finaleClosesAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,finaleClosesAt:valid}))}/><label className="field"><span>Groepen tegelijk</span><input type="number" min={1} value={settingsDraft.finaleMaxGroups} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleMaxGroups: Number(event.target.value) })} /></label><label className="field"><span>Kinderen tegelijk</span><input type="number" min={1} value={settingsDraft.finaleMaxChildren} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleMaxChildren: Number(event.target.value) })} /></label></div></section>
       <section className="wide"><h4>Veiligheid en uitwijk</h4><div className="settings-grid"><label className="field"><span>Veilige aanloop</span><textarea value={settingsDraft.finaleSafeApproach ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleSafeApproach: event.target.value })} /></label><label className="field"><span>Wachtruimte</span><textarea value={settingsDraft.finaleWaitingArea ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleWaitingArea: event.target.value })} /></label><label className="field"><span>Afvoerroute</span><textarea value={settingsDraft.finaleExitRoute ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleExitRoute: event.target.value })} /></label><label className="field"><span>Toegankelijke ingang</span><textarea value={settingsDraft.finaleAccessibleEntrance ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleAccessibleEntrance: event.target.value })} /></label><label className="field"><span>Alternatieve verzamelplek</span><input value={settingsDraft.emergencyDestinationName ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, emergencyDestinationName: event.target.value })} /></label><label className="field"><span>Noodinstructie</span><textarea value={settingsDraft.emergencyInstructions ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, emergencyInstructions: event.target.value })} /></label></div></section>
     </div>
-    <div className="settings-save-bar"><span>Huidige versie {snapshot.settings.version} · wijzigingen worden op gelijktijdigheid gecontroleerd.</span><button className="btn" type="button" disabled={busy || settingsDraft.preferenceGreenMinutes >= settingsDraft.preferenceAmberMinutes} onClick={() => void saveSettings()}><Save />Kaders opslaan</button></div>
+    <div className="settings-save-bar"><span>Huidige versie {snapshot.settings.version} · wijzigingen worden op gelijktijdigheid gecontroleerd.</span><button className="btn" type="button" disabled={busy || Object.values(timeValidity).includes(false) || settingsDraft.version !== snapshot.settings.version || settingsDraft.preferenceGreenMinutes >= settingsDraft.preferenceAmberMinutes} onClick={() => void saveSettings()}><Save />Kaders opslaan</button></div>
   </section>;
 }
 
-function PointEditor({ draft, setDraft, snapshot, busy, savePoint }: {
-  draft: PointDraft; setDraft: (draft: PointDraft | null) => void; snapshot: Snapshot; busy: boolean; savePoint: () => Promise<void>;
+function PointEditor({ draft, setDraft, snapshot, busy, savePoint, error }: {
+  error: string; draft: PointDraft; setDraft: (draft: PointDraft | null) => void; snapshot: Snapshot; busy: boolean; savePoint: () => Promise<void>;
 }) {
   return <div className="start-point-editor-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDraft(null); }}><aside className="start-point-editor" role="dialog" aria-modal="true" aria-labelledby="start-point-editor-title">
     <header><div><p className="kicker">{draft.id ? "Startpunt bijwerken" : "Nieuw startpunt"}</p><h3 id="start-point-editor-title">{draft.name || "Veilige verzamelplek"}</h3></div><button type="button" className="icon-button" aria-label="Sluiten" onClick={() => setDraft(null)}><X /></button></header>
     <div className="start-point-editor-body">
-      <section><h4>Herkenning</h4><div className="settings-grid"><label className="field"><span>Interne naam</span><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label><label className="field"><span>Publiek label</span><input value={draft.publicLabel} onChange={(event) => setDraft({ ...draft, publicLabel: event.target.value })} placeholder={draft.name || "Bijvoorbeeld Hof Zuid"} /></label><label className="field"><span>Soort startpunt</span><select value={draft.pointType} onChange={(event) => setDraft({ ...draft, pointType: event.target.value as PointDraft["pointType"], linkedPortalId: "" })}><option value="gathering">Zelfstandig verzamelpunt</option><option value="portal">Aan een poort gekoppeld</option></select></label>{draft.pointType === "portal" && <label className="field"><span>Gekoppelde poort</span><select value={draft.linkedPortalId} onChange={(event) => setDraft({ ...draft, linkedPortalId: event.target.value })}><option value="">Kies een goedgekeurde poort</option>{snapshot.portals.filter((portal) => ["approved", "active"].includes(portal.lifecycleStatus)).map((portal) => <option key={portal.id} value={portal.id}>{portal.systemCode} · {portal.name}</option>)}</select></label>}</div></section>
+      <section><h4>Herkenning</h4><div className="settings-grid"><label className="field"><span>Interne naam</span><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label><label className="field"><span>Publiek label</span><input value={draft.publicLabel} onChange={(event) => setDraft({ ...draft, publicLabel: event.target.value })} placeholder={draft.name || "Bijvoorbeeld Hof Zuid"} /></label><label className="field"><span>Soort startpunt</span><select value={draft.pointType} onChange={(event) => setDraft({ ...draft, pointType: event.target.value as PointDraft["pointType"], linkedPortalId: "" })}><option value="gathering">Zelfstandig verzamelpunt</option><option value="portal">Aan een poort gekoppeld</option></select></label>{draft.pointType === "portal" && <label className="field"><span>Gekoppelde poort</span><select value={draft.linkedPortalId} onChange={(event) => { const portal = snapshot.portals.find(portal => portal.id === event.target.value); setDraft({ ...draft, linkedPortalId: event.target.value, name: draft.name || portal?.name || "", publicLabel: draft.publicLabel || portal?.name || "", privateAddress: portal?.address || draft.privateAddress, geocodedLatitude: portal?.geocodedLatitude?.toString() || "", geocodedLongitude: portal?.geocodedLongitude?.toString() || "", markerLatitude: portal?.latitude?.toString() || "", markerLongitude: portal?.longitude?.toString() || "" }); }}><option value="">Kies een goedgekeurde poort</option>{snapshot.portals.filter((portal) => portal.approvalStatus === "approved" && portal.lifecycleStatus === "active" && !portal.isFinal).map((portal) => <option key={portal.id} value={portal.id}>{portal.systemCode} · {portal.name}</option>)}</select></label>}</div></section>
       <section><h4>Aankomst en locatie</h4><div className="settings-grid"><label className="field"><span>Officieel/contactadres <small>(optioneel)</small></span><input value={draft.privateAddress} onChange={(event) => setDraft({ ...draft, privateAddress: event.target.value })} placeholder="Mag leeg blijven voor een hofingang" /></label><label className="field"><span>Publieke aankomstinstructie</span><textarea value={draft.publicArrivalInstructions} onChange={(event) => setDraft({ ...draft, publicArrivalInstructions: event.target.value })} placeholder="Bijvoorbeeld: verzamel bij de zuidelijke ingang" /></label><label className="field"><span>Veilige aanloop</span><textarea value={draft.safeApproach} onChange={(event) => setDraft({ ...draft, safeApproach: event.target.value })} /></label></div>
         <LocationEditor label={draft.publicLabel || draft.name || "Nieuw startpunt"}
           coordinate={coordinate(draft.markerLongitude ? Number(draft.markerLongitude) : draft.geocodedLongitude ? Number(draft.geocodedLongitude) : null, draft.markerLatitude ? Number(draft.markerLatitude) : draft.geocodedLatitude ? Number(draft.geocodedLatitude) : null)}
@@ -628,9 +664,9 @@ function PointEditor({ draft, setDraft, snapshot, busy, savePoint }: {
           onSave={(change) => { setDraft({ ...draft, markerLatitude: String(change.latitude), markerLongitude: String(change.longitude), markerReason: change.reason }); }} />
       </section>
       <section><h4>Beschikbaarheid en capaciteit</h4><div className="settings-grid"><label className="field"><span>Beschikbaar vanaf</span><input type="datetime-local" value={draft.availableFrom} onChange={(event) => setDraft({ ...draft, availableFrom: event.target.value })} /></label><label className="field"><span>Beschikbaar tot</span><input type="datetime-local" value={draft.availableUntil} onChange={(event) => setDraft({ ...draft, availableUntil: event.target.value })} /></label><label className="field"><span>Maximaal routegroepen</span><input type="number" min={1} value={draft.maxGroups} onChange={(event) => setDraft({ ...draft, maxGroups: event.target.value })} /></label><label className="field"><span>Maximaal kinderen</span><input type="number" min={1} value={draft.maxChildren} onChange={(event) => setDraft({ ...draft, maxChildren: event.target.value })} /></label></div></section>
-      <section><h4>Toegankelijkheid en beheer</h4><div className="settings-grid"><label className="field"><span>Bereikbaarheid</span><select value={draft.accessible} onChange={(event) => setDraft({ ...draft, accessible: event.target.value as PointDraft["accessible"] })}><option value="">Nog beoordelen</option><option value="true">Toegankelijk</option><option value="false">Niet volledig toegankelijk</option></select></label><label className="field"><span>Toegankelijkheidsinformatie</span><textarea value={draft.accessibilityNotes} onChange={(event) => setDraft({ ...draft, accessibilityNotes: event.target.value })} /></label><label className="field"><span>Contactpersoon <small>(optioneel)</small></span><input value={draft.contactName} onChange={(event) => setDraft({ ...draft, contactName: event.target.value })} /></label><label className="field"><span>Telefoon <small>(optioneel)</small></span><input value={draft.contactPhone} onChange={(event) => setDraft({ ...draft, contactPhone: event.target.value })} /></label><label className="field wide"><span>Interne beheeropmerking</span><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} /></label><label className="check-row"><input type="checkbox" checked={draft.countsAsFirstPortalVisit} onChange={(event) => setDraft({ ...draft, countsAsFirstPortalVisit: event.target.checked })} /><span>Telt als eerste poortbezoek</span></label><label className="check-row"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} /><span>Actief beschikbaar voor planning</span></label></div></section>
-      <details><summary>Technische locatiegegevens</summary><p>De wandelnode wordt na opslaan automatisch opnieuw gekozen. Deze waarden zijn alleen voor gecontroleerde correcties.</p><div className="settings-grid"><label className="field"><span>Adres-breedtegraad</span><input inputMode="decimal" value={draft.geocodedLatitude} onChange={(event) => setDraft({ ...draft, geocodedLatitude: event.target.value })} /></label><label className="field"><span>Adres-lengtegraad</span><input inputMode="decimal" value={draft.geocodedLongitude} onChange={(event) => setDraft({ ...draft, geocodedLongitude: event.target.value })} /></label></div></details>
+      <section><h4>Toegankelijkheid en beheer</h4><div className="settings-grid"><label className="field"><span>Bereikbaarheid</span><select value={draft.accessible} onChange={(event) => setDraft({ ...draft, accessible: event.target.value as PointDraft["accessible"] })}><option value="">Nog beoordelen</option><option value="true">Toegankelijk</option><option value="false">Niet volledig toegankelijk</option></select></label><label className="field"><span>Toegankelijkheidsinformatie</span><textarea value={draft.accessibilityNotes} onChange={(event) => setDraft({ ...draft, accessibilityNotes: event.target.value })} /></label><label className="field"><span>Contactpersoon <small>(optioneel)</small></span><input value={draft.contactName} onChange={(event) => setDraft({ ...draft, contactName: event.target.value })} /></label><label className="field"><span>Telefoon <small>(optioneel)</small></span><input value={draft.contactPhone} onChange={(event) => setDraft({ ...draft, contactPhone: event.target.value })} /></label><label className="field wide"><span>Interne beheeropmerking</span><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} /></label><label className="check-row"><input type="checkbox" disabled={draft.pointType !== "portal" || !draft.linkedPortalId} checked={draft.pointType === "portal" && draft.countsAsFirstPortalVisit} onChange={(event) => setDraft({ ...draft, countsAsFirstPortalVisit: event.target.checked })} /><span>Begin met een bezoek aan deze startpoort <small>Alleen bij een gekoppelde poort. Een zegel volgt na de echte aankomstscan, nooit bij alleen starten.</small></span></label><label className="check-row"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} /><span>Actief beschikbaar voor planning</span></label></div></section>
+      <details><summary>Technische locatiegegevens</summary><p>De dichtstbijzijnde wandelkoppeling wordt berekend. Routeklaar wordt het punt pas na een gecontroleerde, veilige aansluiting binnen 75 meter. Een verplaatsing trekt de verificatie in.</p><div className="settings-grid"><label className="field"><span>Adres-breedtegraad</span><input inputMode="decimal" value={draft.geocodedLatitude} onChange={(event) => setDraft({ ...draft, geocodedLatitude: event.target.value })} /></label><label className="field"><span>Adres-lengtegraad</span><input inputMode="decimal" value={draft.geocodedLongitude} onChange={(event) => setDraft({ ...draft, geocodedLongitude: event.target.value })} /></label></div></details>
     </div>
-    <footer><button className="btn outline" type="button" onClick={() => setDraft(null)}>Annuleren</button><button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || (draft.pointType === "portal" && !draft.linkedPortalId) || (!draft.markerLatitude && !draft.geocodedLatitude)} onClick={() => void savePoint()}><Save />{draft.id ? "Wijzigingen opslaan" : "Startpunt toevoegen"}</button></footer>
+    {error && <p className="form-warning" role="alert">{error}</p>}<footer><button className="btn outline" type="button" onClick={() => setDraft(null)}>Annuleren</button><button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || (draft.pointType === "portal" && !draft.linkedPortalId) || (!draft.markerLatitude && !draft.geocodedLatitude)} onClick={() => void savePoint()}><Save />{draft.id ? "Wijzigingen opslaan" : "Startpunt toevoegen"}</button></footer>
   </aside></div>;
 }

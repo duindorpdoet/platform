@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(27);
 
 update app_private.group_registrations
 set superseded_at = now()
@@ -15,6 +15,13 @@ values ('24000000-0000-0000-0000-000000000050', '23000000-0000-0000-0000-0000000
 update app_private.walking_groups
 set current_plan_version_id = '24000000-0000-0000-0000-000000000050'
 where id = '23000000-0000-0000-0000-000000000050';
+
+select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+select throws_ok($$select api.admin_publish_plans('duindorp-halloween-2026',array['24000000-0000-0000-0000-000000000050']::uuid[],'Geen eerste startafspraak via een oud publicatiecommando')$$,'23514','START_TIME_PUBLICATION_REQUIRED','legacy route publication cannot create an unconfirmed first departure');
+-- Model an already-existing frozen start for the legacy route-revision cases.
+insert into app_private.group_start_publications(event_id,group_id,source_key,revision,starts_at,published_at,point_snapshot,slot_snapshot)
+select event_id,'23000000-0000-0000-0000-000000000050','fixture-existing-legacy-start',revision,starts_at,published_at,point_snapshot,slot_snapshot
+from app_private.group_start_publications where group_id='23000000-0000-0000-0000-000000000001' order by publication_order desc limit 1;
 
 select is(
   app_private.has_approved_walking_path(

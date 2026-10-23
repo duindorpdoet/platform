@@ -109,6 +109,19 @@ jobs:
         run: |
           bash scripts/acceptance/prepare-browser-runner.sh
           pnpm exec playwright install --with-deps chromium webkit
+      - name: Exercise real Startregie, group policy and push HTTP boundaries
+        env:
+          APP_ENVIRONMENT: test
+          REGISTRATION_MODE: staging_test
+          APP_URL: http://127.0.0.1:3100
+          ALLOWED_ORIGINS: http://127.0.0.1:3100
+          ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/group-size-policy.mjs
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/start-ops.spec.ts --project=desktop-chromium --workers=1
+          pnpm exec supabase db reset
       - name: Run offline, reconnect and private-payload browser acceptance
         env:
           APP_ENVIRONMENT: test

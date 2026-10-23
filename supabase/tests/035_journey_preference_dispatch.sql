@@ -76,20 +76,10 @@ perform api.run_bulk_skip_pending((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,
 perform api.run_scan((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,version}')::integer,pg_temp.rehearsal_short_code((s#>>'{run,currentStop,id}')::uuid),'short_code');
 perform api.run_complete_stop((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,version}')::integer,true,'pref-skip-done','pref-skip-done');
 end $$;
-select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,currentStop,kind}','ordinary','a skipped stop is not counted as a visited house');
+select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,currentStop,kind}','finale','a physically reached house counts toward the visit limit even when every child stays outside');
 set local role postgres;
-create temporary table visit_code as select 'TEST-'||right(s.portal_id::text,2) code from app_private.run_stops s join app_private.group_runs r on r.current_stop_id=s.id where r.id=(select run_id from dynamic_state);
-grant select on visit_code to authenticated;
+select is((select count(*)::integer from app_private.run_stop_arrivals where run_id=(select run_id from dynamic_state)),1,'the outside child has a real arrival fact for that first ordinary house');
 set local role authenticated;
-do $$ declare s jsonb; begin
-s:=api.group_snapshot('23000000-0000-0000-0000-000000000001');
-perform api.run_scan((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,version}')::integer,(select code from visit_code),'short_code');
-s:=api.group_snapshot('23000000-0000-0000-0000-000000000001');
-perform api.run_update_participant((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,participants,0,id}')::uuid,'visited',(s#>>'{run,version}')::integer,(s#>>'{run,participants,0,statusVersion}')::integer,null);
-s:=api.group_snapshot('23000000-0000-0000-0000-000000000001');
-perform api.run_complete_stop((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,version}')::integer,false,'pref-visit-done','pref-visit-done');
-end $$;
-select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,currentStop,kind}','finale','the chosen limit leads to the real reserved finale');
 select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,status}','live','reaching the chosen count does not finish the route before the show');
 set local role postgres;
 select is((select count(*)::integer from app_private.portal_reservations where run_id=(select run_id from dynamic_state) and kind='finale' and status='active'),1,'exactly one active finale reservation remains');

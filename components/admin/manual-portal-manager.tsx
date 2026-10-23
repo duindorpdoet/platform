@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Archive, Edit3, Plus, Save, ShieldAlert, Trash2, UserPlus, X } from "lucide-react";
+import { amsterdamDateTimeInput, amsterdamInputToIso } from "@/lib/time/amsterdam";
+import { PortalWalkingConnection } from "@/components/admin/portal-walking-connection";
 import { LocationEditor } from "@/components/admin/location-editor";
+import { useDialogFocus } from "@/lib/ui/use-dialog-focus";
 import { createClient } from "@/lib/supabase/client";
 
 type World = { id: string; slug: string; name: string };
 type Portal = {
-  id: string; systemCode: string; name: string; world: string; worldSlug: string; color: string | null; description: string;
+  walkingConnectionVerified?:boolean; id: string; systemCode: string; name: string; world: string; worldSlug: string; color: string | null; description: string;
   lifecycleStatus: "concept" | "registered" | "approved" | "active" | "archived"; approvalStatus: Draft["approvalStatus"]; operationStatus: string;
   recordSource: "resident_registration" | "manual"; contactName: string | null; phone: string | null; email: string | null;
   address: string | null; postalCode: string | null; city: string | null; geocodedLatitude: number | null; geocodedLongitude: number | null;
@@ -25,11 +28,7 @@ type Draft = {
   candidateStartPoint: boolean; isFinal: boolean; confirmFinal: boolean;
 };
 
-function localDateTime(value: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-}
+const localDateTime = amsterdamDateTimeInput;
 function empty(worlds: World[]): Draft {
   return { id: null, version: null, systemNumber: "", name: "", worldSlug: worlds[0]?.slug ?? "", color: "#d59658",
     description: "", intensity: "1", street: "", houseNumber: "", addition: "", postalCode: "", city: "Den Haag",
@@ -55,7 +54,9 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged }: { eventSlu
   const [portals, setPortals] = useState<Portal[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [notice, setNotice] = useState("");
+  const [timeError,setTimeError] = useState("");
   const [busy, setBusy] = useState(false);
+  useDialogFocus(Boolean(draft),".manual-portal-editor",()=>setDraft(null),busy);
   const load = useCallback(async () => {
     const client = createClient(); if (!client) return;
     const { data, error } = await client.schema("api").rpc("admin_startregie_snapshot", { _event_slug: eventSlug });
@@ -66,6 +67,21 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged }: { eventSlu
 
   async function save() {
     if (!draft) return;
+    setTimeError("");
+    const plannedOpensAt = draft.plannedOpensAt ? amsterdamInputToIso(draft.plannedOpensAt) : null;
+    const plannedClosesAt = draft.plannedClosesAt ? amsterdamInputToIso(draft.plannedClosesAt) : null;
+    if (draft.plannedOpensAt && !plannedOpensAt) {
+      setTimeError("De openingstijd is geen eenduidig Nederlands tijdstip. Kies een geldige datum en tijd; een overgeslagen of dubbel uur bij de zomer-/wintertijdwisseling kan niet worden opgeslagen.");
+      return;
+    }
+    if (draft.plannedClosesAt && !plannedClosesAt) {
+      setTimeError("De sluitingstijd is geen eenduidig Nederlands tijdstip. Kies een geldige datum en tijd; een overgeslagen of dubbel uur bij de zomer-/wintertijdwisseling kan niet worden opgeslagen.");
+      return;
+    }
+    if (plannedOpensAt && plannedClosesAt && Date.parse(plannedClosesAt) <= Date.parse(plannedOpensAt)) {
+      setTimeError("De sluitingstijd moet na de openingstijd liggen. Alle tijden worden verwerkt als Nederlandse tijd (Europe/Amsterdam).");
+      return;
+    }
     const client = createClient(); if (!client) return;
     setBusy(true);
     const payload = {
@@ -73,8 +89,8 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged }: { eventSlu
       systemNumber: draft.systemNumber ? Number(draft.systemNumber) : null,
       intensity: Number(draft.intensity), latitude: draft.latitude ? Number(draft.latitude) : null,
       longitude: draft.longitude ? Number(draft.longitude) : null,
-      plannedOpensAt: draft.plannedOpensAt ? new Date(draft.plannedOpensAt).toISOString() : null,
-      plannedClosesAt: draft.plannedClosesAt ? new Date(draft.plannedClosesAt).toISOString() : null,
+      plannedOpensAt,
+      plannedClosesAt,
       maxGroups: Number(draft.maxGroups), maxChildren: Number(draft.maxChildren),
       visitMinutes: Number(draft.visitMinutes), bufferMinutes: Number(draft.bufferMinutes),
     };
@@ -83,7 +99,8 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged }: { eventSlu
       _reason: draft.id ? "Handmatig beheerde poort bijgewerkt" : "Poort handmatig door de organisatie toegevoegd",
     });
     setBusy(false);
-    setNotice(error ? `Opslaan geweigerd: ${error.message}` : draft.id ? "Poort bijgewerkt." : "Poort aangemaakt met een stabiele poortcode.");
+    if (error) setTimeError(`Opslaan geweigerd: ${error.message}`);
+    else setNotice(draft.id ? "Poort bijgewerkt." : "Poort aangemaakt met een stabiele poortcode.");
     if (!error) { setDraft(null); await load(); onChanged(); }
   }
 
@@ -113,12 +130,12 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged }: { eventSlu
   }
 
   return <div className="manual-portal-manager">
-    <header><div><p className="kicker">Organisatiebeheer</p><h3>Handmatig geregistreerde poorten</h3><p>Maak een poort aan voordat er een huiseigenarenaccount bestaat. Alleen een goedgekeurde, actieve en routeklare poort kan door de planner worden gebruikt.</p></div><button className="btn" type="button" onClick={() => setDraft(empty(worlds))}><Plus />Poort toevoegen</button></header>
+    <header><div><p className="kicker">Organisatiebeheer</p><h3>Handmatig geregistreerde poorten</h3><p>Maak een poort aan voordat er een huiseigenarenaccount bestaat. Alleen een goedgekeurde, actieve en routeklare poort kan door de planner worden gebruikt.</p></div><button className="btn" type="button" onClick={() => { setTimeError(""); setDraft(empty(worlds)); }}><Plus />Poort toevoegen</button></header>
     {notice && <div className="form-notice" role="status">{notice}</div>}
     <div className="manual-portal-list">{portals.filter((portal) => portal.recordSource === "manual").map((portal) => <article key={portal.id}>
       <header><span className="portal-code">{portal.systemCode}</span><div><strong>{portal.name}</strong><small>{portal.world} · {portal.lifecycleStatus} · live: {portal.operationStatus}</small></div>{portal.isFinal && <span className="portal-status-badge">Eindpoort</span>}</header>
-      <dl><div><dt>Beschikbaar</dt><dd>{portal.plannedOpensAt ? `${localDateTime(portal.plannedOpensAt).slice(11)}–${localDateTime(portal.plannedClosesAt).slice(11)}` : "Nog niet gepland"}</dd></div><div><dt>Locatie</dt><dd>{portal.latitude !== null ? "Routeklaar" : "Marker ontbreekt"}</dd></div><div><dt>Contact</dt><dd>{portal.contactName || "Niet ingevuld"}</dd></div></dl>
-      <div className="actions"><button className="btn outline" type="button" onClick={() => setDraft(fromPortal(portal))}><Edit3 />Bewerken</button>{["approved", "active"].includes(portal.lifecycleStatus) && <button className="btn outline" type="button" disabled={busy} onClick={() => void inviteOwner(portal)}><UserPlus />Eigenaar uitnodigen</button>}<button className="text-link danger" type="button" onClick={() => void remove(portal)}>{portal.lifecycleStatus === "concept" ? <Trash2 /> : <Archive />}{portal.lifecycleStatus === "concept" ? "Verwijderen" : "Archiveren"}</button></div>
+      <dl><div><dt>Beschikbaar</dt><dd>{portal.plannedOpensAt ? `${localDateTime(portal.plannedOpensAt).slice(11)}–${localDateTime(portal.plannedClosesAt).slice(11)}` : "Nog niet gepland"}</dd></div><div><dt>Locatie</dt><dd>{portal.walkingConnectionVerified?"Loopaansluiting gecontroleerd":portal.latitude!==null?"Loopaansluiting controleren":"Marker ontbreekt"}</dd></div><div><dt>Contact</dt><dd>{portal.contactName || "Niet ingevuld"}</dd></div></dl>
+      <div className="actions"><PortalWalkingConnection eventSlug={eventSlug} portal={portal} onChanged={async()=>{await load();onChanged();}}/><button className="btn outline" type="button" onClick={() => { setTimeError(""); setDraft(fromPortal(portal)); }}><Edit3 />Bewerken</button>{["approved", "active"].includes(portal.lifecycleStatus) && <button className="btn outline" type="button" disabled={busy} onClick={() => void inviteOwner(portal)}><UserPlus />Eigenaar uitnodigen</button>}<button className="text-link danger" type="button" onClick={() => void remove(portal)}>{portal.lifecycleStatus === "concept" ? <Trash2 /> : <Archive />}{portal.lifecycleStatus === "concept" ? "Verwijderen" : "Archiveren"}</button></div>
     </article>)}{portals.every((portal) => portal.recordSource !== "manual") && <div className="portal-empty"><ShieldAlert /><p>Er zijn nog geen handmatig aangemaakte poorten.</p></div>}</div>
 
     {draft && <div className="manual-portal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDraft(null); }}><aside className="manual-portal-editor" role="dialog" aria-modal="true" aria-labelledby="manual-portal-title">
@@ -130,7 +147,7 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged }: { eventSlu
         <section><h4>Geplande beschikbaarheid</h4><div className="settings-grid"><label className="field"><span>Live avondstatus</span><select value={draft.operationStatus} onChange={(event) => setDraft({ ...draft, operationStatus: event.target.value as Draft["operationStatus"] })}><option value="scheduled">Onbekend / nog niet gestart</option><option value="open">Open</option><option value="paused">Pauze</option><option value="closed">Gestopt</option></select></label><label className="field"><span>Opent</span><input type="datetime-local" value={draft.plannedOpensAt} onChange={(event) => setDraft({ ...draft, plannedOpensAt: event.target.value })} /></label><label className="field"><span>Sluit</span><input type="datetime-local" value={draft.plannedClosesAt} onChange={(event) => setDraft({ ...draft, plannedClosesAt: event.target.value })} /></label><label className="field"><span>Groepen tegelijk</span><input type="number" min={1} value={draft.maxGroups} onChange={(event) => setDraft({ ...draft, maxGroups: event.target.value })} /></label><label className="field"><span>Kinderen per bezoek</span><input type="number" min={1} value={draft.maxChildren} onChange={(event) => setDraft({ ...draft, maxChildren: event.target.value })} /></label><label className="field"><span>Bezoekduur</span><input type="number" min={1} value={draft.visitMinutes} onChange={(event) => setDraft({ ...draft, visitMinutes: event.target.value })} /></label><label className="field"><span>Buffer</span><input type="number" min={0} value={draft.bufferMinutes} onChange={(event) => setDraft({ ...draft, bufferMinutes: event.target.value })} /></label></div></section>
         <section><h4>Beheer</h4><label className="field"><span>Interne notities</span><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} /></label><label className="check-row"><input type="checkbox" checked={draft.candidateStartPoint} onChange={(event) => setDraft({ ...draft, candidateStartPoint: event.target.checked })} /><span>Kandidaat-startpunt</span></label><label className="check-row"><input type="checkbox" checked={draft.isFinal} onChange={(event) => setDraft({ ...draft, isFinal: event.target.checked, confirmFinal: false })} /><span>Instellen als eindpoort</span></label>{draft.isFinal && <label className="check-row critical"><input type="checkbox" checked={draft.confirmFinal} onChange={(event) => setDraft({ ...draft, confirmFinal: event.target.checked })} /><span>Ik begrijp dat dit de eindpoortconfiguratie wijzigt.</span></label>}</section>
       </div>
-      <footer><button className="btn outline" type="button" onClick={() => setDraft(null)}>Annuleren</button><button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug || (draft.lifecycleStatus === "active" && (draft.approvalStatus !== "approved" || !draft.latitude || !draft.plannedOpensAt || !draft.plannedClosesAt)) || (draft.isFinal && !draft.confirmFinal)} onClick={() => void save()}><Save />Poort opslaan</button></footer>
+      {timeError && <p className="form-warning" role="alert">{timeError}</p>}<footer><button className="btn outline" type="button" onClick={() => setDraft(null)}>Annuleren</button><button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug || (draft.lifecycleStatus === "active" && (draft.approvalStatus !== "approved" || !draft.latitude || !draft.plannedOpensAt || !draft.plannedClosesAt)) || (draft.isFinal && !draft.confirmFinal)} onClick={() => void save()}><Save />Poort opslaan</button></footer>
     </aside></div>}
   </div>;
 }

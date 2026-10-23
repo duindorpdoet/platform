@@ -65,8 +65,8 @@ grant select, update on dynamic_state to authenticated;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select is(
-  api.group_snapshot('23000000-0000-0000-0000-000000000001') -> 'group' -> 'start',
-  'null'::jsonb,
+  api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{group,start,address}',
+  null::text,
   'a draft schedule never exposes its exact start point through the participant RPC'
 );
 select throws_ok(
@@ -99,6 +99,16 @@ select throws_ok(
 set local role postgres;
 update app_private.start_slots set starts_at = now() - interval '1 minute'
 where id = '20000000-0000-0000-0000-000000000001';
+-- A changed live slot alone cannot rewrite an immutable published appointment.
+-- Publish a distinct corrected fixture revision before exercising later arrivals.
+update app_private.group_schedule_revisions set state='superseded' where id=(select schedule_id from dynamic_state);
+with correction as (
+ insert into app_private.group_schedule_revisions(group_id,revision,state,start_slot_id,effective_ordinary_stop_at,expected_finale_arrival_at,preference_match,published_at)
+ select group_id,revision+1,'published',start_slot_id,effective_ordinary_stop_at,expected_finale_arrival_at,preference_match,clock_timestamp()
+ from app_private.group_schedule_revisions where id=(select schedule_id from dynamic_state) returning id
+) update dynamic_state set schedule_id=correction.id from correction;
+update app_private.walking_groups set current_schedule_revision_id=(select schedule_id from dynamic_state) where id='23000000-0000-0000-0000-000000000001';
+
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);

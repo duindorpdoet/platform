@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/legacy-start-available.inc
 create extension if not exists pgtap with schema extensions;
 select no_plan();
 -- A second household shares the route but remains independently authorized.

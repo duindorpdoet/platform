@@ -1,13 +1,15 @@
 name: Redesign authenticated acceptance
 on:
   push:
-    branches: [codex/complete-halloween-redesign]
+    branches: [codex/complete-halloween-redesign, codex/startregie-ops]
     paths:
       - 'app/**'
       - 'components/**'
       - 'lib/**'
       - 'modern/**'
       - 'tests/**'
+      - 'supabase/**'
+      - 'scripts/acceptance/**'
       - '.github/workflows/redesign-acceptance.yml'
 permissions:
   contents: read

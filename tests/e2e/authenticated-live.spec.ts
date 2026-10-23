@@ -1,3 +1,4 @@
+import {prepareStartedLegacyFixtures} from "../../scripts/acceptance/started-fixtures.mjs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { assertReadableLayout } from "./helpers/layout";
@@ -66,7 +67,11 @@ test("Startregie keeps planning, start points, map and publication controls task
   await page.goto("/admin");
   await selectAdminSection(page, "Startregie");
 
-  await expect(page.getByRole("heading", { name: "Startregie", exact: true, level: 2 })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", {name:"Iedere groep een goede start.",level:1})).toBeVisible({timeout:15_000});
+  await expect(page.locator(".start-ops-workspace")).toBeVisible();
+  await expect(page.locator(".planning-workspace")).not.toBeVisible();
+  await page.getByText("Alle planningscijfers",{exact:true}).click();
+  await page.getByText("Automatisch voorstel en uitgebreid planbord",{exact:true}).click();
   await expect(page.getByRole("tab", { name: "Indeling" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText("actieve startpunten", { exact: true })).toBeVisible();
   await expect(page.getByText("binnen voorkeur", { exact: true })).toBeVisible();
@@ -89,6 +94,11 @@ test("Startregie keeps planning, start points, map and publication controls task
     window.scrollTo(0, 0);
     document.querySelector<HTMLElement>(".admin-content")?.scrollTo(0, 0);
   });
+  for(const selector of [".start-ops-stats",".start-ops-advanced"]){
+    const disclosure=page.locator(selector);
+    if(await disclosure.getAttribute("open")!==null)await disclosure.locator("summary").click();
+  }
+  await page.evaluate(()=>{for(const element of document.querySelectorAll<HTMLElement>("*")){if(element.scrollTop>0)element.scrollTo({top:0,left:0,behavior:"instant"});}});
   await page.screenshot({ path: `test-results/startregie-${testInfo.project.name}.png`, fullPage: false });
 });
 
@@ -171,6 +181,7 @@ test("forged cookies fail and offline group state reveals only the current stop 
 
   await context.clearCookies();
   const { client, session } = await fixtureClient();
+  prepareStartedLegacyFixtures();
   const roster = await rpc(client, "group_roster", { _group_id: groupId }) as Array<{ registrationChildId: string }>;
   const beforeStart = await rpc(client, "group_snapshot", { _group_id: groupId }) as { group: { version: number } };
   await rpc(client, "run_start", {

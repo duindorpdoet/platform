@@ -35,6 +35,7 @@ export function GroupSizePolicy({eventSlug,maximum,target,followsMaximum,setting
     const preview=await client.schema('api').rpc('admin_group_size_policy_preview',{_event_slug:eventSlug,_max_group_size:nextMaximum,_target_group_size:follow?null:nextTarget});
     if(preview.error)throw preview.error;
     current=preview.data as Impact;
+    if(current.settingsVersion!==settingsVersion)throw new Error('STALE_VERSION');
     if(current.groups.length||current.parties.length){setImpact(current);setNotice('Controleer de bestaande uitzonderingen en bevestig dat alle groepen behouden blijven.');return;}
    }
    if((current.groups.length||current.parties.length)&&!reviewed)return;

@@ -26,9 +26,10 @@ vi.mock("@/lib/config/server-env", () => ({
 vi.mock("@/lib/supabase/privileged", () => ({
   createPrivilegedClient: () => ({ schema: () => ({ rpc: state.rpc }) }),
 }));
-vi.mock("web-push", () => ({
-  default: { setVapidDetails: vi.fn(), sendNotification: state.send },
-}));
+vi.mock("@/lib/pwa/push-delivery",()=>({deliverScopedPush:async(target:unknown,_scope:unknown,payload:string)=>{
+  try {await state.send(target,payload);return {success:true,deactivate:false,error:null};}
+  catch(cause) {const code=Number((cause as {statusCode?:number}).statusCode??0);return {success:false,deactivate:[404,410].includes(code),error:`HTTP_${code}`};}
+}}));
 import { editorialTick } from "./worker";
 import { editorialImageVariants } from "./media";
 import { sendSendGrid } from "../mail/sendgrid";
@@ -42,12 +43,14 @@ const job = {
   targets: [
     {
       subscriptionId: id,
+      fingerprint:"fixture-one",
       endpoint: "https://push.example.invalid/one",
       p256dh: "secret-key",
       auth: "secret-auth",
     },
     {
       subscriptionId: "a0000000-0000-0000-0000-000000000002",
+      fingerprint:"fixture-two",
       endpoint: "https://push.example.invalid/two",
       p256dh: "key-two",
       auth: "auth-two",

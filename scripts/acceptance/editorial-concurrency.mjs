@@ -1,3 +1,4 @@
+import {syntheticPushMaterial} from "./push-fixtures.mjs";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
@@ -6,10 +7,11 @@ requireLocalTogetherDatabase();
 const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession:false, autoRefreshToken:false } });
 assert.equal((await client.auth.signInWithPassword({email:"admin@example.invalid",password:"local-test-only"})).error,null);
 const media=randomUUID(), device=randomUUID(), suffix=randomUUID().slice(0,8);
+const deviceMaterial=syntheticPushMaterial(device);
 sql(`insert into app_private.editorial_media(id,event_id,alt,width,height,byte_size,created_by) select '${media}',id,'Local concurrent fixture',1600,900,1000,'f0000000-0000-0000-0000-000000000001' from app_private.events where slug='duindorp-halloween-2026';
 insert into app_private.participant_preferences(event_id,user_id,optional_updates_consent,editorial_push_parents) select id,'a0000000-0000-0000-0000-000000000001',true,true from app_private.events where slug='duindorp-halloween-2026' on conflict(event_id,user_id) do update set optional_updates_consent=true,editorial_push_parents=true;
 insert into app_private.push_preferences(user_id,enabled) values('a0000000-0000-0000-0000-000000000001',true) on conflict(user_id) do update set enabled=true;
-insert into app_private.push_subscriptions(id,user_id,endpoint,p256dh,auth_secret) values('${device}','a0000000-0000-0000-0000-000000000001','https://push.example.invalid/${device}','aaaaaaaaaaaaaaaaaaaaaaaa','bbbbbbbbbbbb');`);
+insert into app_private.push_subscriptions(id,user_id,endpoint,p256dh,auth_secret) values('${device}','a0000000-0000-0000-0000-000000000001','${deviceMaterial.endpoint}','${deviceMaterial.p256dh}','${deviceMaterial.auth}');`);
 const content={ title:"Concurrent verhaal",intro:"Een lokale fixture",heroId:media,heroAlt:"Fixture",heroCaption:"",author:"",categoryId:null,body:{type:"doc",content:[{type:"paragraph",content:[{type:"text",text:"Lokale test"}]}]},cta:null };
 const saved=await client.schema("api").rpc("admin_news_save",{_event_slug:"duindorp-halloween-2026",_id:null,_expected_revision:0,_slug:`concurrent-${suffix}`,_content:content}); assert.equal(saved.error,null);
 const at=new Date(Date.now()+60000).toISOString();
