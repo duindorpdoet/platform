@@ -1,11 +1,13 @@
 "use client";
 /* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-location-assign-relative-destination -- A new credential requires a full document request, without retained Next router state. */
+import { useEventDetails } from "@/components/redesign/event-details";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, KeyRound, LockKeyhole, Sparkles } from "lucide-react";
 import { MotionToggle } from "@/components/poorten-cinematic";
 import { LOGIN_ERROR, normalizeCode } from "@/lib/poortenboek/model";
 
 export function BookLogin({ demo = false }: { demo?: boolean }) {
+  const event = useEventDetails();
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -187,7 +189,7 @@ export function BookLogin({ demo = false }: { demo?: boolean }) {
         <MotionToggle inline />
       </div>
       <p className="pb-login-foot">
-        31 oktober 2026 <span>✦</span> Duindorp, Den Haag
+        {event.dateLong} <span>✦</span> Duindorp, Den Haag
       </p>
     </main>
   );

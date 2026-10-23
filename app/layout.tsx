@@ -23,7 +23,7 @@ import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-regis
 
 export const metadata: Metadata = {
   title: "De Duindorpse Poorten van Halloween",
-  description: "Een magische Halloween-avondloop door Duindorp op 31 oktober 2026. Loop samen langs versierde huizen, portieken en buurtbedrijven.",
+  description: "Een magische Halloween-avondloop door Duindorp. Loop samen langs versierde huizen, portieken en buurtbedrijven.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: "/favicon.svg",

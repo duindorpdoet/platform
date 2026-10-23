@@ -30,7 +30,7 @@ export async function loadBookKeepsakeFonts(){
  if(!loading)loading=Promise.all(['DejaVuSans.ttf','DejaVuSans-Bold.ttf'].map(async name=>{const response=await fetch('/print/fonts/'+name);if(!response.ok)throw new Error('PDF_FONT_UNAVAILABLE');return new Uint8Array(await response.arrayBuffer());})).then(([regular,bold])=>setBookKeepsakeFonts(regular,bold)).catch(error=>{loading=null;throw error;});
  await loading;
 }
-function formattedDate(value:string){const date=new Date(/^\d{4}-\d{2}-\d{2}$/.test(value)?`${value}T12:00:00+01:00`:value);return Number.isFinite(date.getTime())?new Intl.DateTimeFormat('nl-NL',{day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Amsterdam'}).format(date):'31 oktober 2026';}
+function formattedDate(value:string){const date=new Date(/^\d{4}-\d{2}-\d{2}$/.test(value)?`${value}T12:00:00+01:00`:value);return Number.isFinite(date.getTime())?new Intl.DateTimeFormat('nl-NL',{day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Amsterdam'}).format(date):'Evenementdatum volgt';}
 function formattedTime(value:string){const date=new Date(value);return Number.isFinite(date.getTime())?new Intl.DateTimeFormat('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'}).format(date):'Tijd niet bekend';}
 
 /** Generates a personal, address-free PDF. Only snapshot.journey.seals supply visits. */

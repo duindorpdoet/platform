@@ -1,4 +1,5 @@
 "use client";
+import { useEventDetails } from "@/components/redesign/event-details";
 import {HousePortalThanks} from "@/components/redesign/portal-thanks";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { PortalNews } from "@/components/editorial/portal-news";
@@ -78,6 +79,7 @@ export function Poortkamer({
   initial: PortalRoom;
   admin?: boolean;
 }) {
+  const event = useEventDetails();
   const [room, setRoom] = useState<PortalRoom | null>(initial);
   const [portalId, setPortalId] = useState(initial.portal.id);
   const [moreSection, setMoreSection] = useState("preparation");
@@ -283,7 +285,7 @@ export function Poortkamer({
             />
             <div>
               <strong>De Poortkamer</strong>
-              <small>Duindorp · 31 oktober 2026</small>
+              <small>Duindorp · {event.dateLong}</small>
             </div>
           </Link>
           <div className={s.gateIdentity}><span className={s.gateIcon}><DoorOpen size={22} /></span><div><small>{room.portal.code} · {room.portal.world}</small><strong>{room.portal.name}</strong><span className={s.gateStatus} data-state={room.portal.state}><i />{portalStates[room.portal.state]}</span></div></div>
@@ -304,7 +306,7 @@ export function Poortkamer({
               </button>
             ))}
           </nav>
-          <div className={s.sidebarFoot}><span className={s.sidebarDate}><CalendarDays size={16} />31 oktober · 17:00–21:00</span><Link className={s.sidebarReturn} href={admin ? "/admin" : "/omgeving"}>Mijn omgeving <ArrowRight size={15} /></Link></div>
+          <div className={s.sidebarFoot}><span className={s.sidebarDate}><CalendarDays size={16} />{event.dateShort} · {event.times}</span><Link className={s.sidebarReturn} href={admin ? "/admin" : "/omgeving"}>Mijn omgeving <ArrowRight size={15} /></Link></div>
         </aside>
         <div className={s.workspace}>
           <header className={s.top}>
@@ -1196,6 +1198,7 @@ function Metric({ value, label }: { value: number | string; label: string }) {
   );
 }
 function NightRecap({ room }: { room: PortalRoom }) {
+  const event = useEventDetails();
   const recap = room.visits.recap;
   return (
     <section className={`${s.card} ${s.recap}`}>
@@ -1212,7 +1215,7 @@ function NightRecap({ room }: { room: PortalRoom }) {
       <p>Dank je wel voor jullie licht in de wijk.</p>
       <div className={s.certificate}>
         <img src="/images/poortkamer-v2/certificates/gate-certificate-background.webp" alt="" />
-        <div><span>Digitaal certificaat</span><strong>Officiële Poort van 2026</strong><small>{room.portal.name} · {room.portal.code}</small></div>
+        <div><span>Digitaal certificaat</span><strong>Officiële Poort van {event.year}</strong><small>{room.portal.name} · {room.portal.code}</small></div>
       </div>
       <div className={s.metrics}>
         <Metric value={recap.groups} label="Groepen ontvangen" />

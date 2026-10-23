@@ -1,5 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-html-link-for-pages -- Private child pages deliberately reload to validate the cookie and discard the previous child snapshot. */
+import { useEventDetails } from "@/components/redesign/event-details";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
@@ -65,6 +66,7 @@ export function Poortenboek({
   initial: BookSnapshot;
   section: BookSection;
 }) {
+  const event = useEventDetails();
   const [snapshot, setSnapshot] = useState<BookSnapshot | null>(initial);
   const [offline, setOffline] = useState(false);
   const [confirmedIdentity, setConfirmedIdentity] = useState(readConfirmedBookIdentity);
@@ -288,7 +290,7 @@ export function Poortenboek({
       <main id="poortenboek-content" className="pb-content">
         <div className="pb-workspace-context">
           <span><BookOpen size={15} /> Jouw avontuur <ChevronRight size={13} /> <strong>{sections.find(([key]) => key === section)?.[1] ?? "Nu"}</strong></span>
-          <span><Moon size={13} /> 31 oktober 2026</span>
+          <span><Moon size={13} /> {event.dateLong}</span>
         </div>
         <BookArrivalSync childId={snapshot.childId} confirmedStopIds={snapshot.journey.seals.flatMap(seal=>seal.stopId?[seal.stopId]:[])}/>
         {notice && (
@@ -562,7 +564,7 @@ export function Poortenboek({
                   {snapshot.election.winner && (
                     <p>{snapshot.election.winner}</p>
                   )}
-                  <small>Duindorp · Halloween 2026</small>
+                  <small>Duindorp · Halloween {event.year}</small>
                 </div>
               </div>
               <section className="pb-parchment">
