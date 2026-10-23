@@ -75,7 +75,7 @@ async function noOverflow(page: Page) {
     ),
   ).toBe(true);
 }
-async function realFamily(context: BrowserContext) {
+async function realFamily(context: BrowserContext, guidanceComplete = true) {
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SECRET_KEY!,
@@ -106,7 +106,7 @@ async function realFamily(context: BrowserContext) {
     password: "local-poortenboek-only",
   });
   expect(signed.error).toBeNull();
-  await prepareFixtureGuidance(client);
+  if(guidanceComplete)await prepareFixtureGuidance(client);
   // Auth and PostgREST run in separate local containers. Wait until the newly
   // issued fixture JWT is accepted before the browser's one-shot initial load.
   await expect.poll(async () => {
@@ -463,4 +463,38 @@ test("private PWA responses, offline neutral view and no stored child data", asy
     page.getByRole("heading", { name: "De wijk wordt wakker" }),
   ).toBeVisible();
   await noOverflow(page);
+});
+
+test('a child book stays independent of the adult community acknowledgement',async({page,context})=>{
+  const children=await realFamily(context,false);
+  await page.goto('/poortenboek/inloggen');
+  const code=(await mutation(page,'parent',{action:'view',childId:children[0].id})).data.code;
+  await login(page,code);
+  await dashboard(page);
+  await expect(page.locator('.guidance-community-dialog, .guidance-tour-dialog')).toHaveCount(0);
+  const before=await page.request.get('/api/redesign/guidance');
+  expect(before.status()).toBe(200);
+  expect((await before.json()).acknowledgedDay).toBeNull();
+});
+
+test('adult first-use guidance resumes after reload and completes all fourteen real screens',async({page,context})=>{
+  await realFamily(context,false);
+  await page.goto('/mijn-inschrijving');
+  const community=page.locator('.guidance-community-dialog');
+  await expect(community).toBeVisible();
+  await expect(community.getByRole('link')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(community).toBeVisible();
+  await community.getByRole('button',{name:'Gelezen, verder naar mijn omgeving',exact:true}).click();
+  const guide=page.locator('.guidance-tour-dialog');
+  await expect(guide).toBeVisible();
+  for(let step=0;step<3;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
+  await expect(guide.getByRole('progressbar')).toHaveAttribute('aria-valuenow','4');
+  await page.reload();
+  await expect(guide.getByRole('progressbar')).toHaveAttribute('aria-valuenow','4');
+  for(let step=3;step<13;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
+  await guide.getByRole('button',{name:'Rondleiding afronden',exact:true}).click();
+  await expect(guide).toHaveCount(0);
+  const saved=await page.request.get('/api/redesign/guidance');
+  expect((await saved.json()).completed.parent).toBe(1);
 });

@@ -151,6 +151,8 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
 
 export function GuidanceHost(){
  const path=usePathname();const [record,setRecord]=useState<GuidanceRecord|null>(null);
+ const childBook=path==='/poortenboek'||path.startsWith('/poortenboek/');
+ useLayoutEffect(()=>{if(childBook){document.documentElement.dataset.participantGuidanceActive='false';window.dispatchEvent(new Event('poorten-guidance-status'));}},[childBook]);
  useEffect(()=>{
   let active=true;
   document.documentElement.dataset.participantGuidanceActive='true';
@@ -159,5 +161,5 @@ export function GuidanceHost(){
   void load();const client=createClient();const auth=client?.auth.onAuthStateChange(()=>{if(active)void load();});const timer=setInterval(()=>void load(),30000);window.addEventListener('online',load);
   return()=>{active=false;auth?.data.subscription.unsubscribe();clearInterval(timer);window.removeEventListener('online',load);};
  },[]);
- return record?<ParticipantGuidance key={record.userId+record.eventId} path={path} initial={record}/>:null;
+ return record&&!childBook?<ParticipantGuidance key={record.userId+record.eventId} path={path} initial={record}/>:null;
 }
