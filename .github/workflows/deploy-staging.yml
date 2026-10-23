@@ -86,7 +86,6 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/duindorp-release-backup
       SENDGRID_API: ${{ secrets.SENDGRID_API }}
       SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
       SENDGRID_FROM_NAME: De Duindorpse Poorten van Halloween
@@ -149,6 +148,8 @@ jobs:
           path: ${{ runner.temp }}/duindorp-release-backup
           merge-multiple: true
       - name: Protect redesign migrations with private preflight and restore gate
+        env:
+          RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/duindorp-release-backup
         run: node scripts/deploy/redesign-preflight.mjs
       - name: Validate application
         run: pnpm verify
