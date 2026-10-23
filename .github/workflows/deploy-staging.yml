@@ -5,6 +5,12 @@ on:
     branches:
       - staging
   workflow_dispatch:
+    inputs:
+      skip_mail_acceptance:
+        description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
+        type: boolean
+        default: false
+        required: false
 
 permissions:
   contents: read
@@ -197,6 +203,9 @@ jobs:
         run: node scripts/deploy/verify-deployment.mjs staging "${APP_URL}"
       - name: Verify signed Auth email hook and mail provider
         run: node scripts/deploy/verify-mail-provider.mjs
+      - name: Record explicitly selected mailbox acceptance waiver
+        if: github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance
+        run: echo "::notice title=Mailbox receipt acceptance skipped::This exact staging run skips the IMAP receipt test on explicit release approval. Provider and signed-hook checks remain enabled."
       - name: Diagnose SendGrid delivery on deployment failure
         if: failure()
         continue-on-error: true
@@ -211,7 +220,7 @@ jobs:
   mail-acceptance:
     name: Verify real OTP and transactional mail
     needs: deploy
-    if: github.ref == 'refs/heads/staging'
+    if: github.ref == 'refs/heads/staging' && !(github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance)
     environment:
       name: staging
       url: https://staging-halloween.duindorpdoet.nl

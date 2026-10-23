@@ -2,6 +2,8 @@
 
 Stand: 23 oktober 2026. De gebruiker heeft expliciet opdracht gegeven alles naar productie te promoveren. De vier additieve migraties staan op staging; de appuitrol wacht nog op alle releasecontroles. Productie is nog niet gepromoveerd. Deze status is geen volledige visuele of fysieke acceptatie.
 
+De gebruiker heeft vervolgens expliciet gevraagd de falende IMAP-ontvangsttest over te slaan. Hiervoor bestaat een afzonderlijke, standaard uitgeschakelde `workflow_dispatch`-optie `skip_mail_acceptance`. Normale pushdeployments behouden de ontvangsttest; alleen de handmatig geselecteerde run krijgt de uitzondering. Die uitzondering bewijst geen echte OTP-/transactieberichtontvangst. De provider- en getekende Auth-hookcontroles blijven ingeschakeld. De promotie en uiteindelijke SHA worden vastgelegd in [productie-PR #35](https://github.com/duindorpdoet/platform/pull/35).
+
 ## Bron en basis
 
 De 468 SHA256-vermeldingen uit de overdracht zijn gecontroleerd. Presentatie komt uit prototypecommit `0a0d2edc6b371859ba014c2c279a91759f3e9112`; herkomst staat in [source-provenance.json](source-provenance.json). De geïsoleerde werkboom is gestart vanaf `bc2b3796d39f79f7f6dc5ef5bd4978a304eb125b`. Deze SHA is bij aanvang bevestigd via de health-endpoints en GitHub-deploymentgegevens van staging en productie. Oude main en bestaande werkbomen zijn niet als implementatiebasis gebruikt of overschreven.

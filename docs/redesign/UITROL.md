@@ -2,6 +2,8 @@
 
 Status: uitrol in uitvoering. De gebruiker heeft productiepromotie expliciet opgedragen. Geldige projectautorisatie bestaat binnen de beschermde Actions-omgevingen; de vier expand-migraties staan op staging. Beide deployworkflows vereisen nu een backup-/hersteljob vóór enige migratie. Productie vereist de volledige succesvolle stagingworkflow, inclusief echte mailboxacceptatie, op precies dezelfde Git-SHA.
 
+**Expliciete uitzondering voor deze promotie:** op 23 oktober heeft de gebruiker gevraagd de IMAP-ontvangsttest over te slaan nadat de testmailbox de bestaande login weigerde. Start daarvoor de stagingworkflow handmatig met `skip_mail_acceptance=true` op de te promoveren staging-SHA. De optie is standaard `false`; gewone pushes blijven de echte ontvangsttest uitvoeren. De handmatige run vermeldt de uitzondering expliciet en slaat alleen de aparte mailboxjob over. Getekende Auth-hook- en providercontroles blijven vereist. Dit mag niet als geslaagde e-mailontvangst worden gerapporteerd. Leg de uitzondering vast bij de productie-PR.
+
 ## 1. Vooraf vastleggen
 
 Verifieer opnieuw health-SHA, Git-ref en Supabase-projectidentiteit; de basis bij aanvang was `bc2b3796d39f79f7f6dc5ef5bd4978a304eb125b`. Lees werkelijk toegepaste migraties uit `supabase_migrations.schema_migrations`, inspecteer actuele RPC-definities, triggers, RLS/policies/grants, Auth-, Storage- en eventconfiguratie. Vergelijk die met de repository. Bij drift eerst een gericht compatibiliteitsplan, geen force/reset.

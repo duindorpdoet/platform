@@ -9,12 +9,13 @@ const headers = {
 };
 const api = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}`;
 // A deployment job can succeed before the separate mailbox job fails.
-// Require the entire staging workflow, including real receipt, on this SHA.
+// Require the entire staging workflow on this SHA. A receipt-test waiver is
+// available only as an explicit workflow_dispatch input, never on normal pushes.
 const runsResponse = await fetch(`${api}/actions/workflows/deploy-staging.yml/runs?head_sha=${process.env.GITHUB_SHA}&branch=staging&status=success&per_page=100`, { headers });
 if (!runsResponse.ok) throw new Error(`Could not read staging workflow results (${runsResponse.status}).`);
 const runs = await runsResponse.json();
 if (!runs.workflow_runs?.some((run) => run.head_sha === process.env.GITHUB_SHA && run.head_branch === "staging" && run.conclusion === "success")) {
-  throw new Error("Production promotion requires the entire staging workflow, including real mailbox acceptance, to succeed on this exact Git commit.");
+  throw new Error("Production promotion requires the entire staging workflow to succeed on this exact Git commit, with mailbox acceptance or an explicitly selected dispatch waiver.");
 }
 
 const deploymentsResponse = await fetch(`${api}/deployments?sha=${process.env.GITHUB_SHA}&environment=staging&per_page=10`, { headers });
