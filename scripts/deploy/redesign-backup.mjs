@@ -124,6 +124,10 @@ async function main() {
   try {
     console.log('Private repeatable-read database snapshot opened.');
     const catalog=JSON.parse(await sourceQuery(catalogSQL,snapshot));
+    const repositoryMigrations=(await readdir('supabase/migrations')).filter(name=>name.endsWith('.sql')).sort();
+    const appliedMigrations=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(version::text order by version),'[]') from supabase_migrations.schema_migrations",snapshot));
+    const knownVersions=new Set(repositoryMigrations.map(name=>name.split('_')[0]));
+    if(appliedMigrations.some(version=>!knownVersions.has(version))||repositoryMigrations.filter(name=>!name.startsWith('20261023')).some(name=>!appliedMigrations.includes(name.split('_')[0])))throw new Error('LIVE_MIGRATION_HISTORY_DRIFT');
     const before=(await sourceQuery(fingerprintQuery(catalog),snapshot)).split('\n').map(JSON.parse);
     const roles=JSON.parse(await sourceQuery("select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls)) from pg_roles where rolname not like 'pg_%'",snapshot));
     const objects=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]') from storage.objects o",snapshot));
@@ -152,7 +156,7 @@ async function main() {
     holder.child.stdin.end('commit;\n');await holder.done;
     // No network is attached to the restore database. Its cron launcher is
     // disabled, so restored jobs/messages cannot contact live services.
-    await capture('docker',['run','--detach','--name',container,'--network','none','--env','POSTGRES_USER=supabase_admin','--env','POSTGRES_DB=postgres','--env','POSTGRES_PASSWORD='+randomBytes(32).toString('hex'),image,'postgres','-c','cron.launch_active_jobs=off']);
+    await capture('docker',['run','--detach','--name',container,'--network','none','--env','POSTGRES_USER=supabase_admin','--env','POSTGRES_DB=postgres','--env','POSTGRES_PASSWORD='+randomBytes(32).toString('hex'),image,'postgres','-c','shared_preload_libraries=pg_stat_statements,pg_cron,pg_net,supabase_vault','-c','cron.database_name=postgres','-c','cron.launch_active_jobs=off']);
     localStarted=true;
     for(let attempt=0;;attempt++) {
       // The image opens a temporary Unix-socket server during initialization.
@@ -183,7 +187,7 @@ async function main() {
     if(compareFingerprints(before,migrated).length)throw new Error('MIGRATION_DATA_MISMATCH');
     const files=[];
     for(const name of (await readdir(directory)).filter(name=>name.endsWith('.aes')).sort())files.push({name,...await fileDigest(join(directory,name))});
-    const proof={version:1,environment,revision,context,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,tables:catalog.length,objects:objects.length,migrations,files,
+    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,tables:catalog.length,objects:objects.length,migrations,files,
       limits:['Provider runtime secrets remain in the existing secret store.','No live database configuration, migration, credential, or row was changed by this job.','Isolated SQL restore is not an Auth/mail/browser acceptance result.']};
     proof.signature=createHmac('sha256',key).update(JSON.stringify(proof)).digest('hex');
     await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});
