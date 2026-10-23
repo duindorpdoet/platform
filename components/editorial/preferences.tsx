@@ -69,7 +69,7 @@ export function CommunicationPreferences() {
       <h1>Nieuws op jouw manier.</h1>
       <p>
         Nachtpost is onze afmeldbare nieuwsbrief. Betaling, starttijd,
-        veiligheid en andere belangrijke deelnameberichten blijven beschikbaar.
+        veiligheid en andere noodzakelijke deelnameberichten worden afzonderlijk verstuurd, ook als Nachtpost of gewone e-mailupdates uitstaan.
       </p>
       <p role="status">{message}</p>
       {value ? (

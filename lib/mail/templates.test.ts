@@ -71,6 +71,14 @@ describe("premium transactional mail catalog", () => {
     }
   });
 
+  it("explains the participation purpose of a necessary event notice without claiming newsletter consent", () => {
+    const rendered=renderTransactionalMail({messageType:"participant_update",payload:{title:"Veilige oversteek",message:"Volg de veilige oversteek.",mandatoryEventNotice:true,priority:"urgent"}});
+    expect(rendered.html).toContain("Urgente evenementinformatie");
+    expect(rendered.text).toContain("vanwege je aanmelding of rol");
+    expect(rendered.text).toContain("los van je nieuwsbriefvoorkeur");
+    expect(rendered.text).not.toContain("toestemming gaf");
+  });
+
   it("escapes participant copy and rejects a multiline subject", () => {
     const escaped = renderTransactionalMail({
       messageType: "participant_update",

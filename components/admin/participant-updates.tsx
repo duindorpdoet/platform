@@ -12,10 +12,12 @@ export function ParticipantUpdates({ eventSlug }: { eventSlug: string }) {
   const [email, setEmail] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const essential = priority === "important" || priority === "urgent";
+  const sendEmail = essential || email;
 
   async function publish() {
     if (title.trim().length < 3 || body.trim().length < 3) return setNotice("Vul een duidelijke titel en berichttekst in.");
-    if (!window.confirm(`Publiceer deze update voor ${role === "all" ? "alle rollen" : role} ${email ? "en verstuur e-mail volgens de voorkeuren" : "zonder e-mail"}?`)) return;
+    if (!window.confirm(`Publiceer deze update voor ${role === "all" ? "alle rollen" : role} ${essential ? "en stuur dit noodzakelijke evenementbericht naar iedereen in deze doelgroep, ook bij uitgeschakelde nieuwsbrief- of updatevoorkeuren" : email ? "en verstuur e-mail volgens de voorkeuren" : "zonder e-mail"}?`)) return;
     const client = createClient();
     if (!client) return;
     setBusy(true);
@@ -25,13 +27,13 @@ export function ParticipantUpdates({ eventSlug }: { eventSlug: string }) {
       _title: title.trim(),
       _body: body.trim(),
       _priority: priority,
-      _send_email: email,
+      _send_email: sendEmail,
     });
     setBusy(false);
     if (error) return setNotice("Publiceren is niet gelukt. Controleer je rechten en probeer opnieuw.");
     const result = data as { emailCount: number };
     setTitle(""); setBody("");
-    setNotice(`Update gepubliceerd${email ? ` en ${result.emailCount} e-mailmelding${result.emailCount === 1 ? "" : "en"} klaargezet` : ""}.`);
+    setNotice(`Update gepubliceerd${sendEmail ? ` en ${result.emailCount} e-mailmelding${result.emailCount === 1 ? "" : "en"} klaargezet` : ""}.`);
   }
 
   return <section className="panel">
@@ -42,7 +44,8 @@ export function ParticipantUpdates({ eventSlug }: { eventSlug: string }) {
     </div>
     <label className="field"><span>Titel</span><input maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} /></label>
     <label className="field"><span>Bericht</span><textarea rows={6} maxLength={1200} value={body} onChange={(event) => setBody(event.target.value)} /></label>
-    <label className="checkfield"><input type="checkbox" checked={email} onChange={(event) => setEmail(event.target.checked)} />Stuur ook e-mail naar accounts die e-mailupdates aan hebben staan.</label>
+    <label className="checkfield"><input type="checkbox" checked={sendEmail} disabled={essential} onChange={(event) => setEmail(event.target.checked)} />{essential ? "E-mail naar iedereen in de gekozen doelgroep is verplicht voor dit belangrijke evenementbericht." : "Stuur ook e-mail naar accounts die e-mailupdates aan hebben staan."}</label>
+    {essential && <p className="form-notice">Gebruik Belangrijk en Urgent uitsluitend voor noodzakelijke informatie over veiligheid of uitvoering van het evenement. Alle huidige en nieuwe inschrijvers in de gekozen doelgroep komen automatisch in aanmerking. Afmelden voor Nachtpost blokkeert deze berichten niet; nieuwsbriefvoorkeuren blijven bewaard.</p>}
     <button className="btn" disabled={busy || title.trim().length < 3 || body.trim().length < 3} onClick={() => void publish()}><Send />Publiceer update</button>
     {notice && <p className="form-notice" role="status">{notice}</p>}
   </section>;

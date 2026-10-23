@@ -408,6 +408,10 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
     ...definition,
     title: dynamicTitle,
     subject: dynamicSubject,
+    ...(messageType === "participant_update" && payload.mandatoryEventNotice === true ? {
+      eyebrow: payload.priority === "urgent" ? "Urgente evenementinformatie" : "Belangrijk evenementbericht",
+      footerReason: "Je ontvangt dit noodzakelijke bericht over de veiligheid of uitvoering van het evenement vanwege je aanmelding of rol bij De Duindorpse Poorten. Dit staat los van je nieuwsbriefvoorkeur.",
+    } : {}),
     preheader: childConfirmation ? "Deze bevestiging geldt voor de hieronder genoemde kinderen." : definition.preheader,
     paragraphs: definition.paragraphs(payload),
     details: details.length ? details : undefined,
