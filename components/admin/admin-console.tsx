@@ -324,7 +324,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     const menuButton = navigationOpenerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    closeMenuRef.current?.focus();
+    const focusFrame = window.requestAnimationFrame(() => closeMenuRef.current?.focus());
     const desktop = window.matchMedia("(min-width: 1101px)");
     const closeOnDesktop = () => {
       if (desktop.matches) setMobileNavOpen(false);
@@ -351,6 +351,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     desktop.addEventListener("change", closeOnDesktop);
     document.addEventListener("keydown", onKeyDown);
     return () => {
+      window.cancelAnimationFrame(focusFrame);
       document.body.style.overflow = previousOverflow;
       desktop.removeEventListener("change", closeOnDesktop);
       document.removeEventListener("keydown", onKeyDown);
@@ -1161,6 +1162,9 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         role={mobileNavOpen ? "dialog" : undefined}
         aria-modal={mobileNavOpen ? true : undefined}
         aria-label="Organisatienavigatie"
+        onTransitionEnd={(event) => {
+          if (mobileNavOpen && event.target === event.currentTarget && event.propertyName === "transform" && !event.currentTarget.contains(document.activeElement)) closeMenuRef.current?.focus();
+        }}
         onClick={(event) => {
           if ((event.target as HTMLElement).closest("button, a")) setMobileNavOpen(false);
         }}

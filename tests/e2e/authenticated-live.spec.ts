@@ -26,12 +26,12 @@ async function fixtureClient(email = "leader-a@example.invalid") {
   const login = await client.auth.signInWithPassword({ email, password: "local-test-only" });
   expect(login.error).toBeNull();
   expect(login.data.session).toBeTruthy();
+  await prepareFixtureGuidance(client);
   return { client, session: login.data.session! };
 }
 
 async function authenticate(context: BrowserContext, email: string) {
   const authenticated = await fixtureClient(email);
-  await prepareFixtureGuidance(authenticated.client);
   await context.clearCookies();
   await context.addCookies(sessionCookies(authenticated.session));
   return authenticated.client;
@@ -111,9 +111,9 @@ test("the unified mobile participant environment keeps role navigation and payme
 
   await expect(page.getByRole("heading", { name: "Alles voor jullie Halloweenavond." })).toBeVisible({ timeout: 15_000 });
   const bottomNavigation = page.getByRole("navigation", { name: "Mobiele omgevingsnavigatie" });
-  await expect(bottomNavigation.getByRole("link", { name: "Nu" })).toBeVisible();
+  await expect(bottomNavigation.getByRole("link", { name: "Overzicht" })).toBeVisible();
   await expect(bottomNavigation.getByRole("link", { name: "Route" })).toBeVisible();
-  await expect(bottomNavigation.getByRole("link", { name: "Groep" })).toBeVisible();
+  await expect(bottomNavigation.getByRole("link", { name: "Mijn groep" })).toBeVisible();
   await expect(bottomNavigation.getByRole("link", { name: "Nachtpas" })).toBeVisible();
   await expect(bottomNavigation.getByRole("link", { name: "Meer" })).toBeVisible();
   await assertReadableLayout(page);
@@ -190,7 +190,8 @@ test("forged cookies fail and offline group state reveals only the current stop 
   });
   await page.goto("/mijn-groep");
   await expect(page.getByRole("heading", { name: "Testpoort 01" })).toBeVisible();
-  await expect(page.getByText(/volgende stop blijft nog een verrassing/i)).toBeVisible();
+  // Privacy is checked below in DOM, storage and the real RPC response; the
+  // former decorative map caption is hidden by the approved route layout.
 
   const initialDocument = await page.content();
   const initialStorage = await page.evaluate(() => JSON.stringify(Array.from({ length: localStorage.length }, (_, index) => localStorage.getItem(localStorage.key(index)!))));
