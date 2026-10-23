@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog as Primitive } from "radix-ui";
 import { ArrowLeft, ArrowRight, BookOpen, Check, HelpCircle, Sparkles, X } from "lucide-react";
@@ -46,13 +46,33 @@ export function KidGuide({ snapshot, section, onComplete }: { snapshot: Tutorial
 
 function ChildGuide({ snapshot, section, childId, onComplete }: { snapshot: TutorialSnapshot; section: BookSection; childId: string; onComplete?: () => void | Promise<void> }) {
   const router=useRouter();
+  const pathname=usePathname();
   const go=useCallback((path:string)=>{if(currentHash().split("?")[0]!==path)router.push(path);},[router]);
   const [tour, setTour] = useState<Session>(() => initialTour(snapshot, childId));
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [reload, setReload] = useState(0);
   const [error, setError] = useState("");
   const [targetVisible, setTargetVisible] = useState(false);
   const title = useRef<HTMLHeadingElement>(null);
   const step = steps[tour.index];
+  const waiting = busy || loading || (tour.active && pathname !== step.path);
+  // Route prefetches can contain progress from before the previous POST.
+  // Read the current session before enabling the next step after a remount.
+  useEffect(() => {
+    const controller=new AbortController();
+    const deadline=window.setTimeout(()=>controller.abort(),10000);
+    let active=true;
+    void fetch('/api/poortenboek/snapshot',{cache:'no-store',signal:controller.signal})
+      .then(async response=>{
+        if(!response.ok)throw new Error('guide');
+        const fresh=await response.json() as TutorialSnapshot;
+        if((fresh.childId||`child-${fresh.medallion}`)!==childId)throw new Error('identity');
+        if(active){setTour(initialTour(fresh,childId));setError('');setLoading(false);}
+      }).catch(()=>{if(active)setError('De actuele uitleg kon niet worden opgehaald. Probeer opnieuw.');})
+      .finally(()=>window.clearTimeout(deadline));
+    return ()=>{active=false;controller.abort();window.clearTimeout(deadline);};
+  },[childId,reload]);
   useEffect(() => { storeSession(childId, tour); }, [childId, tour]);
   useEffect(() => {
     if (!tour.active) return;
@@ -77,14 +97,14 @@ function ChildGuide({ snapshot, section, childId, onComplete }: { snapshot: Tuto
     } catch { setError("Dat lukte nog niet. Probeer opnieuw, of vraag een volwassene om hulp."); return false; }
   }
   async function move(index: number) {
-    if (busy || index < 0 || index >= steps.length) return;
+    if (waiting || index < 0 || index >= steps.length) return;
     setBusy(true); setError("");
     const ok = await persist(index);
     if (ok) { const next = { ...tour, index }; storeSession(childId, next); setTour(next); }
     setBusy(false);
   }
   async function finish() {
-    if (busy || tour.index !== steps.length - 1) return;
+    if (waiting || tour.index !== steps.length - 1) return;
     setBusy(true); setError("");
     const ok = await persist(tour.index, true);
     if (ok) {
@@ -99,7 +119,7 @@ function ChildGuide({ snapshot, section, childId, onComplete }: { snapshot: Tuto
   function close() { if (tour.mandatory || busy) return; const next = { ...tour, active: false }; storeSession(childId, next); setTour(next); router.push(tour.returnHash); }
 
   return <>
-    <button type="button" className="pb-kid-help" onClick={replay} aria-label="Zo werkt mijn boek"><HelpCircle size={18}/><span>Zo werkt mijn boek</span></button>
+    <button type="button" className="pb-kid-help" disabled={loading} onClick={replay} aria-label="Zo werkt mijn boek"><HelpCircle size={18}/><span>Zo werkt mijn boek</span></button>
     <Primitive.Root open={tour.active} onOpenChange={open => { if (!open) close(); }}><Primitive.Portal><Primitive.Overlay className="pb-kid-guide-overlay"/><Primitive.Content className="pb-kid-guide-dialog" onEscapeKeyDown={event => { if (tour.mandatory || busy) event.preventDefault(); }} onPointerDownOutside={event => event.preventDefault()} onOpenAutoFocus={event => { event.preventDefault(); title.current?.focus(); }}>
       <div className="pb-kid-guide-top"><span><Sparkles size={16}/>Even samen kijken</span>{!tour.mandatory && <button type="button" aria-label="Uitleg sluiten" onClick={close} disabled={busy}><X size={20}/></button>}</div>
       <div className="pb-kid-guide-progress" role="progressbar" aria-label="Voortgang uitleg" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={tour.index + 1}><span style={{ width: `${(tour.index + 1) / steps.length * 100}%` }}/></div>
@@ -107,8 +127,8 @@ function ChildGuide({ snapshot, section, childId, onComplete }: { snapshot: Tuto
       <Primitive.Description className="pb-kid-guide-copy">{step.copy}</Primitive.Description>
       <div className="pb-kid-guide-tip"><BookOpen size={20}/><p>{step.tip}</p></div>
       <p className="pb-kid-guide-screen">{targetVisible ? "Het bijbehorende scherm staat achter deze uitleg." : "Dit onderdeel verschijnt wanneer jullie avontuur eraan toe is."}</p>
-      {error && <p className="pb-kid-guide-error" role="alert">{error}</p>}
-      <div className="pb-kid-guide-actions"><button className="pb-kid-guide-back" type="button" disabled={busy || tour.index === 0} onClick={() => void move(tour.index - 1)}><ArrowLeft size={17}/>Terug</button>{tour.index < steps.length - 1 ? <button className="pb-kid-guide-next" type="button" disabled={busy} onClick={() => void move(tour.index + 1)}>{busy ? "Even wachten…" : "Verder"}<ArrowRight size={18}/></button> : <button className="pb-kid-guide-next" type="button" disabled={busy} onClick={() => void finish()}><Check size={18}/>{busy ? "Even bewaren…" : "Ik ben klaar voor mijn avontuur!"}</button>}</div>
+      {error && <p className="pb-kid-guide-error" role="alert">{error}{loading&&<button type="button" onClick={()=>{setError("");setReload(value=>value+1);}}>Opnieuw proberen</button>}</p>}
+      <div className="pb-kid-guide-actions"><button className="pb-kid-guide-back" type="button" disabled={waiting || tour.index === 0} onClick={() => void move(tour.index - 1)}><ArrowLeft size={17}/>Terug</button>{tour.index < steps.length - 1 ? <button className="pb-kid-guide-next" type="button" disabled={waiting} onClick={() => void move(tour.index + 1)}>{busy ? "Even wachten…" : "Verder"}<ArrowRight size={18}/></button> : <button className="pb-kid-guide-next" type="button" disabled={waiting} onClick={() => void finish()}><Check size={18}/>{busy ? "Even bewaren…" : "Ik ben klaar voor mijn avontuur!"}</button>}</div>
       {tour.mandatory && <p className="pb-kid-guide-required">We kijken alles één keer samen na. Bij opnieuw openen gaan we verder waar je was.</p>}
     </Primitive.Content></Primitive.Portal></Primitive.Root>
   </>;

@@ -51,7 +51,11 @@ async function dashboard(page: Page, firstVisit = true) {
   const guide=page.locator('.pb-kid-guide-dialog');
   if(firstVisit) {
     await expect(guide).toBeVisible();
-    for(let step=0;step<8;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
+    for(let step=0;step<8;step++){
+      await expect(guide.getByRole('progressbar',{name:'Voortgang uitleg'})).toHaveAttribute('aria-valuenow',String(step+1));
+      await guide.getByRole('button',{name:'Verder',exact:true}).click();
+    }
+    await expect(guide.getByRole('progressbar',{name:'Voortgang uitleg'})).toHaveAttribute('aria-valuenow','9');
     await guide.getByRole('button',{name:'Ik ben klaar voor mijn avontuur!',exact:true}).click();
   }
   await expect(guide).toHaveCount(0);
