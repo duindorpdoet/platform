@@ -24,6 +24,7 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261023161300_reviewed_portal_walking_connections.sql',
   '20261023222934_portal_management_hotfix.sql',
   '20261023224435_portal_start_point_choice.sql',
+  '20261023234741_simple_start_confirmation.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

@@ -19,11 +19,11 @@ create temp table protected_ops_rows as select 'registration' kind,md5(jsonb_agg
 
 select ok(not has_function_privilege('authenticated','app_private.published_start_projection(uuid,timestamptz)','execute'),'participants cannot supply their own release clock');
 select ok(not has_table_privilege('authenticated','app_private.group_start_publications','select'),'published private snapshots are not directly readable');
-select ok(not app_private.start_point_safe_connection('20000000-0000-0000-0000-000000000001'),'legacy coordinate verification is not fabricated as an explicit walking check');
+select ok(app_private.start_point_safe_connection('20000000-0000-0000-0000-000000000001'),'an active start with existing route data needs no physical-inspection form');
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-select throws_ok($$select api.admin_startregie_verify_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',1,false,'Veilige fictieve testaanloop')$$,'23514','SAFE_CONNECTION_REQUIRED','a nonempty approach alone cannot replace the explicit safety checkbox');
-select throws_ok($$select api.admin_startregie_verify_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',1,true,' ')$$,'23514','SAFE_CONNECTION_REQUIRED','a checked box cannot replace a concrete approach');
+select lives_ok($$select api.admin_startregie_verify_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',1,false,'')$$,'legacy tabs can confirm without an inspection checkbox or approach');
+select lives_ok($$select api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',1)$$,'one confirmation records the organizational choice');
 select lives_ok($$select api.admin_startregie_verify_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',1,true,'Gecontroleerde fictieve aanloop via de stoep en het zebrapad')$$,'explicit verification succeeds at a real approved fixture node');
 select lives_ok($$update ops_values set first_schedule=(api.admin_startregie_move_group('23000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','2026-10-31T16:30:00Z',(select first_group_version from ops_values),'neutral','Nieuwe fictieve vertrekafspraak als concept')->>'id')::uuid$$,'a working start assignment is saved through the real command');
 set local role postgres;
@@ -74,7 +74,7 @@ set local role postgres;
 select throws_ok($$update app_private.group_start_publications set starts_at=now() where schedule_id=(select first_schedule from ops_values)$$,'23514','PUBLISHED_APPOINTMENT_IMMUTABLE','even an accidental trusted update cannot rewrite an existing publication');
 select throws_ok($$delete from app_private.group_start_publications where schedule_id=(select first_schedule from ops_values)$$,'23514','PUBLISHED_APPOINTMENT_IMMUTABLE','a publication cannot be silently deleted');
 update app_private.start_points set private_address='GEWIJZIGD NOG BESLOTEN TESTADRES',version=version+1 where id='20000000-0000-0000-0000-000000000001';
-select ok(not app_private.start_point_safe_connection('20000000-0000-0000-0000-000000000001'),'an address change invalidates the walking verification');
+select ok(app_private.start_point_safe_connection('20000000-0000-0000-0000-000000000001'),'an address edit does not restore a physical-inspection gate');
 select is((select s.state::text from app_private.walking_groups g join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id where g.id='23000000-0000-0000-0000-000000000001'),'draft','relevant point changes produce a new working draft');
 select is(app_private.published_start_projection('23000000-0000-0000-0000-000000000001','2026-10-31T15:30:00Z')->>'address','NIET-BESTAAND TESTADRES','the changed live point cannot overwrite a previously published address');
 select throws_ok($$update app_private.start_points set active=false where id='20000000-0000-0000-0000-000000000001'$$,'23514','START_POINT_IN_USE','an assigned start point cannot be archived');

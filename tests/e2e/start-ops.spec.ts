@@ -28,9 +28,10 @@ test('real Startregie concepts, confirmation, private route and publication pers
  await expect(page.getByRole('heading',{name:'Iedere groep een goede start.'})).toBeVisible();
  await page.locator('.start-ops-point-shortcuts summary').click();
  const pointCard=page.locator('.start-ops-point-checks article').first();
- await pointCard.getByRole('textbox').fill('Fictieve gecontroleerde aanloop via de bestaande stoep');
- await pointCard.getByRole('checkbox').check();await pointCard.getByRole('button',{name:'Controle bevestigen'}).click();
- await expect(pointCard).toContainText('Loopaansluiting gecontroleerd');
+ await expect(pointCard.getByRole('textbox')).toHaveCount(0);await expect(pointCard.getByRole('checkbox')).toHaveCount(0);
+ const confirmation=page.waitForResponse(response=>response.url().includes('/rpc/admin_startregie_confirm_point'));
+ await pointCard.getByRole('button',{name:'Startpunt bevestigen'}).click();expect((await confirmation).ok()).toBe(true);
+ await expect(pointCard).toContainText('Startpunt: ja');await expect(pointCard).not.toContainText('75 meter');
  before=await snapshot();const group=before.groups.find((item:{id:string})=>item.id===groupId),point=before.startPoints[0];
  const card=page.locator('.start-ops-assignment').filter({has:page.getByText(group.systemCode,{exact:true})});
  await card.getByRole('combobox',{name:`Startpunt voor ${group.systemCode}`}).selectOption(point.id);
@@ -89,4 +90,17 @@ test('mobile point errors remain inside the keyboard-accessible dialog without a
  await assertReadableLayout(page);await page.screenshot({path:'docs/ops/screenshots/point-invalid-time-360.png'});
  await dialog.getByRole('button',{name:'Sluiten',exact:true}).focus();await page.keyboard.press('Shift+Tab');await expect(dialog.getByRole('button',{name:'Startpunt toevoegen',exact:true})).toBeFocused();await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(opener).toBeFocused();
  await selectOrganizationSection(page,'Push & beveiliging');await expect(page.getByRole('heading',{name:'Meldingen met duidelijke grenzen.',exact:true})).toBeVisible();await assertReadableLayout(page);await page.screenshot({path:'docs/ops/screenshots/push-security-360.png'});
+});
+
+test('a start point can be confirmed in one click without an inspection form',async({page,context})=>{
+ const client=await login(context),name='Eenvoudig bevestigen '+randomUUID().slice(0,8);
+ const created=await client.schema('api').rpc('admin_startregie_start_point_save',{_event_slug:event,_point_id:null,_payload:{name,publicLabel:name,pointType:'gathering',geocodedLatitude:52.12,geocodedLongitude:4.29,active:true,maxGroups:1,maxChildren:30},_expected_version:null,_reason:'Isolated one-click start confirmation browser acceptance'});expect(created.error).toBeNull();
+ await page.setViewportSize({width:390,height:844});await page.goto('/admin');await selectOrganizationSection(page,'Startregie');await page.getByRole('tab',{name:'Startpunten',exact:true}).click();
+ const card=page.locator('.start-point-card').filter({has:page.getByText(name,{exact:true})});
+ await expect(card.getByRole('checkbox')).toHaveCount(0);await expect(card).not.toContainText('75 meter');
+ const response=page.waitForResponse(result=>result.url().includes('/rpc/admin_startregie_confirm_point'));
+ await card.getByRole('button',{name:'Startpunt bevestigen'}).click();expect((await response).ok()).toBe(true);
+ await expect(card).toContainText('Startpunt: ja');await card.scrollIntoViewIfNeeded();await assertReadableLayout(page);
+ await mkdir('docs/ops/screenshots',{recursive:true});await page.screenshot({path:'docs/ops/screenshots/start-simple-confirmation-390.png'});
+ const after=await client.schema('api').rpc('admin_startregie_snapshot',{_event_slug:event});expect(after.error).toBeNull();expect(after.data.startPoints.find((point:{name:string})=>point.name===name).verified).toBe(true);
 });
