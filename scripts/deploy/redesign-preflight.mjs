@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { releaseBaselineQuery } from './redesign-reconciliation.mjs';
 
 export function backupKey(secret) {
   const bytes=Buffer.from(secret??'','base64');
@@ -83,9 +84,9 @@ async function main() {
   }
   await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});
   const catalog=JSON.parse(openBackup(await readFile(join(directory,'catalog.aes')),key,proof.context+':catalog.aes').toString());
-  const current=await management('/database/query',{read_only:true,query:fingerprintQuery(catalog)});
+  const current=await management('/database/query',{read_only:true,query:releaseBaselineQuery(fingerprintQuery(catalog))});
   const baseline=join(directory,'migration-baseline.aes');
-  await writeFile(baseline,sealBackup(Buffer.from(JSON.stringify({catalog,rows:current.map(row=>row.fingerprint)})),key,context+':migration-baseline'),{flag:'wx',mode:0o600});
+  await writeFile(baseline,sealBackup(Buffer.from(JSON.stringify({catalog,...current[0].baseline,expectedMigrationVersions:proof.migrations.map(migration=>migration.file.split('_')[0])})),key,context+':migration-baseline'),{flag:'wx',mode:0o600});
   await writeFile(process.env.GITHUB_ENV,`RELEASE_PRIVATE_BASELINE_FILE=${baseline}\n`,{flag:'a'});
   console.log(JSON.stringify({environment,revision,backupRetainedPrivately:true,restoreVerified:true,migrationDryRunVerified:true,tables:proof.tables,objects:proof.objects}));
 }
