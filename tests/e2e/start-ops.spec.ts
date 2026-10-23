@@ -23,7 +23,7 @@ test('real Startregie concepts, confirmation, private route and publication pers
  const client=await login(context);
  async function snapshot(){const result=await client.schema('api').rpc('admin_startregie_snapshot',{_event_slug:event});expect(result.error).toBeNull();return result.data;}
  let before=await snapshot();
- const configured=await client.schema('api').rpc('admin_startregie_settings_save',{_event_slug:event,_settings:{...before.settings,firstStartAt:'2026-10-31T15:00:00Z',globalOrdinaryStopAt:'2026-10-31T19:30:00Z',finalPortalId:'12000000-0000-0000-0000-000000000030',finaleOpensAt:'2026-10-31T18:00:00Z',finaleLastArrivalAt:'2026-10-31T20:30:00Z',finaleClosesAt:'2026-10-31T21:00:00Z',finaleMaxGroups:10,finaleMaxChildren:100,finaleAvailable:true},_expected_version:before.settings.version,_reason:'Isolated browser acceptance of the complete publication flow'});expect(configured.error).toBeNull();
+ const configured=await client.schema('api').rpc('admin_startregie_settings_save',{_event_slug:event,_settings:{...before.settings,plannerMode:'dynamic',firstStartAt:'2026-10-31T15:00:00Z',globalOrdinaryStopAt:'2026-10-31T19:30:00Z',finalPortalId:'12000000-0000-0000-0000-000000000030',finaleOpensAt:'2026-10-31T18:00:00Z',finaleLastArrivalAt:'2026-10-31T20:30:00Z',finaleClosesAt:'2026-10-31T21:00:00Z',finaleMaxGroups:10,finaleMaxChildren:100,finaleAvailable:true},_expected_version:before.settings.version,_reason:'Isolated browser acceptance of the complete publication flow'});expect(configured.error).toBeNull();
  await page.setViewportSize({width:1348,height:926});await page.goto('/admin');await selectOrganizationSection(page,'Startregie');
  await expect(page.getByRole('heading',{name:'Iedere groep een goede start.'})).toBeVisible();
  await page.locator('.start-ops-point-shortcuts summary').click();
@@ -46,7 +46,7 @@ test('real Startregie concepts, confirmation, private route and publication pers
  const publication=page.getByRole('dialog');await expect(publication).toContainText('Adres vanaf 16:30');await page.screenshot({path:'docs/ops/screenshots/publication-desktop.png'});
  await publication.getByRole('button',{name:'Starttijden publiceren',exact:true}).click();await expect(publication).not.toBeVisible();await expect(card).toContainText('Starttijd gepubliceerd');
  await page.reload();await expect(card).toContainText('Starttijd gepubliceerd');
- const parent=createClient(url!,key!,{auth:{persistSession:false,autoRefreshToken:false}});expect((await parent.auth.signInWithPassword({email:'parent-size-1@example.invalid',password:'local-test-only'})).error).toBeNull();
+ const parent=createClient(url!,key!,{auth:{persistSession:false,autoRefreshToken:false}});expect((await parent.auth.signInWithPassword({email:'parent-a@example.invalid',password:'local-test-only'})).error).toBeNull();
  const publicSnapshot=await parent.schema('api').rpc('group_snapshot',{_group_id:groupId});expect(publicSnapshot.error).toBeNull();
  expect(publicSnapshot.data.group.start.startsAt).toBe('2026-10-31T16:30:00+00:00');expect(publicSnapshot.data.group.start.address).toBeNull();expect(publicSnapshot.data.group.start.coordinate).toBeNull();expect(publicSnapshot.data.group.start.name).toBe('Startlocatie volgt');
  for(const width of [1348,390,360]){
