@@ -1,0 +1,22 @@
+{
+  "recordedAt": "2026-10-23T12:07:30.165295+00:00",
+  "environment": "isolated synthetic PostgreSQL; reapplication only, not live inventory or backup/restore proof",
+  "results": [
+    {
+      "migration": "20261023014941_inclusive_arrivals_and_household_departure.sql",
+      "exitCode": 0
+    },
+    {
+      "migration": "20261023014942_guidance_reading_thanks_and_print_material.sql",
+      "exitCode": 0
+    },
+    {
+      "migration": "20261023020159_isolated_server_rehearsal.sql",
+      "exitCode": 0
+    },
+    {
+      "migration": "20261023021247_reviewed_arrival_backfill_contract.sql",
+      "exitCode": 0
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "recordedAt": "2026-10-23T12:07:30.318692+00:00",
+  "environment": "isolated PostgreSQL 16, synthetic fixtures; not staging or live preservation proof",
+  "tablesCompared": 142,
+  "changedExistingTables": [],
+  "scope": "app_private/auth/storage metadata and rows; excludes storage object bytes and provider configuration",
+  "meaning": "Four already-applied migrations reapplied; no existing fixture rows changed. Does not prove first migration on representative data or backup/restore.",
+  "negativeControlDetectedChangedRow": true,
+  "negativeControlNote": "A deliberate change to an isolated fixture event was detected. A new baseline was recorded after this probe before the four final migrations were reapplied."
+}

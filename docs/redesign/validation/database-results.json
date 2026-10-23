@@ -1,0 +1,381 @@
+{
+  "recordedAt": "2026-10-23T12:05:22.559322+00:00",
+  "environment": "isolated PostgreSQL 16; synthetic fixtures; Auth/Storage/Realtime/Cron service boundaries stubbed; no staging proof",
+  "files": 62,
+  "assertions": 1652,
+  "filesPassed": 62,
+  "results": [
+    {
+      "file": "001_security_surface.sql",
+      "exitCode": 0,
+      "assertions": 14,
+      "failures": []
+    },
+    {
+      "file": "002_group_authorization_and_hidden_route.sql",
+      "exitCode": 0,
+      "assertions": 10,
+      "failures": []
+    },
+    {
+      "file": "003_journey_transaction.sql",
+      "exitCode": 0,
+      "assertions": 9,
+      "failures": []
+    },
+    {
+      "file": "004_operational_authorization.sql",
+      "exitCode": 0,
+      "assertions": 12,
+      "failures": []
+    },
+    {
+      "file": "005_durable_jobs.sql",
+      "exitCode": 0,
+      "assertions": 6,
+      "failures": []
+    },
+    {
+      "file": "006_household_payment_credentials.sql",
+      "exitCode": 0,
+      "assertions": 31,
+      "failures": []
+    },
+    {
+      "file": "007_closed_portal_system_skip.sql",
+      "exitCode": 0,
+      "assertions": 21,
+      "failures": []
+    },
+    {
+      "file": "008_payment_management.sql",
+      "exitCode": 0,
+      "assertions": 15,
+      "failures": []
+    },
+    {
+      "file": "009_live_roster_and_leadership.sql",
+      "exitCode": 0,
+      "assertions": 30,
+      "failures": []
+    },
+    {
+      "file": "010_security_boundaries.sql",
+      "exitCode": 0,
+      "assertions": 31,
+      "failures": []
+    },
+    {
+      "file": "011_registration_integrity.sql",
+      "exitCode": 0,
+      "assertions": 22,
+      "failures": []
+    },
+    {
+      "file": "012_last_stop_completion.sql",
+      "exitCode": 0,
+      "assertions": 10,
+      "failures": []
+    },
+    {
+      "file": "013_mail_event_ordering.sql",
+      "exitCode": 0,
+      "assertions": 8,
+      "failures": []
+    },
+    {
+      "file": "014_route_plan_invariants.sql",
+      "exitCode": 0,
+      "assertions": 26,
+      "failures": []
+    },
+    {
+      "file": "015_portal_review_workflow.sql",
+      "exitCode": 0,
+      "assertions": 29,
+      "failures": []
+    },
+    {
+      "file": "016_mail_failure_recovery.sql",
+      "exitCode": 0,
+      "assertions": 8,
+      "failures": []
+    },
+    {
+      "file": "017_payment_link.sql",
+      "exitCode": 0,
+      "assertions": 10,
+      "failures": []
+    },
+    {
+      "file": "018_content_publication.sql",
+      "exitCode": 0,
+      "assertions": 20,
+      "failures": []
+    },
+    {
+      "file": "019_registration_changes.sql",
+      "exitCode": 0,
+      "assertions": 32,
+      "failures": []
+    },
+    {
+      "file": "020_immediate_mail_outbox_dispatch.sql",
+      "exitCode": 0,
+      "assertions": 10,
+      "failures": []
+    },
+    {
+      "file": "021_notification_recipient.sql",
+      "exitCode": 0,
+      "assertions": 8,
+      "failures": []
+    },
+    {
+      "file": "022_verified_house_registration.sql",
+      "exitCode": 0,
+      "assertions": 5,
+      "failures": []
+    },
+    {
+      "file": "023_admin_access_management.sql",
+      "exitCode": 0,
+      "assertions": 23,
+      "failures": []
+    },
+    {
+      "file": "024_registration_together_codes.sql",
+      "exitCode": 0,
+      "assertions": 28,
+      "failures": []
+    },
+    {
+      "file": "025_group_capacity_and_support_tickets.sql",
+      "exitCode": 0,
+      "assertions": 43,
+      "failures": []
+    },
+    {
+      "file": "026_participant_environment.sql",
+      "exitCode": 0,
+      "assertions": 35,
+      "failures": []
+    },
+    {
+      "file": "027_house_intake_and_privacy.sql",
+      "exitCode": 0,
+      "assertions": 22,
+      "failures": []
+    },
+    {
+      "file": "028_dynamic_dispatch_and_finale.sql",
+      "exitCode": 0,
+      "assertions": 20,
+      "failures": []
+    },
+    {
+      "file": "029_schedule_publication_and_correction.sql",
+      "exitCode": 0,
+      "assertions": 15,
+      "failures": []
+    },
+    {
+      "file": "030_time_control_and_emergency.sql",
+      "exitCode": 0,
+      "assertions": 20,
+      "failures": []
+    },
+    {
+      "file": "031_cockpit_codes_names_preferences.sql",
+      "exitCode": 0,
+      "assertions": 36,
+      "failures": []
+    },
+    {
+      "file": "032_participant_messenger.sql",
+      "exitCode": 0,
+      "assertions": 34,
+      "failures": []
+    },
+    {
+      "file": "033_participation_fee_and_group_ceiling.sql",
+      "exitCode": 0,
+      "assertions": 14,
+      "failures": []
+    },
+    {
+      "file": "034_launch_and_journey_preference.sql",
+      "exitCode": 0,
+      "assertions": 13,
+      "failures": []
+    },
+    {
+      "file": "035_journey_preference_dispatch.sql",
+      "exitCode": 0,
+      "assertions": 6,
+      "failures": []
+    },
+    {
+      "file": "036_shared_tikkie_payments.sql",
+      "exitCode": 0,
+      "assertions": 65,
+      "failures": []
+    },
+    {
+      "file": "037_child_payments.sql",
+      "exitCode": 0,
+      "assertions": 75,
+      "failures": []
+    },
+    {
+      "file": "038_admin_registration_roster.sql",
+      "exitCode": 0,
+      "assertions": 6,
+      "failures": []
+    },
+    {
+      "file": "039_parent_child_registration_changes.sql",
+      "exitCode": 0,
+      "assertions": 20,
+      "failures": []
+    },
+    {
+      "file": "040_house_minimum_approval.sql",
+      "exitCode": 0,
+      "assertions": 13,
+      "failures": []
+    },
+    {
+      "file": "041_admin_child_payment_review.sql",
+      "exitCode": 0,
+      "assertions": 8,
+      "failures": []
+    },
+    {
+      "file": "042_night_regie_map_and_group_composition.sql",
+      "exitCode": 0,
+      "assertions": 15,
+      "failures": []
+    },
+    {
+      "file": "043_pwa_push_subscriptions.sql",
+      "exitCode": 0,
+      "assertions": 12,
+      "failures": []
+    },
+    {
+      "file": "044_admin_portal_realtime_lists.sql",
+      "exitCode": 0,
+      "assertions": 16,
+      "failures": []
+    },
+    {
+      "file": "045_together_cluster_management.sql",
+      "exitCode": 0,
+      "assertions": 79,
+      "failures": []
+    },
+    {
+      "file": "046_participant_together_requests.sql",
+      "exitCode": 0,
+      "assertions": 35,
+      "failures": []
+    },
+    {
+      "file": "047_poortenboek.sql",
+      "exitCode": 0,
+      "assertions": 78,
+      "failures": []
+    },
+    {
+      "file": "048_poortenboek_parent_entry.sql",
+      "exitCode": 0,
+      "assertions": 36,
+      "failures": []
+    },
+    {
+      "file": "049_poortkamer.sql",
+      "exitCode": 0,
+      "assertions": 74,
+      "failures": []
+    },
+    {
+      "file": "050_poortkamer_boundaries.sql",
+      "exitCode": 0,
+      "assertions": 33,
+      "failures": []
+    },
+    {
+      "file": "051_poortenboek_poortkamer_v2.sql",
+      "exitCode": 0,
+      "assertions": 45,
+      "failures": []
+    },
+    {
+      "file": "051_redactiekamer.sql",
+      "exitCode": 0,
+      "assertions": 65,
+      "failures": []
+    },
+    {
+      "file": "052_editorial_deliveries.sql",
+      "exitCode": 0,
+      "assertions": 25,
+      "failures": []
+    },
+    {
+      "file": "053_premium_chat_moderation.sql",
+      "exitCode": 0,
+      "assertions": 40,
+      "failures": []
+    },
+    {
+      "file": "054_nachtpost_testmail.sql",
+      "exitCode": 0,
+      "assertions": 28,
+      "failures": []
+    },
+    {
+      "file": "055_social_share_studio.sql",
+      "exitCode": 0,
+      "assertions": 27,
+      "failures": []
+    },
+    {
+      "file": "056_product_analytics.sql",
+      "exitCode": 0,
+      "assertions": 29,
+      "failures": []
+    },
+    {
+      "file": "057_group_split_repair.sql",
+      "exitCode": 0,
+      "assertions": 7,
+      "failures": []
+    },
+    {
+      "file": "058_startregie.sql",
+      "exitCode": 0,
+      "assertions": 17,
+      "failures": []
+    },
+    {
+      "file": "059_redesign_contracts.sql",
+      "exitCode": 0,
+      "assertions": 91,
+      "failures": []
+    },
+    {
+      "file": "060_family_arrivals_and_thanks.sql",
+      "exitCode": 0,
+      "assertions": 22,
+      "failures": []
+    },
+    {
+      "file": "registration_channels_test.sql",
+      "exitCode": 0,
+      "assertions": 15,
+      "failures": []
+    }
+  ]
+}

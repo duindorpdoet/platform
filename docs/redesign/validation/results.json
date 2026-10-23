@@ -1,0 +1,65 @@
+{
+  "recordedAt": "2026-10-23T12:10:16.800664+00:00",
+  "testedApplicationSHA": "ea07e361d5e7dfad9a5207ec1768a88aaac22e43",
+  "productionBase": "bc2b3796d39f79f7f6dc5ef5bd4978a304eb125b",
+  "stagingTestedSHA": null,
+  "productionDeployed": false,
+  "environment": "isolated local worktree; Node 24.18, pnpm 11.25, Next 16.3.5; public read-only staging configuration; local PostgreSQL 16 with synthetic fixtures and stubbed service boundaries",
+  "commands": [
+    {
+      "command": "pnpm lint",
+      "result": "pass"
+    },
+    {
+      "command": "pnpm typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "pnpm test",
+      "result": "pass: 45 files, 269 tests"
+    },
+    {
+      "command": "pnpm build",
+      "result": "pass"
+    },
+    {
+      "command": "pnpm test:artifacts",
+      "result": "pass: 1035 files"
+    },
+    {
+      "command": "public Playwright flows/security headers/Deelstudio; desktop + mobile Chromium",
+      "result": "pass: 50 tests"
+    },
+    {
+      "command": "all 62 pgTAP files on isolated PostgreSQL 16",
+      "result": "pass: 1652 assertions"
+    },
+    {
+      "command": "SQL virtual rehearsal",
+      "result": "pass: 12 scenarios / 46 checkpoints"
+    },
+    {
+      "command": "four migrations reapplied with private inventory comparison",
+      "result": "pass: 142 synthetic tables, zero changed existing data fingerprints"
+    },
+    {
+      "command": "PDF unit tests and independent rendering",
+      "result": "pass: 6 PDFs"
+    },
+    {
+      "command": "public screenshot harness",
+      "result": "pass: 20 screenshots, 5 viewports, no measured horizontal overflow"
+    }
+  ],
+  "notProven": [
+    "live inventory and applied migrations",
+    "consistent encrypted production backup and isolated restore",
+    "representative first migration/backfill and storage preservation",
+    "all 66 acceptance cases on real staging services",
+    "authenticated visual comparisons and exact reference font metrics",
+    "true parallel phones against real services",
+    "physical printing/QR scanning/iOS/PWA/mobile network/OTP"
+  ],
+  "acceptance": "not complete; no staging or production migration/deployment performed",
+  "revisionScope": "Final source and tests at testedApplicationSHA; subsequent documentation/evidence commit adds only docs and read-only QA tools."
+}

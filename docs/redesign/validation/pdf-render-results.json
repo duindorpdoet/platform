@@ -1,0 +1,74 @@
+[
+  {
+    "file": "book-0.pdf",
+    "pages": 1,
+    "a4": [
+      0.0,
+      0.0,
+      595.280029296875,
+      841.8900146484375
+    ],
+    "ownName": true,
+    "addressOrCredentialLeak": false
+  },
+  {
+    "file": "book-2.pdf",
+    "pages": 2,
+    "a4": [
+      0.0,
+      0.0,
+      595.280029296875,
+      841.8900146484375
+    ],
+    "ownName": true,
+    "addressOrCredentialLeak": false
+  },
+  {
+    "file": "book-40.pdf",
+    "pages": 7,
+    "a4": [
+      0.0,
+      0.0,
+      595.280029296875,
+      841.8900146484375
+    ],
+    "ownName": true,
+    "addressOrCredentialLeak": false
+  },
+  {
+    "file": "book-5.pdf",
+    "pages": 2,
+    "a4": [
+      0.0,
+      0.0,
+      595.280029296875,
+      841.8900146484375
+    ],
+    "ownName": true,
+    "addressOrCredentialLeak": false
+  },
+  {
+    "file": "poster-colour.pdf",
+    "pages": 1,
+    "a4": [
+      0.0,
+      0.0,
+      595.280029296875,
+      841.8900146484375
+    ],
+    "ownName": null,
+    "addressOrCredentialLeak": false
+  },
+  {
+    "file": "poster-mono.pdf",
+    "pages": 1,
+    "a4": [
+      0.0,
+      0.0,
+      595.280029296875,
+      841.8900146484375
+    ],
+    "ownName": null,
+    "addressOrCredentialLeak": false
+  }
+]

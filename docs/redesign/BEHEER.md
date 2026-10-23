@@ -1,0 +1,19 @@
+# Korte beheerinstructie
+
+Deze bediening is geïmplementeerd voor stagingacceptatie; gebruik in het echte evenement volgt na de uitrolcontroles in `UITROL.md`.
+
+**QR downloaden.** Open in de Poortkamer Meer → QR & printen. Kies zwart-wit of kleur en download de A4-PDF. Herhaald downloaden gebruikt hetzelfde actieve materiaal. Bij een oude poort waarvoor alleen een hash bestaat kan de app de oude code niet terughalen: gebruik de bewaarde oude poster. Alleen een bevoegd beheerder kan bewust vernieuwen; na de bevestigde vernieuwing werken oude posters niet meer. Vernieuw dus niet vlak voor aankomst zonder de fysieke posters te vervangen.
+
+**Aanwezigheid en aankomst.** Controleer vóór vertrek wie werkelijk meeloopt. Scan bij de actuele poort en bevestig de kinderen. Samen aankomen geeft ieder aanwezig kind een zegel, ook bij buiten blijven of overslaan van de beleving. Dit geldt ook bij de finale. Afwezige/vertrokken kinderen en systeemovergeslagen poorten krijgen geen nieuwe aankomstzegel. In de handmatige variant bevestigt de scan alleen de code: verwerk daarna de kinderen en rond de stop af.
+
+**Wachten op verbinding.** ‘Lokaal bewaard’ betekent dat de aankomst nog niet definitief is; de volgende poort blijft dicht. Laat de telefoon met hetzelfde account herstellen en gebruik opnieuw proberen. Ook na herladen blijft dezelfde opdrachtsleutel bewaard. ‘Controle nodig’ vraagt controle van de actuele route/poort; scan zo nodig opnieuw. Wis een onbevestigde opdracht alleen bewust na controle. Bij uitloggen/accountwissel verdwijnt actieve gevoelige informatie uit het geheugen; de versleutelde opdracht blijft afzonderlijk bewaard tot hetzelfde bevoegde account terugkeert. Verwijderen van browseropslag verwijdert ook lokale herstelgegevens: doe dat niet als er nog onbevestigde aankomsten zijn.
+
+**Eerder naar huis.** Kies Onze avond afronden, selecteer alleen de eigen vertrekkende kinderen en bevestig. Andere gezinnen blijven doorlopen. Een groepsleider moet zo nodig eerst de leiding overdragen. Bestaande zegels blijven staan; latere aankomsten van de groep komen niet in het afgesloten boek. Ook met nul zegels krijgt een kind een warme afsluiting en eigen bewaarkaart.
+
+**Community en uitleg.** Volwassen deelnemers bevestigen elke Amsterdamse kalenderdag dat zij de melding hebben gelezen. WhatsApp-lid worden blijft vrijwillig; klikken op de link voltooit de melding niet. De huizenlink verschijnt uitsluitend voor bevoegde huisrollen. Ouder en poortteam hebben ieder 14 uitlegstappen; de voortgang wordt op het account bewaard. Open de uitleg later opnieuw via de hulpbediening. Een kind krijgt eigen uitleg van negen stappen, zonder WhatsApp-verplichting.
+
+**Kinderboeken.** Controleer naam, verschijning en lantaarn bij ‘Dit is mijn boek’. Bij wisselen naar een ander kind volgt opnieuw controle. Het ouderaccount blijft ouder. Lantaarnvorm/kleur, stemmen, lezen en uitleg zijn persoonlijk. Gesloten hoofdstukken blijven gesloten; voorlezen is optioneel en stopt bij sluiten/wisselen. De bewaarkaart downloadt alleen eigen verkregen zegels, ook tussentijds. Vernieuw een kindcode via de bestaande ouderbediening als toegang ingetrokken moet worden; de geschiedenis blijft behouden.
+
+**Bedankjes.** Na het eigen gezinseinde kan een gezin een van drie vaste warme berichten kiezen bij iedere eigen bereikte poort. Aanpassen vervangt hetzelfde bedankje. De Poortkamer toont alleen de eigen poort; Nachtregie → De avond → Bedankjes toont het geanonimiseerde overzicht op naamvolgorde. Er wordt geen WhatsApp-bericht of e-mail verstuurd.
+
+**Generale.** Open Nachtregie → De avond → Generale. Start alles of één scenario, bekijk per stap verwachting en gemeten uitkomst en download het rapport. Rapport wissen verwijdert alleen het lokale oefenrapport. De server gebruikt eigen geïsoleerde oefenrijen en draait die terug. Een groen rapport vervangt geen printer-, camera-, netwerk-, OTP- of echte stagingcontrole.

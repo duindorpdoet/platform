@@ -1,0 +1,313 @@
+{
+  "environment": "local Next production build; public routes; Deelstudio UI test uses intercepted service responses, not backend proof",
+  "stats": {
+    "startTime": "2026-10-23T12:07:29.618Z",
+    "duration": 126545.069,
+    "expected": 50,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "tests": [
+    {
+      "title": "public Deelstudio selects, previews, copies and downloads without personal data",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 2819
+    },
+    {
+      "title": "public Deelstudio selects, previews, copies and downloads without personal data",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 2674
+    },
+    {
+      "title": "premium homepage keeps the supplied identity and closed participation path",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 3202
+    },
+    {
+      "title": "public map shows a living fictional route without exposing real participants",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 9705
+    },
+    {
+      "title": "homepage theme previews link to six worlds without exposing private destinations",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 2238
+    },
+    {
+      "title": "public map mounts a canvas in a WebGL2 browser",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 2191
+    },
+    {
+      "title": "map outage shows a usable Duindorp text fallback",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 2471
+    },
+    {
+      "title": "world overview presents six optional themes in a stable grid",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 1033
+    },
+    {
+      "title": "authentication uses a six-digit email OTP without a role picker",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 1194
+    },
+    {
+      "title": "protected route redirects to login and keeps safe return path",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 937
+    },
+    {
+      "title": "keyboard navigation and reduced motion remain usable",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 1610
+    },
+    {
+      "title": "service worker is a real script with private network-only rules",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 67
+    },
+    {
+      "title": "service worker never serves cached page HTML on a first navigation",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 2646
+    },
+    {
+      "title": "public pages fit 320px with 100% text",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 12565
+    },
+    {
+      "title": "public pages fit 390px with 100% text",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 11699
+    },
+    {
+      "title": "public pages fit 390px with 200% text",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 12940
+    },
+    {
+      "title": "public pages fit 768px with 100% text",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 11942
+    },
+    {
+      "title": "public pages fit 1440px with 100% text",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 10553
+    },
+    {
+      "title": "world gallery displays all six artworks and supports keyboard navigation",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 2762
+    },
+    {
+      "title": "house registration respects the release mode and starts with only the three required contact fields",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 1441
+    },
+    {
+      "title": "the Halloween image package is connected to every intended public role",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 3778
+    },
+    {
+      "title": "motion preference lives in accessibility settings and persists without floating controls",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 1596
+    },
+    {
+      "title": "home features lead to a searchable, categorized FAQ",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 2694
+    },
+    {
+      "title": "premium homepage keeps the supplied identity and closed participation path",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 3903
+    },
+    {
+      "title": "public map shows a living fictional route without exposing real participants",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 9008
+    },
+    {
+      "title": "homepage theme previews link to six worlds without exposing private destinations",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 1826
+    },
+    {
+      "title": "public map mounts a canvas in a WebGL2 browser",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 2956
+    },
+    {
+      "title": "map outage shows a usable Duindorp text fallback",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 3103
+    },
+    {
+      "title": "world overview presents six optional themes in a stable grid",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 1018
+    },
+    {
+      "title": "authentication uses a six-digit email OTP without a role picker",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 1075
+    },
+    {
+      "title": "protected route redirects to login and keeps safe return path",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 983
+    },
+    {
+      "title": "keyboard navigation and reduced motion remain usable",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 2204
+    },
+    {
+      "title": "service worker is a real script with private network-only rules",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 215
+    },
+    {
+      "title": "service worker never serves cached page HTML on a first navigation",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 1926
+    },
+    {
+      "title": "public pages fit 320px with 100% text",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 81102
+    },
+    {
+      "title": "public pages fit 390px with 100% text",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 80714
+    },
+    {
+      "title": "public pages fit 390px with 200% text",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 82080
+    },
+    {
+      "title": "public pages fit 768px with 100% text",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 81133
+    },
+    {
+      "title": "public pages fit 1440px with 100% text",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 10732
+    },
+    {
+      "title": "world gallery displays all six artworks and supports keyboard navigation",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 3536
+    },
+    {
+      "title": "house registration respects the release mode and starts with only the three required contact fields",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 2278
+    },
+    {
+      "title": "the Halloween image package is connected to every intended public role",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 4596
+    },
+    {
+      "title": "motion preference lives in accessibility settings and persists without floating controls",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 1996
+    },
+    {
+      "title": "home features lead to a searchable, categorized FAQ",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 2897
+    },
+    {
+      "title": "protected pages and APIs are never publicly cached",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 130
+    },
+    {
+      "title": "baseline browser security headers are present",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 282
+    },
+    {
+      "title": "deployment health contract exposes no secrets",
+      "project": "desktop-chromium",
+      "status": "expected",
+      "durationMs": 54
+    },
+    {
+      "title": "protected pages and APIs are never publicly cached",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 275
+    },
+    {
+      "title": "baseline browser security headers are present",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 168
+    },
+    {
+      "title": "deployment health contract exposes no secrets",
+      "project": "mobile-chromium",
+      "status": "expected",
+      "durationMs": 41
+    }
+  ]
+}

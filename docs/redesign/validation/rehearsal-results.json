@@ -1,0 +1,2861 @@
+[
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:53.649769+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Geen actieve bestemming",
+            "status": "before",
+            "arrived": false,
+            "version": 0,
+            "sequence": 0,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "b32d468b-cc73-488d-9585-34b7af41ab3c",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "absent",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2ec7c266-9ffb-4e80-9c05-8f88080a3b74",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "absent",
+              "finaleSeals": 0
+            },
+            {
+              "id": "8cf71b9b-4dc0-4891-a6ce-a9c87c9b37ea",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "absent",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Start zonder aanwezigen weigeren",
+        "actual": "{\"error\": \"EMPTY_GROUP\", \"seals\": [0, 0, 0], \"status\": \"before\", \"history\": 0, \"sequence\": 0}",
+        "passed": true,
+        "command": "empty",
+        "durationMs": 3,
+        "expectation": "{\"error\": \"EMPTY_GROUP\", \"seals\": [0, 0, 0], \"status\": \"before\", \"history\": 0, \"sequence\": 0}"
+      },
+      {
+        "at": "2026-10-23T04:16:53.655767+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "b32d468b-cc73-488d-9585-34b7af41ab3c",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2ec7c266-9ffb-4e80-9c05-8f88080a3b74",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "8cf71b9b-4dc0-4891-a6ce-a9c87c9b37ea",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "absent",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 6,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:53.673239+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "b32d468b-cc73-488d-9585-34b7af41ab3c",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2ec7c266-9ffb-4e80-9c05-8f88080a3b74",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "8cf71b9b-4dc0-4891-a6ce-a9c87c9b37ea",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "absent",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Twee aanwezige kinderen bereiken de poort",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 0], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 17,
+        "expectation": "{\"seals\": [1, 1, 0], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      },
+      {
+        "at": "2026-10-23T04:16:53.67422+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "b32d468b-cc73-488d-9585-34b7af41ab3c",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2ec7c266-9ffb-4e80-9c05-8f88080a3b74",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "8cf71b9b-4dc0-4891-a6ce-a9c87c9b37ea",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "absent",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Afwezig kind krijgt geen zegel",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 0], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "snapshot",
+        "durationMs": 1,
+        "expectation": "{\"seals\": [1, 1, 0], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      }
+    ],
+    "title": "start",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:53.674452+02:00",
+    "startedAt": "2026-10-23T04:16:53.618827+02:00",
+    "scenarioId": "start",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:53.752841+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "24690633-eac0-4528-9636-88f19858adc1",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "d113371b-9b71-4564-a5ff-08a6cdbf71fe",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "49921206-1101-44dd-99d3-e0b7aeb5a140",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 8,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:53.76986+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "24690633-eac0-4528-9636-88f19858adc1",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "d113371b-9b71-4564-a5ff-08a6cdbf71fe",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "49921206-1101-44dd-99d3-e0b7aeb5a140",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 1",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 17,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      },
+      {
+        "at": "2026-10-23T04:16:53.770805+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "24690633-eac0-4528-9636-88f19858adc1",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "d113371b-9b71-4564-a5ff-08a6cdbf71fe",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "49921206-1101-44dd-99d3-e0b7aeb5a140",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Precies de volgende bestemming staat klaar",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "snapshot",
+        "durationMs": 1,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      }
+    ],
+    "title": "arrival",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:53.771025+02:00",
+    "startedAt": "2026-10-23T04:16:53.716466+02:00",
+    "scenarioId": "arrival",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:53.839267+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "3e2a78f1-f174-49fc-8ed7-c11b951f4df4",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9720e989-46a5-4c58-b3ab-5b860bfb5019",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "c8ff5a5b-9936-4405-9f43-51e5897cfb41",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 9,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:53.858066+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "3e2a78f1-f174-49fc-8ed7-c11b951f4df4",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9720e989-46a5-4c58-b3ab-5b860bfb5019",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "c8ff5a5b-9936-4405-9f43-51e5897cfb41",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 1",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 19,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      },
+      {
+        "at": "2026-10-23T04:16:53.859204+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "3e2a78f1-f174-49fc-8ed7-c11b951f4df4",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9720e989-46a5-4c58-b3ab-5b860bfb5019",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "c8ff5a5b-9936-4405-9f43-51e5897cfb41",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Buiten blijven krijgt dezelfde aankomstzegel",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "snapshot",
+        "durationMs": 1,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      }
+    ],
+    "title": "inclusive",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:53.859505+02:00",
+    "startedAt": "2026-10-23T04:16:53.801048+02:00",
+    "scenarioId": "inclusive",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:53.923148+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "3ec0aa19-4566-42c0-9f55-392e048face3",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "c0b8de1e-c1dd-4010-8df3-c5d7225f3e1f",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "4d2ef046-e922-4f96-befd-71bbf1bef503",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 8,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:53.926298+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "3ec0aa19-4566-42c0-9f55-392e048face3",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "c0b8de1e-c1dd-4010-8df3-c5d7225f3e1f",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "4d2ef046-e922-4f96-befd-71bbf1bef503",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Een verkeerde poortcode weigeren",
+        "actual": "{\"error\": \"WRONG_PORTAL\", \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "wrong",
+        "durationMs": 3,
+        "expectation": "{\"error\": \"WRONG_PORTAL\", \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      }
+    ],
+    "title": "wrong",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:53.926484+02:00",
+    "startedAt": "2026-10-23T04:16:53.888566+02:00",
+    "scenarioId": "wrong",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:53.993501+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "b29db202-c25d-40e2-b44e-2ccc484d1f58",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "12260fe0-a884-4237-953b-4f03ed9781f3",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2b500998-b376-4f88-a8bf-3b4342346deb",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 9,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.01107+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "b29db202-c25d-40e2-b44e-2ccc484d1f58",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "12260fe0-a884-4237-953b-4f03ed9781f3",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2b500998-b376-4f88-a8bf-3b4342346deb",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 1",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 18,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.012353+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "b29db202-c25d-40e2-b44e-2ccc484d1f58",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "12260fe0-a884-4237-953b-4f03ed9781f3",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2b500998-b376-4f88-a8bf-3b4342346deb",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Dezelfde opdracht blijft eenmalig",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "repeat",
+        "durationMs": 1,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      }
+    ],
+    "title": "duplicate",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:54.012617+02:00",
+    "startedAt": "2026-10-23T04:16:53.956135+02:00",
+    "scenarioId": "duplicate",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:54.083199+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "4aea9f30-d288-4e09-8764-befc74a84765",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "081b023e-7779-490e-bbf4-06787d7f8e4d",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "61e5aaf9-f237-4129-b43d-175c118acafa",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 10,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.089413+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "closed",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "4aea9f30-d288-4e09-8764-befc74a84765",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "081b023e-7779-490e-bbf4-06787d7f8e4d",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "61e5aaf9-f237-4129-b43d-175c118acafa",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Eigen oefenpoort sluiten",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "close",
+        "durationMs": 6,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.091748+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "closed",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "4aea9f30-d288-4e09-8764-befc74a84765",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "081b023e-7779-490e-bbf4-06787d7f8e4d",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "61e5aaf9-f237-4129-b43d-175c118acafa",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij gesloten poort weigeren",
+        "actual": "{\"error\": \"PORTAL_UNAVAILABLE\", \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 2,
+        "expectation": "{\"error\": \"PORTAL_UNAVAILABLE\", \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.097076+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "closed",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": false,
+              "outcome": "system_skipped",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "4aea9f30-d288-4e09-8764-befc74a84765",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "081b023e-7779-490e-bbf4-06787d7f8e4d",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "61e5aaf9-f237-4129-b43d-175c118acafa",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Expliciete systeemoverslag zonder zegel",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "systemskip",
+        "durationMs": 5,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      }
+    ],
+    "title": "closed",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:54.097366+02:00",
+    "startedAt": "2026-10-23T04:16:54.045769+02:00",
+    "scenarioId": "closed",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:54.169828+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "1dc70d26-8076-4854-ba15-ac62f5312928",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2e45a507-dda3-4e6e-8288-49cb741577a0",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9c9cc946-c794-4df7-873f-fee8d3e0bc02",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 9,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.172248+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "1dc70d26-8076-4854-ba15-ac62f5312928",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2e45a507-dda3-4e6e-8288-49cb741577a0",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9c9cc946-c794-4df7-873f-fee8d3e0bc02",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Alle kinderen slaan de beleving over",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "skipall",
+        "durationMs": 2,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.174174+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "1dc70d26-8076-4854-ba15-ac62f5312928",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2e45a507-dda3-4e6e-8288-49cb741577a0",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9c9cc946-c794-4df7-873f-fee8d3e0bc02",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Zonder aankomst niet afronden",
+        "actual": "{\"error\": \"SCAN_REQUIRED\", \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "complete",
+        "durationMs": 2,
+        "expectation": "{\"error\": \"SCAN_REQUIRED\", \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.17753+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": true
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "1dc70d26-8076-4854-ba15-ac62f5312928",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2e45a507-dda3-4e6e-8288-49cb741577a0",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9c9cc946-c794-4df7-873f-fee8d3e0bc02",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Alleen code bevestigen zonder definitieve zegels",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "scan",
+        "durationMs": 3,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.187755+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "all_skipped",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "1dc70d26-8076-4854-ba15-ac62f5312928",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "2e45a507-dda3-4e6e-8288-49cb741577a0",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9c9cc946-c794-4df7-873f-fee8d3e0bc02",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Met aankomst iedereen een zegel geven",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "complete",
+        "durationMs": 10,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      }
+    ],
+    "title": "manual",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:54.187955+02:00",
+    "startedAt": "2026-10-23T04:16:54.133574+02:00",
+    "scenarioId": "manual",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:54.251414+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "112c9768-ec3e-4828-a9cf-dd4a91963a44",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "739c3fed-eeee-4a0f-b877-4feb6d6939bb",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "600a0781-2a4a-45c4-b540-97197a09f938",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 9,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.252552+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "112c9768-ec3e-4828-a9cf-dd4a91963a44",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "739c3fed-eeee-4a0f-b877-4feb6d6939bb",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "600a0781-2a4a-45c4-b540-97197a09f938",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": false
+        },
+        "title": "Verbinding weg: geen serveropdracht ontvangen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "offline",
+        "durationMs": 1,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.273643+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "112c9768-ec3e-4828-a9cf-dd4a91963a44",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "739c3fed-eeee-4a0f-b877-4feb6d6939bb",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "600a0781-2a4a-45c4-b540-97197a09f938",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Na herstel dezelfde aankomst bevestigen",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 21,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.276462+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "112c9768-ec3e-4828-a9cf-dd4a91963a44",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "739c3fed-eeee-4a0f-b877-4feb6d6939bb",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "600a0781-2a4a-45c4-b540-97197a09f938",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Herhaalde ontvangst maakt geen duplicaat",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "repeat",
+        "durationMs": 3,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      }
+    ],
+    "title": "offline",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:54.276722+02:00",
+    "startedAt": "2026-10-23T04:16:54.218019+02:00",
+    "scenarioId": "offline",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:54.421536+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "fd4f5e25-8c0b-49c6-b137-7956995fee99",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9168ae9f-9850-46cd-b668-1b8afdb23bc9",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "727348ff-3c92-48f0-9870-db179b5c7087",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 15,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.424829+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "fd4f5e25-8c0b-49c6-b137-7956995fee99",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "9168ae9f-9850-46cd-b668-1b8afdb23bc9",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "727348ff-3c92-48f0-9870-db179b5c7087",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Oude routeversie weigeren",
+        "actual": "{\"error\": \"STALE_VERSION\", \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "stale",
+        "durationMs": 3,
+        "expectation": "{\"error\": \"STALE_VERSION\", \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      }
+    ],
+    "title": "stale",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:54.425146+02:00",
+    "startedAt": "2026-10-23T04:16:54.362072+02:00",
+    "scenarioId": "stale",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:54.509132+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "e6404217-762c-4033-ac61-52c1a412b79f",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "1dba379c-1110-4e5c-95ce-813e60b81b32",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "3bd45a7e-0377-4bd0-8f69-4576c441305c",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 16,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.528694+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "e6404217-762c-4033-ac61-52c1a412b79f",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "1dba379c-1110-4e5c-95ce-813e60b81b32",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "3bd45a7e-0377-4bd0-8f69-4576c441305c",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 1",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 20,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.537307+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 3",
+            "status": "live",
+            "arrived": true,
+            "version": 4,
+            "sequence": 3,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            },
+            {
+              "name": "Oefenpoort 2",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 2
+            }
+          ],
+          "children": [
+            {
+              "id": "e6404217-762c-4033-ac61-52c1a412b79f",
+              "name": "Oefenkind A",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "1dba379c-1110-4e5c-95ce-813e60b81b32",
+              "name": "Oefenkind B",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "3bd45a7e-0377-4bd0-8f69-4576c441305c",
+              "name": "Oefenkind C",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 2",
+        "actual": "{\"error\": null, \"seals\": [2, 2, 2], \"status\": \"live\", \"history\": 2, \"sequence\": 3}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 9,
+        "expectation": "{\"seals\": [2, 2, 2], \"status\": \"live\", \"history\": 2, \"sequence\": 3}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.540476+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Geen actieve bestemming",
+            "status": "stopped",
+            "arrived": true,
+            "version": 5,
+            "sequence": 0,
+            "endedEarly": true
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            },
+            {
+              "name": "Oefenpoort 2",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 2
+            }
+          ],
+          "children": [
+            {
+              "id": "e6404217-762c-4033-ac61-52c1a412b79f",
+              "name": "Oefenkind A",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "departed",
+              "finaleSeals": 0
+            },
+            {
+              "id": "1dba379c-1110-4e5c-95ce-813e60b81b32",
+              "name": "Oefenkind B",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "departed",
+              "finaleSeals": 0
+            },
+            {
+              "id": "3bd45a7e-0377-4bd0-8f69-4576c441305c",
+              "name": "Oefenkind C",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "departed",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Eigen gezin sluit af zonder finale",
+        "actual": "{\"error\": null, \"seals\": [2, 2, 2], \"status\": \"stopped\", \"history\": 2, \"sequence\": 0}",
+        "passed": true,
+        "command": "departall",
+        "durationMs": 3,
+        "expectation": "{\"seals\": [2, 2, 2], \"status\": \"stopped\", \"history\": 2, \"sequence\": 0}"
+      }
+    ],
+    "title": "early",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:54.540713+02:00",
+    "startedAt": "2026-10-23T04:16:54.462257+02:00",
+    "scenarioId": "early",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:54.621399+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "02443dbe-93b2-4f9d-8d5a-4ebc0b8cf6c1",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "f0f1af86-6cc6-4b0b-9e91-9606ef31b2d3",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "1c265270-0c7e-4148-af0a-94dd7984fd9c",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 9,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.640814+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "02443dbe-93b2-4f9d-8d5a-4ebc0b8cf6c1",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "f0f1af86-6cc6-4b0b-9e91-9606ef31b2d3",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "1c265270-0c7e-4148-af0a-94dd7984fd9c",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 1",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 19,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.644934+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 4,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "02443dbe-93b2-4f9d-8d5a-4ebc0b8cf6c1",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "f0f1af86-6cc6-4b0b-9e91-9606ef31b2d3",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "departed",
+              "finaleSeals": 0
+            },
+            {
+              "id": "1c265270-0c7e-4148-af0a-94dd7984fd9c",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Een kind vertrekt; de groep loopt door",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "departone",
+        "durationMs": 4,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.655062+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 3",
+            "status": "live",
+            "arrived": true,
+            "version": 5,
+            "sequence": 3,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            },
+            {
+              "name": "Oefenpoort 2",
+              "arrived": true,
+              "outcome": "visited",
+              "sequence": 2
+            }
+          ],
+          "children": [
+            {
+              "id": "02443dbe-93b2-4f9d-8d5a-4ebc0b8cf6c1",
+              "name": "Oefenkind A",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "f0f1af86-6cc6-4b0b-9e91-9606ef31b2d3",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "departed",
+              "finaleSeals": 0
+            },
+            {
+              "id": "1c265270-0c7e-4148-af0a-94dd7984fd9c",
+              "name": "Oefenkind C",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Vertrokken kind krijgt geen volgende zegel",
+        "actual": "{\"error\": null, \"seals\": [2, 1, 2], \"status\": \"live\", \"history\": 2, \"sequence\": 3}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 10,
+        "expectation": "{\"seals\": [2, 1, 2], \"status\": \"live\", \"history\": 2, \"sequence\": 3}"
+      }
+    ],
+    "title": "part-departure",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:54.655482+02:00",
+    "startedAt": "2026-10-23T04:16:54.575407+02:00",
+    "scenarioId": "part-departure",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  },
+  {
+    "steps": [
+      {
+        "at": "2026-10-23T04:16:54.794618+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 1",
+            "status": "live",
+            "arrived": false,
+            "version": 2,
+            "sequence": 1,
+            "endedEarly": null
+          },
+          "history": [],
+          "children": [
+            {
+              "id": "ab3ae500-0dd5-4a76-ba17-a45b31b297ed",
+              "name": "Oefenkind A",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "cbeefebd-94a2-480d-9c0f-f82e7069f0e4",
+              "name": "Oefenkind B",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "41017fe9-8943-4f17-89c6-e9ec1467ee86",
+              "name": "Oefenkind C",
+              "seals": 0,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aanwezigheid bevestigen",
+        "actual": "{\"error\": null, \"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}",
+        "passed": true,
+        "command": "start",
+        "durationMs": 33,
+        "expectation": "{\"seals\": [0, 0, 0], \"status\": \"live\", \"history\": 0, \"sequence\": 1}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.85116+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 2",
+            "status": "live",
+            "arrived": true,
+            "version": 3,
+            "sequence": 2,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            }
+          ],
+          "children": [
+            {
+              "id": "ab3ae500-0dd5-4a76-ba17-a45b31b297ed",
+              "name": "Oefenkind A",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "cbeefebd-94a2-480d-9c0f-f82e7069f0e4",
+              "name": "Oefenkind B",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "41017fe9-8943-4f17-89c6-e9ec1467ee86",
+              "name": "Oefenkind C",
+              "seals": 1,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 1",
+        "actual": "{\"error\": null, \"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 57,
+        "expectation": "{\"seals\": [1, 1, 1], \"status\": \"live\", \"history\": 1, \"sequence\": 2}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.886548+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 3",
+            "status": "live",
+            "arrived": true,
+            "version": 4,
+            "sequence": 3,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            },
+            {
+              "name": "Oefenpoort 2",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 2
+            }
+          ],
+          "children": [
+            {
+              "id": "ab3ae500-0dd5-4a76-ba17-a45b31b297ed",
+              "name": "Oefenkind A",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "cbeefebd-94a2-480d-9c0f-f82e7069f0e4",
+              "name": "Oefenkind B",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "41017fe9-8943-4f17-89c6-e9ec1467ee86",
+              "name": "Oefenkind C",
+              "seals": 2,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 2",
+        "actual": "{\"error\": null, \"seals\": [2, 2, 2], \"status\": \"live\", \"history\": 2, \"sequence\": 3}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 35,
+        "expectation": "{\"seals\": [2, 2, 2], \"status\": \"live\", \"history\": 2, \"sequence\": 3}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.91235+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 4",
+            "status": "live",
+            "arrived": true,
+            "version": 5,
+            "sequence": 4,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            },
+            {
+              "name": "Oefenpoort 2",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 2
+            },
+            {
+              "name": "Oefenpoort 3",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 3
+            }
+          ],
+          "children": [
+            {
+              "id": "ab3ae500-0dd5-4a76-ba17-a45b31b297ed",
+              "name": "Oefenkind A",
+              "seals": 3,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "cbeefebd-94a2-480d-9c0f-f82e7069f0e4",
+              "name": "Oefenkind B",
+              "seals": 3,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "41017fe9-8943-4f17-89c6-e9ec1467ee86",
+              "name": "Oefenkind C",
+              "seals": 3,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 3",
+        "actual": "{\"error\": null, \"seals\": [3, 3, 3], \"status\": \"live\", \"history\": 3, \"sequence\": 4}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 26,
+        "expectation": "{\"seals\": [3, 3, 3], \"status\": \"live\", \"history\": 3, \"sequence\": 4}"
+      },
+      {
+        "at": "2026-10-23T04:16:54.968176+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Oefenpoort 5",
+            "status": "live",
+            "arrived": true,
+            "version": 6,
+            "sequence": 5,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            },
+            {
+              "name": "Oefenpoort 2",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 2
+            },
+            {
+              "name": "Oefenpoort 3",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 3
+            },
+            {
+              "name": "Oefenpoort 4",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 4
+            }
+          ],
+          "children": [
+            {
+              "id": "ab3ae500-0dd5-4a76-ba17-a45b31b297ed",
+              "name": "Oefenkind A",
+              "seals": 4,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "cbeefebd-94a2-480d-9c0f-f82e7069f0e4",
+              "name": "Oefenkind B",
+              "seals": 4,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            },
+            {
+              "id": "41017fe9-8943-4f17-89c6-e9ec1467ee86",
+              "name": "Oefenkind C",
+              "seals": 4,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 0
+            }
+          ],
+          "connected": true
+        },
+        "title": "Aankomst bij poort 4",
+        "actual": "{\"error\": null, \"seals\": [4, 4, 4], \"status\": \"live\", \"history\": 4, \"sequence\": 5}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 56,
+        "expectation": "{\"seals\": [4, 4, 4], \"status\": \"live\", \"history\": 4, \"sequence\": 5}"
+      },
+      {
+        "at": "2026-10-23T04:16:55.005444+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Geen actieve bestemming",
+            "status": "completed",
+            "arrived": true,
+            "version": 7,
+            "sequence": 0,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            },
+            {
+              "name": "Oefenpoort 2",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 2
+            },
+            {
+              "name": "Oefenpoort 3",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 3
+            },
+            {
+              "name": "Oefenpoort 4",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 4
+            },
+            {
+              "name": "Oefenpoort 5",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 5
+            }
+          ],
+          "children": [
+            {
+              "id": "ab3ae500-0dd5-4a76-ba17-a45b31b297ed",
+              "name": "Oefenkind A",
+              "seals": 5,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 1
+            },
+            {
+              "id": "cbeefebd-94a2-480d-9c0f-f82e7069f0e4",
+              "name": "Oefenkind B",
+              "seals": 5,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 1
+            },
+            {
+              "id": "41017fe9-8943-4f17-89c6-e9ec1467ee86",
+              "name": "Oefenkind C",
+              "seals": 5,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 1
+            }
+          ],
+          "connected": true
+        },
+        "title": "Finaleaankomst telt ook bij buiten blijven",
+        "actual": "{\"error\": null, \"seals\": [5, 5, 5], \"status\": \"completed\", \"history\": 5, \"sequence\": 0}",
+        "passed": true,
+        "command": "arrive",
+        "durationMs": 37,
+        "expectation": "{\"seals\": [5, 5, 5], \"status\": \"completed\", \"history\": 5, \"sequence\": 0}"
+      },
+      {
+        "at": "2026-10-23T04:16:55.006561+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Geen actieve bestemming",
+            "status": "completed",
+            "arrived": true,
+            "version": 7,
+            "sequence": 0,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            },
+            {
+              "name": "Oefenpoort 2",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 2
+            },
+            {
+              "name": "Oefenpoort 3",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 3
+            },
+            {
+              "name": "Oefenpoort 4",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 4
+            },
+            {
+              "name": "Oefenpoort 5",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 5
+            }
+          ],
+          "children": [
+            {
+              "id": "ab3ae500-0dd5-4a76-ba17-a45b31b297ed",
+              "name": "Oefenkind A",
+              "seals": 5,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 1
+            },
+            {
+              "id": "cbeefebd-94a2-480d-9c0f-f82e7069f0e4",
+              "name": "Oefenkind B",
+              "seals": 5,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 1
+            },
+            {
+              "id": "41017fe9-8943-4f17-89c6-e9ec1467ee86",
+              "name": "Oefenkind C",
+              "seals": 5,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 1
+            }
+          ],
+          "connected": true
+        },
+        "title": "Ieder aanwezig kind heeft precies een finalezegel",
+        "actual": "{\"error\": null, \"seals\": [5, 5, 5], \"status\": \"completed\", \"history\": 5, \"sequence\": 0}",
+        "passed": true,
+        "command": "snapshot",
+        "durationMs": 1,
+        "expectation": "{\"seals\": [5, 5, 5], \"status\": \"completed\", \"history\": 5, \"sequence\": 0}"
+      },
+      {
+        "at": "2026-10-23T04:16:55.010844+02:00",
+        "view": {
+          "gate": {
+            "code": "LAB",
+            "name": "Geïsoleerde oefenpoort",
+            "status": "open",
+            "scanned": false
+          },
+          "parent": {
+            "stop": "Geen actieve bestemming",
+            "status": "completed",
+            "arrived": true,
+            "version": 7,
+            "sequence": 0,
+            "endedEarly": null
+          },
+          "history": [
+            {
+              "name": "Oefenpoort 1",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 1
+            },
+            {
+              "name": "Oefenpoort 2",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 2
+            },
+            {
+              "name": "Oefenpoort 3",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 3
+            },
+            {
+              "name": "Oefenpoort 4",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 4
+            },
+            {
+              "name": "Oefenpoort 5",
+              "arrived": true,
+              "outcome": "mixed",
+              "sequence": 5
+            }
+          ],
+          "children": [
+            {
+              "id": "ab3ae500-0dd5-4a76-ba17-a45b31b297ed",
+              "name": "Oefenkind A",
+              "seals": 5,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 1
+            },
+            {
+              "id": "cbeefebd-94a2-480d-9c0f-f82e7069f0e4",
+              "name": "Oefenkind B",
+              "seals": 5,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 1
+            },
+            {
+              "id": "41017fe9-8943-4f17-89c6-e9ec1467ee86",
+              "name": "Oefenkind C",
+              "seals": 5,
+              "choice": "Eigen keuze",
+              "attendance": "present",
+              "finaleSeals": 1
+            }
+          ],
+          "connected": true
+        },
+        "title": "Geen dubbele finale of zesde zegel",
+        "actual": "{\"error\": null, \"seals\": [5, 5, 5], \"status\": \"completed\", \"history\": 5, \"sequence\": 0}",
+        "passed": true,
+        "command": "repeat",
+        "durationMs": 4,
+        "expectation": "{\"seals\": [5, 5, 5], \"status\": \"completed\", \"history\": 5, \"sequence\": 0}"
+      }
+    ],
+    "title": "finale",
+    "passed": true,
+    "endedAt": "2026-10-23T04:16:55.011174+02:00",
+    "startedAt": "2026-10-23T04:16:54.689504+02:00",
+    "scenarioId": "finale",
+    "environment": "Isolated SQL transaction; fixtures rolled back; external transport is not measured"
+  }
+]
