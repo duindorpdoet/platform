@@ -103,7 +103,7 @@ async function main() {
   const image='supabase/postgres:'+version;
   await capture('docker',['pull',image]);
   const poolerUser=pooler.db_user==='postgres'?'postgres.'+process.env.SUPABASE_PROJECT_REF:pooler.db_user;
-  const sourceEnv={PGHOST:pooler.db_host,PGPORT:'5432',PGDATABASE:pooler.db_name,PGUSER:poolerUser,PGPASSWORD:process.env.SUPABASE_DB_PASSWORD,PGSSLMODE:'require',PGCONNECT_TIMEOUT:'30',PGOPTIONS:'-c statement_timeout=300000 -c lock_timeout=3000'};
+  const sourceEnv={PGHOST:pooler.db_host,PGPORT:'5432',PGDATABASE:pooler.db_name,PGUSER:poolerUser,PGPASSWORD:process.env.SUPABASE_DB_PASSWORD,PGSSLMODE:'require',PGCONNECT_TIMEOUT:'30',PGOPTIONS:'-c statement_timeout=300000 -c lock_timeout=3000 -c jit=off'};
   const clientArgs=['run','--rm','-i','--network','host',...Object.keys(sourceEnv).flatMap(name=>['--env',name]),image];
   const sourceQuery=async(sql,snapshot)=>{
     const prefix="begin isolation level repeatable read read only;"+(snapshot?`set transaction snapshot ${literal(snapshot)};`:'')+"set local timezone='UTC';set local datestyle='ISO';";

@@ -1,12 +1,11 @@
 import { isDeepStrictEqual } from 'node:util';
 
-export function releaseBaselineQuery(fingerprints) {
-  return `with fingerprints as (${fingerprints}) select jsonb_build_object(
-    'rows',(select jsonb_agg(fingerprint) from fingerprints),
+export function releaseMetadataQuery() {
+  return `select jsonb_build_object(
     'migrationHistory',(select coalesce(jsonb_agg(to_jsonb(m) order by m.version),'[]') from supabase_migrations.schema_migrations m),
     'cronHistory',(select coalesce(jsonb_agg(to_jsonb(r)||jsonb_build_object('runid',r.runid::text,'jobid',r.jobid::text) order by r.runid),'[]') from cron.job_run_details r),
     'cronJobs',(select coalesce(jsonb_agg(to_jsonb(j)||jsonb_build_object('jobid',j.jobid::text) order by j.jobid),'[]') from cron.job j)
-  ) as baseline`;
+  ) as metadata`;
 }
 
 // These are the only metadata changes caused by this deployment or by the

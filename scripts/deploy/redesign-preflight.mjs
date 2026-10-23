@@ -5,7 +5,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { releaseBaselineQuery } from './redesign-reconciliation.mjs';
+import { releaseMetadataQuery } from './redesign-reconciliation.mjs';
 
 export function backupKey(secret) {
   const bytes=Buffer.from(secret??'','base64');
@@ -84,9 +84,15 @@ async function main() {
   }
   await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});
   const catalog=JSON.parse(openBackup(await readFile(join(directory,'catalog.aes')),key,proof.context+':catalog.aes').toString());
-  const current=await management('/database/query',{read_only:true,query:releaseBaselineQuery(fingerprintQuery(catalog))});
+  // Domain fingerprints use one statement/snapshot. Scheduler and migration
+  // history are compared separately as complete rows, so ongoing cron activity
+  // cannot make a cross-query metadata hash look like lost participant data.
+  const [current,metadata]=await Promise.all([
+    management('/database/query',{read_only:true,query:fingerprintQuery(catalog)}),
+    management('/database/query',{read_only:true,query:releaseMetadataQuery()}),
+  ]);
   const baseline=join(directory,'migration-baseline.aes');
-  await writeFile(baseline,sealBackup(Buffer.from(JSON.stringify({catalog,...current[0].baseline,expectedMigrationVersions:proof.migrations.map(migration=>migration.file.split('_')[0])})),key,context+':migration-baseline'),{flag:'wx',mode:0o600});
+  await writeFile(baseline,sealBackup(Buffer.from(JSON.stringify({catalog,rows:current.map(row=>row.fingerprint),...metadata[0].metadata,expectedMigrationVersions:proof.migrations.map(migration=>migration.file.split('_')[0])})),key,context+':migration-baseline'),{flag:'wx',mode:0o600});
   await writeFile(process.env.GITHUB_ENV,`RELEASE_PRIVATE_BASELINE_FILE=${baseline}\n`,{flag:'a'});
   console.log(JSON.stringify({environment,revision,backupRetainedPrivately:true,restoreVerified:true,migrationDryRunVerified:true,tables:proof.tables,objects:proof.objects}));
 }
