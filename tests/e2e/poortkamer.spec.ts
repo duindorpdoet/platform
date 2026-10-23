@@ -1,5 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { prepareFixtureGuidance } from "./helpers/guidance";
+import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
@@ -152,7 +152,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   const fixture = await owner(context);
   await page.goto("/mijn-huis");
   await expect(
-    page.getByRole("heading", { name: "De nacht wacht op jullie." }),
+    page.getByRole("heading", { name: /^(Samen klaar voor de nacht\.|Welkom op de Nachtwacht\.|De nacht leeft voort\.)$/ }),
   ).toBeVisible();
   await noOverflow(page);
   await expect(page.getByText(/^Live · Bijgewerkt/)).toBeVisible({
@@ -206,6 +206,16 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
     .getByRole("button", { name: /Bevestig|Open mijn|Inloggen/ })
     .click();
   await expect(guest).toHaveURL(/\/mijn-huis$/);
+  // The newly invited adult follows the real house-team introduction once.
+  const community=guest.locator('.guidance-community-dialog');
+  await expect(community).toBeVisible();
+  await community.getByRole('button',{name:'Gelezen, verder naar mijn omgeving',exact:true}).click();
+  const guide=guest.locator('.guidance-tour-dialog');
+  await expect(guide).toBeVisible();
+  for(let step=0;step<13;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
+  await guide.getByRole('button',{name:'Rondleiding afronden',exact:true}).click();
+  await expect(guide).toHaveCount(0);
+  await guest.goto('/mijn-huis');
   await expect(
     guest.getByText("Meekijker", { exact: false }).first(),
   ).toBeVisible();
@@ -450,7 +460,7 @@ test("standalone presentation and offline reload never recover cached private da
   });
   await page.goto("/mijn-huis");
   await expect(
-    page.getByRole("heading", { name: "De nacht wacht op jullie." }),
+    page.getByRole("heading", { name: /^(Samen klaar voor de nacht\.|Welkom op de Nachtwacht\.|De nacht leeft voort\.)$/ }),
   ).toBeVisible();
   await noOverflow(page);
   const cached = await page.evaluate(async () => {
@@ -479,6 +489,7 @@ test("organization updates reach the cockpit live and only organization moderate
   const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
   const signed = await client.auth.signInWithPassword({ email: "admin@example.invalid", password: "local-test-only" });
   expect(signed.error).toBeNull();
+  await prepareFixtureGuidance(client);
   const adminContext = await browser.newContext({ ...info.project.use, baseURL: origin, ignoreHTTPSErrors: true });
   const name = `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0]}-auth-token`;
   const value = `base64-${Buffer.from(JSON.stringify(signed.data.session)).toString("base64url")}`;
@@ -487,9 +498,7 @@ test("organization updates reach the cockpit live and only organization moderate
   const organization = await adminContext.newPage();
   await organization.goto("/admin");
   await expect(organization.locator(".admin-appbar")).toBeVisible();
-  const menu = organization.getByRole("button", { name: "Organisatienavigatie openen" });
-  if (await menu.isVisible()) await menu.click();
-  await organization.locator(".admin-nav").getByRole("button", { name: "Poorten", exact: true }).click();
+  await selectOrganizationSection(organization,'Poorten');
   await organization.getByRole("tab", { name: /Poortkamers en moderatie/ }).click();
   await organization.getByRole("button", { name: "Korte updates", exact: true }).click();
   const update = `Vanavond nemen we een lampje mee ${randomUUID()}`;
@@ -512,7 +521,7 @@ test("organization updates reach the cockpit live and only organization moderate
     await bottomNavigation.getByRole("button", { name: "Praatkamer", exact: true }).click();
     await expect(bottomNavigation.getByRole("button", { name: "Praatkamer", exact: true })).toHaveAttribute("aria-current", "page");
   } else {
-    await organization.locator(".admin-nav").getByRole("button", { name: "Praatkamer", exact: true }).click();
+    await selectOrganizationSection(organization,'Praatkamer');
   }
   await expect(organization.getByRole("heading", { name: "Praatkamer", level: 2 })).toBeVisible();
   const received = organization.locator(".chat-bubble").filter({ hasText: message });
