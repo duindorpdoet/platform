@@ -43,15 +43,17 @@ async function login(page: Page, code: string, demo = false) {
   await page.getByRole("button", { name: "Dit is mijn boek", exact: true }).click();
   await expect(page.getByRole("heading", { name: /^Welkom, / })).toBeVisible();
 }
-async function dashboard(page: Page) {
+async function dashboard(page: Page, firstVisit = true) {
   await page
     .getByRole("button", { name: "Open mijn boek", exact: true })
     .click();
   // Follow the real nine-step guide before unrelated book interactions.
   const guide=page.locator('.pb-kid-guide-dialog');
-  await expect(guide).toBeVisible();
-  for(let step=0;step<8;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
-  await guide.getByRole('button',{name:'Ik ben klaar voor mijn avontuur!',exact:true}).click();
+  if(firstVisit) {
+    await expect(guide).toBeVisible();
+    for(let step=0;step<8;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
+    await guide.getByRole('button',{name:'Ik ben klaar voor mijn avontuur!',exact:true}).click();
+  }
   await expect(guide).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "De wijk wordt wakker" }),
@@ -221,6 +223,7 @@ test("parent opens each child directly and switches safely on one shared device"
   const codeCount = () => Number(sql(`select count(*) from app_private.poortenboek_codes where child_id in (${childIds});`));
   expect(codeCount()).toBe(0);
   let opens = 0;
+  const visited = new Set<string>();
   page.on("request", (request) => {
     if (request.url().endsWith("/api/poortenboek/parent") && request.method() === "POST" && request.postDataJSON()?.action === "open") opens++;
   });
@@ -232,8 +235,10 @@ test("parent opens each child directly and switches safely on one shared device"
     const response = page.waitForResponse((response) => response.url().endsWith("/api/poortenboek/parent") && response.request().method() === "POST");
     await card.getByRole("button", { name: `Open Poortenboek van ${name}`, exact: true }).click();
     expect((await response).status()).toBe(200);
+    await page.getByRole('button',{name:'Dit is mijn boek',exact:true}).click();
     await expect(page.getByRole("heading", { name: `Welkom, ${name}!`, exact: true })).toBeVisible();
-    await dashboard(page);
+    await dashboard(page, !visited.has(name));
+    visited.add(name);
     await expect(page.getByText(`Welkom terug, ${name}`, { exact: true })).toBeVisible();
   }
   await openChild("Mila");
