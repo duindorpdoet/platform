@@ -41,6 +41,7 @@ test('real Startregie concepts, confirmation, private route and publication pers
  await card.getByRole('button',{name:'Start bevestigen'}).click();await expect(card.getByRole('button',{name:'Route controleren'})).toBeEnabled();
  await card.getByRole('button',{name:'Route controleren'}).click();
  const route=page.getByRole('dialog');await expect(route).toContainText('Privé routecontrole');await expect(route).toContainText('Revisie');await expect(route.locator('.start-ops-route-stops li')).not.toHaveCount(0);
+ await route.getByRole('button',{name:'Markeer als gecontroleerd',exact:true}).click();await expect(route.getByRole('button',{name:'Actuele route gecontroleerd',exact:true})).toBeDisabled();
  await mkdir('docs/ops/screenshots',{recursive:true});await page.screenshot({path:'docs/ops/screenshots/route-desktop.png'});
  await page.keyboard.press('Escape');await expect(route).not.toBeVisible();await expect(card.getByRole('button',{name:'Route controleren'})).toBeFocused();
  await card.getByRole('checkbox').check();await page.getByRole('button',{name:'1 starttijd(en) publiceren'}).click();
@@ -50,7 +51,7 @@ test('real Startregie concepts, confirmation, private route and publication pers
  const parent=createClient(url!,key!,{auth:{persistSession:false,autoRefreshToken:false}});expect((await parent.auth.signInWithPassword({email:'parent-a@example.invalid',password:'local-test-only'})).error).toBeNull();
  const publicSnapshot=await parent.schema('api').rpc('group_snapshot',{_group_id:groupId});expect(publicSnapshot.error).toBeNull();
  expect(publicSnapshot.data.group.start.startsAt).toBe('2026-10-31T16:30:00+00:00');expect(publicSnapshot.data.group.start.address).toBeNull();expect(publicSnapshot.data.group.start.coordinate).toBeNull();expect(publicSnapshot.data.group.start.name).toBe('Startlocatie volgt');
- for(const width of [1348,390,360]){
+ for(const width of [1348,360,390,430]){
   await page.setViewportSize({width,height:width===1348?926:844});await assertReadableLayout(page);
   await page.evaluate(()=>{window.scrollTo(0,0);for(const element of document.querySelectorAll<HTMLElement>('*'))if(element.scrollTop>0)element.scrollTo({top:0,behavior:'instant'});});
   await page.screenshot({path:`docs/ops/screenshots/start-${width}.png`});

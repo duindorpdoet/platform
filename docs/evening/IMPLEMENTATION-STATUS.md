@@ -72,15 +72,23 @@ De private beheerpreview en daadwerkelijke dynamische toewijzing gebruiken nu de
 
 Alle bestaande 2.158 databasecontroles zijn geslaagd; de aanvullende gerichte suite heeft 33 geslaagde controles voor actuele keuzes, autorisatie, versieconflict, sluiting na openen, idempotentie, historie en blijvend finale-wachten. De routepreview gebruikt de echte serverklok voor live berekenen. Een lokale meting van twintig afzonderlijke routeberekeningen voor dezelfde synthetische groep duurde 9,66 seconden. Dit is geen VPS-belastingproef. Het tegelijk berekenen van alle routes wordt daarom in de volgende stap vervangen door afzonderlijk ophalen bij openen/publicatiecontrole. Routefingerprints en reviews blijven nog vereist.
 
-## Resterende servercontracten
+## Routebeoordelingen en afzonderlijk ophalen
 
-De client verwijst vooruit naar onderstaande RPC's. Zij zijn nog niet geïmplementeerd. Deze branch mag daarom niet als voltooide release worden uitgerold.
+Startregie laadt de indeling zonder alle groepsroutes tegelijk te berekenen. De organisatie haalt een privéroute apart op bij openen en controleert geselecteerde routes per twee vóór de publicatiebevestiging. Elke berekening heeft een SHA-256 van expliciete canonieke invoer en route-uitkomst, inclusief fysieke capaciteit, geverifieerde verbindingen, praktische toegankelijkheid, actuele bezetting, vaste start/finale en de echte runstand. Incidentele audit-/generatietijden veranderen een voorbereiding niet. Tijdens live bezetting begrenst een dertigsecondenperiode het hergebruik; de getoonde berekening behoudt haar echte serverinstant.
 
-- Afzonderlijk ophalen van de actuele routepreview, zodat Startregie niet alle groepsroutes tegelijk hoeft te berekenen.
-- `api.admin_startregie_review_route(...)`, routefingerprints en de uitgebreide publicatievoorwaarde `_expected_route_fingerprints`.
-- Live routeklok, volledige oude-routebinding en een beheerpreview die dezelfde gebonden finale-afspraak en daadwerkelijke positie gebruikt.
+Een routecontrole bewaart de daadwerkelijke serveractor en invoer-/uitkomstkopieën privé. Bekeken kopieën zijn onveranderlijk; alleen niet-bekeken cachekopieën worden tot de laatste twee per groep beperkt. De weergave toont de laatste controle, actuele/vorige status en echte toegevoegde/vervallen huizen en afstand-/tijdsverschillen. Historie blijft apart van de resterende route. Verwachte aankomst, gereserveerd finalemoment en echte scan worden afzonderlijk benoemd.
 
-De clienttypen zijn het voorlopige contract. Serverimplementatie en tests moeten dit bevestigen of de client samenhangend aanpassen. Geen clientstatus geldt als bewijs van serverautorisatie, capaciteit, een fysieke QR-test of een gelopen route.
+De nieuwe publicatiegrens vereist precies de getoonde routefingerprints én actuele concept-/settingsrevisies. Oude clients kunnen geen nieuwe publicatie zonder fingerprints maken; een eerder vastgelegd oud receipt blijft op zijn oorspronkelijke inhoud herhaalbaar. Een bekeken route kan nog steeds hard onhaalbaar zijn. Publicatie zonder handmatige review is toegestaan wanneer de actuele route werkelijk past. Capaciteit wordt vóór publicatie opnieuw beoordeeld. De eigen publicatie verandert een inhoudelijk ongewijzigde routehash niet; de beheerweergave krijgt wel de echte gebonden reserverings-ID terug.
+
+De schone lokale opbouw en volledige suite hebben 2.235 geslaagde controles in 80 bestanden, waaronder 44 reviewcontroles. Productiebuild, types, gerichte lint en SQL-lint zijn groen. De echte Auth/RPC-browserdoorloop voor concept, bevestiging, review, publicatie en herladen is geslaagd; 360/390/430px-screenshots zijn bekeken. Twintig herhaalde controles van dezelfde ongewijzigde synthetische route kosten lokaal 104,85 ms. Dit is geen stagingbelasting- of fysieke telefoonproef.
+
+## Resterend vóór uitrol
+
+- Fysieke capaciteit opnieuw controleren bij daadwerkelijke scan, ook wanneer de groep eerder aankomt dan haar verwachte interval; een al geldig bevestigd bezoek behouden.
+- Volledige oude-routebinding en automatische voortzetting laten aansluiten op actuele tijd en dezelfde ontvangstcapaciteit.
+- Actuele omleiding/veilig afmelden en fouten/herstel in echte mobiele Auth/RPC-doorlopen controleren, plus de volledige geïntegreerde staging- en databehoudproeven.
+
+De bredere avondbranch is nog niet uitgerold. Geen clientstatus geldt als bewijs van serverautorisatie, capaciteit, een fysieke QR-test of een gelopen route.
 
 ## Productiebaseline en uitrol
 
