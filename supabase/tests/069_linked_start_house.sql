@@ -1,5 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
+\ir fixtures/evening-route-publication.inc
 select no_plan();
 create temp table linked_start(eid uuid,event_version integer,point_version integer,schedule_id uuid,run_id uuid,stop_id uuid,run_version integer,first_child uuid);
 insert into linked_start(eid,event_version) select id,settings_version from app_private.events where slug='duindorp-halloween-2026';
@@ -12,7 +13,7 @@ do $$begin perform api.admin_startregie_verify_point('duindorp-halloween-2026','
 update linked_start set schedule_id=(api.admin_startregie_move_group('23000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',clock_timestamp()-interval '1 minute',(select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000001'),'neutral','Geïsoleerde vertrekafspraak bij een gekoppeld starthuis')->>'id')::uuid;
 do $$begin
  perform api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000001',1,(select event_version from linked_start));
- perform api.admin_startregie_publish_times('duindorp-halloween-2026',array[(select schedule_id from linked_start)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from linked_start),'revision',1)),(select event_version from linked_start),gen_random_uuid()::text);
+ perform pg_temp.publish_fingerprinted('duindorp-halloween-2026',array[(select schedule_id from linked_start)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from linked_start),'revision',1)),(select event_version from linked_start),gen_random_uuid()::text);
 end $$;
 select is((select count(*)::integer from app_private.poortenboek_passport_seals),0,'publishing the linked start house grants no seal');
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
@@ -30,7 +31,7 @@ update app_private.start_points set counts_as_first_portal_visit=false,version=v
 update linked_start set schedule_id=(api.admin_startregie_move_group('23000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001',clock_timestamp()-interval '30 seconds',(select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000002'),'neutral','Tweede fictieve groep telt het starthuis expliciet niet mee')->>'id')::uuid;
 do $$begin
  perform api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000002',1,(select event_version from linked_start));
- perform api.admin_startregie_publish_times('duindorp-halloween-2026',array[(select schedule_id from linked_start)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from linked_start),'revision',1)),(select event_version from linked_start),gen_random_uuid()::text);
+ perform pg_temp.publish_fingerprinted('duindorp-halloween-2026',array[(select schedule_id from linked_start)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from linked_start),'revision',1)),(select event_version from linked_start),gen_random_uuid()::text);
 end $$;
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 update linked_start set first_child=(select c.id from app_private.registration_children c join app_private.group_registrations a on a.registration_id=c.registration_id where a.group_id='23000000-0000-0000-0000-000000000002' and a.superseded_at is null order by c.id limit 1);

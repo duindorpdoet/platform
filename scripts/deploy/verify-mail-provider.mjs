@@ -311,103 +311,109 @@ if (!hookResponse.ok) {
   );
 }
 
-// SendGrid's activity endpoint accepts this simple, provider-supported query.
-// Correlate the probe subject locally rather than composing unsupported filters.
-const activityQuery = encodeURIComponent(`to_email="${recipient}"`);
-
-let activityAvailable = true;
 let deliveryStatus;
-let deliveryMessage;
+const receiptWaived = process.env.APP_ENVIRONMENT === "staging"
+  && process.env.MAIL_RECEIPT_ACCEPTANCE_WAIVED === "true";
+if (receiptWaived) {
+  console.log("::notice title=Mailbox receipt acceptance skipped::Signed Auth hook and provider acceptance are verified. Recipient delivery status is not checked under the explicitly selected staging receipt waiver.");
+} else {
+  // SendGrid's activity endpoint accepts this simple, provider-supported query.
+  // Correlate the probe subject locally rather than composing unsupported filters.
+  const activityQuery = encodeURIComponent(`to_email="${recipient}"`);
 
-for (let attempt = 1; attempt <= 5; attempt += 1) {
-  if (attempt > 1) {
-    await new Promise((resolve) =>
-      setTimeout(resolve, activityPollIntervalMs),
-    );
-  }
+  let activityAvailable = true;
+  let deliveryMessage;
 
-  let activity;
-
-  try {
-    activity = await sendgrid(
-      `/messages?limit=10&query=${activityQuery}`,
-    );
-  } catch (error) {
-    // Status lookup is supplemental: the next workflow job must still prove
-    // real OTP and transactional delivery through IMAP before promotion.
-    if (error?.code !== "MAIL_NETWORK_ERROR") {
-      throw error;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    if (attempt > 1) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, activityPollIntervalMs),
+      );
     }
 
-    console.log(
-      `::warning title=SendGrid activity network failure::${error.message} Real mailbox acceptance remains required.`,
+    let activity;
+
+    try {
+      activity = await sendgrid(
+        `/messages?limit=10&query=${activityQuery}`,
+      );
+    } catch (error) {
+      // Status lookup is supplemental: the next workflow job must still prove
+      // real OTP and transactional delivery through IMAP before promotion.
+      if (error?.code !== "MAIL_NETWORK_ERROR") {
+        throw error;
+      }
+
+      console.log(
+        `::warning title=SendGrid activity network failure::${error.message} Real mailbox acceptance remains required.`,
+      );
+
+      activityAvailable = false;
+      break;
+    }
+
+    if (!activity.available) {
+      activityAvailable = false;
+      break;
+    }
+
+    deliveryMessage = activity.body?.messages?.find(
+      (message) => message.subject === probeSubject,
     );
 
-    activityAvailable = false;
-    break;
+    deliveryStatus = deliveryMessage?.status;
+
+    if (
+      deliveryStatus === "delivered" ||
+      deliveryStatus === "not_delivered"
+    ) {
+      break;
+    }
   }
 
-  if (!activity.available) {
-    activityAvailable = false;
-    break;
-  }
+  if (deliveryStatus === "not_delivered") {
+    const details = deliveryMessage?.msg_id
+      ? await sendgrid(
+          `/messages/${encodeURIComponent(deliveryMessage.msg_id)}`,
+        )
+      : null;
 
-  deliveryMessage = activity.body?.messages?.find(
-    (message) => message.subject === probeSubject,
-  );
+    const reason = details?.body?.events
+      ?.map((event) => event.reason)
+      .find(Boolean);
 
-  deliveryStatus = deliveryMessage?.status;
+    if (reason) {
+      const redactedReason = reason
+        .replaceAll(recipient, "[test-recipient]")
+        .replaceAll(
+          process.env.SENDGRID_FROM_EMAIL.toLowerCase(),
+          "[configured-sender]",
+        )
+        .replace(
+          /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+          "[redacted-email]",
+        )
+        .slice(0, 600);
 
-  if (
-    deliveryStatus === "delivered" ||
-    deliveryStatus === "not_delivered"
-  ) {
-    break;
-  }
-}
+      console.log(
+        `::error title=SendGrid non-delivery reason::${redactedReason}`,
+      );
+    }
 
-if (deliveryStatus === "not_delivered") {
-  const details = deliveryMessage?.msg_id
-    ? await sendgrid(
-        `/messages/${encodeURIComponent(deliveryMessage.msg_id)}`,
-      )
-    : null;
-
-  const reason = details?.body?.events
-    ?.map((event) => event.reason)
-    .find(Boolean);
-
-  if (reason) {
-    const redactedReason = reason
-      .replaceAll(recipient, "[test-recipient]")
-      .replaceAll(
-        process.env.SENDGRID_FROM_EMAIL.toLowerCase(),
-        "[configured-sender]",
-      )
-      .replace(
-        /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
-        "[redacted-email]",
-      )
-      .slice(0, 600);
-
-    console.log(
-      `::error title=SendGrid non-delivery reason::${redactedReason}`,
+    throw new Error(
+      "SendGrid reports the signed Auth-hook test message as not delivered.",
     );
   }
 
-  throw new Error(
-    "SendGrid reports the signed Auth-hook test message as not delivered.",
-  );
-}
-
-if (!activityAvailable) {
-  console.log(
-    "::warning title=SendGrid activity read unavailable::Provider acceptance is verified, but the activity API is unavailable. Real mailbox acceptance remains required.",
-  );
-} else if (deliveryStatus !== "delivered") {
-  console.log(
-    "::warning title=SendGrid delivery still processing::The signed Auth-hook message was accepted but has no final status yet.",
-  );
+  if (!activityAvailable) {
+    console.log(
+      "::warning title=SendGrid activity read unavailable::Provider acceptance is verified, but the activity API is unavailable. Real mailbox acceptance remains required.",
+    );
+  } else if (deliveryStatus !== "delivered") {
+    console.log(
+      "::warning title=SendGrid delivery still processing::The signed Auth-hook message was accepted but has no final status yet.",
+    );
+  }
 }
 
 console.log(

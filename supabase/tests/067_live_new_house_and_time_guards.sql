@@ -1,5 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
+\ir fixtures/evening-route-publication.inc
 select no_plan();
 create temp table ops_house(eid uuid,event_version integer,group_version integer,schedule_id uuid,run_id uuid,stop_id uuid,stop_hash text,
   child_id uuid,new_portal uuid,new_node uuid,new_version integer,expected_arrival timestamptz);
@@ -26,7 +27,7 @@ do $$begin perform api.admin_startregie_verify_point('duindorp-halloween-2026','
 update ops_house set schedule_id=(api.admin_startregie_move_group('23000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',clock_timestamp()-interval '1 minute',(select group_version from ops_house),'neutral','Geïsoleerde start voor de nieuwe-huisproef')->>'id')::uuid;
 do $$begin
  perform api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000001',1,(select event_version from ops_house));
- perform api.admin_startregie_publish_times('duindorp-halloween-2026',array[(select schedule_id from ops_house)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from ops_house),'revision',1)),(select event_version from ops_house),gen_random_uuid()::text);
+ perform pg_temp.publish_fingerprinted('duindorp-halloween-2026',array[(select schedule_id from ops_house)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from ops_house),'revision',1)),(select event_version from ops_house),gen_random_uuid()::text);
 end $$;
 update ops_house set group_version=g.version from app_private.walking_groups g where g.id='23000000-0000-0000-0000-000000000001';
 set local role authenticated;
@@ -90,7 +91,7 @@ select new_portal,extensions.digest('TEST-NEW-HOUSE-OPS-TOKEN','sha256'),extensi
 update app_private.portals set operation_status='open' where id=(select new_portal from ops_house);
 set local role authenticated;
 select lives_ok($$select pg_temp.new_house_arrive('TEST-NEW-HOUSE-OPS-TOKEN','new-house-second-arrival')$$,'the second outside arrival uses the actual new portal credential');
-select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,currentStop,kind}','finale','the selected two-house maximum includes physically reached outside visits');
+select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,waitingReason}','finale_window','the selected two-house maximum includes physically reached outside visits');
 set local role postgres;
 select is((select count(*)::integer from app_private.run_stop_arrivals where run_id=(select run_id from ops_house)),2,'new dispatch does not manufacture a finale arrival');
 select is((select count(*)::integer from app_private.poortenboek_passport_seals where run_id=(select run_id from ops_house)),2,'only the two genuinely reached houses grant seals');

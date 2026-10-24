@@ -216,7 +216,9 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   for(let step=0;step<13;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
   await guide.getByRole('button',{name:'Rondleiding afronden',exact:true}).click();
   await expect(guide).toHaveCount(0);
-  await guest.goto('/mijn-huis');
+  // Completion returns through the application's real navigation. A second
+  // page.goto races that navigation in WebKit and does not test the actual flow.
+  await expect(guest).toHaveURL(/\/mijn-huis$/);
   await expect(
     guest.getByText("Meekijker", { exact: false }).first(),
   ).toBeVisible();
@@ -531,4 +533,26 @@ test("organization updates reach the cockpit live and only organization moderate
   await expect(page.getByRole("log").getByText(message, { exact: true })).toHaveCount(0, { timeout: 5_000 });
   await noOverflow(organization);
   await adminContext.close();
+});
+
+// UI attestation exercises storage/receipt recovery, not actual paper or phones.
+test("poster readiness distinguishes PDF from physical attestation and retries a lost committed response once",async({context,page},testInfo)=>{
+ test.skip(testInfo.project.name!=="room-desktop","One dedicated HTTPS actor transition");
+ const fixture=await owner(context),portalId=fixture.id;
+ const admin=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});
+ const login=await admin.auth.signInWithPassword({email:"admin@example.invalid",password:"local-test-only"});expect(login.error).toBeNull();
+ const adminRpc=async(name:string,args:Record<string,unknown>)=>{const result=await admin.schema("api").rpc(name,args);expect(result.error,`${name}: ${result.error?.message}`).toBeNull();return result.data;};
+await page.goto(`/mijn-huis?poort=${portalId}`);await page.getByRole("navigation",{name:"Poortkamer navigatie",exact:true}).getByRole("button",{name:"Meer",exact:true}).click();
+ await page.getByRole("button",{name:"QR & printen",exact:true}).click();await page.getByText("Een nieuwe bezoekcode nodig?",{exact:true}).click();page.once("dialog",confirmation=>confirmation.accept());await page.getByRole("button",{name:"Nieuwe code maken",exact:true}).click();
+ const download=page.getByRole("button",{name:"Download A4-PDF",exact:true});await expect(download).toBeEnabled();
+ const [downloaded]=await Promise.all([page.waitForEvent("download",{timeout:15000}),download.click()]);expect(downloaded.suggestedFilename()).toMatch(/\.pdf$/);
+ type Check={check:string;state:string};const criteria=async()=>{const value=await adminRpc("admin_evening_readiness",{_event_slug:"duindorp-halloween-2026"});return (value.subjects as {id:string;criteria:Check[]}[]).find(row=>row.id===portalId)!.criteria;};
+ await expect.poll(async()=>(await criteria()).find(row=>row.check==="qr_downloaded")?.state).toBe("complete");expect((await criteria()).find(row=>row.check==="qr_tested")?.state).toBe("unknown");
+ const preparation=page.locator(".portal-preparation");await preparation.getByRole("checkbox",{name:"De huidige QR-poster hangt geprint klaar.",exact:true}).check();await preparation.getByRole("checkbox",{name:"We hebben de geprinte QR met een telefoon gescand.",exact:true}).check();
+ const code=(await page.locator(".gate-poster-code strong").textContent())!;await preparation.getByLabel("Korte code van de geprinte poster",{exact:true}).fill(code);await preparation.getByLabel("Notitie",{exact:true}).fill("Synthetische UI-attestatie; dit is geen echte drukwerk-/telefoonproef.");
+ let lost=false;await page.route("**/rest/v1/rpc/record_evening_readiness",async route=>{const body=route.request().postDataJSON();if(body._check==="qr_tested"&&!lost){lost=true;await route.fetch();await route.abort("failed");}else await route.continue();});
+ const save=preparation.getByRole("button",{name:"Fysieke QR-test vastleggen",exact:true});await save.click();await expect(preparation.getByRole("alert")).toContainText("kon niet worden vastgesteld");await expect(save).toBeEnabled();
+ const count=()=>sql(`select count(*) from app_private.evening_readiness_evidence where subject_id='${portalId}' and check_name='qr_tested'`);expect(count()).toBe("1");await save.click();await expect(preparation.getByRole("status")).toContainText("voor deze poster vastgelegd");expect(count()).toBe("1");
+ expect((await criteria()).find(row=>row.check==="qr_tested")?.state).toBe("complete");
+ const current=await adminRpc("admin_portal_editor_snapshot",{_event_slug:"duindorp-halloween-2026"});const portal=current.portals.find((row:{id:string})=>row.id===portalId);await adminRpc("admin_manual_portal_remove",{_portal_id:portalId,_expected_version:portal.version,_reason:"Afzonderlijke browserproef afgerond; bewijs blijft behouden"});
 });
