@@ -35,7 +35,7 @@ concurrency:
 jobs:
   runner-maintenance:
     name: Dedicated staging runner maintenance (no deployment)
-    if: github.ref == 'refs/heads/staging' && github.event_name == 'workflow_dispatch' && inputs.runner_maintenance != 'none'
+    if: github.ref == 'refs/heads/codex/evening-load-diagnostics' && github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'profile-http'
     environment: staging
     permissions:
       contents: read
@@ -46,7 +46,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "${GITHUB_REF}" = "refs/heads/staging"
+          test "${GITHUB_REF}" = "refs/heads/codex/evening-load-diagnostics"
           test "$(id -un)" = "duindorphalloweenstg"
           test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenstg-01"
           [[ "${GITHUB_WORKSPACE}" == /srv/sites/duindorphalloweenstg/actions-runner/_work/* ]]
@@ -59,7 +59,7 @@ jobs:
       - name: Inspect disk and optionally clear rebuildable workspace caches
         env:
           MAINTENANCE_ACTION: ${{ startsWith(inputs.runner_maintenance, 'profile-') && 'inspect' || inputs.runner_maintenance }}
-        run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/deploy/staging-runner-maintenance.mjs
+        run: df -h /srv/sites/duindorphalloweenstg
       - name: Profile rolled-back synthetic snapshots without deployment
         if: startsWith(inputs.runner_maintenance, 'profile-')
         env:
