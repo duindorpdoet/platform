@@ -40,9 +40,11 @@ try {
   console.log(JSON.stringify({name:'synthetic-http-transport-profile',transport,logicalRequests:254,distinctAccounts:1,elapsedMs:Math.round(performance.now()-started),statuses,p50Ms:p(.5)(samples.map(s=>s.total)),p95Ms:p(.95)(samples.map(s=>s.total)),maximumMs:p(1)(samples.map(s=>s.total)),queueP95Ms:p(.95)(samples.map(s=>s.queue??0)),connectP95Ms:p(.95)(samples.map(s=>s.connect??0)),serverP95Ms:p(.95)(samples.map(s=>s.server??0)),maximumBytes:Math.max(...samples.map(s=>s.bytes??0)),diagnosticOnly:true,releaseAcceptance:false}));
  }
 }finally{
- if(session){const r=await admin.auth.admin.signOut(session.access_token,'global');assert.equal(r.error,null,'synthetic profile session revoked');}
+ async function cleanup(command){for(let attempt=0;attempt<5;attempt++){try{const r=await command();if(!r.error)return r;}catch{}if(attempt<4)await new Promise(resolve=>setTimeout(resolve,250*2**attempt));}return null;}
+ const signedOut=!session||await cleanup(()=>admin.auth.admin.signOut(session.access_token,'global'));
  let secured=0;
- for(const actor of created){const r=await admin.auth.admin.updateUserById(actor.id,{ban_duration:'876000h',password:randomUUID()+randomUUID()});if(!r.error&&Date.parse(r.data.user.banned_until)>Date.now()+86400000)secured++;}
+ for(const actor of created){const r=await cleanup(()=>admin.auth.admin.updateUserById(actor.id,{ban_duration:'876000h',password:randomUUID()+randomUUID()}));if(r&&Date.parse(r.data.user.banned_until)>Date.now()+86400000)secured++;}
  console.log(JSON.stringify({name:'http-profile-cleanup',created:created.length,secured}));
  assert.equal(secured,created.length,'all temporary HTTP probe accounts secured');
+ assert.ok(signedOut,'synthetic profile session revoked');
 }
