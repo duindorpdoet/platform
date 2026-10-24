@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {VisitInformationFields,type VisitInformationDraft} from "@/components/portal/visit-information";
 
 async function digest(value: unknown) {
   return [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(value))))]
@@ -11,6 +12,7 @@ async function digest(value: unknown) {
 type ReviewStatus = "draft" | "changes_requested" | "submitted" | "approved" | "rejected" | "withdrawn";
 type WarningKey = "smoke" | "flashes" | "sound" | "actors" | "allergens";
 type PortalPayload = {
+  warningDisclosure: VisitInformationDraft["warningDisclosure"];
   email: string;
   contactName: string;
   phone: string;
@@ -32,6 +34,7 @@ type PortalPayload = {
 };
 
 const emptyPayload: PortalPayload = {
+  warningDisclosure:"unknown",
   email: "",
   contactName: "",
   phone: "",
@@ -52,13 +55,6 @@ const emptyPayload: PortalPayload = {
   locationConsent: false,
 };
 
-const warningLabels: Record<WarningKey, string> = {
-  smoke: "Rook of mist",
-  flashes: "Flitsend licht",
-  sound: "Hard geluid",
-  actors: "Acteurs of onverwachte beweging",
-  allergens: "Allergenen bij traktaties",
-};
 
 function restoredPayload(draft: Partial<PortalPayload>, fallbackWorld: string): PortalPayload {
   return {
@@ -173,9 +169,6 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     setPayload(nextPayload); setSaved(result); setStatus(result.status); setNotice("De foto staat bij jullie aanmelding. Jullie kunnen later verdergaan.");
   }
 
-  function setWarning(key: WarningKey, value: boolean) {
-    setPayload({ ...payload, warnings: { ...payload.warnings, [key]: value } });
-  }
 
   return <div className="panel production-form">
     <h2>Werk jullie poort uit</h2>
@@ -197,13 +190,10 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
       <label className="field"><span>Naam van je poort (optioneel)</span><input maxLength={120} value={payload.portalName} onChange={(event) => setPayload({ ...payload, portalName: event.target.value })} /></label>
       <label className="field"><span>Beschrijving (optioneel)</span><textarea maxLength={1000} rows={5} value={payload.description} onChange={(event) => setPayload({ ...payload, description: event.target.value })} /></label>
       <label className="field"><span>Spanningsniveau (1–4)</span><input type="number" min={1} max={4} value={payload.intensity} onChange={(event) => setPayload({ ...payload, intensity: event.target.value })} /></label>
-      <div className="check-grid">{(Object.keys(warningLabels) as WarningKey[]).map((key) => <label className="checkfield" key={key}><input type="checkbox" checked={payload.warnings[key]} onChange={(event) => setWarning(key, event.target.checked)} />{warningLabels[key]}</label>)}</div>
-      <label className="field"><span>Toelichting op waarschuwingen of allergenen</span><textarea maxLength={500} value={payload.warningNotes} onChange={(event) => setPayload({ ...payload, warningNotes: event.target.value })} /></label>
+      <VisitInformationFields value={payload} onChange={value=>setPayload({...payload,...value})}/>
 
       <h3>Beschikbaarheid en bereikbaarheid</h3>
       <div className="two-fields"><label className="field"><span>Beschikbaar vanaf</span><input type="time" value={payload.availableFrom} onChange={(event) => setPayload({ ...payload, availableFrom: event.target.value })} /></label><label className="field"><span>Beschikbaar tot</span><input type="time" value={payload.availableUntil} onChange={(event) => setPayload({ ...payload, availableUntil: event.target.value })} /></label></div>
-      <label className="field"><span>Praktische toegankelijkheid (optioneel)</span><select className="choice" value={payload.accessibility} onChange={(event) => setPayload({ ...payload, accessibility: event.target.value as PortalPayload["accessibility"] })}><option value="">Niet ingevuld</option><option value="unknown">Nog te beoordelen</option><option value="step_free">Drempelvrij</option><option value="steps">Trappen of hoge drempels</option><option value="mixed">Gedeeltelijk toegankelijk</option></select></label>
-      <label className="field"><span>Toelichting toegankelijkheid</span><textarea maxLength={500} value={payload.accessibilityNotes} onChange={(event) => setPayload({ ...payload, accessibilityNotes: event.target.value })} /></label>
       <label className="field"><span>Foto van de opstelling (optioneel)</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAsset(file); event.currentTarget.value = ""; }} /><small>Een foto helpt ons alvast mee te denken. Kies een JPG, PNG of WebP van maximaal 8 MB.</small></label>
       {payload.assetPaths.length > 0 && <p className="note">{payload.assetPaths.length} afbeelding(en) veilig aan dit concept gekoppeld.</p>}
       <label className="checkfield"><input type="checkbox" checked={payload.availability} onChange={(event) => setPayload({ ...payload, availability: event.target.checked })} />Ik ben tijdens het opgegeven venster beschikbaar en meld wijzigingen tijdig.</label>

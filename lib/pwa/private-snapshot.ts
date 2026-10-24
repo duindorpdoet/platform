@@ -11,16 +11,18 @@ export function readPrivateSnapshot<T>(userId: string, groupId: string): T | nul
   try {
     localStorage.removeItem(`${LEGACY_PREFIX}${userId}:${groupId}`);
     const key = `${PREFIX}${userId}:${groupId}`;
-    const stored = JSON.parse(localStorage.getItem(key) ?? "null") as { userId?: string; expiresAt?: number; snapshot?: T } | null;
-    if (!stored || stored.userId !== userId || !stored.expiresAt || stored.expiresAt < Date.now()) { localStorage.removeItem(key); return null; }
+    const stored = JSON.parse(localStorage.getItem(key) ?? "null") as { userId?: string; groupId?: string; expiresAt?: number; snapshot?: T } | null;
+    if (!stored || stored.userId !== userId || stored.groupId !== groupId || !Number.isFinite(stored.expiresAt) || !stored.expiresAt || stored.expiresAt <= Date.now()) { localStorage.removeItem(key); return null; }
     return stored.snapshot ?? null;
   } catch { return null; }
 }
 
 export function clearPrivateSnapshots() {
-  for (let index = localStorage.length - 1; index >= 0; index -= 1) {
-    const key = localStorage.key(index);
-    if (key?.startsWith(LEGACY_PREFIX)) localStorage.removeItem(key);
-  }
-  navigator.serviceWorker?.controller?.postMessage({ type: "CLEAR_PRIVATE_CACHE" });
+  try {
+    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+      const key = localStorage.key(index);
+      if (key?.startsWith(LEGACY_PREFIX)) localStorage.removeItem(key);
+    }
+  } catch { /* Storage denial must not prevent sign-out or pausing the outbox. */ }
+  if(typeof navigator!=='undefined')navigator.serviceWorker?.controller?.postMessage({ type: "CLEAR_PRIVATE_CACHE" });
 }

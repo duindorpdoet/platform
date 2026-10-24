@@ -1,0 +1,63 @@
+/* Route controls remain available in both modes. This preference is independent
+   from readableMode and reduced motion in the account profile. */
+.route-utility-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.route-outdoor-toggle,.route-direct-help a,.route-recovery-banner button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 13px;border:1px solid #4c5c73;border-radius:10px;background:#172438;color:#d9e3ef;font:inherit;font-size:12px;text-decoration:none;cursor:pointer;line-height:1.4}
+.route-outdoor-toggle strong{color:#f2c790;font-weight:600}.route-outdoor-toggle[aria-pressed=true]{background:#f2c790;border-color:#f2c790;color:#17202b}.route-outdoor-toggle[aria-pressed=true] strong{color:inherit}
+.route-direct-help>div{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.route-direct-help a{color:#edc795;background:#152235}
+.route-direct-help.is-expanded{display:grid;gap:16px;padding:22px;border:1px solid #3d526d;border-radius:14px;background:#142235}.route-direct-help.is-expanded>div:first-child{display:block}.route-direct-help h3{font-size:20px;margin:0 0 8px}.route-direct-help p{font-size:13px;color:#c5d1e1;line-height:1.7;margin:0}
+.modern-ui .route-workspace .route-unavailable{display:grid;justify-items:start;gap:16px;padding:30px;border-color:#7d6849;background:linear-gradient(135deg,#29281f,#132135)}
+.modern-ui .route-workspace .route-unavailable>svg{color:#f2c790}.modern-ui .route-workspace .route-unavailable h2{margin:0;font-size:28px}.modern-ui .route-workspace .route-unavailable p{margin:0;max-width:680px;line-height:1.75;color:#bfccdc}.route-unavailable .btn{min-height:46px}
+.route-recovery-reference{display:flex;gap:9px;align-items:center;padding:12px 14px;border:1px solid #6c644f;border-radius:9px;background:#433b2229;color:#ecd6af;font-size:13px}
+.route-recovery-banner{display:flex;align-items:center;gap:14px;padding:17px;border:1px solid #a5844a88;border-radius:12px;background:#634d242b;color:#f5d4a0}.route-recovery-banner>svg{flex-shrink:0}.route-recovery-banner strong{font-size:13px}.route-recovery-banner p{font-size:12px;line-height:1.65;margin:4px 0 0;color:#d2c1a4}.route-recovery-banner button{margin-left:auto;flex-shrink:0}
+.modern-ui .route-workspace .route-safe-wait{display:flex;gap:20px;border:1px solid #8c744d;background:radial-gradient(ellipse at 0 0,#7460353b,transparent 65%),#132033;padding:28px}.route-safe-wait>svg{flex-shrink:0;color:#f2c790}.modern-ui .route-workspace .route-safe-wait h2{font-size:26px;margin:5px 0 12px}.modern-ui .route-workspace .route-safe-wait p{color:#c3cfdf;font-size:14px;line-height:1.7}.route-wait-time{display:flex;align-items:center;gap:8px;color:#f6d19e!important;font-weight:600}
+.modern-ui .route-workspace .route-destination-warnings{margin-top:20px;padding:17px;border:1px solid #d7bd8455;border-radius:12px;background:#0b1429c9;backdrop-filter:blur(8px)}
+.route-destination-warnings h3{display:flex;align-items:center;gap:8px;margin:0 0 12px;color:#f0d3a8;font-size:14px;font-weight:600}.route-destination-warnings ul{display:flex;flex-wrap:wrap;gap:7px;list-style:none;margin:0;padding:0}.route-destination-warnings li{border:1px solid #b29b714d;border-radius:7px;padding:6px 9px;background:#82682d20;color:#f0dbb5;font-size:12px}.modern-ui .route-workspace .route-destination-warnings p{font-size:12px;color:#d5deeb;line-height:1.7;margin:12px 0 0}.route-destination-warnings .route-accessibility{display:flex;align-items:flex-start;gap:7px}.route-accessibility>svg{flex-shrink:0;margin-top:3px}.route-destination-warnings small{display:block;border-top:1px solid #9ba9c02c;padding-top:12px;margin-top:12px;font-size:11px;color:#c6d9cc;line-height:1.7}
+.modern-ui .route-workspace.is-outdoor{--group-line:#69819b;--group-gold:#ffce86;gap:20px;font-size:17px;color:#f8fafc}
+.modern-ui .route-workspace.is-outdoor :is(.panel,.group-route-context,.route-direct-help.is-expanded,.scan-panel,.participant-panel){background:#0b1726;border-color:#7188a1;box-shadow:none}
+.modern-ui .route-workspace.is-outdoor :is(.route-outdoor-toggle,.route-direct-help a,.btn,.participant-actions button,.group-route-refresh,.text-link){min-height:52px;font-size:16px;line-height:1.5;padding:12px 16px}
+.modern-ui .route-workspace.is-outdoor .btn:disabled,.modern-ui .route-workspace.is-outdoor button:disabled{opacity:.65}
+.modern-ui .route-workspace.is-outdoor :is(.route-workspace-heading h2,.panel h2,.active-portal-copy h2){font-size:clamp(28px,4vw,40px);line-height:1.2;color:#fff}
+.modern-ui .route-workspace.is-outdoor :is(p,.group-route-phase,.group-destination-details>span,.participant-row strong,.participant-row small,.participant-row>.status,.route-checked-count,.route-next-block strong,.route-next-block p,.route-inline-guide,.route-instruction,.next-hidden,.attendance-progress strong,.attendance-progress span,.route-destination-warnings p,.route-destination-warnings li,.route-destination-warnings small,.arrival-sync-notice p,.arrival-sync-notice small){font-size:16px;line-height:1.7;color:#e6edf6}
+.modern-ui .route-workspace.is-outdoor :is(.kicker,.route-step-number,.route-group-badge,.group-route-code){font-size:13px;line-height:1.5;color:#ffce86}
+.modern-ui .route-workspace.is-outdoor .group-destination{min-height:0;background:#0b1726;border-color:#8797a7}.modern-ui .route-workspace.is-outdoor .group-destination>img{display:none}.modern-ui .route-workspace.is-outdoor .active-portal-copy{position:relative;background:#0b1726;padding:26px}
+.modern-ui .route-workspace.is-outdoor .route-destination-warnings{background:#17263b;border-color:#cfb67e;backdrop-filter:none}.modern-ui .route-workspace.is-outdoor .route-destination-warnings h3{font-size:18px;color:#ffda9c}
+.modern-ui .route-workspace.is-outdoor .group-route-metrics>span{font-size:15px;color:#e6edf6}.modern-ui .route-workspace.is-outdoor .route-next-block{background:#17263b;border-color:#69819b}.modern-ui .route-workspace.is-outdoor .scan-panel .actions input{min-height:52px;font-size:18px;color:#fff;border-color:#91a8c2}.modern-ui .route-workspace.is-outdoor .arrival-sync-notice strong{font-size:18px}
+.route-workspace :is(.route-outdoor-toggle,.route-direct-help a,.route-recovery-banner button):focus-visible{outline:3px solid #ffce86;outline-offset:3px}
+@media(max-width:750px){.route-utility-bar{align-items:stretch;gap:10px}.route-outdoor-toggle{flex:1}.route-direct-help:not(.is-expanded){flex:1}.route-direct-help:not(.is-expanded)>div,.route-direct-help:not(.is-expanded) a{width:100%}.route-recovery-banner{align-items:flex-start;flex-wrap:wrap}.route-recovery-banner>div{flex:1;min-width:150px}.route-recovery-banner button{width:100%;margin-left:0}.modern-ui .route-workspace .route-safe-wait{padding:22px 18px;gap:13px}.modern-ui .route-workspace .route-safe-wait h2{font-size:23px}.modern-ui .route-workspace.is-outdoor .live-grid{grid-template-columns:1fr}.modern-ui .route-workspace.is-outdoor .participant-row{grid-template-columns:36px minmax(0,1fr)}.modern-ui .route-workspace.is-outdoor .participant-row>.status{grid-column:2}.modern-ui .route-workspace.is-outdoor .participant-row>.participant-actions{grid-column:1/-1;width:100%}.modern-ui .route-workspace.is-outdoor .route-next-block{display:grid}.modern-ui .route-workspace.is-outdoor .route-finish-button{width:100%;min-width:0}.modern-ui .route-workspace.is-outdoor .route-steps{display:none}.modern-ui .route-workspace.is-outdoor .group-route-metrics{grid-template-columns:1fr 1fr}.modern-ui .route-workspace.is-outdoor .active-portal-copy{padding:23px 18px}}
+
+/* Outdoor mode puts the destination and a real scan action above secondary
+   planning, farewell and demonstration tools. Toggling does not scroll. */
+.route-secondary-tools:empty{display:none}.route-secondary-tools .early-departure,.route-secondary-tools .early-farewell{margin:0}
+
+.modern-ui .participant-page.compact:has(.route-workspace.is-outdoor)>.participant-page-head{margin:0;padding:0}
+.modern-ui .participant-page.compact:has(.route-workspace.is-outdoor)>.participant-page-head .participant-eyebrow{display:none}
+.modern-ui .participant-page.compact:has(.route-workspace.is-outdoor)>.participant-page-head h1{font-size:22px;line-height:1.2;margin:0}
+.modern-ui .route-workspace.is-outdoor{gap:12px;overflow-anchor:none}
+.modern-ui .route-workspace.is-outdoor .route-workspace-heading{padding:0;min-height:32px}
+.modern-ui .route-workspace.is-outdoor .route-workspace-heading>.route-group-badge{font-size:12px;padding:6px 9px}
+.modern-ui .route-workspace.is-outdoor .route-workspace-heading .kicker{display:none}
+.modern-ui .route-workspace.is-outdoor .route-workspace-heading h2{font-size:24px;line-height:1.2;margin:0;font-weight:600}
+.modern-ui .route-workspace.is-outdoor .route-steps{display:none}
+.modern-ui .route-workspace.is-outdoor .group-route-context{padding:0;background:none;border:0;min-height:30px}
+.modern-ui .route-workspace.is-outdoor .group-route-context .group-route-phase{font-size:13px;line-height:1.4}
+.modern-ui .route-workspace.is-outdoor .group-route-context .group-route-refresh{min-height:36px;font-size:12px;padding:7px 10px}
+.route-outdoor-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:9px;align-items:stretch}
+.modern-ui .route-workspace.is-outdoor .route-outdoor-shortcuts .btn{min-height:50px;margin:0;justify-content:center}
+.route-outdoor-location{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:4px 0 8px;background:none;border:0;color:#f8d49e;text-align:left;font:inherit;font-size:14px;line-height:1.5;cursor:pointer;min-width:0}
+.route-outdoor-location>svg{flex:0 0 17px}.route-outdoor-location>span{overflow-wrap:anywhere}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>*{order:10}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.route-workspace-heading{order:0}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.route-utility-bar{order:1}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.group-route-context{order:2}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.route-outdoor-shortcuts{order:3}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>:is(.offline-banner,.route-recovery-banner,.arrival-sync-notice,.form-warning){order:4}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.live-grid{order:5}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.scan-panel{order:6}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.participant-panel{order:7}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.group-route-metrics{order:8}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.route-secondary-tools{order:9}
+.modern-ui .route-workspace.is-outdoor.has-active-stop>.group-route-history{order:11}
+
+@media(max-width:750px){.modern-ui .route-workspace.is-outdoor .route-workspace-heading h2{font-size:24px}.modern-ui .route-workspace.is-outdoor .route-utility-bar{gap:8px}.modern-ui .route-workspace.is-outdoor .route-utility-bar :is(.route-outdoor-toggle,.route-direct-help a){font-size:13px;min-height:46px;padding:9px 11px}.modern-ui .route-workspace.is-outdoor .active-portal-copy{padding:20px 16px}.modern-ui .route-workspace.is-outdoor .active-portal-copy h2{font-size:28px}.modern-ui .route-workspace.is-outdoor .route-outdoor-shortcuts .btn{font-size:15px;min-height:48px;padding:10px}.modern-ui .route-workspace.is-outdoor .group-destination-details{margin-top:12px;gap:7px}.modern-ui .route-workspace.is-outdoor .group-destination-details>span{font-size:14px;line-height:1.5;padding:7px 9px}.modern-ui .route-workspace.is-outdoor .route-destination-warnings{margin-top:14px;padding:14px}}
+
+.route-workspace :is(h2,p,span){overflow-wrap:anywhere}.route-workspace .route-snapshot-error{display:grid;gap:18px}.route-workspace .route-snapshot-error h2{font-size:26px}.route-workspace .route-snapshot-error .actions{display:flex;flex-wrap:wrap;gap:12px}
