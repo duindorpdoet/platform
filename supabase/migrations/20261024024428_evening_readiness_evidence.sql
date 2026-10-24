@@ -88,15 +88,25 @@ declare actor uuid:=auth.uid(); eventid uuid; current_revision text; own boolean
 begin
  if actor is null then raise exception 'NOT_AUTHORIZED' using errcode='42501'; end if;
  if _subject_type='group' then
-  select event_id into eventid from app_private.walking_groups where id=_subject_id for share;
-  manager:=app_private.has_capability(eventid,'groups_manage',actor) or app_private.has_capability(eventid,'live_support',actor) or app_private.has_capability(eventid,'event_admin',actor);
+  select event_id into eventid from app_private.walking_groups where id=_subject_id;
   tutorial_role:='parent';
  elsif _subject_type='portal' then
-  select event_id into eventid from app_private.portals where id=_subject_id for share;
-  manager:=app_private.has_capability(eventid,'portals_manage',actor) or app_private.has_capability(eventid,'event_admin',actor)
-   or exists(select 1 from app_private.portal_owners o where o.portal_id=_subject_id and o.user_id=actor and o.revoked_at is null and o.suspended_at is null and o.access_level='manage');
+  select event_id into eventid from app_private.portals where id=_subject_id;
   tutorial_role:='house';
  end if;
+ -- Shared event lock precedes subject locks. Multiple observations may run in
+ -- parallel; route/publication writers cannot hold the event while waiting for
+ -- a subject which is itself waiting on the evidence event FK.
+ if eventid is null then raise exception 'NOT_AUTHORIZED' using errcode='42501'; end if;
+ perform 1 from app_private.events where id=eventid for share;
+ if _subject_type='group' then perform 1 from app_private.walking_groups where id=_subject_id for share;
+ else perform 1 from app_private.portals where id=_subject_id for share; end if;
+ -- Recheck role after any wait on the event/subject. A revoked role must not
+ -- survive as a cached authorization decision from before that wait.
+ manager:=case when _subject_type='group' then
+  app_private.has_capability(eventid,'groups_manage',actor) or app_private.has_capability(eventid,'live_support',actor) or app_private.has_capability(eventid,'event_admin',actor)
+ else app_private.has_capability(eventid,'portals_manage',actor) or app_private.has_capability(eventid,'event_admin',actor)
+  or exists(select 1 from app_private.portal_owners o where o.portal_id=_subject_id and o.user_id=actor and o.revoked_at is null and o.suspended_at is null and o.access_level='manage') end;
  own:=app_private.readiness_own_subject(_subject_type,_subject_id,actor);
  if eventid is null or _source is null or _source not in ('manual','observed')
    or (_source='observed' and not own) or (_source='manual' and not coalesce(manager,false)) then

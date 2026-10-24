@@ -22,6 +22,8 @@ Een schone opbouw van uitsluitend de eigen lokale teststack plus alle pgTAP-test
 
 Vier aanvullende browserproeven met echte lokale Auth/RPC zijn geslaagd: eigen waarneming plus handmatig contact/focusherstel op 360/390/430 px; bewonersinformatie tot de actuele ouderbestemming; de bestaande organisatieflow voor bewerken/verwijderen; en een echte HTTPS-posterflow. De laatste bewijst PDF-generatie als afzonderlijke actie en precies één verklaring na een verloren antwoord ná servercommit. Dit is een synthetische UI-attestatie en geen fysieke drukwerk-/telefoonproef. De screenshots voor gereedheid en bezoekwaarschuwingen zijn bekeken. Volledige lint, typecheck, 377 applicatietests in 54 bestanden, productiebuild en artifactscan van 1.054 bestanden zijn geslaagd.
 
+Een aanvullende echte parallelle databaseproef is geslaagd: een tocht starten en een eigen waarneming opslaan wachten zonder deadlock op dezelfde eventgrens. Een tijdens die wachttijd ingetrokken beheerrol kan daarna geen handmatige verklaring vastleggen. De proef controleert daadwerkelijke lockcontentie en behoud van de oorspronkelijke groep/run/bewijsstand na rollback en het opruimen van uitsluitend de tijdelijke testactor. Zij staat in de CI-keten.
+
 De productie-inventaris is vóór deze implementatie vastgelegd. Deze twee serveruitbreidingen staan op de werkbranch; de resterende route-/capaciteitscontracten moeten aansluiten voordat de avondrelease wordt uitgerold.
 
 ## Nog niet geïmplementeerde servercontracten
