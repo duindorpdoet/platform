@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       runner_maintenance:
-        description: 'Inspect the dedicated staging runner or clear only rebuildable build caches; does not deploy'
+        description: 'Run scoped staging diagnostics or rebuildable cache maintenance; never deploys'
         type: choice
         default: none
         required: false
@@ -16,6 +16,8 @@ on:
           - inspect
           - clear-build-cache
           - compact-git-checkout
+          - profile-database
+          - profile-http
       skip_mail_acceptance:
         description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
         type: boolean
@@ -56,17 +58,17 @@ jobs:
           clean: false
       - name: Inspect disk and optionally clear rebuildable workspace caches
         env:
-          MAINTENANCE_ACTION: ${{ inputs.runner_maintenance }}
+          MAINTENANCE_ACTION: ${{ startsWith(inputs.runner_maintenance, 'profile-') && 'inspect' || inputs.runner_maintenance }}
         run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/deploy/staging-runner-maintenance.mjs
       - name: Profile rolled-back synthetic snapshots without deployment
-        if: inputs.runner_maintenance == 'inspect'
+        if: startsWith(inputs.runner_maintenance, 'profile-')
         env:
           APP_ENVIRONMENT: staging
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/acceptance/evening-staging-profile.mjs
       - name: Compare HTTP transports with an isolated synthetic account
-        if: inputs.runner_maintenance == 'inspect'
+        if: inputs.runner_maintenance == 'profile-http'
         env:
           APP_ENVIRONMENT: staging
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
