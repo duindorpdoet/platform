@@ -85,10 +85,11 @@ try {
             signal: AbortSignal.timeout(15000),
         });
         assert.ok(response.ok, 'read the actual Auth preparation limit');
-        const config = await response.json(), perHour = Number(config.rate_limit_token_refresh);
-        assert.ok(Number.isFinite(perHour) && perHour > 0, 'known positive token request limit');
-        loginSpacingMs = Math.ceil(3600000 / perHour) + 150;
-        report.authPreparation = { tokenRequestsPerHour: perHour, minimumSpacingMs: loginSpacingMs, concurrency: 1 };
+        // Auth's apilimiter divides this field by 60*5, not by an hour.
+        const config = await response.json(), perFiveMinutes = Number(config.rate_limit_token_refresh);
+        assert.ok(Number.isFinite(perFiveMinutes) && perFiveMinutes > 0, 'known positive token request limit');
+        loginSpacingMs = Math.ceil(300000 / perFiveMinutes) + 150;
+        report.authPreparation = { tokenRequestsPerFiveMinutes: perFiveMinutes, minimumSpacingMs: loginSpacingMs, concurrency: 1 };
         report.limitations.push('Independent sessions are prepared sequentially within the configured shared-IP Auth limit; this is not a simultaneous sign-in capacity test.');
         console.log(JSON.stringify({ name: 'shared-ip-auth-preparation', ...report.authPreparation }));
     }
