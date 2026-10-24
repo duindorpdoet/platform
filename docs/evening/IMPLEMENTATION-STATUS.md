@@ -44,13 +44,27 @@ De nieuwe schone lokale opbouw en volledige regressiesuite zijn geslaagd: 2.059 
 
 De vier synthetische basisgroepen bevatten samen 23 kinderen in hetzelfde tijdvak; hun happy-path-huiscapaciteit is aangepast van 12 naar 40. Kleine capaciteit wordt expliciet in de negatieve tests ingesteld. De geïsoleerde oefenfunctie gebruikt nu dezelfde geverifieerde coördinaat voor poortlocatie en wandelknoop. De verwijderproef maakt haar reservering binnen een echt openingsvenster. Dit wijzigt uitsluitend test-/oefengegevens en importeert niets naar productie.
 
+## Vaste finale-afspraak
+
+Nieuwe startpublicaties met een daadwerkelijke finale-instant krijgen één private, onveranderlijke afspraak en één echte capaciteitsreservering. De publicatie, run, ouderweergave en poortverwachting gebruiken dezelfde reserverings-ID, revisie en aankomsttijd. Een gewijzigde ETA verplaatst die afspraak niet. Alleen een expliciete nieuwe publicatie kan een nog ongebruikte afspraak vervangen; een lopende run kan zijn gebonden publicatie niet loslaten of verwisselen. Bestaande publicaties worden door de migration niet gebackfilld, verplaatst of opnieuw geboekt.
+
+Dynamische toewijzing wacht tot het gereserveerde moment minus de geverifieerde looptijd en geeft dan pas het finale-adres vrij. Een onhaalbare of ontbrekende afspraak pauzeert de toewijzing met organisatiehulp. Een handmatige omleiding controleert dit voordat zij een eerdere bestemming verwijdert. De wachttekst gebruikt uitsluitend vastgelegde veilige instructies, met generieke organisatiehulp als die ontbreken. Nieuwe finale-admissie wordt vóór het gereserveerde moment geweigerd met `FINAL_ARRIVAL_TOO_EARLY` en na de vastgelegde omlooptijd met `FINAL_RESERVATION_MISSED`. Zowel directe scan, validatie als samengestelde aankomst gebruiken deze grens. Eerder geldig scanbewijs blijft bruikbaar voor een later afgeronde aankomst; een retry maakt geen tweede scan, aankomst of reservering.
+
+De schone lokale opbouw plus volledige regressiesuite is geslaagd: 2.122 pgTAP-controles in 77 bestanden, waaronder 62 finalecontroles. De bestaande snelle regressies verwachten bij een toekomstige finale nu een veilige wachtstatus; de daadwerkelijke finale-admissie en inclusieve afronding zijn afzonderlijk met de echte serverklok getest, zonder klokoverride. Ongebruikte afspraken en eerdere publicaties blijven in historie staan. Na veilig afmelden komen zij niet opnieuw als een vrijblijvende voorspelling in de poortweergave terug. Een duidelijk gescheiden oefenfixture gebruikt een daadwerkelijk actieve finale-reservering voor haar reeds toegewezen slot.
+
+Een nieuwe browserproef met echte Auth/RPC is geslaagd: de ouder bevestigt een gewone aankomst met een korte code, laat de beleving over, krijgt de vaste finale-wachtinstructie en herlaadt zonder het finale-adres te ontvangen. De poortteam-RPC bevestigt dezelfde reservering en tijd. Een echte vertrouwde worker-aanroep na een gecontroleerde fixturewijziging toont vervolgens organisatiehulp zonder oneindige spinner. De 360/390/430px-screenshots zijn bekeken. Dit is een lokale synthetische proef, geen fysieke scan-/wandelproef.
+
+Productiebuild, typecheck, gerichte client-/browserlint, applicatieregressies en exacte migrationlijstcontrole zijn geslaagd. SQL-lint en security-/performance-advisors vonden geen problemen. Na een verse reset zijn opnieuw alle drie de echte parallelle proeven geslaagd: route/gereedheid/ingetrokken rol, laatste gewone ontvangstplek en twee geauthenticeerde planners/publiceerders.
+
+De volledige Startregie-routepreview moet nog aansluiten op deze gebonden afspraak en de werkelijke live positie. Ook de oude-routebinding, routefingerprints en de actuele keuzelijsten hieronder blijven vereist. De bredere avondbranch is daarom nog niet uitgerold.
+
 ## Resterende servercontracten
 
 De client verwijst vooruit naar onderstaande RPC's. Zij zijn nog niet geïmplementeerd. Deze branch mag daarom niet als voltooide release worden uitgerold.
 
 - `api.admin_route_command_options(_run_id)` voor actuele poortkeuzes, verantwoordelijke volwassenen en de runversie.
 - `api.admin_startregie_review_route(...)`, routefingerprints en de uitgebreide publicatievoorwaarde `_expected_route_fingerprints`.
-- Live routeklok, volledige oude-routebinding, stabiele gepubliceerde finalereservering en vroeg/laat-scanconflicten.
+- Live routeklok, volledige oude-routebinding en een beheerpreview die dezelfde gebonden finale-afspraak en daadwerkelijke positie gebruikt.
 
 De clienttypen zijn het voorlopige contract. Serverimplementatie en tests moeten dit bevestigen of de client samenhangend aanpassen. Geen clientstatus geldt als bewijs van serverautorisatie, capaciteit, een fysieke QR-test of een gelopen route.
 

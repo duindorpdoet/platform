@@ -1693,3 +1693,40 @@ test("own house warnings persist to the authorized current destination without o
  const denied=await leader.schema("api").rpc("portal_visit_information",{_portal_id:"12000000-0000-0000-0000-000000000002"});expect(denied.error?.message).toContain("NOT_AUTHORIZED");
  await mkdir("docs/evening/screenshots",{recursive:true});for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);await warnings.scrollIntoViewIfNeeded();await page.screenshot({path:`docs/evening/screenshots/visit-warnings-${width}.png`});}
 });
+
+test("fixed finale wait keeps its reservation and hides the address on mobile",async({context,page},testInfo)=>{
+ test.skip(testInfo.project.name!=="desktop-chromium","One fresh isolated route fixture");requireLocalAuth();test.setTimeout(60000);
+ expect(sql(`select count(*) from app_private.group_runs where group_id='${groupId}'`)).toBe("0");
+ sql(`begin;
+  update app_private.portal_windows set opens_at=now()-interval '1 hour',closes_at=now()+interval '5 hours';
+  update app_private.start_slots set starts_at=now()-interval '1 minute';
+  update app_private.event_route_settings set first_start_at=now()-interval '2 hours',global_ordinary_stop_at=now()+interval '2 hours',
+   allowed_personal_stop_times=array[now()+interval '1 hour'],ordinary_visit_seconds=60,route_buffer_seconds=0,
+   final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at=now()-interval '1 hour',finale_last_arrival_at=now()+interval '4 hours',
+   finale_closes_at=now()+interval '5 hours',finale_show_seconds=60,finale_turnover_seconds=120,finale_max_concurrent_groups=10,
+   finale_max_concurrent_children=40,finale_available=true,planner_mode='dynamic',finale_waiting_area='',finale_safe_approach=''
+   where event_id=(select event_id from app_private.walking_groups where id='${groupId}');
+  with inserted as (insert into app_private.group_schedule_revisions(group_id,revision,state,start_slot_id,effective_ordinary_stop_at,expected_finale_arrival_at,preference_match,published_at)
+   select id,1,'published',start_slot_id,now()+interval '2 hours',now()+interval '1 hour','neutral',now() from app_private.walking_groups where id='${groupId}' returning id)
+  update app_private.walking_groups set route_mode='dynamic',current_schedule_revision_id=inserted.id,desired_ordinary_visits=1,version=version+1 from inserted where walking_groups.id='${groupId}';
+  commit;`);
+ const leader=await authenticate(context,"leader-a@example.invalid");const before=await rpc(leader,"group_snapshot",{_group_id:groupId});
+ const roster=await rpc(leader,"group_roster",{_group_id:groupId});await rpc(leader,"run_start",{_group_id:groupId,_present_registration_child_ids:roster.map((row:{registrationChildId:string})=>row.registrationChildId),_expected_group_version:before.group.version,_idempotency_key:"finale-mobile-start",_request_hash:"finale-mobile-start"});
+ const started=await rpc(leader,"group_snapshot",{_group_id:groupId});const reservationId=started.run.finaleReservation.id;
+ await page.goto("/mijn-groep");await expect(page.getByRole("heading",{name:started.run.currentStop.portal.name,exact:true})).toBeVisible();
+ await page.getByLabel("Korte poortcode").fill("TEST-"+started.run.currentStop.portal.id.slice(-2));await page.getByRole("button",{name:"Code controleren",exact:true}).click();
+ const dialog=page.getByRole("dialog");await expect(dialog).toContainText("Jullie zijn bij de juiste poort");await dialog.getByRole("checkbox").uncheck();await dialog.getByRole("button",{name:"Aankomst bevestigen & volgende poort",exact:true}).click();
+ await expect(dialog).not.toBeVisible();await expect(page.getByRole("heading",{name:"Jullie finalemoment staat vast",exact:true})).toBeVisible();
+ const waiting=await rpc(leader,"group_snapshot",{_group_id:groupId});expect(waiting.run.currentStop).toBeNull();expect(waiting.run.waitingReason).toBe("finale_window");expect(waiting.run.finaleReservation.id).toBe(reservationId);
+ const futureAddress=sql("select concat_ws(' ',street,house_number,addition) from app_private.portal_private_locations where portal_id='12000000-0000-0000-0000-000000000030'");expect(JSON.stringify(waiting)).not.toContain(futureAddress);
+ await expect(page.locator(".route-safe-wait")).toContainText("Blijf bij jullie groep en vraag de organisatie");await expect(page.locator(".route-safe-wait")).toContainText("Volgende aanwijzing vanaf");
+ await mkdir("docs/evening/screenshots",{recursive:true});for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);await page.locator(".route-safe-wait").scrollIntoViewIfNeeded();await page.screenshot({path:`docs/evening/screenshots/finale-wait-${width}.png`});}
+ await page.reload();await expect(page.getByRole("heading",{name:"Jullie finalemoment staat vast",exact:true})).toBeVisible();await expect(page.locator(".group-app")).not.toContainText(futureAddress);
+ const {client:owner}=await fixtureClient("owner@example.invalid");const arrivals=await rpc(owner,"portal_arrivals_snapshot",{_portal_id:"12000000-0000-0000-0000-000000000030"});const arrival=arrivals.arrivals.find((row:{reservationId:string})=>row.reservationId===reservationId);expect(arrival).toBeTruthy();expect(new Date(arrival.plannedArrivalAt).getTime()).toBe(new Date(waiting.run.reservedArrivalAt).getTime());
+ sql("update app_private.event_route_settings set finale_available=false where event_id=(select id from app_private.events where slug='duindorp-halloween-2026')");
+ try{
+  expect(process.env.SUPABASE_SECRET_KEY).toBeTruthy();const worker=createClient(supabaseUrl!,process.env.SUPABASE_SECRET_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});await rpc(worker,"worker_dispatch_due_groups",{_event_slug:"duindorp-halloween-2026",_batch_size:50});
+  await page.getByRole("button",{name:"Groepsinformatie vernieuwen",exact:true}).click();await expect(page.getByRole("heading",{name:"Organisatiecontrole nodig",exact:true})).toBeVisible();await expect(page.locator(".loading-state .spin")).toHaveCount(0);await expect(page.locator(".group-app")).not.toContainText(futureAddress);
+ }finally{sql("update app_private.event_route_settings set finale_available=true where event_id=(select id from app_private.events where slug='duindorp-halloween-2026')");}
+ expect(sql(`select count(*) from app_private.run_stop_arrivals where run_id='${waiting.run.id}'`)).toBe("1");
+});

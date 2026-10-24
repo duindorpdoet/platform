@@ -76,12 +76,12 @@ perform api.run_bulk_skip_pending((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,
 perform api.run_scan((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,version}')::integer,pg_temp.rehearsal_short_code((s#>>'{run,currentStop,id}')::uuid),'short_code');
 perform api.run_complete_stop((s#>>'{run,id}')::uuid,(s#>>'{run,currentStop,id}')::uuid,(s#>>'{run,version}')::integer,true,'pref-skip-done','pref-skip-done');
 end $$;
-select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,currentStop,kind}','finale','a physically reached house counts toward the visit limit even when every child stays outside');
+select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,waitingReason}','finale_window','a physically reached house counts toward the visit limit even when every child stays outside');
 set local role postgres;
 select is((select count(*)::integer from app_private.run_stop_arrivals where run_id=(select run_id from dynamic_state)),1,'the outside child has a real arrival fact for that first ordinary house');
 set local role authenticated;
 select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,status}','live','reaching the chosen count does not finish the route before the show');
 set local role postgres;
-select is((select count(*)::integer from app_private.portal_reservations where run_id=(select run_id from dynamic_state) and kind='finale' and status='active'),1,'exactly one active finale reservation remains');
+select is((select count(*)::integer from app_private.portal_reservations where run_id=(select run_id from dynamic_state) and kind='finale' and status='held'),1,'exactly one fixed future finale reservation remains held');
 select * from finish();
 rollback;

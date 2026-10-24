@@ -88,11 +88,10 @@ select lives_ok(
 
 set local role postgres;
 select is(
-  (select stop_kind::text from app_private.run_stops stop
-    join app_private.group_runs run on run.current_stop_id = stop.id
-    where run.id = (select run_id from timed_state where group_id = '23000000-0000-0000-0000-000000000002')),
-  'finale',
-  'after the stop boundary an unscanned ordinary assignment is replaced by the terminal portal'
+  (select input_snapshot->>'waitingReason' from app_private.dispatch_decisions
+    where run_id=(select run_id from timed_state where group_id='23000000-0000-0000-0000-000000000002') order by sequence desc limit 1),
+  'finale_window',
+  'after cutoff an unscanned ordinary assignment becomes a safe wait for the fixed finale appointment'
 );
 select is(
   (select outcome::text from app_private.run_stops

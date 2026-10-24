@@ -90,7 +90,7 @@ select new_portal,extensions.digest('TEST-NEW-HOUSE-OPS-TOKEN','sha256'),extensi
 update app_private.portals set operation_status='open' where id=(select new_portal from ops_house);
 set local role authenticated;
 select lives_ok($$select pg_temp.new_house_arrive('TEST-NEW-HOUSE-OPS-TOKEN','new-house-second-arrival')$$,'the second outside arrival uses the actual new portal credential');
-select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,currentStop,kind}','finale','the selected two-house maximum includes physically reached outside visits');
+select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,waitingReason}','finale_window','the selected two-house maximum includes physically reached outside visits');
 set local role postgres;
 select is((select count(*)::integer from app_private.run_stop_arrivals where run_id=(select run_id from ops_house)),2,'new dispatch does not manufacture a finale arrival');
 select is((select count(*)::integer from app_private.poortenboek_passport_seals where run_id=(select run_id from ops_house)),2,'only the two genuinely reached houses grant seals');
