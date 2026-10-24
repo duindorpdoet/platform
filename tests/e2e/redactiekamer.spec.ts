@@ -130,7 +130,8 @@ test("editor publishes selective news and prepares an immutable deduplicated Nac
     .getByRole("combobox", { name: "Hoofdafbeelding", exact: true })
     .selectOption({ label: `Nachtelijk verlichte straat ${suffix}` });
   await page.getByLabel("Ouderportaal", { exact: true }).check();
-  const planned = amsterdamInput(new Date(Date.now() + 3600000).toISOString());
+  // A future noon never selects the repeated hour at the wintertime transition.
+  const planned = `${amsterdamInput(new Date(Date.now() + 86_400_000).toISOString()).slice(0, 10)}T12:00`;
   for (const input of await page
     .getByLabel("Publiceren op · leeg is direct")
     .all())
