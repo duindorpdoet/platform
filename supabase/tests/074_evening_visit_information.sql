@@ -8,8 +8,9 @@ select is(app_private.portal_visit_information_projection('12000000-0000-0000-00
 select ok(not(app_private.portal_visit_information_projection('12000000-0000-0000-0000-000000000002')->'warnings' ? 'flashes'),'unreported legacy fields remain unknown');
 create temp table original_credentials as select id,md5(to_jsonb(c)::text) hash from app_private.portal_credentials c;
 create temp table original_children as select id,md5(to_jsonb(c)::text) hash from app_private.registration_children c;
-create temp table info_fixture(info jsonb,portal_version integer,revision integer,draft jsonb,application_id uuid,application_version integer,new_application uuid,new_portal uuid);
+create temp table info_fixture(info jsonb,portal_version integer,revision integer,draft jsonb,application_id uuid,application_version integer,new_application uuid,new_portal uuid,original_latitude numeric,original_longitude numeric);
 insert into info_fixture(info) values('{"warningDisclosure":"none","warnings":{"smoke":false,"flashes":false,"sound":false,"actors":false,"allergens":false},"warningNotes":"","accessibility":"step_free","accessibilityNotes":"Brede ingang aan de voorkant"}');
+update info_fixture set original_latitude=(select coordinate[1]::numeric from app_private.walking_nodes where portal_id='12000000-0000-0000-0000-000000000001' limit 1),original_longitude=(select coordinate[0]::numeric from app_private.walking_nodes where portal_id='12000000-0000-0000-0000-000000000001' limit 1);
 grant all on info_fixture to authenticated;
 create function pg_temp.admin_payload(pid uuid) returns jsonb language sql security definer set search_path='' as $$
  select item||jsonb_build_object('systemNumber',p.system_number,'contactPhone',item->'phone','contactEmail',item->'email') from jsonb_array_elements(api.admin_portal_editor_snapshot('duindorp-halloween-2026')->'portals') item
@@ -56,9 +57,21 @@ update info_fixture set draft=(api.portal_snapshot('duindorp-halloween-2026')#>'
 select lives_ok($$select api.portal_application_save('duindorp-halloween-2026',draft||'{"address":{"street":"Fictief pad","houseNumber":"1","postalCode":"2583AA"},"warnings":{"smoke":false,"flashes":false,"sound":false,"actors":false,"allergens":false}}',application_version) from info_fixture$$,'legacy intake can update its ordinary application fields');
 update info_fixture set application_version=(api.portal_application_submit(application_id,(api.portal_snapshot('duindorp-halloween-2026')#>>'{application,version}')::integer,'visit-info-reapproval-submit','visit-info-reapproval-submit')->>'version')::integer;
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-select lives_ok($$select api.admin_review_portal_application(application_id,application_version,'approved','anders',52.1,4.27,'Oude aanvraag opnieuw beoordelen zonder live informatie te wissen') from info_fixture$$,'reapproval preserves separately edited live information');
+select lives_ok($$select api.admin_review_portal_application(application_id,application_version,'approved','anders',(select original_latitude from info_fixture),(select original_longitude from info_fixture),'Oude aanvraag opnieuw beoordelen zonder live informatie te wissen') from info_fixture$$,'reapproval preserves separately edited live information');
 select is(pg_temp.current_info()#>>'{information,warnings,smoke}','true','legacy false flags cannot erase canonical smoke warning');
 select is(pg_temp.current_info()#>>'{information,warningNotes}','Actuele verklaring via de eigen aanvraag','reapproval retains the latest actual note');
+-- Reapproval changed the address. Explicitly restore only this synthetic
+-- fixture's known walking verification before releasing a real destination.
+set local role postgres;
+update app_private.portal_private_locations set marker_latitude=(select original_latitude from info_fixture),marker_longitude=(select original_longitude from info_fixture) where portal_id='12000000-0000-0000-0000-000000000001';
+update app_private.portal_private_locations set verified_at=clock_timestamp() where portal_id='12000000-0000-0000-0000-000000000001';
+update app_private.walking_nodes set verified_at=clock_timestamp(),verified_by='f0000000-0000-0000-0000-000000000001' where portal_id='12000000-0000-0000-0000-000000000001';
+update app_private.walking_edges set approved_at=clock_timestamp(),approved_by='f0000000-0000-0000-0000-000000000001' where from_node_id in(select id from app_private.walking_nodes where portal_id='12000000-0000-0000-0000-000000000001') or to_node_id in(select id from app_private.walking_nodes where portal_id='12000000-0000-0000-0000-000000000001');
+set local role authenticated;
+set local role postgres;
+insert into app_private.portal_windows(portal_id,opens_at,closes_at,visit_minutes,buffer_minutes,max_concurrent_groups,max_children_per_visit,max_children_total)
+ select portal_id,clock_timestamp()-interval '1 hour',clock_timestamp()+interval '6 hours',visit_minutes,buffer_minutes,max_concurrent_groups,max_children_per_visit,max_children_total from app_private.portal_windows where portal_id='12000000-0000-0000-0000-000000000001' order by opens_at limit 1;
+set local role authenticated;
 -- Parent sees only authorized current stop; direct arbitrary-portal reads remain denied.
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select lives_ok($$select api.run_start('23000000-0000-0000-0000-000000000001',array(select (item->>'registrationChildId')::uuid from jsonb_array_elements(api.group_roster('23000000-0000-0000-0000-000000000001')) item),(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{group,version}')::integer,'visit-info-group-start','visit-info-group-start')$$,'real route begins under existing start/attendance rules');

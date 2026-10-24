@@ -65,10 +65,7 @@ insert into live_capacity(run_id) select (api.run_start('23000000-0000-0000-0000
  (api.group_snapshot('23000000-0000-0000-0000-000000000002')#>>'{group,version}')::integer,'capacity-real-start','capacity-real-start')->>'runId')::uuid;
 update live_capacity set stop_id=(api.group_snapshot('23000000-0000-0000-0000-000000000002')#>>'{run,currentStop,id}')::uuid,version=(api.group_snapshot('23000000-0000-0000-0000-000000000002')#>>'{run,version}')::integer;
 set local role postgres;
-with b as (insert into app_private.portal_reservations(event_id,portal_id,group_id,run_id,kind,status,reserved_from,service_until,reserved_until,child_count)
- select g.event_id,'12000000-0000-0000-0000-000000000001',g.id,l.run_id,'ordinary','active',now(),now()+interval '5 minutes',now()+interval '7 minutes',5
- from live_capacity l join app_private.group_runs r on r.id=l.run_id join app_private.walking_groups g on g.id=r.group_id returning id)
- update live_capacity set reservation_id=b.id from b;
+update live_capacity l set reservation_id=(select id from app_private.portal_reservations where bound_stop_id=l.stop_id);
 select throws_ok($$update app_private.portal_reservations b set group_id='23000000-0000-0000-0000-000000000001',bound_stop_id=l.stop_id from live_capacity l where b.id=l.reservation_id$$,
  '23514','INVALID_RESERVATION_SCOPE','legacy binding cannot attach a reservation to another physical group');
 update app_private.portal_reservations b set bound_stop_id=l.stop_id from live_capacity l where b.id=l.reservation_id;
@@ -84,14 +81,7 @@ update app_private.portal_windows set max_children_total=5 where portal_id='1200
 select ok(app_private.assess_ordinary_portal((select event_id from capacity_fixture),'23000000-0000-0000-0000-000000000003','12000000-0000-0000-0000-000000000001',now(),1)->'blockingCodes' ? 'PORTAL_TOTAL_CAPACITY_EXCEEDED','completed arrivals remain in the finite total-reception limit');
 update app_private.portal_windows set opens_at=now()+interval '1 hour' where portal_id='12000000-0000-0000-0000-000000000001';
 select ok(app_private.assess_ordinary_portal((select event_id from capacity_fixture),'23000000-0000-0000-0000-000000000003','12000000-0000-0000-0000-000000000001',now()+interval '2 hours',1)->'blockingCodes' ? 'PORTAL_TOTAL_CAPACITY_EXCEEDED','changing a future opening window does not erase the physical total already received');
-with b as (insert into app_private.portal_reservations(event_id,portal_id,group_id,run_id,kind,status,reserved_from,service_until,reserved_until,child_count)
- select g.event_id,'12000000-0000-0000-0000-000000000002',g.id,l.run_id,'ordinary','active',now(),now()+interval '5 minutes',now()+interval '7 minutes',5
- from live_capacity l join app_private.group_runs r on r.id=l.run_id join app_private.walking_groups g on g.id=r.group_id returning id)
- update live_capacity set reservation_id=b.id from b;
-update app_private.portal_reservations b set bound_stop_id=l.stop_id from live_capacity l where b.id=l.reservation_id;
-insert into app_private.portal_reservations(event_id,portal_id,group_id,run_id,kind,status,reserved_from,reserved_until,child_count)
- select g.event_id,'12000000-0000-0000-0000-000000000030',g.id,l.run_id,'finale','held',now()+interval '1 hour',now()+interval '65 minutes',5
- from live_capacity l join app_private.group_runs r on r.id=l.run_id join app_private.walking_groups g on g.id=r.group_id;
+update live_capacity l set reservation_id=(select id from app_private.portal_reservations where bound_stop_id=l.stop_id and kind='ordinary');
 create temp table preserved_capacity as
  select 'arrivals' kind,md5(jsonb_agg(to_jsonb(a) order by a.run_stop_id,a.run_participant_id)::text) hash from app_private.run_stop_arrivals a
  union all select 'seals',md5(jsonb_agg(to_jsonb(s) order by s.run_stop_id,s.child_id)::text) from app_private.poortenboek_passport_seals s

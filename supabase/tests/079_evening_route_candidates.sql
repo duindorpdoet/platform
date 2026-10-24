@@ -70,5 +70,11 @@ select is((select to_jsonb(b) from app_private.portal_reservations b where b.sta
 select is((select count(*)::integer from jsonb_array_elements(app_private.start_ops_route_preview((select group_id from candidate_test))->'stops') s where s->>'kind'='ordinary'),0,'remaining preview also respects the explicit finale-only choice');
 select is((select count(*)::integer from app_private.run_stop_arrivals where run_id=(select run_id from candidate_test)),0,'all management choices preserve the absence of actual arrival evidence');
 select ok(not has_function_privilege('authenticated','app_private.evening_route_candidates(jsonb,uuid,timestamptz,uuid[],integer,uuid)','execute'),'shared private candidate planner cannot enumerate house addresses');
+insert into app_private.event_capabilities(event_id,user_id,capability,granted_by) select event_id,'b0000000-0000-0000-0000-000000000001','groups_manage','f0000000-0000-0000-0000-000000000001' from candidate_test;
+select set_config('request.jwt.claims','{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+select ok(not (api.admin_route_command_options((select run_id from candidate_test))#>>'{withdraw,eligible}')::boolean,'group-only manager sees the actual separate safe-withdrawal permission');
+select throws_ok($$select api.admin_safe_withdraw_group(run_id,'a0000000-0000-0000-0000-000000000001',version,'Groepen beheren verleent niet automatisch avondregiebevoegdheid') from candidate_test$$,'42501','NOT_AUTHORIZED','group-only management cannot bypass safe-withdrawal authorization');
+set local role postgres;
 select * from finish();
 rollback;
