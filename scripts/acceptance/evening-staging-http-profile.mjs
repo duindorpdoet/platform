@@ -13,7 +13,7 @@ let session;
 const sessions=[];
 const p=n=>samples=>Math.round([...samples].sort((a,b)=>a-b)[Math.max(0,Math.ceil(samples.length*n)-1)]??0);
 try {
- for(let offset=0;offset<fixture.actors.length;offset+=5)await Promise.all(fixture.actors.slice(offset,offset+5).map(async actor=>{const r=await admin.auth.admin.createUser({id:actor.id,email:actor.email,password:actor.password,email_confirm:true,app_metadata:{evening_load:fixture.slug}});if(r.error)throw new Error(`HTTP_PROFILE_ACCOUNT_${r.error.code}`);assert.equal(r.data.user.id,actor.id);created.push(actor);}));
+ for(let offset=0;offset<fixture.actors.length;offset+=5){const results=await Promise.allSettled(fixture.actors.slice(offset,offset+5).map(async actor=>{const r=await admin.auth.admin.createUser({id:actor.id,email:actor.email,password:actor.password,email_confirm:true,app_metadata:{evening_load:fixture.slug}});if(r.error)throw new Error(`HTTP_PROFILE_ACCOUNT_${r.error.code}`);assert.equal(r.data.user.id,actor.id);created.push(actor);}));const failure=results.find(r=>r.status==='rejected');if(failure)throw failure.reason;}
  const setup=await fetch(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_REF}/database/query`,{method:'POST',headers:{Authorization:`Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({query:eveningLoadFixtureSql(fixture),read_only:false}),signal:AbortSignal.timeout(60000)});
  assert.ok(setup.ok,'isolated fixture setup');
  const family=fixture.actors.find(a=>a.kind==='family'),client=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
