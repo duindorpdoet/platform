@@ -19,6 +19,7 @@ export const startLocationInventoryQuery = `select jsonb_build_object(
     'effectivePositionHash',encode(sha256(convert_to(jsonb_build_array(coalesce(p.marker_latitude,p.geocoded_latitude,p.latitude),coalesce(p.marker_longitude,p.geocoded_longitude,p.longitude))::text,'UTF8')),'hex'),
     'walkingNodeId',p.walking_node_id,'verifiedAt',p.verified_at,'markerUpdatedAt',p.marker_updated_at,
     'routeReady',app_private.start_point_safe_connection(p.id),
+    'readiness',app_private.start_point_readiness(p.id)-'location',
     'confirmationAudit',(select jsonb_build_object('createdAt',a.created_at,'version',a.minimal_change->'version','hasLocationHash',a.minimal_change ? 'locationHash')
       from app_private.audit_events a where a.event_id=e.id and a.resource_type='start_point' and a.resource_id=p.id and a.action='start_point.confirmed' order by a.created_at desc,a.id desc limit 1),
     'groupLinks',(select count(*) from app_private.walking_groups g join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id join app_private.start_slots slot on slot.id=s.start_slot_id where g.event_id=e.id and slot.start_point_id=p.id)) order by p.id)

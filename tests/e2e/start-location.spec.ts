@@ -73,8 +73,14 @@ test("saved official and manual positions can be confirmed on mobile without a w
     await expect(editor.getByRole("alert")).toContainText("opslaan geweigerd");
     await expect(page.locator(".start-regie-notice").filter({ hasText: "Locatie opgeslagen" })).toHaveCount(0);
     expect((await snapshot()).startPoints.find((point: { id: string }) => point.id === ids[0]).latitude).toBe(52.09);
+    await page.route("**/rest/v1/rpc/admin_startregie_snapshot", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Tijdelijke snapshotstoring" }) }));
     await editor.getByRole("button", { name: "Locatie opslaan" }).click();
+    await expect(page.locator(".start-regie-notice")).toContainText("Startregie ophalen mislukt");
+    expect((await snapshot()).startPoints.find((point: { id: string }) => point.id === ids[0]).latitude).toBe(52.091234);
+    await page.unroute("**/rest/v1/rpc/admin_startregie_snapshot");
+    await page.getByRole("button", { name: "Vernieuwen", exact: true }).click();
     await expect(editor.getByRole("button", { name: "Deze marker bevestigen" })).toBeVisible();
+    await expect(page.locator(".start-regie-notice").filter({ hasText: "Startregie ophalen mislukt" })).toHaveCount(0);
     await expect(editor).toContainText("Bron: handmatige routingpositie");
     await editor.getByRole("button", { name: "Deze marker bevestigen" }).click();
     await expect(editor).toContainText("Locatie bevestigd");

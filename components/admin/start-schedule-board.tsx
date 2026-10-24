@@ -268,6 +268,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     if (Number.isFinite(serverTime) && serverTime < lastServerTime.current) return;
     if (Number.isFinite(serverTime)) lastServerTime.current = serverTime;
     setSnapshot(next);
+    setNotice(current => current.startsWith("Startregie ophalen mislukt:") || current.startsWith("Startregie vernieuwen mislukt.") ? "" : current);
     setScheduleIds(current => current.filter(id => next.groups.some(group => group.schedule?.id === id && ["draft", "confirmed", "published"].includes(group.schedule.state))));
     setSettingsDraft(current => current ?? next.settings);
     } catch { if (serial === refreshSerial.current) setNotice("Startregie vernieuwen mislukt. Controleer de verbinding en probeer opnieuw."); }
@@ -514,8 +515,8 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       if (data?.id !== resource.id || !Number.isInteger(data.version) || !coordinate(data.longitude, data.latitude)) {
         throw new Error("De server heeft de opgeslagen positie niet teruggegeven. Vernieuw en controleer de locatie.");
       }
-      await load();
       setNotice(kind === "start" && !data.readiness?.confirmed ? "Locatie opgeslagen. Controleer de pin en kies ‘Deze marker bevestigen’." : "Locatie opgeslagen.");
+      await load();
       return true;
     } finally { setBusy(false); }
   }
