@@ -4,10 +4,20 @@ import { describe, expect, it } from "vitest";
 function configure(probeResult: object, runtimeStatus = 200, environment: Record<string, string> = {}) {
   const code = `
     const runtimeStatus = ${runtimeStatus};
+    const restMode = process.env.TEST_REST_MODE ?? 'correct';
+    let restConfig = restMode.startsWith('mismatch') ? {db_schema:'public',db_extra_search_path:'extensions',max_rows:1000} : {db_schema:'api',db_extra_search_path:'api,extensions',max_rows:1000};
     globalThis.fetch = async (input, init = {}) => {
       const url = new URL(String(input));
       let body = {};
 
+      if (url.pathname.endsWith('/postgrest')) {
+        if (init.method === 'PATCH') {
+          if (restMode === 'correct-patch-broken' || restMode === 'mismatch-patch-broken') return new Response('{}',{status:500});
+          if (restMode !== 'mismatch-not-retained') restConfig = JSON.parse(init.body);
+          console.log('Data API configuration patched.');
+        }
+        return new Response(JSON.stringify(restConfig),{status:200});
+      }
       if (url.pathname.endsWith('/config/auth') && init.method === 'PATCH') {
         const requested = JSON.parse(init.body);
         const expectedRateLimit = process.env.APP_ENVIRONMENT === 'production' ? 120 : 30;
@@ -153,5 +163,30 @@ describe("mail worker deployment probe", () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("runtime configuration is unavailable or disabled");
+  });
+});
+
+describe("Data API deployment configuration", () => {
+  const probe = {found:true,statusCode:204,timedOut:false,error:null};
+  it("verifies an already correct configuration without a redundant failing PATCH", () => {
+    const result=configure(probe,200,{TEST_REST_MODE:"correct-patch-broken"});
+    expect(result.status,result.stderr).toBe(0);
+    expect(result.stdout).toContain("Supabase Data API configuration verified.");
+    expect(result.stdout).not.toContain("Data API configuration patched.");
+  });
+  it("applies a required change and reads back the actual configuration", () => {
+    const result=configure(probe,200,{TEST_REST_MODE:"mismatch"});
+    expect(result.status,result.stderr).toBe(0);
+    expect(result.stdout).toContain("Data API configuration patched.");
+  });
+  it("does not accept a required change that the provider rejected", () => {
+    const result=configure(probe,200,{TEST_REST_MODE:"mismatch-patch-broken"});
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Deployment API request failed (500)");
+  });
+  it("rejects success without the intended server configuration", () => {
+    const result=configure(probe,200,{TEST_REST_MODE:"mismatch-not-retained"});
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Data API did not retain");
   });
 });

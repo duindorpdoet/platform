@@ -141,11 +141,20 @@ const managementHeaders = {
   "Content-Type": "application/json",
 };
 
-await request(`https://api.supabase.com/v1/projects/${projectRef}/postgrest`, {
-  method: "PATCH",
-  headers: managementHeaders,
-  body: JSON.stringify({ db_schema: "api", db_extra_search_path: "api,extensions", max_rows: 1000 }),
-});
+const restConfigUrl = `https://api.supabase.com/v1/projects/${projectRef}/postgrest`;
+const desiredRestConfig = { db_schema: "api", db_extra_search_path: "api,extensions", max_rows: 1000 };
+const restConfigMatches = (config) => config?.db_schema === desiredRestConfig.db_schema
+  && config?.db_extra_search_path === desiredRestConfig.db_extra_search_path
+  && Number(config?.max_rows) === desiredRestConfig.max_rows;
+let restConfig = await request(restConfigUrl, { headers: managementHeaders });
+// An unchanged configuration needs verification, not another control-plane
+// mutation. A changed configuration must still be applied and read back.
+if (!restConfigMatches(restConfig)) {
+  await request(restConfigUrl, { method: "PATCH", headers: managementHeaders, body: JSON.stringify(desiredRestConfig) });
+  restConfig = await request(restConfigUrl, { headers: managementHeaders });
+}
+if (!restConfigMatches(restConfig)) throw new Error("Supabase Data API did not retain the required schema, search path and row limit.");
+console.log("Supabase Data API configuration verified.");
 
 await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, {
   method: "PATCH",
