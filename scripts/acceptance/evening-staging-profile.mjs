@@ -15,6 +15,17 @@ for(const path of ['billing/addons','postgrest']){
  const value=await r.json();
  console.log(JSON.stringify(path==='billing/addons'?{name:'compute-selection',selected:value.selected_addons?.filter(a=>a.type==='compute_instance'),available:value.available_addons?.filter(a=>a.type==='compute_instance')}:{name:'rest-pool',settings:Object.fromEntries(Object.entries(value).filter(([key])=>/^(db_pool|db_pool_size|db_pre_request|db_prepared_statements|db_tx_end|db_schema)$/.test(key)))}));
 }
+// Read both known application environments; never print keys or service secrets.
+for(const [environment,project] of [['staging',ref],['production','dtubngvxfbupgvgfrjko']]){
+ for(const path of ['config/realtime','billing/addons']){
+  const r=await fetch(`https://api.supabase.com/v1/projects/${project}/${path}`,{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(15000)});
+  if(!r.ok){console.log(JSON.stringify({name:'configured-hosted-limits',environment,path,status:r.status}));continue;}
+  const value=await r.json();
+  const limits={};
+  if(path==='config/realtime')for(const [key,item] of Object.entries(value)){if(typeof item==='number'&&/(max|limit|pool)/i.test(key))limits[key]=item;}
+  console.log(JSON.stringify({name:'configured-hosted-limits',environment,path,status:r.status,...(path==='config/realtime'?{limits}:{selected:value.selected_addons?.filter(a=>a.type==='compute_instance')})}));
+ }
+}
 const settings=await query("select name,setting,unit from pg_settings where name in ('jit','jit_above_cost','jit_inline_above_cost','jit_optimize_above_cost','max_connections','shared_buffers','work_mem','effective_cache_size') order by name");
 console.log(JSON.stringify({name:'database-settings',settings}));
 console.log(JSON.stringify({name:'api-role-settings',rows:await query("select rolname,(select jsonb_agg(c) from unnest(rolconfig) c where c ~ '^(statement_timeout|plan_cache_mode|jit|pgrst.db_pool|pgrst.db_pre_request)=') settings from pg_roles where rolname in ('authenticator','authenticated','postgres')")}));
