@@ -3,7 +3,7 @@ import {prepareStartedLegacyFixtures} from "../../scripts/acceptance/started-fix
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { assertReadableLayout } from "./helpers/layout";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile,mkdir } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -215,9 +215,9 @@ test("forged cookies fail and offline group state reveals only the current stop 
 
   await context.setOffline(true);
   await page.getByRole("button", { name: "Vernieuwen" }).click();
-  await expect(page.locator(".offline-banner")).toContainText(/laatste route-informatie, bijgewerkt om/i);
+  await expect(page.locator(".offline-banner")).toContainText(/laatste geldige opgeslagen opdracht, bijgewerkt om/i);
   await expect(page.getByRole("heading", { name: "Testpoort 01" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "QR scannen" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "QR scannen" })).toBeEnabled();
   await expect(page.getByRole("button", { name: /overslaan/i }).first()).toBeDisabled();
   expect(await page.evaluate(() => JSON.stringify(Array.from({ length: localStorage.length }, (_, index) => localStorage.getItem(localStorage.key(index)!))))).not.toContain("Testpoort 02");
 
@@ -1627,4 +1627,36 @@ test("organization edits and removes resident portals while preserving existing 
   await page.reload(); await selectAdminSection(page, "Poorten");
   await page.getByRole("tab", { name: "Poorten beheren", exact: true }).click();
   await expect(page.locator(".manual-portal-list > article").filter({ hasText: updated })).toHaveCount(0);
+});
+
+
+test("an expired offline destination hides its address but retains the durable arrival for review",async({context,page},testInfo)=>{
+ test.skip(testInfo.project.name!=="desktop-chromium","One stateful local recovery probe");requireLocalAuth();test.setTimeout(45000);
+ const {client,session}=await fixtureClient();prepareStartedLegacyFixtures();
+ let current=await rpc(client,"group_snapshot",{_group_id:groupId});
+ if(!current.run){const roster=await rpc(client,"group_roster",{_group_id:groupId});await rpc(client,"run_start",{_group_id:groupId,_present_registration_child_ids:roster.map((row:{registrationChildId:string})=>row.registrationChildId),_expected_group_version:current.group.version,_idempotency_key:"evening-cache-start",_request_hash:"evening-cache-start"});current=await rpc(client,"group_snapshot",{_group_id:groupId});}
+ const stop=current.run.currentStop;expect(stop).toBeTruthy();await context.addCookies(sessionCookies(session));await page.goto("/mijn-groep");
+ await expect(page.getByRole("heading",{name:stop.portal.name,exact:true})).toBeVisible();await expect.poll(()=>page.evaluate(async()=>(await indexedDB.databases()).some(database=>database.name==="duindorp-private-arrivals-v1"))).toBe(true);await context.setOffline(true);
+ await page.evaluate(()=>{for(const key of Object.keys(localStorage)){if(key.startsWith("duindorp-private-group:ops1:")){const value=JSON.parse(localStorage.getItem(key)!);value.expiresAt=Date.now()+5000;localStorage.setItem(key,JSON.stringify(value));}}});
+ await page.getByRole("button",{name:"Groepsinformatie vernieuwen",exact:true}).click();await expect(page.locator(".offline-banner")).toBeVisible();
+ await page.getByLabel("Korte poortcode").fill("UNCONFIRMED-CODE");await page.getByRole("button",{name:"Code controleren",exact:true}).click();
+ const dialog=page.getByRole("dialog");await expect(dialog).toContainText("Poortcode nog niet bevestigd");await dialog.getByRole("button",{name:"Aankomst bewaren voor bevestiging",exact:true}).click();
+ await expect(page.locator(".arrival-sync-notice.is-pending")).toContainText("Aankomst bewaard op deze telefoon");
+ await expect(page.getByRole("heading",{name:"Jullie route kon niet worden opgehaald"})).toBeVisible({timeout:10000});
+ await expect(page.getByRole("heading",{name:stop.portal.name,exact:true})).toHaveCount(0);if(stop.portal.address)await expect(page.locator(".group-app")).not.toContainText(stop.portal.address);
+ await expect(page.locator(".arrival-sync-notice.is-pending")).toBeVisible();await page.getByText("Bewaarde aankomsten (1)",{exact:true}).click();await expect(page.locator(".arrival-sync-history")).toContainText("Wacht op bevestiging");
+ const after=await rpc(client,"group_snapshot",{_group_id:groupId});expect(after.run.currentStop.id).toBe(stop.id);expect(after.run.currentStop.scanAccepted).toBe(false);expect(after.run.version).toBe(current.run.version);
+ await mkdir("docs/evening/screenshots",{recursive:true});for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);await page.screenshot({path:`docs/evening/screenshots/recovery-expired-${width}.png`});}
+});
+
+
+test("outdoor preference survives reload and remains separate after a real account switch",async({context,page},testInfo)=>{
+ test.skip(testInfo.project.name!=="desktop-chromium","One scoped preference transition");requireLocalAuth();
+ await authenticate(context,"leader-a@example.invalid");await page.setViewportSize({width:390,height:844});await page.goto("/mijn-groep");
+ const toggle=page.getByRole("button",{name:"Buitenmodus uit",exact:true});await expect(toggle).toHaveAttribute("aria-pressed","false");await toggle.click();
+ await expect(page.getByRole("button",{name:"Buitenmodus aan",exact:true})).toHaveAttribute("aria-pressed","true");await page.reload();await expect(page.getByRole("button",{name:"Buitenmodus aan",exact:true})).toHaveAttribute("aria-pressed","true");
+ for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);}
+ await mkdir("docs/evening/screenshots",{recursive:true});await page.screenshot({path:"docs/evening/screenshots/outdoor-430.png"});
+ await authenticate(context,"parent-a@example.invalid");await page.reload();await expect(page.getByRole("button",{name:"Buitenmodus uit",exact:true})).toHaveAttribute("aria-pressed","false");
+ await authenticate(context,"leader-a@example.invalid");await page.reload();await expect(page.getByRole("button",{name:"Buitenmodus aan",exact:true})).toHaveAttribute("aria-pressed","true");
 });

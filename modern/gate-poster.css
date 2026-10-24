@@ -3,3 +3,5 @@
 .gate-paper-preview.mono header{background:#fff;color:#111;border:0;border-top:1px solid #111;border-bottom:1px solid #111}.gate-paper-preview.mono header>p{color:#333}
 
 .portal-preparation{display:grid;gap:14px}.portal-preparation label{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;color:#cfdef0;font-size:13px}.portal-preparation :is(input:not([type=checkbox]),textarea){width:100%;padding:10px;color:#e6f0ff;background:#0b1626;border:1px solid #526982;border-radius:8px}.portal-preparation .btn{white-space:normal}
+
+.portal-preparation fieldset{display:grid;gap:12px;margin:0;padding:0;border:0;min-width:0}

@@ -6,6 +6,7 @@ import { amsterdamDateTimeInput, amsterdamInputToIso } from "@/lib/time/amsterda
 import { LocationEditor } from "@/components/admin/location-editor";
 import { useDialogFocus } from "@/lib/ui/use-dialog-focus";
 import { createClient } from "@/lib/supabase/client";
+import {withRequestDeadline} from "@/lib/redesign/request-deadline";
 import {VisitInformationFields,visitInformationDraft,type VisitInformationDraft} from "@/components/portal/visit-information";
 
 type World = { id: string; slug: string; name: string };
@@ -117,15 +118,16 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
       maxGroups: Number(draft.maxGroups), maxChildren: Number(draft.maxChildren),
       visitMinutes: Number(draft.visitMinutes), bufferMinutes: Number(draft.bufferMinutes),
     };
-    const { error } = await client.schema("api").rpc("admin_manual_portal_save", {
+    try {
+    const { error } = await withRequestDeadline(client.schema("api").rpc("admin_manual_portal_save", {
       _event_slug: eventSlug, _portal_id: draft.id, _payload: payload, _expected_version: draft.version,
       _reason: draft.id ? "Poortgegevens bijgewerkt door de organisatie" : "Poort handmatig door de organisatie toegevoegd",
-    });
-    setBusy(false);
+    }));
     if (error?.message.includes("STALE_VERSION")) await load();
     if (error) setTimeError(`Opslaan geweigerd: ${commandError(error.message)}`);
     else setNotice(draft.id ? "Poort bijgewerkt." : "Poort aangemaakt met een stabiele poortcode.");
     if (!error) { setDraft(null); await load(); onChanged(); }
+    }catch{setTimeError("Er kwam geen bevestiging terug. Je ingevulde gegevens blijven staan. Open de actuele poort opnieuw voordat je nogmaals opslaat.");}finally{setBusy(false); }
   }
 
   async function remove(portal: Portal) {

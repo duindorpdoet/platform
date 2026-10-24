@@ -1,6 +1,6 @@
 # Avondverbeteringen: werkstatus 24 oktober 2026
 
-Dit is een onvoltooide implementatiebranch. De bredere avondwijzigingen zijn niet op staging of productie gezet. De aparte, geteste hotfix voor eenvoudig startpunten bevestigen staat in PR 39, release `1622eb447f3a57546ef13c656bc71bfe5b848af7`.
+Dit is een onvoltooide implementatiebranch. De bredere avondwijzigingen zijn niet op staging of productie gezet. De aparte, geteste hotfix voor eenvoudig startpunten bevestigen staat in PR 39, release `ce23ab3564b6157ebfcb64c62d1edec4b11d0c8f`. PR 39 is gemerged; de productie-uitrol is gestart en nog niet als live bevestigd.
 
 ## Afgeronde clientwerkzaamheden
 
@@ -24,16 +24,20 @@ De client verwijst vooruit naar onderstaande RPC's. Zij bestaan nog niet in prod
 
 De clienttypen zijn het voorlopige contract. Serverimplementatie en tests moeten dit bevestigen of de client samenhangend aanpassen. Geen clientstatus geldt als bewijs van serverautorisatie, capaciteit, een fysieke QR-test of een gelopen route.
 
-## Productiebaseline en uitrolblokkade
+## Productiebaseline en uitrol
 
-Productiehealth toont `c892999bea664f1bf848b0435a262d930872d5f8`; de laatst geslaagde productiebackup bij die release omvatte 179 tabellen, 52 Storage-objecten en 80 migraties. Een nieuwe uitsluitend-lezen inventaris moet op de productiebranch onder het bestaande productie-environment worden uitgevoerd zodra de infrastructuurwijziging uit PR 39 daar staat. Behoud de bestaande branch- en environmentgrenzen.
+Hotfix-CI [40052620685](https://github.com/duindorpdoet/platform/actions/runs/40052620685) en volledige staging-uitrol [40052812221](https://github.com/duindorpdoet/platform/actions/runs/40052812221) zijn geslaagd op exact `ce23ab3564b6157ebfcb64c62d1edec4b11d0c8f`. De stagingproef omvatte een verse versleutelde backup, geïsoleerd herstel, migrations, databehoudvergelijking, VPS-uitrol en healthcontrole. De productiebranch is daarna fast-forward gepromoveerd. Productie-uitrol [40054456261](https://github.com/duindorpdoet/platform/actions/runs/40054456261) is nog bezig; claim pas livegang na geslaagde uitrol en externe health op dezelfde SHA.
 
-Hotfix-CI 40042138038 is volledig geslaagd. Stagingrun 40042293666 doorliep backup/herstel, migratie en vergelijking van bestaande data, maar verloor de self-hosted runner bij de VPS-deploy. Nieuwe stagingrun 40044095260 doorliep opnieuw backup/herstel en wacht op de offline service `dg-sites-vps-01-duindorphalloweenstg-01`. Er is geen SSH-/servicebeheer beschikbaar in deze sessie. De gebruiker is gevraagd de service te laten herstarten. Er is geen productiepromotie uitgevoerd.
+De stagingrunner viel uit doordat de VPS-schijf vol was. De gebruiker maakte 3,5 GB vrij met apt-cache- en journaldonderhoud. Afgebakend onderhoud van uitsluitend de staging Git-checkout verkleinde vervolgens `.git` van 11,60 GiB naar 244,36 MiB, met ongewijzigde HEAD en bronbestanden. Er is nu ongeveer 14,63 GiB vrij. Releases, runtime, opslag en database werden hierbij niet gewijzigd. Maintenance-runs tellen niet als geslaagde stagingrelease.
+
+Een uitsluitend-lezen productie-inventaris [40054582474](https://github.com/duindorpdoet/platform/actions/runs/40054582474) wacht achter de productie-uitrol. Die registreert schema, migrationversies, functiehashes en databehoudfingerprints zonder rijinhoud of credentials. Verifieer de werkelijke baseline voordat nieuwe servercontracten worden geïmplementeerd. Behoud de bestaande branch- en environmentgrenzen.
 
 De drie lege, via de CLI gemaakte migratieplaatsaanduidingen zijn buiten de repository bewaard in `/tmp/duindorp-evening-unfinished-migrations`. Zij bevatten geen implementatie en zijn niet toegevoegd aan de gereviewde releaselijst. Maak de werkelijke migraties via de CLI en valideer de exacte releaselijst voordat de release wordt gepubliceerd.
 
 ## Verificatie en resterend bewijs
 
-Gerichte tests voor queue/cache/huisinformatie: 26 geslaagd. Lint en typecheck zijn geslaagd. De eerste volledige applicatietestrun signaleerde terecht de drie lege, niet-gereviewde migratiebestanden; na het apart bewaren daarvan en de aanvullende cacheproeven slaagde de definitieve `pnpm verify`: lint, typecheck, 370 applicatietests in 53 bestanden, productiebuild en client-artifactscan van 1.168 bestanden.
+De huidige clientcheckpoint heeft 377 geslaagde applicatietests in 54 bestanden, volledige lint, typecheck, productiebuild en een client-artifactscan van 1.054 bestanden. Naast de bestaande queueproeven zijn echte opgeslagen bevestigde receipts van de oude productieversie als regressiefixture getest: zij blijven leesbaar en worden nooit opnieuw verzonden. Onzekere opdrachten zonder oorspronkelijke sleutel blijven ongewijzigd bewaard voor controle.
+
+Drie aanvullende browserproeven met echte lokale Auth/RPC zijn geslaagd: bestaande offline/reconnect/camera-afhandeling; een aflopend snapshot met een duurzaam bewaarde aankomst; en buitenmodus na herladen en een echte accountwisseling. De laatste twee doorlopen controleerden 360/390/430 px. De synthetische screenshots staan in `docs/evening/screenshots/` en zijn bekeken. Een verlopen bestemming verdwijnt ook als de telefoon continu offline blijft. Fout-/hulpinformatie blijft zichtbaar boven de aankomsthistorie. Snapshot-, auth- en formulieraanvragen hebben een begrensde wachttijd; een onbekende uitkomst wordt niet als bevestigde aankomst voorgesteld.
 
 Nog vereist: echte servercontracten en pgTAP, autorisatie- en concurrentieproeven, browserdoorlopen met echte Auth/RPC op 360/390/430px, stagingbelasting en databehoudvergelijking, productiepromotie en health op exact dezelfde SHA. De fysieke proef met geprinte posters, verschillende telefoons en een gecontroleerde wandel-/wacht-/finaleroute kan niet als browserbewijs worden afgevinkt. De echte IMAP-ontvangsttest is op expliciet gebruikersverzoek overgeslagen; zij is niet als geslaagd gerekend. OPS-03/mailworker blijft buiten scope.

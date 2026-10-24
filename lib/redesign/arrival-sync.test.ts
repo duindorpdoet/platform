@@ -199,3 +199,34 @@ describe('account changes and interrupted leases',()=>{
     expect(await rawOutbox()).toHaveLength(1);
   });
 });
+
+// Exact persisted shape of c892999b: no scope/lease/revision fields; successful
+// responses retained only run/stop identifiers and removed the command key.
+async function seedBaselineReceipt(status:'confirmed'|'pending'){
+ const keyId=`${scope.accountId}:${scope.eventId}:${scope.groupId}`,id='baseline-arrival';
+ const row={id,action:'run_arrive_and_advance',args:{_run_id:args._run_id,_expected_stop_id:args._expected_stop_id},...meta,createdAt:'2026-10-22T17:00:00.000Z',updatedAt:'2026-10-22T17:00:01.000Z',status};
+ const key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']),iv=crypto.getRandomValues(new Uint8Array(12));
+ const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:new TextEncoder().encode(keyId)},key,new TextEncoder().encode(JSON.stringify(row)));
+ const db=await new Promise<IDBDatabase>(resolve=>{const request=indexedDB.open('duindorp-private-arrivals-v1',1);request.onupgradeneeded=()=>{request.result.createObjectStore('keys');request.result.createObjectStore('outbox');};request.onsuccess=()=>resolve(request.result);});
+ await new Promise<void>((resolve,reject)=>{const tx=db.transaction(['keys','outbox'],'readwrite');tx.objectStore('keys').put(key,keyId);tx.objectStore('outbox').put({iv,ciphertext},keyId+':'+id);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});db.close();return row;
+}
+describe('preserving real production outbox formats',()=>{
+ it('reads a baseline confirmed record without replaying or blocking new arrivals',async()=>{
+  connect(false);await seedBaselineReceipt('confirmed');const original=await rawOutbox();
+  const queue=await import('./arrival-sync');await queue.configureArrivalSync(scope);
+  expect(queue.getArrivalRecoveryIssue()).toBe('');expect(queue.getLatestArrival()?.status).toBe('confirmed');expect(await rawOutbox()).toEqual(original);
+  connect(true);await queue.submitArrival('run_arrive_and_advance',{...args,_expected_stop_id:'new-stop'},meta);
+  expect(mock.rpc).toHaveBeenCalledTimes(1);expect(mock.rpc.mock.calls[0][1]._expected_stop_id).toBe('new-stop');expect(await rawOutbox()).toHaveLength(2);
+ });
+ it('retains and quarantines an uncertain record that has lost its original command key',async()=>{
+  await seedBaselineReceipt('pending');const original=await rawOutbox();const queue=await import('./arrival-sync');await queue.configureArrivalSync(scope);await queue.flushArrivalQueue();
+  expect(queue.getArrivalRecoveryIssue()).toBe('ARRIVAL_RECOVERY_REQUIRED');expect(mock.rpc).not.toHaveBeenCalled();expect(await rawOutbox()).toEqual(original);
+ });
+ it('keeps an older run visible and reviewable without replaying it',async()=>{
+  connect(false);const queue=await import('./arrival-sync');await queue.configureArrivalSync(scope);const row=await queue.submitArrival('run_arrive_and_advance',args,meta);
+  connect(true);await queue.configureArrivalSync({...scope,runId:'new-run'});await queue.flushArrivalQueue();
+  expect(queue.getLatestArrival()).toBeNull();expect(queue.getArrivalHistory()).toHaveLength(1);expect(queue.isCurrentArrivalReceipt(queue.getArrivalHistory()[0])).toBe(false);
+  await queue.dismissArrival(row.id);expect(queue.getArrivalHistory()[0]).toMatchObject({reviewed:true,status:'pending',automaticPaused:true});expect(queue.getArrivalHistory()[0].args).toEqual({...args,_idempotency_key:row.id});
+  expect(mock.rpc).not.toHaveBeenCalled();expect(await rawOutbox()).toHaveLength(1);expect(queue.getArrivalRecoveryIssue()).toBe('');
+ });
+});

@@ -58,6 +58,7 @@ import { PushNotificationSettings } from "@/components/pwa/pwa-experience";
 import { normalizeActivity } from "@/lib/domain/activity-labels";
 import { paymentRegistrationStage, type PaymentRegistrationStage } from "@/lib/domain/payment-registration-stage";
 import { createClient } from "@/lib/supabase/client";
+import {withRequestDeadline} from "@/lib/redesign/request-deadline";
 
 type Dashboard = {
   event: {
@@ -451,7 +452,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const [togetherRequests, setTogetherRequests] = useState<TogetherRequest[]>([]);
   const load=useCallback(async()=>{
     const request=++sourceRequests.current.dashboard;
-    try{const result=await createClient()?.schema("api").rpc("admin_dashboard",{_event_slug:eventSlug});
+    try{const client=createClient();if(!client)throw new Error();const result=await withRequestDeadline(client.schema("api").rpc("admin_dashboard",{_event_slug:eventSlug}));
       if(request!==sourceRequests.current.dashboard)return;
       if(!result||result.error||!result.data)throw new Error();
       const next=result.data as Dashboard;if(!next.event?.id||!next.counts)throw new Error();setDashboard(next);setEveningHealth(current=>({...current,dashboard:{at:Date.now(),error:null}}));
@@ -461,8 +462,8 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     const cockpitRequest=++sourceRequests.current.cockpit,portalRequest=++sourceRequests.current.portals;
     const client=createClient();if(!client)return;
     await Promise.allSettled([
-      (async()=>{try{const result=await client.schema("api").rpc("admin_evening_cockpit",{_event_slug:eventSlug});if(cockpitRequest!==sourceRequests.current.cockpit)return;if(result.error||!result.data)throw new Error();const cockpit=result.data as {groups:LiveRun[];portals:LivePortal[];alerts:LiveAlert[]};if(!Array.isArray(cockpit.groups)||!Array.isArray(cockpit.portals)||!Array.isArray(cockpit.alerts))throw new Error();setLiveRuns(cockpit.groups);setLivePortals(cockpit.portals);setLiveAlerts(cockpit.alerts);setEveningHealth(current=>({...current,cockpit:{at:Date.now(),error:null}}));}catch{if(cockpitRequest===sourceRequests.current.cockpit)setEveningHealth(current=>({...current,cockpit:{...current.cockpit,error:"Groepen en veiligheidssignalen konden niet worden bijgewerkt."}}));}})(),
-      (async()=>{try{const result=await client.schema("api").rpc("admin_portal_operations_snapshot",{_event_slug:eventSlug});if(portalRequest!==sourceRequests.current.portals)return;if(result.error||!result.data)throw new Error();const portals=result.data as {realtimeTopic?:string;portals?:PortalOperation[]};if(!Array.isArray(portals.portals))throw new Error();setPortalOperations(portals.portals??[]);setPortalRealtimeTopic(portals.realtimeTopic??null);setEveningHealth(current=>({...current,portals:{at:Date.now(),error:null}}));}catch{if(portalRequest===sourceRequests.current.portals)setEveningHealth(current=>({...current,portals:{...current.portals,error:"Poorten en capaciteit konden niet worden bijgewerkt."}}));}})()
+      (async()=>{try{const result=await withRequestDeadline(client.schema("api").rpc("admin_evening_cockpit",{_event_slug:eventSlug}));if(cockpitRequest!==sourceRequests.current.cockpit)return;if(result.error||!result.data)throw new Error();const cockpit=result.data as {groups:LiveRun[];portals:LivePortal[];alerts:LiveAlert[]};if(!Array.isArray(cockpit.groups)||!Array.isArray(cockpit.portals)||!Array.isArray(cockpit.alerts))throw new Error();setLiveRuns(cockpit.groups);setLivePortals(cockpit.portals);setLiveAlerts(cockpit.alerts);setEveningHealth(current=>({...current,cockpit:{at:Date.now(),error:null}}));}catch{if(cockpitRequest===sourceRequests.current.cockpit)setEveningHealth(current=>({...current,cockpit:{...current.cockpit,error:"Groepen en veiligheidssignalen konden niet worden bijgewerkt."}}));}})(),
+      (async()=>{try{const result=await withRequestDeadline(client.schema("api").rpc("admin_portal_operations_snapshot",{_event_slug:eventSlug}));if(portalRequest!==sourceRequests.current.portals)return;if(result.error||!result.data)throw new Error();const portals=result.data as {realtimeTopic?:string;portals?:PortalOperation[]};if(!Array.isArray(portals.portals))throw new Error();setPortalOperations(portals.portals??[]);setPortalRealtimeTopic(portals.realtimeTopic??null);setEveningHealth(current=>({...current,portals:{at:Date.now(),error:null}}));}catch{if(portalRequest===sourceRequests.current.portals)setEveningHealth(current=>({...current,portals:{...current.portals,error:"Poorten en capaciteit konden niet worden bijgewerkt."}}));}})()
     ]);
   },[eventSlug]);
   const refreshEvening=useCallback(async()=>{await Promise.allSettled([load(),loadLive()]);},[load,loadLive]);

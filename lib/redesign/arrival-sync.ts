@@ -2,6 +2,7 @@
 
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import {withRequestDeadline} from './request-deadline';
 
 export type ArrivalConnection = 'online' | 'offline';
 type Scope = { accountId: string; eventId: string; groupId: string; runId?: string | null };
@@ -22,9 +23,11 @@ let channel: BroadcastChannel | null = null,activeController:AbortController|nul
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach(listener => listener());
 const now = () => new Date().toISOString();
+async function authenticatedUser(){try{const client=createClient();return client?(await withRequestDeadline(client.auth.getUser())).data.user:null;}catch{return null;}}
 const isWaiting = (row: ArrivalReceipt) => row.status === 'pending' || row.status === 'sending';
-const belongs = (row: ArrivalReceipt) => !!scope && (!row.scope || row.scope.accountId === scope.accountId && row.scope.eventId === scope.eventId && row.scope.groupId === scope.groupId)
-  && scope.runId !== undefined && row.args._run_id === scope.runId;
+const ownScope = (row: ArrivalReceipt) => !!scope && (!row.scope || row.scope.accountId === scope.accountId && row.scope.eventId === scope.eventId && row.scope.groupId === scope.groupId);
+const belongs = (row:ArrivalReceipt) => ownScope(row)&&scope?.runId!==undefined&&row.args._run_id===scope?.runId;
+export const isCurrentArrivalReceipt=(row:ArrivalReceipt)=>belongs(row);
 function cancelTimer() { if (retryTimer) clearTimeout(retryTimer); retryTimer = null; }
 
 async function database() {
@@ -63,7 +66,7 @@ async function decode(value: Envelope, id: string) {
   const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:value.iv,additionalData:new TextEncoder().encode(id)},await encryptionKey(id),value.ciphertext);
   const row=JSON.parse(new TextDecoder().decode(bytes)) as ArrivalReceipt;
   if (typeof row.id!=='string'||!row.id||!row.args||typeof row.args!=='object'||Array.isArray(row.args)
-    ||row.args._idempotency_key!==row.id||typeof row.args._run_id!=='string'||typeof row.args._expected_stop_id!=='string'
+    ||(row.args._idempotency_key!==row.id&&!(row.status==='confirmed'&&row.args._idempotency_key===undefined))||typeof row.args._run_id!=='string'||typeof row.args._expected_stop_id!=='string'
     ||typeof row.portalName!=='string'||!Array.isArray(row.childIds)||row.childIds.some(id=>typeof id!=='string')||typeof row.finale!=='boolean'
     ||!Number.isFinite(Date.parse(row.createdAt))||!Number.isFinite(Date.parse(row.updatedAt))
     ||!['run_arrive_and_advance','run_scan'].includes(row.action)||!['pending','sending','confirmed','attention'].includes(row.status)
@@ -108,7 +111,7 @@ async function restore(key=scopeKey, gen=generation) {
   }
   if (key!==scopeKey || gen!==generation) return;
   receipts=values.sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
-  issue=corrupt ? 'ARRIVAL_RECOVERY_REQUIRED' : receipts.some(row=>isWaiting(row)&&!belongs(row)) ? 'OTHER_RUN_PENDING' : '';
+  issue=corrupt ? 'ARRIVAL_RECOVERY_REQUIRED' : receipts.some(row=>isWaiting(row)&&!row.reviewed&&!belongs(row)) ? 'OTHER_RUN_PENDING' : '';
   // Legacy unscoped commands remain byte-for-byte intact and are never sent.
   if (typeof localStorage!=='undefined' && ['duindorp-arrival-outbox-v1','duindorp-arrival-outbox-v2'].some(key=>localStorage.getItem(key))) issue ||= 'LEGACY_OUTBOX_REQUIRES_HELP';
   notify();
@@ -127,9 +130,9 @@ export async function configureArrivalSync(next: Scope) {
   }
   clearArrivalMemory(); scopeKey=id; scope={...next}; const gen=generation;
   configuring=(async()=>{
-    const user=await createClient()?.auth.getUser();
+    const user=await authenticatedUser();
     if (gen!==generation) return;
-    if (user?.data.user && user.data.user.id!==next.accountId) { clearArrivalMemory(); return; }
+    if (user && user.id!==next.accountId) { clearArrivalMemory(); return; }
     try { await restore(id,gen); }
     catch { if (gen===generation) { issue='ARRIVAL_RECOVERY_REQUIRED'; notify(); } throw new Error('ARRIVAL_RECOVERY_REQUIRED'); }
   })();
@@ -140,6 +143,7 @@ export const getArrivalConnection=():ArrivalConnection=>typeof navigator!=='unde
 export const isArrivalConnected=()=>getArrivalConnection()==='online';
 export const getArrivalRecoveryIssue=()=>issue;
 export const getArrivalReceipts=(childId?:string,includeReviewed=false)=>receipts.filter(row=>belongs(row)&&(includeReviewed||!row.reviewed)&&(!childId||row.childIds.includes(childId)));
+export const getArrivalHistory=(childId?:string)=>receipts.filter(row=>ownScope(row)&&(!childId||row.childIds.includes(childId)));
 export const getLatestArrival=(childId?:string)=>{const rows=getArrivalReceipts(childId);return rows.filter(row=>row.status!=='confirmed').at(-1)??rows.at(-1)??null;};
 export const hasWaitingArrival=()=>receipts.some(row=>belongs(row)&&isWaiting(row));
 export function subscribeArrivalSync(listener:()=>void) { listeners.add(listener); return()=>{listeners.delete(listener);}; }
@@ -169,11 +173,11 @@ export async function flushArrivalQueue():Promise<void> {
     for (const row of receipts.filter(row=>belongs(row)&&isWaiting(row)&&!row.automaticPaused)) {
       if (gen!==generation || !scope || !isArrivalConnected()) break;
       if ((row.nextRetryAt??0)>Date.now()) continue;
-      const user=await createClient()?.auth.getUser();
+      const user=await authenticatedUser();
       if (gen!==generation) break;
-      if (!user?.data.user) {authorizationRetryAt=Date.now()+15_000;break;}
+      if (!user) {authorizationRetryAt=Date.now()+15_000;break;}
       authorizationRetryAt=0;
-      if (user.data.user.id!==scope.accountId) { clearArrivalMemory(); break; }
+      if (user.id!==scope.accountId) { clearArrivalMemory(); break; }
       if((row.autoAttempts??0)>=MAX_ATTEMPTS){await change(row.id,(fresh,envelope)=>fresh&&isWaiting(fresh)&&(fresh.autoAttempts??0)>=MAX_ATTEMPTS&&(envelope?.leaseUntil??0)<=Date.now()?{...fresh,status:'pending',automaticPaused:true,nextRetryAt:undefined,error:'RESPONSE_UNCERTAIN'}:null);continue;}
       const claimed=await change(row.id,(fresh,envelope)=>{
         if (!fresh||!belongs(fresh)||!isWaiting(fresh)||fresh.automaticPaused||(fresh.autoAttempts??0)>=MAX_ATTEMPTS||(fresh.nextRetryAt??0)>Date.now()) return null;
@@ -223,7 +227,7 @@ export async function retryArrival(id:string) {
   return flushArrivalQueue();
 }
 export async function dismissArrival(id:string) {
-  await change(id,row=>row&&belongs(row)&&['attention','confirmed'].includes(row.status)?{...row,reviewed:true,updatedAt:now()}:null);
+  await change(id,row=>row&&ownScope(row)&&(['attention','confirmed'].includes(row.status)||!!scope?.runId&&row.args._run_id!==scope.runId)?{...row,reviewed:true,...(isWaiting(row)?{automaticPaused:true}:{}),updatedAt:now()}:null);
 }
 export function startArrivalSync() {
   if (started) return; started=true;

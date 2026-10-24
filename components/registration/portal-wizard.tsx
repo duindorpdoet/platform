@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {withRequestDeadline} from "@/lib/redesign/request-deadline";
 import {VisitInformationFields,type VisitInformationDraft} from "@/components/portal/visit-information";
 
 async function digest(value: unknown) {
@@ -124,11 +125,12 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     if (!editable) { setNotice("Deze aanvraag is al in behandeling en kan nu niet worden gewijzigd."); return null; }
     const client = createClient(); if (!client) return null;
     setBusy(true); setNotice("");
-    const { data, error } = await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: payload, _expected_version: saved?.version ?? null });
-    setBusy(false);
+    try {
+    const { data, error } = await withRequestDeadline(client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: payload, _expected_version: saved?.version ?? null }));
     if (error) { setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie huidige concept blijft bewaard." : error.message.includes("STALE_VERSION") ? "Jullie gegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
     const result = data as { id: string; version: number; status: ReviewStatus };
     setSaved(result); setStatus(result.status); setNotice(result.status === "changes_requested" ? "Jullie wijzigingen zijn bewaard en kunnen opnieuw worden ingediend." : "Jullie gegevens zijn bewaard. Je kunt later verdergaan."); return result;
+    }catch{setNotice("Er kwam geen bevestiging terug. Jullie ingevulde concept blijft op dit scherm staan. Vernieuw voordat je opnieuw opslaat.");return null;}finally{setBusy(false); }
   }
 
   async function submit() {
@@ -137,11 +139,12 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     const current = await save();
     const client = createClient(); if (!client || !current) return;
     setBusy(true);
-    const { data, error } = await client.schema("api").rpc("portal_application_submit", { _application_id: current.id, _expected_version: current.version, _idempotency_key: crypto.randomUUID(), _request_hash: await digest(payload) });
-    setBusy(false);
+    try {
+    const { data, error } = await withRequestDeadline(client.schema("api").rpc("portal_application_submit", { _application_id: current.id, _expected_version: current.version, _idempotency_key: crypto.randomUUID(), _request_hash: await digest(payload) }));
     if (error) return setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie concept blijft bewaard." : "Indienen is niet gelukt. Controleer de gegevens en probeer opnieuw.");
     const result = data as { version: number };
     setSaved({ ...current, version: result.version }); setStatus("submitted"); setReviewFeedback(null); setNotice("Jullie plek is ingediend voor beoordeling.");
+    }catch{setNotice("Er kwam geen bevestiging van de indiening terug. Jullie ingevulde gegevens blijven staan; vernieuw om de actuele status op te halen.");}finally{setBusy(false); }
   }
 
   async function uploadAsset(file: File) {
@@ -152,21 +155,22 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     const application = saved ?? await save();
     if (!application) return;
     setBusy(true); setNotice("");
+    try {
     const form = new FormData();
     form.set("applicationId", application.id);
     form.set("file", file);
-    const response = await fetch("/api/portal-assets", { method: "POST", body: form });
+    const response = await withRequestDeadline(fetch("/api/portal-assets", { method: "POST", body: form }));
     const body = await response.json() as { data?: { path: string }; error?: { message?: string } };
     if (!response.ok || !body.data?.path) {
-      setBusy(false); setNotice(body.error?.message ?? "Deze foto kunnen we nu niet toevoegen. Probeer een andere foto."); return;
+      setNotice(body.error?.message ?? "Deze foto kunnen we nu niet toevoegen. Probeer een andere foto."); return;
     }
     const nextPayload = { ...payload, assetPaths: [...new Set([...payload.assetPaths, body.data.path])] };
     const client = createClient();
-    const linked = client ? await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: nextPayload, _expected_version: application.version }) : null;
-    setBusy(false);
+    const linked = client ? await withRequestDeadline(client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: nextPayload, _expected_version: application.version })) : null;
     if (!linked || linked.error) return setNotice("De foto is ontvangen, maar nog niet aan jullie aanmelding gekoppeld. Probeer het nog eens.");
     const result = linked.data as { id: string; version: number; status: ReviewStatus };
     setPayload(nextPayload); setSaved(result); setStatus(result.status); setNotice("De foto staat bij jullie aanmelding. Jullie kunnen later verdergaan.");
+    }catch{setNotice("De foto is nog niet bevestigd. Jullie ingevulde concept blijft behouden. Controleer de verbinding en probeer opnieuw.");}finally{setBusy(false); }
   }
 
 
