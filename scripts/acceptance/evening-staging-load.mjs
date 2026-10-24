@@ -75,15 +75,36 @@ catch {
 } }
 let sampling = false, timer, probeFinished = false;
 try {
+    // These identities share one runner IP. Prepare their sessions below the
+    // actual token-bucket refill rate; the measured live phases still run with
+    // all identities at once. Never change the project's abuse protections.
+    let loginSpacingMs = 0;
+    if (!local) {
+        const response = await fetch(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_REF}/config/auth`, {
+            headers: { Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}` },
+            signal: AbortSignal.timeout(15000),
+        });
+        assert.ok(response.ok, 'read the actual Auth preparation limit');
+        const config = await response.json(), perHour = Number(config.rate_limit_token_refresh);
+        assert.ok(Number.isFinite(perHour) && perHour > 0, 'known positive token request limit');
+        loginSpacingMs = Math.ceil(3600000 / perHour) + 150;
+        report.authPreparation = { tokenRequestsPerHour: perHour, minimumSpacingMs: loginSpacingMs, concurrency: 1 };
+        report.limitations.push('Independent sessions are prepared sequentially within the configured shared-IP Auth limit; this is not a simultaneous sign-in capacity test.');
+        console.log(JSON.stringify({ name: 'shared-ip-auth-preparation', ...report.authPreparation }));
+    }
     // Admin createUser confirms only these synthetic accounts; it sends no mail.
     await pool(fixture.actors, 5, async (actor) => { const result = await privileged.auth.admin.createUser({ id: actor.id, email: actor.email, password: actor.password, email_confirm: true, app_metadata: { evening_load: fixture.slug } }); if (result.error)
         throw new Error(`LOAD_ACCOUNT_${result.error.code ?? result.error.status}`); assert.equal(result.data.user.id, actor.id); created.push(actor); });
     await query(eveningLoadFixtureSql(fixture), false);
-    const login = await phase('distinct-account-logins', fixture.actors, async (actor) => { const client = createClient(url, key, { global:{fetch:observedFetch},auth: { persistSession: false, autoRefreshToken: false } }), signed = await client.auth.signInWithPassword({ email: actor.email, password: actor.password }); if (signed.error) {
+    const login = await phase('distinct-account-logins', fixture.actors, async (actor, index) => {
+        if (index > 0 && loginSpacingMs) await new Promise(resolve => setTimeout(resolve, loginSpacingMs));
+        const client = createClient(url, key, { global:{fetch:observedFetch},auth: { persistSession: false, autoRefreshToken: false } }), signed = await client.auth.signInWithPassword({ email: actor.email, password: actor.password }); if (signed.error) {
         const error = new Error('LOGIN');
         error.code = signed.error.code ?? signed.error.status;
         throw error;
-    } clients.set(actor.id, client); actor.session = signed.data.session; }, 20);
+    } clients.set(actor.id, client); actor.session = signed.data.session;
+        if (!local && (index + 1) % 25 === 0) console.log(JSON.stringify({ name: 'shared-ip-auth-progress', prepared: index + 1, total: fixture.actors.length }));
+    }, local ? 20 : 1);
     assert.equal(login.failed, 0, 'all independent login attempts must succeed');
     await metrics();
     timer = setInterval(() => { if (!sampling) {
