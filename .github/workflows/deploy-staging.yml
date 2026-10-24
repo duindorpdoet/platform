@@ -313,7 +313,6 @@ jobs:
       LOAD_PORTALS: "30"
       LOAD_ADMINS: "4"
       LOAD_OBSERVERS: "20"
-      LOAD_REPORT_PATH: ${{ runner.temp }}/evening-staging-load-report.json
     steps:
       - uses: actions/checkout@v7
         with:
@@ -327,6 +326,8 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Exercise independent test accounts and the actual deployed application
+        env:
+          LOAD_REPORT_PATH: ${{ runner.temp }}/evening-staging-load-report.json
         run: node scripts/acceptance/evening-staging-load.mjs
       - name: Retain aggregate measurements without account credentials
         if: always()
