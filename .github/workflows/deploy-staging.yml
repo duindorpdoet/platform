@@ -15,6 +15,7 @@ on:
           - none
           - inspect
           - clear-build-cache
+          - compact-git-checkout
       skip_mail_acceptance:
         description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
         type: boolean
