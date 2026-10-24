@@ -34,13 +34,23 @@ Runhandelingen vereisen een daadwerkelijke verwachte versie. Veilig afmelden con
 
 Een schone lokale opbouw plus de volledige regressiesuite is geslaagd: 2.020 pgTAP-controles in 75 bestanden. De bestaande echte parallelle Startregieproef met twee geauthenticeerde planners/publiceerders is groen. De aanvullende parallelle proef bewijst ook dat voorraad en poortstatus elkaar niet via hun event-FK vastzetten. Deze transactiewijziging staat nog op de werkbranch; ETA, fysieke capaciteit, finalereserveringen en routefingerprints volgen hierop.
 
-## Nog niet geïmplementeerde servercontracten
+## Gedeelde fysieke capaciteit
+
+De gewone-poortcontrole gebruikt één private beoordeling voor de beheerpreview, dynamische toewijzing, oude routevalidatie en de databasegrens voor een nieuwe reservering. Zij beoordeelt de werkelijke aankomst, volledige huisbezoekduur en buffer, goedkeuring/locatie/wandelverbinding, gelijktijdige groepen, gelijktijdige kinderen en de totale ontvangstcapaciteit. De bezetting wordt op iedere relevante intervalgrens berekend en per fysieke groep ontdubbeld. Een groep die achtereenvolgens twee andere groepen overlapt telt hen niet als gelijktijdig. Werkelijk ontvangen kinderen blijven meetellen in het totale huismaximum, ook na vertrek of gewijzigde openingstijden.
+
+Afronden en veilig afmelden geven actieve claims vrij. Het vertrek van een kind verkleint gewone én finaleclaims, zonder het eerdere aankomstbewijs of de zegels te veranderen. Een optionele FK `bound_stop_id` koppelt capaciteit aan oude routestops; hun oorspronkelijke plan-/stop-ID's en bronconstraint blijven behouden. Automatische binding en de volledige resterende legacyroute volgen in de volgende routestap.
+
+De nieuwe schone lokale opbouw en volledige regressiesuite zijn geslaagd: 2.059 pgTAP-controles in 76 bestanden. De gerichte capaciteitssuite is daarna uitgebreid tot 40 geslaagde controles, inclusief weigering van een koppeling aan een andere groep. De echte parallelle databaseproef laat twee `api.run_start`-opdrachten op dezelfde eventgrens wachten: precies één reservering en adres worden vrijgegeven; de tweede groep wacht. De capaciteitsbeoordeling komt na die commit tot dezelfde uitsluiting. Oude plannen, aankomsten, betalingen en credentials zijn exact gelijk gebleven. Security-advisors op errorniveau en performance-advisors op warnniveau vonden geen problemen.
+
+De vier synthetische basisgroepen bevatten samen 23 kinderen in hetzelfde tijdvak; hun happy-path-huiscapaciteit is aangepast van 12 naar 40. Kleine capaciteit wordt expliciet in de negatieve tests ingesteld. De geïsoleerde oefenfunctie gebruikt nu dezelfde geverifieerde coördinaat voor poortlocatie en wandelknoop. De verwijderproef maakt haar reservering binnen een echt openingsvenster. Dit wijzigt uitsluitend test-/oefengegevens en importeert niets naar productie.
+
+## Resterende servercontracten
 
 De client verwijst vooruit naar onderstaande RPC's. Zij zijn nog niet geïmplementeerd. Deze branch mag daarom niet als voltooide release worden uitgerold.
 
 - `api.admin_route_command_options(_run_id)` voor actuele poortkeuzes, verantwoordelijke volwassenen en de runversie.
 - `api.admin_startregie_review_route(...)`, routefingerprints en de uitgebreide publicatievoorwaarde `_expected_route_fingerprints`.
-- Live routeklok, gedeelde fysieke capaciteit, stabiele gepubliceerde finalereservering, vroeg/laat-scanconflicten en consistente lockvolgorde voor alle muterende ingangen.
+- Live routeklok, volledige oude-routebinding, stabiele gepubliceerde finalereservering en vroeg/laat-scanconflicten.
 
 De clienttypen zijn het voorlopige contract. Serverimplementatie en tests moeten dit bevestigen of de client samenhangend aanpassen. Geen clientstatus geldt als bewijs van serverautorisatie, capaciteit, een fysieke QR-test of een gelopen route.
 

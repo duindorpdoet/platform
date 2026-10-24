@@ -66,7 +66,7 @@ select is((api.admin_manual_portal_remove((select id from unused_concept),1,'Ver
 select ok(not exists(select 1 from app_private.portals where id=(select id from unused_concept)),'unused concept record no longer exists');
 -- Held visits must be resolved before a portal can disappear from the active route.
 insert into app_private.portal_reservations(event_id,portal_id,group_id,kind,status,reserved_from,reserved_until,child_count)
- select event_id,'12000000-0000-0000-0000-000000000003',id,'ordinary','held',statement_timestamp(),statement_timestamp()+interval '10 minutes',1
+ select event_id,'12000000-0000-0000-0000-000000000003',id,'ordinary','held',timestamptz '2026-10-31T17:30:00Z',timestamptz '2026-10-31T17:40:00Z',1
  from app_private.walking_groups where id='23000000-0000-0000-0000-000000000001';
 select throws_ok($$select api.admin_manual_portal_remove('12000000-0000-0000-0000-000000000003',(select version from app_private.portals where id='12000000-0000-0000-0000-000000000003'),'Poort met een gereserveerd bezoek verwijderen')$$,'23514','RESOLVE_ACTIVE_VISITS_FIRST','held visits block removal');
 select ok(not has_function_privilege('anon','api.admin_portal_editor_snapshot(text)','execute'),'anonymous clients cannot read portal editor details');
