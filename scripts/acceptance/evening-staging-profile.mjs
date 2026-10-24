@@ -17,6 +17,10 @@ for(const path of ['billing/addons','postgrest']){
 }
 const settings=await query("select name,setting,unit from pg_settings where name in ('jit','jit_above_cost','jit_inline_above_cost','jit_optimize_above_cost','max_connections','shared_buffers','work_mem','effective_cache_size') order by name");
 console.log(JSON.stringify({name:'database-settings',settings}));
+console.log(JSON.stringify({name:'api-role-settings',rows:await query("select rolname,(select jsonb_agg(c) from unnest(rolconfig) c where c ~ '^(statement_timeout|plan_cache_mode|jit|pgrst.db_pool|pgrst.db_pre_request)=') settings from pg_roles where rolname in ('authenticator','authenticated','postgres')")}));
+console.log(JSON.stringify({name:'channel-maintenance-definition',rows:await query("select encode(sha256(convert_to(pg_get_functiondef('app_private.poortkamer_channels(uuid,uuid)'::regprocedure),'UTF8')),'hex') sha256")}));
+const restQueries=await query("select query,calls,mean_exec_time from extensions.pg_stat_statements where query like 'WITH pgrst_source AS%' and query ~ '(group_snapshot|portal_room_snapshot|admin_evening_cockpit)' order by total_exec_time desc limit 5");
+console.log(JSON.stringify({name:'normalized-rest-query-shapes',queries:restQueries.map(row=>({...row,query:row.query.replace(/[a-f0-9]{8}-[a-f0-9-]{27}/gi,'[uuid]').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[email]').slice(0,5000)}))}));
 const stats=await query(`select case when query like '%portal_room_snapshot%' then 'portal_room_snapshot' when query like '%group_snapshot%' then 'group_snapshot' when query like '%admin_evening_cockpit%' then 'admin_evening_cockpit' when query like '%admin_portal_operations_snapshot%' then 'admin_portal_operations_snapshot' else 'admin_dashboard' end rpc,calls,round(mean_exec_time::numeric,2) mean_ms,round(max_exec_time::numeric,2) maximum_ms,round(total_exec_time::numeric,2) total_ms,shared_blks_hit,shared_blks_read,jit_functions,round(jit_generation_time::numeric,2) jit_generation_ms,round(jit_inlining_time::numeric,2) jit_inlining_ms,round(jit_optimization_time::numeric,2) jit_optimization_ms,round(jit_emission_time::numeric,2) jit_emission_ms from extensions.pg_stat_statements where query ~ '(portal_room_snapshot|group_snapshot|admin_dashboard|admin_evening_cockpit|admin_portal_operations_snapshot)' order by total_exec_time desc limit 15`);
 console.log(JSON.stringify({name:'rpc-statistics',stats}));
 const fixture=await query("select id,slug from app_private.events where settings->>'eveningLoad'='true' and slug like 'evening-load-%' order by created_at desc limit 1");
@@ -49,3 +53,11 @@ const burst=await Promise.all(Array.from({length:8},async()=>{
  return {totalMs:Math.round(performance.now()-started),executionMs:plan?.['Execution Time']};
 }));
 console.log(JSON.stringify({name:'eight-parallel-rolled-back-group-reads',elapsedMs:Math.round(performance.now()-burstStarted),requests:burst,diagnosticOnly:true}));
+for(const actor of actors)for(const mode of ['auto','force_generic_plan','force_custom_plan']){
+ const fn=actor.kind==='family'?'group_snapshot':actor.kind==='portal'?'portal_room_snapshot':'admin_evening_cockpit';
+ const args=actor.kind==='family'?`${literal(actor.subject)}::uuid`:actor.kind==='portal'?`${literal(event.slug)},${literal(actor.subject)}::uuid`:literal(event.slug);
+ const started=performance.now();
+ const rows=await query(`begin;set local statement_timeout='15s';set local jit=off;set local plan_cache_mode=${mode};set local request.jwt.claims=${literal(JSON.stringify({sub:actor.actor,role:'authenticated'}))};set local role authenticated;explain(analyze,buffers,format json) select api.${fn}(${args}) from generate_series(1,20);set constraints all immediate;rollback;`,false);
+ const plan=rows.find?.(row=>row['QUERY PLAN'])?.['QUERY PLAN']?.[0];
+ console.log(JSON.stringify({name:'twenty-rolled-back-role-reads',role:actor.kind,mode,totalMs:Math.round(performance.now()-started),executionMs:plan?.['Execution Time']}));
+}
