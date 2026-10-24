@@ -1,6 +1,6 @@
 # Avondverbeteringen: werkstatus 24 oktober 2026
 
-Dit is een onvoltooide implementatiebranch. De bredere avondwijzigingen zijn niet op staging of productie gezet. De aparte, geteste hotfix voor eenvoudig startpunten bevestigen staat in PR 39, release `ce23ab3564b6157ebfcb64c62d1edec4b11d0c8f`. PR 39 is gemerged; de productie-uitrol is gestart en nog niet als live bevestigd.
+Dit is een onvoltooide implementatiebranch. De bredere avondwijzigingen zijn niet op staging of productie gezet. De aparte, geteste hotfix voor eenvoudig startpunten bevestigen staat in PR 39, release `ce23ab3564b6157ebfcb64c62d1edec4b11d0c8f`. PR 39 is gemerged; de volledige productie-uitrol en afzonderlijke externe smokecontrole zijn geslaagd. De hotfix is live.
 
 ## Afgeronde clientwerkzaamheden
 
@@ -12,13 +12,18 @@ Dit is een onvoltooide implementatiebranch. De bredere avondwijzigingen zijn nie
 - Zoekbare omleiding/afmelding, routebeoordeling, gereedheid en praktische huisinformatie hebben clientbediening, busy-/foutweergave en waar nodig expliciete herbeoordeling na een versieconflict.
 - Nieuwe huisinformatie onderscheidt onbekend van expliciet geen extra effecten. Bestaande lege checkboxes worden niet als een bewuste verklaring geïnterpreteerd.
 
+## Lokaal geïmplementeerde servercontracten
+
+`api.admin_evening_readiness` en `api.record_evening_readiness` zijn lokaal geïmplementeerd. Bewijs is privé en append-only, met serveractor, actuele publicatie-/credentialrevisie, oorspronkelijke idempotentiesleutel en serverhash. Adminopeningen leveren geen deelnemerswaarneming op. Bestaande echte tutorialafrondingen tellen mee; handmatige verklaringen veranderen geen waargenomen gezinnentelling. Een latere negatieve verklaring blijft zichtbaar en krijgt voorrang op een oudere positieve handmatige verklaring. Een fysieke QR-attestatie vereist de huidige korte code plus expliciete print-/telefooncheckboxes; de code zelf blijft buiten het bewijs. De beheerweergave toont per gezin wat daadwerkelijk is waargenomen.
+
+Een schone opbouw van uitsluitend de eigen lokale teststack plus alle pgTAP-tests is geslaagd: 1.953 controles in 73 bestanden, waaronder 46 gerichte gereedheidscontroles. De productie-inventaris is vóór deze implementatie vastgelegd. De nieuwe serveruitbreiding staat nog niet op staging/productie en vereist nog de browser- en integratieproeven.
+
 ## Nog niet geïmplementeerde servercontracten
 
-De client verwijst vooruit naar onderstaande RPC's. Zij bestaan nog niet in productie. Deze branch mag daarom niet als voltooide release worden uitgerold.
+De client verwijst vooruit naar onderstaande RPC's. Zij zijn nog niet geïmplementeerd. Deze branch mag daarom niet als voltooide release worden uitgerold.
 
 - `api.admin_route_command_options(_run_id)` voor actuele poortkeuzes, verantwoordelijke volwassenen en de runversie.
 - `api.admin_startregie_review_route(...)`, routefingerprints en de uitgebreide publicatievoorwaarde `_expected_route_fingerprints`.
-- `api.admin_evening_readiness(_event_slug)` en `api.record_evening_readiness(...)`: privé append-only bewijs, daadwerkelijke actor, autorisatie en actuele publicatie-/credentialrevisie.
 - `api.portal_visit_information(_portal_id)` en `api.portal_visit_information_save(...)`, plus atomische opname in intake en organisatiebeheer.
 - Live routeklok, gedeelde fysieke capaciteit, stabiele gepubliceerde finalereservering, vroeg/laat-scanconflicten en consistente lockvolgorde voor alle muterende ingangen.
 
@@ -26,11 +31,11 @@ De clienttypen zijn het voorlopige contract. Serverimplementatie en tests moeten
 
 ## Productiebaseline en uitrol
 
-Hotfix-CI [40052620685](https://github.com/duindorpdoet/platform/actions/runs/40052620685) en volledige staging-uitrol [40052812221](https://github.com/duindorpdoet/platform/actions/runs/40052812221) zijn geslaagd op exact `ce23ab3564b6157ebfcb64c62d1edec4b11d0c8f`. De stagingproef omvatte een verse versleutelde backup, geïsoleerd herstel, migrations, databehoudvergelijking, VPS-uitrol en healthcontrole. De productiebranch is daarna fast-forward gepromoveerd. Productie-uitrol [40054456261](https://github.com/duindorpdoet/platform/actions/runs/40054456261) is nog bezig; claim pas livegang na geslaagde uitrol en externe health op dezelfde SHA.
+Hotfix-CI [40052620685](https://github.com/duindorpdoet/platform/actions/runs/40052620685) en volledige staging-uitrol [40052812221](https://github.com/duindorpdoet/platform/actions/runs/40052812221) zijn geslaagd op exact `ce23ab3564b6157ebfcb64c62d1edec4b11d0c8f`. De stagingproef omvatte een verse versleutelde backup, geïsoleerd herstel, migrations, databehoudvergelijking, VPS-uitrol en healthcontrole. De productiebranch is daarna fast-forward gepromoveerd. Productie-uitrol [40054456261](https://github.com/duindorpdoet/platform/actions/runs/40054456261) is geslaagd. De afzonderlijke externe health-/routecontrole bevestigt live dezelfde SHA.
 
 De stagingrunner viel uit doordat de VPS-schijf vol was. De gebruiker maakte 3,5 GB vrij met apt-cache- en journaldonderhoud. Afgebakend onderhoud van uitsluitend de staging Git-checkout verkleinde vervolgens `.git` van 11,60 GiB naar 244,36 MiB, met ongewijzigde HEAD en bronbestanden. Er is nu ongeveer 14,63 GiB vrij. Releases, runtime, opslag en database werden hierbij niet gewijzigd. Maintenance-runs tellen niet als geslaagde stagingrelease.
 
-Een uitsluitend-lezen productie-inventaris [40054582474](https://github.com/duindorpdoet/platform/actions/runs/40054582474) wacht achter de productie-uitrol. Die registreert schema, migrationversies, functiehashes en databehoudfingerprints zonder rijinhoud of credentials. Verifieer de werkelijke baseline voordat nieuwe servercontracten worden geïmplementeerd. Behoud de bestaande branch- en environmentgrenzen.
+De uitsluitend-lezen productie-inventaris [40054582474](https://github.com/duindorpdoet/platform/actions/runs/40054582474) is geslaagd op 24 oktober 2026 om 02:42:37 UTC: 81 migraties, 179 tabellen en 482 functies. Alle functiehashes komen exact overeen met de lokale testbasis. Het ZIP-artifact is op SHA-256 gecontroleerd. De private inventaris bevat schema, migrationversies, functiehashes en databehoudfingerprints zonder rijinhoud of credentials. Deze werkelijke baseline is vastgesteld vóór implementatie van nieuwe servercontracten. Behoud de bestaande branch- en environmentgrenzen.
 
 De drie lege, via de CLI gemaakte migratieplaatsaanduidingen zijn buiten de repository bewaard in `/tmp/duindorp-evening-unfinished-migrations`. Zij bevatten geen implementatie en zijn niet toegevoegd aan de gereviewde releaselijst. Maak de werkelijke migraties via de CLI en valideer de exacte releaselijst voordat de release wordt gepubliceerd.
 
