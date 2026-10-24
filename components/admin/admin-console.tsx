@@ -5,6 +5,7 @@ import {AdminPortalThanks} from "@/components/redesign/portal-thanks";
 
 import Image from "next/image";
 import {useSnapshotRefresh} from "@/lib/realtime/use-snapshot-refresh";
+import {createCoalescedRefresh} from "@/lib/realtime/coalesced-refresh";
 import {EveningFreshness,emptyEveningHealth} from "./evening-freshness";
 import {EveningReadiness} from "./evening-readiness";
 import {EveningActionDialog,type EveningAction} from "./evening-action-dialog";
@@ -473,10 +474,11 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   useEffect(() => {
     const client = createClient();
     if (!client || !portalRealtimeTopic || !["overview", "live"].includes(section)) return;
+    const refreshQueue = createCoalescedRefresh(refreshEvening);
     const channel = client.channel(portalRealtimeTopic, { config: { private: true } })
-      .on("broadcast", { event: "snapshot_changed" }, () => void refreshEvening())
+      .on("broadcast", { event: "snapshot_changed" }, refreshQueue.request)
       .subscribe((status: string) => setLiveConnection(status === "SUBSCRIBED" ? "live" : status === "CHANNEL_ERROR" || status === "TIMED_OUT" ? "offline" : "connecting"));
-    return () => { void client.removeChannel(channel); };
+    return () => { refreshQueue.dispose(); void client.removeChannel(channel); };
   }, [liveConnectionRetry, refreshEvening, portalRealtimeTopic, section]);
 
   async function dryRun(file: File) {

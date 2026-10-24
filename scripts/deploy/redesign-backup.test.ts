@@ -25,13 +25,13 @@ it('blocks missing or changed original rows while allowing additive tables',()=>
   expect(compareFingerprints(original,[{...original[0],sha256:'changed'}])).toEqual(['app_private.events']);
 });
 it('rehearses only missing migrations on a restored release while retaining every file hash',async()=>{
-  const files=[...REVIEWED_RELEASE_MIGRATIONS],applied=files.slice(0,-12).map(file=>file.split('_')[0]);
+  const files=[...REVIEWED_RELEASE_MIGRATIONS],applied=files.slice(0,-13).map(file=>file.split('_')[0]);
   const executed:string[]=[];
   const proof=await dryRunReleaseMigrations(files,applied,async sql=>{executed.push(sql);});
-  expect(executed).toHaveLength(12);
+  expect(executed).toHaveLength(13);
   expect(proof.map(row=>row.file)).toEqual(files);
-  expect(proof.slice(0,-12).every(row=>row.execution==='already-applied')).toBe(true);
-  expect(proof.slice(-12).every(row=>row.execution==='dry-run')).toBe(true);
+  expect(proof.slice(0,-13).every(row=>row.execution==='already-applied')).toBe(true);
+  expect(proof.slice(-13).every(row=>row.execution==='dry-run')).toBe(true);
   expect(proof.every(row=>/^[a-f0-9]{64}$/.test(row.sha256))).toBe(true);
   executed.length=0;
   const repeated=await dryRunReleaseMigrations(files,files.map(file=>file.split('_')[0]),async sql=>{executed.push(sql);});

@@ -1,0 +1,1208 @@
+{
+  "diagnosticOnly": true,
+  "releaseAcceptance": false,
+  "limitations": [
+    "Single-role and three-account HTTP comparisons do not establish capacity for 254 distinct active accounts.",
+    "SQL profiling uses scoped synthetic actors in rolled-back transactions; it does not validate Auth or physical routing.",
+    "No compute sizing or project limits were changed."
+  ],
+  "sources": [
+    {
+      "run": 40092762851,
+      "job": 120868917839,
+      "records": [
+        {
+          "name": "database-settings",
+          "settings": [
+            {
+              "name": "effective_cache_size",
+              "setting": "49152",
+              "unit": "8kB"
+            },
+            {
+              "name": "jit",
+              "setting": "off",
+              "unit": null
+            },
+            {
+              "name": "jit_above_cost",
+              "setting": "100000",
+              "unit": null
+            },
+            {
+              "name": "jit_inline_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "jit_optimize_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "max_connections",
+              "setting": "60",
+              "unit": null
+            },
+            {
+              "name": "shared_buffers",
+              "setting": "28672",
+              "unit": "8kB"
+            },
+            {
+              "name": "work_mem",
+              "setting": "2184",
+              "unit": "kB"
+            }
+          ]
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "on",
+          "totalMs": 541,
+          "executionMs": 67.92,
+          "planningMs": 0.052,
+          "buffersHit": 3857
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "off",
+          "totalMs": 302,
+          "executionMs": 17.169,
+          "planningMs": 0.049,
+          "buffersHit": 3857
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "on",
+          "totalMs": 389,
+          "executionMs": 128.415,
+          "planningMs": 0.046,
+          "buffersHit": 6434
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "off",
+          "totalMs": 668,
+          "executionMs": 41.143,
+          "planningMs": 0.044,
+          "buffersHit": 6437
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "on",
+          "totalMs": 671,
+          "executionMs": 61.839,
+          "planningMs": 0.074,
+          "buffersHit": 2968
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "off",
+          "totalMs": 631,
+          "executionMs": 12.248,
+          "planningMs": 0.048,
+          "buffersHit": 2968
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "on",
+          "totalMs": 688,
+          "executionMs": 50.753,
+          "planningMs": 0.049,
+          "buffersHit": 6987
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "off",
+          "totalMs": 483,
+          "executionMs": 25.131,
+          "planningMs": 0.05,
+          "buffersHit": 6985
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "on",
+          "totalMs": 515,
+          "executionMs": 19.002,
+          "planningMs": 0.055,
+          "buffersHit": 2612
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "off",
+          "totalMs": 510,
+          "executionMs": 12.61,
+          "planningMs": 0.051,
+          "buffersHit": 2612
+        }
+      ]
+    },
+    {
+      "run": 40093462527,
+      "job": 120870786755,
+      "records": [
+        {
+          "name": "database-settings",
+          "settings": [
+            {
+              "name": "effective_cache_size",
+              "setting": "49152",
+              "unit": "8kB"
+            },
+            {
+              "name": "jit",
+              "setting": "off",
+              "unit": null
+            },
+            {
+              "name": "jit_above_cost",
+              "setting": "100000",
+              "unit": null
+            },
+            {
+              "name": "jit_inline_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "jit_optimize_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "max_connections",
+              "setting": "60",
+              "unit": null
+            },
+            {
+              "name": "shared_buffers",
+              "setting": "28672",
+              "unit": "8kB"
+            },
+            {
+              "name": "work_mem",
+              "setting": "2184",
+              "unit": "kB"
+            }
+          ]
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "on",
+          "totalMs": 551,
+          "executionMs": 78.299,
+          "planningMs": 0.061,
+          "buffersHit": 3857
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "off",
+          "totalMs": 458,
+          "executionMs": 16.702,
+          "planningMs": 0.041,
+          "buffersHit": 3857
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "on",
+          "totalMs": 411,
+          "executionMs": 137.77,
+          "planningMs": 0.04,
+          "buffersHit": 6437
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "off",
+          "totalMs": 499,
+          "executionMs": 39.364,
+          "planningMs": 0.066,
+          "buffersHit": 6437
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "on",
+          "totalMs": 312,
+          "executionMs": 49.129,
+          "planningMs": 0.049,
+          "buffersHit": 2968
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "off",
+          "totalMs": 330,
+          "executionMs": 16.323,
+          "planningMs": 0.049,
+          "buffersHit": 2968
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "on",
+          "totalMs": 353,
+          "executionMs": 72.011,
+          "planningMs": 0.046,
+          "buffersHit": 6985
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "off",
+          "totalMs": 644,
+          "executionMs": 24.851,
+          "planningMs": 0.044,
+          "buffersHit": 6985
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "on",
+          "totalMs": 663,
+          "executionMs": 19.037,
+          "planningMs": 0.052,
+          "buffersHit": 2612
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "off",
+          "totalMs": 287,
+          "executionMs": 12.507,
+          "planningMs": 0.045,
+          "buffersHit": 2612
+        },
+        {
+          "name": "eight-parallel-rolled-back-group-reads",
+          "elapsedMs": 682,
+          "requests": [
+            {
+              "totalMs": 483,
+              "executionMs": 18.99
+            },
+            {
+              "totalMs": 372,
+              "executionMs": 20.342
+            },
+            {
+              "totalMs": 671,
+              "executionMs": 17.279
+            },
+            {
+              "totalMs": 682,
+              "executionMs": 17.774
+            },
+            {
+              "totalMs": 563,
+              "executionMs": 17.034
+            },
+            {
+              "totalMs": 295,
+              "executionMs": 20.001
+            },
+            {
+              "totalMs": 304,
+              "executionMs": 17.017
+            },
+            {
+              "totalMs": 483,
+              "executionMs": 18.826
+            }
+          ],
+          "diagnosticOnly": true
+        }
+      ]
+    },
+    {
+      "run": 40094105809,
+      "job": 120872678533,
+      "records": [
+        {
+          "name": "database-settings",
+          "settings": [
+            {
+              "name": "effective_cache_size",
+              "setting": "49152",
+              "unit": "8kB"
+            },
+            {
+              "name": "jit",
+              "setting": "off",
+              "unit": null
+            },
+            {
+              "name": "jit_above_cost",
+              "setting": "100000",
+              "unit": null
+            },
+            {
+              "name": "jit_inline_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "jit_optimize_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "max_connections",
+              "setting": "60",
+              "unit": null
+            },
+            {
+              "name": "shared_buffers",
+              "setting": "28672",
+              "unit": "8kB"
+            },
+            {
+              "name": "work_mem",
+              "setting": "2184",
+              "unit": "kB"
+            }
+          ]
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "on",
+          "totalMs": 314,
+          "executionMs": 40.878,
+          "planningMs": 0.041,
+          "buffersHit": 3857
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "off",
+          "totalMs": 1317,
+          "executionMs": 18.743,
+          "planningMs": 0.049,
+          "buffersHit": 3857
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "on",
+          "totalMs": 719,
+          "executionMs": 85.528,
+          "planningMs": 0.039,
+          "buffersHit": 6437
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "off",
+          "totalMs": 1588,
+          "executionMs": 39.6,
+          "planningMs": 0.037,
+          "buffersHit": 6437
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "on",
+          "totalMs": 321,
+          "executionMs": 26.983,
+          "planningMs": 0.043,
+          "buffersHit": 2968
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "off",
+          "totalMs": 433,
+          "executionMs": 11.566,
+          "planningMs": 0.043,
+          "buffersHit": 2968
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "on",
+          "totalMs": 493,
+          "executionMs": 36.962,
+          "planningMs": 0.043,
+          "buffersHit": 6985
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "off",
+          "totalMs": 319,
+          "executionMs": 24.922,
+          "planningMs": 0.043,
+          "buffersHit": 6985
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "on",
+          "totalMs": 485,
+          "executionMs": 14.994,
+          "planningMs": 0.045,
+          "buffersHit": 2612
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "off",
+          "totalMs": 449,
+          "executionMs": 12.405,
+          "planningMs": 0.044,
+          "buffersHit": 2612
+        },
+        {
+          "name": "eight-parallel-rolled-back-group-reads",
+          "elapsedMs": 1242,
+          "requests": [
+            {
+              "totalMs": 635,
+              "executionMs": 19.155
+            },
+            {
+              "totalMs": 826,
+              "executionMs": 19.82
+            },
+            {
+              "totalMs": 576,
+              "executionMs": 17.152
+            },
+            {
+              "totalMs": 504,
+              "executionMs": 17.855
+            },
+            {
+              "totalMs": 872,
+              "executionMs": 17.01
+            },
+            {
+              "totalMs": 529,
+              "executionMs": 18.894
+            },
+            {
+              "totalMs": 1239,
+              "executionMs": 16.627
+            },
+            {
+              "totalMs": 673,
+              "executionMs": 17.372
+            }
+          ],
+          "diagnosticOnly": true
+        },
+        {
+          "name": "synthetic-http-transport-profile",
+          "transport": "native-fetch",
+          "logicalRequests": 254,
+          "distinctAccounts": 1,
+          "elapsedMs": 2860,
+          "statuses": {
+            "200": 254
+          },
+          "p50Ms": 2531,
+          "p95Ms": 2773,
+          "maximumMs": 2828,
+          "queueP95Ms": 0,
+          "connectP95Ms": 0,
+          "serverP95Ms": 0,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "synthetic-http-transport-profile",
+          "transport": "https-16-sockets",
+          "logicalRequests": 254,
+          "distinctAccounts": 1,
+          "elapsedMs": 731,
+          "statuses": {
+            "200": 254
+          },
+          "p50Ms": 393,
+          "p95Ms": 681,
+          "maximumMs": 715,
+          "queueP95Ms": 629,
+          "connectP95Ms": 23,
+          "serverP95Ms": 38,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "synthetic-http-transport-profile",
+          "transport": "https-254-sockets",
+          "logicalRequests": 254,
+          "distinctAccounts": 1,
+          "elapsedMs": 822,
+          "statuses": {
+            "200": 254
+          },
+          "p50Ms": 576,
+          "p95Ms": 712,
+          "maximumMs": 738,
+          "queueP95Ms": 104,
+          "connectP95Ms": 493,
+          "serverP95Ms": 341,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "http-profile-cleanup",
+          "created": 6,
+          "secured": 6
+        }
+      ]
+    },
+    {
+      "run": 40094715662,
+      "job": 120874567568,
+      "records": [
+        {
+          "name": "database-settings",
+          "settings": [
+            {
+              "name": "effective_cache_size",
+              "setting": "49152",
+              "unit": "8kB"
+            },
+            {
+              "name": "jit",
+              "setting": "off",
+              "unit": null
+            },
+            {
+              "name": "jit_above_cost",
+              "setting": "100000",
+              "unit": null
+            },
+            {
+              "name": "jit_inline_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "jit_optimize_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "max_connections",
+              "setting": "60",
+              "unit": null
+            },
+            {
+              "name": "shared_buffers",
+              "setting": "28672",
+              "unit": "8kB"
+            },
+            {
+              "name": "work_mem",
+              "setting": "2184",
+              "unit": "kB"
+            }
+          ]
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "on",
+          "totalMs": 735,
+          "executionMs": 78.992,
+          "planningMs": 0.045,
+          "buffersHit": 3857
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "off",
+          "totalMs": 638,
+          "executionMs": 16.557,
+          "planningMs": 0.044,
+          "buffersHit": 3857
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "on",
+          "totalMs": 414,
+          "executionMs": 150.646,
+          "planningMs": 0.043,
+          "buffersHit": 6422
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "off",
+          "totalMs": 1555,
+          "executionMs": 39.606,
+          "planningMs": 0.042,
+          "buffersHit": 6430
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "on",
+          "totalMs": 318,
+          "executionMs": 51.065,
+          "planningMs": 0.05,
+          "buffersHit": 2810
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "off",
+          "totalMs": 472,
+          "executionMs": 11.538,
+          "planningMs": 0.046,
+          "buffersHit": 2811
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "on",
+          "totalMs": 448,
+          "executionMs": 30.975,
+          "planningMs": 0.047,
+          "buffersHit": 4170
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "off",
+          "totalMs": 670,
+          "executionMs": 17.363,
+          "planningMs": 0.046,
+          "buffersHit": 4170
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "on",
+          "totalMs": 456,
+          "executionMs": 15.972,
+          "planningMs": 0.046,
+          "buffersHit": 2435
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "off",
+          "totalMs": 849,
+          "executionMs": 10.159,
+          "planningMs": 0.048,
+          "buffersHit": 2431
+        },
+        {
+          "name": "eight-parallel-rolled-back-group-reads",
+          "elapsedMs": 874,
+          "requests": [
+            {
+              "totalMs": 486,
+              "executionMs": 25.065
+            },
+            {
+              "totalMs": 558,
+              "executionMs": 16.877
+            },
+            {
+              "totalMs": 522,
+              "executionMs": 16.657
+            },
+            {
+              "totalMs": 494,
+              "executionMs": 21.807
+            },
+            {
+              "totalMs": 686,
+              "executionMs": 16.37
+            },
+            {
+              "totalMs": 589,
+              "executionMs": 16.247
+            },
+            {
+              "totalMs": 392,
+              "executionMs": 21.89
+            },
+            {
+              "totalMs": 871,
+              "executionMs": 16.316
+            }
+          ],
+          "diagnosticOnly": true
+        },
+        {
+          "name": "synthetic-http-transport-profile",
+          "transport": "native-fetch",
+          "logicalRequests": 254,
+          "distinctAccounts": 1,
+          "elapsedMs": 3572,
+          "statuses": {
+            "200": 254
+          },
+          "p50Ms": 3092,
+          "p95Ms": 3498,
+          "maximumMs": 3542,
+          "queueP95Ms": 0,
+          "connectP95Ms": 0,
+          "serverP95Ms": 0,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "synthetic-http-transport-profile",
+          "transport": "https-16-sockets",
+          "logicalRequests": 254,
+          "distinctAccounts": 1,
+          "elapsedMs": 1584,
+          "statuses": {
+            "200": 254
+          },
+          "p50Ms": 1213,
+          "p95Ms": 1515,
+          "maximumMs": 1543,
+          "queueP95Ms": 1478,
+          "connectP95Ms": 23,
+          "serverP95Ms": 563,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "synthetic-http-transport-profile",
+          "transport": "https-254-sockets",
+          "logicalRequests": 254,
+          "distinctAccounts": 1,
+          "elapsedMs": 783,
+          "statuses": {
+            "200": 254
+          },
+          "p50Ms": 570,
+          "p95Ms": 708,
+          "maximumMs": 728,
+          "queueP95Ms": 77,
+          "connectP95Ms": 509,
+          "serverP95Ms": 341,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "three-account-mixed-role-profile",
+          "distinctAccounts": 3,
+          "rpc": "group_snapshot",
+          "requests": 200,
+          "statuses": {
+            "0": 8,
+            "200": 192
+          },
+          "p95Ms": 10277,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "three-account-mixed-role-profile",
+          "distinctAccounts": 3,
+          "rpc": "admin_evening_cockpit",
+          "requests": 24,
+          "statuses": {
+            "0": 1,
+            "200": 23
+          },
+          "p95Ms": 10218,
+          "maximumBytes": 53983,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "three-account-mixed-role-profile",
+          "distinctAccounts": 3,
+          "rpc": "admin_portal_operations_snapshot",
+          "requests": 24,
+          "statuses": {
+            "0": 1,
+            "200": 23
+          },
+          "p95Ms": 10248,
+          "maximumBytes": 28779,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "three-account-mixed-role-profile",
+          "distinctAccounts": 3,
+          "rpc": "admin_dashboard",
+          "requests": 24,
+          "statuses": {
+            "0": 2,
+            "200": 22
+          },
+          "p95Ms": 12002,
+          "maximumBytes": 572,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "three-account-mixed-role-profile",
+          "distinctAccounts": 3,
+          "rpc": "portal_room_snapshot",
+          "requests": 30,
+          "statuses": {
+            "0": 10,
+            "200": 20
+          },
+          "p95Ms": 12001,
+          "maximumBytes": 2642,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "http-profile-cleanup",
+          "created": 254,
+          "secured": 254
+        }
+      ]
+    },
+    {
+      "run": 40095470581,
+      "job": 120876931444,
+      "records": [
+        {
+          "name": "database-settings",
+          "settings": [
+            {
+              "name": "effective_cache_size",
+              "setting": "49152",
+              "unit": "8kB"
+            },
+            {
+              "name": "jit",
+              "setting": "off",
+              "unit": null
+            },
+            {
+              "name": "jit_above_cost",
+              "setting": "100000",
+              "unit": null
+            },
+            {
+              "name": "jit_inline_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "jit_optimize_above_cost",
+              "setting": "500000",
+              "unit": null
+            },
+            {
+              "name": "max_connections",
+              "setting": "60",
+              "unit": null
+            },
+            {
+              "name": "shared_buffers",
+              "setting": "28672",
+              "unit": "8kB"
+            },
+            {
+              "name": "work_mem",
+              "setting": "2184",
+              "unit": "kB"
+            }
+          ]
+        },
+        {
+          "name": "api-role-settings",
+          "rows": [
+            {
+              "rolname": "postgres",
+              "settings": null
+            },
+            {
+              "rolname": "authenticated",
+              "settings": [
+                "statement_timeout=8s"
+              ]
+            },
+            {
+              "rolname": "authenticator",
+              "settings": [
+                "statement_timeout=8s"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "channel-maintenance-definition",
+          "rows": [
+            {
+              "sha256": "56733d34c5c02e455b18b3ab5aefc4fdf3c669c1856775a9aeac24bfbcce4a4c"
+            }
+          ]
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "on",
+          "totalMs": 1081,
+          "executionMs": 85.528,
+          "planningMs": 0.046,
+          "buffersHit": 3859
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "family",
+          "rpc": "group_snapshot",
+          "jit": "off",
+          "totalMs": 1040,
+          "executionMs": 17.589,
+          "planningMs": 0.048,
+          "buffersHit": 3859
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "on",
+          "totalMs": 1149,
+          "executionMs": 171.052,
+          "planningMs": 0.046,
+          "buffersHit": 6403
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "portal",
+          "rpc": "portal_room_snapshot",
+          "jit": "off",
+          "totalMs": 1020,
+          "executionMs": 39.933,
+          "planningMs": 0.046,
+          "buffersHit": 6405
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "on",
+          "totalMs": 1063,
+          "executionMs": 69.478,
+          "planningMs": 0.053,
+          "buffersHit": 2966
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_dashboard",
+          "jit": "off",
+          "totalMs": 1053,
+          "executionMs": 13.252,
+          "planningMs": 0.052,
+          "buffersHit": 2966
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "on",
+          "totalMs": 1402,
+          "executionMs": 53.285,
+          "planningMs": 0.048,
+          "buffersHit": 6953
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_evening_cockpit",
+          "jit": "off",
+          "totalMs": 1024,
+          "executionMs": 34.427,
+          "planningMs": 0.05,
+          "buffersHit": 6944
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "on",
+          "totalMs": 1138,
+          "executionMs": 38.06,
+          "planningMs": 1.331,
+          "buffersHit": 2671
+        },
+        {
+          "name": "isolated-rolled-back-snapshot",
+          "role": "admin",
+          "rpc": "admin_portal_operations_snapshot",
+          "jit": "off",
+          "totalMs": 983,
+          "executionMs": 17.944,
+          "planningMs": 0.064,
+          "buffersHit": 2671
+        },
+        {
+          "name": "eight-parallel-rolled-back-group-reads",
+          "elapsedMs": 1794,
+          "requests": [
+            {
+              "totalMs": 1522,
+              "executionMs": 19.047
+            },
+            {
+              "totalMs": 1431,
+              "executionMs": 32.915
+            },
+            {
+              "totalMs": 1105,
+              "executionMs": 48.638
+            },
+            {
+              "totalMs": 1099,
+              "executionMs": 64.54
+            },
+            {
+              "totalMs": 1096,
+              "executionMs": 69.154
+            },
+            {
+              "totalMs": 1458,
+              "executionMs": 24.469
+            },
+            {
+              "totalMs": 1094,
+              "executionMs": 67.455
+            },
+            {
+              "totalMs": 1790,
+              "executionMs": 23.997
+            }
+          ],
+          "diagnosticOnly": true
+        },
+        {
+          "name": "twenty-rolled-back-role-reads",
+          "role": "family",
+          "mode": "auto",
+          "totalMs": 1089,
+          "executionMs": 66.97
+        },
+        {
+          "name": "twenty-rolled-back-role-reads",
+          "role": "family",
+          "mode": "force_generic_plan",
+          "totalMs": 1060,
+          "executionMs": 37.945
+        },
+        {
+          "name": "twenty-rolled-back-role-reads",
+          "role": "family",
+          "mode": "force_custom_plan",
+          "totalMs": 1150,
+          "executionMs": 58.276
+        },
+        {
+          "name": "twenty-rolled-back-role-reads",
+          "role": "portal",
+          "mode": "auto",
+          "totalMs": 1291,
+          "executionMs": 221.84
+        },
+        {
+          "name": "twenty-rolled-back-role-reads",
+          "role": "portal",
+          "mode": "force_generic_plan",
+          "totalMs": 1408,
+          "executionMs": 141.768
+        },
+        {
+          "name": "twenty-rolled-back-role-reads",
+          "role": "portal",
+          "mode": "force_custom_plan",
+          "totalMs": 2107,
+          "executionMs": 402.222
+        },
+        {
+          "name": "twenty-rolled-back-role-reads",
+          "role": "admin",
+          "mode": "auto",
+          "totalMs": 1433,
+          "executionMs": 275.116
+        },
+        {
+          "name": "twenty-rolled-back-role-reads",
+          "role": "admin",
+          "mode": "force_generic_plan",
+          "totalMs": 1177,
+          "executionMs": 202.689
+        },
+        {
+          "name": "twenty-rolled-back-role-reads",
+          "role": "admin",
+          "mode": "force_custom_plan",
+          "totalMs": 1247,
+          "executionMs": 251.894
+        }
+      ]
+    }
+  ]
+}

@@ -31,6 +31,18 @@ test('connected cockpit retains each last good source through partial failures, 
     await expect(freshness).toContainText('Realtimekanaal verbonden');
     await expect(sources.filter({ hasText: 'Actueel bevestigd' })).toHaveCount(3);
     await expect(page.locator('.incident-row')).toContainText(['Eerder werkelijk bevestigd testoverzicht']);
+    // Actual private broadcast delivery must not multiply three source RPCs
+    // by every invalidation in the same burst.
+    let burstRequests=0;
+    const countBurst=(request:{url:()=>string})=>{if(/\/rest\/v1\/rpc\/(admin_dashboard|admin_evening_cockpit|admin_portal_operations_snapshot)$/.test(request.url()))burstRequests++;};
+    page.on('request',countBurst);
+    try {
+        sql("select realtime.send(jsonb_build_object('source','isolated-refresh-burst','n',n),'snapshot_changed','admin-event:'||e.id::text,true) from app_private.events e cross join generate_series(1,20)n where e.slug='duindorp-halloween-2026'");
+        await expect.poll(()=>burstRequests).toBeGreaterThanOrEqual(3);
+        await page.waitForTimeout(1500);
+        expect(burstRequests).toBeLessThanOrEqual(6);
+        await expect(sources.filter({hasText:'Actueel bevestigd'})).toHaveCount(3);
+    } finally {page.off('request',countBurst);}
     const lastGood = await cockpit.locator('small').first().innerText();
     await page.route('**/rest/v1/rpc/admin_evening_cockpit', route => route.abort('failed'), { times: 1 });
     await refresh.click();

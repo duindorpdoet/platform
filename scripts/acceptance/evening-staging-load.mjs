@@ -39,9 +39,15 @@ const number = (name, fallback) => process.env[name] ? Number(process.env[name])
 const fixture = makeEveningLoadFixture({ families: number('LOAD_FAMILIES', 200), portals: number('LOAD_PORTALS', 30), admins: number('LOAD_ADMINS', 4), observers: number('LOAD_OBSERVERS', 20) });
 await writeFile(join(directory, 'private-fixture.json'), JSON.stringify(fixture), { mode: 0o600 });
 const networkSamples=[];
-async function observedFetch(input,init){const began=performance.now();try{const response=await fetch(input,init);networkSamples.push({status:response.status,ms:performance.now()-began});return response;}catch(error){networkSamples.push({status:0,ms:performance.now()-began});throw error;}}
+async function observedFetch(input,init){const began=performance.now();let rpc;try{rpc=new URL(typeof input==='string'?input:input.url??String(input)).pathname.match(/\/rest\/v1\/rpc\/([a-z_]+)$/)?.[1];}catch{}try{const response=await fetch(input,init);networkSamples.push({status:response.status,ms:performance.now()-began,rpc});return response;}catch(error){networkSamples.push({status:0,ms:performance.now()-began,rpc});throw error;}}
 const privileged = createClient(url, secret, { global:{fetch:observedFetch},auth: { persistSession: false, autoRefreshToken: false } }), clients = new Map(), channels = [], created = [];
 const report = { environment: local ? 'local' : 'staging', revision: process.env.GITHUB_SHA ?? process.env.APP_REVISION ?? 'local', fixtureEvent: fixture.slug, counts: { ...fixture.counts, groups: fixture.groups.length, distinctIdentities: fixture.actors.length }, phases: [], databaseSamples: [], realtime: { attempts: 0, subscribed: 0, errors: 0, messages: 0, byRole: { family: 0, portal: 0, admin: 0, observer: 0 } }, limitations: ['Generated synthetic walking graph; no physical route or camera proof.','Native SDK role RPC waves and actual private subscriptions; not 254 rendered browsers or an automatic RPC request for every broadcast.', 'VPS HTTP phase measures the real authenticated application shell; scoped fixture route RPCs run on the actual linked Supabase service.', 'Observers exercise read requests using the existing live-support capability in the isolated test event.'] };
+async function recordPreservation(){
+ const after=await snapshots(),changes=[];let compared=0;
+ for(const [table,rows] of Object.entries(before))for(const [id,hash]of Object.entries(rows)){compared++;if(after[table]?.[id]!==hash)changes.push({table,rowKeyHash:id});}
+ report.preservation={originalTables:catalog.length,originalRows:compared,changedOriginalRows:changes.length};
+ return changes;
+}
 async function pool(items, concurrency, fn) { let cursor = 0, failure; await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, async () => { while (cursor < items.length && !failure) {
     const index = cursor++;
     try {
@@ -61,7 +67,8 @@ catch (error) {
         report.phaseFailureDetails[name]??=String(error.message).slice(0,1000);
     errors[code] = (errors[code] ?? 0) + 1;
 } times.push(performance.now() - began); }); times.sort((a, b) => a - b); const p = n => Math.round(times[Math.max(0, Math.ceil(times.length * n) - 1)] ?? 0); const network=networkSamples.slice(networkBefore),requestTimes=network.map(sample=>sample.ms).sort((a,b)=>a-b),responseStatuses={};for(const sample of network)responseStatuses[sample.status]=(responseStatuses[sample.status]??0)+1;
-const result = { name, operations:items.length, requests:network.length, responseStatuses,requestP95Ms:Math.round(requestTimes[Math.max(0,Math.ceil(requestTimes.length*.95)-1)]??0), concurrency, errors, failed: Object.values(errors).reduce((a, b) => a + b, 0), elapsedMs: Math.round(performance.now() - started), p50Ms: p(.5), p95Ms: p(.95), p99Ms: p(.99), maxMs: p(1), overClientDeadline: times.filter(t => t > 8000).length }; report.phases.push(result); console.log(JSON.stringify(result)); return result; }
+const byRpc={};for(const rpc of new Set(network.map(s=>s.rpc).filter(Boolean))){const calls=network.filter(s=>s.rpc===rpc),ms=calls.map(s=>s.ms).sort((a,b)=>a-b),statuses={};for(const call of calls)statuses[call.status]=(statuses[call.status]??0)+1;byRpc[rpc]={requests:calls.length,statuses,p95Ms:Math.round(ms[Math.max(0,Math.ceil(ms.length*.95)-1)]??0)};}
+const result = { name, operations:items.length, requests:network.length, responseStatuses,byRpc,requestP95Ms:Math.round(requestTimes[Math.max(0,Math.ceil(requestTimes.length*.95)-1)]??0), concurrency, errors, failed: Object.values(errors).reduce((a, b) => a + b, 0), elapsedMs: Math.round(performance.now() - started), p50Ms: p(.5), p95Ms: p(.95), p99Ms: p(.99), maxMs: p(1), overClientDeadline: times.filter(t => t > 8000).length }; report.phases.push(result); console.log(JSON.stringify(result)); return result; }
 async function rpc(actor, name, args) { const client = clients.get(actor.id); assert.ok(client, 'independent authenticated identity'); const result = await client.schema('api').rpc(name, args).abortSignal(AbortSignal.timeout(60000)); if (result.error) {
     const error = new Error(name);
     error.code = result.error.code || `HTTP_${result.status || 'NETWORK'}`;
@@ -188,16 +195,7 @@ try {
     assert.equal(invariants.runs, fixture.groups.length);
     assert.equal(invariants.overbookedOrdinary, 0);
     report.invariants = invariants;
-    const after = await snapshots(), changes = [];
-    let compared = 0;
-    for (const [table, rows] of Object.entries(before))
-        for (const [id, hash] of Object.entries(rows)) {
-            compared++;
-            if (after[table]?.[id] !== hash)
-                changes.push({ table, rowKeyHash: id });
-        }
-    report.preservation = { originalTables: catalog.length, originalRows: compared, changedOriginalRows: changes.length };
-    assert.deepEqual(changes, [], 'all pre-existing business IDs and full contents retained');
+    assert.deepEqual(await recordPreservation(), [], 'all pre-existing business IDs and full contents retained');
     assert.equal(report.realtime.subscribed, report.realtime.attempts);assert.ok(report.realtime.attempts>=fixture.actors.length);
     assert.equal(report.realtime.errors, 0, 'private channels remained connected during the measured load');
     assert.ok(report.realtime.messages > 0, 'actual domain broadcasts observed');
@@ -242,6 +240,7 @@ finally {
         report.status = 'fail';
         report.cleanupFailure = 'SYNTHETIC_ACCOUNT_REVOCATION_INCOMPLETE';
     }
+    if(!report.preservation){try{const changes=await recordPreservation();if(changes.length)report.preservationFailure='ORIGINAL_BUSINESS_ROWS_CHANGED';}catch{report.preservationFailure='ORIGINAL_BUSINESS_ROW_COMPARISON_UNAVAILABLE';}}
     await writeFile(join(directory, 'report.json'), JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });
     if (process.env.LOAD_REPORT_PATH)
         await writeFile(process.env.LOAD_REPORT_PATH, JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });

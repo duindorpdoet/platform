@@ -37,6 +37,7 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261024071646_evening_legacy_route_binding.sql',
   '20261024100115_evening_closed_current_instruction.sql',
   '20261024112932_evening_nonblocking_channel_reads.sql',
+  '20261024125139_evening_cockpit_aggregation.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {
