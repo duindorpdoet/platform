@@ -17,3 +17,11 @@ Lokaal uitgevoerd op de geïsoleerde stack `duindorp-ops-codex-20261023`:
 De uitrol gebruikt de bestaande staging-, back-up/herstel- en productiecontroles. De aanvullende `readonly_baseline`-workflow heeft uitsluitend SELECT-opdrachten, draait alleen op de productiebranch onder het bestaande productie-environment en sluit deployment bij die modus uit. Dit ondersteunt de aparte, lopende opdracht voor de avondverbeteringen.
 
 Herstel: zet de vorige UI-release terug. De nieuwe functie kan blijven bestaan; oudere aanroepen blijven werken. Verwijder geen publicaties, registraties, aankomsten of QR-materiaal. De migratie is herhaalbaar en staat expliciet in de gereviewde releaselijst.
+
+## Herstel van de volle VPS-schijf
+
+De eerste VPS-uitrol liep vast door `No space left on device` in het stagingrunner-logboek. De schijf van 150 GB had nul vrije ruimte; inodes waren nog beschikbaar. Na opruimen van pakketcache en oudere gearchiveerde systeemlogs is de runner weer online. De wachtende oude uitrol is geannuleerd om eerst voldoende werkruimte vast te stellen.
+
+`deploy-staging.yml` heeft nu een expliciete onderhoudsmodus op uitsluitend de stagingbranch, het staging-environment en de dedicated stagingrunner. `inspect` meet directorygroottes en vrije ruimte zonder bestandinhoud te lezen. `clear-build-cache` verwijdert uitsluitend `.next/cache` en `node_modules/.cache` binnen de bestaande checkout, na controle op symlinks en het werkelijke pad. Het onderhoud deelt de bestaande stagingconcurrency en start geen migratie of applicatie-uitrol.
+
+Een geslaagde onderhoudsrun geldt niet als geslaagde stagingrelease. De productiegate vereist nu ook een daadwerkelijk geslaagde job `Validate, migrate, deploy and accept` binnen een volledig geslaagde stagingworkflow op exact dezelfde SHA, plus de bestaande stagingdeploymentstatus. Regressies dekken onder meer een geslaagde onderhoudsrun met overgeslagen deploy, verkeerde SHA, mislukte mailboxacceptatie en ontbrekende succesvolle deploymentstatus.
