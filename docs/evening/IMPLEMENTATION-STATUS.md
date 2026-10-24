@@ -58,6 +58,14 @@ Productiebuild, typecheck, gerichte client-/browserlint, applicatieregressies en
 
 De volledige Startregie-routepreview moet nog aansluiten op deze gebonden afspraak en de werkelijke live positie. Ook de oude-routebinding, routefingerprints en de actuele keuzelijsten hieronder blijven vereist. De bredere avondbranch is daarom nog niet uitgerold.
 
+## Vrijgegeven locatie en bevestigde positie
+
+Een nieuwe, private vrijgavekopie bewaart adres, coördinaat en geverifieerde wandelknoop per daadwerkelijk actieve routestop. Zij is geen aankomstbewijs. Een latere marker-/adreswijziging kan deze vrijgegeven locatie of de fysieke identiteit achter een pending stop-ID niet herschrijven. Nieuwe startpublicaties bewaren ook de toen gekozen wandelknoopcoördinaat; een nieuw concept verplaatst de bron van een al begonnen tocht niet.
+
+De private routecontext onderscheidt voorbereiding vanaf de exacte bevestigde/gepubliceerde afspraak van live berekenen met de actuele serverklok. De laatste echte scan bepaalt de bevestigde positie; een ongescande systeemoverslag blijft historie en wordt geen fictieve positie of geteld bezoek. Oude en nieuwe stoprepresentaties gebruiken dezelfde fysieke poort-ID zonder historische ID's te overschrijven. Als een verplaatste knoop zijn verificatie verliest, pauzeert de vervolgrouting en blijven de zojuist bevestigde aankomst en zegel geldig. Na expliciet geverifieerd herstel, hervatten en een echte worker-aanroep komt een volgende bestemming vrij. Een logisch probleem in de vervolgberekening kan de eerdere echte aankomst niet terugdraaien; transactie-/verbindingsfouten blijven de oorspronkelijke retrysemantiek volgen.
+
+Een schone opbouw en de volledige suite zijn geslaagd: 2.158 pgTAP-controles in 78 bestanden, waaronder 36 positie-/vrijgavecontroles. Security- en performance-advisors, SQL-lint en de exacte migrationlijstcontrole zijn groen. Ook beide parallelle route-/gereedheids- en laatste-capaciteitsproeven zijn opnieuw geslaagd. Deze private context moet nog in de volledige beheerpreview en actuele omleidingskeuzes worden gebruikt; de bredere avondrelease blijft onvoltooid.
+
 ## Resterende servercontracten
 
 De client verwijst vooruit naar onderstaande RPC's. Zij zijn nog niet geïmplementeerd. Deze branch mag daarom niet als voltooide release worden uitgerold.
