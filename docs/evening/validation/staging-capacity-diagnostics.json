@@ -1,0 +1,290 @@
+{
+  "diagnosticOnly": true,
+  "releaseAcceptance": false,
+  "limitations": [
+    "32 distinct accounts are a diagnostic comparison, not acceptance of 254 independent active identities.",
+    "The two Prometheus scrapes returned identical values; these records do not establish CPU saturation.",
+    "Postgres deltas were collected shortly after 12-second HTTP aborts and may exclude statements completing later.",
+    "Staging's configured 200-user Realtime limit is confirmed by GET; the full hosted load stopped before attempting Realtime.",
+    "Production configuration returned HTTP 403 with the staging credential and remains unverified.",
+    "No compute size, subscription, connection pool or quota was changed."
+  ],
+  "sources": [
+    {
+      "run": 40100287820,
+      "job": 120891159638,
+      "records": [
+        {
+          "name": "synthetic-http-transport-profile",
+          "transport": "native-fetch",
+          "logicalRequests": 254,
+          "distinctAccounts": 1,
+          "elapsedMs": 1989,
+          "statuses": {
+            "200": 254
+          },
+          "p50Ms": 1776,
+          "p95Ms": 1930,
+          "maximumMs": 1968,
+          "queueP95Ms": 0,
+          "connectP95Ms": 0,
+          "serverP95Ms": 0,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "synthetic-http-transport-profile",
+          "transport": "https-16-sockets",
+          "logicalRequests": 254,
+          "distinctAccounts": 1,
+          "elapsedMs": 799,
+          "statuses": {
+            "200": 254
+          },
+          "p50Ms": 389,
+          "p95Ms": 643,
+          "maximumMs": 777,
+          "queueP95Ms": 609,
+          "connectP95Ms": 30,
+          "serverP95Ms": 31,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "synthetic-http-transport-profile",
+          "transport": "https-254-sockets",
+          "logicalRequests": 254,
+          "distinctAccounts": 1,
+          "elapsedMs": 806,
+          "statuses": {
+            "200": 254
+          },
+          "p50Ms": 462,
+          "p95Ms": 637,
+          "maximumMs": 691,
+          "queueP95Ms": 100,
+          "connectP95Ms": 476,
+          "serverP95Ms": 263,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "diagnostic-identity-preparation",
+          "distinctAccounts": 32,
+          "portalOwners": 30,
+          "algorithm": "ES256",
+          "releaseAcceptance": false
+        },
+        {
+          "name": "hosted-resource-metrics",
+          "label": "before-mixed-role-wave",
+          "status": 200,
+          "values": {
+            "node_memory_MemAvailable_bytes": 164372480,
+            "cpu_idle_seconds": 168451.06,
+            "cpu_iowait_seconds": 3116.54,
+            "cpu_irq_seconds": 0,
+            "cpu_nice_seconds": 3.1100000000000003,
+            "cpu_softirq_seconds": 77.12,
+            "cpu_steal_seconds": 5.5600000000000005,
+            "cpu_system_seconds": 1488.5900000000001,
+            "cpu_user_seconds": 2317.83,
+            "node_load5": 0.37,
+            "node_memory_MemTotal_bytes": 426258432,
+            "node_load1": 0.54
+          },
+          "diagnosticOnly": true
+        },
+        {
+          "name": "hosted-resource-metrics",
+          "label": "after-mixed-role-wave",
+          "status": 200,
+          "values": {
+            "node_memory_MemAvailable_bytes": 164372480,
+            "cpu_idle_seconds": 168451.06,
+            "cpu_iowait_seconds": 3116.54,
+            "cpu_irq_seconds": 0,
+            "cpu_nice_seconds": 3.1100000000000003,
+            "cpu_softirq_seconds": 77.12,
+            "cpu_steal_seconds": 5.5600000000000005,
+            "cpu_system_seconds": 1488.5900000000001,
+            "cpu_user_seconds": 2317.83,
+            "node_load5": 0.37,
+            "node_memory_MemTotal_bytes": 426258432,
+            "node_load1": 0.54
+          },
+          "diagnosticOnly": true
+        },
+        {
+          "name": "mixed-role-database-work",
+          "rpc": "group_snapshot",
+          "calls": 147,
+          "totalExecutionMs": 12285,
+          "meanExecutionMs": 84,
+          "bufferHits": 51867,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "mixed-role-database-work",
+          "rpc": "admin_evening_cockpit",
+          "calls": 14,
+          "totalExecutionMs": 14922,
+          "meanExecutionMs": 1066,
+          "bufferHits": 16708,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "mixed-role-database-work",
+          "rpc": "portal_room_snapshot",
+          "calls": 14,
+          "totalExecutionMs": 21409,
+          "meanExecutionMs": 1529,
+          "bufferHits": 24260,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "mixed-role-database-work",
+          "rpc": "admin_portal_operations_snapshot",
+          "calls": 13,
+          "totalExecutionMs": 5602,
+          "meanExecutionMs": 431,
+          "bufferHits": 7847,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "mixed-role-database-work",
+          "rpc": "admin_dashboard",
+          "calls": 7,
+          "totalExecutionMs": 10725,
+          "meanExecutionMs": 1532,
+          "bufferHits": 5575,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "scoped-mixed-role-profile",
+          "distinctAccounts": 32,
+          "rpc": "group_snapshot",
+          "requests": 200,
+          "statuses": {
+            "0": 60,
+            "200": 140
+          },
+          "p95Ms": 12013,
+          "maximumBytes": 1034,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "scoped-mixed-role-profile",
+          "distinctAccounts": 32,
+          "rpc": "admin_portal_operations_snapshot",
+          "requests": 24,
+          "statuses": {
+            "0": 13,
+            "200": 11
+          },
+          "p95Ms": 12016,
+          "maximumBytes": 28779,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "scoped-mixed-role-profile",
+          "distinctAccounts": 32,
+          "rpc": "admin_dashboard",
+          "requests": 24,
+          "statuses": {
+            "0": 20,
+            "200": 4
+          },
+          "p95Ms": 12016,
+          "maximumBytes": 572,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "scoped-mixed-role-profile",
+          "distinctAccounts": 32,
+          "rpc": "portal_room_snapshot",
+          "requests": 30,
+          "statuses": {
+            "0": 20,
+            "200": 10
+          },
+          "p95Ms": 12018,
+          "maximumBytes": 2646,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "scoped-mixed-role-profile",
+          "distinctAccounts": 32,
+          "rpc": "admin_evening_cockpit",
+          "requests": 24,
+          "statuses": {
+            "0": 11,
+            "200": 13
+          },
+          "p95Ms": 12016,
+          "maximumBytes": 53985,
+          "diagnosticOnly": true,
+          "releaseAcceptance": false
+        },
+        {
+          "name": "http-profile-cleanup",
+          "created": 254,
+          "secured": 254
+        }
+      ]
+    },
+    {
+      "run": 40100882043,
+      "job": 120892720960,
+      "records": [
+        {
+          "name": "configured-hosted-limits",
+          "environment": "staging",
+          "path": "config/realtime",
+          "status": 200,
+          "limits": {
+            "connection_pool": 2,
+            "max_concurrent_users": 200,
+            "max_events_per_second": 100,
+            "max_bytes_per_second": 100000,
+            "max_channels_per_client": 100,
+            "max_joins_per_second": 100,
+            "max_presence_events_per_second": 20,
+            "max_payload_size_in_kb": 256
+          }
+        },
+        {
+          "name": "configured-hosted-limits",
+          "environment": "staging",
+          "path": "billing/addons",
+          "status": 200,
+          "selected": []
+        },
+        {
+          "name": "configured-hosted-limits",
+          "environment": "production",
+          "path": "config/realtime",
+          "status": 403
+        },
+        {
+          "name": "configured-hosted-limits",
+          "environment": "production",
+          "path": "billing/addons",
+          "status": 403
+        }
+      ]
+    }
+  ]
+}

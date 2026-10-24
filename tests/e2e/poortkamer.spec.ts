@@ -216,7 +216,9 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   for(let step=0;step<13;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
   await guide.getByRole('button',{name:'Rondleiding afronden',exact:true}).click();
   await expect(guide).toHaveCount(0);
-  await guest.goto('/mijn-huis');
+  // Completion returns through the application's real navigation. A second
+  // page.goto races that navigation in WebKit and does not test the actual flow.
+  await expect(guest).toHaveURL(/\/mijn-huis$/);
   await expect(
     guest.getByText("Meekijker", { exact: false }).first(),
   ).toBeVisible();
