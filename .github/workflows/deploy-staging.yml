@@ -65,6 +65,16 @@ jobs:
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/acceptance/evening-staging-profile.mjs
+      - name: Compare HTTP transports with an isolated synthetic account
+        if: inputs.runner_maintenance == 'inspect'
+        env:
+          APP_ENVIRONMENT: staging
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/acceptance/evening-staging-http-profile.mjs
   backup-restore:
     name: Encrypted backup and isolated restore before migration
     if: github.ref == 'refs/heads/staging' && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
