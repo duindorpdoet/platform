@@ -6,6 +6,15 @@ on:
       - staging
   workflow_dispatch:
     inputs:
+      runner_maintenance:
+        description: 'Inspect the dedicated staging runner or clear only rebuildable build caches; does not deploy'
+        type: choice
+        default: none
+        required: false
+        options:
+          - none
+          - inspect
+          - clear-build-cache
       skip_mail_acceptance:
         description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
         type: boolean
@@ -21,9 +30,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  runner-maintenance:
+    name: Dedicated staging runner maintenance (no deployment)
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'workflow_dispatch' && inputs.runner_maintenance != 'none'
+    environment: staging
+    permissions:
+      contents: read
+    runs-on: [self-hosted, Linux, X64, dg-sites, production, duindorphalloweenstg]
+    timeout-minutes: 10
+    steps:
+      - name: Verify dedicated staging boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = "refs/heads/staging"
+          test "$(id -un)" = "duindorphalloweenstg"
+          test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenstg-01"
+          [[ "${GITHUB_WORKSPACE}" == /srv/sites/duindorphalloweenstg/actions-runner/_work/* ]]
+      - name: Check out maintenance source without cleaning existing caches
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          clean: false
+      - name: Inspect disk and optionally clear rebuildable workspace caches
+        env:
+          MAINTENANCE_ACTION: ${{ inputs.runner_maintenance }}
+        run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/deploy/staging-runner-maintenance.mjs
   backup-restore:
     name: Encrypted backup and isolated restore before migration
-    if: github.ref == 'refs/heads/staging'
+    if: github.ref == 'refs/heads/staging' && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
     environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -57,7 +93,7 @@ jobs:
           if-no-files-found: error
   deploy:
     name: Validate, migrate, deploy and accept
-    if: github.ref == 'refs/heads/staging'
+    if: github.ref == 'refs/heads/staging' && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
     needs: backup-restore
     environment:
       name: staging
