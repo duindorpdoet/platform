@@ -6,7 +6,8 @@ import { spawn } from 'node:child_process';
 import { Readable, Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { pathToFileURL } from 'node:url';
-import { REVIEWED_RELEASE_MIGRATIONS,reviewedRepositoryMigrations } from './release-migrations.mjs';
+import { REVIEWED_RELEASE_MIGRATIONS,reviewedRepositoryMigrations,assertReviewedReleaseMigrations } from './release-migrations.mjs';
+import { installedStagingHistory } from './staging-installed-history.mjs';
 import { backupKey, sealBackup } from './redesign-preflight.mjs';
 
 const quote=value=>'"'+value.replaceAll('"','""')+'"';
@@ -15,6 +16,19 @@ const schemas=['app_private','auth','storage','supabase_migrations','vault','cro
 const catalogSQL=`select coalesce(jsonb_agg(jsonb_build_object('schema',n.nspname,'name',c.relname,'rls',c.relrowsecurity,
  'columns',(select jsonb_agg(a.attname order by a.attnum) from pg_attribute a where a.attrelid=c.oid and a.attnum>0 and not a.attisdropped)) order by n.nspname,c.relname),'[]')
  from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in (${schemas.map(literal).join(',')}) and c.relkind in ('r','p')`;
+
+export async function dryRunReleaseMigrations(files,appliedVersions,localQuery) {
+  assertReviewedReleaseMigrations(files);
+  const applied=new Set(appliedVersions),proof=[];
+  for(const file of files) {
+    const sql=await readFile(join('supabase/migrations',file),'utf8');
+    const alreadyApplied=applied.has(file.split('_')[0]),started=Date.now();
+    if(!alreadyApplied)await localQuery("begin;set local lock_timeout='3s';set local statement_timeout='5min';"+sql+';commit');
+    proof.push({file,sha256:createHash('sha256').update(sql).digest('hex'),execution:alreadyApplied?'already-applied':'dry-run',durationMs:Date.now()-started});
+  }
+  return proof;
+}
+
 
 export function fingerprintQuery(catalog) {
   if(!catalog.length)throw new Error('EMPTY_DATABASE_INVENTORY');
@@ -149,7 +163,7 @@ async function main() {
     const reviewedMigrations=reviewedRepositoryMigrations(repositoryMigrations);
     const reviewedSet=new Set(reviewedMigrations);
     const appliedMigrations=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(version::text order by version),'[]') from supabase_migrations.schema_migrations",snapshot));
-    const knownVersions=new Set(repositoryMigrations.map(name=>name.split('_')[0]));
+    const knownVersions=new Set([...repositoryMigrations,...installedStagingHistory()].map(name=>name.split('_')[0]));
     if(appliedMigrations.some(version=>!knownVersions.has(version))||repositoryMigrations.filter(name=>!reviewedSet.has(name)).some(name=>!appliedMigrations.includes(name.split('_')[0])))throw new Error('LIVE_MIGRATION_HISTORY_DRIFT');
     const before=(await sourceQuery(fingerprintQuery(catalog),snapshot)).split('\n').map(JSON.parse);
     const roles=JSON.parse(await sourceQuery("select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper,'eventTriggerOwner',exists(select 1 from pg_event_trigger where evtowner=pg_roles.oid))) from pg_roles where rolname not like 'pg_%'",snapshot));
@@ -207,12 +221,7 @@ async function main() {
     const vaultAfter=JSON.parse(await localQuery(vaultFingerprint));
     if(JSON.stringify(vaultBefore)!==JSON.stringify(vaultAfter))throw new Error('VAULT_RESTORE_DATA_MISMATCH');
     console.log(`Isolated restore preserved all ${catalog.length} table fingerprints.`);
-    const migrations=[];
-    for(const filename of reviewedMigrations) {
-      const sql=await readFile(join('supabase/migrations',filename),'utf8');
-      const started=Date.now();await localQuery("begin;set local lock_timeout='3s';set local statement_timeout='5min';"+sql+';commit');
-      migrations.push({file:filename,sha256:createHash('sha256').update(sql).digest('hex'),durationMs:Date.now()-started});
-    }
+    const migrations=await dryRunReleaseMigrations(reviewedMigrations,appliedMigrations,localQuery);
     if(migrations.length!==REVIEWED_RELEASE_MIGRATIONS.length)throw new Error('REVIEWED_MIGRATION_SET_CHANGED');
     const migrated=(await localQuery(fingerprintQuery(catalog))).split('\n').map(JSON.parse);
     const migrationDifferences=compareFingerprints(before,migrated);

@@ -74,6 +74,8 @@ async function main() {
   assertReviewedReleaseMigrations(proof.migrations.map(migration=>migration.file));
   const {verifyBackupFile,fingerprintQuery}=await import('./redesign-backup.mjs');
   for(const migration of proof.migrations) {
+    const wasApplied=proof.appliedMigrations.includes(migration.file.split('_')[0]);
+    if(migration.execution!==(wasApplied?'already-applied':'dry-run'))throw new Error('MIGRATION_EXECUTION_PROOF_MISMATCH');
     if(!REVIEWED_RELEASE_MIGRATIONS.includes(migration.file))throw new Error('INVALID_MIGRATION_PROOF');
     const digest=createHash('sha256').update(await readFile(join('supabase','migrations',migration.file))).digest('hex');
     if(digest!==migration.sha256)throw new Error('MIGRATION_PROOF_REVISION_MISMATCH');

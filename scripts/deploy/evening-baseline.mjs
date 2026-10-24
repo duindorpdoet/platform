@@ -1,6 +1,7 @@
 // Read-only production inventory. Never returns row contents or credentials.
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { startLocationInventoryQuery } from './start-location-inventory.mjs';
 import { fingerprintQuery } from './redesign-backup.mjs';
 
 async function query(sql) {
@@ -26,7 +27,9 @@ const [tables, migrations, functions, constraints, policies, indexes, jobs] = aw
   query("select jobid,schedule,active,encode(sha256(convert_to(command,'UTF8')),'hex') as command_sha256 from cron.job order by jobid"),
 ]);
 const fingerprints = await query(fingerprintQuery(tables));
+const startLocations = await query(startLocationInventoryQuery);
 const directory=join(process.env.RUNNER_TEMP ?? '/tmp','duindorp-evening-baseline');
 await mkdir(directory,{recursive:true,mode:0o700});
 await writeFile(join(directory,'baseline.json'),JSON.stringify({capturedAt:new Date().toISOString(),revision:process.env.GITHUB_SHA,tables,migrations,functions,constraints,policies,indexes,jobs,fingerprints},null,2),{mode:0o600});
+await writeFile(join(directory,'start-locations.json'),JSON.stringify({capturedAt:new Date().toISOString(),revision:process.env.GITHUB_SHA,...startLocations[0]?.inventory},null,2),{mode:0o600});
 console.log(JSON.stringify({readOnly:true,tables:tables.length,migrations:migrations.length,functions:functions.length,latestMigration:migrations.at(-1)?.version}));

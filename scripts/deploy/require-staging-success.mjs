@@ -1,3 +1,4 @@
+import { HOTFIX_BRANCH } from "./staging-installed-history.mjs";
 if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPOSITORY || !process.env.GITHUB_SHA) {
   throw new Error("GitHub deployment context is incomplete.");
 }
@@ -11,12 +12,12 @@ const api = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}`;
 // A deployment job can succeed before the separate mailbox job fails.
 // Require the entire staging workflow on this SHA. A receipt-test waiver is
 // available only as an explicit workflow_dispatch input, never on normal pushes.
-const runsResponse = await fetch(`${api}/actions/workflows/deploy-staging.yml/runs?head_sha=${process.env.GITHUB_SHA}&branch=staging&status=success&per_page=100`, { headers });
+const runsResponse = await fetch(`${api}/actions/workflows/deploy-staging.yml/runs?head_sha=${process.env.GITHUB_SHA}&status=success&per_page=100`, { headers });
 if (!runsResponse.ok) throw new Error(`Could not read staging workflow results (${runsResponse.status}).`);
 const runs = await runsResponse.json();
 let releaseRunSucceeded = false;
 for (const run of runs.workflow_runs ?? []) {
-  if (run.head_sha !== process.env.GITHUB_SHA || run.head_branch !== "staging" || run.conclusion !== "success") continue;
+  if (run.head_sha !== process.env.GITHUB_SHA || !new Set(["staging",HOTFIX_BRANCH]).has(run.head_branch) || run.conclusion !== "success") continue;
   const jobsResponse = await fetch(`${api}/actions/runs/${run.id}/jobs?per_page=100`, { headers });
   if (!jobsResponse.ok) throw new Error(`Could not read staging release jobs (${jobsResponse.status}).`);
   const jobs = await jobsResponse.json();

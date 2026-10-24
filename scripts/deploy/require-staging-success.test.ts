@@ -1,13 +1,13 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
-function promote(workflowPassed: boolean, exactSha = true, deploymentPassed = true, environmentPassed = true) {
+function promote(workflowPassed: boolean, exactSha = true, deploymentPassed = true, environmentPassed = true, branch = "staging") {
   return spawnSync(process.execPath, ["--input-type=module", "-e", `
     globalThis.fetch = async (input) => {
       const url = String(input);
       let body;
       if (url.includes('/actions/workflows/')) {
-        body = {workflow_runs:[{id:7,head_sha:${exactSha ? 'process.env.GITHUB_SHA' : '"wrong-sha"'},head_branch:'staging',conclusion:${JSON.stringify(workflowPassed ? "success" : "failure")}}]};
+        body = {workflow_runs:[{id:7,head_sha:${exactSha ? 'process.env.GITHUB_SHA' : '"wrong-sha"'},head_branch:${JSON.stringify(branch)},conclusion:${JSON.stringify(workflowPassed ? "success" : "failure")}}]};
       } else if (url.includes('/jobs?')) body = {jobs:[{name:'Dedicated staging runner maintenance (no deployment)',conclusion:'success'},{name:'Validate, migrate, deploy and accept',conclusion:${JSON.stringify(deploymentPassed ? 'success' : 'skipped')}}]};
       else if (url.includes('/statuses')) body = [{state:${JSON.stringify(environmentPassed ? 'success' : 'failure')}}];
       else body = [{id:1}];
@@ -37,6 +37,11 @@ describe("production staging workflow gate", () => {
   });
   it("rejects a successful workflow without successful staging deployment status", () => {
     expect(promote(true,true,true,false).status).not.toBe(0);
+  });
+  it("accepts the isolated hotfix only after the same complete staging checks", () => {
+    expect(promote(true,true,true,true,"codex/startregie-marker-readiness").status).toBe(0);
+    expect(promote(true,true,false,true,"codex/startregie-marker-readiness").status).not.toBe(0);
+    expect(promote(true,true,true,true,"codex/unreviewed-branch").status).not.toBe(0);
   });
   it("accepts a successful full staging workflow and deployment on the exact revision", () => {
     const result = promote(true);

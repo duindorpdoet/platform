@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Archive, Edit3, Plus, Save, ShieldAlert, Trash2, UserPlus, X } from "lucide-react";
 import { amsterdamDateTimeInput, amsterdamInputToIso } from "@/lib/time/amsterdam";
-import { LocationEditor } from "@/components/admin/location-editor";
+import { locationCoordinate, locationError } from "@/lib/domain/location-readiness";
+import { LocationEditor, type LocationSave } from "@/components/admin/location-editor";
 import { useDialogFocus } from "@/lib/ui/use-dialog-focus";
 import { createClient } from "@/lib/supabase/client";
 
 type World = { id: string; slug: string; name: string };
 type Portal = {
-  walkingConnectionVerified?:boolean; id: string; systemCode: string; name: string; world: string; worldSlug: string; color: string | null; description: string;
+  locationSource: "address" | "manual"; walkingConnectionVerified?:boolean; id: string; systemCode: string; name: string; world: string; worldSlug: string; color: string | null; description: string;
   lifecycleStatus: "concept" | "registered" | "approved" | "active" | "archived"; approvalStatus: Draft["approvalStatus"]; operationStatus: string;
   recordSource: "resident_registration" | "manual"; contactName: string | null; phone: string | null; email: string | null;
   street: string | null; houseNumber: string | null; addition: string | null; intensity: number; accessibilityNotes: string | null; internalNotes: string | null; visitMinutes: number | null; bufferMinutes: number | null; windowCount: number; address: string | null; postalCode: string | null; city: string | null; geocodedLatitude: number | null; geocodedLongitude: number | null;
@@ -17,6 +18,7 @@ type Portal = {
   maxGroups: number | null; maxChildren: number | null; candidateStartPoint: boolean; isFinal: boolean; version: number;
 };
 type Draft = {
+  routingMarker: LocationSave | null;
   id: string | null; version: number | null; systemNumber: string; name: string; worldSlug: string; color: string;
   description: string; intensity: string; street: string; houseNumber: string; addition: string; postalCode: string; city: string;
   latitude: string; longitude: string; contactName: string; contactPhone: string; contactEmail: string;
@@ -28,6 +30,7 @@ type Draft = {
 };
 
 function commandError(message: string) {
+  const location = locationError(message); if (location) return location;
   if (message.includes("STALE_VERSION")) return "Deze poort is intussen gewijzigd. Sluit het formulier en open de poort opnieuw om de nieuwste gegevens te gebruiken.";
   if (message.includes("CHOOSE_REPLACEMENT_FINAL_PORTAL_FIRST")) return "Kies eerst een andere eindpoort in Startregie.";
   if (message.includes("RESOLVE_ACTIVE_ASSIGNMENTS_FIRST")) return "Verplaats eerst de groepen die bij deze poort starten via Startregie.";
@@ -39,7 +42,7 @@ function commandError(message: string) {
 }
 const localDateTime = amsterdamDateTimeInput;
 function empty(worlds: World[]): Draft {
-  return { id: null, version: null, systemNumber: "", name: "", worldSlug: worlds[0]?.slug ?? "", color: "#d59658",
+  return { routingMarker: null, id: null, version: null, systemNumber: "", name: "", worldSlug: worlds[0]?.slug ?? "", color: "#d59658",
     description: "", intensity: "1", street: "", houseNumber: "", addition: "", postalCode: "", city: "Den Haag",
     latitude: "", longitude: "", contactName: "", contactPhone: "", contactEmail: "", plannedOpensAt: "", plannedClosesAt: "",
     maxGroups: "1", maxChildren: "20", visitMinutes: "5", bufferMinutes: "2", accessibilityNotes: "", internalNotes: "",
@@ -51,8 +54,8 @@ function fromPortal(portal: Portal): Draft {
     color: portal.color ?? "#d59658", description: portal.description, street: portal.street ?? "", houseNumber: portal.houseNumber ?? "", addition: portal.addition ?? "",
     intensity: String(portal.intensity), accessibilityNotes: portal.accessibilityNotes ?? "", internalNotes: portal.internalNotes ?? "",
     visitMinutes: String(portal.visitMinutes ?? 5), bufferMinutes: String(portal.bufferMinutes ?? 2),
-    postalCode: portal.postalCode ?? "", city: portal.city ?? "Den Haag", latitude: portal.latitude?.toString() ?? "",
-    longitude: portal.longitude?.toString() ?? "", contactName: portal.contactName ?? "", contactPhone: portal.phone ?? "",
+    postalCode: portal.postalCode ?? "", city: portal.city ?? "Den Haag", latitude: (portal.geocodedLatitude ?? (portal.locationSource === "address" ? portal.latitude : null))?.toString() ?? "",
+    longitude: (portal.geocodedLongitude ?? (portal.locationSource === "address" ? portal.longitude : null))?.toString() ?? "", contactName: portal.contactName ?? "", contactPhone: portal.phone ?? "",
     contactEmail: portal.email ?? "", plannedOpensAt: localDateTime(portal.plannedOpensAt), plannedClosesAt: localDateTime(portal.plannedClosesAt),
     maxGroups: String(portal.maxGroups ?? 1), maxChildren: String(portal.maxChildren ?? 20), lifecycleStatus: portal.lifecycleStatus,
     approvalStatus: portal.approvalStatus,
@@ -103,7 +106,8 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
       return;
     }
     const client = createClient(); if (!client) return;
-    setBusy(true);
+    setBusy(true); setNotice("");
+    try {
     const payload = {
       ...draft,
       systemNumber: draft.systemNumber ? Number(draft.systemNumber) : null,
@@ -114,15 +118,16 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
       maxGroups: Number(draft.maxGroups), maxChildren: Number(draft.maxChildren),
       visitMinutes: Number(draft.visitMinutes), bufferMinutes: Number(draft.bufferMinutes),
     };
-    const { error } = await client.schema("api").rpc("admin_manual_portal_save", {
+    const { data, error } = await client.schema("api").rpc("admin_manual_portal_save", {
       _event_slug: eventSlug, _portal_id: draft.id, _payload: payload, _expected_version: draft.version,
       _reason: draft.id ? "Poortgegevens bijgewerkt door de organisatie" : "Poort handmatig door de organisatie toegevoegd",
-    });
-    setBusy(false);
+    }).abortSignal(AbortSignal.timeout(20_000));
     if (error?.message.includes("STALE_VERSION")) await load();
     if (error) setTimeError(`Opslaan geweigerd: ${commandError(error.message)}`);
-    else setNotice(draft.id ? "Poort bijgewerkt." : "Poort aangemaakt met een stabiele poortcode.");
-    if (!error) { setDraft(null); await load(); onChanged(); }
+    else if (!data?.id || !Number.isInteger(data.version)) setTimeError("De server heeft de opslag niet bevestigd. Vernieuw en controleer de poort; je invoer is bewaard.");
+    else { setNotice(draft.id ? "Poort bijgewerkt." : "Poort aangemaakt met een stabiele poortcode."); setDraft(null); await load(); onChanged(); }
+    } catch { setTimeError("Opslag niet bevestigd. Controleer de verbinding en probeer opnieuw; je invoer is bewaard."); }
+    finally { setBusy(false); }
   }
 
   async function remove(portal: Portal) {
@@ -165,6 +170,17 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
     setNotice(error ? `Uitnodiging geweigerd: ${error.message}` : "Uitnodiging verstuurd via de bestaande poortteamflow. Het poortrecord blijft ongewijzigd.");
   }
 
+  const originalDraft = portals.find(portal => portal.id === draft?.id);
+  const draftPosition = draft?.routingMarker ? locationCoordinate(draft.routingMarker.longitude, draft.routingMarker.latitude)
+    : originalDraft ? locationCoordinate(originalDraft.longitude, originalDraft.latitude)
+    : locationCoordinate(draft?.longitude ? Number(draft.longitude) : null, draft?.latitude ? Number(draft.latitude) : null);
+  const changesFinalPortal = Boolean(draft?.isFinal && !originalDraft?.isFinal);
+  const activationMissing = draft?.lifecycleStatus === "active" ? [
+    draft.approvalStatus !== "approved" ? "Kies ‘Goedgekeurd’ bij de goedkeuring." : "",
+    !draftPosition ? "Plaats een routingmarker en kies ‘Positie overnemen’." : "",
+    !draft.plannedOpensAt || !draft.plannedClosesAt ? "Vul de geplande openings- en sluitingstijd in." : "",
+  ].filter(Boolean) : [];
+
   return <div className="manual-portal-manager">
     <header><div><p className="kicker">Organisatiebeheer</p><h3>Poorten beheren</h3><p>Bewerk gegevens van aangemelde en handmatig toegevoegde poorten of verwijder een poort uit het actieve beheer. De oorspronkelijke aanmelding en bezoekhistorie blijven bewaard.</p></div><button className="btn" type="button" onClick={() => { setTimeError(""); setDraft(empty(worlds)); }}><Plus />Poort toevoegen</button></header>
     {notice && <div className="form-notice" role="status">{notice}</div>}
@@ -178,12 +194,12 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
       <header><div><p className="kicker">{draft.id ? "Poort bewerken" : "Nieuwe poort"}</p><h3 id="manual-portal-title">{draft.name || "Handmatig registreren"}</h3></div><button type="button" className="icon-button" aria-label="Sluiten" disabled={busy} onClick={() => setDraft(null)}><X /></button></header>
       <div className="manual-portal-editor-body">
         <section><h4>Identiteit</h4><div className="settings-grid"><label className="field"><span>Voorgesteld poortnummer</span><input type="number" min={1} value={draft.systemNumber} disabled={Boolean(draft.id && !["concept", "registered"].includes(draft.lifecycleStatus))} onChange={(event) => setDraft({ ...draft, systemNumber: event.target.value })} placeholder="Automatisch" /><small>Alleen vóór goedkeuring aanpasbaar.</small></label><label className="field"><span>Poortnaam</span><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label><label className="field"><span>Wereld</span><select value={draft.worldSlug} onChange={(event) => setDraft({ ...draft, worldSlug: event.target.value })}>{worlds.map((world) => <option key={world.id} value={world.slug}>{world.name}</option>)}</select></label><label className="field"><span>Kleur</span><input type="color" value={draft.color} onChange={(event) => setDraft({ ...draft, color: event.target.value })} /></label><label className="field"><span>Spanningsniveau</span><input type="number" min={1} max={4} value={draft.intensity} onChange={(event) => setDraft({ ...draft, intensity: event.target.value })} /></label><label className="field"><span>Lifecycle-status</span><select value={draft.lifecycleStatus} onChange={(event) => setDraft({ ...draft, lifecycleStatus: event.target.value as Draft["lifecycleStatus"] })}><option value="concept">Concept</option><option value="registered">Aangemeld</option><option value="approved">Goedgekeurd</option><option value="active">Actief</option></select></label><label className="field"><span>Goedkeuringsstatus</span><select value={draft.approvalStatus} onChange={(event) => setDraft({ ...draft, approvalStatus: event.target.value as Draft["approvalStatus"] })}><option value="draft">Conceptcontrole</option><option value="submitted">In beoordeling</option><option value="changes_requested">Aanpassing gevraagd</option><option value="approved">Goedgekeurd</option><option value="rejected">Afgewezen</option><option value="withdrawn">Teruggetrokken</option></select></label><label className="field wide"><span>Omschrijving</span><textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label></div></section>
-        <section><h4>Adres en routingmarker</h4><div className="settings-grid"><label className="field"><span>Straat</span><input value={draft.street} onChange={(event) => setDraft({ ...draft, street: event.target.value })} /></label><label className="field"><span>Huisnummer</span><input value={draft.houseNumber} onChange={(event) => setDraft({ ...draft, houseNumber: event.target.value })} /></label><label className="field"><span>Toevoeging</span><input value={draft.addition} onChange={(event) => setDraft({ ...draft, addition: event.target.value })} /></label><label className="field"><span>Postcode</span><input value={draft.postalCode} onChange={(event) => setDraft({ ...draft, postalCode: event.target.value })} /></label><label className="field"><span>Plaats</span><input value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })} /></label></div><LocationEditor label={draft.name || "Nieuwe poort"} markerKind={draft.isFinal ? "final" : "portal"} color={draft.color} coordinate={draft.longitude && draft.latitude ? [Number(draft.longitude), Number(draft.latitude)] : null} addressCoordinate={draft.longitude && draft.latitude ? [Number(draft.longitude), Number(draft.latitude)] : null} onSave={(change) => setDraft({ ...draft, latitude: String(change.latitude), longitude: String(change.longitude) })} /></section>
+        <section><h4>Adres en routingmarker</h4><div className="settings-grid"><label className="field"><span>Straat</span><input value={draft.street} onChange={(event) => setDraft({ ...draft, street: event.target.value })} /></label><label className="field"><span>Huisnummer</span><input value={draft.houseNumber} onChange={(event) => setDraft({ ...draft, houseNumber: event.target.value })} /></label><label className="field"><span>Toevoeging</span><input value={draft.addition} onChange={(event) => setDraft({ ...draft, addition: event.target.value })} /></label><label className="field"><span>Postcode</span><input value={draft.postalCode} onChange={(event) => setDraft({ ...draft, postalCode: event.target.value })} /></label><label className="field"><span>Plaats</span><input value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })} /></label></div><LocationEditor staged label={draft.name || "Nieuwe poort"} markerKind={draft.isFinal ? "final" : "portal"} color={draft.color} coordinate={draft.routingMarker ? [draft.routingMarker.longitude, draft.routingMarker.latitude] : draft.id ? locationCoordinate(portals.find(portal => portal.id === draft.id)?.longitude ?? null, portals.find(portal => portal.id === draft.id)?.latitude ?? null) : locationCoordinate(draft.longitude ? Number(draft.longitude) : null, draft.latitude ? Number(draft.latitude) : null)} addressCoordinate={locationCoordinate(draft.longitude ? Number(draft.longitude) : null, draft.latitude ? Number(draft.latitude) : null)} reason={draft.routingMarker?.reason} onSave={(change) => setDraft({ ...draft, routingMarker: change })} /></section>
         <section><h4>Contact en toegankelijkheid</h4><div className="settings-grid"><label className="field"><span>Contactpersoon</span><input value={draft.contactName} onChange={(event) => setDraft({ ...draft, contactName: event.target.value })} /></label><label className="field"><span>Telefoonnummer</span><input value={draft.contactPhone} onChange={(event) => setDraft({ ...draft, contactPhone: event.target.value })} /></label><label className="field"><span>E-mailadres</span><input type="email" value={draft.contactEmail} onChange={(event) => setDraft({ ...draft, contactEmail: event.target.value })} /></label><label className="field"><span>Toegankelijkheid</span><textarea value={draft.accessibilityNotes} onChange={(event) => setDraft({ ...draft, accessibilityNotes: event.target.value })} /></label></div></section>
         <section><h4>Geplande beschikbaarheid</h4>{draft.id && (portals.find((portal) => portal.id === draft.id)?.windowCount ?? 0) > 1 && <p>Deze poort heeft meerdere tijdvakken. Bestaande tijdvakken blijven behouden; pas hier alleen de overige poortgegevens aan.</p>}<div className="settings-grid"><label className="field"><span>Live avondstatus</span><select value={draft.operationStatus} onChange={(event) => setDraft({ ...draft, operationStatus: event.target.value as Draft["operationStatus"] })}><option value="scheduled">Onbekend / nog niet gestart</option><option value="open">Open</option><option value="paused">Pauze</option><option value="closed">Gestopt</option></select></label><label className="field"><span>Opent</span><input type="datetime-local" value={draft.plannedOpensAt} onChange={(event) => setDraft({ ...draft, plannedOpensAt: event.target.value })} /></label><label className="field"><span>Sluit</span><input type="datetime-local" value={draft.plannedClosesAt} onChange={(event) => setDraft({ ...draft, plannedClosesAt: event.target.value })} /></label><label className="field"><span>Groepen tegelijk</span><input type="number" min={1} value={draft.maxGroups} onChange={(event) => setDraft({ ...draft, maxGroups: event.target.value })} /></label><label className="field"><span>Kinderen per bezoek</span><input type="number" min={1} value={draft.maxChildren} onChange={(event) => setDraft({ ...draft, maxChildren: event.target.value })} /></label><label className="field"><span>Bezoekduur</span><input type="number" min={1} value={draft.visitMinutes} onChange={(event) => setDraft({ ...draft, visitMinutes: event.target.value })} /></label><label className="field"><span>Buffer</span><input type="number" min={0} value={draft.bufferMinutes} onChange={(event) => setDraft({ ...draft, bufferMinutes: event.target.value })} /></label></div></section>
-        <section><h4>Beheer</h4><label className="field"><span>Interne notities</span><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} /></label><label className="field"><span>Startpunt</span><select value={draft.candidateStartPoint ? "yes" : "no"} onChange={(event) => setDraft({ ...draft, candidateStartPoint: event.target.value === "yes" })}><option value="no">Nee</option><option value="yes">Ja</option></select></label><label className="check-row"><input type="checkbox" checked={draft.isFinal} onChange={(event) => setDraft({ ...draft, isFinal: event.target.checked, confirmFinal: false })} /><span>Instellen als eindpoort</span></label>{draft.isFinal && <label className="check-row critical"><input type="checkbox" checked={draft.confirmFinal} onChange={(event) => setDraft({ ...draft, confirmFinal: event.target.checked })} /><span>Ik begrijp dat dit de eindpoortconfiguratie wijzigt.</span></label>}</section>
+        <section><h4>Beheer</h4><label className="field"><span>Interne notities</span><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} /></label><label className="field"><span>Startpunt</span><select value={draft.candidateStartPoint ? "yes" : "no"} onChange={(event) => setDraft({ ...draft, candidateStartPoint: event.target.value === "yes" })}><option value="no">Nee</option><option value="yes">Ja</option></select></label><label className="check-row"><input type="checkbox" checked={draft.isFinal} onChange={(event) => setDraft({ ...draft, isFinal: event.target.checked, confirmFinal: false })} /><span>Instellen als eindpoort</span></label>{changesFinalPortal && <label className="check-row critical"><input type="checkbox" checked={draft.confirmFinal} onChange={(event) => setDraft({ ...draft, confirmFinal: event.target.checked })} /><span>Ik begrijp dat dit de eindpoortconfiguratie wijzigt.</span></label>}</section>
       </div>
-      {timeError && <p className="form-warning" role="alert">{timeError}</p>}<footer>{draft.id && <button className="text-link danger" type="button" disabled={busy} onClick={() => { const portal = portals.find((item) => item.id === draft.id); if (portal) void remove(portal); }}><Trash2 />Poort verwijderen</button>}<button className="btn outline" disabled={busy} type="button" onClick={() => setDraft(null)}>Annuleren</button><button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug || (draft.lifecycleStatus === "active" && (draft.approvalStatus !== "approved" || !draft.latitude || !draft.plannedOpensAt || !draft.plannedClosesAt)) || (draft.isFinal && !draft.confirmFinal)} onClick={() => void save()}><Save />Poort opslaan</button></footer>
+      {activationMissing.length > 0 && <p className="form-warning" role="alert">Voor een actieve poort: {activationMissing.join(" ")}</p>}{timeError && <p className="form-warning" role="alert">{timeError}</p>}<footer>{draft.id && <button className="text-link danger" type="button" disabled={busy} onClick={() => { const portal = portals.find((item) => item.id === draft.id); if (portal) void remove(portal); }}><Trash2 />Poort verwijderen</button>}<button className="btn outline" disabled={busy} type="button" onClick={() => setDraft(null)}>Annuleren</button><button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug || activationMissing.length > 0 || (changesFinalPortal && !draft.confirmFinal)} onClick={() => void save()}><Save />Poort opslaan</button></footer>
     </aside></div>}
   </div>;
 }

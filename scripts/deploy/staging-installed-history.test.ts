@@ -1,0 +1,18 @@
+import { describe, expect, it } from "vitest";
+import { installedStagingHistory, missingInstalledFiles, STAGING_INSTALLED_MIGRATIONS, HOTFIX_BRANCH } from "./staging-installed-history.mjs";
+
+const context = { APP_ENVIRONMENT: "staging", GITHUB_REF: `refs/heads/${HOTFIX_BRANCH}` };
+describe("isolated hotfix staging history", () => {
+  it("recognizes only the pinned already installed staging versions", () => {
+    const first = Object.keys(STAGING_INSTALLED_MIGRATIONS)[0];
+    expect(missingInstalledFiles(["20260920160812_initial_platform.sql"], ["20260920160812", first.split("_")[0]], context)).toEqual([first]);
+    expect(missingInstalledFiles([first], [first.split("_")[0]], context)).toEqual([]);
+    expect(() => missingInstalledFiles([], ["20271025000000"], context)).toThrow("LIVE_MIGRATION_HISTORY_DRIFT");
+  });
+  it("does not permit missing migration history on production or other branches", () => {
+    for (const input of [{ ...context, APP_ENVIRONMENT: "production" }, { ...context, GITHUB_REF: "refs/heads/staging" }, {}]) {
+      expect(installedStagingHistory(input)).toEqual([]);
+      expect(() => missingInstalledFiles([], [Object.keys(STAGING_INSTALLED_MIGRATIONS)[0].split("_")[0]], input)).toThrow();
+    }
+  });
+});
