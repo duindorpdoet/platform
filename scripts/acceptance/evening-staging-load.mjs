@@ -127,6 +127,7 @@ try {
     }
     const initialReads=await phase('before-start-role-snapshots',fixture.actors,readActor);
     assert.equal(initialReads.failed,0,'all roles load their actual application RPCs');
+    assert.ok(initialReads.p95Ms<=8000,'initial role snapshots must fit the actual eight-second client deadline');
     await phase('private-realtime-subscriptions',fixture.actors,async actor=>{
         const client=clients.get(actor.id);
         await client.realtime.setAuth(actor.session.access_token);
@@ -201,7 +202,7 @@ try {
     assert.equal(report.realtime.errors, 0, 'private channels remained connected during the measured load');
     assert.ok(report.realtime.messages > 0, 'actual domain broadcasts observed');
     assert.ok(report.phases.every(p => p.failed === 0), 'all measured phase requests succeeded');
-    assert.ok(report.phases.filter(p => /^(live-role-snapshots|concurrent-group-starts|simultaneous-real-arrivals)/.test(p.name)).every(p => p.p95Ms <= 8000), 'route and live snapshot p95 must fit the actual eight-second client deadline');
+    assert.ok(report.phases.filter(p => /^(before-start-role-snapshots|after-arrival-role-snapshots|live-role-snapshots|concurrent-group-starts|simultaneous-real-arrivals)/.test(p.name)).every(p => p.p95Ms <= 8000), 'route and role snapshot p95 must fit the actual eight-second client deadline');
     report.status = 'pass';
 }
 catch (error) {
