@@ -7,20 +7,20 @@ const container=requireLocalTogetherDatabase();
 prepareStartedLegacyFixtures();
 const group='23000000-0000-0000-0000-000000000002';
 const claims=actor=>`set local role authenticated;select set_config('request.jwt.claims','{"sub":"${actor}","role":"authenticated"}',true);`;
-const before=sql(`select jsonb_build_object('runs',(select count(*) from app_private.group_runs),'evidence',(select count(*) from app_private.evening_readiness_evidence),'group',(select to_jsonb(g) from app_private.walking_groups g where id='${group}'))`);
+const before=sql(`select jsonb_build_object('runs',(select count(*) from app_private.group_runs),'evidence',(select count(*) from app_private.evening_readiness_evidence),'group',(select to_jsonb(g) from app_private.walking_groups g where id='${group}'),'portal',(select to_jsonb(p) from app_private.portals p where id='12000000-0000-0000-0000-000000000001'))`);
 function transaction(query,onOutput=()=>{}) {
  let output='',error='';
  const child=spawn('docker',['exec','-i',container,'psql','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1']);
  const done=new Promise((resolve,reject)=>{child.stdout.on('data',data=>{output+=data;onOutput(output);});child.stderr.on('data',data=>{error+=data;});child.on('error',reject);child.on('close',code=>code===0?resolve(output):reject(new Error(error||`Transaction exited ${code}`)));});
  child.stdin.end(query);return done;
 }
-async function contend(eventAction,observerAction,commit=false) {
+async function contend(eventAction,observerAction,commit=false,resourceLock="select 1 from app_private.events where slug='duindorp-halloween-2026' for update;") {
  const observerName='evening-readiness-'+randomUUID();
  let observed,barrierFailed,observer;
  const observerReady=new Promise((resolve,reject)=>{observed=resolve;barrierFailed=reject;});
  const route=transaction(`begin;
   set local lock_timeout='4s';set local statement_timeout='8s';
-  select 1 from app_private.events where slug='duindorp-halloween-2026' for update;
+  ${resourceLock}
   select 'EVENT_LOCKED';
   do $$begin
    for tick in 1..200 loop
@@ -51,6 +51,15 @@ const [route,observation]=await contend(`
  `${claims('a0000000-0000-0000-0000-000000000005')}
  select api.record_evening_readiness('group','${group}','account_opened','observed',null,null,'{}',true,'${randomUUID()}');`);
 assert.ifError(route.error);assert.ifError(observation.error);assert.match(route.value,/runId/);assert.match(observation.value,/observed/);
+// A stock action holds its own portal while a route/status writer waits for it.
+// Its event FK must remain compatible with that writer's NO KEY UPDATE lock.
+const portalVersion=sql("select version from app_private.portals where id='12000000-0000-0000-0000-000000000001'");assert.match(portalVersion,/^[0-9]+$/);
+const [stock,status]=await contend(`${claims('e0000000-0000-0000-0000-000000000001')}
+ select api.portal_room_update('12000000-0000-0000-0000-000000000001','stock','{"stock":"plenty"}','${randomUUID()}');`,
+ `${claims('f0000000-0000-0000-0000-000000000001')}
+ select api.portal_set_operational_state('12000000-0000-0000-0000-000000000001','paused',${portalVersion},'Synthetische gelijktijdige statuscontrole');`,false,
+ "select 1 from app_private.portals where id='12000000-0000-0000-0000-000000000001' for update;");
+assert.ifError(stock.error);assert.ifError(status.error);
 // Revoke only a dedicated synthetic actor while its own command waits on the event.
 // The command must authorize after the wait, not keep the earlier role decision.
 const actor=randomUUID();
@@ -65,6 +74,6 @@ try {
 } finally {
  sql(`delete from app_private.event_capabilities where user_id='${actor}';delete from auth.users where id='${actor}';`);
 }
-const after=sql(`select jsonb_build_object('runs',(select count(*) from app_private.group_runs),'evidence',(select count(*) from app_private.evening_readiness_evidence),'group',(select to_jsonb(g) from app_private.walking_groups g where id='${group}'))`);
+const after=sql(`select jsonb_build_object('runs',(select count(*) from app_private.group_runs),'evidence',(select count(*) from app_private.evening_readiness_evidence),'group',(select to_jsonb(g) from app_private.walking_groups g where id='${group}'),'portal',(select to_jsonb(p) from app_private.portals p where id='12000000-0000-0000-0000-000000000001'))`);
 assert.equal(after,before);
-console.log(JSON.stringify({status:'pass',checks:['actual run start and own readiness observation complete without event/subject deadlock','role revoked during an event-lock wait cannot record a manual attestation','rolled-back test actions and synthetic actor cleanup preserve existing runs, evidence and group']}));
+console.log(JSON.stringify({status:'pass',checks:['actual run start and own readiness observation complete without event/subject deadlock','independent portal stock and route status writes complete without an event-FK deadlock','role revoked during an event-lock wait cannot record a manual attestation','rolled-back test actions and synthetic actor cleanup preserve existing runs, evidence and group']}));

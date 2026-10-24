@@ -26,6 +26,14 @@ Een aanvullende echte parallelle databaseproef is geslaagd: een tocht starten en
 
 De productie-inventaris is vóór deze implementatie vastgelegd. Deze twee serveruitbreidingen staan op de werkbranch; de resterende route-/capaciteitscontracten moeten aansluiten voordat de avondrelease wordt uitgerold.
 
+## Transacties en veilig afmelden
+
+De routegerelateerde ingangen, planning, groepssamenstelling, locaties en poortstatus volgen nu dezelfde volgorde: eventrij met `NO KEY UPDATE`, de bestaande dispatchmutex, actor/opdrachtsleutel en daarna run/groep/poort. De bestaande functie-bodies zijn statisch overgenomen; er vindt op de doelomgeving geen herschrijven van `pg_proc`-tekst plaats. Onafhankelijke voorraad- en printacties behouden hun eigen pad. De timer voor automatisch hervatten kiest eerst het evenement en controleert daarna opnieuw welke poorten nog gepauzeerd zijn.
+
+Runhandelingen vereisen een daadwerkelijke verwachte versie. Veilig afmelden controleert de actuele live/gepauzeerde run en een op dit moment geregistreerde volwassene. Bestaande aankomsten, zegels, betalingen en credentials blijven exact behouden; een afgeronde of al gestopte tocht kan niet opnieuw worden afgemeld.
+
+Een schone lokale opbouw plus de volledige regressiesuite is geslaagd: 2.020 pgTAP-controles in 75 bestanden. De bestaande echte parallelle Startregieproef met twee geauthenticeerde planners/publiceerders is groen. De aanvullende parallelle proef bewijst ook dat voorraad en poortstatus elkaar niet via hun event-FK vastzetten. Deze transactiewijziging staat nog op de werkbranch; ETA, fysieke capaciteit, finalereserveringen en routefingerprints volgen hierop.
+
 ## Nog niet geïmplementeerde servercontracten
 
 De client verwijst vooruit naar onderstaande RPC's. Zij zijn nog niet geïmplementeerd. Deze branch mag daarom niet als voltooide release worden uitgerold.
