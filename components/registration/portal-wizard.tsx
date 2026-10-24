@@ -13,6 +13,7 @@ async function digest(value: unknown) {
 type ReviewStatus = "draft" | "changes_requested" | "submitted" | "approved" | "rejected" | "withdrawn";
 type WarningKey = "smoke" | "flashes" | "sound" | "actors" | "allergens";
 type PortalPayload = {
+  visitInformationRevision:number;
   warningDisclosure: VisitInformationDraft["warningDisclosure"];
   email: string;
   contactName: string;
@@ -35,6 +36,7 @@ type PortalPayload = {
 };
 
 const emptyPayload: PortalPayload = {
+  visitInformationRevision:0,
   warningDisclosure:"unknown",
   email: "",
   contactName: "",
@@ -79,17 +81,20 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [loading,setLoading]=useState(true);
+  const [reload,setReload]=useState(0);
 
   useEffect(() => {
     let active = true;
     async function restore() {
-      const client = createClient(); if (!client) return;
+      try {
+      const client = createClient(); if (!client) throw new Error('UNAVAILABLE');
       const [portalResult, eventResult] = await Promise.all([
-        client.schema("api").rpc("portal_snapshot", { _event_slug: eventSlug }),
-        client.schema("api").rpc("event_public_snapshot", { _event_slug: eventSlug }),
+        withRequestDeadline(client.schema("api").rpc("portal_snapshot", { _event_slug: eventSlug })),
+        withRequestDeadline(client.schema("api").rpc("event_public_snapshot", { _event_slug: eventSlug })),
       ]);
       if (!active) return;
-      if (portalResult.error || eventResult.error) { setNotice("Jullie gegevens konden niet worden opgehaald. Vernieuw de pagina om opnieuw te proberen."); return; }
+      if (portalResult.error || eventResult.error) throw new Error('SNAPSHOT_UNAVAILABLE');
       setLoaded(true);
       const availableWorlds = ((eventResult.data as { worlds?: Array<{ slug: string; name: string }> } | null)?.worlds ?? []);
       setWorlds(availableWorlds);
@@ -106,10 +111,11 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
       if (application.status === "submitted") setNotice("Jullie plek is ingediend en wacht op beoordeling.");
       if (application.status === "approved") setNotice("Je poort is goedgekeurd. Operationele informatie staat in je poortdashboard.");
       if (application.status === "rejected") setNotice("Deze aanvraag is afgewezen.");
+      }catch{if(active)setNotice("Jullie gegevens konden niet worden opgehaald. Probeer opnieuw; je bestaande aanmelding blijft behouden.");}finally{if(active)setLoading(false);}
     }
     void restore();
     return () => { active = false; };
-  }, [eventSlug]);
+  }, [eventSlug,reload]);
 
   const editable = loaded && status !== "rejected" && status !== "withdrawn";
 
@@ -127,9 +133,9 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     setBusy(true); setNotice("");
     try {
     const { data, error } = await withRequestDeadline(client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: payload, _expected_version: saved?.version ?? null }));
-    if (error) { setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie huidige concept blijft bewaard." : error.message.includes("STALE_VERSION") ? "Jullie gegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
-    const result = data as { id: string; version: number; status: ReviewStatus };
-    setSaved(result); setStatus(result.status); setNotice(result.status === "changes_requested" ? "Jullie wijzigingen zijn bewaard en kunnen opnieuw worden ingediend." : "Jullie gegevens zijn bewaard. Je kunt later verdergaan."); return result;
+    if (error) { setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie huidige concept blijft bewaard." : /STALE_/.test(error.message) ? "Jullie gegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
+    const result = data as { id: string; version: number; status: ReviewStatus; visitInformationRevision:number };
+    setSaved(result); setStatus(result.status);setPayload(current=>({...current,visitInformationRevision:result.visitInformationRevision})); setNotice(result.status === "changes_requested" ? "Jullie wijzigingen zijn bewaard en kunnen opnieuw worden ingediend." : "Jullie gegevens zijn bewaard. Je kunt later verdergaan."); return result;
     }catch{setNotice("Er kwam geen bevestiging terug. Jullie ingevulde concept blijft op dit scherm staan. Vernieuw voordat je opnieuw opslaat.");return null;}finally{setBusy(false); }
   }
 
@@ -168,8 +174,8 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     const client = createClient();
     const linked = client ? await withRequestDeadline(client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: nextPayload, _expected_version: application.version })) : null;
     if (!linked || linked.error) return setNotice("De foto is ontvangen, maar nog niet aan jullie aanmelding gekoppeld. Probeer het nog eens.");
-    const result = linked.data as { id: string; version: number; status: ReviewStatus };
-    setPayload(nextPayload); setSaved(result); setStatus(result.status); setNotice("De foto staat bij jullie aanmelding. Jullie kunnen later verdergaan.");
+    const result = linked.data as { id: string; version: number; status: ReviewStatus; visitInformationRevision:number };
+    setPayload({...nextPayload,visitInformationRevision:result.visitInformationRevision}); setSaved(result); setStatus(result.status); setNotice("De foto staat bij jullie aanmelding. Jullie kunnen later verdergaan.");
     }catch{setNotice("De foto is nog niet bevestigd. Jullie ingevulde concept blijft behouden. Controleer de verbinding en probeer opnieuw.");}finally{setBusy(false); }
   }
 
@@ -177,6 +183,8 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
   return <div className="panel production-form">
     <h2>Werk jullie poort uit</h2>
     <p>Je adres delen we alleen met de organisatie. Zo kunnen we jullie plek goed voorbereiden en kinderen veilig ontvangen.</p>
+    {!loaded&&<p role="status">{loading?'Jullie aanmelding ophalen…':'De aanmelding kon niet worden geladen.'}</p>}
+    {!loaded&&!loading&&<button className="btn outline" onClick={()=>{setLoading(true);setNotice('');setReload(value=>value+1);}}>Gegevens opnieuw ophalen</button>}
     {reviewFeedback && <div className="form-warning"><strong>Terugkoppeling van de organisatie:</strong> {reviewFeedback}</div>}
     <fieldset className="form-fieldset" disabled={busy || !editable}>
       <h3>Contact en locatie</h3>

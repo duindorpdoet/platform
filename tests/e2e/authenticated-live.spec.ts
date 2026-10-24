@@ -1614,7 +1614,7 @@ test("organization edits and removes resident portals while preserving existing 
   await card.getByRole("button", { name: "Bewerken", exact: true }).click();
   await expect(dialog.getByRole("textbox", { name: "Telefoonnummer", exact: true })).toHaveValue("0707654321");
   await expect(dialog.getByRole("textbox", { name: "Toevoeging", exact: true })).toHaveValue("B");
-  await expect(dialog.getByRole("textbox", { name: "Toegankelijkheid", exact: true })).toHaveValue("Bestaande toegang behouden");
+  await expect(dialog.getByRole("textbox", { name: "Toelichting toegankelijkheid", exact: true })).toHaveValue("Bestaande toegang behouden");
   page.once("dialog", (confirmation) => confirmation.dismiss());
   await dialog.getByRole("button", { name: "Poort verwijderen", exact: true }).click();
   await expect(dialog).toBeVisible();
@@ -1659,4 +1659,37 @@ test("outdoor preference survives reload and remains separate after a real accou
  await mkdir("docs/evening/screenshots",{recursive:true});await page.screenshot({path:"docs/evening/screenshots/outdoor-430.png"});
  await authenticate(context,"parent-a@example.invalid");await page.reload();await expect(page.getByRole("button",{name:"Buitenmodus uit",exact:true})).toHaveAttribute("aria-pressed","false");
  await authenticate(context,"leader-a@example.invalid");await page.reload();await expect(page.getByRole("button",{name:"Buitenmodus aan",exact:true})).toHaveAttribute("aria-pressed","true");
+});
+
+test("readiness records actual own observations and keeps manual contact separate on mobile",async({context,page},testInfo)=>{
+ test.skip(testInfo.project.name!=="desktop-chromium","One real actor transition");requireLocalAuth();test.setTimeout(60000);
+ const {client:admin}=await fixtureClient("admin@example.invalid");
+ const observedCount=()=>sql("select count(*) from app_private.evening_readiness_evidence where check_name='account_opened' and source='observed'");
+ const before=observedCount();await authenticate(context,"admin@example.invalid");await page.goto("/admin");await selectAdminSection(page,"Gereed voor de avond");
+ await expect(page.getByRole("heading",{name:"Wie heeft nog een handje nodig?"})).toBeVisible();expect(observedCount()).toBe(before);
+ await authenticate(context,"parent-a@example.invalid");await page.goto("/omgeving/meeloper/groep");await expect(page.locator(".group-summary")).toBeVisible();await page.locator(".group-summary").scrollIntoViewIfNeeded();
+ type Subject={id:string;kind:string;observedHouseholds:number;criteria:{check:string;state:string}[]};
+ const subject=async()=>((await rpc(admin,"admin_evening_readiness",{_event_slug:"duindorp-halloween-2026"})).subjects as Subject[]).find(row=>row.id===groupId&&row.kind==="group")!;
+ await expect.poll(async()=>(await subject()).observedHouseholds).toBe(1);await expect.poll(async()=>(await subject()).criteria.find(row=>row.check==="start_time_seen")?.state).toBe("complete");
+ await authenticate(context,"admin@example.invalid");await page.goto("/admin");await selectAdminSection(page,"Gereed voor de avond");
+ const card=page.locator(".readiness-subject").filter({hasText:"G-01"});await expect(card).toContainText("1 van 1 gezinnen");
+ await card.getByText("Waarnemingen per gezin",{exact:true}).click();await expect(card.locator(".readiness-households")).toContainText("Testgezin 1");
+ const opener=card.locator(".readiness-check").filter({has:page.getByText("Account geopend",{exact:true})}).getByRole("button",{name:"Handmatig vastleggen",exact:true});
+ await opener.click();const dialog=page.getByRole("dialog");await dialog.getByLabel("Notitie",{exact:true}).fill("Gebeld met de eigen verantwoordelijke; contact is afzonderlijk vastgelegd.");
+ await expect(dialog.getByRole("button",{name:"Bevestiging bewaren",exact:true})).toBeDisabled();await dialog.getByRole("checkbox",{name:/Ik bevestig dat ik dit voor de huidige versie/}).check();
+ await dialog.getByRole("button",{name:"Bevestiging bewaren",exact:true}).click();await expect(dialog).not.toBeVisible();await expect(opener).toBeFocused();
+ expect((await subject()).observedHouseholds).toBe(1);await expect(card).toContainText("Gebeld met de eigen verantwoordelijke");
+ await mkdir("docs/evening/screenshots",{recursive:true});for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);await card.scrollIntoViewIfNeeded();await page.screenshot({path:`docs/evening/screenshots/readiness-${width}.png`});}
+});
+
+test("own house warnings persist to the authorized current destination without opening future portals",async({context,page},testInfo)=>{
+ test.skip(testInfo.project.name!=="desktop-chromium","One real owner to parent transition");requireLocalAuth();test.setTimeout(60000);
+ const owner=await authenticate(context,"owner@example.invalid");await page.goto("/mijn-huis?poort=12000000-0000-0000-0000-000000000001");await page.getByRole("navigation",{name:"Poortkamer navigatie",exact:true}).getByRole("button",{name:"Meer",exact:true}).click();await page.getByRole("button",{name:"Instellingen",exact:true}).click();
+ const editor=page.locator("section.production-form").filter({hasText:"Wat zien ouders vóór het bezoek?"});await expect(editor.getByRole("combobox",{name:"Effecten en bijzonderheden",exact:true})).toBeVisible();
+ await editor.getByRole("combobox",{name:"Effecten en bijzonderheden",exact:true}).selectOption("listed");await editor.getByLabel("Rook of mist",{exact:true}).check();await editor.getByLabel("Hard geluid",{exact:true}).check();await editor.getByLabel("Toelichting op waarschuwingen of allergenen",{exact:true}).fill("Rook en muziek bij de deur; buiten blijven mag.");await editor.getByRole("combobox",{name:"Praktische toegankelijkheid",exact:true}).selectOption("step_free");await editor.getByLabel("Toelichting toegankelijkheid",{exact:true}).fill("Brede ingang via het pad.");await editor.getByRole("button",{name:"Bezoekinformatie bewaren",exact:true}).click();await expect(editor.getByRole("status")).toContainText("opgeslagen");
+ const saved=await rpc(owner,"portal_visit_information",{_portal_id:"12000000-0000-0000-0000-000000000001"});expect(saved.information.warningDisclosure).toBe("listed");
+ const leader=await authenticate(context,"leader-a@example.invalid");prepareStartedLegacyFixtures();let current=await rpc(leader,"group_snapshot",{_group_id:groupId});if(!current.run){const roster=await rpc(leader,"group_roster",{_group_id:groupId});await rpc(leader,"run_start",{_group_id:groupId,_present_registration_child_ids:roster.map((row:{registrationChildId:string})=>row.registrationChildId),_expected_group_version:current.group.version,_idempotency_key:"visit-info-browser-start",_request_hash:"visit-info-browser-start"});current=await rpc(leader,"group_snapshot",{_group_id:groupId});}
+ expect(current.run.currentStop.portal.id).toBe("12000000-0000-0000-0000-000000000001");await page.goto("/mijn-groep");const warnings=page.getByRole("region",{name:"Praktisch voor jullie bezoek"});await expect(warnings).toContainText("Rook of nevel");await expect(warnings).toContainText("Hard geluid");await expect(warnings).toContainText("Brede ingang via het pad");await expect(warnings).toContainText("Ieder aanwezig kind");
+ const denied=await leader.schema("api").rpc("portal_visit_information",{_portal_id:"12000000-0000-0000-0000-000000000002"});expect(denied.error?.message).toContain("NOT_AUTHORIZED");
+ await mkdir("docs/evening/screenshots",{recursive:true});for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);await warnings.scrollIntoViewIfNeeded();await page.screenshot({path:`docs/evening/screenshots/visit-warnings-${width}.png`});}
 });

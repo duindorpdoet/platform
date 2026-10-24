@@ -87,5 +87,14 @@ set local role postgres;
 select ok(not has_table_privilege('authenticated','app_private.evening_readiness_evidence','select'),'evidence table is private');
 select ok(not has_function_privilege('anon','api.admin_evening_readiness(text)','execute'),'anonymous users cannot read organization readiness');
 select ok(not has_function_privilege('authenticated','app_private.evening_readiness_rows(text,uuid,text)','execute'),'private projection cannot be called directly');
+-- Historical readiness is a real reference: removing a formerly unused concept
+-- archives it rather than leaving orphan evidence after a physical DELETE.
+select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+create temp table readiness_concept as select api.admin_manual_portal_save('duindorp-halloween-2026',null,'{"name":"Concept met contactbewijs","worldSlug":"dodenrijk"}',null,'Lokaal concept voor behoud van gereedheidsbewijs') value;
+select lives_ok($$select pg_temp.record_ready('portal',(value->>'id')::uuid,'account_opened','manual','concept-contact-evidence-01',app_private.evening_readiness_revision('portal',(value->>'id')::uuid,'account_opened'),'Organisatie heeft contact gehad','{"confirmed":true}') from readiness_concept$$,'scoped organization can retain preliminary contact evidence');
+select is((select api.admin_manual_portal_remove((value->>'id')::uuid,(value->>'version')::integer,'Verwijderen bewaart eerder vastgelegde contactgeschiedenis')->>'archived' from readiness_concept),'true','readiness reference makes removal preserve the portal');
+select ok(exists(select 1 from app_private.evening_readiness_evidence e join app_private.portals p on p.id=e.portal_id where p.id=(select (value->>'id')::uuid from readiness_concept)),'portal evidence retains its real subject');
+select ok(not exists(select 1 from app_private.evening_readiness_rows('group','23000000-0000-0000-0000-000000000001','account_opened') r where r.actor_label='Deelnemer'),'unnamed actors retain a meaningful household or role label');
+select is(pg_temp.criterion('group','23000000-0000-0000-0000-000000000001','account_opened')#>>'{evidence,0,revisionLabel}','Eigen omgeving','revision labels omit opaque technical IDs');
 select * from finish();
 rollback;

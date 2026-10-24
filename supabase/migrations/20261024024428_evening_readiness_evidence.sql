@@ -5,6 +5,8 @@ create table app_private.evening_readiness_evidence (
  event_id uuid not null references app_private.events(id),
  subject_type text not null check(subject_type in ('group','portal')),
  subject_id uuid not null,
+ group_id uuid generated always as (case when subject_type='group' then subject_id end) stored references app_private.walking_groups(id),
+ portal_id uuid generated always as (case when subject_type='portal' then subject_id end) stored references app_private.portals(id),
  check_name text not null check(check_name in ('account_opened','tutorial_completed','start_time_seen','qr_downloaded','qr_tested','ready_to_host')),
  source text not null check(source in ('observed','manual')),
  -- An immutable actor reference must not block the existing account deletion procedure.
@@ -19,6 +21,8 @@ create table app_private.evening_readiness_evidence (
 alter table app_private.evening_readiness_evidence enable row level security;
 revoke all on app_private.evening_readiness_evidence from public,anon,authenticated;
 create index evening_readiness_subject on app_private.evening_readiness_evidence(event_id,subject_type,subject_id,check_name,recorded_at desc,id);
+create index evening_readiness_group_fk on app_private.evening_readiness_evidence(group_id) where group_id is not null;
+create index evening_readiness_portal_fk on app_private.evening_readiness_evidence(portal_id) where portal_id is not null;
 create unique index evening_readiness_observed_once on app_private.evening_readiness_evidence(subject_type,subject_id,check_name,actor_id,revision) where source='observed';
 create function app_private.preserve_evening_readiness() returns trigger language plpgsql set search_path='' as $$
 begin raise exception 'READINESS_EVIDENCE_IMMUTABLE' using errcode='23514'; end $$;
@@ -64,6 +68,15 @@ begin
  end if;
  return case when eventid is null then null else revision end;
 end $$;
+
+create function app_private.readiness_actor_label(_kind text,_id uuid,_actor uuid)
+returns text language sql stable security definer set search_path='' as $$
+ select coalesce((select nullif(trim(display_name),'') from app_private.profiles where user_id=_actor),
+  case when _kind='portal' then (select nullif(trim(concat_ws(' ',o.first_name,o.last_name)),'') from app_private.portal_owners o where o.portal_id=_id and o.user_id=_actor and o.revoked_at is null limit 1) end,
+  case when _kind='group' and app_private.is_current_leader(_id,_actor) then 'Groepsleider' end,
+  case when _kind='group' then (select 'Volwassene · '||h.label from app_private.readiness_group_adults(_id) a join app_private.households h on h.id=a.household_id where a.user_id=_actor order by h.id limit 1) end,
+  case when _kind='portal' and app_private.readiness_own_subject(_kind,_id,_actor) then 'Poortteamlid' else 'Organisatie' end)
+$$;
 
 create function api.record_evening_readiness(_subject_type text,_subject_id uuid,_check text,_source text,
  _expected_revision text,_detail text,_attestations jsonb,_done boolean,_idempotency_key text)
@@ -127,8 +140,7 @@ begin
    safe_attestations:=safe_attestations||jsonb_build_object('printed',true,'scannedWithPhone',true,'shortCodeMatched',true);
   end if;
  end if;
- select coalesce(nullif(trim(display_name),''),'Deelnemer') into label from app_private.profiles where user_id=actor;
- label:=coalesce(label,'Deelnemer');
+ label:=app_private.readiness_actor_label(_subject_type,_subject_id,actor);
  insert into app_private.evening_readiness_evidence(event_id,subject_type,subject_id,check_name,source,actor_id,actor_label,revision,done,detail,attestations,occurred_at)
  values(eventid,_subject_type,_subject_id,_check,_source,actor,label,current_revision,_done,
   case when _source='manual' then trim(_detail) end,safe_attestations,coalesce(completed,clock_timestamp()))
@@ -159,7 +171,7 @@ language sql stable security definer set search_path='' as $$
   select e.id::text,e.source,e.actor_id,e.actor_label,e.revision,e.done,e.detail,e.occurred_at at,e.recorded_at
    from app_private.evening_readiness_evidence e where e.subject_type=_kind and e.subject_id=_id and e.check_name=_check
   union all
-  select 'tutorial:'||t.user_id||':'||t.role||':'||t.version,'observed',t.user_id,coalesce(p.display_name,'Deelnemer'),
+  select 'tutorial:'||t.user_id||':'||t.role||':'||t.version,'observed',t.user_id,app_private.readiness_actor_label(_kind,_id,t.user_id),
     'tutorial:'||t.role||':'||t.version,true,null,t.completed_at,t.completed_at
    from app_private.participant_tutorials t left join app_private.profiles p on p.user_id=t.user_id
    where _check='tutorial_completed' and t.completed_at is not null
@@ -177,7 +189,11 @@ declare rows jsonb; current_revision text; manual_done boolean; any_current bool
 begin
  current_revision:=app_private.evening_readiness_revision(_kind,_id,_check);
  select jsonb_agg(jsonb_build_object('id',r.id,'source',r.source,'actorLabel',r.actor_label,'at',r.at,'detail',r.detail,'done',r.done,
-   'current',r.current,'revisionLabel',r.revision) order by r.recorded_at desc,r.id),
+   'current',r.current,'revisionLabel',case
+    when _check='account_opened' then 'Eigen omgeving'
+    when _check='tutorial_completed' then 'Rondleiding versie '||split_part(r.revision,':',3)
+    when _check='start_time_seen' then 'Startafspraak versie '||split_part(r.revision,':',3)
+    else 'QR-poster versie '||split_part(r.revision,':',3) end) order by r.recorded_at desc,r.id),
   coalesce(bool_or(r.current and r.done and r.source='observed'),false),coalesce(bool_or(not r.current),false)
  into rows,any_current,any_old from app_private.evening_readiness_rows(_kind,_id,_check) r;
  select r.done into manual_done from app_private.evening_readiness_rows(_kind,_id,_check) r where r.current and r.source='manual' order by r.recorded_at desc,r.id desc limit 1;
@@ -240,7 +256,7 @@ begin
  return base||jsonb_build_object('readinessRevision',app_private.evening_readiness_revision('group',_group_id,'start_time_seen'));
 end $$;
 revoke all on function app_private.preserve_evening_readiness(),app_private.readiness_group_adults(uuid),app_private.readiness_own_subject(text,uuid,uuid),
- app_private.evening_readiness_revision(text,uuid,text),app_private.evening_readiness_rows(text,uuid,text),app_private.evening_readiness_criterion(text,uuid,text) from public,anon,authenticated;
+ app_private.evening_readiness_revision(text,uuid,text),app_private.readiness_actor_label(text,uuid,uuid),app_private.evening_readiness_rows(text,uuid,text),app_private.evening_readiness_criterion(text,uuid,text) from public,anon,authenticated;
 revoke all on function api.record_evening_readiness(text,uuid,text,text,text,text,jsonb,boolean,text),api.admin_evening_readiness(text),api.group_snapshot(uuid) from public,anon;
 grant execute on function api.record_evening_readiness(text,uuid,text,text,text,text,jsonb,boolean,text),api.admin_evening_readiness(text),api.group_snapshot(uuid) to authenticated;
 notify pgrst,'reload schema';
