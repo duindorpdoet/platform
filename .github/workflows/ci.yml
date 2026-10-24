@@ -124,6 +124,8 @@ jobs:
           pnpm exec supabase db reset
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/evening-capacity-concurrency.mjs
           pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/evening-admission-concurrency.mjs
+          pnpm exec supabase db reset
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/start-ops-concurrency.mjs
           pnpm exec supabase db reset
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts --project=desktop-chromium --workers=1 --grep 'fixed finale wait keeps'

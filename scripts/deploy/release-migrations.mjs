@@ -33,6 +33,7 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261024050939_evening_live_route_context.sql',
   '20261024054230_evening_route_candidates.sql',
   '20261024064423_evening_route_reviews.sql',
+  '20261024065647_evening_physical_admission.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

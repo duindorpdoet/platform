@@ -82,9 +82,16 @@ De nieuwe publicatiegrens vereist precies de getoonde routefingerprints én actu
 
 De schone lokale opbouw en volledige suite hebben 2.235 geslaagde controles in 80 bestanden, waaronder 44 reviewcontroles. Productiebuild, types, gerichte lint en SQL-lint zijn groen. De echte Auth/RPC-browserdoorloop voor concept, bevestiging, review, publicatie en herladen is geslaagd; 360/390/430px-screenshots zijn bekeken. Twintig herhaalde controles van dezelfde ongewijzigde synthetische route kosten lokaal 104,85 ms. Dit is geen stagingbelasting- of fysieke telefoonproef.
 
+## Capaciteit bij de echte aankomst
+
+Directe scan, scanvalidatie en samengestelde aankomst beoordelen nu dezelfde fysieke ontvangstcapaciteit opnieuw op de actuele serverinstant. Een eerder geaccepteerde preflight reserveert geen recht om later een bezette poort te betreden. Een echte scan vervroegt de bezettingsprojectie naar het daadwerkelijke aankomsttijdstip; de oorspronkelijke verwachte reservering wordt niet herschreven. Gewone, finale- en oude stoprepresentaties delen dezelfde pool en tellen een fysieke groep per intervalgrens één keer. Een actief, nog niet afgerond bezoek blijft meetellen als de verwachte eindtijd voorbij is. Afronding of veilig afmelden geeft die claim vrij. Oudere concept-/publicatieplannen worden niet als extra onafhankelijke groepen opgeteld.
+
+Een reeds geaccepteerde scan blijft geldig voor afronding; een latere verandering aan de toekomstige wandelverbinding kan die echte aankomst niet wissen. De toelating gebruikt de bestaande capaciteit van het actuele of reeds vrijgegeven ontvangstvenster. Nieuwe scanbewijzen krijgen hun werkelijke serverinstant na eventuele event-lockwachttijd. Oud bewijs krijgt geen nieuwe timestamp. Capaciteitsconflicten stoppen de automatische queuepogingen met duidelijke organisatiehulp; de oorspronkelijke versleutelde opdracht blijft bewaard.
+
+De volledige lokale suite heeft 2.255 geslaagde controles in 81 bestanden. De nieuwe gerichte suite heeft twintig ontvangstcontroles. De echte parallelle proef gebruikt twee zelfstandig ingelogde Auth-sessies en HTTP-RPC's, waarvan beide daadwerkelijke lockwachttijden zijn waargenomen. Twee niet-overlappende verwachte tijdvakken leveren precies één toegelaten gelijktijdige vroege scan op, zonder valse aankomst of zegel. Het nieuwe bewijs heeft een tijdstip na de waargenomen wachttijd. Na de eerste echte afronding kan de tweede groep worden toegelaten en krijgen alle aanwezige buitenblijvende kinderen hun echte aankomst en inclusieve zegel. Plannen, betaalrijen en QR-credentials blijven exact gelijk. Deze proef staat in CI en gebruikt alleen een verse lokale teststack.
+
 ## Resterend vóór uitrol
 
-- Fysieke capaciteit opnieuw controleren bij daadwerkelijke scan, ook wanneer de groep eerder aankomt dan haar verwachte interval; een al geldig bevestigd bezoek behouden.
 - Volledige oude-routebinding en automatische voortzetting laten aansluiten op actuele tijd en dezelfde ontvangstcapaciteit.
 - Actuele omleiding/veilig afmelden en fouten/herstel in echte mobiele Auth/RPC-doorlopen controleren, plus de volledige geïntegreerde staging- en databehoudproeven.
 

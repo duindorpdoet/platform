@@ -69,6 +69,7 @@ function explain(error: { message?: string } | null) {
   if (value.includes("SCAN_REQUIRED")) return "Scan eerst de QR-code van deze poort.";
   if (value.includes("PENDING_PARTICIPANTS")) return "Geef voor ieder aanwezig kind aan: bezocht of overgeslagen.";
   if (value.includes("WRONG_PORTAL")) return "Deze code hoort niet bij de huidige poort of is verlopen.";
+  if (/PORTAL_(?:CHILD_|TOTAL_)?CAPACITY_/.test(value)) return "Deze poort heeft nu onvoldoende bevestigde ontvangstruimte. Blijf bij jullie groep en vraag de organisatie om hulp.";
   if (value.includes("PORTAL_UNAVAILABLE")) return "Deze poort is gepauzeerd of gesloten; een nieuw bezoek kan niet worden vastgelegd.";
   if (value.includes("START_TIME_NOT_REACHED")) return "Jullie toegewezen starttijd is nog niet bereikt.";
   if (value.includes("PAYMENT_NOT_CONFIRMED")) return "De betaling moet door de organisatie zijn bevestigd voordat de groep kan starten.";

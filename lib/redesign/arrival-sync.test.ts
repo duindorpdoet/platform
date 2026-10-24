@@ -109,11 +109,11 @@ describe('evening recovery under uncertain outcomes',()=>{
     await queue.retryArrival(queue.getLatestArrival()!.id);
     expect(mock.rpc.mock.calls[0][1]).toEqual(mock.rpc.mock.calls[1][1]);expect(queue.getLatestArrival()?.status).toBe('confirmed');
   });
-  it('retains the original rejected command after it is marked reviewed',async()=>{
+  it.each(['FINAL_RESERVATION_MISSED','PORTAL_CAPACITY_EXCEEDED','PORTAL_CHILD_CAPACITY_EXCEEDED','PORTAL_TOTAL_CAPACITY_EXCEEDED','PORTAL_CAPACITY_UNAVAILABLE'])('retains the original rejected %s command after it is marked reviewed',async(message)=>{
     const queue=await import('./arrival-sync');await queue.configureArrivalSync(scope);
-    mock.rpc.mockResolvedValue({data:null,error:{message:'FINAL_RESERVATION_MISSED'}});
+    mock.rpc.mockResolvedValue({data:null,error:{message}});
     const row=await queue.submitArrival('run_arrive_and_advance',args,meta);
-    expect(row.args._credential).toBe(args._credential);await queue.dismissArrival(row.id);
+    expect(row.status).toBe('attention');expect(row.automaticPaused).toBe(true);expect(row.args._credential).toBe(args._credential);await queue.dismissArrival(row.id);
     expect(queue.getLatestArrival()).toBeNull();expect(await rawOutbox()).toHaveLength(1);
     vi.resetModules();const reopened=await import('./arrival-sync');await reopened.configureArrivalSync(scope);await reopened.flushArrivalQueue();
     expect(reopened.getLatestArrival()).toBeNull();expect(mock.rpc).toHaveBeenCalledTimes(1);expect(await rawOutbox()).toHaveLength(1);
