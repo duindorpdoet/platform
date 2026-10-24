@@ -58,6 +58,13 @@ jobs:
         env:
           MAINTENANCE_ACTION: ${{ inputs.runner_maintenance }}
         run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/deploy/staging-runner-maintenance.mjs
+      - name: Profile rolled-back synthetic snapshots without deployment
+        if: inputs.runner_maintenance == 'inspect'
+        env:
+          APP_ENVIRONMENT: staging
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/acceptance/evening-staging-profile.mjs
   backup-restore:
     name: Encrypted backup and isolated restore before migration
     if: github.ref == 'refs/heads/staging' && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')

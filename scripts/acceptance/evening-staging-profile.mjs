@@ -1,0 +1,36 @@
+// Diagnostic only. Never qualifies as release acceptance or changes settings.
+import assert from 'node:assert/strict';
+const ref=process.env.SUPABASE_PROJECT_REF,token=process.env.SUPABASE_ACCESS_TOKEN;
+assert.equal(process.env.APP_ENVIRONMENT,'staging');
+assert.ok(ref&&token);
+async function query(sql,readOnly=true){
+ const r=await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({query:sql,read_only:readOnly}),signal:AbortSignal.timeout(60000)});
+ if(!r.ok)throw new Error(`PROFILE_SQL_${r.status}`);
+ return r.json();
+}
+const literal=s=>"'"+s.replaceAll("'","''")+"'";
+const settings=await query("select name,setting,unit from pg_settings where name in ('jit','jit_above_cost','jit_inline_above_cost','jit_optimize_above_cost','max_connections','shared_buffers','work_mem','effective_cache_size') order by name");
+console.log(JSON.stringify({name:'database-settings',settings}));
+const stats=await query(`select case when query like '%portal_room_snapshot%' then 'portal_room_snapshot' when query like '%group_snapshot%' then 'group_snapshot' when query like '%admin_evening_cockpit%' then 'admin_evening_cockpit' when query like '%admin_portal_operations_snapshot%' then 'admin_portal_operations_snapshot' else 'admin_dashboard' end rpc,calls,round(mean_exec_time::numeric,2) mean_ms,round(max_exec_time::numeric,2) maximum_ms,round(total_exec_time::numeric,2) total_ms,shared_blks_hit,shared_blks_read,jit_functions,round(jit_generation_time::numeric,2) jit_generation_ms,round(jit_inlining_time::numeric,2) jit_inlining_ms,round(jit_optimization_time::numeric,2) jit_optimization_ms,round(jit_emission_time::numeric,2) jit_emission_ms from extensions.pg_stat_statements where query ~ '(portal_room_snapshot|group_snapshot|admin_dashboard|admin_evening_cockpit|admin_portal_operations_snapshot)' order by total_exec_time desc limit 15`);
+console.log(JSON.stringify({name:'rpc-statistics',stats}));
+const fixture=await query("select id,slug from app_private.events where settings->>'eveningLoad'='true' and slug like 'evening-load-%' order by created_at desc limit 1");
+assert.equal(fixture.length,1,'an existing owned synthetic event is required');
+const event=fixture[0];
+const actors=await query(`select 'family' kind,u.id actor,g.id subject from auth.users u join app_private.household_members m on m.user_id=u.id join app_private.registrations r on r.household_id=m.household_id join app_private.group_registrations a on a.registration_id=r.id join app_private.walking_groups g on g.id=a.group_id where g.event_id=${literal(event.id)}::uuid and u.raw_app_meta_data->>'evening_load'=${literal(event.slug)} limit 1`);
+actors.push(...await query(`select 'portal' kind,u.id actor,p.id subject from auth.users u join app_private.portal_owners o on o.user_id=u.id join app_private.portals p on p.id=o.portal_id where p.event_id=${literal(event.id)}::uuid and u.raw_app_meta_data->>'evening_load'=${literal(event.slug)} limit 1`));
+actors.push(...await query(`select 'admin' kind,u.id actor from auth.users u join app_private.event_capabilities c on c.user_id=u.id where c.event_id=${literal(event.id)}::uuid and c.capability='event_admin' and u.raw_app_meta_data->>'evening_load'=${literal(event.slug)} limit 1`));
+assert.equal(actors.length,3,'only the three scoped synthetic roles');
+for(const actor of actors){
+ const functions=actor.kind==='family'?['group_snapshot']:actor.kind==='portal'?['portal_room_snapshot']:['admin_dashboard','admin_evening_cockpit','admin_portal_operations_snapshot'];
+ for(const fn of functions)for(const jit of ['on','off']){
+  const args=fn==='group_snapshot'?`${literal(actor.subject)}::uuid`:fn==='portal_room_snapshot'?`${literal(event.slug)},${literal(actor.subject)}::uuid`:literal(event.slug);
+  const sql=`begin;set local statement_timeout='15s';set local jit=${jit};set local request.jwt.claims=${literal(JSON.stringify({sub:actor.actor,role:'authenticated'}))};set local role authenticated;explain(analyze,buffers,format json) select api.${fn}(${args});rollback;`;
+  const began=performance.now();
+  try {
+   const result=await query(sql,false);
+   const plan=result.find?.(row=>row['QUERY PLAN'])?.['QUERY PLAN']?.[0];
+   console.log(JSON.stringify({name:'isolated-rolled-back-snapshot',role:actor.kind,rpc:fn,jit,totalMs:Math.round(performance.now()-began),executionMs:plan?.['Execution Time'],planningMs:plan?.['Planning Time'],buffersHit:plan?.Plan?.['Shared Hit Blocks']}));
+  }catch(error){console.log(JSON.stringify({name:'isolated-rolled-back-snapshot',role:actor.kind,rpc:fn,jit,totalMs:Math.round(performance.now()-began),error:error.message}));}
+ }
+}
+console.log(JSON.stringify({name:'profile-complete',diagnosticOnly:true,releaseAcceptance:false}));
