@@ -293,3 +293,46 @@ jobs:
         env:
           SENDGRID_API: ${{ secrets.SENDGRID_API }}
         run: node scripts/deploy/diagnose-mail-delivery.mjs
+
+  evening-load:
+    name: Staging evening load and preservation acceptance
+    needs: deploy
+    if: github.ref == 'refs/heads/staging' && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      APP_ENVIRONMENT: staging
+      APP_URL: https://staging-halloween.duindorpdoet.nl
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      LOAD_FAMILIES: "200"
+      LOAD_PORTALS: "30"
+      LOAD_ADMINS: "4"
+      LOAD_OBSERVERS: "20"
+      LOAD_REPORT_PATH: ${{ runner.temp }}/evening-staging-load-report.json
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pnpm
+        run: npm install --global pnpm@11.25.0
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Exercise independent test accounts and the actual deployed application
+        run: node scripts/acceptance/evening-staging-load.mjs
+      - name: Retain aggregate measurements without account credentials
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: evening-staging-load-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/evening-staging-load-report.json
+          retention-days: 30
+          if-no-files-found: warn

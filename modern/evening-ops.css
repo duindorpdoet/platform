@@ -38,3 +38,25 @@
 .ops-action-dialog{padding:24px;display:grid;gap:16px}.ops-action-dialog header{padding-right:20px}.ops-action-dialog label{display:grid;gap:8px}.ops-action-dialog :is(input[type=search],textarea){width:100%;min-width:0;border:1px solid #586b83;background:#0b1726;color:#eff5ff;border-radius:8px;padding:10px}.ops-choice-list{display:grid;gap:8px;max-height:34dvh;overflow:auto}.ops-choice-list button{display:grid;text-align:left;gap:5px;border:1px solid #495c73;background:#132337;color:#e6eef9;border-radius:10px;padding:14px;min-width:0;overflow-wrap:anywhere}.ops-choice-list button.selected{border-color:#e8b77d;background:#55452d55}.ops-choice-list button:disabled{opacity:.65}.ops-action-dialog footer{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.ops-action-dialog .ops-action-attestation{display:flex;align-items:flex-start;gap:10px}.ops-action-dialog :is(p,span,small){overflow-wrap:anywhere}
 
 .route-review-panel{display:grid;gap:16px;padding:20px;border:1px solid #475c73;border-radius:14px;background:#102235;margin:12px 0 22px}.route-review-panel>header{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}.route-review-panel h4{margin:0}.route-review-panel p{font-size:12px;line-height:1.6;color:#bdcde1}.route-review-diff{padding:14px;border:1px solid #54634d;border-radius:10px}.route-review-diff>strong{display:flex;gap:8px;align-items:center}.route-review-diff>div{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px}.route-review-diff>div>span{font-size:12px;color:#d5b27f}.route-review-diff p{margin:4px 0 10px;overflow-wrap:anywhere}.route-review-checklist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.route-review-checklist>div{display:flex;gap:10px;padding:12px;border:1px solid #4b6067;border-radius:10px}.route-review-checklist strong{font-size:12px}.route-review-checklist svg{flex-shrink:0}.route-review-checklist .is-blocked{border-color:#ad766a}.route-review-checklist .is-warning{border-color:#998359}@media(max-width:600px){.route-review-checklist{grid-template-columns:1fr}.route-review-panel{padding:14px}.route-review-panel .btn{width:100%}}
+
+/* Keep live controls and modal actions reachable on narrow screens. */
+.modern-ui .admin-live-cockpit .incident-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;min-width:0}
+.modern-ui .admin-live-cockpit .incident-row>div:first-child{flex:1 1 240px;min-width:0;overflow-wrap:anywhere}
+.modern-ui .admin-live-cockpit .incident-row>.btn{max-width:100%}
+.modern-ui .admin-live-cockpit .incident-row>.actions{display:flex;flex:1 1 100%;flex-wrap:wrap;min-width:0}
+.ops-action-overlay[data-slot=dialog-overlay]{z-index:899}
+.group-create-dialog[data-slot=dialog-content]:has(>.ops-action-dialog){position:fixed;inset:14px;margin:auto;--tw-translate-x:0;--tw-translate-y:0;translate:none;transform:none;align-self:auto;height:max-content;z-index:900;display:flex;flex-direction:column;gap:0;max-height:calc(100dvh - 28px);overflow:hidden;padding:0!important}
+.ops-action-dialog{display:flex;flex-direction:column;gap:16px;max-height:calc(100dvh - 28px);min-height:0;box-sizing:border-box}
+.ops-action-dialog>header{display:block;flex:0 0 auto;min-width:0;margin:0;padding-right:28px}
+.ops-action-dialog>header .kicker{margin:0;font-size:10px}
+.ops-action-dialog>header [data-slot=dialog-description]{margin:0;line-height:1.6}
+.ops-action-body{display:flex;flex-direction:column;gap:16px;min-height:0;overflow-y:auto;overflow-x:hidden;padding:2px}
+.ops-action-body>*{flex:0 0 auto;min-width:0}
+.ops-action-body>label.ops-action-search{display:flex;align-items:center;gap:10px;margin:0}
+.ops-action-body .ops-action-search>svg{flex:0 0 17px}
+.ops-action-dialog .ops-action-attestation>input{flex:0 0 18px;width:18px;height:18px;min-height:18px;margin:4px 0 0;padding:0}
+.group-create-dialog:has(>.ops-action-dialog)>[data-slot=dialog-close]{display:grid;place-items:center;width:44px;height:44px;top:4px;right:4px}
+.ops-action-dialog>footer{flex:0 0 auto;margin:0}
+
+.evening-freshness>header>div{flex:1 1 auto;min-width:0}
+.evening-freshness>header>.btn{flex:0 0 auto;min-width:110px;white-space:normal;overflow-wrap:normal;word-break:normal}

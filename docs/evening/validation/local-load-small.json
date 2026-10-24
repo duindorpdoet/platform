@@ -1,0 +1,289 @@
+{
+  "environment": "local",
+  "revision": "local",
+  "fixtureEvent": "evening-load-1792837046470-39541e",
+  "counts": {
+    "families": 9,
+    "portals": 4,
+    "admins": 1,
+    "observers": 1,
+    "groups": 2,
+    "distinctIdentities": 15
+  },
+  "phases": [
+    {
+      "name": "distinct-account-logins",
+      "operations": 15,
+      "requests": 15,
+      "responseStatuses": {
+        "200": 15
+      },
+      "requestP95Ms": 208,
+      "concurrency": 20,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 215,
+      "p50Ms": 186,
+      "p95Ms": 209,
+      "p99Ms": 209,
+      "maxMs": 209,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "before-start-role-snapshots",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "requestP95Ms": 170,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 177,
+      "p50Ms": 113,
+      "p95Ms": 175,
+      "p99Ms": 175,
+      "maxMs": 175,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "private-realtime-subscriptions",
+      "operations": 15,
+      "requests": 0,
+      "responseStatuses": {},
+      "requestP95Ms": 0,
+      "concurrency": 20,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 222,
+      "p50Ms": 149,
+      "p95Ms": 222,
+      "p99Ms": 222,
+      "maxMs": 222,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "concurrent-group-starts",
+      "operations": 2,
+      "requests": 6,
+      "responseStatuses": {
+        "200": 6
+      },
+      "requestP95Ms": 188,
+      "concurrency": 2,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 248,
+      "p50Ms": 144,
+      "p95Ms": 248,
+      "p99Ms": 248,
+      "maxMs": 248,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "live-role-snapshots-1",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "requestP95Ms": 154,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 157,
+      "p50Ms": 128,
+      "p95Ms": 157,
+      "p99Ms": 157,
+      "maxMs": 157,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "live-role-snapshots-2",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "requestP95Ms": 64,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 65,
+      "p50Ms": 22,
+      "p95Ms": 65,
+      "p99Ms": 65,
+      "maxMs": 65,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "live-role-snapshots-3",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "requestP95Ms": 72,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 74,
+      "p50Ms": 15,
+      "p95Ms": 74,
+      "p99Ms": 74,
+      "maxMs": 74,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "authenticated-vps-application-shell",
+      "operations": 15,
+      "requests": 15,
+      "responseStatuses": {
+        "200": 15
+      },
+      "requestP95Ms": 499,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 507,
+      "p50Ms": 505,
+      "p95Ms": 505,
+      "p99Ms": 505,
+      "maxMs": 505,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "simultaneous-real-arrivals",
+      "operations": 2,
+      "requests": 4,
+      "responseStatuses": {
+        "200": 4
+      },
+      "requestP95Ms": 241,
+      "concurrency": 2,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 252,
+      "p50Ms": 125,
+      "p95Ms": 252,
+      "p99Ms": 252,
+      "maxMs": 252,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "two-independent-client-arrival-retries",
+      "operations": 4,
+      "requests": 4,
+      "responseStatuses": {
+        "200": 4
+      },
+      "requestP95Ms": 14,
+      "concurrency": 4,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 16,
+      "p50Ms": 12,
+      "p95Ms": 15,
+      "p99Ms": 15,
+      "maxMs": 15,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "owner-close-versus-pending-arrival",
+      "operations": 1,
+      "requests": 4,
+      "responseStatuses": {
+        "200": 3,
+        "400": 1
+      },
+      "requestP95Ms": 16,
+      "concurrency": 1,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 125,
+      "p50Ms": 125,
+      "p95Ms": 125,
+      "p99Ms": 125,
+      "maxMs": 125,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "after-arrival-role-snapshots",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "requestP95Ms": 51,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 53,
+      "p50Ms": 14,
+      "p95Ms": 53,
+      "p99Ms": 53,
+      "maxMs": 53,
+      "overClientDeadline": 0
+    }
+  ],
+  "databaseSamples": [
+    {
+      "at": "2026-10-24T10:17:27.330233+00:00",
+      "active": 1,
+      "maximum": 100,
+      "waiting": 0,
+      "connections": 12
+    },
+    {
+      "at": "2026-10-24T10:17:28.421186+00:00",
+      "active": 2,
+      "maximum": 100,
+      "waiting": 0,
+      "connections": 24
+    },
+    {
+      "at": "2026-10-24T10:17:29.312358+00:00",
+      "active": 2,
+      "maximum": 100,
+      "waiting": 0,
+      "connections": 24
+    }
+  ],
+  "realtime": {
+    "attempts": 19,
+    "subscribed": 19,
+    "errors": 0,
+    "messages": 78,
+    "byRole": {
+      "family": 36,
+      "portal": 14,
+      "admin": 14,
+      "observer": 14
+    }
+  },
+  "limitations": [
+    "Generated synthetic walking graph; no physical route or camera proof.",
+    "Native SDK role RPC waves and actual private subscriptions; not 254 rendered browsers or an automatic RPC request for every broadcast.",
+    "VPS HTTP phase measures the real authenticated application shell; scoped fixture route RPCs run on the actual linked Supabase service.",
+    "Observers exercise read requests using the existing live-support capability in the isolated test event."
+  ],
+  "closeRace": {
+    "outcome": "closure-before-arrival",
+    "pendingInstructionRetained": true,
+    "newArrivals": 0
+  },
+  "invariants": {
+    "runs": 2,
+    "seals": 9,
+    "arrivals": 9,
+    "overbookedOrdinary": 0
+  },
+  "preservation": {
+    "originalTables": 22,
+    "originalRows": 183,
+    "changedOriginalRows": 0
+  },
+  "status": "pass",
+  "syntheticAccountsSecured": 15
+}

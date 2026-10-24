@@ -684,7 +684,7 @@ test("a portal draft survives refresh and rejects disguised executable upload co
   for (const removed of ["Bezoekduur", "Groepen tegelijk", "Kinderen per bezoek", "Kinderen totaal"]) {
     await expect(page.getByLabel(removed, { exact: false })).toHaveCount(0);
   }
-  await expect(page.getByLabel("Praktische toegankelijkheid (optioneel)")).toBeVisible();
+  await expect(page.getByRole("combobox", {name:"Praktische toegankelijkheid",exact:true})).toBeVisible();
   await expect(page.getByLabel("Straat")).toHaveValue("");
   await expect(page.getByLabel("Categorie of gewenste wereld")).toHaveValue("anders");
   await expect(page.getByLabel("Beschikbaar vanaf")).toHaveValue("17:00");
