@@ -66,11 +66,17 @@ De private routecontext onderscheidt voorbereiding vanaf de exacte bevestigde/ge
 
 Een schone opbouw en de volledige suite zijn geslaagd: 2.158 pgTAP-controles in 78 bestanden, waaronder 36 positie-/vrijgavecontroles. Security- en performance-advisors, SQL-lint en de exacte migrationlijstcontrole zijn groen. Ook beide parallelle route-/gereedheids- en laatste-capaciteitsproeven zijn opnieuw geslaagd. Deze private context moet nog in de volledige beheerpreview en actuele omleidingskeuzes worden gebruikt; de bredere avondrelease blijft onvoltooid.
 
+## Actuele routekeuzes en gedeelde preview
+
+De private beheerpreview en daadwerkelijke dynamische toewijzing gebruiken nu dezelfde geverifieerde wandelverbindingen en beoordeling van huiscapaciteit, toegankelijkheid, werkelijk aanwezige kinderen, bezoekgrens, stopgrens en vaste finale-afspraak. De live preview houdt de huidige instructie intact en toont historie afzonderlijk. Een gewone omleiding controleert de actuele poort opnieuw voordat de bestaande instructie wordt vervangen. De keuzelijst bevat concrete Nederlandse redenen en daadwerkelijke geregistreerde volwassenen. Na een verloren antwoord kan dezelfde beheeropdracht dezelfde bevestiging teruggeven zonder een tweede stop of auditrecord. Een expliciete keuze voor de finale blijft ook bij volgende worker-controles gelden; er komt geen nieuw gewoon huis tussen.
+
+Alle bestaande 2.158 databasecontroles zijn geslaagd; de aanvullende gerichte suite heeft 33 geslaagde controles voor actuele keuzes, autorisatie, versieconflict, sluiting na openen, idempotentie, historie en blijvend finale-wachten. De routepreview gebruikt de echte serverklok voor live berekenen. Een lokale meting van twintig afzonderlijke routeberekeningen voor dezelfde synthetische groep duurde 9,66 seconden. Dit is geen VPS-belastingproef. Het tegelijk berekenen van alle routes wordt daarom in de volgende stap vervangen door afzonderlijk ophalen bij openen/publicatiecontrole. Routefingerprints en reviews blijven nog vereist.
+
 ## Resterende servercontracten
 
 De client verwijst vooruit naar onderstaande RPC's. Zij zijn nog niet geïmplementeerd. Deze branch mag daarom niet als voltooide release worden uitgerold.
 
-- `api.admin_route_command_options(_run_id)` voor actuele poortkeuzes, verantwoordelijke volwassenen en de runversie.
+- Afzonderlijk ophalen van de actuele routepreview, zodat Startregie niet alle groepsroutes tegelijk hoeft te berekenen.
 - `api.admin_startregie_review_route(...)`, routefingerprints en de uitgebreide publicatievoorwaarde `_expected_route_fingerprints`.
 - Live routeklok, volledige oude-routebinding en een beheerpreview die dezelfde gebonden finale-afspraak en daadwerkelijke positie gebruikt.
 
