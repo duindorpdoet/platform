@@ -239,6 +239,8 @@ jobs:
       - name: Verify deployed staging release
         run: node scripts/deploy/verify-deployment.mjs staging "${APP_URL}"
       - name: Verify signed Auth email hook and mail provider
+        env:
+          MAIL_RECEIPT_ACCEPTANCE_WAIVED: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance }}
         run: node scripts/deploy/verify-mail-provider.mjs
       - name: Record explicitly selected mailbox acceptance waiver
         if: github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance
