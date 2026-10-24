@@ -9,6 +9,12 @@ async function query(sql,readOnly=true){
  return r.json();
 }
 const literal=s=>"'"+s.replaceAll("'","''")+"'";
+for(const path of ['billing/addons','postgrest']){
+ const r=await fetch(`https://api.supabase.com/v1/projects/${ref}/${path}`,{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(15000)});
+ if(!r.ok){console.log(JSON.stringify({name:path,status:r.status}));continue;}
+ const value=await r.json();
+ console.log(JSON.stringify(path==='billing/addons'?{name:'compute-selection',selected:value.selected_addons?.filter(a=>a.type==='compute_instance'),available:value.available_addons?.filter(a=>a.type==='compute_instance')}:{name:'rest-pool',settings:Object.fromEntries(Object.entries(value).filter(([key])=>/^(db_pool|db_pool_size|db_pre_request|db_prepared_statements|db_tx_end|db_schema)$/.test(key)))}));
+}
 const settings=await query("select name,setting,unit from pg_settings where name in ('jit','jit_above_cost','jit_inline_above_cost','jit_optimize_above_cost','max_connections','shared_buffers','work_mem','effective_cache_size') order by name");
 console.log(JSON.stringify({name:'database-settings',settings}));
 const stats=await query(`select case when query like '%portal_room_snapshot%' then 'portal_room_snapshot' when query like '%group_snapshot%' then 'group_snapshot' when query like '%admin_evening_cockpit%' then 'admin_evening_cockpit' when query like '%admin_portal_operations_snapshot%' then 'admin_portal_operations_snapshot' else 'admin_dashboard' end rpc,calls,round(mean_exec_time::numeric,2) mean_ms,round(max_exec_time::numeric,2) maximum_ms,round(total_exec_time::numeric,2) total_ms,shared_blks_hit,shared_blks_read,jit_functions,round(jit_generation_time::numeric,2) jit_generation_ms,round(jit_inlining_time::numeric,2) jit_inlining_ms,round(jit_optimization_time::numeric,2) jit_optimization_ms,round(jit_emission_time::numeric,2) jit_emission_ms from extensions.pg_stat_statements where query ~ '(portal_room_snapshot|group_snapshot|admin_dashboard|admin_evening_cockpit|admin_portal_operations_snapshot)' order by total_exec_time desc limit 15`);
@@ -34,3 +40,12 @@ for(const actor of actors){
  }
 }
 console.log(JSON.stringify({name:'profile-complete',diagnosticOnly:true,releaseAcceptance:false}));
+const family=actors.find(a=>a.kind==='family');
+const burstStarted=performance.now();
+const burst=await Promise.all(Array.from({length:8},async()=>{
+ const started=performance.now();
+ const rows=await query(`begin;set local statement_timeout='15s';set local jit=off;set local request.jwt.claims=${literal(JSON.stringify({sub:family.actor,role:'authenticated'}))};set local role authenticated;explain(analyze,buffers,format json) select api.group_snapshot(${literal(family.subject)}::uuid);rollback;`,false);
+ const plan=rows.find?.(row=>row['QUERY PLAN'])?.['QUERY PLAN']?.[0];
+ return {totalMs:Math.round(performance.now()-started),executionMs:plan?.['Execution Time']};
+}));
+console.log(JSON.stringify({name:'eight-parallel-rolled-back-group-reads',elapsedMs:Math.round(performance.now()-burstStarted),requests:burst,diagnosticOnly:true}));
