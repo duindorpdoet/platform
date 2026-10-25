@@ -114,7 +114,7 @@ test("portal management exposes safe manual creation as a primary action", async
   await assertReadableLayout(page);
 });
 
-test("the unified mobile participant environment keeps role navigation and payment-gated Night Pass clear", async ({ context, page }) => {
+test("the unified mobile participant environment keeps role navigation and Night Pass clear", async ({ context, page }) => {
   requireLocalAuth();
   await page.setViewportSize({ width: 390, height: 844 });
   await authenticate(context, "parent-size-5@example.invalid");
@@ -135,6 +135,22 @@ test("the unified mobile participant environment keeps role navigation and payme
   await expect(page.getByText("Laat deze Nachtpas zien als de organisatie daarom vraagt.")).toBeVisible();
   await expect(page.locator('img[alt*="QR-code"]')).toHaveCount(0);
   await assertReadableLayout(page);
+});
+
+test("an unpaid registration has an active Night Pass without changing financial records", async ({ context, page }) => {
+  requireLocalAuth();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const client = await authenticate(context, "parent-child-payment-a@example.invalid");
+  const before = (await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" })).registration;
+  expect(before.status).toBe("submitted");
+  expect(before.children.some((child: { payment: { status: string } }) => !["confirmed", "waived"].includes(child.payment.status))).toBe(true);
+  await page.goto("/omgeving/meeloper/nachtpas");
+  await expect(page.getByText("TOEGANG ACTIEF", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Dit blokkeert jullie deelname niet/)).toBeVisible();
+  await expect(page.getByText("NOG VERGRENDELD", { exact: true })).toHaveCount(0);
+  await assertReadableLayout(page);
+  const after = (await rpc(client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" })).registration;
+  expect(after).toEqual(before);
 });
 
 test("the homeowner cockpit labels schedules as planned rather than live ETA", async ({ context, page }) => {

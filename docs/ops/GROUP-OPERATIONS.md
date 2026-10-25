@@ -67,3 +67,5 @@ Tijdens een tussentijdse browserstart ontbrak eenmaal de expliciete lokale conta
 ## Releasevoorbereiding na deployopdracht
 
 De mobiele locatie-/poortregressie gebruikt de nieuwe expliciete afrondknop en is opnieuw aan de echte lokale servergrens uitgevoerd: drie proeven geslaagd. Negen releasegate-tests, typecheck en lint zijn geslaagd. De releasebranch `codex/coherent-group-start-operations` doorloopt dezelfde stagingbackup, geïsoleerde herstelproef, private migratiecontrole en mailacceptatie als de eerdere gerichte releasebranch; alleen de bekende, gepinde reeds geïnstalleerde stagingmigraties worden als compatibiliteitshistorie toegestaan. Productie vereist het volledig geslaagde stagingworkflowresultaat en deploymentstatus op exact dezelfde SHA.
+
+De aanvullende frontendcontrole vóór uitrol vond nog een oude betaalvergrendeling in de Nachtpas. Die is vervangen door deelname op basis van een ingediende inschrijving met actieve kinderen; het financiële overzicht blijft onveranderd en meldt de open controle zonder deelname te blokkeren. Ook de oude betaalblokkade-fouttekst is verwijderd. De servercontracten blijven betalingsstatussen en bedragen behouden.

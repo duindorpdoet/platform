@@ -104,7 +104,7 @@ export function ChildPaymentRows({ items: children, registrationId, legacyPaymen
               : <button className="child-tikkie-action" type="button" disabled>{state.label}</button>}
             {state.canPay && batch && <button type="button" className="child-payment-report" disabled={reporting !== null} onClick={() => void report(batch)} aria-label={`Betaling voor ${child.firstName} melden`}>{reporting === batch.id ? "Melden…" : "Betaling melden"}</button>}
           </div>
-          <small>{child.status !== "active" ? "Afgezegd" : state.paid ? "Toegang actief" : state.status === "reported" ? "Betaling gemeld · wacht op controle" : `Aangemeld · ${paymentAmount(child.unitPriceCents)}`}</small>
+          <small>{child.status !== "active" ? "Afgezegd" : state.paid ? "Betaling bevestigd" : state.status === "reported" ? "Betaling gemeld · wacht op controle" : `Aangemeld · ${paymentAmount(child.unitPriceCents)}`}</small>
           {child.status === "active" && state.included && batch && <small className="child-payment-included">Inbegrepen bij {batch.anchorChildName}.</small>}
           {state.canPay && batch && batch.childNames.length > 1 && <small className="child-payment-for">Eén betaling voor {batch.childNames.join(" · ")}.</small>}
           {state.status === "needs_review" && <small>De organisatie past de betaling aan. Gebruik de eerdere link niet.</small>}

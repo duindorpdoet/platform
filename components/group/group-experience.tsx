@@ -65,7 +65,6 @@ function explain(error: { message?: string } | null) {
   if (value.includes("WRONG_PORTAL")) return "Deze code hoort niet bij de huidige poort of is verlopen.";
   if (value.includes("PORTAL_UNAVAILABLE")) return "Deze poort is gepauzeerd of gesloten; een nieuw bezoek kan niet worden vastgelegd.";
   if (value.includes("START_TIME_NOT_REACHED")) return "Jullie toegewezen starttijd is nog niet bereikt.";
-  if (value.includes("PAYMENT_NOT_CONFIRMED")) return "De betaling moet door de organisatie zijn bevestigd voordat de groep kan starten.";
   if (value.includes("FINAL_PORTAL_REQUIRED")) return "Bevestig de aankomst bij de laatste poort of vraag de organisatie om hulp. Meedoen aan de beleving hoeft niet.";
   if (value.includes("FINALE_CAPACITY_UNAVAILABLE")) return "We zoeken een nieuw aankomstmoment bij de laatste poort. Blijf bij elkaar en wacht op het volgende bericht.";
   if (value.includes("VISIT_ALREADY_RECORDED")) return "Er is al een bezoek vastgelegd; de poort kan niet meer als systeemskip worden overschreven.";

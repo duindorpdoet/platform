@@ -290,7 +290,7 @@ function WalkerSection({ context, eventSlug, userId, role, section }: { context:
   if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience groupId={role.groupId} userId={userId} /></ParticipantPageFrame>;
   if (loading) return <ParticipantLoading />;
   if (section === "groep") return <WalkerGroup group={group} registration={registration} preferences={preferences} groupId={role.groupId ?? undefined} reload={load} />;
-  if (section === "nachtpas") return <NightPass context={context} snapshot={registration} group={group} reload={load} />;
+  if (section === "nachtpas") return <NightPass snapshot={registration} group={group} reload={load} />;
   if (section === "meer" || section === "updates") return <MorePage context={context} eventSlug={eventSlug} userId={userId} role="walker" />;
   return <><WalkerNow context={context} registration={registration} group={group} reload={load} /><div className="member-news-section"><PortalNews channel="parents" compact /></div></>;
 }
@@ -371,14 +371,21 @@ function WalkerGroup({ group, registration, preferences, groupId, reload }: { gr
   </ParticipantPageFrame>;
 }
 
-function NightPass({ context, snapshot, group, reload }: { context: ParticipantContext; snapshot: RegistrationSnapshot | null; group: GroupSnapshot | null; reload: () => Promise<void> }) {
+function NightPass({ snapshot, group, reload }: { snapshot: RegistrationSnapshot | null; group: GroupSnapshot | null; reload: () => Promise<void> }) {
   const event=useEventDetails();
   const registration = snapshot?.registration;
   if (!registration) return <ParticipantPageFrame eyebrow="Nachtpas" title="Nog geen inschrijving"><section className="participant-card"><p>Na je definitieve inschrijving verschijnt hier de Nachtpas voor je eigen kinderen.</p><Link className="btn" href="/meelopen">Schrijf je in</Link></section></ParticipantPageFrame>;
   const activeChildren = registration.children.filter((child) => child.status === "active");
+  const participating = registration.status === "submitted" && activeChildren.length > 0;
   const paid = activeChildren.length > 0 && activeChildren.every((child) => childPaymentState(child, childPaymentFor(child, registration.children, registration.payment)).paid);
   return <ParticipantPageFrame eyebrow="Alles voor deelname" title="Jullie Nachtpas">
-    <section className={`night-pass ${paid ? "active" : "locked"}`}><div className="night-pass-top"><span><MoonStar />Duindorp {event.year}</span><strong>{paid ? "TOEGANG ACTIEF" : "NOG VERGRENDELD"}</strong></div><h2>{registration.reference}</h2><div className="night-pass-grid"><span>Kinderen<strong>{registration.children.filter((child) => child.status === "active").map((child) => child.firstName).join(", ")}</strong></span><span>Tijdslot<strong>{group?.group.start ? formatTime(group.group.start.startsAt) : "Volgt"}</strong></span><span>Groep<strong>{group ? group.group.code : "Volgt"}</strong></span><span>Betaling<strong>{registration.payment ? paymentLabels[registration.payment.status] ?? registration.payment.status : "Wordt voorbereid"}</strong></span></div>{paid ? <div className="night-pass-valid"><ShieldCheck />Toegang bevestigd. Neem deze pagina en de bevestigingsmail mee.</div> : <div className="night-pass-warning"><LockKeyhole /><span><strong>Betaal vóór <time dateTime={context.event.paymentDeadline}>30 oktober</time> om mee te kunnen doen.</strong>Het toegangsbewijs wordt pas zichtbaar nadat de organisatie de betaling heeft bevestigd.</span></div>}</section>
+    <section className={`night-pass ${participating ? "active" : "locked"}`}>
+      <div className="night-pass-top"><span><MoonStar />Duindorp {event.year}</span><strong>{participating ? "TOEGANG ACTIEF" : "DEELNAME NIET ACTIEF"}</strong></div>
+      <h2>{registration.reference}</h2>
+      <div className="night-pass-grid"><span>Kinderen<strong>{activeChildren.map((child) => child.firstName).join(", ")}</strong></span><span>Tijdslot<strong>{group?.group.start ? formatTime(group.group.start.startsAt) : "Volgt"}</strong></span><span>Groep<strong>{group ? group.group.code : "Volgt"}</strong></span><span>Betaling<strong>{registration.payment ? paymentLabels[registration.payment.status] ?? registration.payment.status : "Wordt voorbereid"}</strong></span></div>
+      {participating ? <div className="night-pass-valid"><ShieldCheck />Toegang bevestigd. Neem deze pagina en de bevestigingsmail mee.</div> : <div className="night-pass-warning"><ShieldCheck /><span>Deze inschrijving heeft geen actieve deelname. Neem contact op met de organisatie als dit niet klopt.</span></div>}
+      {!paid && <p className="night-pass-warning"><Clock3 /><span>De betaling is nog niet volledig bevestigd. Controleer hieronder de betaalstatus per kind. Dit blokkeert jullie deelname niet.</span></p>}
+    </section>
     <section className="participant-card participant-children-card"><div className="section-title"><div><p className="participant-eyebrow">Per eigen kind</p><h2>Deelnamestatus</h2></div><TicketCheck aria-hidden="true" /></div>
       <ChildPaymentRows items={registration.children} registrationId={registration.id} legacyPayment={registration.payment} reload={reload} />
     </section>
