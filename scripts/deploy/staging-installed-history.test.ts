@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { installedStagingHistory, missingInstalledFiles, STAGING_INSTALLED_MIGRATIONS, HOTFIX_BRANCH } from "./staging-installed-history.mjs";
+import { installedStagingHistory, missingInstalledFiles, STAGING_INSTALLED_MIGRATIONS, HOTFIX_BRANCH, GROUP_OPERATIONS_BRANCH } from "./staging-installed-history.mjs";
 
 const context = { APP_ENVIRONMENT: "staging", GITHUB_REF: `refs/heads/${HOTFIX_BRANCH}` };
 describe("isolated hotfix staging history", () => {
@@ -8,6 +8,9 @@ describe("isolated hotfix staging history", () => {
     expect(missingInstalledFiles(["20260920160812_initial_platform.sql"], ["20260920160812", first.split("_")[0]], context)).toEqual([first]);
     expect(missingInstalledFiles([first], [first.split("_")[0]], context)).toEqual([]);
     expect(() => missingInstalledFiles([], ["20271025000000"], context)).toThrow("LIVE_MIGRATION_HISTORY_DRIFT");
+  });
+  it("preserves the same pinned history for the group operations release", () => {
+    expect(installedStagingHistory({ ...context, GITHUB_REF: `refs/heads/${GROUP_OPERATIONS_BRANCH}` })).toEqual(Object.keys(STAGING_INSTALLED_MIGRATIONS));
   });
   it("does not permit missing migration history on production or other branches", () => {
     for (const input of [{ ...context, APP_ENVIRONMENT: "production" }, { ...context, GITHUB_REF: "refs/heads/staging" }, {}]) {

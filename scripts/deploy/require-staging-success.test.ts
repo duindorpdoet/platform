@@ -41,6 +41,8 @@ describe("production staging workflow gate", () => {
   it("accepts the isolated hotfix only after the same complete staging checks", () => {
     expect(promote(true,true,true,true,"codex/portal-sequence-without-street-routing").status).toBe(0);
     expect(promote(true,true,false,true,"codex/portal-sequence-without-street-routing").status).not.toBe(0);
+    expect(promote(true,true,true,true,"codex/coherent-group-start-operations").status).toBe(0);
+    expect(promote(false,true,true,true,"codex/coherent-group-start-operations").status).not.toBe(0);
     expect(promote(true,true,true,true,"codex/unreviewed-branch").status).not.toBe(0);
   });
   it("accepts a successful full staging workflow and deployment on the exact revision", () => {

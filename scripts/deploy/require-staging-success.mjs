@@ -1,4 +1,4 @@
-import { HOTFIX_BRANCH } from "./staging-installed-history.mjs";
+import { ISOLATED_RELEASE_BRANCHES } from "./staging-installed-history.mjs";
 if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPOSITORY || !process.env.GITHUB_SHA) {
   throw new Error("GitHub deployment context is incomplete.");
 }
@@ -17,7 +17,7 @@ if (!runsResponse.ok) throw new Error(`Could not read staging workflow results (
 const runs = await runsResponse.json();
 let releaseRunSucceeded = false;
 for (const run of runs.workflow_runs ?? []) {
-  if (run.head_sha !== process.env.GITHUB_SHA || !new Set(["staging",HOTFIX_BRANCH]).has(run.head_branch) || run.conclusion !== "success") continue;
+  if (run.head_sha !== process.env.GITHUB_SHA || !new Set(["staging",...ISOLATED_RELEASE_BRANCHES]).has(run.head_branch) || run.conclusion !== "success") continue;
   const jobsResponse = await fetch(`${api}/actions/runs/${run.id}/jobs?per_page=100`, { headers });
   if (!jobsResponse.ok) throw new Error(`Could not read staging release jobs (${jobsResponse.status}).`);
   const jobs = await jobsResponse.json();

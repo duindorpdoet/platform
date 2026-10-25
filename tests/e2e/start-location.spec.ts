@@ -175,7 +175,7 @@ test("organizer can create and edit a portal on mobile and edit an existing fina
     await editor.getByRole("textbox", { name: "Reden voor de afwijkende routingpositie" }).fill("Bewust gekozen synthetische poortingang");
     await editor.getByRole("button", { name: "Positie overnemen" }).click();
     const created = page.waitForResponse(response => response.url().includes("/rpc/admin_manual_portal_save"));
-    await dialog.getByRole("button", { name: "Poort opslaan", exact: true }).click();
+    await dialog.getByRole("button", { name: "Activeren / gegevens afronden", exact: true }).click();
     const creation = await created; expect(creation.ok(), await creation.text()).toBe(true);
     id = (await creation.json()).id;
     await expect(dialog).not.toBeVisible();
@@ -184,10 +184,10 @@ test("organizer can create and edit a portal on mobile and edit an existing fina
     dialog = page.getByRole("dialog");
     await dialog.getByRole("textbox", { name: "Omschrijving", exact: true }).fill("Synthetische gewijzigde aankomstinstructie");
     await page.route("**/rest/v1/rpc/admin_manual_portal_save", route => route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ code: "42501", message: "NOT_AUTHORIZED" }) }), { times: 1 });
-    await dialog.getByRole("button", { name: "Poort opslaan", exact: true }).click();
+    await dialog.getByRole("button", { name: "Activeren / gegevens afronden", exact: true }).click();
     await expect(dialog.getByRole("alert")).toContainText("Opslaan geweigerd");
-    await expect(dialog.getByRole("button", { name: "Poort opslaan", exact: true })).toBeEnabled();
-    await dialog.getByRole("button", { name: "Poort opslaan", exact: true }).click();
+    await expect(dialog.getByRole("button", { name: "Activeren / gegevens afronden", exact: true })).toBeEnabled();
+    await dialog.getByRole("button", { name: "Activeren / gegevens afronden", exact: true }).click();
     await expect(dialog).not.toBeVisible();
     let stored = await client.schema("api").rpc("admin_portal_editor_snapshot", { _event_slug: event });
     expect(stored.error).toBeNull();
@@ -200,8 +200,8 @@ test("organizer can create and edit a portal on mobile and edit an existing fina
     dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Ik begrijp dat dit de eindpoortconfiguratie wijzigt.", { exact: true })).toHaveCount(0);
     await dialog.getByRole("textbox", { name: "Omschrijving", exact: true }).fill("Bestaande finale gewoon bewerkt");
-    await expect(dialog.getByRole("button", { name: "Poort opslaan", exact: true })).toBeEnabled();
-    await dialog.getByRole("button", { name: "Poort opslaan", exact: true }).click();
+    await expect(dialog.getByRole("button", { name: "Activeren / gegevens afronden", exact: true })).toBeEnabled();
+    await dialog.getByRole("button", { name: "Activeren / gegevens afronden", exact: true }).click();
     await expect(dialog).not.toBeVisible();
     stored = await client.schema("api").rpc("admin_portal_editor_snapshot", { _event_slug: event });
     expect(stored.data.portals.find((portal: { id: string }) => portal.id === id)).toMatchObject({ description: "Bestaande finale gewoon bewerkt", isFinal: true, latitude: 52.091111 });
