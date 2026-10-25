@@ -36,6 +36,9 @@ export function locationError(message: string) {
   const errors: Record<string, string> = {
     START_POINT_POSITION_MISSING: "Geen opgeslagen positie — plaats een marker en sla deze op.",
     START_POINT_POSITION_INVALID: "Ongeldige positie — controleer de coördinaten en sla opnieuw op.",
+    START_POINT_ADDRESS_MISSING: "Adres ontbreekt — vul het adres van deze startlocatie in.",
+    SOURCE_POSITION_INVALID: "De laatst bevestigde locatie heeft geen geldige opgeslagen positie. Vraag de organisatie deze marker te controleren.",
+    FINAL_PORTAL_POSITION_INVALID: "De eindpoort heeft geen geldige opgeslagen positie. Controleer de finalemarker.",
     LINKED_START_PORTAL_POSITION_INVALID: "De gekoppelde eerste poort heeft geen geldige positie. Open de poortmarker en sla de juiste positie op.",
     LINKED_PORTAL_NOT_AVAILABLE: "De gekoppelde poort is niet beschikbaar. Controleer de gekoppelde poort.",
     INVALID_COORDINATE: "Vul een geldige breedtegraad en lengtegraad in.",

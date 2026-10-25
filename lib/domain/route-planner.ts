@@ -162,7 +162,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   const finaleOpen = millis(input.finaleOpensAt);
   const finaleLast = millis(input.finaleLastArrivalAt);
   const finaleClose = millis(input.finaleClosesAt);
-  if (!input.starts.length) conflicts.push({ code: "NO_START_SLOTS", message: "Voeg ten minste één geverifieerd startpunt met een exact tijdstip toe." });
+  if (!input.starts.length) conflicts.push({ code: "NO_START_SLOTS", message: "Voeg ten minste één bevestigd startpunt met een exact tijdstip toe." });
   if (![input.maxGroupSize,input.targetGroupSize].every(value=>Number.isSafeInteger(value)&&value>=1&&value<=2147483647) || input.targetGroupSize > input.maxGroupSize) conflicts.push({ code: "INVALID_GROUP_LIMIT", message: "De gewenste groepsgrootte valt buiten de grens." });
   if ([globalStop, finaleOpen, finaleLast, finaleClose].some((value) => value === null)) conflicts.push({ code: "ROUTE_CONFIGURATION_INCOMPLETE", message: "Vul de stopgrens en alle eindpoortvensters in." });
   if (input.finaleShowSeconds < 60 || input.finaleMaxGroups < 1 || input.finaleMaxChildren < 1) conflicts.push({ code: "INVALID_FINALE_CAPACITY", message: "De eindpoortcapaciteit is niet geldig." });

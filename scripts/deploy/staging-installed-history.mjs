@@ -1,7 +1,7 @@
 // Preserve the unrelated, already installed staging expansion when testing
 // the production hotfix. These files are never added to the production release
 // or executed by this compatibility path.
-export const HOTFIX_BRANCH = "codex/startregie-marker-readiness";
+export const HOTFIX_BRANCH = "codex/portal-sequence-without-street-routing";
 export const STAGING_SOURCE_REVISION = "a0263258c03a5aaed5c08445c461aed3f3206756";
 export const STAGING_INSTALLED_MIGRATIONS = Object.freeze({
   '20261024024428_evening_readiness_evidence.sql': '9c0d1a99f0be1ed817177a50a3e29dfe858daf46549a18c3912f6df1db811544',

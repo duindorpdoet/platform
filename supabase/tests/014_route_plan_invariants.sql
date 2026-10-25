@@ -73,30 +73,31 @@ select throws_ok(
 
 update app_private.walking_edges set closed_at = now()
 where external_id = 'fixture-edge-1-2';
-select throws_ok(
-  $$
-    insert into app_private.route_plan_stops(plan_version_id, position, portal_id, planned_arrival_at, planned_departure_at)
-    values ('24000000-0000-0000-0000-000000000050', 2, '12000000-0000-0000-0000-000000000002', '2026-10-31 18:38:00+01', '2026-10-31 18:43:00+01')
-  $$,
-  '23514', 'NO_SAFE_WALKING_PATH', 'closed graph connection blocks a route stop instead of drawing a straight line'
-);
-update app_private.walking_edges set closed_at = null
-where external_id = 'fixture-edge-1-2';
 select lives_ok(
   $$
     insert into app_private.route_plan_stops(plan_version_id, position, portal_id, planned_arrival_at, planned_departure_at)
     values ('24000000-0000-0000-0000-000000000050', 2, '12000000-0000-0000-0000-000000000002', '2026-10-31 18:38:00+01', '2026-10-31 18:43:00+01')
   $$,
-  'approved graph connection allows the next route stop'
+  'a closed optional graph edge does not block a valid destination'
+);
+update app_private.walking_edges set closed_at = null
+where external_id = 'fixture-edge-1-2';
+select lives_ok(
+  $$
+    update app_private.route_plan_stops set planned_arrival_at='2026-10-31 18:38:00+01'
+    where plan_version_id='24000000-0000-0000-0000-000000000050' and position=2
+  $$,
+  'existing valid stop can be revalidated independently of optional graph data'
 );
 
 update app_private.walking_edges set closed_at = now()
 where external_id = 'fixture-edge-1-2';
+update app_private.portals set operation_status='closed' where id='12000000-0000-0000-0000-000000000002';
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select throws_ok(
   $$ select api.admin_publish_plans('duindorp-halloween-2026', array['24000000-0000-0000-0000-000000000050']::uuid[], 'Publicatie na verplichte hervalidatie') $$,
-  '23514', 'NO_SAFE_WALKING_PATH', 'publication revalidates graph state and rejects a newly closed edge'
+  '23514', 'PORTAL_NOT_ROUTE_READY', 'publication revalidates the destination and rejects a closed house'
 );
 set local role postgres;
 create temporary table route_revision_values(plan_id uuid) on commit drop;
@@ -106,8 +107,7 @@ select is(
   'valid',
   'failed revalidation leaves the plan unpublished'
 );
-update app_private.walking_edges set closed_at = null
-where external_id = 'fixture-edge-1-2';
+update app_private.portals set operation_status='open' where id='12000000-0000-0000-0000-000000000002';
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);

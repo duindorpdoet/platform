@@ -44,7 +44,7 @@ test("saved official and manual positions can be confirmed on mobile without a w
     for (const [name, publicLabel] of [["Horror Zone", "Horor zone"], ["Welcome to the Freakshow", "Welcome to the Freakshow"]]) {
       const result = await client.schema("api").rpc("admin_startregie_start_point_save", {
         _event_slug: event, _point_id: null, _expected_version: null, _reason: "Isolated reproduction of saved markers without a graph",
-        _payload: { name: `${name} ${suffix}`, publicLabel: `${publicLabel} ${suffix}`, pointType: "gathering", geocodedLatitude: 52.09, geocodedLongitude: 4.26, active: true, maxGroups: 1, maxChildren: 30 },
+        _payload: { name: `${name} ${suffix}`, publicLabel: `${publicLabel} ${suffix}`, pointType: "gathering", privateAddress: "FICTIEF STARTADRES", geocodedLatitude: 52.09, geocodedLongitude: 4.26, active: true, maxGroups: 1, maxChildren: 30 },
       });
       expect(result.error).toBeNull(); ids.push(result.data.id);
     }
@@ -54,7 +54,7 @@ test("saved official and manual positions can be confirmed on mobile without a w
     const unassigned = before.ops.groups.filter((group: { state: string }) => group.state === "unassigned").length;
     await page.setViewportSize({ width: 390, height: 844 }); await page.goto("/admin");
     await selectOrganizationSection(page, "Startregie");
-    await page.getByRole("region", { name: "Waarschuwingen" }).getByRole("button").filter({ hasText: `Horor zone ${suffix}` }).click();
+    await openMap(page, ids[0]);
     await expect(page.getByRole("combobox", { name: "Locatie bewerken" })).toHaveValue(`start|${ids[0]}`);
     let editor = page.getByRole("region", { name: `Locatie-editor voor Startpunt · Horor zone ${suffix}` });
     await expect(editor).toContainText("Bron: officiële adrespositie");
@@ -98,7 +98,7 @@ test("saved official and manual positions can be confirmed on mobile without a w
     for (const id of ids) {
       expect(after.startPoints.find((point: { id: string }) => point.id === id).confirmed).toBe(true);
       expect(after.warnings.some((warning: { resourceId: string; code: string }) => warning.resourceId === id && warning.code === "MISSING_MARKER")).toBe(false);
-      expect(after.warnings.some((warning: { resourceId: string; code: string }) => warning.resourceId === id && warning.code === "WALKING_ROUTE_MISSING")).toBe(true);
+      expect(after.warnings.some((warning: { resourceId: string; code: string }) => warning.resourceId === id && warning.code === "WALKING_ROUTE_MISSING")).toBe(false);
     }
     expect(after.startPoints.find((point: { id: string }) => point.id === ids[0]).readiness.location).toMatchObject({ latitude: 52.091234, longitude: 4.261234, source: "manual" });
     expect(after.ops.groups.filter((group: { state: string }) => group.state === "unassigned")).toHaveLength(unassigned);
@@ -116,7 +116,7 @@ test("saved official and manual positions can be confirmed on mobile without a w
 test("a delayed snapshot and an outdated open editor cannot replace a newer server position", async ({ page, context }) => {
   test.setTimeout(120_000);
   const client = await login(context);
-  const created = await client.schema("api").rpc("admin_startregie_start_point_save", { _event_slug: event, _point_id: null, _expected_version: null, _reason: "Isolated two-editor location conflict acceptance", _payload: { name: `Gelijktijdige marker ${randomUUID().slice(0, 8)}`, geocodedLatitude: 52.09, geocodedLongitude: 4.26, active: true } });
+  const created = await client.schema("api").rpc("admin_startregie_start_point_save", { _event_slug: event, _point_id: null, _expected_version: null, _reason: "Isolated two-editor location conflict acceptance", _payload: { name: `Gelijktijdige marker ${randomUUID().slice(0, 8)}`, privateAddress: "FICTIEF STARTADRES", geocodedLatitude: 52.09, geocodedLongitude: 4.26, active: true } });
   expect(created.error).toBeNull(); const id = created.data.id;
   await page.setViewportSize({ width: 360, height: 844 }); await page.goto("/admin"); await selectOrganizationSection(page, "Startregie");
   const editor = await openMap(page, id);

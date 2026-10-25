@@ -25,10 +25,10 @@ update state set snapshot=api.admin_startregie_snapshot('duindorp-halloween-2026
 select is((select confirmation->>'confirmed' from state),'true','saved official position can be confirmed without a manual override or graph');
 select is((select p->>'confirmed' from state,jsonb_array_elements(snapshot->'startPoints') p where p->>'id'='20000000-0000-0000-0000-000000000001'),'true','fresh server snapshot retains the successful confirmation');
 select ok(not exists(select 1 from state,jsonb_array_elements(snapshot->'warnings') w where w->>'resourceId'='20000000-0000-0000-0000-000000000001' and w->>'code'='MISSING_MARKER'),'saved address position is not reported as a missing marker');
-select ok(exists(select 1 from state,jsonb_array_elements(snapshot->'warnings') w where w->>'resourceId'='20000000-0000-0000-0000-000000000001' and w->>'code'='WALKING_ROUTE_MISSING'),'missing walking graph remains a separate actionable planning task');
+select ok(not exists(select 1 from state,jsonb_array_elements(snapshot->'warnings') w where w->>'code'='WALKING_ROUTE_MISSING'),'no walking network is required for the house-sequence flow');
 select is((select count(*)::integer from state,jsonb_array_elements(snapshot->'ops'->'groups') g where g->>'state'='unassigned'),(select unassigned from state),'point confirmation assigns no groups');
 set local role postgres;
-select ok(not app_private.start_point_safe_connection('20000000-0000-0000-0000-000000000001'),'organizational confirmation does not invent a walking route');
+select ok(app_private.start_point_safe_connection('20000000-0000-0000-0000-000000000001'),'saved confirmed destination is usable without inventing a street route');
 
 update app_private.start_points set latitude=null,longitude=null,geocoded_latitude=null,geocoded_longitude=null,walking_node_id=null,version=version+1
 where id='20000000-0000-0000-0000-000000000001';

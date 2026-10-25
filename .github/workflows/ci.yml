@@ -124,6 +124,8 @@ jobs:
           pnpm exec supabase db reset
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/start-ops.spec.ts tests/e2e/start-location.spec.ts --project=desktop-chromium --workers=1
           pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/portal-sequence.spec.ts --project=desktop-chromium --workers=1
+          pnpm exec supabase db reset
       - name: Run offline, reconnect and private-payload browser acceptance
         env:
           APP_ENVIRONMENT: test

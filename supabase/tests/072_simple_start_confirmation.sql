@@ -13,10 +13,14 @@ create temp table point_version as select version before from app_private.start_
 grant select on point_version to authenticated;
 set local role authenticated;
 select lives_ok($$select api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',(select before from point_version))$$,'existing start is confirmed with only its ID and expected version');
-select throws_ok($$select api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',(select before from point_version))$$,'40001','STALE_VERSION','stale confirmation cannot overwrite a new version');
+select lives_ok($$select api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',(select before from point_version))$$,'repeating the same unchanged confirmation is idempotent');
+set local role postgres;
+update app_private.start_points set marker_longitude=4.290001,version=version+1 where id='20000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select throws_ok($$select api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',(select before from point_version))$$,'40001','STALE_VERSION','a genuinely stale editor cannot confirm a newer marker');
 select throws_ok($$select api.admin_startregie_confirm_point('unknown-event','20000000-0000-0000-0000-000000000001',1)$$,'42501','NOT_AUTHORIZED','a different event cannot confirm this point');
 set local role postgres;
-select ok(app_private.start_point_safe_connection('20000000-0000-0000-0000-000000000001'),'existing graph data is selected automatically without a 75m form');
+select ok(app_private.start_point_safe_connection('20000000-0000-0000-0000-000000000001'),'valid stored destination needs no graph or 75m form');
 select is((select safe_approach from app_private.start_points where id='20000000-0000-0000-0000-000000000001'),null::text,'confirmation requires and invents no approach text');
 select is((select walking_connection_verified_at from app_private.start_points where id='20000000-0000-0000-0000-000000000001'),null::timestamptz,'organizational confirmation is not stored as physical inspection');
 select ok(exists(select 1 from app_private.audit_events where resource_id='20000000-0000-0000-0000-000000000001' and action='start_point.confirmed' and actor_id=auth.uid()),'organizational confirmation has an actual actor and audit record');

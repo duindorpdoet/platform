@@ -38,11 +38,11 @@ test('real Startregie concepts, confirmation, private route and publication pers
  await card.getByRole('combobox',{name:`Starttijd voor ${group.systemCode}`}).selectOption({label:'17:30 uur'});
  await card.getByRole('button',{name:'Concept opslaan'}).click();await expect(card).toContainText(/Conceptindeling|Nieuw concept/);
  await expect(card.getByRole('button',{name:'Start bevestigen'})).toBeEnabled();
- await card.getByRole('button',{name:'Start bevestigen'}).click();await expect(card.getByRole('button',{name:'Route controleren'})).toBeEnabled();
- await card.getByRole('button',{name:'Route controleren'}).click();
- const route=page.getByRole('dialog');await expect(route).toContainText('Privé routecontrole');await expect(route).toContainText('Revisie');await expect(route.locator('.start-ops-route-stops li')).not.toHaveCount(0);
+ await card.getByRole('button',{name:'Start bevestigen'}).click();await expect(card.getByRole('button',{name:'Poortvolgorde controleren'})).toBeEnabled();
+ await card.getByRole('button',{name:'Poortvolgorde controleren'}).click();
+ const route=page.getByRole('dialog');await expect(route).toContainText('Privé poortvolgorde');await expect(route).toContainText('Revisie');await expect(route.locator('.start-ops-route-stops li')).not.toHaveCount(0);
  await mkdir('docs/ops/screenshots',{recursive:true});await page.screenshot({path:'docs/ops/screenshots/route-desktop.png'});
- await page.keyboard.press('Escape');await expect(route).not.toBeVisible();await expect(card.getByRole('button',{name:'Route controleren'})).toBeFocused();
+ await page.keyboard.press('Escape');await expect(route).not.toBeVisible();await expect(card.getByRole('button',{name:'Poortvolgorde controleren'})).toBeFocused();
  await card.getByRole('checkbox').check();await page.getByRole('button',{name:'1 starttijd(en) publiceren'}).click();
  const publication=page.getByRole('dialog');await expect(publication).toContainText('Adres vanaf 16:30');await page.screenshot({path:'docs/ops/screenshots/publication-desktop.png'});
  await publication.getByRole('button',{name:'Starttijden publiceren',exact:true}).click();await expect(publication).not.toBeVisible();await expect(card).toContainText('Starttijd gepubliceerd');
@@ -54,7 +54,7 @@ test('real Startregie concepts, confirmation, private route and publication pers
   await page.setViewportSize({width,height:width===1348?926:844});await assertReadableLayout(page);
   await page.evaluate(()=>{window.scrollTo(0,0);for(const element of document.querySelectorAll<HTMLElement>('*'))if(element.scrollTop>0)element.scrollTo({top:0,behavior:'instant'});});
   await page.screenshot({path:`docs/ops/screenshots/start-${width}.png`});
-  await card.getByRole('button',{name:'Route controleren'}).click();await assertReadableLayout(page);await page.screenshot({path:`docs/ops/screenshots/route-${width}.png`});await page.keyboard.press('Escape');
+  await card.getByRole('button',{name:'Poortvolgorde controleren'}).click();await assertReadableLayout(page);await page.screenshot({path:`docs/ops/screenshots/route-${width}.png`});await page.keyboard.press('Escape');
  }
  await page.setViewportSize({width:390,height:844});await selectOrganizationSection(page,'Instellingen');
  const policy=page.locator('.group-size-policy');await expect(policy).toBeVisible();
@@ -94,7 +94,7 @@ test('mobile point errors remain inside the keyboard-accessible dialog without a
 
 test('a start point can be confirmed in one click without an inspection form',async({page,context})=>{
  const client=await login(context),name='Eenvoudig bevestigen '+randomUUID().slice(0,8);
- const created=await client.schema('api').rpc('admin_startregie_start_point_save',{_event_slug:event,_point_id:null,_payload:{name,publicLabel:name,pointType:'gathering',geocodedLatitude:52.12,geocodedLongitude:4.29,active:true,maxGroups:1,maxChildren:30},_expected_version:null,_reason:'Isolated one-click start confirmation browser acceptance'});expect(created.error).toBeNull();
+ const created=await client.schema('api').rpc('admin_startregie_start_point_save',{_event_slug:event,_point_id:null,_payload:{name,publicLabel:name,pointType:'gathering',privateAddress:'FICTIEF STARTADRES',geocodedLatitude:52.12,geocodedLongitude:4.29,active:true,maxGroups:1,maxChildren:30},_expected_version:null,_reason:'Isolated one-click start confirmation browser acceptance'});expect(created.error).toBeNull();
  await page.setViewportSize({width:390,height:844});await page.goto('/admin');await selectOrganizationSection(page,'Startregie');await page.getByRole('tab',{name:'Startpunten',exact:true}).click();
  const card=page.locator('.start-point-card').filter({has:page.getByText(name,{exact:true})});
  await expect(card.getByRole('checkbox')).toHaveCount(0);await expect(card).not.toContainText('75 meter');

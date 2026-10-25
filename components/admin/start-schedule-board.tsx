@@ -10,7 +10,6 @@ import { locationCoordinate, locationError, parseCoordinatePart, type RoutingLoc
 import { LocationEditor, type LocationSave } from "@/components/admin/location-editor";
 import { NightMap } from "@/components/maps/night-map";
 import { proposePlan, type PlannedGroup, type PlanningInput, type PreferenceMatch } from "@/lib/domain/route-planner";
-import { PortalWalkingConnection } from "@/components/admin/portal-walking-connection";
 import { AmsterdamDateTime } from "@/components/forms/amsterdam-date-time";
 import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
@@ -389,16 +388,12 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
 
   async function publish() {
     if (!scheduleIds.length || !snapshot) return;
-    if (snapshot.warnings.some((warning) => ["CAPACITY", "MISSING_MARKER", "PORTAL_UNAVAILABLE"].includes(warning.code))) {
-      return setNotice("Los de blokkerende marker-, capaciteit- en poortwaarschuwingen op vóór publicatie.");
-    }
     if (!window.confirm(`Bevestig ${scheduleIds.length} geselecteerde startindeling(en)? Starttijden publiceren blijft daarna een aparte stap.`)) return;
     const client = createClient(); if (!client) return;
     setBusy(true);
     const { data, error } = await client.schema("api").rpc("admin_startregie_confirm_starts", {
       _event_slug: eventSlug, _expected_settings_version: snapshot.settings.eventSettingsVersion,
       _expected_revisions: snapshot.groups.filter(group => group.schedule && scheduleIds.includes(group.schedule.id)).map(group => ({ id: group.schedule!.id, revision: group.schedule!.revision })),
-      _reason: "Startplanning gecontroleerd, conflicten opgelost en wijzigingen expliciet gepubliceerd",
     });
     setBusy(false);
     const result = data as { planningVersion?: number } | null;
@@ -482,7 +477,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       if (error) {
         setNotice(`${point.publicLabel} — bevestigen niet gelukt: ${readableError(error.message)}${error.message.includes("LINKED_START_PORTAL") && error.details ? ` (${error.details})` : ""}`);
       } else if (data?.id === point.id && data?.confirmed === true) {
-        setNotice(`${point.publicLabel} — Startpunt bevestigd.${data.readiness?.routeReady === false ? " De wandelroute moet nog worden aangesloten; groepen indelen en publiceren hebben eigen controles." : ""}`);
+        setNotice(`${point.publicLabel} — Locatie bevestigd.`);
       } else { setNotice("De server heeft de startpuntbevestiging niet teruggegeven. Vernieuw en probeer opnieuw."); }
       await load();
     } catch { setNotice(`${point.publicLabel} — bevestigen niet gelukt. Controleer de verbinding en probeer opnieuw.`); }
@@ -558,7 +553,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       <div className="start-point-list">{snapshot.startPoints.map((point) => <article className={`start-point-card${point.active ? "" : " is-archived"}`} key={point.id}>
         <header><span className={`start-point-symbol type-${point.pointType}`}>{point.pointType === "portal" ? "P" : "S"}</span><div><strong>{point.name}</strong><small>{point.publicLabel} · {point.pointType === "portal" ? "startpoort" : "zelfstandig verzamelpunt"}</small></div><span className={`route-ready ${point.verified ? "ready" : "warning"}`}>{point.verified ? <Check /> : <AlertTriangle />}{point.confirmed ? "Startpunt: ja · Startpunt bevestigd" : `Startpunt: ${point.active ? "ja" : "nee"}`}</span></header>
         <dl><div><dt>Beschikbaar</dt><dd>{point.availableFrom || point.availableUntil ? `${timeLabel(point.availableFrom)}–${timeLabel(point.availableUntil)}` : "Volledig startvenster"}</dd></div><div><dt>Capaciteit</dt><dd>{point.maxGroups} groepen · {point.maxChildren} kinderen</dd></div><div><dt>Aankomst</dt><dd>{point.publicArrivalInstructions || "Nog geen publieke instructie"}</dd></div><div><dt>Routing</dt><dd>{point.locationSource === "manual" ? `Handmatige marker${point.markerDistanceMeters ? ` · ${point.markerDistanceMeters} m van adres` : ""}` : "Vanaf officieel adres"}</dd></div></dl>
-        <p>Locatie: {point.readiness.location.valid ? `opgeslagen · ${point.readiness.location.source === "manual" ? "handmatige routingpositie" : "officiële adrespositie"}` : "geen geldige opgeslagen positie"}. {point.verified ? "Wandelroute beschikbaar." : "Wandelroute nog niet beschikbaar; dit verhindert de locatiebevestiging niet."}</p>
+        <p>Locatie: {point.readiness.location.valid ? `opgeslagen · ${point.readiness.location.source === "manual" ? "handmatige routingpositie" : "officiële adrespositie"}` : "geen geldige opgeslagen positie"}. {point.confirmed ? "Locatie bevestigd." : "Controleer deze opgeslagen locatie en bevestig het startpunt."}</p>
         {point.readiness.confirmationReason && <p className="form-warning">{locationError(point.readiness.confirmationReason)}</p>}
         <div className="start-ops-point-verification"><button type="button" className="btn outline" disabled={busy} onClick={()=>void confirmPoint(point)}><Check/>Startpunt bevestigen</button></div>
         <div className="actions"><button className="btn outline" type="button" onClick={() => { setPointError(""); setPointEditor(pointDraft(point)); }}><Settings2 />Bewerken</button><button className="btn outline" type="button" onClick={() => { setMapSelection({ kind: "start", id: point.id }); setTab("map"); }}><MapPin />Marker</button>{point.linkedPortalId && <button className="btn outline" type="button" onClick={onOpenPortals}>Gekoppelde poort</button>}{point.active && <button className="text-link danger" type="button" onClick={() => void archivePoint(point)}><Archive />Archiveren</button>}</div>
@@ -578,7 +573,6 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
         onSave={(change) => saveMarker("start", selectedMapResource, change)}
       />}
       {selectedMapResource && mapSelection?.kind === "start" && "linkedPortalId" in selectedMapResource && selectedMapResource.linkedPortalId && <button className="btn outline" type="button" onClick={() => setMapSelection({ kind: "portal", id: selectedMapResource.linkedPortalId! })}><MapPin />Gekoppelde poortmarker controleren</button>}
-      {selectedMapResource && mapSelection?.kind === "portal" && "systemCode" in selectedMapResource && <PortalWalkingConnection eventSlug={eventSlug} portal={selectedMapResource} onChanged={load}/>}
       {selectedMapResource && mapSelection?.kind === "portal" && "systemCode" in selectedMapResource && <LocationEditor
         key={`portal-${selectedMapResource.id}`} version={selectedMapResource.version} label={`${selectedMapResource.systemCode} · ${selectedMapResource.name}`}
         coordinate={coordinate(selectedMapResource.longitude, selectedMapResource.latitude)}
@@ -705,7 +699,7 @@ function PointEditor({ draft, setDraft, snapshot, busy, savePoint, error }: {
       </section>
       <section><h4>Beschikbaarheid en capaciteit</h4><div className="settings-grid"><label className="field"><span>Beschikbaar vanaf</span><input type="datetime-local" value={draft.availableFrom} onChange={(event) => setDraft({ ...draft, availableFrom: event.target.value })} /></label><label className="field"><span>Beschikbaar tot</span><input type="datetime-local" value={draft.availableUntil} onChange={(event) => setDraft({ ...draft, availableUntil: event.target.value })} /></label><label className="field"><span>Maximaal routegroepen</span><input type="number" min={1} value={draft.maxGroups} onChange={(event) => setDraft({ ...draft, maxGroups: event.target.value })} /></label><label className="field"><span>Maximaal kinderen</span><input type="number" min={1} value={draft.maxChildren} onChange={(event) => setDraft({ ...draft, maxChildren: event.target.value })} /></label></div></section>
       <section><h4>Toegankelijkheid en beheer</h4><div className="settings-grid"><label className="field"><span>Bereikbaarheid</span><select value={draft.accessible} onChange={(event) => setDraft({ ...draft, accessible: event.target.value as PointDraft["accessible"] })}><option value="">Nog beoordelen</option><option value="true">Toegankelijk</option><option value="false">Niet volledig toegankelijk</option></select></label><label className="field"><span>Toegankelijkheidsinformatie</span><textarea value={draft.accessibilityNotes} onChange={(event) => setDraft({ ...draft, accessibilityNotes: event.target.value })} /></label><label className="field"><span>Contactpersoon <small>(optioneel)</small></span><input value={draft.contactName} onChange={(event) => setDraft({ ...draft, contactName: event.target.value })} /></label><label className="field"><span>Telefoon <small>(optioneel)</small></span><input value={draft.contactPhone} onChange={(event) => setDraft({ ...draft, contactPhone: event.target.value })} /></label><label className="field wide"><span>Interne beheeropmerking</span><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} /></label><label className="check-row"><input type="checkbox" disabled={draft.pointType !== "portal" || !draft.linkedPortalId} checked={draft.pointType === "portal" && draft.countsAsFirstPortalVisit} onChange={(event) => setDraft({ ...draft, countsAsFirstPortalVisit: event.target.checked })} /><span>Begin met een bezoek aan deze startpoort <small>Alleen bij een gekoppelde poort. Een zegel volgt na de echte aankomstscan, nooit bij alleen starten.</small></span></label><label className="check-row"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} /><span>Actief beschikbaar voor planning</span></label></div></section>
-      <details><summary>Technische locatiegegevens</summary><p>De bestaande wandelkoppeling wordt automatisch gekozen bij het bevestigen van het startpunt.</p><div className="settings-grid"><label className="field"><span>Adres-breedtegraad</span><input inputMode="decimal" value={draft.geocodedLatitude} onChange={(event) => setDraft({ ...draft, geocodedLatitude: event.target.value })} /></label><label className="field"><span>Adres-lengtegraad</span><input inputMode="decimal" value={draft.geocodedLongitude} onChange={(event) => setDraft({ ...draft, geocodedLongitude: event.target.value })} /></label></div></details>
+      <details><summary>Technische locatiegegevens</summary><p>De opgeslagen adrespositie wordt gebruikt, tenzij een handmatige routingpositie is ingesteld.</p><div className="settings-grid"><label className="field"><span>Adres-breedtegraad</span><input inputMode="decimal" value={draft.geocodedLatitude} onChange={(event) => setDraft({ ...draft, geocodedLatitude: event.target.value })} /></label><label className="field"><span>Adres-lengtegraad</span><input inputMode="decimal" value={draft.geocodedLongitude} onChange={(event) => setDraft({ ...draft, geocodedLongitude: event.target.value })} /></label></div></details>
     </div>
     {error && <p className="form-warning" role="alert">{error}</p>}<footer><button className="btn outline" type="button" onClick={() => setDraft(null)}>Annuleren</button><button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || (draft.pointType === "portal" && !draft.linkedPortalId) || (!draft.markerLatitude && !draft.geocodedLatitude)} onClick={() => void savePoint()}><Save />{draft.id ? "Wijzigingen opslaan" : "Startpunt toevoegen"}</button></footer>
   </aside></div>;
