@@ -1595,7 +1595,7 @@ test("organization edits and removes resident portals while preserving existing 
   await dialog.getByRole("textbox", { name: "Telefoonnummer", exact: true }).fill("0707654321");
   await assertReadableLayout(page);
   await page.screenshot({ path: `test-results/portal-editor-${test.info().project.name}.png` });
-  await dialog.getByRole("button", { name: "Poort opslaan", exact: true }).click();
+  await dialog.getByRole("button", { name: "Activeren / gegevens afronden", exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await expect(page.getByRole("status")).toContainText("Poort bijgewerkt");
   const saved = (await rpc(client, "admin_portal_editor_snapshot", { _event_slug: event })).portals.find((portal: { id: string }) => portal.id === created.id);
@@ -1611,6 +1611,7 @@ test("organization edits and removes resident portals while preserving existing 
   await expect(page.getByRole("status")).toContainText(`Startpunt voor ${created.code}: ja`);
   const enabled = await rpc(client, "admin_startregie_snapshot", { _event_slug: event });
   expect(enabled.startPoints.some((point: { linkedPortalId: string; active: boolean }) => point.linkedPortalId === created.id && point.active)).toBe(true);
+  page.once("dialog", (impact) => { expect(impact.message()).toContain("conceptafspraken"); return impact.accept(); });
   await startChoice.selectOption("no");
   await expect(startChoice).toHaveValue("no");
   await expect(page.getByRole("status")).toContainText(`Startpunt voor ${created.code}: nee`);
