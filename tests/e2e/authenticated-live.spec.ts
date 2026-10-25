@@ -1157,7 +1157,7 @@ function boardFixture() {
     id, systemCode: `G-${id}`, displayName: `Groep ${id}`, status: "draft", version: 1, locked, childCount, registrations,
   });
   return {
-    eventId: "fixture-event", phase: "draft", editable: true, maxGroupSize: 4, realtimeTopic: "",
+    eventId: "fixture-event", phase: "draft", editable: true, maxGroupSize: 4, targetGroupSize:4, inputHash:"fixture-input-hash", realtimeTopic: "",
     unassigned: [registration("free", early), registration("mixed-a", early, "mixed"), registration("mixed-b", late, "mixed"), registration("split-a", null, "split"), registration("published", null, null, true)],
     groups: [group("a", [registration("assigned", late), registration("split-b", null, "split")]), group("b", []), group("locked", [registration("locked")], true), group("full", [registration("full")], false, 4)],
   };
@@ -1176,12 +1176,14 @@ async function openFixtureBoard(
   const creates: Array<Record<string, unknown>> = [];
   const repairs: Array<Record<string, unknown>> = [];
   await page.route("**/rest/v1/rpc/admin_group_composition_snapshot", (route) => route.fulfill({ json: snapshot }));
-  await page.route("**/rest/v1/rpc/admin_group_move_registration", async (route) => {
-    moves.push(route.request().postDataJSON());
+  await page.route("**/rest/v1/rpc/admin_group_operations_apply", async (route) => {
+    const command=route.request().postDataJSON();if(command._action!=="move")return route.fallback();
+    moves.push({_event_slug:command._event_slug,_registration_id:command._payload.registrationId,_target_group_id:command._payload.targetGroupId});
     await route.fulfill({ json: { movedRegistrations: 1 } });
   });
-  await page.route("**/rest/v1/rpc/admin_group_repair_split_party", async (route) => {
-    repairs.push(route.request().postDataJSON());
+  await page.route("**/rest/v1/rpc/admin_group_operations_apply", async (route) => {
+    const command=route.request().postDataJSON();if(command._action!=="repair")return route.fallback();
+    repairs.push({_event_slug:command._event_slug,_party_id:command._payload.partyId});
     const members = [
       ...snapshot.unassigned,
       ...snapshot.groups.flatMap((group) => group.registrations),
@@ -1208,8 +1210,9 @@ async function openFixtureBoard(
       },
     });
   });
-  await page.route("**/rest/v1/rpc/admin_group_create", async (route) => {
-    creates.push(route.request().postDataJSON());
+  await page.route("**/rest/v1/rpc/admin_group_operations_apply", async (route) => {
+    const command=route.request().postDataJSON();if(command._action!=="create")return route.fallback();
+    creates.push({_event_slug:command._event_slug,_display_name:command._payload.displayName});
     snapshot.groups.push({ id: "created", systemCode: "G-created", displayName: "Nieuwe groep", status: "draft", version: 1, locked: false, childCount: 0, registrations: [] });
     // Keep the request pending while the test attempts another submit.
     await new Promise((resolve) => setTimeout(resolve, 300));

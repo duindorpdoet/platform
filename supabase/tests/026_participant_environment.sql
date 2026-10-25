@@ -155,8 +155,8 @@ select ok(
   'planned arrival windows never expose child names'
 );
 select ok(
-  api.portal_arrivals_snapshot('12000000-0000-0000-0000-000000000001')::text !~ 'Familie Privé',
-  'homeowner arrival windows expose stable G-codes without leader-chosen family names'
+  api.portal_arrivals_snapshot('12000000-0000-0000-0000-000000000001')::text !~ '@example.invalid',
+  'homeowner arrival windows expose group names and G-codes without adult email addresses'
 );
 
 select set_config('request.jwt.claims', '{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);

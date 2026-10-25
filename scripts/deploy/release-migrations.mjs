@@ -27,6 +27,12 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261023234741_simple_start_confirmation.sql',
   '20261024145517_start_location_readiness.sql',
   '20261025023205_portal_sequence_without_street_routing.sql',
+  '20261025090000_group_operations_foundation.sql',
+  '20261025090100_group_operations_commands.sql',
+  '20261025090200_group_operations_projections.sql',
+  '20261025090300_semantic_start_communication.sql',
+  '20261025090400_canonical_visits_and_occupancy.sql',
+  '20261025090500_portal_drafts_and_confirmed_receptions.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

@@ -1,0 +1,35 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+create temp table reception(eid uuid,gid uuid,point_id uuid,schedule_id uuid,revision integer,pid uuid,draft_pid uuid,impact jsonb,hash text);
+insert into reception(eid,gid,pid) select id,'23000000-0000-0000-0000-000000000002','12000000-0000-0000-0000-000000000001' from app_private.events where slug='duindorp-halloween-2026';
+-- Partial concept availability is saved privately and never activated as an invalid window.
+update reception set draft_pid=(api.admin_manual_portal_save('duindorp-halloween-2026',null,jsonb_build_object('name','Onvolledig onderhoudsconcept','worldSlug',(select slug from app_private.worlds order by sort_order limit 1),'plannedOpensAt','2026-10-31T17:00:00Z','saveMode','draft'),null,'Gedeeltelijk concept met alleen een begintijd bewaren')->>'id')::uuid;
+select is((select count(*)::integer from app_private.portal_windows where portal_id=(select draft_pid from reception)),0,'incomplete reception window is never operational');
+select is((select payload->>'plannedOpensAt' from app_private.portal_maintenance_drafts where portal_id=(select draft_pid from reception)),'2026-10-31T17:00:00Z','explicit partial availability retained in maintenance draft');
+select lives_ok($$select api.admin_manual_portal_remove(draft_pid,(select version from app_private.portals where id=draft_pid),'Ongebruikt onderhoudsconcept verwijderen met behoud van overige data') from reception$$,'unused concept can still be deleted despite its private maintenance draft');
+select lives_ok($$select api.admin_manual_portal_save('duindorp-halloween-2026',pid,'{"saveMode":"draft","street":"Gedeeltelijk herstelde straat"}',(select version from app_private.portals where id=pid),'Een onvolledig actief record bewust als onderhoudsconcept opslaan') from reception$$,'active incomplete maintenance can be saved without silent deactivation');
+select is((select lifecycle_status from app_private.portals where id=(select pid from reception)),'active','active lifecycle retained');
+update app_private.event_route_settings set first_start_at='2026-10-31T15:00:00Z',global_ordinary_stop_at='2026-10-31T19:30:00Z',final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at='2026-10-31T18:00:00Z',finale_last_arrival_at='2026-10-31T20:30:00Z',finale_closes_at='2026-10-31T21:00:00Z',finale_max_concurrent_groups=20,finale_max_concurrent_children=200,finale_available=true,planner_mode='dynamic' where event_id=(select eid from reception);
+update reception set point_id=(api.admin_portal_start_point_set(pid,true,(select version from app_private.portals where id=pid))->>'startPointId')::uuid;
+select api.admin_startregie_confirm_point('duindorp-halloween-2026',point_id,(select version from app_private.start_points where id=point_id)) from reception;
+update reception set schedule_id=(api.admin_startregie_move_group(gid,point_id,'2026-10-31T17:00:00Z',(select version from app_private.walking_groups where id=gid),'neutral','Bevestigde ontvangst bij het eigen poortteam tonen')->>'id')::uuid;
+update reception set revision=(select s.revision from app_private.group_schedule_revisions s where s.id=schedule_id);
+select api.admin_startregie_confirm_and_send('duindorp-halloween-2026',jsonb_build_array(jsonb_build_object('id',schedule_id,'revision',revision)),(select settings_version from app_private.events where id=eid),gen_random_uuid()::text) from reception;
+select ok(exists(select 1 from jsonb_array_elements(api.portal_arrivals_snapshot((select pid from reception))->'arrivals') a where a->>'groupId'=(select gid::text from reception) and a->>'state'='confirmed_start'),'own team sees a confirmed linked start independently of route reservations');
+select is((select count(*)::integer from jsonb_array_elements(api.portal_arrivals_snapshot((select pid from reception))->'arrivals') a where a->>'groupId'=(select gid::text from reception)),1,'linked start group counted once');
+select api.admin_portal_start_point_set(pid,false,(select version from app_private.portals where id=pid)) from reception;
+select ok(app_private.published_start_projection((select gid from reception)) is not null,'disabling start choice preserves the externally valid appointment');
+select ok(not (select active from app_private.start_points where id=(select point_id from reception)),'disabled start is absent for new planning');
+-- A run in any current group blocks the entire preparation reset.
+insert into app_private.group_runs(group_id,schedule_revision_id,status,started_at) select gid,schedule_id,'live',clock_timestamp() from reception;
+update reception set impact=api.admin_group_operations_preview('duindorp-halloween-2026'),hash=app_private.group_operations_hash(eid);
+select ok(jsonb_array_length((select impact->'blockers' from reception))>0,'reset preview exposes the specific started-group blocker');
+select throws_ok($$select api.admin_group_operations_apply('duindorp-halloween-2026','reset',impact->>'inputHash','{"confirmation":"ALLE GROEPEN TERUGZETTEN"}',gen_random_uuid()::text) from reception$$,'23514','RESET_BLOCKED_STARTED_GROUP','one live group refuses the whole reset');
+select is(app_private.group_operations_hash(eid),hash,'blocked reset makes no partial data or communication change') from reception;
+select set_config('request.jwt.claims','{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+select throws_ok($$select api.admin_group_operations_preview('duindorp-halloween-2026')$$,'42501','NOT_AUTHORIZED','household cannot inspect organization reset impact');
+select throws_ok($$select api.portal_arrivals_snapshot((select pid from reception))$$,'42501','NOT_AUTHORIZED','another household cannot read the own-team reception projection');
+select * from finish();
+rollback;

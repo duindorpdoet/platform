@@ -9,6 +9,7 @@ import {
 import { locationCoordinate, locationError, parseCoordinatePart, type RoutingLocation, type StartPointReadiness } from "@/lib/domain/location-readiness";
 import { LocationEditor, type LocationSave } from "@/components/admin/location-editor";
 import { NightMap } from "@/components/maps/night-map";
+import { dominantStartPreference } from "@/lib/domain/start-preference";
 import { proposePlan, type PlannedGroup, type PlanningInput, type PreferenceMatch } from "@/lib/domain/route-planner";
 import { AmsterdamDateTime } from "@/components/forms/amsterdam-date-time";
 import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
@@ -206,7 +207,7 @@ function GroupCard({ group, points, times, visitCycleSeconds, compact = false, o
   const deviation = location ? groupDeviation(group, location.slot.startsAt) : null;
   const match: PreferenceMatch = deviation === null ? "neutral" : deviation <= greenMinutes ? "good" : deviation <= amberMinutes ? "small_deviation" : "large_deviation";
   const Icon = matchIcons[match];
-  const preferred = group.registrations.find((registration) => registration.preferredStartAt)?.preferredStartAt;
+  const preferred = dominantStartPreference(group.registrations);
   const desiredEnd = group.registrations.map((registration) => registration.desiredEndAt).filter(Boolean).sort()[0] ?? null;
   const estimatedStops = desiredEnd && (location?.slot.startsAt ?? preferred)
     ? Math.max(0, Math.floor((Date.parse(desiredEnd) - Date.parse(location?.slot.startsAt ?? preferred!)) / (Math.max(60, visitCycleSeconds) * 1_000)))
@@ -226,7 +227,7 @@ function GroupCard({ group, points, times, visitCycleSeconds, compact = false, o
       <span><CalendarClock />{deviation === null ? "Geen vaste startvoorkeur" : deviation === 0 ? "Exact op voorkeur" : `${deviation} minuten verschil`} · einde gewenst {timeLabel(desiredEnd)}{estimatedStops === null ? "" : ` · circa ${estimatedStops} stops`}</span>
       <span><MapPin />{location?.point.publicLabel ?? "Nog geen startpunt"}</span>
     </div>
-    {group.registrations.some((registration) => !registration.paymentEligible) && <p className="group-inline-warning"><ShieldAlert />Betaling nog niet bevestigd; publiceren blijft geblokkeerd.</p>}
+    {group.registrations.some((registration) => !registration.paymentEligible) && <p className="group-inline-warning"><ShieldAlert />Betaling nog niet bevestigd; deelname en planning blijven mogelijk.</p>}
     {warnings.map((warning) => <p className="group-inline-warning" key={warning}><AlertTriangle />{warning.replaceAll("_", " ").toLowerCase()}</p>)}
     <label className="start-move-control"><span>Verplaats naar…</span><select value={target} onChange={(event) => {
       setTarget(event.target.value);
@@ -243,6 +244,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
   const [pointEditor, setPointEditor] = useState<PointDraft | null>(null);
   const [pointError, setPointError] = useState("");
   const [mapSelection, setMapSelection] = useState<{ kind: "start" | "portal"; id: string } | null>(null);
+  const [proposalMode, setProposalMode] = useState<"new" | "existing">("new");
   const [proposalCommand,setProposalCommand]=useState<{key:string;inputHash:string}|null>(null);
   const [proposal, setProposal] = useState<ReturnType<typeof proposePlan> | null>(null);
   const [scheduleIds, setScheduleIds] = useState<string[]>([]);
@@ -321,7 +323,8 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     if (!error) { setSettingsDraft(null); await load(); }
   }
 
-  async function calculate() {
+  async function calculate(mode: "new" | "existing" = "new") {
+    setProposalMode(mode);
     if (!snapshot || !times.length || !activePoints.length) return setNotice("Voeg eerst minimaal één routeklaar startpunt en een geldig startvenster toe.");
     const client = createClient(); if (!client) return;
     setBusy(true);
@@ -356,7 +359,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
         togetherKey: party.togetherKey ?? undefined, paymentEligible: party.paymentEligible,
       })),
       existingSchedules: planningSnapshot.ops?.existingSchedules ?? planningSnapshot.groups.filter(group => group.schedule && ["draft", "published", "confirmed"].includes(group.schedule.state)).map(group => ({ id: group.schedule!.id, startId: group.schedule!.startSlotId, childCount: group.childCount, expectedFinaleArrivalAt: group.schedule!.expectedFinaleArrivalAt, partyIds: group.registrations.map(registration => registration.id) })),
-      starts, targetGroupSize: settings.targetGroupSize ?? settings.maxGroupSize, maxGroupSize:settings.maxGroupSize,
+      starts, targetGroupSize: settings.targetGroupSize ?? Math.min(15, settings.maxGroupSize), maxGroupSize:settings.maxGroupSize,
       globalOrdinaryStopAt: settings.globalOrdinaryStopAt ?? "", finaleOpensAt: settings.finaleOpensAt ?? "",
       finaleLastArrivalAt: settings.finaleLastArrivalAt ?? "", finaleClosesAt: settings.finaleClosesAt ?? "",
       finaleShowSeconds: settings.finaleShowSeconds, finaleTurnoverSeconds: settings.finaleTurnoverSeconds,
@@ -365,6 +368,18 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       laterPreferenceEarliestAt: settings.laterPreferenceEarliestAt, preferenceGreenMinutes: settings.preferenceGreenMinutes,
       preferenceAmberMinutes: settings.preferenceAmberMinutes,
     };
+    if (mode === "existing") {
+      const movable = planningSnapshot.groups.filter(group => group.status === "draft" && !planningSnapshot.ops?.groups.some(op => op.groupId === group.id && (op.confirmedAt || op.timePublishedAt)));
+      const movingIds = new Set(movable.map(group => group.id));
+      input.existingSchedules = input.existingSchedules?.filter(schedule => !schedule.groupId || !movingIds.has(schedule.groupId));
+      input.parties = movable.flatMap(group => group.registrations.map((registration, index) => ({ id: registration.id, fixedGroupId: group.id, childCount: index === 0 ? group.childCount : 0, preferredStartAt: registration.preferredStartAt, requestedStopAt: registration.ordinaryStopAt, paymentEligible: registration.paymentEligible })));
+      const impact = await client.schema("api").rpc("admin_group_operations_preview", { _event_slug: eventSlug });
+      if (impact.error || impact.data.planningInputHash !== planningSnapshot.ops?.inputHash) return setNotice("De planning is gewijzigd. Bereken de slotverdeling opnieuw.");
+      const result = proposePlan(input);
+      setProposalCommand({key:crypto.randomUUID(),inputHash:impact.data.inputHash}); setProposal(result); setScheduleIds([]);
+      setNotice(`Slotvoorstel voor ${movable.length} bestaande groepen. Samenstellingen blijven intact; ${result.conflicts.length} groep(en) of instellingen vragen aandacht.`);
+      return;
+    }
     const result = proposePlan(input);
     setProposalCommand({key:crypto.randomUUID(),inputHash:planningSnapshot.ops?.inputHash??""});
     setProposal(result); setScheduleIds([]);
@@ -372,9 +387,17 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
   }
 
   async function saveProposal() {
-    if (!proposal?.groups.length || proposal.conflicts.length || !proposalCommand) return;
+    if (!proposal?.groups.length || (proposalMode === "new" && proposal.conflicts.length) || !proposalCommand) return;
     const client = createClient(); if (!client) return;
     const key = proposalCommand.key; setBusy(true);
+    if (proposalMode === "existing") {
+      try {
+        const {data,error} = await client.schema("api").rpc("admin_group_operations_apply", {_event_slug:eventSlug,_action:"distribute",_input_hash:proposalCommand.inputHash,_payload:{groups:proposal.groups},_idempotency_key:key});
+        if (error) {setNotice(`Slotverdeling geweigerd: ${readableError(error.message)}`);return;}
+        setScheduleIds(data.scheduleIds);setProposal(null);setNotice(`Concept opgeslagen met ${proposal.conflicts.length} aandachtspunt(en). Er is niemand gemaild.`);await load();
+      } finally {setBusy(false);}
+      return;
+    }
     const { data, error } = await client.schema("api").rpc("admin_apply_dynamic_plan", {
       _event_slug: eventSlug, _proposal: proposal, _input_hash: proposalCommand.inputHash,
       _idempotency_key: key, _request_hash: await digest({ proposal, key }),
@@ -388,16 +411,17 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
 
   async function publish() {
     if (!scheduleIds.length || !snapshot) return;
-    if (!window.confirm(`Bevestig ${scheduleIds.length} geselecteerde startindeling(en)? Starttijden publiceren blijft daarna een aparte stap.`)) return;
+    if (!window.confirm(`Bevestig ${scheduleIds.length} geselecteerde startindeling(en)? De startafspraken worden actief gedeeld en de persoonlijke tijdmails worden klaargezet.`)) return;
     const client = createClient(); if (!client) return;
     setBusy(true);
-    const { data, error } = await client.schema("api").rpc("admin_startregie_confirm_starts", {
+    const { data, error } = await client.schema("api").rpc("admin_startregie_confirm_and_send", {
+      _idempotency_key: crypto.randomUUID(),
       _event_slug: eventSlug, _expected_settings_version: snapshot.settings.eventSettingsVersion,
       _expected_revisions: snapshot.groups.filter(group => group.schedule && scheduleIds.includes(group.schedule.id)).map(group => ({ id: group.schedule!.id, revision: group.schedule!.revision })),
     });
     setBusy(false);
     const result = data as { planningVersion?: number } | null;
-    setNotice(error ? `Publicatie geblokkeerd: ${readableError(error.message)}` : `Startindeling bevestigd${result?.planningVersion ? ` als versie ${result.planningVersion}` : ""}. Publiceer de starttijd apart via het groepenoverzicht.`);
+    setNotice(error ? `Publicatie geblokkeerd: ${readableError(error.message)}` : `Startindeling bevestigd${result?.planningVersion ? ` als versie ${result.planningVersion}` : ""}. De actuele afspraak is gedeeld en de tijdmails staan in de wachtrij.`);
     if (!error) { setScheduleIds([]); setProposal(null); await load(); }
   }
 
@@ -541,6 +565,9 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       ] as const).map(([value, Icon, label]) => <button key={value} type="button" role="tab" aria-selected={tab === value} className={tab === value ? "active" : ""} onClick={() => setTab(value)}><Icon />{label}</button>)}
     </nav>
 
+    {tab === "planning" && <section className="panel" aria-label="Bestaande groepen automatisch plannen"><h3>Groepen automatisch over startpunten verdelen</h3><p>Bestaande samenstellingen blijven intact. Bevestigde en gepubliceerde startafspraken blijven behouden.</p><button className="btn" type="button" disabled={busy} onClick={() => void calculate("existing")}>Groepen automatisch over startpunten verdelen</button>
+      {proposalMode === "existing" && proposal && <><p>{proposal.groups.length} groepen toegewezen · {proposal.conflicts.length} aandachtspunten</p>{proposal.groups.map(group => {const slot=snapshot.startPoints.flatMap(point => point.slots.map(slot => ({...slot,point:point.name}))).find(slot=>slot.id===group.startId);return <p key={group.key}>{snapshot.groups.find(g=>g.id===group.key)?.systemCode} · voorkeur {timeLabel(dominantStartPreference(snapshot.groups.find(g=>g.id===group.key)?.registrations??[]))} · voorstel {timeLabel(slot?.startsAt)} · {slot?.point} · grootste afwijking {group.maxPreferenceDeviationMinutes??"—"} min</p>;})}{proposal.conflicts.map((c,i)=><p className="form-warning" key={i}>{c.subjectId}: {c.message}</p>)}<button className="btn outline" type="button" disabled={busy||!proposal.groups.length} onClick={()=>void saveProposal()}>Conceptslotverdeling opslaan</button></>}
+    </section>}
     {tab === "planning" && <StartOpsWorkspace snapshot={snapshot} eventSlug={eventSlug} busy={busy} setBusy={setBusy} onReload={load} onNotice={setNotice} onMove={async (group,target)=>{const current=snapshot.groups.find(item=>item.id===group.id);if(current)await moveGroup(current,target);}} onOpenPoints={() => setTab("points")} selectedIds={scheduleIds} onSelectedIds={setScheduleIds} />}
     {tab === "planning" && <details className="start-ops-advanced"><summary><Settings2 /> Automatisch voorstel en uitgebreid planbord</summary><PlanningPanel snapshot={snapshot} activePoints={activePoints} times={times} visibleTimes={visibleTimes}
       visiblePoints={visiblePoints} visibleGroups={visibleGroups} filters={filters} setFilters={setFilters}
@@ -658,7 +685,7 @@ function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoi
 
     <section className="planning-proposal">
       <header><div><p className="kicker">Controleer vóór publicatie</p><h3>Voorstel en bevestiging</h3></div><div className="publication-steps" aria-label={`Publicatiestap ${publicationStep + 1} van 5`}>{["Berekenen", "Conflicten", "Controleren", "Voorbeeld", "Bevestigen"].map((label, index) => <span key={label} className={index <= publicationStep ? "active" : ""}><b>{index + 1}</b>{label}</span>)}</div></header>
-      <div className="actions"><button className="btn" type="button" disabled={busy || snapshot.unassigned.length === 0} onClick={() => void calculate()}><Sparkles />Concept berekenen</button><button className="btn outline" type="button" disabled={busy || !proposal?.groups.length || Boolean(proposal?.conflicts.length)} onClick={() => void saveProposal()}><Save />Concept opslaan</button><button className="btn outline" type="button" disabled={busy || !scheduleIds.length} onClick={() => void publish()}><Send />{scheduleIds.length ? `${scheduleIds.length} indeling(en) bevestigen` : "Indeling bevestigen"}</button></div>
+      <div className="actions"><button className="btn" type="button" disabled={busy || snapshot.unassigned.length === 0} onClick={() => void calculate()}><Sparkles />Concept berekenen</button><button className="btn outline" type="button" disabled={busy || !proposal?.groups.length || Boolean(proposal?.conflicts.length)} onClick={() => void saveProposal()}><Save />Concept opslaan</button><button className="btn outline" type="button" disabled={busy || !scheduleIds.length} onClick={() => void publish()}><Send />{scheduleIds.length ? "Startafspraken bevestigen en versturen" : "Startafspraken bevestigen en versturen"}</button></div>
       {proposal?.conflicts.map((conflict) => <div className="form-warning" key={`${conflict.code}-${conflict.subjectId}`}><AlertTriangle /><span><strong>{conflict.code}</strong>{conflict.message}</span></div>)}
       {proposal?.groups.map((group: PlannedGroup) => <article className={`proposal-row match-${group.preferenceMatch}`} key={group.key}><span className="proposal-icon">{(() => { const Icon = matchIcons[group.preferenceMatch]; return <Icon />; })()}</span><div><strong>{group.key} · {group.childCount} kinderen</strong><p>{matchLabels[group.preferenceMatch]} · gewone poorten tot {timeLabel(group.effectiveStopAt)} · finale circa {timeLabel(group.expectedFinaleArrivalAt)}</p><small><b>Waarom hier?</b> {group.explanation}</small></div></article>)}
       {scheduleIds.length > 0 && <details className="publication-preview" open><summary><Eye />Voorbeeld van {scheduleIds.length} te publiceren wijziging(en)</summary><p>Alleen geselecteerde conceptrevisies worden bevestigd. De starttijd wordt pas gedeeld na de aparte publicatiestap bovenaan. Het adres blijft verborgen tot één uur voor vertrek.</p></details>}

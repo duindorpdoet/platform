@@ -88,7 +88,7 @@ export async function POST(request: Request) {
 
   for (const row of rows) {
     try {
-      if (["group_schedule_published", "group_schedule_corrected"].includes(row.message_type)) {
+      if (["group_schedule_published", "group_schedule_corrected", "group_composition_confirmed", "group_assignment_withdrawn"].includes(row.message_type)) {
         const appointment = await supabase.schema("api").rpc("worker_group_schedule_mail_payload", { _outbox_id: row.id });
         if (appointment.error) throw new ApiError(503, "APPOINTMENT_MATERIAL_UNAVAILABLE", "Probeer het later opnieuw.");
         if (!appointment.data) {
@@ -96,6 +96,7 @@ export async function POST(request: Request) {
           continue;
         }
         row.payload = appointment.data;
+        if (typeof appointment.data.messageType === "string") row.message_type = appointment.data.messageType;
       }
       if (row.message_type === "portal_team_invite") {
         const material = await supabase.schema("api").rpc("portal_invitation_mail_payload", { _invite_id: row.payload.inviteId });

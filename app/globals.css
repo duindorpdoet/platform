@@ -906,3 +906,11 @@ dialog.group-create-dialog::backdrop{background:#02070dc7;backdrop-filter:blur(4
   .admin-route-surface .admin-bottomnav{position:relative;inset:auto}
   .admin-route-surface .admin-content{padding-bottom:max(24px,env(safe-area-inset-bottom))}
 }
+
+/* Group operations retain the existing board and its mobile scrolling. */
+.group-composition-dropzone[hidden]{display:none}
+.group-operations{display:grid;gap:12px;min-width:0}
+.group-operations>.actions{display:flex;flex-wrap:wrap;gap:8px}
+.group-operations p,.group-composition-column>p{font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+.group-composition-column>p,.group-composition-column>button{margin:0 14px 10px}
+.group-operations article{padding:12px 0;border-bottom:1px solid #ffffff20}

@@ -16,6 +16,8 @@ export const MAIL_MESSAGE_TYPES = [
   "group_merge_requested",
   "group_merge_approved",
   "group_merge_declined",
+  "group_composition_confirmed",
+  "group_assignment_withdrawn",
   "group_schedule_published",
   "group_schedule_corrected",
   "stops_request_received",
@@ -104,9 +106,9 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     action: { label: "Bekijk de betaling", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt dit bericht omdat er voor jouw inschrijving een betaling klaarstaat.",
   },
   payment_reminder: {
-    kind: "reminder", subject: "Herinnering: betaling voor jullie groep", preheader: "Voor 30 oktober betalen is nodig om deel te nemen.", eyebrow: "Een kleine herinnering", title: "Controleer jullie betaling.",
+    kind: "reminder", subject: "Herinnering: betaling voor jullie groep", preheader: "Controleer het openstaande bedrag in jullie omgeving.", eyebrow: "Een kleine herinnering", title: "Controleer jullie betaling.",
     paragraphs: (payload) => [`${greeting(payload)}volgens onze administratie staat de betaling voor ${groupName(payload)} nog open. Is de betaling net gedaan? Controleer eerst de actuele status in jullie omgeving.`],
-    notice: { title: "Belangrijk", text: "Betaal vóór 30 oktober. Na de uiterste datum kan jullie groep niet deelnemen als de betaling niet is bevestigd." },
+    notice: { title: "Belangrijk", text: "Betaal vóór 30 oktober. Een open betaling blijft zichtbaar voor de organisatie; jullie deelname en startafspraak blijven geldig." },
     action: { label: "Controleer betaalstatus", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt deze herinnering vanwege een nog openstaande betaling.",
   },
   payment_reported: {
@@ -124,9 +126,9 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     action: { label: "Bekijk jullie deelname", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt deze bevestiging na de registratie van jullie betaling.",
   },
   payment_deadline_missed: {
-    kind: "payment", subject: "Jullie deelname kan niet doorgaan", preheader: "De betaling was niet op tijd bevestigd.", eyebrow: "Status van je inschrijving", title: "Een bericht dat we liever niet sturen.",
-    paragraphs: (payload) => [`${greeting(payload)}voor ${groupName(payload)} is vóór 30 oktober geen bevestigde betaling geregistreerd. Daarom is jullie deelname voor deze editie vervallen. Denk je dat de betaling wel op tijd is verwerkt? Neem dan via de beveiligde omgeving contact op.`],
-    action: { label: "Bekijk de inschrijving", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt dit bericht vanwege een wijziging in de status van jullie inschrijving.",
+    kind: "payment", subject: "Controleer jullie openstaande betaling", preheader: "Jullie deelname blijft geldig.", eyebrow: "Betaalstatus", title: "De betaling staat nog open.",
+    paragraphs: (payload) => [`${greeting(payload)}volgens onze administratie staat de betaling voor ${groupName(payload)} nog open. Jullie deelname en startafspraak blijven geldig. Controleer de betaalstatus of neem contact op met de organisatie.`],
+    action: { label: "Bekijk de betaling", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt dit bericht vanwege een openstaande betaling.",
   },
   household_invite: {
     kind: "group", subject: "Je bent uitgenodigd voor jullie deelname", preheader: "Gebruik dit e-mailadres om toegang te krijgen.", eyebrow: "Samen regelen", title: "Je bent uitgenodigd.",
@@ -153,15 +155,25 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     paragraphs: (payload) => [`De aanvraag om bij ${headGroup(payload)} aan te sluiten kon niet worden bevestigd. Je eigen groep en inschrijving blijven bestaan. Bekijk jullie actuele gegevens in de omgeving.`],
     action: { label: "Bekijk mijn groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit bericht omdat een samenvoegingsaanvraag is beoordeeld.",
   },
+  group_composition_confirmed: {
+    kind: "group", subject: "Jullie groep voor Halloween is gekozen", preheader: "De starttijd wordt afzonderlijk bevestigd.", eyebrow: "Jullie groep", title: "Jullie groep is gekozen.",
+    paragraphs: (payload) => [`Jullie groep voor de Duindorpse Poorten van Halloween is gekozen: ${groupName(payload)}${text(payload, ["groupCode"]) ? ` (${text(payload, ["groupCode"])})` : ""}. Bekijk jullie groep in de persoonlijke omgeving.`, "Jullie definitieve starttijd wordt afzonderlijk bevestigd zodra de startplanning klaarstaat. Een al gedeelde afspraak vind je in jullie omgeving."],
+    action: { label: "Bekijk jullie groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit bericht omdat jullie groepssamenstelling is bevestigd.",
+  },
+  group_assignment_withdrawn: {
+    kind: "group", subject: "Jullie groepsindeling wordt herzien", preheader: "Een nieuwe bevestiging volgt.", eyebrow: "Nieuwe indeling volgt", title: "De organisatie herziet de indeling.",
+    paragraphs: () => ["Jullie eerdere groepsindeling en startafspraak zijn ingetrokken. De organisatie maakt een nieuwe indeling. Jullie inschrijving blijft behouden en jullie krijgen een nieuwe bevestiging. Er is nu nog geen nieuwe starttijd of startadres."],
+    action: { label: "Bekijk de actuele indeling", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit bericht omdat een eerder gedeelde indeling is ingetrokken.",
+  },
   group_schedule_published: {
-    kind: "route", subject: "Jullie startpunt en starttijd zijn bekend", preheader: "Bekijk wanneer en waar jullie groep begint.", eyebrow: "Jullie avond", title: "De start staat vast.", hero: true,
-    paragraphs: (payload) => [`${greeting(payload)}de organisatie heeft de start van ${groupName(payload)} bevestigd. Kom pas vanaf de toegewezen tijd en meld jullie aanwezigheid in de app. Na de grens voor gewone poorten volgt nog de laatste poort.`],
-    action: { label: "Bekijk jullie start", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt deze e-mail omdat de startindeling van jouw groep is gepubliceerd.",
+    kind: "route", subject: "Jullie starttijd voor Halloween is bevestigd", preheader: "Het adres volgt vanaf één uur voor vertrek.", eyebrow: "Jullie avond", title: "De starttijd staat vast.", hero: true,
+    paragraphs: (payload) => [`Jullie groep ${groupName(payload)} start op ${eventDateTime(payload.startsAt)}. ${releaseNotice(payload)} Bekijk jullie actuele afspraak in de persoonlijke omgeving en blijf samen als groep.`],
+    action: { label: "Bekijk jullie start", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt deze e-mail omdat jullie startafspraak is bevestigd.",
   },
   group_schedule_corrected: {
-    kind: "route", subject: "Belangrijk: jullie start is aangepast", preheader: "Gebruik de nieuwe gegevens in dit bericht.", eyebrow: "Nieuwe startgegevens", title: "Jullie indeling is bijgewerkt.",
-    paragraphs: (payload) => [`${greeting(payload)}gebruik vanaf nu uitsluitend de bijgewerkte startgegevens van ${groupName(payload)}. Eerder ontvangen gegevens zijn niet meer geldig.`],
-    action: { label: "Bekijk de actuele start", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt deze correctie omdat de gepubliceerde start van jouw groep is gewijzigd.",
+    kind: "route", subject: "Jullie starttijd voor Halloween is gewijzigd", preheader: "Bekijk de actuele starttijd.", eyebrow: "Gewijzigde starttijd", title: "Jullie starttijd is gewijzigd.",
+    paragraphs: (payload) => [`Jullie starttijd is gewijzigd van ${eventDateTime(payload.oldStartsAt)} naar ${eventDateTime(payload.startsAt)}. ${releaseNotice(payload)} Bekijk daar jullie actuele afspraak.`],
+    action: { label: "Bekijk de actuele start", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt deze correctie omdat jullie eerder gedeelde starttijd is gewijzigd.",
   },
   stops_request_received: {
     kind: "group", subject: "Je aanvraag voor extra poorten is binnen", preheader: "De organisatie bekijkt of er ruimte is.", eyebrow: "Aanvraag ontvangen", title: "We bekijken wat mogelijk is.",
@@ -302,6 +314,10 @@ function senderRole(payload: Payload) { return text(payload, ["senderRole", "afz
 function queueStatus(payload: Payload) { return text(payload, ["queueStatus", "wachtrij_status"], "in de wachtrij"); }
 function reference(payload: Payload) { return text(payload, ["reference", "registrationReference", "applicationReference", "ticketReference"]); }
 
+function releaseNotice(payload: Payload) {
+  return payload.addressReleased === true ? "Het adres van jullie startpoort is nu zichtbaar in jullie persoonlijke omgeving." : `Het adres van jullie startpoort wordt vanaf ${eventDateTime(payload.addressReleaseAt)} zichtbaar in jullie persoonlijke omgeving.`;
+}
+
 function eventDateTime(value: unknown) {
   if (typeof value !== "string") return "";
   const parsed = new Date(value);
@@ -318,8 +334,8 @@ function detailsFor(messageType: MailMessageType, payload: Payload): MailDetail[
   }
   if (["group_schedule_published", "group_schedule_corrected"].includes(messageType)) {
     add("Groep", groupName(payload) === "jullie groep" ? "" : groupName(payload));
-    add("Startpunt", text(payload, ["startPoint", "startpunt"]));
-    add("Adres startpunt", text(payload, ["startAddress", "startadres"]));
+
+
     add("Starttijd", eventDateTime(payload.startsAt) || text(payload, ["starttijd"]));
     add("Geen nieuwe gewone poorten vanaf", eventDateTime(payload.ordinaryStopAt) || text(payload, ["eindtijd"]));
   }
@@ -395,7 +411,7 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
   const childConfirmation = messageType === "payment_confirmed" && Array.isArray(payload.paymentChildren);
   const childReport = messageType === "payment_reported" && Array.isArray(payload.paymentChildren);
   const dynamicTitle = childConfirmation ? "De betaling voor deze kinderen is verwerkt." : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.title) : definition.title;
-  const dynamicSubject = childConfirmation ? "Betaling voor deze kinderen bevestigd" : childReport ? "Betaalmelding voor deze kinderen ontvangen" : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
+  const dynamicSubject = ["group_schedule_published", "group_schedule_corrected"].includes(messageType) ? `${definition.subject}: ${eventDateTime(payload.startsAt)}` : childConfirmation ? "Betaling voor deze kinderen bevestigd" : childReport ? "Betaalmelding voor deze kinderen ontvangen" : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
   const codeValue = text(payload, ["code", "token"]);
   const paymentUrl = messageType === "payment_link_ready" ? validatedPaymentUrl(payload.externalUrl) : undefined;
   const action = paymentUrl ? { label: "Open de betaallink", url: paymentUrl } : definition.action

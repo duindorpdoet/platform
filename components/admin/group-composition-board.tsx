@@ -20,6 +20,8 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
+import { dominantStartPreference } from "@/lib/domain/start-preference";
+import { GroupOperationsActions } from "./group-operations-actions";
 import { AdminDialog } from "@/components/admin/admin-dialog";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -49,12 +51,18 @@ type Group = {
   locked: boolean;
   childCount: number;
   registrations: Registration[];
+  compositionConfirmed?: boolean;
+  communication?: Record<string,number>;
+  start?: {startsAt: string; linkedPortalId: string | null} | null;
+  draftStart?: {startsAt: string; pointId: string | null} | null;
 };
 type Snapshot = {
   eventId: string;
   phase: string;
   editable: boolean;
   maxGroupSize: number;
+  targetGroupSize: number;
+  inputHash: string;
   realtimeTopic: string;
   groups: Group[];
   unassigned: Registration[];
@@ -113,7 +121,7 @@ const columnAnchor = (board: HTMLDivElement) => {
         (Number.parseFloat(getComputedStyle(board).paddingLeft) || 0);
 };
 
-export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
+export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: string; onOpenStarts?: () => void }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -130,6 +138,7 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   const [preferenceFilter, setPreferenceFilter] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [repairCandidate, setRepairCandidate] =
     useState<RepairCandidate | null>(null);
@@ -138,6 +147,8 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
   const [activeColumnId, setActiveColumnId] = useState("unassigned");
   const [revealRequest, setRevealRequest] = useState(0);
   const mutationPending = useRef(false);
+  const commandRetry = useRef<{signature:string;key:string}|null>(null);
+  function commandKey(signature:string){if(commandRetry.current?.signature!==signature)commandRetry.current={signature,key:crypto.randomUUID()};return commandRetry.current.key;}
   const revealColumn = useRef<string | null>(null);
   const pendingAlignment = useRef<string | null>(null);
   const request = useRef(0);
@@ -254,16 +265,13 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
     if (source.id === (target ?? "unassigned")) return;
     const client = createClient();
     if (!client) return;
+    request.current += 1;
     mutationPending.current = true;
     setBusy(true);
     try {
       const { data, error } = await client
         .schema("api")
-        .rpc("admin_group_move_registration", {
-          _event_slug: eventSlug,
-          _registration_id: itemRepresentative(item).id,
-          _target_group_id: target,
-        });
+        .rpc("admin_group_operations_apply", {_event_slug:eventSlug,_action:"move",_input_hash:snapshot.inputHash,_payload:{registrationId:itemRepresentative(item).id,targetGroupId:target},_idempotency_key:commandKey(`${snapshot.inputHash}:move:${item.id}:${target}`)});
       setNotice(
         error
           ? `Verplaatsen geweigerd: ${error.message}`
@@ -283,15 +291,13 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
     if (!snapshot?.editable || mutationPending.current) return;
     const client = createClient();
     if (!client) return;
+    request.current += 1;
     mutationPending.current = true;
     setBusy(true);
     try {
       const { data, error } = await client
         .schema("api")
-        .rpc("admin_group_create", {
-          _event_slug: eventSlug,
-          _display_name: newName.trim() || null,
-        });
+        .rpc("admin_group_operations_apply", {_event_slug:eventSlug,_action:"create",_input_hash:snapshot.inputHash,_payload:{displayName:newName.trim()||null},_idempotency_key:commandKey(`${snapshot.inputHash}:create:${newName.trim()}`)});
       if (error) setNotice(`Groep kon niet worden gemaakt: ${error.message}`);
       else {
         const created = data as { id?: string; systemCode?: string } | null;
@@ -306,19 +312,17 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
     }
   };
   const repairSplitParty = async () => {
-    if (!repairCandidate || mutationPending.current) return;
+    if (!snapshot || !repairCandidate || mutationPending.current) return;
     const client = createClient();
     if (!client) return;
+    request.current += 1;
     mutationPending.current = true;
     setBusy(true);
     setRepairError("");
     try {
       const { data, error } = await client
         .schema("api")
-        .rpc("admin_group_repair_split_party", {
-          _event_slug: eventSlug,
-          _party_id: repairCandidate.partyId,
-        });
+        .rpc("admin_group_operations_apply", {_event_slug:eventSlug,_action:"repair",_input_hash:snapshot.inputHash,_payload:{partyId:repairCandidate.partyId},_idempotency_key:commandKey(`${snapshot.inputHash}:repair:${repairCandidate.partyId}`)});
       if (error) {
         setRepairError(repairErrorMessage(error.message));
         return;
@@ -584,6 +588,8 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
           <ChevronRight />
         </button>
       </div>
+      {onOpenStarts && <button type="button" className="btn outline" onClick={onOpenStarts}>Groepen over startpunten verdelen</button>}
+      <GroupOperationsActions eventSlug={eventSlug} inputHash={snapshot.inputHash} unassigned={snapshot.unassigned} groups={snapshot.groups} target={snapshot.targetGroupSize} maximum={snapshot.maxGroupSize} reload={load} notice={setNotice} />
       <div
         ref={boardRef}
         className="group-composition-board"
@@ -644,15 +650,24 @@ export function GroupCompositionBoard({ eventSlug }: { eventSlug: string }) {
                 <h3>{column.title}</h3>
               </div>
               <span>
-                {column.childCount}/{snapshot.maxGroupSize} kinderen
+                {column.childCount} kinderen / streef {snapshot.targetGroupSize}
               </span>
             </header>
+            <p>Voorkeurstijd {clock(dominantStartPreference(column.registrations))} · {column.registrations.length} inschrijvingen · {compositionItems(column.registrations).filter(item => item.registrations.length > 1).length} samenloopblokken</p>
+            {snapshot.groups.find(group => group.id === column.id)?.compositionConfirmed && <p>Groep bevestigd</p>}
+            {snapshot.groups.find(group => group.id === column.id)?.start?.startsAt && <p>Starttijd bevestigd {clock(snapshot.groups.find(group => group.id === column.id)!.start!.startsAt)} · startpunt gekoppeld</p>}
+            {!snapshot.groups.find(group => group.id === column.id)?.start && snapshot.groups.find(group => group.id === column.id)?.draftStart && <p>Conceptstart {clock(snapshot.groups.find(group => group.id === column.id)!.draftStart!.startsAt)}</p>}
+            {column.registrations.some(r => r.paymentEligible === false) && <p className="form-warning">Betaling open of in controle · deelname blijft mogelijk</p>}
+            {snapshot.groups.find(group=>group.id===column.id)?.communication && (()=>{const mail=snapshot.groups.find(group=>group.id===column.id)!.communication!;return <p>Mail: {(mail.pending??0)+(mail.processing??0)+(mail.deferred??0)} in wachtrij · {mail.accepted??0} geaccepteerd · {mail.delivered??0} bewezen bezorgd · {mail.failed??0} fout · {mail.unknown??0} onzeker</p>;})()}
+            {column.id !== "unassigned" && <button type="button" className="btn outline" aria-expanded={!collapsed[column.id]} aria-controls={`group-content-${column.id}`} onClick={() => setCollapsed(value => ({...value, [column.id]: !value[column.id]}))}>{collapsed[column.id] ? "Uitklappen" : "Inklappen"}</button>}
             {column.locked && (
               <p className="group-locked">
                 <LockKeyhole /> Definitief
               </p>
             )}
             <div
+              id={`group-content-${column.id}`}
+              hidden={Boolean(collapsed[column.id])}
               className="group-composition-dropzone"
               aria-label={`${column.title}: inschrijvingen`}
             >
@@ -986,7 +1001,7 @@ function Card({
     preference.kind === "none"
       ? "Geen voorkeur"
       : preference.kind === "mixed"
-        ? "Verschillende voorkeurstijden"
+        ? `Meest gekozen ${clock(preference.value)}`
         : `Voorkeur ${clock(preference.value)}`;
   const movable = moveCheck(null).canMove;
   return (

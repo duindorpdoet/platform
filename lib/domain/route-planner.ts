@@ -1,3 +1,4 @@
+import { dominantStartPreference } from "./start-preference";
 export type StartTimePreference = "early" | "indifferent" | "later";
 
 export type PlanningParty = {
@@ -10,6 +11,8 @@ export type PlanningParty = {
   desiredEndAt?: string | null;
   togetherKey?: string;
   togetherOverride?: boolean;
+  /** Preserve a route group when only distributing existing groups over slots. */
+  fixedGroupId?: string;
 };
 
 export type PlanningStart = {
@@ -92,9 +95,9 @@ function millis(value: string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function groupPreference(parties: PlanningParty[]): StartTimePreference | "conflict" {
+function groupPreference(parties: PlanningParty[]): StartTimePreference {
   const values = new Set(parties.map((party) => party.startPreference ?? "indifferent").filter((value) => value !== "indifferent"));
-  if (values.size > 1) return "conflict";
+  if (values.size > 1) return "indifferent";
   return values.values().next().value ?? "indifferent";
 }
 
@@ -133,7 +136,7 @@ function matchFor(preference: StartTimePreference, startAt: number, input: Pick<
   return "large_deviation";
 }
 
-/** Report the least satisfied household, while the selection score may still use a soft group average. */
+/** Report the least satisfied household, while slot selection uses the dominant registration preference. */
 export function evaluatePartyPreferences(parties: PlanningParty[], startsAt: string | number, input: Pick<PlanningInput,
   "earlyPreferenceLatestAt" | "laterPreferenceEarliestAt" | "preferenceGreenMinutes" | "preferenceAmberMinutes"
 >): { preferenceMatch: PreferenceMatch; preferenceDetails: PartyPreferenceDetail[]; maxPreferenceDeviationMinutes: number | null } {
@@ -202,7 +205,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   const clusters = new Map<string, PlanningParty[]>();
   const assignedPartyIds = new Set([...existingSchedules.values()].flatMap((schedule) => schedule.partyIds ?? []));
   for (const party of stable(input.parties).filter((party) => !assignedPartyIds.has(party.id))) {
-    const key = party.togetherKey ? `together:${party.togetherKey}` : `party:${party.id}`;
+    const key = party.fixedGroupId ? `fixed:${party.fixedGroupId}` : party.togetherKey ? `together:${party.togetherKey}` : `party:${party.id}`;
     clusters.set(key, [...(clusters.get(key) ?? []), party]);
   }
   const bundles = [...clusters.entries()].map(([key, parties]) => ({
@@ -215,7 +218,6 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
 
   for (const bundle of bundles) {
     if (bundle.size > input.maxGroupSize) conflicts.push({ code: "TOGETHER_PARTY_TOO_LARGE", subjectId: bundle.key, message: `${bundle.key} bevat ${bundle.size} kinderen; maximaal ${input.maxGroupSize}.` });
-    if (bundle.preference === "conflict") conflicts.push({ code: "START_PREFERENCE_CONFLICT", subjectId: bundle.key, message: `${bundle.key} bevat zowel een vroege als late voorkeur. Stem een gezamenlijke afspraak af of splits bewust.` });
   }
   if (conflicts.length) return { groups: [], conflicts };
 
@@ -223,7 +225,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   for (const bundle of bundles) {
     const preference = bundle.preference as StartTimePreference;
     const preferred = draftGroups
-      .filter((group) => !bundle.capacityOverride && !group.capacityOverride
+      .filter((group) => !bundle.parties.some(p => p.fixedGroupId) && !group.parties.some(p => p.fixedGroupId) && !bundle.capacityOverride && !group.capacityOverride
         && group.childCount + bundle.size <= input.maxGroupSize
         && (group.preference === "indifferent" || preference === "indifferent" || group.preference === preference))
       .sort((a, b) => a.childCount - b.childCount || a.key.localeCompare(b.key))[0];
@@ -232,7 +234,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
       preferred.childCount += bundle.size;
       if (preferred.preference === "indifferent") preferred.preference = preference;
     } else {
-      draftGroups.push({ key: `group-${String(draftGroups.length + 1).padStart(3, "0")}`, parties: [...bundle.parties], childCount: bundle.size, capacityOverride: bundle.capacityOverride, preference });
+      draftGroups.push({ key: bundle.parties[0].fixedGroupId ?? `group-${String(draftGroups.length + 1).padStart(3, "0")}`, parties: [...bundle.parties], childCount: bundle.size, capacityOverride: bundle.capacityOverride, preference });
     }
   }
 
@@ -253,10 +255,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   }
   const groups: PlannedGroup[] = [];
   for (const group of draftGroups) {
-    const preferredStarts = group.parties.map((party) => millis(party.preferredStartAt)).filter((value): value is number => value !== null);
-    const preferredStartAt = preferredStarts.length
-      ? Math.round(preferredStarts.reduce((sum, value) => sum + value, 0) / preferredStarts.length)
-      : null;
+    const preferredStartAt = millis(dominantStartPreference(group.parties));
     const selected = [...starts]
       .filter((start) => {
         const load = startLoads.get(start.id)!;
@@ -315,5 +314,5 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
       explanation: `${preferenceReason}; ${selected.pointName ?? "het startpunt"} heeft daarna nog ruimte voor ${Math.max(0, remainingChildren)} kinderen.`,
     });
   }
-  return conflicts.length ? { groups: [], conflicts } : { groups, conflicts: [] };
+  return { groups, conflicts };
 }

@@ -1,3 +1,4 @@
+import { dominantStartPreference } from "./start-preference";
 export type TogetherGroup = {
   id: string;
   systemCode: string;
@@ -84,9 +85,8 @@ const time = (value: string | null) => value ? new Intl.DateTimeFormat("nl-NL", 
   hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam",
 }).format(new Date(value)) : null;
 export function partyPreference(party: TogetherParty) {
-  const preferences = [...new Set(party.members.map((member) => [time(member.preferredStartAt), time(member.desiredEndAt)].filter(Boolean).join("–")))];
-  if (preferences.every((value) => !value)) return "Geen voorkeur";
-  return preferences.length > 1 ? "Verschillende voorkeurstijden" : `Voorkeur: ${preferences[0]}`;
+  const preferred = dominantStartPreference(party.members.filter(member => member.status === "submitted"));
+  return preferred ? `Voorkeurstijd: ${time(preferred)}` : "Geen voorkeur";
 }
 export function matchingMembers(party: TogetherParty, query: string) {
   const needle = query.trim().toLocaleLowerCase("nl");

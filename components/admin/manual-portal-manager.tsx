@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type World = { id: string; slug: string; name: string };
 type Portal = {
+  maintenanceDraft?: Partial<Draft> | null;
   locationSource: "address" | "manual"; walkingConnectionVerified?:boolean; id: string; systemCode: string; name: string; world: string; worldSlug: string; color: string | null; description: string;
   lifecycleStatus: "concept" | "registered" | "approved" | "active" | "archived"; approvalStatus: Draft["approvalStatus"]; operationStatus: string;
   recordSource: "resident_registration" | "manual"; contactName: string | null; phone: string | null; email: string | null;
@@ -50,7 +51,7 @@ function empty(worlds: World[]): Draft {
 }
 function fromPortal(portal: Portal): Draft {
   const number = portal.systemCode.match(/\d+/)?.[0] ?? "";
-  return { ...empty([]), id: portal.id, version: portal.version, systemNumber: number, name: portal.name, worldSlug: portal.worldSlug,
+  const base: Draft = { ...empty([]), id: portal.id, version: portal.version, systemNumber: number, name: portal.name, worldSlug: portal.worldSlug,
     color: portal.color ?? "#d59658", description: portal.description, street: portal.street ?? "", houseNumber: portal.houseNumber ?? "", addition: portal.addition ?? "",
     intensity: String(portal.intensity), accessibilityNotes: portal.accessibilityNotes ?? "", internalNotes: portal.internalNotes ?? "",
     visitMinutes: String(portal.visitMinutes ?? 5), bufferMinutes: String(portal.bufferMinutes ?? 2),
@@ -61,6 +62,11 @@ function fromPortal(portal: Portal): Draft {
     approvalStatus: portal.approvalStatus,
     operationStatus: portal.operationStatus as Draft["operationStatus"],
     candidateStartPoint: portal.candidateStartPoint, isFinal: portal.isFinal };
+  const saved = portal.maintenanceDraft;
+  if (!saved) return base;
+  return {...base,...saved,id:portal.id,version:portal.version,
+    plannedOpensAt: localDateTime(Object.hasOwn(saved,"plannedOpensAt") ? saved.plannedOpensAt??null : portal.plannedOpensAt),plannedClosesAt:localDateTime(Object.hasOwn(saved,"plannedClosesAt") ? saved.plannedClosesAt??null : portal.plannedClosesAt),
+    ...Object.fromEntries(["systemNumber","intensity","latitude","longitude","maxGroups","maxChildren","visitMinutes","bufferMinutes"].map(key => [key, String(Object.hasOwn(saved,key) ? saved[key as keyof Draft]??"" : base[key as keyof Draft]??"")]))};
 }
 
 export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPortalId }: { eventSlug: string; worlds: World[]; onChanged: () => void; initialPortalId?: string }) {
@@ -85,7 +91,7 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
   }, [eventSlug, initialPortalId]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
-  async function save() {
+  async function save(mode: "draft" | "activate" = "activate") {
     if (!draft || busy) return;
     setTimeError("");
     const original = portals.find((portal) => portal.id === draft.id);
@@ -101,7 +107,7 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
       setTimeError("De sluitingstijd is geen eenduidig Nederlands tijdstip. Kies een geldige datum en tijd; een overgeslagen of dubbel uur bij de zomer-/wintertijdwisseling kan niet worden opgeslagen.");
       return;
     }
-    if (plannedOpensAt && plannedClosesAt && Date.parse(plannedClosesAt) <= Date.parse(plannedOpensAt)) {
+    if (mode === "activate" && plannedOpensAt && plannedClosesAt && Date.parse(plannedClosesAt) <= Date.parse(plannedOpensAt)) {
       setTimeError("De sluitingstijd moet na de openingstijd liggen. Alle tijden worden verwerkt als Nederlandse tijd (Europe/Amsterdam).");
       return;
     }
@@ -110,6 +116,8 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
     try {
     const payload = {
       ...draft,
+      saveMode: mode,
+      lifecycleStatus: mode === "draft" ? original?.lifecycleStatus === "active" ? "active" : "concept" : draft.lifecycleStatus,
       systemNumber: draft.systemNumber ? Number(draft.systemNumber) : null,
       intensity: Number(draft.intensity), latitude: draft.latitude ? Number(draft.latitude) : null,
       longitude: draft.longitude ? Number(draft.longitude) : null,
@@ -125,15 +133,18 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
     if (error?.message.includes("STALE_VERSION")) await load();
     if (error) setTimeError(`Opslaan geweigerd: ${commandError(error.message)}`);
     else if (!data?.id || !Number.isInteger(data.version)) setTimeError("De server heeft de opslag niet bevestigd. Vernieuw en controleer de poort; je invoer is bewaard.");
-    else { setNotice(draft.id ? "Poort bijgewerkt." : "Poort aangemaakt met een stabiele poortcode."); setDraft(null); await load(); onChanged(); }
+    else { setNotice(data.draftSaved ? "Onderhoudsconcept bewaard. De live poortstatus is behouden; rond de gegevens af voordat je activeert." : mode === "draft" ? "Concept opgeslagen. Onvolledige beschikbaarheid is nog niet actief." : draft.id ? "Poort bijgewerkt." : "Poort aangemaakt met een stabiele poortcode."); setDraft(null); await load(); onChanged(); }
     } catch { setTimeError("Opslag niet bevestigd. Controleer de verbinding en probeer opnieuw; je invoer is bewaard."); }
     finally { setBusy(false); }
   }
 
   async function remove(portal: Portal) {
     if (busy) return;
-    if (!window.confirm(`${portal.systemCode} · ${portal.name} verwijderen? De poort verdwijnt uit het actieve beheer. Bestaande aanmeldingen, teams en bezoekhistorie blijven bewaard door archivering. Een ongebruikte handmatige conceptpoort wordt permanent verwijderd. Verwijderen wordt geblokkeerd zolang groepen of de eindpoortconfiguratie deze poort gebruiken.`)) return;
     const client = createClient(); if (!client) return;
+    const impact = await client.schema("api").rpc("admin_portal_change_impact", {_portal_id:portal.id});
+    if(impact.error){setNotice(commandError(impact.error.message));return;}
+    const summary = `${impact.data.draftGroups.length} conceptafspraken, ${impact.data.publishedGroups.length} gepubliceerde afspraken, ${impact.data.pendingStops} huidige/pending stops, ${impact.data.reservations} reserveringen${impact.data.finale ? ", ingestelde finale" : ""}.`;
+    if (!window.confirm(`${summary} ${portal.systemCode} · ${portal.name} verwijderen? De poort verdwijnt uit het actieve beheer. Bestaande aanmeldingen, teams en bezoekhistorie blijven bewaard door archivering. Een ongebruikte handmatige conceptpoort wordt permanent verwijderd. Verwijderen wordt geblokkeerd zolang groepen of de eindpoortconfiguratie deze poort gebruiken.`)) return;
     setBusy(true);
     const { data, error } = await client.schema("api").rpc("admin_manual_portal_remove", {
       _portal_id: portal.id, _expected_version: portal.version, _reason: "Poort verwijderd uit actief beheer door de organisatie",
@@ -148,6 +159,11 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
 
   async function setStartPoint(portal: Portal, enabled: boolean) {
     const client = createClient(); if (!client || busy) return;
+    if(!enabled){
+      const impact=await client.schema("api").rpc("admin_portal_change_impact",{_portal_id:portal.id});
+      if(impact.error){setNotice(commandError(impact.error.message));return;}
+      if(!window.confirm(`Niet meer als startpunt gebruiken? ${impact.data.draftGroups.length} conceptafspraken en ${impact.data.publishedGroups.length} gepubliceerde afspraken zijn gekoppeld. De gewone poort, QR en historie blijven behouden. Gepubliceerde afspraken blijven geldig tot je ze expliciet vervangt via Startregie.`))return;
+    }
     setBusy(true);
     const { error } = await client.schema("api").rpc("admin_portal_start_point_set", {
       _portal_id: portal.id, _enabled: enabled, _expected_version: portal.version,
@@ -199,7 +215,7 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
         <section><h4>Geplande beschikbaarheid</h4>{draft.id && (portals.find((portal) => portal.id === draft.id)?.windowCount ?? 0) > 1 && <p>Deze poort heeft meerdere tijdvakken. Bestaande tijdvakken blijven behouden; pas hier alleen de overige poortgegevens aan.</p>}<div className="settings-grid"><label className="field"><span>Live avondstatus</span><select value={draft.operationStatus} onChange={(event) => setDraft({ ...draft, operationStatus: event.target.value as Draft["operationStatus"] })}><option value="scheduled">Onbekend / nog niet gestart</option><option value="open">Open</option><option value="paused">Pauze</option><option value="closed">Gestopt</option></select></label><label className="field"><span>Opent</span><input type="datetime-local" value={draft.plannedOpensAt} onChange={(event) => setDraft({ ...draft, plannedOpensAt: event.target.value })} /></label><label className="field"><span>Sluit</span><input type="datetime-local" value={draft.plannedClosesAt} onChange={(event) => setDraft({ ...draft, plannedClosesAt: event.target.value })} /></label><label className="field"><span>Groepen tegelijk</span><input type="number" min={1} value={draft.maxGroups} onChange={(event) => setDraft({ ...draft, maxGroups: event.target.value })} /></label><label className="field"><span>Kinderen per bezoek</span><input type="number" min={1} value={draft.maxChildren} onChange={(event) => setDraft({ ...draft, maxChildren: event.target.value })} /></label><label className="field"><span>Bezoekduur</span><input type="number" min={1} value={draft.visitMinutes} onChange={(event) => setDraft({ ...draft, visitMinutes: event.target.value })} /></label><label className="field"><span>Buffer</span><input type="number" min={0} value={draft.bufferMinutes} onChange={(event) => setDraft({ ...draft, bufferMinutes: event.target.value })} /></label></div></section>
         <section><h4>Beheer</h4><label className="field"><span>Interne notities</span><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} /></label><label className="field"><span>Startpunt</span><select value={draft.candidateStartPoint ? "yes" : "no"} onChange={(event) => setDraft({ ...draft, candidateStartPoint: event.target.value === "yes" })}><option value="no">Nee</option><option value="yes">Ja</option></select></label><label className="check-row"><input type="checkbox" checked={draft.isFinal} onChange={(event) => setDraft({ ...draft, isFinal: event.target.checked, confirmFinal: false })} /><span>Instellen als eindpoort</span></label>{changesFinalPortal && <label className="check-row critical"><input type="checkbox" checked={draft.confirmFinal} onChange={(event) => setDraft({ ...draft, confirmFinal: event.target.checked })} /><span>Ik begrijp dat dit de eindpoortconfiguratie wijzigt.</span></label>}</section>
       </div>
-      {activationMissing.length > 0 && <p className="form-warning" role="alert">Voor een actieve poort: {activationMissing.join(" ")}</p>}{timeError && <p className="form-warning" role="alert">{timeError}</p>}<footer>{draft.id && <button className="text-link danger" type="button" disabled={busy} onClick={() => { const portal = portals.find((item) => item.id === draft.id); if (portal) void remove(portal); }}><Trash2 />Poort verwijderen</button>}<button className="btn outline" disabled={busy} type="button" onClick={() => setDraft(null)}>Annuleren</button><button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug || activationMissing.length > 0 || (changesFinalPortal && !draft.confirmFinal)} onClick={() => void save()}><Save />Poort opslaan</button></footer>
+      {activationMissing.length > 0 && <p className="form-warning" role="alert">Voor een actieve poort: {activationMissing.join(" ")}</p>}{timeError && <p className="form-warning" role="alert">{timeError}</p>}<footer>{draft.id && <button className="text-link danger" type="button" disabled={busy} onClick={() => { const portal = portals.find((item) => item.id === draft.id); if (portal) void remove(portal); }}><Trash2 />Poort verwijderen</button>}<button className="btn outline" disabled={busy} type="button" onClick={() => setDraft(null)}>Annuleren</button><button className="btn outline" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug} onClick={() => void save("draft")}>Concept opslaan</button><button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug || activationMissing.length > 0 || (changesFinalPortal && !draft.confirmFinal)} onClick={() => void save()}><Save />Activeren / gegevens afronden</button></footer>
     </aside></div>}
   </div>;
 }

@@ -1,3 +1,5 @@
+import { dominantStartPreference } from "./start-preference";
+
 export type CompositionRegistration = {
   id: string;
   reference: string;
@@ -10,6 +12,7 @@ export type CompositionRegistration = {
   preferredStartAt: string | null;
   desiredEndAt: string | null;
   assignmentPublished: boolean;
+  paymentEligible?: boolean;
 };
 export type CompositionItem = {
   id: string;
@@ -72,7 +75,7 @@ export const itemRepresentative = (item: CompositionItem) =>
 export type PreferenceSummary =
   | { kind: "none" }
   | { kind: "same"; value: string }
-  | { kind: "mixed" };
+  | { kind: "mixed"; value: string };
 export function preferenceSummary(item: CompositionItem): PreferenceSummary {
   const values = [
     ...new Set(
@@ -85,7 +88,7 @@ export function preferenceSummary(item: CompositionItem): PreferenceSummary {
     ? { kind: "none" }
     : values.length === 1
       ? { kind: "same", value: values[0] }
-      : { kind: "mixed" };
+      : { kind: "mixed", value: dominantStartPreference(item.registrations)! };
 }
 export function itemMatches(item: CompositionItem, query: string) {
   const needle = query.trim().toLocaleLowerCase("nl");

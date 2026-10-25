@@ -71,13 +71,14 @@ describe("group and finale planner", () => {
     expect(result.groups[0]).toMatchObject({ partyIds: ["a", "b"], startId: "start-a", preferenceMatch: "good" });
   });
 
-  it("reports conflicting preferences inside one linked party", () => {
+  it("retains linked parties with different soft preferences", () => {
     const result = proposePlan({ ...base, parties: [
       { id: "a", childCount: 2, togetherKey: "same", startPreference: "early" },
       { id: "b", childCount: 2, togetherKey: "same", startPreference: "later" },
     ] });
-    expect(result.groups).toEqual([]);
-    expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "START_PREFERENCE_CONFLICT" }));
+    expect(result.groups).toHaveLength(1);
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups[0].partyIds).toEqual(["a", "b"]);
   });
 
   it("uses the earliest personal or global stop without a fixed visit count", () => {
@@ -97,7 +98,8 @@ describe("group and finale planner", () => {
       finaleLastArrivalAt: "2026-10-31T20:41:00+01:00",
       finaleMaxGroups: 1,
     });
-    expect(result.groups).toEqual([]);
+    expect(result.groups).toHaveLength(1);
+    expect(result.conflicts).toHaveLength(3);
     expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "FINALE_CAPACITY_EXCEEDED" }));
   });
 

@@ -57,13 +57,14 @@ test("mobile organization and participant complete the destination sequence with
   await card.getByRole("combobox",{name:`Startpunt voor ${group.systemCode}`}).selectOption(pointId);
   await card.getByRole("combobox",{name:`Starttijd voor ${group.systemCode}`}).selectOption({label:"17:30 uur"});
   await card.getByRole("button",{name:"Concept opslaan"}).click();
-  await card.getByRole("button",{name:"Start bevestigen"}).click();
+  await card.getByRole("button",{name:"Startafspraken bevestigen en versturen"}).click();
+  await page.getByRole("dialog").getByRole("button",{name:"Startafspraken bevestigen en versturen",exact:true}).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
   await card.getByRole("button",{name:"Poortvolgorde controleren"}).click();
   const preview=page.getByRole("dialog");await expect(preview).toContainText("Privé poortvolgorde");await expect(preview).toContainText("hemelsbreed");
   expect(await preview.locator(".start-ops-route-stops li").count()).toBeGreaterThan(2);await assertReadableLayout(page);
   await mkdir("docs/ops/screenshots",{recursive:true});await page.screenshot({path:"docs/ops/screenshots/sequence-admin-390.png"});
-  await page.keyboard.press("Escape");await card.getByRole("checkbox").check();
-  await page.getByRole("button",{name:"1 starttijd(en) publiceren"}).click();await page.getByRole("dialog").getByRole("button",{name:"Starttijden publiceren",exact:true}).click();
+  await page.keyboard.press("Escape");
   await expect(card).toContainText("Starttijd gepubliceerd");await page.reload();await expect(card).toContainText("Starttijd gepubliceerd");
   const after=await snapshot();expect(after.ops.groups.filter((g:{state:string})=>g.state==="unassigned")).toHaveLength(unassigned-1);
   expect(after.startPoints.find((p:{id:string})=>p.id===manualPoint.id).readiness.location.source).toBe("manual");

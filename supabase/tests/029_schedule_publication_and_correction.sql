@@ -63,12 +63,9 @@ where registration_id = '22000000-0000-0000-0000-000000000001';
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-select throws_ok(
-  $$ select pg_temp.publish_current_schedule(
-    array[(select first_id from schedule_state)],
-    'Publicatiepoging voor nog niet betaalde groep'
-  ) $$,
-  '23514', 'PAYMENT_NOT_CONFIRMED', 'unpaid applications can be estimated but never published'
+select lives_ok(
+ $$select api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000001',1,pg_temp.event_settings_version())$$,
+ 'unpaid applications can confirm a valid start without altering financial status'
 );
 
 set local role postgres;
@@ -100,7 +97,7 @@ select is(
 
 set local role postgres;
 select is(
-  (select count(*)::integer from app_private.email_outbox where dedupe_key like 'group-schedule:23000000-0000-0000-0000-000000000001:1:%'),
+  (select count(*)::integer from app_private.email_outbox where payload->>'groupId'='23000000-0000-0000-0000-000000000001' and message_type in ('group_schedule_published','group_schedule_corrected')),
   1,
   'publication queues one confirmation message for each authorized adult and revision'
 );
@@ -169,17 +166,17 @@ select is(
   'publishing a correction explicitly supersedes the prior revision'
 );
 select is(
-  (select count(*)::integer from app_private.email_outbox where dedupe_key like 'group-schedule:23000000-0000-0000-0000-000000000001:%'),
+  (select count(*)::integer from app_private.email_outbox where payload->>'groupId'='23000000-0000-0000-0000-000000000001' and message_type in ('group_schedule_published','group_schedule_corrected')),
   2,
-  'the correction adds exactly one distinct correction message without duplicating the first mail'
+  'a real time change keeps an auditable superseded event and one new notification'
 );
 select is(
-  (select message_type from app_private.email_outbox where dedupe_key like 'group-schedule:23000000-0000-0000-0000-000000000001:2:%'),
-  'group_schedule_corrected',
-  'the second revision is clearly identified as a correction'
+  (select api.worker_group_schedule_mail_payload(id)->>'messageType' from app_private.email_outbox where payload->>'groupId'='23000000-0000-0000-0000-000000000001' and message_type in ('group_schedule_published','group_schedule_corrected') and status='pending' order by created_at desc limit 1),
+  'group_schedule_published',
+  'an unsent earlier time is not presented as a recipient-known correction'
 );
 select matches(
-  (select payload ->> 'actionPath' from app_private.email_outbox where dedupe_key like 'group-schedule:23000000-0000-0000-0000-000000000001:2:%'),
+  (select payload ->> 'actionPath' from app_private.email_outbox where payload->>'groupId'='23000000-0000-0000-0000-000000000001' and message_type in ('group_schedule_published','group_schedule_corrected') and status='pending' order by created_at desc limit 1),
   '^/omgeving/',
   'schedule mail links to the private participant environment without future portal addresses'
 );

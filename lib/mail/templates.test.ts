@@ -44,9 +44,9 @@ const completePayload = {
 };
 
 describe("premium transactional mail catalog", () => {
-  it("renders every one of the 40 catalog keys as bounded HTML and matching plaintext", () => {
-    expect(MAIL_MESSAGE_TYPES).toHaveLength(40);
-    expect(new Set(MAIL_MESSAGE_TYPES).size).toBe(40);
+  it("renders every one of the 42 catalog keys as bounded HTML and matching plaintext", () => {
+    expect(MAIL_MESSAGE_TYPES).toHaveLength(42);
+    expect(new Set(MAIL_MESSAGE_TYPES).size).toBe(42);
 
     for (const messageType of MAIL_MESSAGE_TYPES) {
       const rendered = renderTransactionalMail({ messageType, payload: completePayload });
@@ -247,8 +247,8 @@ describe("premium transactional mail catalog", () => {
       messageType: "group_schedule_published",
       payload: completePayload,
     });
-    expect(schedule.text).toContain("Tesselseplein");
-    expect(schedule.text).toContain("Besloten startadres 1");
+    expect(schedule.text).not.toContain("Tesselseplein");
+    expect(schedule.text).not.toContain("Besloten startadres 1");
     expect(schedule.text).toContain("31 oktober 2026 om 17:30");
     expect(schedule.text).toContain("Geen nieuwe gewone poorten vanaf: 31 oktober 2026 om 19:30");
 

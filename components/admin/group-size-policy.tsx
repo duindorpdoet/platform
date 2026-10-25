@@ -20,7 +20,7 @@ export function GroupSizePolicy({eventSlug,maximum,target,followsMaximum,setting
  const [notice,setNotice]=useState("");
  const rawMaximum=maximumDraft??String(maximum),rawTarget=targetDraft??String(target);
  const follow=followDraft??followsMaximum;
- const nextMaximum=parseGroupSize(rawMaximum),nextTarget=follow?nextMaximum:parseGroupSize(rawTarget);
+ const nextMaximum=parseGroupSize(rawMaximum),nextTarget=follow?(nextMaximum===null?null:Math.min(15,nextMaximum)):parseGroupSize(rawTarget);
  const valid=nextMaximum!==null&&nextTarget!==null&&nextTarget<=nextMaximum;
  const changed=nextMaximum!==maximum||nextTarget!==target||follow!==followsMaximum;
  const impacted=Boolean(impact&&(impact.groups.length||impact.parties.length));
@@ -60,7 +60,7 @@ export function GroupSizePolicy({eventSlug,maximum,target,followsMaximum,setting
   <p>Geldt voor wandelgroepen, samenlopen en nieuwe indelingen. De capaciteit van startpunten, poorten en de finale blijft apart gelden.</p>
   <label className="field"><span>Aantal kinderen per groep</span><input type="number" min={1} step={1} value={rawMaximum} disabled={busy} aria-describedby="group-size-validation" onChange={event=>{setMaximumDraft(event.target.value);invalidate();}}/></label>
   {nextMaximum===null&&<p id="group-size-validation" role="alert">Vul een heel aantal kinderen van minimaal 1 in. De technische opslaggrens is 2.147.483.647.</p>}
-  <label className="checkfield"><input type="checkbox" checked={follow} disabled={busy} onChange={event=>{setFollowDraft(event.target.checked);invalidate();}}/>Streefaantal volgt het maximum</label>
+  <label className="checkfield"><input type="checkbox" checked={follow} disabled={busy} onChange={event=>{setFollowDraft(event.target.checked);invalidate();}}/>Standaard streef 15 gebruiken (begrensd door het evenementmaximum)</label>
   {!follow&&<label className="field"><span>Streefaantal kinderen per groep</span><input type="number" min={1} step={1} value={rawTarget} disabled={busy} onChange={event=>{setTargetDraft(event.target.value);invalidate();}}/></label>}
   {!follow&&(nextTarget===null||(nextMaximum!==null&&nextTarget>nextMaximum))&&<p role="alert">Vul een heel streefaantal in tussen 1 en het groepsmaximum.</p>}
   <label className="field"><span>Reden voor de wijziging</span><textarea minLength={10} maxLength={500} value={reason} disabled={busy} onChange={event=>setReason(event.target.value)}/></label>

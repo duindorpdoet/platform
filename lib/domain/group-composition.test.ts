@@ -105,11 +105,11 @@ describe("group composition clusters", () => {
     expect(
       preferenceSummary(
         compositionItems([
-          registration("1", "p", 1, { preferredStartAt: "a" }),
-          registration("2", "p", 1, { preferredStartAt: "b" }),
+          registration("1", "p", 1, { preferredStartAt: "2026-10-31T17:30:00Z" }),
+          registration("2", "p", 1, { preferredStartAt: "2026-10-31T18:00:00Z" }),
         ])[0],
       ),
-    ).toEqual({ kind: "mixed" });
+    ).toEqual({ kind: "mixed", value: "2026-10-31T17:30:00.000Z" });
   });
   it("blocks a whole cluster for published, locked, inconsistent, and full destinations", () => {
     const item = compositionItems([

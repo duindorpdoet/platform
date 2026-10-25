@@ -1246,7 +1246,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
                 </article>
                 {(capabilities.includes("event_admin") ||
                   capabilities.includes("groups_manage")) && (
-                  <GroupSizePolicy eventSlug={eventSlug} maximum={dashboard.event.maxGroupSize} target={dashboard.event.targetGroupSize??dashboard.event.maxGroupSize} followsMaximum={dashboard.event.targetFollowsMaximum??true} settingsVersion={dashboard.event.settingsVersion} onSaved={async()=>{await Promise.all([load(),loadTogetherRequests()]);}} onOpenGroups={()=>openSection('groups')}/>
+                  <GroupSizePolicy eventSlug={eventSlug} maximum={dashboard.event.maxGroupSize} target={dashboard.event.targetGroupSize??Math.min(15,dashboard.event.maxGroupSize)} followsMaximum={dashboard.event.targetFollowsMaximum??false} settingsVersion={dashboard.event.settingsVersion} onSaved={async()=>{await Promise.all([load(),loadTogetherRequests()]);}} onOpenGroups={()=>openSection('groups')}/>
                 )}
                 {capabilities.includes("event_admin") && <article className="panel registration-channel">
                   <BellRing />
@@ -1614,7 +1614,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
         {section === "together" && canManageTogether && <TogetherManagement eventSlug={eventSlug} />}
         {section === "poortenboek" && canManageGroups && <PoortenboekAdmin />}
-        {section === "groups" && (capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && <GroupCompositionBoard eventSlug={eventSlug} />}
+        {section === "groups" && (capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && <GroupCompositionBoard onOpenStarts={()=>openSection("planner")} eventSlug={eventSlug} />}
         {section === "planner" && <StartScheduleBoard eventSlug={eventSlug} maxGroupSize={dashboard.event.maxGroupSize} onOpenPortals={() => setSection("portals")} />}
         {section === "live" && (
           <div className="admin-live-cockpit">

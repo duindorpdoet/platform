@@ -127,7 +127,7 @@ test("group composition shows the cluster number and moves every member with one
   const client = await authenticate(context);
   const group = await client.schema("api").rpc("admin_group_create", { _event_slug: slug, _display_name: "Cluster samen verplaatsen" }); expect(group.error).toBeNull();
   const moves: Array<Record<string, unknown>> = [];
-  await page.route("**/rest/v1/rpc/admin_group_move_registration", async (route) => { moves.push(route.request().postDataJSON()); await route.continue(); });
+  await page.route("**/rest/v1/rpc/admin_group_operations_apply", async (route) => { const command=route.request().postDataJSON();if(command._action==="move")moves.push({_registration_id:command._payload.registrationId}); await route.continue(); });
   await page.goto("/admin"); await section(page, "Groepsindeling");
   await page.getByRole("textbox", { name: "Zoek in groepsindeling" }).fill(party.clusterReference!);
   const card = page.locator(".group-registration-card").filter({ hasText: party.clusterReference! });

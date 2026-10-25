@@ -18,9 +18,9 @@ describe("together organizer view", () => {
     }
     expect(matchingMembers(party, "")).toEqual([]);
   });
-  it("summarizes the entire preference window including differing end times", () => {
-    expect(partyPreference(party)).toBe("Voorkeur: 18:00–20:30");
-    expect(partyPreference({ ...party, members: party.members.map((m, i) => ({ ...m, desiredEndAt: i ? null : m.desiredEndAt })) })).toBe("Verschillende voorkeurstijden");
+  it("uses the shared dominant start preference independently of desired end times", () => {
+    expect(partyPreference(party)).toBe("Voorkeurstijd: 18:00");
+    expect(partyPreference({ ...party, members: party.members.map((m, i) => ({ ...m, desiredEndAt: i ? null : m.desiredEndAt })) })).toBe("Voorkeurstijd: 18:00");
     expect(partyPreference({ ...party, members: party.members.map((m) => ({ ...m, preferredStartAt: null, desiredEndAt: null })) })).toBe("Geen voorkeur");
   });
   it("shows group conflicts and asks for renewed preview on stale data", () => {
