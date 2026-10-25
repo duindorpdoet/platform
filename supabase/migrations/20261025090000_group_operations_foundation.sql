@@ -556,7 +556,7 @@ begin
    join app_private.registration_children c on c.registration_id=a.registration_id and c.participation_status='active'
    where a.group_id=g.id and a.superseded_at is null),'status',g.status,'version',g.version,
   'published',exists(select 1 from app_private.group_registrations a where a.group_id=g.id and a.superseded_at is null and a.published_at is not null)) order by g.id),'[]')
- into groups from app_private.walking_groups g where g.event_id=_event;
+ into groups from app_private.walking_groups g where g.event_id=_event and g.retired_at is null;
  select coalesce(jsonb_agg(jsonb_build_object('id',p.id,'code',p.cluster_reference,
   'childCount',app_private.together_party_child_count(p.id),'locked',p.locked_at is not null,
   'members',coalesce((select jsonb_agg(m.registration_id order by m.registration_id) from app_private.together_memberships m where m.party_id=p.id and m.left_at is null),'[]')) order by p.id),'[]')

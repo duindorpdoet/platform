@@ -4,7 +4,10 @@ import { readFileSync } from "node:fs";
 export function requireLocalTogetherDatabase() {
   const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url || !["127.0.0.1", "localhost", "::1"].includes(new URL(url).hostname)) throw new Error("Together acceptance only permits an isolated local Supabase URL");
-  const container = process.env.TOGETHER_TEST_DB_CONTAINER ?? "supabase_db_duindorphalloween";
+  const explicitContainer = process.env.TOGETHER_TEST_DB_CONTAINER;
+  const configuredApiPort = readFileSync("supabase/config.toml", "utf8").match(/\[api\][\s\S]*?^port\s*=\s*(\d+)/m)?.[1];
+  if (!explicitContainer && new URL(url).port !== configuredApiPort) throw new Error("A non-default local Supabase URL requires an explicit TOGETHER_TEST_DB_CONTAINER before fixtures can be written");
+  const container = explicitContainer ?? "supabase_db_duindorphalloween";
   if (!/^supabase_db_[a-zA-Z0-9_-]+$/.test(container)) throw new Error("Invalid local test container");
   return container;
 }

@@ -706,3 +706,221 @@ begin
 end;
 $function$
 ;
+
+CREATE OR REPLACE FUNCTION api.admin_live_snapshot(_event_slug text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare actor uuid := auth.uid(); v_event_id uuid;
+begin
+  select id into v_event_id from app_private.events where slug = _event_slug;
+  if v_event_id is null or not app_private.has_capability(v_event_id, 'live_support', actor) then raise exception 'NOT_AUTHORIZED' using errcode = '42501'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object(
+    'groupId', walking_group.id,
+    'groupCode', walking_group.code,
+    'groupVersion', walking_group.version,
+    'leaderEmail', (
+      select lower(users.email)
+      from app_private.group_leaders leader
+      join auth.users users on users.id = leader.user_id
+      where leader.group_id = walking_group.id and leader.active_until is null
+      order by leader.revision desc limit 1
+    ),
+    'runId', run.id,
+    'runStatus', run.status,
+    'runVersion', run.version,
+    'stopId', run.current_stop_id,
+    'portalName', (
+      select portal.name
+      from app_private.run_stops stop
+      join app_private.route_plan_stops plan_stop on plan_stop.id = stop.plan_stop_id
+      join app_private.portals portal on portal.id = plan_stop.portal_id
+      where stop.id = run.current_stop_id
+    )
+  ) order by walking_group.code)
+  from app_private.walking_groups walking_group
+  join app_private.group_runs run on run.group_id = walking_group.id and run.status in ('live', 'paused')
+  where walking_group.retired_at is null and walking_group.event_id = v_event_id), '[]'::jsonb);
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION app_private.admin_dashboard_before_group_capacity(_event_slug text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  actor uuid := auth.uid();
+  v_event_id uuid;
+begin
+  select id into v_event_id from app_private.events where slug = _event_slug;
+  if v_event_id is null or not (
+    app_private.has_capability(v_event_id, 'event_admin', actor)
+    or app_private.has_capability(v_event_id, 'registration_manage', actor)
+    or app_private.has_capability(v_event_id, 'portals_manage', actor)
+    or app_private.has_capability(v_event_id, 'groups_manage', actor)
+    or app_private.has_capability(v_event_id, 'live_support', actor)
+  ) then raise exception 'NOT_AUTHORIZED' using errcode = '42501'; end if;
+  return jsonb_build_object(
+    'event', (select jsonb_build_object(
+      'id', id,
+      'title', title,
+      'phase', phase,
+      'date', local_date,
+      'settingsVersion', settings_version,
+      'groupRegistrationOpen', coalesce((settings ->> 'groupRegistrationOpen')::boolean, false),
+      'portalRegistrationOpen', coalesce((settings ->> 'portalRegistrationOpen')::boolean, true)
+    ) from app_private.events where id = v_event_id),
+    'counts', jsonb_build_object(
+      'registrations', (select count(*) from app_private.registrations where event_id = v_event_id and status = 'submitted'),
+      'children', (select count(*) from app_private.registration_children where event_id = v_event_id and participation_status = 'active'),
+      'portalApplications', (select count(*) from app_private.portal_applications where event_id = v_event_id and review_status = 'submitted'),
+      'approvedPortals', (select count(*) from app_private.portals where event_id = v_event_id and approval_status = 'approved'),
+      'groups', (select count(*) from app_private.walking_groups where retired_at is null and event_id = v_event_id),
+      'liveGroups', (select count(*) from app_private.walking_groups where retired_at is null and event_id = v_event_id and status = 'live'),
+      'openSupportCases', (select count(*) from app_private.support_cases where event_id = v_event_id and status in ('open', 'acknowledged')),
+      'unconfirmedPayments', (select count(*) from app_private.payment_requests payment join app_private.registrations registration on registration.id = payment.registration_id where registration.event_id = v_event_id and payment.status not in ('confirmed', 'waived', 'refunded'))
+    ),
+    'imports', coalesce((select jsonb_agg(jsonb_build_object('id', batch.id, 'kind', batch.kind, 'dryRun', batch.dry_run, 'status', batch.status, 'createdAt', batch.created_at) order by batch.created_at desc) from (select * from app_private.import_batches where event_id = v_event_id order by created_at desc limit 10) batch), '[]'::jsonb),
+    'recentActivity', coalesce((select jsonb_agg(jsonb_build_object('action', audit.action, 'resourceType', audit.resource_type, 'createdAt', audit.created_at) order by audit.created_at desc) from (select * from app_private.audit_events where event_id = v_event_id order by created_at desc limit 20) audit), '[]'::jsonb)
+  );
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION app_private.admin_planning_snapshot_before_group_capacity(_event_slug text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  actor uuid := auth.uid();
+  v_event_id uuid;
+begin
+  select id into v_event_id from app_private.events where slug = _event_slug;
+  if v_event_id is null or not app_private.has_capability(v_event_id, 'groups_manage', actor) then raise exception 'NOT_AUTHORIZED' using errcode = '42501'; end if;
+  return jsonb_build_object(
+    'parties', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', registration.id,
+      'childCount', (select count(*) from app_private.registration_children child where child.registration_id = registration.id and child.participation_status = 'active'),
+      'requestedStartId', registration.start_preference_id,
+      'togetherKey', membership.party_id
+    ) order by registration.id)
+    from app_private.registrations registration
+    left join app_private.together_memberships membership on membership.registration_id = registration.id and membership.left_at is null
+    where registration.event_id = v_event_id and registration.status = 'submitted'
+      and not exists (select 1 from app_private.group_registrations assignment where assignment.registration_id = registration.id and assignment.superseded_at is null)), '[]'::jsonb),
+    'starts', coalesce((select jsonb_agg(jsonb_build_object('id', slot.id, 'startsAt', slot.starts_at, 'maxGroups', slot.max_groups, 'maxChildren', slot.max_children) order by slot.starts_at, slot.id) from app_private.start_slots slot where slot.event_id = v_event_id and slot.active and slot.location_verified_at is not null), '[]'::jsonb),
+    'portals', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', portal.id, 'worldId', portal.world_id, 'opensAt', portal_window.opens_at, 'closesAt', portal_window.closes_at,
+      'visitMinutes', portal_window.visit_minutes, 'maxConcurrentGroups', portal_window.max_concurrent_groups,
+      'maxChildren', portal_window.max_children_per_visit, 'maxTotalChildren', portal_window.max_children_total
+    ) order by portal.id)
+    from app_private.portals portal
+    join lateral (select * from app_private.portal_windows candidate where candidate.portal_id = portal.id order by candidate.opens_at limit 1) portal_window on true
+    join app_private.portal_private_locations location on location.portal_id = portal.id and location.verified_at is not null
+    where portal.event_id = v_event_id and portal.approval_status = 'approved'), '[]'::jsonb),
+    'groups', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', walking_group.id,
+        'code', walking_group.code,
+        'status', walking_group.status,
+        'planId', plan.id,
+        'revision', plan.revision,
+        'planState', plan.state,
+        'portalIds', coalesce((
+          select jsonb_agg(stop.portal_id order by stop.position)
+          from app_private.route_plan_stops stop where stop.plan_version_id = plan.id
+        ), '[]'::jsonb)
+      ) order by walking_group.code)
+      from app_private.walking_groups walking_group
+      join app_private.route_plan_versions plan on plan.id = walking_group.current_plan_version_id
+      where walking_group.retired_at is null and walking_group.event_id = v_event_id
+    ), '[]'::jsonb)
+  );
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION app_private.admin_evening_cockpit_before_codes(_event_slug text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  actor uuid := auth.uid();
+  v_event_id uuid;
+begin
+  select id into v_event_id from app_private.events where slug = _event_slug;
+  if v_event_id is null or not (
+    app_private.has_capability(v_event_id, 'live_support', actor)
+    or app_private.has_capability(v_event_id, 'groups_manage', actor)
+  ) then raise exception 'NOT_AUTHORIZED' using errcode = '42501'; end if;
+  return jsonb_build_object(
+    'groups', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'groupId', walking_group.id, 'groupCode', walking_group.code, 'groupVersion', walking_group.version,
+        'status', walking_group.status, 'runId', run.id, 'runStatus', run.status, 'runVersion', run.version,
+        'currentStopId', run.current_stop_id, 'currentPortal', portal.name,
+        'currentKind', stop.stop_kind, 'lastConfirmedAt', run.updated_at,
+        'currentCoordinate', case when location.latitude is null then null else jsonb_build_array(location.longitude, location.latitude) end,
+        'leaderEmail', (select users.email from app_private.group_leaders leader
+          join auth.users users on users.id = leader.user_id
+          where leader.group_id = walking_group.id and leader.active_from <= now()
+            and (leader.active_until is null or leader.active_until > now())
+          order by leader.active_from desc limit 1),
+        'responsibleAdults', coalesce((select jsonb_agg(distinct jsonb_build_object('userId', users.id, 'email', users.email))
+          from app_private.group_registrations assignment
+          join app_private.registrations registration on registration.id = assignment.registration_id
+          join app_private.household_members member on member.household_id = registration.household_id and member.revoked_at is null
+          join auth.users users on users.id = member.user_id
+          where assignment.group_id = walking_group.id and assignment.superseded_at is null), '[]'::jsonb),
+        'elapsedSeconds', case when run.started_at is null then null else greatest(0, extract(epoch from (now() - run.started_at))::integer) end,
+        'effectiveStopAt', schedule.effective_ordinary_stop_at,
+        'expectedFinaleArrivalAt', coalesce(finale_reservation.reserved_from, schedule.expected_finale_arrival_at),
+        'childCount', (select count(*) from app_private.group_registrations assignment
+          join app_private.registration_children child on child.registration_id = assignment.registration_id and child.participation_status = 'active'
+          where assignment.group_id = walking_group.id and assignment.superseded_at is null)
+      ) order by walking_group.code)
+      from app_private.walking_groups walking_group
+      left join app_private.group_runs run on run.group_id = walking_group.id and run.status in ('ready', 'live', 'paused')
+      left join app_private.run_stops stop on stop.id = run.current_stop_id
+      left join app_private.route_plan_stops plan_stop on plan_stop.id = stop.plan_stop_id
+      left join app_private.portals portal on portal.id = coalesce(stop.portal_id, plan_stop.portal_id)
+      left join app_private.portal_private_locations location on location.portal_id = portal.id
+      left join app_private.group_schedule_revisions schedule on schedule.id = walking_group.current_schedule_revision_id
+      left join app_private.portal_reservations finale_reservation on finale_reservation.run_id = run.id
+        and finale_reservation.kind = 'finale' and finale_reservation.status in ('held', 'active')
+      where walking_group.retired_at is null and walking_group.event_id = v_event_id
+    ), '[]'::jsonb),
+    'portals', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', portal.id, 'name', portal.name, 'operationStatus', portal.operation_status, 'version', portal.version,
+        'isFinal', portal.id = settings.final_portal_id,
+        'activeReservations', (select count(*) from app_private.portal_reservations reservation
+          where reservation.portal_id = portal.id and reservation.status in ('held', 'active')),
+        'expectedChildren', (select coalesce(sum(reservation.child_count), 0) from app_private.portal_reservations reservation
+          where reservation.portal_id = portal.id and reservation.status in ('held', 'active'))
+      ) order by portal.id = settings.final_portal_id desc, portal.name)
+      from app_private.portals portal
+      join app_private.event_route_settings settings on settings.event_id = portal.event_id
+      where portal.event_id = v_event_id and portal.approval_status = 'approved'
+    ), '[]'::jsonb),
+    'alerts', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', alert.id, 'priority', alert.priority, 'code', alert.code,
+        'message', alert.message, 'groupId', alert.group_id, 'portalId', alert.portal_id,
+        'createdAt', alert.created_at
+      ) order by case alert.priority when 'urgent' then 0 when 'warning' then 1 else 2 end, alert.created_at)
+      from app_private.route_alerts alert where alert.event_id = v_event_id and alert.status = 'open'
+    ), '[]'::jsonb)
+  );
+end;
+$function$
+;

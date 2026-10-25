@@ -27,6 +27,8 @@ select is(api.admin_group_operations_apply('duindorp-halloween-2026','reset',imp
 select is((select count(*)::integer from app_private.walking_groups where event_id=(select eid from test_ops) and retired_at is null),0,'no active groups after reset');
 select is(jsonb_array_length(api.admin_group_composition_snapshot('duindorp-halloween-2026')->'groups'),0,'retired groups absent from kanban');
 select is(jsonb_array_length(api.admin_startregie_snapshot('duindorp-halloween-2026')->'groups'),0,'retired groups absent from start planning');
+select is((api.admin_dashboard('duindorp-halloween-2026')#>>'{counts,groups}')::integer,0,'dashboard counts only current groups after reset');
+select is(jsonb_array_length(api.admin_evening_cockpit('duindorp-halloween-2026')->'groups'),0,'live cockpit excludes explicitly retired groups');
 select is((select count(*)::integer from app_private.group_registrations where superseded_at is null),0,'all current memberships ended');
 select is((select md5(jsonb_agg(to_jsonb(p) order by p.publication_order)::text) from app_private.group_start_publications p),(select hash from preserved where kind='publications'),'immutable publications retained');
 select is((select count(*)::integer from app_private.walking_groups where app_private.published_start_projection(id) is not null),0,'withdrawn participant instructions are not valid');
