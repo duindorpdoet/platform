@@ -4,7 +4,44 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-export const startLocationInventoryQuery = `select jsonb_build_object(
+// The Management API read-only role can read private data but intentionally
+// cannot execute the application's private SECURITY DEFINER functions. Derive
+// diagnostic facts using SELECTs only; never broaden application grants.
+export const startLocationInventoryQuery = `with positions as (
+  select 'start_point'::text kind,p.id,p.event_id,p.marker_latitude,p.marker_longitude,p.geocoded_latitude,p.geocoded_longitude,p.latitude,p.longitude
+    from app_private.start_points p where p.event_id in (select id from app_private.events where slug='duindorp-halloween-2026')
+  union all
+  select 'portal',p.id,p.event_id,l.marker_latitude,l.marker_longitude,l.geocoded_latitude,l.geocoded_longitude,l.latitude,l.longitude
+    from app_private.portals p left join app_private.portal_private_locations l on l.portal_id=p.id
+      where p.event_id in (select id from app_private.events where slug='duindorp-halloween-2026')
+), effective as (
+  select kind,id,event_id,
+    case when marker_latitude is not null or marker_longitude is not null then 'manual' else 'address' end source,
+    case when marker_latitude is not null or marker_longitude is not null then marker_latitude
+      when geocoded_latitude is not null or geocoded_longitude is not null then geocoded_latitude else latitude end lat,
+    case when marker_latitude is not null or marker_longitude is not null then marker_longitude
+      when geocoded_latitude is not null or geocoded_longitude is not null then geocoded_longitude else longitude end lon
+  from positions
+), valid_positions as (
+  select *,coalesce(lat between -90 and 90 and lon between -180 and 180,false) valid from effective
+), point_reasons as (
+  select p.id,own.source,own.lat,own.lon,own.valid,portal.name linked_name,
+    case when not own.valid then case when own.lat is null and own.lon is null then 'START_POINT_POSITION_MISSING' else 'START_POINT_POSITION_INVALID' end
+      when p.linked_portal_id is not null and (portal.id is null or portal.lifecycle_status='archived') then 'LINKED_PORTAL_NOT_AVAILABLE'
+      when p.linked_portal_id is not null and p.counts_as_first_portal_visit and not coalesce(linked.valid,false) then 'LINKED_START_PORTAL_POSITION_INVALID'
+      else null end reason
+  from app_private.start_points p join valid_positions own on own.kind='start_point' and own.id=p.id
+  left join app_private.portals portal on portal.id=p.linked_portal_id and portal.event_id=p.event_id
+  left join valid_positions linked on linked.kind='portal' and linked.id=portal.id
+), point_facts as (
+  select r.*,r.reason is null can_confirm,
+    p.active and r.reason is null and n.id is not null and n.verified_at is not null
+      and exists(select 1 from app_private.walking_edges edge where edge.event_id=p.event_id and edge.approved_at is not null and edge.closed_at is null
+        and (edge.from_node_id=n.id or edge.to_node_id=n.id)) route_ready
+  from point_reasons r join app_private.start_points p on p.id=r.id
+  left join app_private.walking_nodes n on n.id=p.walking_node_id and n.event_id=p.event_id
+)
+select jsonb_build_object(
   'eventId',e.id,'eventSlug',e.slug,
   'latestMigration',(select max(version) from supabase_migrations.schema_migrations),
   'walkingNodeCount',(select count(*) from app_private.walking_nodes where event_id=e.id),
@@ -16,19 +53,21 @@ export const startLocationInventoryQuery = `select jsonb_build_object(
     'storedSource',p.location_source,'hasManualPair',p.marker_latitude is not null and p.marker_longitude is not null,
     'hasAddressPair',p.geocoded_latitude is not null and p.geocoded_longitude is not null,
     'hasLegacyPair',p.latitude is not null and p.longitude is not null,
-    'effectivePositionHash',encode(sha256(convert_to(jsonb_build_array(coalesce(p.marker_latitude,p.geocoded_latitude,p.latitude),coalesce(p.marker_longitude,p.geocoded_longitude,p.longitude))::text,'UTF8')),'hex'),
+    'effectiveSource',facts.source,'positionValid',facts.valid,
+    'effectivePositionHash',encode(sha256(convert_to(jsonb_build_array(facts.lat,facts.lon)::text,'UTF8')),'hex'),
     'walkingNodeId',p.walking_node_id,'verifiedAt',p.verified_at,'markerUpdatedAt',p.marker_updated_at,
-    'routeReady',app_private.start_point_safe_connection(p.id),
-    'readiness',app_private.start_point_readiness(p.id)-'location',
+    'routeReady',facts.route_ready,
+    'readiness',jsonb_build_object('canConfirm',facts.can_confirm,'confirmationReason',facts.reason,'linkedPortalName',facts.linked_name,'routeReady',facts.route_ready),
     'confirmationAudit',(select jsonb_build_object('createdAt',a.created_at,'version',a.minimal_change->'version','hasLocationHash',a.minimal_change ? 'locationHash')
       from app_private.audit_events a where a.event_id=e.id and a.resource_type='start_point' and a.resource_id=p.id and a.action='start_point.confirmed' order by a.created_at desc,a.id desc limit 1),
     'groupLinks',(select count(*) from app_private.walking_groups g join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id join app_private.start_slots slot on slot.id=s.start_slot_id where g.event_id=e.id and slot.start_point_id=p.id)) order by p.id)
-    from app_private.start_points p where p.event_id=e.id),'[]'::jsonb),
+    from app_private.start_points p join point_facts facts on facts.id=p.id where p.event_id=e.id),'[]'::jsonb),
   'portals',coalesce((select jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'systemCode',p.system_code,'version',p.version,
     'lifecycleStatus',p.lifecycle_status,'storedSource',l.location_source,
-    'hasPosition',coalesce(l.marker_latitude,l.geocoded_latitude,l.latitude) is not null and coalesce(l.marker_longitude,l.geocoded_longitude,l.longitude) is not null,
-    'effectivePositionHash',encode(sha256(convert_to(jsonb_build_array(coalesce(l.marker_latitude,l.geocoded_latitude,l.latitude),coalesce(l.marker_longitude,l.geocoded_longitude,l.longitude))::text,'UTF8')),'hex')) order by p.id)
-    from app_private.portals p left join app_private.portal_private_locations l on l.portal_id=p.id where p.event_id=e.id),'[]'::jsonb)) inventory
+    'hasPosition',position.lat is not null and position.lon is not null,'positionValid',position.valid,'effectiveSource',position.source,
+    'effectivePositionHash',encode(sha256(convert_to(jsonb_build_array(position.lat,position.lon)::text,'UTF8')),'hex')) order by p.id)
+    from app_private.portals p left join app_private.portal_private_locations l on l.portal_id=p.id
+      join valid_positions position on position.kind='portal' and position.id=p.id where p.event_id=e.id),'[]'::jsonb)) inventory
   from app_private.events e where e.slug='duindorp-halloween-2026'`;
 
 async function run() {

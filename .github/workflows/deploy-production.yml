@@ -23,7 +23,7 @@ concurrency:
 jobs:
   readonly-baseline:
     name: Read-only production evening baseline
-    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && github.ref == 'refs/heads/production'
+    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && (github.ref == 'refs/heads/production' || github.ref == 'refs/heads/codex/start-location-readonly-inventory')
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 5
