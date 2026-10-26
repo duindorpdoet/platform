@@ -1,5 +1,7 @@
 "use client";
 
+import { portalInstructionStatusLabel } from "@/lib/domain/portal-instructions";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Archive, Edit3, Plus, Save, ShieldAlert, Trash2, UserPlus, X } from "lucide-react";
 import { amsterdamDateTimeInput, amsterdamInputToIso } from "@/lib/time/amsterdam";
@@ -75,14 +77,14 @@ function fromPortal(portal: Portal): Draft {
     ...Object.fromEntries(["systemNumber","intensity","latitude","longitude","maxGroups","maxChildren","visitMinutes","bufferMinutes"].map(key => [key, String(Object.hasOwn(saved,key) ? saved[key as keyof Draft]??"" : base[key as keyof Draft]??"")]))};
 }
 
-export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPortalId }: { eventSlug: string; worlds: World[]; onChanged: () => void; initialPortalId?: string }) {
+export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPortalId, initialFilter = "current" }: { eventSlug: string; worlds: World[]; onChanged: () => void; initialPortalId?: string; initialFilter?: string }) {
   const openedInitial = useRef(false);
   const [topic,setTopic] = useState<string|null>(null);
   const responseSequence = useRef(0);
   const saveCommand = useRef<{body:string;key:string}|null>(null);
   const [change,setChange] = useState<{kind:"save"|"remove";mode?:"draft"|"activate";portal:Portal;impact:PortalImpact;key:string}|null>(null);
   const [portals, setPortals] = useState<Portal[]>([]);
-  const [recordFilter,setRecordFilter] = useState("current");
+  const [recordFilter,setRecordFilter] = useState(initialFilter);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [notice, setNotice] = useState("");
   const [timeError,setTimeError] = useState("");
@@ -165,7 +167,16 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
     if (error?.message.includes("STALE_VERSION")) await load();
     if (error) setTimeError(`Opslaan geweigerd: ${commandError(error.message)}`);
     else if (!data?.id || !Number.isInteger(data.version)) setTimeError("De server heeft de opslag niet bevestigd. Vernieuw en controleer de poort; je invoer is bewaard.");
-    else { setChange(null); setNotice(data.draftSaved ? "Onderhoudsconcept bewaard. De live poortstatus is behouden; rond de gegevens af voordat je activeert." : mode === "draft" ? "Concept opgeslagen. Onvolledige beschikbaarheid is nog niet actief." : draft.id ? "Poort bijgewerkt." : `Poort aangemaakt. ${data.instructions?.status === "pending" ? "Instructiemail staat in de wachtrij." : "Geen instructiemail mogelijk zonder e-mailadres; vul dit aan en kies Instructies opnieuw versturen."}`); setDraft(null); await load(); onChanged(); }
+    else {
+      setChange(null);
+      const created = !draft.id;
+      const concept = data.lifecycleStatus === "concept" || mode === "draft";
+      if (created) setRecordFilter(concept ? "concept" : "current");
+      const savedMessage = data.draftSaved ? "Onderhoudsconcept bewaard. De live poortstatus is behouden; rond de gegevens af voordat je activeert."
+        : concept ? "Conceptpoort opgeslagen." : created ? "Poort aangemaakt." : "Poort bijgewerkt.";
+      const mailMessage = created ? data.instructions?.status === "no_email" ? " Geen instructiemail mogelijk zonder e-mailadres."
+        : " De instructiemail is aangevraagd. De actuele verzendstatus staat hieronder bij de poort." : "";
+      setNotice(savedMessage + mailMessage); setDraft(null); await load(); onChanged(); }
     } catch { setTimeError("Opslag niet bevestigd. Controleer de verbinding en probeer opnieuw; je invoer is bewaard."); }
     finally { setBusy(false); }
   }
@@ -223,7 +234,7 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
     try {
       const r = await client.schema("api").rpc("admin_manual_portal_instructions", {_portal_id:portal.id,_expected_version:portal.version,_key:instructionCommand.current.key});
       if(r.error) {setNotice(r.error.message);return;}
-      setNotice(r.data.status === "no_email" ? "Geen instructiemail mogelijk zonder e-mailadres. Bewerk de poort." : "Instructiemail staat in de wachtrij. De eerste geverifieerde poortwachter wordt hoofdpoortwachter; volgende uitnodigingen geven medebeheer (coadmin).");
+      setNotice(r.data.status === "no_email" ? "Geen instructiemail mogelijk zonder e-mailadres. Bewerk de poort." : "Instructiemail aangevraagd. Controleer de actuele verzendstatus bij de poort. De geadresseerde moet de persoonlijke uitnodiging met het juiste e-mailadres bevestigen.");
       instructionCommand.current=null;await load();
     } catch {setNotice("Verzending is niet bevestigd. Probeer dezelfde opdracht opnieuw.");} finally {setBusy(false);}
   }
@@ -239,16 +250,18 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
     !draft.plannedOpensAt || !draft.plannedClosesAt ? "Vul de geplande openings- en sluitingstijd in." : "",
   ].filter(Boolean) : [];
 
+  const visiblePortals = portals.filter(p=>recordFilter==="all" || (recordFilter==="concept" ? p.recordSource==="manual" && ["concept","registered"].includes(p.lifecycleStatus) && !["rejected","withdrawn"].includes(p.approvalStatus) : recordFilter==="archived" ? p.lifecycleStatus==="archived" : p.lifecycleStatus!=="archived"));
+
   return <div className="manual-portal-manager">
     <header><div><p className="kicker">Organisatiebeheer</p><h3>Poorten beheren</h3><p>Bewerk gegevens van aangemelde en handmatig toegevoegde poorten of verwijder een poort uit het actieve beheer. De oorspronkelijke aanmelding en bezoekhistorie blijven bewaard.</p></div><button className="btn" type="button" onClick={() => { setTimeError(""); setDraft(empty(worlds)); }}><Plus />Poort toevoegen</button></header>
     {change && <AdminDialog labelledBy="manual-portal-impact" close={()=>{if(!busy)setChange(null);}}><h2 id="manual-portal-impact">{change.kind === "remove" ? "Poort verwijderen" : "Bevestigde poortafspraken wijzigen"} · {change.portal.systemCode}</h2><p>{change.impact.draftGroups.length} conceptafspraken · {change.impact.confirmedGroups.length} actuele startbevestigingen · {change.impact.publishedGroups.length} gepubliceerde afspraken · {change.impact.pendingStops} huidige bezoeken · {change.impact.reservations} reserveringen.</p>{[...change.impact.publishedGroups,...change.impact.confirmedGroups].map((g,i)=><p key={i}>{g.code} · {new Date(g.startsAt).toLocaleTimeString("nl-NL",{timeZone:"Europe/Amsterdam",hour:"2-digit",minute:"2-digit"})}</p>)}<p>{change.kind === "remove" ? "Een ongebruikt concept kan worden verwijderd. Andere poorten worden gearchiveerd met behoud van historie. Handel bestaande groepsafspraken, reserveringen en de finale eerst af via Startregie en de livecockpit." : "De server controleert deze actuele impact opnieuw. Ongeldige gepubliceerde afspraken en lopende bezoeken blokkeren de wijziging; vervang die eerst veilig via de regie."}</p>{timeError&&<p role="alert">{timeError}</p>}<div className="actions"><button className="btn outline" type="button" disabled={busy} onClick={()=>setChange(null)}>Annuleren</button><button className="btn" type="button" disabled={busy || (change.kind === "remove" && Boolean(change.impact.finale || change.impact.publishedGroups.length || change.impact.draftGroups.length || change.impact.pendingStops || change.impact.reservations))} onClick={()=>change.kind === "remove" ? void confirmRemoval() : void save(change.mode,change.impact.inputHash)}>{change.kind === "remove" ? "Poort verwijderen bevestigen" : "Poortwijziging bevestigen"}</button></div></AdminDialog>}
     {notice && <div className="form-notice" role="status">{notice}</div>}
-    <label className="field"><span>Poortrecords tonen</span><select value={recordFilter} onChange={e=>setRecordFilter(e.target.value)}><option value="current">Niet gearchiveerd</option><option value="archived">Gearchiveerd</option><option value="all">Alle statussen</option></select></label>
-    <div className="manual-portal-list">{portals.filter(p=>recordFilter==="all" || (recordFilter==="archived" ? p.lifecycleStatus==="archived" : p.lifecycleStatus!=="archived")).map((portal) => <article key={portal.id}>
+    <label className="field"><span>Poortrecords tonen</span><select value={recordFilter} onChange={e=>setRecordFilter(e.target.value)}><option value="current">Niet gearchiveerd</option><option value="concept">Conceptpoorten</option><option value="archived">Gearchiveerd</option><option value="all">Alle statussen</option></select></label>
+    <div className="manual-portal-list">{visiblePortals.map((portal) => <article key={portal.id}>
       <header><span className="portal-code">{portal.systemCode}</span><div><strong>{portal.name}</strong><small>{portal.world} · {portal.recordSource === "manual" ? "Handmatig toegevoegd" : "Bewonersaanmelding"} · {portal.lifecycleStatus} · live: {portal.operationStatus}</small></div>{portal.isFinal && <span className="portal-status-badge">Eindpoort</span>}</header>
       <dl><div><dt>Beschikbaar</dt><dd>{portal.plannedOpensAt ? `${localDateTime(portal.plannedOpensAt).slice(11)}–${localDateTime(portal.plannedClosesAt).slice(11)}` : "Nog niet gepland"}</dd></div><div><dt>Locatie</dt><dd>{portal.latitude!==null?"Locatie ingevuld":"Locatie ontbreekt"}</dd></div><div><dt>Contact</dt><dd>{portal.contactName || "Niet ingevuld"}</dd></div></dl>
-      <p>Instructiemail: {{pending:"In wachtrij",processing:"Wordt verwerkt",accepted:"Provider geaccepteerd",delivered:"Afgeleverd",failed:"Mislukt",expired:"Verlopen",suppressed:"Onderdrukt",deferred:"Uitgesteld"}[portal.instructionStatus ?? ""] ?? (portal.email ? "Nog geen instructiemail" : "Geen instructiemail mogelijk zonder e-mailadres")}</p><div className="actions"><label className="field"><span>Startpunt</span><select aria-label={`Startpunt voor ${portal.systemCode}`} value={portal.candidateStartPoint ? "yes" : "no"} disabled={busy || portal.lifecycleStatus === "archived"} onChange={(event) => void setStartPoint(portal,event.target.value === "yes")}><option value="no">Nee</option><option value="yes">Ja</option></select></label><button className="btn outline" type="button" disabled={busy} onClick={() => { setTimeError(""); setDraft(fromPortal(portal)); }}><Edit3 />Bewerken</button>{portal.recordSource === "manual" && portal.lifecycleStatus !== "archived" && <button className="btn outline" type="button" disabled={busy} onClick={() => void inviteOwner(portal)}><UserPlus />Instructies opnieuw versturen</button>}<button className="text-link danger" type="button" disabled={busy || portal.lifecycleStatus === "archived"} onClick={() => void remove(portal)}>{portal.lifecycleStatus === "concept" ? <Trash2 /> : <Archive />}Verwijderen</button></div>
-    </article>)}{portals.length === 0 && <div className="portal-empty"><ShieldAlert /><p>Er zijn nog geen poorten om te beheren.</p></div>}</div>
+      <p>Instructiemail: {portalInstructionStatusLabel(portal.instructionStatus, Boolean(portal.email))}</p><div className="actions"><label className="field"><span>Startpunt</span><select aria-label={`Startpunt voor ${portal.systemCode}`} value={portal.candidateStartPoint ? "yes" : "no"} disabled={busy || portal.lifecycleStatus === "archived"} onChange={(event) => void setStartPoint(portal,event.target.value === "yes")}><option value="no">Nee</option><option value="yes">Ja</option></select></label><button className="btn outline" type="button" disabled={busy} onClick={() => { setTimeError(""); setDraft(fromPortal(portal)); }}><Edit3 />Bewerken</button>{portal.recordSource === "manual" && portal.lifecycleStatus !== "archived" && <button className="btn outline" type="button" disabled={busy} onClick={() => void inviteOwner(portal)}><UserPlus />Instructies opnieuw versturen</button>}<button className="text-link danger" type="button" disabled={busy || portal.lifecycleStatus === "archived"} onClick={() => void remove(portal)}>{portal.lifecycleStatus === "concept" ? <Trash2 /> : <Archive />}Verwijderen</button></div>
+    </article>)}{visiblePortals.length === 0 && <div className="portal-empty"><ShieldAlert /><p>Er zijn geen poorten met deze status.</p></div>}</div>
 
     {draft && <div className="manual-portal-backdrop" role="presentation" onMouseDown={(event) => { if (!busy && event.target === event.currentTarget) setDraft(null); }}><aside className="manual-portal-editor" role="dialog" aria-modal="true" aria-labelledby="manual-portal-title">
       <header><div><p className="kicker">{draft.id ? "Poort bewerken" : "Nieuwe poort"}</p><h3 id="manual-portal-title">{draft.name || "Handmatig registreren"}</h3></div><button type="button" className="icon-button" aria-label="Sluiten" disabled={busy} onClick={() => setDraft(null)}><X /></button></header>

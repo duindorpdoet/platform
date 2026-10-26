@@ -47,7 +47,7 @@ type ActivePortal = {
   locationVerified: boolean; coordinate: [number, number] | null; activeReservations: number; expectedChildren: number;
 };
 
-type Snapshot = { realtimeTopic: string | null; worlds: World[]; registrations: PortalRegistration[]; activePortals: ActivePortal[] };
+type Snapshot = { conceptPortals?: Array<{id:string}>; realtimeTopic: string | null; worlds: World[]; registrations: PortalRegistration[]; activePortals: ActivePortal[] };
 
 const reviewLabels = { approved: "Goedgekeurd", changes_requested: "Aanpassing gevraagd", rejected: "Afgewezen" } as const;
 const operationLabels: Record<ActivePortal["operationStatus"], string> = {
@@ -76,7 +76,7 @@ function emailHref(registration: PortalRegistration, requestData = false) {
 
 export function PortalReviews({ eventSlug, canPlan = false }: { eventSlug: string; canPlan?: boolean }) {
   const [snapshot, setSnapshot] = useState<Snapshot>({ realtimeTopic: null, worlds: [], registrations: [], activePortals: [] });
-  const [activeTab, setActiveTab] = useState<"registrations" | "active" | "rooms" | "manual" | "planboard">("registrations");
+  const [activeTab, setActiveTab] = useState<"registrations" | "active" | "rooms" | "manual" | "concepts" | "planboard">("registrations");
   const [operationReview,setOperationReview] = useState<{portal:ActivePortal;state:"open"|"paused"|"closed";hash:string;key:string;groups:Array<{code:string;startsAt:string}>;pending:number;reservations:number}|null>(null);
   const [editingPortalId, setEditingPortalId] = useState<string | undefined>();
   const [registrationFilter, setRegistrationFilter] = useState("all");
@@ -209,6 +209,7 @@ export function PortalReviews({ eventSlug, canPlan = false }: { eventSlug: strin
       <button type="button" role="tab" aria-selected={activeTab === "registrations"} className={activeTab === "registrations" ? "active" : ""} onClick={() => setActiveTab("registrations")}>Aangemelde poorten <span>{snapshot.registrations.length}</span></button>
       <button type="button" role="tab" aria-selected={activeTab === "rooms"} className={activeTab === "rooms" ? "active" : ""} onClick={() => setActiveTab("rooms")}>Poortkamers en moderatie</button>
       <button type="button" role="tab" aria-selected={activeTab === "active"} className={activeTab === "active" ? "active" : ""} onClick={() => setActiveTab("active")}>Actieve poorten <span>{snapshot.activePortals.length}</span></button>
+      <button type="button" role="tab" aria-selected={activeTab === "concepts"} className={activeTab === "concepts" ? "active" : ""} onClick={() => setActiveTab("concepts")}>Conceptpoorten <span>{snapshot.conceptPortals?.length ?? 0}</span></button>
       <button type="button" role="tab" aria-selected={activeTab === "manual"} className={activeTab === "manual" ? "active" : ""} onClick={() => setActiveTab("manual")}>Poorten beheren</button>
     </div>
     {notice && <div className="form-notice" role="status">{notice}</div>}
@@ -216,6 +217,7 @@ export function PortalReviews({ eventSlug, canPlan = false }: { eventSlug: strin
 
     {activeTab === "planboard" && <LivePlanboard eventSlug={eventSlug} />}
     {activeTab === "rooms" && <PoortkamerOverview eventSlug={eventSlug} />}
+    {activeTab === "concepts" && <ManualPortalManager key="concepts" initialFilter="concept" eventSlug={eventSlug} worlds={snapshot.worlds} onChanged={() => void load()} />}
     {activeTab === "manual" && <ManualPortalManager key={editingPortalId ?? "all"} initialPortalId={editingPortalId} eventSlug={eventSlug} worlds={snapshot.worlds} onChanged={() => void load()} />}
     {activeTab === "registrations" && <div role="tabpanel" className="portal-list-panel">
       <div className="portal-list-intro"><div><p className="kicker">Aanmeldingen</p><h3>Aangemelde poorten</h3></div><label>Status<select value={registrationFilter} onChange={e=>setRegistrationFilter(e.target.value)}><option value="all">Alle aanmeldingen</option>{Object.entries(portalRegistrationStatusLabels).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><p>Bekijk hoe ver een aanmelding is en open deze voor de gegevens en beoordeling.</p></div>

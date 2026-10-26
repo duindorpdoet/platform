@@ -94,3 +94,13 @@ test('archiving a future target retains its row, visit and visible domain confli
  const impact=await rpc(client,'admin_portal_change_impact',{_portal_id:visit.portalId});await rpc(client,'admin_portal_remove_reviewed',{_portal_id:visit.portalId,_expected_version:Number(sql(`select version from app_private.portals where id='${visit.portalId}'`)),_input_hash:impact.inputHash,_reason:'Synthetische toekomstige doelpoort intrekken en zichtbaar herstellen',_key:randomUUID()});
  await page.goto('/admin');await selectOrganizationSection(page,'Poorten');await page.getByRole('tab',{name:'Live planbord',exact:true}).click();await expect(page.locator(`[data-portal-row="${visit.portalId}"] .planboard-label`)).toContainText('Gearchiveerd');await expect(page.locator(`[data-visit-id="${visit.id}"]`)).toHaveClass(/has-warning/);
 });
+test('manual concept is visible in organization before mail confirmation',async({page,context})=>{
+ const admin=await login(context);const name='Zichtbare conceptpoort browser';
+ const created=await rpc(admin,'admin_manual_portal_save',{_event_slug:event,_portal_id:null,_payload:{name,worldSlug:'anders',contactEmail:'parent-size-5@example.invalid',lifecycleStatus:'concept',approvalStatus:'draft',commandKey:randomUUID()},_expected_version:null,_reason:'Synthetisch concept voor de echte beheerketen'});
+ sql(`update app_private.email_outbox set status='unknown',last_error_code='WORKER_LEASE_EXPIRED_AFTER_CLAIM' where message_type='portal_manual_instructions' and payload->>'portalId'='${created.id}'`);
+ await page.goto('/admin');await selectOrganizationSection(page,'Poorten');await page.getByRole('tab',{name:/^Conceptpoorten/}).click();
+ const card=page.locator('.manual-portal-list article').filter({hasText:name});await expect(card).toBeVisible();await expect(card).toContainText('Verzending niet bevestigd');
+ await card.getByRole('button',{name:'Bewerken',exact:true}).click();await expect(page.getByRole('dialog').getByRole('textbox',{name:'Poortnaam',exact:true})).toHaveValue(name);await page.keyboard.press('Escape');
+ await page.reload();await selectOrganizationSection(page,'Poorten');await page.getByRole('tab',{name:/^Conceptpoorten/}).click();await expect(card).toBeVisible();
+ const impact=await rpc(admin,'admin_portal_change_impact',{_portal_id:created.id});await rpc(admin,'admin_portal_remove_reviewed',{_portal_id:created.id,_expected_version:Number(sql(`select version from app_private.portals where id='${created.id}'`)),_input_hash:impact.inputHash,_reason:'Synthetisch concept na de browsercontrole archiveren',_key:randomUUID()});
+});

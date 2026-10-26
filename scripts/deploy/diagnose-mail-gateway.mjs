@@ -15,6 +15,19 @@ for (const path of ["scopes", "user/account", "user/credits"]) {
     .filter(key => Object.hasOwn(data, key)).map(key => [key, data[key]]));
   console.log(JSON.stringify({ providerInspection: path, status: info.status, ...details }));
 }
+const identity = await fetch("https://api.sendgrid.com/v3/user/username", {
+  headers: { Authorization: `Bearer ${process.env.SENDGRID_API}` }, signal: AbortSignal.timeout(10_000),
+});
+const account = identity.ok ? await identity.json() : null;
+if (typeof account?.username === "string") {
+  const teammate = await fetch(`https://api.sendgrid.com/v3/teammates/${encodeURIComponent(account.username)}`, {
+    headers: { Authorization: `Bearer ${process.env.SENDGRID_API}` }, signal: AbortSignal.timeout(10_000),
+  });
+  const data = teammate.ok ? await teammate.json() : null;
+  console.log(JSON.stringify({ ownerInspection: true, status: teammate.status,
+    isTeammate: teammate.ok, isAdmin: data?.is_admin ?? null,
+    mailSendAssigned: Array.isArray(data?.scopes) ? data.scopes.includes("mail.send") : null }));
+}
 const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
   method: "POST",
   headers: { Authorization: `Bearer ${process.env.SENDGRID_API}`, "Content-Type": "application/json" },
