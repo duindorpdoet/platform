@@ -1598,7 +1598,7 @@ test("organization edits and removes resident portals while preserving existing 
   let card = page.locator(".manual-portal-list > article").filter({ hasText: name });
   await expect(card).toContainText("Bewonersaanmelding");
   await card.getByRole("button", { name: "Bewerken", exact: true }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.locator(".manual-portal-editor");
   await expect(dialog.getByRole("textbox", { name: "Straat", exact: true })).toHaveValue("Fictieve Lange Straat");
   await expect(dialog.getByRole("textbox", { name: "Huisnummer", exact: true })).toHaveValue("12");
   await expect(dialog.getByRole("textbox", { name: "Toevoeging", exact: true })).toHaveValue("B");
