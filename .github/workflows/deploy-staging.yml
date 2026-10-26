@@ -17,6 +17,7 @@ on:
           - clear-build-cache
           - compact-git-checkout
           - inspect-mail-gateway
+          - inspect-portal-onboarding
       skip_mail_acceptance:
         description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
         type: boolean
@@ -32,6 +33,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  portal-onboarding-diagnostics:
+    name: Inspect production portal onboarding (read only)
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'inspect-portal-onboarding' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Inspect saved manual portals and instruction delivery
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          TEST_EMAIL_1: halloween@duindorpdoet.nl
+        run: |
+          node scripts/deploy/inspect-portal-onboarding.mjs
+          node scripts/deploy/diagnose-mail-gateway.mjs
   mail-gateway-diagnostics:
     name: Inspect staging mail gateway without delivery
     if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'inspect-mail-gateway' && github.ref == 'refs/heads/codex/fix-public-registration-status'
