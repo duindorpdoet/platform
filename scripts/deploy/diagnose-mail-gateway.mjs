@@ -2,6 +2,19 @@
 for (const name of ["SENDGRID_API", "SENDGRID_FROM_EMAIL", "TEST_EMAIL_1"]) {
   if (!process.env[name]) throw new Error(`Missing diagnostic variable: ${name}`);
 }
+for (const path of ["scopes", "user/account", "user/credits"]) {
+  const info = await fetch(`https://api.sendgrid.com/v3/${path}`, {
+    headers: { Authorization: `Bearer ${process.env.SENDGRID_API}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+  const data = await info.json().catch(() => ({}));
+  const details = path === "scopes" ? {
+    mailSendAllowed: Array.isArray(data.scopes) ? data.scopes.includes("mail.send") : null,
+    keyUpdateAllowed: Array.isArray(data.scopes) ? data.scopes.includes("api_keys.update") : null,
+  } : Object.fromEntries(["type", "reputation", "remain", "total", "used", "overage", "last_reset", "next_reset"]
+    .filter(key => Object.hasOwn(data, key)).map(key => [key, data[key]]));
+  console.log(JSON.stringify({ providerInspection: path, status: info.status, ...details }));
+}
 const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
   method: "POST",
   headers: { Authorization: `Bearer ${process.env.SENDGRID_API}`, "Content-Type": "application/json" },
