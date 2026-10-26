@@ -221,7 +221,9 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   }
   await guide.getByRole('button',{name:'Rondleiding afronden',exact:true}).click();
   await expect(guide).toHaveCount(0);
-  await guest.goto('/mijn-huis');
+  // Finishing the guide returns here through the app router. A second hard
+  // navigation races that transition in WebKit and interrupts its own load.
+  await expect(guest).toHaveURL(/\/mijn-huis$/);
   await expect(
     guest.getByText("Meekijker", { exact: false }).first(),
   ).toBeVisible();
