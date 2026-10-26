@@ -450,6 +450,27 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   );
 });
 
+test("a successful snapshot arriving after disconnect cannot re-enable reception controls", async ({page,context})=>{
+  await owner(context);await page.goto('/mijn-huis');
+  await expect(page.getByRole('button',{name:'Open',exact:true})).toBeEnabled();
+  let ready!:()=>void,release!:()=>void;
+  const received=new Promise<void>(resolve=>{ready=resolve;}),held=new Promise<void>(resolve=>{release=resolve;});
+  let intercepted=false;
+  const pattern='**/rest/v1/rpc/portal_room_snapshot';
+  await page.route(pattern,async route=>{
+    if(route.request().method()!=="POST" || intercepted){await route.continue();return;}intercepted=true;
+    const actual=await route.fetch();ready();await held;await route.fulfill({response:actual});
+  });
+  await page.evaluate(()=>window.dispatchEvent(new Event('online')));await received;
+  const response=page.waitForResponse(r=>r.request().method()==="POST" && r.url().includes('/rest/v1/rpc/portal_room_snapshot'));
+  await context.setOffline(true);release();await (await response).finished();
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+  await expect(page.getByText(/Je ziet tijdelijk de laatste stand/)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Open',exact:true})).toBeDisabled();
+  await page.unroute(pattern);await context.setOffline(false);
+  await expect(page.getByRole('button',{name:'Open',exact:true})).toBeEnabled();
+});
+
 test("standalone presentation and offline reload never recover cached private data", async ({
   page,
   context,

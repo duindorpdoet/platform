@@ -18,7 +18,7 @@ De as gebruikt Europe/Amsterdam, standaard 16:30–21:30, en breidt uit voor bez
 
 Serverpreview en opslag delen controles voor volledige openingsintervallen inclusief buffer, minimale poortduur, deelnemende status, locatie, dubbele poort, groeps-overlap, werkelijk berekende verplaatsing, groepscapaciteit, kinderen per groep, totale quota, huidige reserveringen, gepubliceerde ontvangsten, gewone stoptijd en finale. Exact aansluiten op een sluiting volgt het bestaande halfopen intervalcontract. Gewenste starttijden zijn motiveerbare voorkeuren; onveilige of onmogelijke intervallen zijn blokkades. De impacthash bindt ook alle relevante poortvensters, instellingen, publicaties en versies. Een verouderde bevestiging wordt geweigerd en nooit automatisch opnieuw toegepast.
 
-De UI ondersteunt detailbewerking, toetsenbord, pointer/touch, annuleren met Escape, conflictenfilter tijdens slepen, zoom, schermvullend en scrollen. Private broadcasts en herstel-/focusverversing halen actuele snapshots op. Vertraagde antwoorden verdringen geen nieuwere antwoorden. Offline of mislukte verversing blijft zichtbaar.
+De UI ondersteunt detailbewerking, toetsenbord, pointer/touch, annuleren met Escape, conflictenfilter tijdens slepen, zoom, schermvullend en scrollen. Private broadcasts en herstel-/focusverversing halen actuele snapshots op. Vertraagde antwoorden verdringen geen nieuwere antwoorden. Ook de Poortkamer maakt lopende snapshots ongeldig bij offline gaan; een laat geslaagd antwoord kan de ontvangstknoppen niet opnieuw inschakelen. Een browserproef houdt hiervoor een echt API-antwoord vast tot na het verbreken van de verbinding. Offline of mislukte verversing blijft zichtbaar.
 
 ## Publicatie en communicatie
 

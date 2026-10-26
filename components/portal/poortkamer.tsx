@@ -120,6 +120,7 @@ export function Poortkamer({
           _portal_id: portalId,
         });
       if (request !== version.current) return;
+      if (!navigator.onLine) { setOffline(true); return; }
       if (error) {
         if (error.code === "42501" || error.code === "PGRST301") clearPrivate();
         setNotice(roomError(error.message));
@@ -132,7 +133,7 @@ export function Poortkamer({
       setRoom(data as PortalRoom);
       setOffline(false);
     } catch {
-      setOffline(true);
+      if(request === version.current)setOffline(true);
     }
   }, [eventSlug, portalId, userId, clearPrivate]);
   useEffect(() => {
@@ -148,6 +149,7 @@ export function Poortkamer({
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
     const refresh = () => void load();
     const disconnected = () => {
+      version.current += 1;
       setOffline(true);
     };
     window.addEventListener("pagehide", clearPrivate);
