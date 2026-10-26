@@ -40,6 +40,7 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261026031648_confirmed_portal_change_guards.sql',
   '20261026041809_archived_portal_maintenance.sql',
   '20261026042247_manual_portal_verified_onboarding.sql',
+  '20261026044234_preserve_release_mode_on_redeploy.sql',
 
 ]);
 
