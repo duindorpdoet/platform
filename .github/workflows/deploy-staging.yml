@@ -16,6 +16,7 @@ on:
           - inspect
           - clear-build-cache
           - compact-git-checkout
+          - inspect-mail-gateway
       skip_mail_acceptance:
         description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
         type: boolean
@@ -31,6 +32,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  mail-gateway-diagnostics:
+    name: Inspect staging mail gateway without delivery
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'inspect-mail-gateway' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Inspect provider acceptance without sending a message
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
+        run: node scripts/deploy/diagnose-mail-gateway.mjs
   runner-maintenance:
     name: Dedicated staging runner maintenance (no deployment)
     if: github.ref == 'refs/heads/staging' && github.event_name == 'workflow_dispatch' && inputs.runner_maintenance != 'none'
