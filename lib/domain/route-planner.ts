@@ -167,7 +167,13 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   const finaleClose = millis(input.finaleClosesAt);
   if (!input.starts.length) conflicts.push({ code: "NO_START_SLOTS", message: "Voeg ten minste één bevestigd startpunt met een exact tijdstip toe." });
   if (![input.maxGroupSize,input.targetGroupSize].every(value=>Number.isSafeInteger(value)&&value>=1&&value<=2147483647) || input.targetGroupSize > input.maxGroupSize) conflicts.push({ code: "INVALID_GROUP_LIMIT", message: "De gewenste groepsgrootte valt buiten de grens." });
-  if ([globalStop, finaleOpen, finaleLast, finaleClose].some((value) => value === null)) conflicts.push({ code: "ROUTE_CONFIGURATION_INCOMPLETE", message: "Vul de stopgrens en alle eindpoortvensters in." });
+  const missingTimes = [
+    { value: globalStop, label: "stoppen bij gewone huizen" },
+    { value: finaleOpen, label: "opening laatste poort" },
+    { value: finaleLast, label: "laatste aankomst bij de laatste poort" },
+    { value: finaleClose, label: "sluiting laatste poort" },
+  ].filter(({ value }) => value === null).map(({ label }) => label);
+  if (missingTimes.length) conflicts.push({ code: "ROUTE_CONFIGURATION_INCOMPLETE", message: `Vul bij Kaders de ontbrekende tijden in en sla ze op: ${missingTimes.join(", ")}.` });
   if (input.finaleShowSeconds < 60 || input.finaleMaxGroups < 1 || input.finaleMaxChildren < 1) conflicts.push({ code: "INVALID_FINALE_CAPACITY", message: "De eindpoortcapaciteit is niet geldig." });
   const serviceMs = (input.finaleShowSeconds + input.finaleTurnoverSeconds) * 1_000;
   const existingSchedules = new Map<string, ExistingPlanningSchedule>();

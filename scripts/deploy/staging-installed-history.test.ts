@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { installedStagingHistory, missingInstalledFiles, STAGING_INSTALLED_MIGRATIONS, HOTFIX_BRANCH, GROUP_OPERATIONS_BRANCH, PLANBOARD_BRANCH } from "./staging-installed-history.mjs";
+import { installedStagingHistory, missingInstalledFiles, STAGING_INSTALLED_MIGRATIONS, HOTFIX_BRANCH, GROUP_OPERATIONS_BRANCH, PLANBOARD_BRANCH, REGISTRATION_STATUS_BRANCH } from "./staging-installed-history.mjs";
 
 const context = { APP_ENVIRONMENT: "staging", GITHUB_REF: `refs/heads/${HOTFIX_BRANCH}` };
 describe("isolated hotfix staging history", () => {
@@ -14,6 +14,9 @@ describe("isolated hotfix staging history", () => {
   });
   it("preserves the same pinned history for the planboard release", () => {
     expect(installedStagingHistory({ ...context, GITHUB_REF: `refs/heads/${PLANBOARD_BRANCH}` })).toEqual(Object.keys(STAGING_INSTALLED_MIGRATIONS));
+  });
+  it("preserves the same pinned history for the registration status release", () => {
+    expect(installedStagingHistory({ ...context, GITHUB_REF: `refs/heads/${REGISTRATION_STATUS_BRANCH}` })).toEqual(Object.keys(STAGING_INSTALLED_MIGRATIONS));
   });
   it("does not permit missing migration history on production or other branches", () => {
     for (const input of [{ ...context, APP_ENVIRONMENT: "production" }, { ...context, GITHUB_REF: "refs/heads/staging" }, {}]) {

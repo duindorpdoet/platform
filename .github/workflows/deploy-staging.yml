@@ -60,7 +60,7 @@ jobs:
         run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/deploy/staging-runner-maintenance.mjs
   backup-restore:
     name: Encrypted backup and isolated restore before migration
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
     environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -94,7 +94,7 @@ jobs:
           if-no-files-found: error
   deploy:
     name: Validate, migrate, deploy and accept
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
     needs: backup-restore
     environment:
       name: staging
@@ -258,7 +258,7 @@ jobs:
   mail-acceptance:
     name: Verify real OTP and transactional mail
     needs: deploy
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration') && !(github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance)
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && !(github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance)
     environment:
       name: staging
       url: https://staging-halloween.duindorpdoet.nl
