@@ -19,6 +19,11 @@ on:
           - inspect-mail-gateway
           - inspect-portal-onboarding
           - restore-mail-send
+          - replace-mail-key
+      mail_repair_public_key:
+        description: 'Public RSA key for encrypted transport of a verified replacement credential'
+        type: string
+        required: false
       skip_mail_acceptance:
         description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
         type: boolean
@@ -34,6 +39,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  replace-mail-key:
+    name: Verify a replacement application mail credential
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'replace-mail-key' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Validate a replacement key without delivering mail
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          MAIL_REPAIR_PUBLIC_KEY: ${{ inputs.mail_repair_public_key }}
+        run: node scripts/deploy/replace-mail-key.mjs
   restore-mail-send:
     name: Restore the application's Mail Send permission
     if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'restore-mail-send' && github.ref == 'refs/heads/codex/fix-public-registration-status'
