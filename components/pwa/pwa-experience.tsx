@@ -59,16 +59,21 @@ export function PwaInstallInvitation({ userId }: { userId: string }) {
     window.addEventListener("beforeinstallprompt", capture);
     window.addEventListener("appinstalled", installed);
     if (standalone()) void trackProductAnalytics("pwa_standalone_opened", undefined, analyticsDeviceMetadata());
-    const timer = window.setTimeout(() => {
+    const show = () => {
+      if(document.documentElement.dataset.participantGuidanceActive === "true")return;
       if (!standalone() && mobileDevice() && window.localStorage.getItem(`poorten:pwa-installed:${userId}`) !== "true" && shouldShowInstallInvite(window.localStorage, userId)) {
         window.localStorage.setItem(installInviteStorageKey(userId), "shown");
         setVisible(true);
       }
-    }, 900);
+    };
+    let timer=window.setTimeout(show,900);
+    const guidanceChanged=()=>{window.clearTimeout(timer);if(document.documentElement.dataset.participantGuidanceActive === "true")setVisible(false);else timer=window.setTimeout(show,900);};
+    window.addEventListener("poorten-guidance-status",guidanceChanged);
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("beforeinstallprompt", capture);
       window.removeEventListener("appinstalled", installed);
+      window.removeEventListener("poorten-guidance-status",guidanceChanged);
     };
   }, [userId]);
 

@@ -495,11 +495,11 @@ test('adult first-use guidance resumes after reload and completes all fourteen r
   await community.getByRole('button',{name:'Gelezen, verder naar mijn omgeving',exact:true}).click();
   const guide=page.locator('.guidance-tour-dialog');
   await expect(guide).toBeVisible();
-  for(let step=0;step<3;step++){await expect(guide.locator('.guidance-screen-indicator .is-ready')).toBeVisible();await guide.getByRole('button',{name:'Verder',exact:true}).click();}
+  for(let step=0;step<3;step++){await expect(guide.locator('.guidance-screen-indicator .is-ready')).toHaveCount(1);await expect(page.locator('.pwa-dialog')).toHaveCount(0);await guide.getByRole('button',{name:'Verder',exact:true}).click();}
   await expect(guide.getByRole('progressbar')).toHaveAttribute('aria-valuenow','4');
   await page.reload();
   await expect(guide.getByRole('progressbar')).toHaveAttribute('aria-valuenow','4');
-  for(let step=3;step<13;step++){if(![6,7,8,9].includes(step))await expect(guide.locator('.guidance-screen-indicator .is-ready')).toBeVisible();else await expect(page).toHaveURL(/\/omgeving\/meeloper\/route$/);await guide.getByRole('button',{name:'Verder',exact:true}).click();}
+  for(let step=3;step<13;step++){if(![6,7,8,9].includes(step))await expect(guide.locator('.guidance-screen-indicator .is-ready')).toHaveCount(1);else await expect(page).toHaveURL(/\/omgeving\/meeloper\/route$/);await guide.getByRole('button',{name:'Verder',exact:true}).click();}
   await guide.getByRole('button',{name:'Rondleiding afronden',exact:true}).click();
   await expect(guide).toHaveCount(0);
   const saved=await page.request.get('/api/redesign/guidance');
