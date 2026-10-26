@@ -213,7 +213,12 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   await community.getByRole('button',{name:'Gelezen, verder naar mijn omgeving',exact:true}).click();
   const guide=guest.locator('.guidance-tour-dialog');
   await expect(guide).toBeVisible();
-  for(let step=0;step<13;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
+  for(let step=0;step<13;step++){
+    await expect(guide.getByRole('progressbar')).toHaveAttribute('aria-valuenow',String(step+1));
+    await expect(guest).toHaveURL(/\/mijn-huis$/);
+    if(step!==3)await expect(guide.locator('.guidance-screen-indicator .is-ready')).toBeVisible();
+    await guide.getByRole('button',{name:'Verder',exact:true}).click();
+  }
   await guide.getByRole('button',{name:'Rondleiding afronden',exact:true}).click();
   await expect(guide).toHaveCount(0);
   await guest.goto('/mijn-huis');

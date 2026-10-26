@@ -53,9 +53,11 @@ async function dashboard(page: Page, firstVisit = true) {
     await expect(guide).toBeVisible();
     for(let step=0;step<8;step++){
       await expect(guide.getByRole('progressbar',{name:'Voortgang uitleg'})).toHaveAttribute('aria-valuenow',String(step+1));
+      await expect(guide.locator('.pb-kid-guide-screen')).toHaveText('Het bijbehorende scherm staat achter deze uitleg.');
       await guide.getByRole('button',{name:'Verder',exact:true}).click();
     }
     await expect(guide.getByRole('progressbar',{name:'Voortgang uitleg'})).toHaveAttribute('aria-valuenow','9');
+    await expect(guide.locator('.pb-kid-guide-screen')).toHaveText('Het bijbehorende scherm staat achter deze uitleg.');
     await guide.getByRole('button',{name:'Ik ben klaar voor mijn avontuur!',exact:true}).click();
   }
   await expect(guide).toHaveCount(0);
@@ -355,7 +357,8 @@ test("real parent codes, independent child sessions, renewal and account switch"
   const fresh = page.getByLabel("Poortenboekcode van Mila", { exact: true });
   await expect(fresh).not.toHaveText(code!);
   await page.goto("/poortenboek");
-  await expect(page).toHaveURL(/\/poortenboek\/inloggen$/);
+  await expect(page.getByRole('region',{name:'Poortenboeken van jouw kinderen'})).toBeVisible();
+  expect((await page.request.get('/api/poortenboek/snapshot')).status()).toBe(401);
   expect((await mutation(page, "login", { code })).status).toBe(400);
   const semCode = (
     await mutation(page, "parent", { action: "view", childId: children[1].id })
@@ -492,13 +495,17 @@ test('adult first-use guidance resumes after reload and completes all fourteen r
   await community.getByRole('button',{name:'Gelezen, verder naar mijn omgeving',exact:true}).click();
   const guide=page.locator('.guidance-tour-dialog');
   await expect(guide).toBeVisible();
-  for(let step=0;step<3;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
+  for(let step=0;step<3;step++){await expect(guide.locator('.guidance-screen-indicator .is-ready')).toBeVisible();await guide.getByRole('button',{name:'Verder',exact:true}).click();}
   await expect(guide.getByRole('progressbar')).toHaveAttribute('aria-valuenow','4');
   await page.reload();
   await expect(guide.getByRole('progressbar')).toHaveAttribute('aria-valuenow','4');
-  for(let step=3;step<13;step++)await guide.getByRole('button',{name:'Verder',exact:true}).click();
+  for(let step=3;step<13;step++){if(![6,7,8,9].includes(step))await expect(guide.locator('.guidance-screen-indicator .is-ready')).toBeVisible();else await expect(page).toHaveURL(/\/omgeving\/meeloper\/route$/);await guide.getByRole('button',{name:'Verder',exact:true}).click();}
   await guide.getByRole('button',{name:'Rondleiding afronden',exact:true}).click();
   await expect(guide).toHaveCount(0);
   const saved=await page.request.get('/api/redesign/guidance');
   expect((await saved.json()).completed.parent).toBe(1);
+  await page.getByRole('button',{name:'Hulp & community',exact:true}).click();
+  await page.getByRole('button',{name:/Bekijk de rondleiding opnieuw/}).click();
+  await expect(guide).toBeVisible();await page.keyboard.press('Escape');await expect(guide).toHaveCount(0);
+  expect((await (await page.request.get('/api/redesign/guidance')).json()).completed.parent).toBe(1);
 });

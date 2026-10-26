@@ -69,7 +69,7 @@ function fromPortal(portal: Portal): Draft {
     operationStatus: portal.operationStatus as Draft["operationStatus"],
     candidateStartPoint: portal.candidateStartPoint, isFinal: portal.isFinal };
   const saved = portal.maintenanceDraft;
-  if (!saved) return base;
+  if (!saved || portal.lifecycleStatus === "archived") return base;
   return {...base,...saved,id:portal.id,version:portal.version,
     plannedOpensAt: localDateTime(Object.hasOwn(saved,"plannedOpensAt") ? saved.plannedOpensAt??null : portal.plannedOpensAt),plannedClosesAt:localDateTime(Object.hasOwn(saved,"plannedClosesAt") ? saved.plannedClosesAt??null : portal.plannedClosesAt),
     ...Object.fromEntries(["systemNumber","intensity","latitude","longitude","maxGroups","maxChildren","visitMinutes","bufferMinutes"].map(key => [key, String(Object.hasOwn(saved,key) ? saved[key as keyof Draft]??"" : base[key as keyof Draft]??"")]))};
