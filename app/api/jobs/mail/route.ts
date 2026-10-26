@@ -98,6 +98,15 @@ export async function POST(request: Request) {
         row.payload = appointment.data;
         if (typeof appointment.data.messageType === "string") row.message_type = appointment.data.messageType;
       }
+      if (row.message_type === "portal_manual_instructions") {
+        const material = await supabase.schema("api").rpc("worker_manual_portal_instructions", { _outbox_id: row.id });
+        if (material.error) throw material.error;
+        if (!material.data) {
+          await supabase.schema("api").rpc("worker_update_outbox", { _id: row.id, _status: "suppressed", _provider_id: null, _error_code: "INVITATION_UNAVAILABLE", _next_attempt_at: null });
+          continue;
+        }
+        row.payload = material.data;
+      }
       if (row.message_type === "portal_team_invite") {
         const material = await supabase.schema("api").rpc("portal_invitation_mail_payload", { _invite_id: row.payload.inviteId });
         if (material.error) throw material.error;

@@ -174,6 +174,20 @@ jobs:
           pnpm exec supabase db reset
           node scripts/acceptance/poortkamer-concurrency.mjs
           pnpm exec playwright test --config playwright.poortkamer.config.ts
+      - name: Run real live planboard and parent recovery acceptance over HTTPS
+        env:
+          APP_ENVIRONMENT: staging
+          POORTENBOEK_DEMO_ENABLED: "true"
+          REGISTRATION_MODE: staging_test
+          APP_URL: https://127.0.0.1:3443
+          ALLOWED_ORIGINS: https://127.0.0.1:3443,http://127.0.0.1:3100
+          ABUSE_HASH_SECRET: local-ci-planboard-hash-secret
+        run: |
+          pnpm exec supabase db reset
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+          pnpm exec playwright test --config playwright.planboard.config.ts
       - name: Run editorial publication, newsletter and push acceptance
         env:
           APP_ENVIRONMENT: staging

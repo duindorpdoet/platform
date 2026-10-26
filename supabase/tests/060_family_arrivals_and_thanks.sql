@@ -23,6 +23,8 @@ select is((select count(*) from app_private.run_stop_arrivals where run_id=(sele
 -- Emulate a pre-migration confirmed stop with valid existing seals. All fixture
 -- writes, including removing only these synthetic facts, roll back below.
 create temp table legacy_seals as select md5(jsonb_agg(to_jsonb(s) order by to_jsonb(s)::text)::text) fingerprint from app_private.poortenboek_passport_seals s where s.run_id=(select run_id from family_route);
+-- Remove only the new collection rows in this synthetic pre-migration fixture.
+delete from app_private.child_world_awards where run_stop_id in(select id from app_private.run_stops where run_id=(select run_id from family_route));
 delete from app_private.run_stop_arrivals where run_id=(select run_id from family_route);
 select is((select count(*) from app_private.arrival_backfill_candidates((select id from app_private.events where slug='duindorp-halloween-2026')) where eligible),6::bigint,'old valid seals do not hide proven arrival facts from the reviewed preview');
 select is(api.redesign_arrival_backfill('f0000000-0000-0000-0000-000000000001','duindorp-halloween-2026',array[(select stop_id from family_route)],true)->>'insertedArrivals','6','reviewed legacy batch records proven arrivals alongside existing seals');

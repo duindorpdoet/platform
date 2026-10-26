@@ -1,0 +1,27 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+create temp table archive_case(pid uuid,version integer,impact jsonb,result jsonb);
+insert into archive_case(pid) select (api.admin_manual_portal_save('duindorp-halloween-2026',null,
+ '{"name":"Archiefpoort proef","worldSlug":"anders","contactEmail":"parent-size-5@example.invalid","lifecycleStatus":"active","approvalStatus":"approved","latitude":52.09,"longitude":4.26,"plannedOpensAt":"2026-10-31T16:00:00Z","plannedClosesAt":"2026-10-31T21:00:00Z"}',null,'Synthetische poort voor archiefonderhoud')->>'id')::uuid;
+insert into app_private.portal_owners(portal_id,user_id,role) select pid,'a0000000-0000-0000-0000-000000000005','owner' from archive_case;
+update archive_case set version=(select p.version from app_private.portals p where p.id=pid),impact=api.admin_portal_change_impact(pid);
+select lives_ok($$select api.admin_portal_remove_reviewed(pid,version,impact->>'inputHash','Synthetische poort met behoud van archief intrekken','archive-reviewed-remove-01') from archive_case$$,'approved portal is archived through reviewed domain command');
+select is((select lifecycle_status::text from app_private.portals where id=(select pid from archive_case)),'archived','archive keeps the real record');
+select is((select count(*) from app_private.portal_owners where portal_id=(select pid from archive_case) and revoked_at is null),0::bigint,'archiving revokes active portal access without deleting historical identities');
+select is((select count(*) from app_private.portal_team_invites where portal_id=(select pid from archive_case) and accepted_at is null and revoked_at is null),0::bigint,'archiving revokes outstanding invitations');
+select ok(exists(select 1 from jsonb_array_elements(api.admin_portal_records_snapshot('duindorp-halloween-2026')->'portals') p where p->>'id'=(select pid::text from archive_case)),'organization maintenance includes archived records');
+select ok(not exists(select 1 from jsonb_array_elements(api.admin_portal_editor_snapshot('duindorp-halloween-2026')->'portals') p where p->>'id'=(select pid::text from archive_case)),'legacy active editor snapshot stays compatible');
+update archive_case set version=(select p.version from app_private.portals p where p.id=pid);
+update archive_case set result=api.admin_archived_portal_save('duindorp-halloween-2026',pid,'{"name":"Archief gecorrigeerd","contactPhone":"0612345678","internalNotes":"Bewaar bezoekhistorie"}',version,'Contactgegevens in bestaand archief corrigeren','archive-correct-metadata-01');
+select is((select contact_phone from app_private.portals where id=(select pid from archive_case)),'0612345678','archive contact correction persists');
+select is((select lifecycle_status::text from app_private.portals where id=(select pid from archive_case)),'archived','metadata edit cannot reactivate archive');
+select is((select api.admin_archived_portal_save('duindorp-halloween-2026',pid,'{"name":"Archief gecorrigeerd","contactPhone":"0612345678","internalNotes":"Bewaar bezoekhistorie"}',version,'Contactgegevens in bestaand archief corrigeren','archive-correct-metadata-01') from archive_case),(select result from archive_case),'uncertain retry returns the original archive receipt');
+select throws_ok($$select api.admin_archived_portal_save('duindorp-halloween-2026',pid,'{"name":"Oude versie"}',version,'Een oude versie hoort te worden geweigerd','archive-stale-metadata-01') from archive_case$$,'40001','STALE_VERSION','archive edit rejects stale version');
+select throws_ok($$select api.admin_archived_portal_save('duindorp-halloween-2026',pid,'{"lifecycleStatus":"active"}',version,'Geen heropening via een contactcorrectie','archive-no-revival-01') from archive_case$$,'P0001','ARCHIVE_METADATA_ONLY','archive cannot silently reopen operation or change routing');
+select set_config('request.jwt.claims','{"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}',true);
+select ok(not exists(select 1 from jsonb_array_elements(api.participant_context('duindorp-halloween-2026')->'roles') p where p->>'portalId'=(select pid::text from archive_case)),'archived house role no longer forces an unusable homepage');
+select throws_ok($$select api.admin_portal_records_snapshot('duindorp-halloween-2026')$$,'42501','NOT_AUTHORIZED','ordinary parent cannot inspect organization archive contact details');
+select * from finish();
+rollback;

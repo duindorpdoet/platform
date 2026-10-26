@@ -49,7 +49,7 @@ on conflict (provider_id, provider) do nothing;
 update app_private.events
 set phase = 'registration_open',
     registration_open_at = timestamptz '2026-09-01 00:00:00+02',
-    registration_close_at = timestamptz '2026-10-25 23:59:00+01',
+    registration_close_at = greatest(timestamptz '2026-10-31 23:59:00+01', clock_timestamp() + interval '30 days'),
     settings = settings || '{"fixture":true,"termsVersion":"test-v1","privacyVersion":"test-v1","groupRegistrationOpen":true,"portalRegistrationOpen":true,"maxGroupSize":20}'::jsonb
 where slug = 'duindorp-halloween-2026';
 

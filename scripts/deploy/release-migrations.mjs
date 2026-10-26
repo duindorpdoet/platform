@@ -33,6 +33,14 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261025090300_semantic_start_communication.sql',
   '20261025090400_canonical_visits_and_occupancy.sql',
   '20261025090500_portal_drafts_and_confirmed_receptions.sql',
+  '20261026024616_portal_lifecycle_parent_access.sql',
+  '20261026024617_manual_portal_instructions.sql',
+  '20261026024618_durable_live_planboard.sql',
+  '20261026024619_missing_world_awards.sql',
+  '20261026031648_confirmed_portal_change_guards.sql',
+  '20261026041809_archived_portal_maintenance.sql',
+  '20261026042247_manual_portal_verified_onboarding.sql',
+
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

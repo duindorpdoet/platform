@@ -39,6 +39,7 @@ export const MAIL_MESSAGE_TYPES = [
   "messenger_incoming_admin",
   "messenger_admin_reply",
   "participant_update",
+  "portal_manual_instructions",
   "portal_team_invite",
   "portal_team_accepted",
   "portal_team_role_changed",
@@ -264,6 +265,11 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     kind: "group", subject: "Je hebt een antwoord van de organisatie", preheader: "Open je bericht in de persoonlijke omgeving.", eyebrow: "Hulp onderweg", title: "Er staat een antwoord klaar.",
     paragraphs: (payload) => [`${greeting(payload)}de organisatie heeft gereageerd op jouw bericht. Open het gesprek om het antwoord te lezen en te reageren. Je bericht blijft in jouw persoonlijke inbox staan.`],
     action: { label: "Open mijn berichten", path: "/omgeving" }, footerReason: "Je ontvangt deze e-mail omdat de organisatie jouw gesprek heeft beantwoord.",
+  },
+  portal_manual_instructions: {
+    kind: "host", subject: "Instructies voor jullie Poortkamer voor Halloween", preheader: "Inloggen en toegang tot jullie poort.", eyebrow: "De Poortkamer", title: "Jullie poort is aangemeld.",
+    paragraphs: (p) => [`De organisatie heeft ${String(p.portalName ?? "jullie poort")} aangemeld voor De Duindorpse Poorten van Halloween.`, String(p.statusText ?? "Bevestig hetzelfde e-mailadres via de gewone eenmalige inlogcode. Een concept wacht op activering door de organisatie."), "Open de persoonlijke ingang. Gebruik hetzelfde e-mailadres waarop je deze mail ontvangt, vraag de eenmalige inlogcode aan en vul die in. Controleer na activering jullie gegevens, openingstijden en voorbereiding.", "Heb je meerdere deelnames, kies dan de omgeving voor deze poort. Je ouderomgeving blijft beschikbaar. Een uitnodiging is zeven dagen geldig en geeft geen algemene accountlogin."],
+    action: {label: "Open jullie persoonlijke ingang", path: "/omgeving"}, footerReason: "Je ontvangt dit bericht omdat de organisatie dit e-mailadres voor jullie poort heeft opgegeven.",
   },
   portal_team_invite: {
     kind: "host", subject: "Een sleutel voor De Poortkamer", preheader: "Jullie poortteam nodigt je uit.", eyebrow: "De Poortkamer", title: "Er ligt een sleutel voor je klaar.",

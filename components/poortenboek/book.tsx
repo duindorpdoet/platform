@@ -292,7 +292,7 @@ export function Poortenboek({
             </a>
           ))}
         </nav>
-        <div className="pb-header-identity"><a className="pb-switch-book" href="/poortenboek/inloggen" aria-label="Ander Poortenboek openen">Ander boek</a>
+        <div className="pb-header-identity"><a className="pb-switch-book" href="/poortenboek/ouder" aria-label="Eigen kindboek kiezen">Kind kiezen</a>
           {snapshot.demo && <span className="pb-demo-badge"><Sparkles size={12} />Demo</span>}
           <a className="pb-header-profile" href="/poortenboek/ik" aria-label={`Het profiel van ${snapshot.firstName}`}>
             <img src={`/images/poortenboek-v2/avatars/${snapshot.identity.avatarId}.webp`} alt="" />
@@ -966,6 +966,8 @@ function Worlds({ snapshot }: { snapshot: BookSnapshot }) {
   };
   return (
     <section className="pb-worlds">
+      <p><a className="text-link" href="/poortenboek/ouder">Naar de ouderomgeving of een ander kindboek kiezen</a></p>
+      <section className="pb-panel" aria-label="Jouw zes wereldzegels"><h3>Jouw zes wereldzegels · {snapshot.worldCollection?.length ?? 0} van 6</h3><p>Ontbrekende werelden kun je bij een echte aankomst bij een snoeppoort van het type Anders ontdekken. Bonuszegels zijn extra werelden bij hetzelfde huis.</p><ul>{(snapshot.worldCollection ?? []).map(award=><li key={award.slug}>{award.name} · {award.origin === "compensation" ? "Bonuswereld ontdekt bij een snoeppoort" : "Ontdekt bij een themapoort"}</li>)}</ul></section>
       <div className="pb-section-heading">
         <div>
           <p className="pb-eyebrow">Hoofdstukken achter gesloten deuren</p>

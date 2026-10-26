@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { PortalRegistrationActions } from "./portal-registration-actions";
+import { AdminDialog } from "./admin-dialog";
+import { LivePlanboard } from "./live-planboard";
 import { PoortkamerOverview } from "./poortkamer-overview";
 import { ManualPortalManager } from "./manual-portal-manager";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -71,10 +74,12 @@ function emailHref(registration: PortalRegistration, requestData = false) {
   return `mailto:${registration.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
-export function PortalReviews({ eventSlug }: { eventSlug: string }) {
+export function PortalReviews({ eventSlug, canPlan = false }: { eventSlug: string; canPlan?: boolean }) {
   const [snapshot, setSnapshot] = useState<Snapshot>({ realtimeTopic: null, worlds: [], registrations: [], activePortals: [] });
-  const [activeTab, setActiveTab] = useState<"registrations" | "active" | "rooms" | "manual">("registrations");
+  const [activeTab, setActiveTab] = useState<"registrations" | "active" | "rooms" | "manual" | "planboard">("registrations");
+  const [operationReview,setOperationReview] = useState<{portal:ActivePortal;state:"open"|"paused"|"closed";hash:string;key:string;groups:Array<{code:string;startsAt:string}>;pending:number;reservations:number}|null>(null);
   const [editingPortalId, setEditingPortalId] = useState<string | undefined>();
+  const [registrationFilter, setRegistrationFilter] = useState("all");
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -162,15 +167,21 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
   }
 
   async function setPortalState(portal: ActivePortal, state: "open" | "paused" | "closed") {
+    const client=createClient();if(!client||busyId)return;
     setBusyId(portal.portalId);
-    const client = createClient(); if (!client) return setBusyId(null);
-    const { error } = await client.schema("api").rpc("portal_set_operational_state", {
-      _portal_id: portal.portalId, _state: state, _expected_version: portal.version,
-      _reason: `Poortstatus ingesteld op ${state} via Nachtregie`,
-    });
-    setBusyId(null);
-    setNotice(error ? `Poortstatus kon niet worden gewijzigd: ${error.message}` : `${portal.systemCode} staat nu op ${state === "open" ? "open" : state === "paused" ? "pauze" : "gestopt"}.`);
-    if (!error) await load();
+    try {
+      const r=await client.schema("api").rpc("admin_portal_change_impact",{_portal_id:portal.portalId});
+      if(r.error){setNotice(r.error.message);return;}
+      setOperationReview({portal,state,hash:r.data.inputHash,key:crypto.randomUUID(),groups:[...r.data.publishedGroups,...r.data.confirmedGroups],pending:r.data.pendingStops,reservations:r.data.reservations});
+    }catch{setNotice("De actuele poortimpact kon niet worden opgehaald.");}finally{setBusyId(null);}
+  }
+  async function applyPortalState() {
+    const client=createClient();if(!client||!operationReview||busyId)return;setBusyId(operationReview.portal.portalId);
+    try {
+      const r=await client.schema("api").rpc("admin_portal_operation_reviewed",{_portal_id:operationReview.portal.portalId,_state:operationReview.state,_expected_version:operationReview.portal.version,_input_hash:operationReview.hash,_key:operationReview.key});
+      if(r.error){setNotice(/STALE_/.test(r.error.message)?"De poortplanning is gewijzigd. Sluit de preview en beoordeel de actuele impact opnieuw.":r.error.message);return;}
+      setOperationReview(null);setNotice("Operationele poortstatus opgeslagen via de bestaande avondregie.");await load();
+    }catch{setNotice("Statuswijziging is niet bevestigd. Probeer dezelfde opdracht opnieuw.");}finally{setBusyId(null);}
   }
 
   async function openAsset(path: string) {
@@ -194,19 +205,22 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
     </div>
 
     <div className="portal-management-tabs" role="tablist" aria-label="Poortenlijsten">
+      {canPlan && <button type="button" role="tab" aria-selected={activeTab === "planboard"} className={activeTab === "planboard" ? "active" : ""} onClick={() => setActiveTab("planboard")}>Live planbord</button>}
       <button type="button" role="tab" aria-selected={activeTab === "registrations"} className={activeTab === "registrations" ? "active" : ""} onClick={() => setActiveTab("registrations")}>Aangemelde poorten <span>{snapshot.registrations.length}</span></button>
       <button type="button" role="tab" aria-selected={activeTab === "rooms"} className={activeTab === "rooms" ? "active" : ""} onClick={() => setActiveTab("rooms")}>Poortkamers en moderatie</button>
       <button type="button" role="tab" aria-selected={activeTab === "active"} className={activeTab === "active" ? "active" : ""} onClick={() => setActiveTab("active")}>Actieve poorten <span>{snapshot.activePortals.length}</span></button>
       <button type="button" role="tab" aria-selected={activeTab === "manual"} className={activeTab === "manual" ? "active" : ""} onClick={() => setActiveTab("manual")}>Poorten beheren</button>
     </div>
     {notice && <div className="form-notice" role="status">{notice}</div>}
+    {operationReview&&<AdminDialog labelledBy="portal-operation-review" close={()=>{if(!busyId)setOperationReview(null);}}><h2 id="portal-operation-review">Poortstatus wijzigen · {operationReview.portal.systemCode}</h2><p>{operationLabels[operationReview.portal.operationStatus]} → {operationReview.state === "open" ? "Open" : operationReview.state === "paused" ? "Pauze" : "Gestopt"}</p><p>{operationReview.groups.length} bevestigde/gepubliceerde afspraken · {operationReview.pending} huidige bezoeken · {operationReview.reservations} reserveringen.</p>{operationReview.groups.map((g,i)=><p key={i}>{g.code} · {new Date(g.startsAt).toLocaleTimeString("nl-NL",{timeZone:"Europe/Amsterdam",hour:"2-digit",minute:"2-digit"})}</p>)}<p>De bestaande avondregie controleert de gevolgen opnieuw. Een echte aankomst wordt niet door deze statuswijziging herschreven.</p>{notice&&<p role="status">{notice}</p>}<div className="actions"><button className="btn outline" type="button" disabled={Boolean(busyId)} onClick={()=>setOperationReview(null)}>Annuleren</button><button className="btn" type="button" disabled={Boolean(busyId)} onClick={()=>void applyPortalState()}>Poortstatus bevestigen</button></div></AdminDialog>}
 
+    {activeTab === "planboard" && <LivePlanboard eventSlug={eventSlug} />}
     {activeTab === "rooms" && <PoortkamerOverview eventSlug={eventSlug} />}
     {activeTab === "manual" && <ManualPortalManager key={editingPortalId ?? "all"} initialPortalId={editingPortalId} eventSlug={eventSlug} worlds={snapshot.worlds} onChanged={() => void load()} />}
     {activeTab === "registrations" && <div role="tabpanel" className="portal-list-panel">
-      <div className="portal-list-intro"><div><p className="kicker">Aanmeldingen</p><h3>Aangemelde poorten</h3></div><p>Bekijk hoe ver een aanmelding is en open deze voor de gegevens en beoordeling.</p></div>
+      <div className="portal-list-intro"><div><p className="kicker">Aanmeldingen</p><h3>Aangemelde poorten</h3></div><label>Status<select value={registrationFilter} onChange={e=>setRegistrationFilter(e.target.value)}><option value="all">Alle aanmeldingen</option>{Object.entries(portalRegistrationStatusLabels).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><p>Bekijk hoe ver een aanmelding is en open deze voor de gegevens en beoordeling.</p></div>
       {snapshot.registrations.length === 0 ? <div className="portal-empty"><Home /><p>Er zijn nog geen huisaanmeldingen binnengekomen.</p></div> : <div className="portal-premium-list">
-        {snapshot.registrations.map((registration) => {
+        {snapshot.registrations.filter(r => registrationFilter === "all" || r.status === registrationFilter).map((registration) => {
           const progress = countPortalRegistrationProgress(registration.progress);
           const address = formatPortalAddress(registration.address);
           const canReview = registration.applicationStatus === "submitted" && registration.applicationId && registration.applicationVersion !== null;
@@ -246,7 +260,8 @@ export function PortalReviews({ eventSlug }: { eventSlug: string }) {
               </div>
               <aside className="portal-timeline"><h4>Tijdlijn</h4>{registration.timeline.length === 0 ? <p>Nog geen tijdlijn beschikbaar.</p> : registration.timeline.map((entry, index) => <div key={`${entry.label}-${entry.at}-${index}`}><span /><p><strong>{entry.label}</strong><time dateTime={entry.at}>{formatDate(entry.at)}</time></p></div>)}</aside>
               <div className="portal-row-actions">
-                {registration.portalId && !registration.portalArchived && <button className="btn outline" type="button" onClick={() => { setEditingPortalId(registration.portalId!); setActiveTab("manual"); }}>Gegevens bewerken</button>}
+                {(registration.intakeId || registration.applicationId) && <PortalRegistrationActions operational={Boolean(registration.portalId)} eventSlug={eventSlug} kind={registration.intakeId ? "intake" : "application"} id={(registration.intakeId ?? registration.applicationId)!} reload={load} />}
+                {registration.portalId && <button className="btn outline" type="button" onClick={() => { setEditingPortalId(registration.portalId!); setActiveTab("manual"); }}>Gegevens bewerken</button>}
                 {registration.phone && <a className="btn outline" href={`tel:${registration.phone.replace(/\s/g, "")}`}><Phone />Bellen</a>}
                 {registration.email && <a className="btn outline" href={emailHref(registration)}><Mail />Bericht sturen</a>}
                 {registration.email && registration.status !== "approved" && <a className="btn outline" href={emailHref(registration, true)}><FileSearch />Gegevens opvragen</a>}

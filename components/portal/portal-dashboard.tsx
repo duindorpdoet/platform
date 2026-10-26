@@ -49,6 +49,7 @@ export function PortalDashboard({ eventSlug }: { eventSlug: string }) {
   }
   if (!loaded) return <div className={styles.card}>{notice || "Poortgegevens ophalen…"}</div>;
   if (!snapshot) return <div className={styles.card}><h2>Meld jullie plek aan</h2><p>Begin met je contactgegevens en adres.</p><Link className="btn" href="/huis-aanmelden">Plek aanmelden</Link></div>;
+  if (snapshot.application.status === "withdrawn") return <div className={styles.card}><h2>Poortaanmelding ingetrokken</h2><p>Je gewone inschrijving, betaling en ouderrechten blijven behouden.</p><Link className="btn" href="/omgeving/meeloper">Verder als ouder</Link><PortalWizard eventSlug={eventSlug}/></div>;
   if (["draft", "changes_requested"].includes(snapshot.application.status)) return <div className={`${styles.profile} owner-profile`}><PortalWizard eventSlug={eventSlug} /></div>;
   if (!snapshot.portal) return <div className={styles.cockpit}><section className={styles.card}><Clock className={styles.cardIcon} aria-hidden="true" /><p className={styles.eyebrow}>Jullie aanmelding</p><h2>Aanmelding in beoordeling</h2><p>De organisatie bekijkt jullie idee. Je kunt de gegevens hieronder ondertussen blijven bijwerken; gewijzigde gegevens worden opnieuw beoordeeld.</p>{snapshot.application.reviewFeedback && <div className="form-warning">Terugkoppeling: {snapshot.application.reviewFeedback}</div>}</section><div className={`${styles.profile} owner-profile`}><PortalWizard eventSlug={eventSlug} /></div></div>;
   const portal = snapshot.portal;

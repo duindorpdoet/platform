@@ -1,0 +1,31 @@
+begin;
+\ir fixtures/legacy-start-available.inc
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+create temp table awards(eid uuid,run_id uuid,stop_id uuid,version integer,child_ids uuid[],participants uuid[],physical bigint,chapters bigint);
+insert into awards(eid) select id from app_private.events where slug='duindorp-halloween-2026';
+-- Two worlds are absent for the complete evening; retained active houses use a represented type.
+update app_private.portals p set world_id=(select id from app_private.worlds w where w.event_id=p.event_id and w.slug='circuswereld') where p.world_id in(select id from app_private.worlds where slug in ('heksenrijk','vampierrijk'));
+update app_private.portals p set world_id=(select id from app_private.worlds w where w.event_id=p.event_id and w.slug='anders') where p.id='12000000-0000-0000-0000-000000000001';
+select ok((select missing_worlds @> array['heksenrijk','vampierrijk'] and cardinality(missing_worlds)=2 from app_private.world_coverage_policies where event_id=(select eid from awards) order by version desc limit 1),'coverage records exactly the two absent canonical worlds');
+select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+update awards set run_id=(api.run_start('23000000-0000-0000-0000-000000000002',array(select rc.id from app_private.registration_children rc join app_private.group_registrations a on a.registration_id=rc.registration_id where a.group_id='23000000-0000-0000-0000-000000000002' and a.superseded_at is null),1,'world-start-01','world-start-01')->>'runId')::uuid;
+update awards a set stop_id=r.current_stop_id,version=r.version from app_private.group_runs r where r.id=a.run_id;
+select lives_ok($$select api.run_arrive_and_advance(run_id,stop_id,version,'TEST-PORTAL-01-TOKEN',(select jsonb_object_agg(id::text,'skipped') from app_private.run_participants where run_id=awards.run_id and attendance='present'),'world-arrival-01') from awards$$,'real scan with all children staying outside records legitimate arrival rewards');
+update awards a set child_ids=array(select rc.child_id from app_private.run_participants rp join app_private.registration_children rc on rc.id=rp.registration_child_id where rp.run_id=a.run_id and rp.attendance='present'),participants=array(select id from app_private.run_participants where run_id=a.run_id and attendance='present'),physical=(select count(*) from app_private.poortenboek_passport_seals where run_id=a.run_id),chapters=(select count(*) from app_private.poortenboek_story_chapters where child_id in(select child_id from app_private.run_stop_arrivals where run_id=a.run_id));
+select is((select count(*) from app_private.child_world_awards where child_id=any((select child_ids from awards)::uuid[])),(select cardinality(child_ids)::bigint from awards),'one permanent missing-world award per present child at first candy arrival');
+select is((select count(*) from app_private.poortenboek_passport_seals where run_id=(select run_id from awards)),(select physical from awards),'bonus collection creates no extra physical visits');
+select lives_ok($$select api.run_arrive_and_advance(run_id,stop_id,version,'TEST-PORTAL-01-TOKEN',(select jsonb_object_agg(id::text,'skipped') from app_private.run_participants where run_id=awards.run_id and attendance='present'),'world-arrival-01') from awards$$,'duplicate scanner retry returns original command result');
+select is((select count(*) from app_private.child_world_awards where child_id=any((select child_ids from awards)::uuid[])),(select cardinality(child_ids)::bigint from awards),'duplicate scan does not draw a second random world');
+select set_config('request.jwt.claims','{"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}',true);
+select lives_ok($$select api.run_end_early(run_id,(select version from app_private.group_runs where id=run_id),participants,'Eigen gezin sluit de tocht bewust vroegtijdig af','world-departure-01') from awards$$,'own explicit early departure atomically settles the remaining worlds before departure');
+select is((select count(*) from app_private.child_world_awards where child_id=any((select child_ids from awards)::uuid[])),(select 2*cardinality(child_ids)::bigint from awards),'one actual candy arrival can settle both missing worlds at explicit end');
+select is((select count(*) from app_private.child_world_awards where reason='own_departure' and child_id=any((select child_ids from awards)::uuid[])),(select cardinality(child_ids)::bigint from awards),'extra fallback is recorded as settlement, not a new arrival');
+select is((select count(*) from app_private.poortenboek_passport_seals where run_id=(select run_id from awards)),(select physical from awards),'settlement preserves physical passport count');
+select is((select count(*) from app_private.poortenboek_story_chapters where child_id=any((select child_ids from awards)::uuid[])),(select chapters from awards),'settlement creates no fake story chapters or finale');
+select ok(not exists(select 1 from app_private.poortenboek_passport_seals where run_id=(select run_id from awards) and finale),'settlement never invents finale completion');
+select app_private.settle_child_worlds(id,'own_departure') from app_private.run_participants where run_id=(select run_id from awards);
+select is((select count(*) from app_private.child_world_awards where child_id=any((select child_ids from awards)::uuid[])),(select 2*cardinality(child_ids)::bigint from awards),'background retry after departure awards nothing');
+select ok(not has_table_privilege('authenticated','app_private.child_world_awards','insert'),'clients cannot forge world rewards');
+select * from finish();
+rollback;

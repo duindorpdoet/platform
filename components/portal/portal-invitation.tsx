@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { EmailOtpForm } from "@/components/auth/email-otp-form";
 import { createClient } from "@/lib/supabase/client";
@@ -7,13 +8,14 @@ import s from "./poortkamer.module.css";
 export function PortalInvitation({ token }: { token: string }) {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pendingActivation,setPendingActivation] = useState(false);
   async function accept() {
     const client = createClient();
     if (!client || busy) return;
     setBusy(true);
     setNotice("");
     try {
-      const { error } = await client
+      const { data,error } = await client
         .schema("api")
         .rpc("portal_invitation_accept", { _token: token });
       if (error) {
@@ -22,6 +24,7 @@ export function PortalInvitation({ token }: { token: string }) {
         );
         return;
       }
+      if(data?.pendingActivation){setPendingActivation(true);return;}
       window.location.replace("/mijn-huis");
     } finally {
       setBusy(false);
@@ -43,7 +46,7 @@ export function PortalInvitation({ token }: { token: string }) {
           Bevestig het e-mailadres waarop je deze persoonlijke uitnodiging
           ontving. Daarna kun je bij het team.
         </p>
-        <EmailOtpForm
+        {pendingActivation ? <div className={s.card} role="status"><h2>Sleutel bevestigd</h2><p>De organisatie moet deze conceptpoort nog activeren. Daarna kun je de Poortkamer openen. Je eventuele ouderomgeving blijft beschikbaar.</p><Link className={`${s.button} ${s.primary}`} href="/omgeving">Mijn omgeving</Link><Link className={s.button} href="/mijn-huis">Activering controleren</Link></div> : <><EmailOtpForm
           analyticsSurface="homeowner"
           onVerified={accept}
           beforeRequestCode={async (email) => {
@@ -65,7 +68,7 @@ export function PortalInvitation({ token }: { token: string }) {
             {busy ? "Sleutel controleren…" : "Sleutel aannemen"}
           </button>
           {notice && <p role="alert">{notice}</p>}
-        </div>
+        </div></>}
       </main>
     </div>
   );

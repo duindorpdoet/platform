@@ -51,7 +51,7 @@ export function ParentPoortenboek() {
       const result = await fetch("/api/poortenboek/parent", {
         cache: "no-store",
       });
-      if (result.ok) setChildren(await result.json());
+      if (result.ok) { const ownChildren = await result.json() as Child[]; setChildren(ownChildren); setNotice(ownChildren.length ? "" : "Er zijn nog geen actieve ingeschreven kinderen beschikbaar. Je poortdeelname verandert je ouderrechten niet."); }
       else setNotice("Poortenboekbeheer kon niet worden opgehaald.");
     } catch {
       setNotice("Maak verbinding om de Poortenboeken te beheren.");

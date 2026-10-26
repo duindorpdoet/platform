@@ -1,11 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, RefreshCw, Users } from "lucide-react";
+import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
+import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/components/portal/portal-premium.module.css";
 
 type Arrival = {
+  source?: "route_intent";
   groupCode: string;
   displayName?: string | null;
   plannedArrivalAt: string;
@@ -30,26 +33,21 @@ type Forecast = {
 const time = (value?: string | null) => value ? new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "Nog niet berekend";
 
 export function PortalForecast({ portalId, systemCode, name, operationStatus }: { portalId: string; systemCode?: string | null; name: string; operationStatus: string }) {
+  const responseSequence = useRef(0);
   const [snapshot, setSnapshot] = useState<Forecast | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const load = useCallback(async () => {
-    const client = createClient();
-    if (!client) return;
-    const { data, error } = await client.schema("api").rpc("portal_arrivals_snapshot", { _portal_id: portalId });
-    setUnavailable(Boolean(error));
-    if (!error) setSnapshot(data as Forecast);
-  }, [portalId]);
-
-  useEffect(() => {
-    const client = createClient();
-    const first = window.setTimeout(() => void load(), 0);
-    const poll = window.setInterval(() => void load(), 30_000);
-    if (!client) return () => { window.clearTimeout(first); window.clearInterval(poll); };
-    const channel = client.channel(`portal:${portalId}`, { config: { private: true } })
-      .on("broadcast", { event: "snapshot_changed" }, () => void load())
-      .subscribe();
-    return () => { window.clearTimeout(first); window.clearInterval(poll); void client.removeChannel(channel); };
-  }, [load, portalId]);
+    const client = createClient(); if (!client) return;
+    const ticket=++responseSequence.current;
+    try {
+      const {data,error}=await client.schema("api").rpc("portal_arrivals_snapshot",{_portal_id:portalId}).abortSignal(AbortSignal.timeout(15000));
+      if(ticket!==responseSequence.current)return;
+      setUnavailable(Boolean(error));if(!error)setSnapshot(data as Forecast);
+    }catch{if(ticket===responseSequence.current)setUnavailable(true);}
+  },[portalId]);
+  useEffect(()=>{const first=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(first);},[load]);
+  usePrivateBroadcast(`portal:${portalId}`,()=>void load());
+  useSnapshotRefresh(load);
 
   const assigned = useMemo(() => snapshot?.arrivals?.filter((item) => item.classification === "assigned" && item.state !== "completed") ?? [], [snapshot]);
   const forecast = useMemo(() => snapshot?.arrivals?.filter((item) => item.classification === "forecast" && item.state !== "completed") ?? [], [snapshot]);
@@ -72,6 +70,7 @@ export function PortalForecast({ portalId, systemCode, name, operationStatus }: 
         <div><small>Volgende indicatieve aankomst</small><strong className={!nextArrival ? styles.metricText : undefined}>{time(nextArrival)}</strong><span>Gepland venster · geen live ETA</span></div>
       </div>
       {assigned.length > 0 && <div><p className={styles.eyebrow}><Users aria-hidden="true" />Al toegewezen</p><div className={styles.arrivals}>{assigned.map((arrival) => <article className={styles.arrival} key={`${arrival.groupCode}-${arrival.plannedArrivalAt}`}><strong>{arrival.displayName || arrival.groupCode}</strong>{arrival.state === "confirmed_start" && <small>Bevestigde startgroep</small>}<span>{arrival.displayName ? `${arrival.groupCode} · ` : ""}{arrival.expectedChildren} kinderen</span><span>{time(arrival.plannedArrivalAt)}–{time(arrival.plannedDepartureAt)}</span></article>)}</div></div>}
+      {forecast.length > 0 && <div><p className={styles.eyebrow}>Voorgenomen stops · verwacht</p><div className={styles.arrivals}>{forecast.map(arrival=><article className={styles.arrival} key={`expected-${arrival.groupCode}-${arrival.plannedArrivalAt}`}><strong>{arrival.displayName || arrival.groupCode}</strong><small>{arrival.source === "route_intent" ? "Regie-route, nog geen aankomst" : "Verwachting, nog geen aankomst"}</small><span>{arrival.expectedChildren} kinderen · {time(arrival.plannedArrivalAt)}–{time(arrival.plannedDepartureAt)}</span></article>)}</div></div>}
       {assigned.length === 0 && forecast.length === 0 && <p className={styles.empty}>Er staan nu geen groepen in de actuele planning voor jullie poort.</p>}
       <p className={styles.forecastExplanation}>De toegewezen groepen komen naar jullie poort. Hun aankomsttijd kan verschuiven door wandeltempo of een pauze. Je ziet de verwachte aankomst, niet hun locatie onderweg.</p>
       <div className={styles.forecastFoot}><span>{name} · ontvangstplanning</span><span>Bijgewerkt om: {snapshot.updatedAt ? new Date(snapshot.updatedAt).toLocaleString("nl-NL", { timeZone: "Europe/Amsterdam" }) : "nog niet beschikbaar"}</span></div>

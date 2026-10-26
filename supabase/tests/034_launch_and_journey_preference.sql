@@ -4,6 +4,8 @@ select plan(13);
 select ok(not has_function_privilege('authenticated', 'api.configure_release_mode(text,text)', 'execute'), 'participants cannot open a release');
 select ok(not has_function_privilege('anon', 'api.group_journey_preference(uuid)', 'execute'), 'anonymous users cannot read group preference');
 select ok(not has_function_privilege('authenticated', 'app_private.dispatch_next_stop_before_visit_preference(uuid,timestamptz,boolean,uuid)', 'execute'), 'participants cannot bypass the preference dispatcher');
+-- The explicit release-opening fixture must precede its event-relative close date.
+update app_private.events set local_date=make_date(extract(year from now())::integer+1,10,31);
 update app_private.events set settings = settings || '{"groupRegistrationOpen":false,"portalRegistrationOpen":false,"releaseMode":"production_closed"}'::jsonb;
 select is(api.configure_release_mode('duindorp-halloween-2026', 'production_open')->>'groupRegistrationOpen', 'true', 'explicit live release opens participant registration');
 select is(api.configure_release_mode('duindorp-halloween-2026', 'production_open')->>'portalRegistrationOpen', 'false', 'live opening preserves separate house-channel setting');

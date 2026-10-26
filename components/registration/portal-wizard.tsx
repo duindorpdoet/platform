@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -177,6 +178,7 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     setPayload({ ...payload, warnings: { ...payload.warnings, [key]: value } });
   }
 
+  if (status === "withdrawn") return <section className="panel"><h2>Deze poortaanmelding is ingetrokken</h2><p>Je kinderinschrijving, betaling en eigen kindboeken blijven beschikbaar. Wil je bewust opnieuw een poort aanmelden, begin dan hieronder. Een gearchiveerde operationele poort kan alleen de organisatie herstellen.</p><Link className="btn outline" href="/omgeving/meeloper">Verder als ouder</Link><button className="btn" type="button" disabled={busy} onClick={async()=>{const client=createClient();if(!client)return;setBusy(true);try{const r=await client.schema("api").rpc("portal_registration_restart",{_event_slug:eventSlug});if(r.error){setNotice(r.error.message);return;}setSaved({id:r.data.id,version:r.data.version});setStatus("draft");setNotice("Bewust opnieuw aangemeld. Vul je concept aan.");}catch{setNotice("Opnieuw aanmelden is niet bevestigd. Probeer opnieuw.");}finally{setBusy(false);}}}>Bewust opnieuw aanmelden als poort</button>{notice&&<p role="status">{notice}</p>}</section>;
   return <div className="panel production-form">
     <h2>Werk jullie poort uit</h2>
     <p>Je adres delen we alleen met de organisatie. Zo kunnen we jullie plek goed voorbereiden en kinderen veilig ontvangen.</p>

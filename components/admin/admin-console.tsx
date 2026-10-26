@@ -1606,7 +1606,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             <ParticipantUpdates eventSlug={eventSlug} />
           )}
         {section === "praatkamer" && canUsePraatkamer && <PoortkamerOverview eventSlug={eventSlug} praatkamerOnly />}
-        {section === "portals" && <PortalReviews eventSlug={eventSlug} />}
+        {section === "portals" && <PortalReviews eventSlug={eventSlug} canPlan={capabilities.some(capability => capability === "event_admin" || capability === "groups_manage")} />}
         {section === "editorial" && editorialEnabled && <Redactiekamer capabilities={capabilities} />}
         {section === "share" && canManageShares && <ShareStudioAdmin eventSlug={eventSlug} />}
         {section === "statistics" && canViewStatistics && <StatisticsDashboard eventSlug={eventSlug} />}
