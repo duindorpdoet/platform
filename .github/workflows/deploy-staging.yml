@@ -18,6 +18,7 @@ on:
           - compact-git-checkout
           - inspect-mail-gateway
           - inspect-portal-onboarding
+          - restore-mail-send
       skip_mail_acceptance:
         description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
         type: boolean
@@ -33,6 +34,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  restore-mail-send:
+    name: Restore the application's Mail Send permission
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'restore-mail-send' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    strategy:
+      matrix:
+        target: [staging, production]
+      fail-fast: false
+    environment: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Add only the missing mail.send scope and validate without delivery
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          TEST_EMAIL_1: halloween@duindorpdoet.nl
+        run: |
+          node scripts/deploy/restore-mail-send.mjs --apply
+          node scripts/deploy/diagnose-mail-gateway.mjs
   portal-onboarding-diagnostics:
     name: Inspect production portal onboarding (read only)
     if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'inspect-portal-onboarding' && github.ref == 'refs/heads/codex/fix-public-registration-status'
