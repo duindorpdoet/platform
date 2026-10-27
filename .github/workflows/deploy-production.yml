@@ -98,6 +98,8 @@ jobs:
           node-version: 24
       - name: Require exact successful staging revision
         run: node scripts/deploy/require-staging-success.mjs
+      - name: Verify the canonical live portal hotfix with production credentials
+        run: node scripts/deploy/repair-portal-hotfix-history.mjs
       - name: Snapshot, encrypt, restore and dry-run exact migrations
         run: node scripts/deploy/redesign-backup.mjs
       - name: Retain only encrypted backup files and signed proof
