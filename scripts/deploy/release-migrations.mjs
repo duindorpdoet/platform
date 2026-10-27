@@ -56,7 +56,11 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261026042247_manual_portal_verified_onboarding.sql',
   '20261026044234_preserve_release_mode_on_redeploy.sql',
   '20261026045351_keep_unavailable_route_portals_visible.sql',
+
+  '20261026135955_honor_explicit_registration_open.sql',
+  '20261026145449_visible_manual_portal_concepts.sql',
   '20261027011056_resend_durable_gateway.sql',
+  '20261027033940_portal_draft_command_metadata_and_final_conflict_errors.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

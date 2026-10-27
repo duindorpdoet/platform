@@ -18,6 +18,14 @@ on:
           - compact-git-checkout
           - profile-database
           - profile-http
+          - inspect-mail-gateway
+          - inspect-portal-onboarding
+          - restore-mail-send
+          - replace-mail-key
+      mail_repair_public_key:
+        description: 'Public RSA key for encrypted transport of a verified replacement credential'
+        type: string
+        required: false
       skip_mail_acceptance:
         description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
         type: boolean
@@ -33,6 +41,96 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  replace-mail-key:
+    name: Verify a replacement application mail credential
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'replace-mail-key' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Validate a replacement key without delivering mail
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          MAIL_REPAIR_PUBLIC_KEY: ${{ inputs.mail_repair_public_key }}
+        run: node scripts/deploy/replace-mail-key.mjs
+  restore-mail-send:
+    name: Restore the application's Mail Send permission
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'restore-mail-send' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    strategy:
+      matrix:
+        target: [staging, production]
+      fail-fast: false
+    environment: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Add only the missing mail.send scope and validate without delivery
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          TEST_EMAIL_1: halloween@duindorpdoet.nl
+        run: |
+          node scripts/deploy/restore-mail-send.mjs --apply
+          node scripts/deploy/diagnose-mail-gateway.mjs
+  portal-onboarding-diagnostics:
+    name: Inspect production portal onboarding (read only)
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'inspect-portal-onboarding' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Inspect saved manual portals and instruction delivery
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          TEST_EMAIL_1: halloween@duindorpdoet.nl
+        run: |
+          node scripts/deploy/inspect-portal-onboarding.mjs
+          node scripts/deploy/diagnose-mail-gateway.mjs
+  mail-gateway-diagnostics:
+    name: Inspect staging mail gateway without delivery
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'inspect-mail-gateway' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Inspect provider acceptance without sending a message
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
+        run: node scripts/deploy/diagnose-mail-gateway.mjs
   runner-maintenance:
     name: Dedicated staging runner maintenance (no deployment)
     if: github.ref == 'refs/heads/staging' && github.event_name == 'workflow_dispatch' && inputs.runner_maintenance != 'none'
@@ -79,7 +177,7 @@ jobs:
         run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/acceptance/evening-staging-http-profile.mjs
   backup-restore:
     name: Encrypted backup and isolated restore before migration
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
     environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -113,7 +211,7 @@ jobs:
           if-no-files-found: error
   deploy:
     name: Validate, migrate, deploy and accept
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
     needs: backup-restore
     environment:
       name: staging
@@ -300,7 +398,7 @@ jobs:
   mail-acceptance:
     name: Verify real OTP and transactional mail
     needs: deploy
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration') && !(github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance)
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && !(github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance)
     environment:
       name: staging
       url: https://staging-halloween.duindorpdoet.nl
