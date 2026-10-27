@@ -21,16 +21,22 @@ const request=()=>new Request("https://edge.example.com",{method:"POST",body:"ve
 beforeEach(()=>{calls=[];envelopes.clear();env.AUTH_MAIL_MODE="live";env.MAIL_MODE="allowlist";env.AUTH_SITE_URL="https://staging.example.com";});
 describe("shared durable Auth and outbox dispatch",()=>{
  it("recovers partial dual email_change without repeating the accepted delivery or storing OTP content",async()=>{
-  const fetcher=vi.fn().mockImplementation(async(_url:string,init:RequestInit)=>JSON.parse(String(init.body)).to[0]==="new@example.com"&&fetcher.mock.calls.length===2?new Response(null,{status:429}):Response.json({id}));
+  let newAddressRateLimited=false;
+  const fetcher=vi.fn().mockImplementation(async(_url:string,init:RequestInit)=>{
+   if(JSON.parse(String(init.body)).to[0]==="new@example.com"&&!newAddressRateLimited){newAddressRateLimited=true;return new Response(null,{status:429});}
+   return Response.json({id});
+  });
   const deps={env:(key:string)=>env[key],rpc,verify:()=>auth,fetcher};
   expect((await handleMail(request(),deps)).status).toBe(503);
   expect((await handleMail(request(),deps)).status).toBe(200);
   expect(fetcher).toHaveBeenCalledTimes(3);
-  const to=fetcher.mock.calls.map(c=>JSON.parse(c[1].body).to[0]);expect(to).toEqual(["old@example.com","new@example.com","new@example.com"]);
-  const first=JSON.parse(fetcher.mock.calls[0][1].body);const second=JSON.parse(fetcher.mock.calls[1][1].body);
-  expect(first.text).toContain("123456");expect(first.text).not.toContain("654321");expect(second.text).toContain("654321");
-  expect(fetcher.mock.calls[1][1].headers["Idempotency-Key"]).toBe(fetcher.mock.calls[2][1].headers["Idempotency-Key"]);
-  expect(fetcher.mock.calls[0][1].headers["Idempotency-Key"]).not.toBe(fetcher.mock.calls[1][1].headers["Idempotency-Key"]);
+  // Independent async fingerprints may finish in either order. Assert each
+  // recipient's delivery/retry identity rather than a transport call index.
+  const sent=fetcher.mock.calls.map(call=>({message:JSON.parse(String(call[1].body)),key:call[1].headers["Idempotency-Key"]}));
+  const previous=sent.filter(item=>item.message.to[0]==="old@example.com"),updated=sent.filter(item=>item.message.to[0]==="new@example.com");
+  expect(previous).toHaveLength(1);expect(updated).toHaveLength(2);
+  expect(previous[0].message.text).toContain("123456");expect(previous[0].message.text).not.toContain("654321");expect(updated[0].message.text).toContain("654321");
+  expect(updated[0].key).toBe(updated[1].key);expect(previous[0].key).not.toBe(updated[0].key);
   const prepares=calls.filter(c=>c[0]==="worker_mail_prepare");expect(prepares.every(c=>c[1]._payload===null)).toBe(true);
   expect(JSON.stringify(calls)).not.toMatch(/123456|654321|hash-a|hash-b/);
  });
@@ -47,7 +53,7 @@ describe("shared durable Auth and outbox dispatch",()=>{
   await handleMail(request(),deps);
   await handleMail(request(),{...deps,verify:()=>({...auth,metadata:{uuid:"second-new-auth-invocation"}})});
   expect(fetcher).toHaveBeenCalledTimes(4);
-  expect(fetcher.mock.calls[0][1].headers["Idempotency-Key"]).not.toBe(fetcher.mock.calls[2][1].headers["Idempotency-Key"]);
+  expect(new Set(fetcher.mock.calls.map(call=>call[1].headers["Idempotency-Key"])).size).toBe(4);
  });
  it("never turns legacy provider probes or sandbox into a live send",async()=>{
   const fetcher=vi.fn();
