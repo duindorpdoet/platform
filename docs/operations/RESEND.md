@@ -56,7 +56,7 @@ Open `/admin?view=settings&settingsTab=email`. Vereist: een door `getUser()` gev
 2. Controle uitvoeren zonder verzending: centrale versie, afzenderdomein, tracking uit, runtimevoorziening en gesigneerde Edge-probe. Dit is configuratievalidatie; het verstuurt niets.
 3. Bewust een concepttest naar een toegestane echte postbus of een expliciet benoemd Resend-testadres inplannen. Ook dit gebruikt de bestaande outbox. Dubbelklikken/tabs voor dezelfde ontvanger en versie delen tien minuten dezelfde opdracht; HTTP-retries hebben bovendien een duurzaam commandreceipt.
 4. Wachten op provideracceptatie en een passende, geldig ondertekende delivered-webhook. Gesimuleerde provideradressen bewijzen geen echte postbusontvangst. De normale stagingallowlist wordt niet uitgebreid; provideradressen zijn uitsluitend beschikbaar voor expliciete `mail_provider_test`-opdrachten.
-5. Suppressie-import afronden.
+5. Controleren dat de automatische overname van SendGrid-blokkades tijdens deployment is afgerond; er is geen handmatige export nodig.
 6. Impact bevestigen en activeren. De server controleert expected revision/config-ID, hash, actuele DNS/credentialchecks en de concepttest. De testacceptatie mag maximaal dertig minuten oud zijn en moet bij de huidige sending-credentialfingerprint én webhooksecretfingerprint horen. Een race of stale concept geeft conflict.
 
 ## Secrets en externe inrichting
@@ -70,6 +70,7 @@ Stel waarden uitsluitend via de bestaande beveiligde GitHub-environment/runtimev
 | `RESEND_WEBHOOK_SECRET` | Alleen Next-ontvangstverificatie; deployment kan dit uit de eigen providerwebhook provisionen |
 | `MAIL_IDENTITY_SECRET` | Onafhankelijke willekeurige sleutel van minimaal 32 tekens; Edge-HMAC voor stabiele Auth-identiteiten en credentialfingerprints |
 | `MAIL_ADMIN_USER_IDS` | Runtime-beheerde komma-gescheiden geverifieerde Auth-UUID's, plus vereist bestaand event_admin-recht |
+| `SENDGRID_SUPPRESSIONS_API_KEY` | Optionele deployment-only leessleutel voor hetzelfde SendGrid-verzendaccount als `SENDGRID_API`, uitsluitend als die bestaande sleutel de suppressielijsten niet kan lezen; nooit naar Next/Edge |
 | `SEND_EMAIL_HOOK_SECRET` | Bestaande afzonderlijke Standard Webhooks-signing key voor Auth/interne gateway |
 | `AUTH_SITE_URL` | Bestaande Auth-links / branding; geen provider- of webhooksecret |
 
@@ -97,13 +98,23 @@ De additieve migratie labelt bestaande begonnen/accepted/onzekere uitkomsten als
 - Failed/suppressed, lokale uitschrijvingen, publicaties en semantische dedupe blijven behouden.
 - `/api/webhooks/sendgrid`, de verificatiedependency en oude runtimecredentials blijven beschikbaar voor late events en incidentrollback.
 
-Voor activatie: exporteer de volledige relevante SendGrid hard-bounce/complaint/invalid-suppressies, normaliseer een privaat JSON-bestand naar `[{"email":"...","reason":"bounce|spamreport|unsubscribe|invalid"}]`, controleer volledigheid en voer in de juiste omgeving uit:
+De deployment neemt de bestaande blokkades **automatisch rechtstreeks uit SendGrid over** na de centrale bootstrap en vóór Resend-provisioning. Hiervoor gebruikt `import-mail-suppressions.mjs` de bestaande beveiligde `SENDGRID_API`. Handmatig downloaden, normaliseren en uploaden van een exportbestand is vervallen. De handeling verstuurt geen mail en wijzigt niets bij SendGrid.
+
+De overname leest de vier officiële lijsten: bounces, spam reports, invalid emails en global unsubscribes. Alle pagina's worden opgehaald met `limit=500`, oplopende offset, `start_time=0` en dezelfde bovengrens voor het tijdstip. Ook na een korte pagina volgt een volgende request; pas een geldige lege pagina rondt een lijst af. Iedere request heeft een timeout, de totale overname maximaal vijf minuten en iedere lijst maximaal duizend pagina's. Alleen de twee officiële vaste SendGrid-hosts worden geaccepteerd; redirects zijn uitgeschakeld. Voor een EU-account stel je de environment-variable `SENDGRID_API_BASE_URL=https://api.eu.sendgrid.com/v3` in.
+
+Adressen worden direct genormaliseerd en gehasht. Alleen hashes en vaste redenklassen gaan naar de bestaande service-RPC; er ontstaat geen bestand met adressen en providerfoutbody's worden niet gelogd. Bestaande lokale editorial suppressies en bekende SendGrid-bounces/klachten blijven behouden. Een nieuwsbriefuitschrijving blokkeert Nachtpost, geen nieuwe Auth-code. Een herhaalde overname verwijdert geen blokkades en herstelt geen toestemming.
+
+Alleen na succesvolle ontvangst én opslag van **alle vier lijsten** wordt afronding met een bronfingerprint vastgelegd. Een daadwerkelijk leeg account is daardoor aantoonbaar onderscheiden van ontbrekende toegang. HTTP 401/403, ongeldige data, herhaalde pagina's, limietoverschrijding en opslagfouten laten de overname falen. Reeds geïmporteerde blokkades blijven gelden; een gedeeltelijke nieuwe overname wordt niet als voltooid gemarkeerd. 429, tijdelijke serverfouten en netwerkfouten krijgen maximaal drie leespogingen met begrensde wachttijd.
+
+Als de bestaande sleutel alleen verzendrechten heeft, kan een bevoegde accountbeheerder die bestaande deploymentcredential leesrechten op de vier suppressielijsten geven, of een afzonderlijke leessleutel voor **hetzelfde verzendaccount** als environment-secret `SENDGRID_SUPPRESSIONS_API_KEY` instellen. Deze sleutel wordt uitsluitend in het deploymentproces gebruikt. Dit is een rechteninstelling, geen export-/bestandsopdracht. De deployment meldt concreet `SENDGRID_SUPPRESSIONS_READ_ACCESS_REQUIRED` wanneer die toegang ontbreekt.
+
+Een bevoegde operator kan de identieke automatische overname ook opnieuw starten vanuit de bestaande beveiligde deploymentomgeving met `APP_ENVIRONMENT`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` en de bovenstaande SendGrid-credential:
 
 ```sh
-node scripts/deploy/import-mail-suppressions.mjs /private/path/reviewed-export.json --confirm-complete-export
+node scripts/deploy/import-mail-suppressions.mjs
 ```
 
-Het script valideert records en verstuurt uitsluitend ontvangerhashes naar de service-RPC. Het legt de bronhash en afronding vast. Bestaande lokale editorial suppressies en bekende SendGrid-bounces/klachten worden ook behouden. Een nieuwsbriefuitschrijving blokkeert Nachtpost, geen nieuwe Auth-code. Zonder volledige export/controle blijft activering geblokkeerd; ontbreken van export is geen nieuwe toestemming.
+De normale staging- en productieworkflows voeren dit al uit. Alleen aantoonbaar afgeronde overname voldoet aan de bestaande activeringsvoorwaarde; de verplichte handmatige exportstap bestaat niet meer.
 
 Incidentrollback blijft een bewuste servicehandeling met bestaande beheerrechten en expected revision. Verifieer eerst de behouden SendGrid-key/afzender extern, zet de runtime-allowlisted `MAIL_ROLLBACK_USER_ID` en voer uit:
 
@@ -121,4 +132,4 @@ Nieuwe tabellen staan in `app_private`, hebben RLS en geen directe browser-/serv
 
 Gerichte tests: gateway/Resend-parser, officiële Svix-byteverificatie, beheerrechten/versieraces/secretredactie, dual email_change en gedeeltelijk herstel, duurzame SQL-projecties en leases, late callback op oudere startmail, exact geadresseerde planbordcorrectie en de volledige lokale keten met drie parallelle workerkicks. De provider is in lokale tests gemockt; dat bewijst geen live aflevering.
 
-Bronnen, gecontroleerd op 27 oktober 2026: [Supabase Send Email Hook](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook), [HTTP-retryimplementatie](https://github.com/supabase/auth/blob/master/internal/hooks/hookshttp/hookshttp.go), [invocationmetadata](https://github.com/supabase/auth/blob/master/internal/hooks/v0hooks/v0hooks.go), [Resend send API](https://resend.com/docs/api-reference/emails/send-email), [idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys), [Svix-verificatie](https://resend.com/docs/webhooks/verify-webhooks-requests), [events](https://resend.com/docs/webhooks/event-types), [tags](https://resend.com/docs/dashboard/emails/tags), [testadressen](https://resend.com/docs/dashboard/emails/send-test-emails), [providerreplay](https://resend.com/docs/api-reference/webhooks/replay-event).
+Bronnen, gecontroleerd op 27 oktober 2026: [Supabase Send Email Hook](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook), [HTTP-retryimplementatie](https://github.com/supabase/auth/blob/master/internal/hooks/hookshttp/hookshttp.go), [invocationmetadata](https://github.com/supabase/auth/blob/master/internal/hooks/v0hooks/v0hooks.go), [Resend send API](https://resend.com/docs/api-reference/emails/send-email), [idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys), [Svix-verificatie](https://resend.com/docs/webhooks/verify-webhooks-requests), [events](https://resend.com/docs/webhooks/event-types), [tags](https://resend.com/docs/dashboard/emails/tags), [testadressen](https://resend.com/docs/dashboard/emails/send-test-emails), [providerreplay](https://resend.com/docs/api-reference/webhooks/replay-event), [SendGrid bounces](https://www.twilio.com/docs/sendgrid/api-reference/bounces-api/retrieve-all-bounces), [spam reports](https://www.twilio.com/docs/sendgrid/api-reference/spam-reports-api/retrieve-all-spam-reports), [invalid emails](https://www.twilio.com/docs/sendgrid/api-reference/invalid-emails-api/retrieve-all-invalid-emails), [global unsubscribes](https://www.twilio.com/docs/sendgrid/api-reference/suppressions-global-suppressions/retrieve-all-global-suppressions).

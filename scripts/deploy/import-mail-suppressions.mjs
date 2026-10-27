@@ -1,17 +1,19 @@
-// Input: reviewed SendGrid export normalized to [{email,reason}], with reason
-// bounce|spamreport|unsubscribe|invalid. No raw addresses are sent to the RPC.
-import { readFile } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
-import { mailRpc } from './mail-service.mjs';
-const filename=process.argv[2];
-if(!filename||process.argv[3]!=='--confirm-complete-export')throw new Error('Usage: import-mail-suppressions.mjs <reviewed-private-export.json> --confirm-complete-export');
-if(!['staging','production'].includes(process.env.APP_ENVIRONMENT))throw new Error('Explicit environment required');
-const bytes=await readFile(filename),entries=JSON.parse(bytes),hash=createHash('sha256').update(bytes).digest('hex');
-if(!Array.isArray(entries))throw new Error('Export must be an array');
-const rows=entries.map(entry=>{
- if(typeof entry.email!=='string'||!/^\S+@\S+\.\S+$/.test(entry.email)||!['bounce','spamreport','unsubscribe','invalid'].includes(entry.reason))throw new Error('Invalid suppression export entry');
- return {emailHash:createHash('sha256').update(entry.email.trim().toLowerCase()).digest('hex'),reason:entry.reason};
-});
-for(let offset=0;offset<rows.length;offset+=500)await mailRpc('worker_import_mail_suppressions',{_environment:process.env.APP_ENVIRONMENT,_entries:rows.slice(offset,offset+500),_source_hash:hash,_complete:false});
-await mailRpc('worker_import_mail_suppressions',{_environment:process.env.APP_ENVIRONMENT,_entries:[],_source_hash:hash,_complete:true});
-console.log(`Reviewed suppression import completed (${rows.length} entries). No consent was restored.`);
+import { mailRpc } from "./mail-service.mjs";
+import { SuppressionSyncError, syncSendGridSuppressions } from "./sendgrid-suppressions.mjs";
+
+try {
+  const counts = await syncSendGridSuppressions({
+    environment: process.env.APP_ENVIRONMENT,
+    apiKey: process.env.SENDGRID_SUPPRESSIONS_API_KEY || process.env.SENDGRID_API,
+    apiBaseUrl: process.env.SENDGRID_API_BASE_URL,
+    rpc: mailRpc,
+  });
+  console.log(`SendGrid suppressions automatically imported: ${JSON.stringify(counts)}. No consent was restored.`);
+} catch (error) {
+  const code = error instanceof SuppressionSyncError ? error.message : "SUPPRESSION_IMPORT_STORAGE_FAILED";
+  console.error(`${code}: automatic suppression import could not be confirmed; activation requires a confirmed complete import.`);
+  if (code === "SENDGRID_SUPPRESSIONS_READ_ACCESS_REQUIRED") {
+    console.error("Grant suppression-list read access to the existing deployment credential, or configure SENDGRID_SUPPRESSIONS_API_KEY as a separate read-only environment secret for the same sending account. No export file is needed.");
+  }
+  process.exitCode = 1;
+}

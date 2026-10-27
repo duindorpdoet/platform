@@ -25,7 +25,7 @@ Het eerste verzendmateriaal wordt bevroren. Een onbekende Resend-uitkomst kan al
 
 ## Uitgevoerde controles
 
-Alle controles hieronder draaiden lokaal op deze wijziging met Node.js 24, pnpm 11.25.0, Next.js 16.3.5 en Supabase CLI 2.117.0. De databasetests gebruikten een afzonderlijke native lokale Supabase-stack, opgebouwd uit alle repositorymigraties en seed. Productiedata zijn daarvoor niet gebruikt.
+De onderstaande resultaten horen bij de eerste oplevering, met Node.js 24, pnpm 11.25.0, Next.js 16.3.5 en Supabase CLI 2.117.0. De databasetests gebruikten een afzonderlijke native lokale Supabase-stack, opgebouwd uit alle repositorymigraties en seed. Productiedata zijn daarvoor niet gebruikt. De aanvullende controle na automatisering van de suppressie-overname staat hieronder afzonderlijk vermeld.
 
 | Controle | Feitelijk resultaat |
 | --- | --- |
@@ -46,6 +46,14 @@ Gerichte regressies dekken onder meer onleesbare/ongeldige 2xx-antwoorden, 429/r
 
 De lokale provider-HTTP is gemockt. Deze resultaten bewijzen geen echte provideracceptatie, DNS-verificatie, webhookvoorziening of ontvangst in een postbus. Browserbeelden en demodata zijn niet als afleveringsbewijs gebruikt. Remote GitHub CI en de overige omgevingsgebonden releaseacceptaties zijn niet door deze lokale resultaten vervangen.
 
+## Automatische overname zonder exportbestand
+
+Op verzoek is de handmatige export-/bestandsstap vervangen door automatische provider-API-overname in beide deploymentworkflows. `scripts/deploy/sendgrid-suppressions.mjs` leest de vier SendGrid-lijsten met volledige, begrensde paginering; `import-mail-suppressions.mjs` voert dit uit met de bestaande beveiligde deploymentcredential. Alleen ontvangerhashes en vaste redenklassen worden opgeslagen. De beheerinterface toont de overnamestatus. De bestaande voltooiingsvoorwaarde wordt alleen vervuld na succesvolle ontvangst en opslag van alle lijsten; partial failure, ontbrekende leesrechten en een onbekende lijst zijn geen bewijs van een lege suppressielijst.
+
+Er zijn **24 gerichte contracttests** toegevoegd voor paginering, echt lege lijsten, 401/403, 429, tijdelijke fouten, ongeldige/te grote responses, het behouden van verkeerd gevormde adressen uit de invalid-email-bron, duplicaten, bronisolatie, opslagfouten en het uitvoeren vanuit de workflows zonder bestand. De volledige `pnpm verify` is daarna opnieuw geslaagd: **447 unittests**, TypeScript, ESLint, productiebuild en de scan van **1.213 artefacten**. De opt-in ketentest blijft in deze standaardrun overgeslagen. De databasecontracten zijn niet gewijzigd; de volledige SQL- en browsersuites uit de eerste oplevering zijn voor deze aanpassing niet opnieuw uitgevoerd.
+
+De echte SendGrid-API-overname en controle van de sleutelrechten zijn nog niet uitgevoerd: in deze uitvoeromgeving is geen SendGrid-credential beschikbaar. Bij deployment wordt de bestaande sleutel gebruikt. Alleen als die de vier lijsten niet kan lezen, is een eenmalige instelling van leesrechten of een aparte deployment-only leessleutel voor hetzelfde account nodig. De gebruiker hoeft geen export te maken, adressen te downloaden of een bestand te uploaden.
+
 ## Werkelijk ingerichte omgeving
 
 Er is uitsluitend een geïsoleerde lokale Supabase-testomgeving gestart, gemigreerd en gebruikt voor SQL-, Auth-/browser- en ketentests. Er zijn geen externe providerwebhooks, domeinen, DNS-records, Resend-contacten of broadcasts aangemaakt of gewijzigd. Staging en productie zijn niet gedeployed of gemigreerd.
@@ -56,7 +64,7 @@ De benodigde Resend sending-/beheercredential, webhooksecret en onafhankelijke i
 
 1. Stel per GitHub-environment/runtime veilig `RESEND_API_KEY`, `RESEND_ADMIN_API_KEY`, `RESEND_WEBHOOK_SECRET`, `MAIL_IDENTITY_SECRET` en `MAIL_ADMIN_USER_IDS` in. Behoud het afzonderlijke `SEND_EMAIL_HOOK_SECRET`, `AUTH_SITE_URL` en het bestaande mail-/Auth-/Nachtpostbeleid. De signing-secret kan door de daarvoor bestemde deploymentprovisioning worden verkregen; stuur waarden niet via chat. De [secrettabel in het runbook](RESEND.md#secrets-en-externe-inrichting) noemt rechten en bestemmingen.
 2. Verifieer het werkelijke afzenderdomein, DKIM/SPF en bestaand DMARC-beleid; controleer expliciet dat open-/kliktracking uitstaan. Laat uitsluitend de deploymentvoorziening het eigen webhookendpoint provisionen.
-3. Exporteer en beoordeel de volledige relevante SendGrid-suppressies en importeer deze met `import-mail-suppressions.mjs`. Zonder deze afronding blijft Resend-activering geblokkeerd; lokale uitschrijvingen en bekende klachten blijven behouden.
+3. De deployment neemt de bestaande SendGrid-blokkades automatisch over via de provider-API met `import-mail-suppressions.mjs`. Er is geen handmatige export of privaat invoerbestand nodig. Dit gebruikt de bestaande deploymentcredential; alleen wanneer die leesrechten mist is een eenmalige rechteninstelling of aparte deployment-only leessleutel voor hetzelfde account nodig. Lokale uitschrijvingen en bekende klachten blijven behouden.
 4. Doorloop de bestaande integratie-/stagingrelease met encrypted backup/restore en migratiereconciliatie. Maak in Beheer een concept, voer de nietverzendende controles uit en start daarna bewust een toegestane concepttest. Verifieer de bijbehorende echte providerwebhook en echte staging-Auth-postbusontvangst. Een Resend-testadres is alleen een gesimuleerde provideruitkomst.
 5. Bevestig activering pas met geldig, actueel bewijs voor precies die configuratie en credentials. Promoveer uitsluitend de succesvol geaccepteerde staging-SHA via de bestaande productieautorisatie. Inventariseer bestaande SendGrid-unknown-pogingen en behoud de legacywebhook/credentials gedurende de afgesproken drain-/rollbacktermijn.
 

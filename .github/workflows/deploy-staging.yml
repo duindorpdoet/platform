@@ -138,6 +138,8 @@ jobs:
       MAIL_ADMIN_USER_IDS: ${{ vars.MAIL_ADMIN_USER_IDS }}
       SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY: ${{ secrets.SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY }}
       SENDGRID_API: ${{ secrets.SENDGRID_API }}
+      SENDGRID_SUPPRESSIONS_API_KEY: ${{ secrets.SENDGRID_SUPPRESSIONS_API_KEY }}
+      SENDGRID_API_BASE_URL: ${{ vars.SENDGRID_API_BASE_URL || 'https://api.sendgrid.com/v3' }}
       SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
       SENDGRID_FROM_NAME: De Duindorpse Poorten van Halloween
       SENDGRID_REPLY_TO: halloween@duindorpdoet.nl
@@ -217,6 +219,8 @@ jobs:
         run: node scripts/deploy/redesign-postmigration.mjs
       - name: Initialize central provider configuration without activation
         run: node scripts/deploy/bootstrap-mail-config.mjs
+      - name: Automatically preserve SendGrid suppressions
+        run: node scripts/deploy/import-mail-suppressions.mjs
       - name: Provision own signed Resend webhook
         run: node scripts/deploy/configure-resend-webhook.mjs
       - name: Deploy shared signed email hook
