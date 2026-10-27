@@ -25,6 +25,20 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261023222934_portal_management_hotfix.sql',
   '20261023224435_portal_start_point_choice.sql',
   '20261023234741_simple_start_confirmation.sql',
+
+  '20261024024428_evening_readiness_evidence.sql',
+  '20261024025222_evening_visit_information.sql',
+  '20261024034343_evening_route_transaction_order.sql',
+  '20261024042005_evening_ordinary_capacity.sql',
+  '20261024043647_evening_finale_commitments.sql',
+  '20261024050939_evening_live_route_context.sql',
+  '20261024054230_evening_route_candidates.sql',
+  '20261024064423_evening_route_reviews.sql',
+  '20261024065647_evening_physical_admission.sql',
+  '20261024071646_evening_legacy_route_binding.sql',
+  '20261024100115_evening_closed_current_instruction.sql',
+  '20261024112932_evening_nonblocking_channel_reads.sql',
+  '20261024125139_evening_cockpit_aggregation.sql',
   '20261024145517_start_location_readiness.sql',
   '20261025023205_portal_sequence_without_street_routing.sql',
   '20261025090000_group_operations_foundation.sql',
@@ -43,7 +57,6 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261026044234_preserve_release_mode_on_redeploy.sql',
   '20261026045351_keep_unavailable_route_portals_visible.sql',
   '20261027011056_resend_durable_gateway.sql',
-
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

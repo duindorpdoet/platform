@@ -88,18 +88,16 @@ select lives_ok(
 
 set local role postgres;
 select is(
-  (select stop_kind::text from app_private.run_stops stop
-    join app_private.group_runs run on run.current_stop_id = stop.id
-    where run.id = (select run_id from timed_state where group_id = '23000000-0000-0000-0000-000000000002')),
-  'finale',
-  'after the stop boundary an unscanned ordinary assignment is replaced by the terminal portal'
+  (select code from app_private.route_alerts where run_id=(select run_id from timed_state where group_id='23000000-0000-0000-0000-000000000002') and status='open' order by created_at desc limit 1),
+  'CURRENT_DESTINATION_REVIEW_REQUIRED',
+  'cutoff requests organization review while preserving the current pending destination'
 );
 select is(
   (select outcome::text from app_private.run_stops
     where run_id = (select run_id from timed_state where group_id = '23000000-0000-0000-0000-000000000002')
       and stop_kind = 'ordinary' order by sequence desc limit 1),
-  'system_skipped',
-  'the timed redirect records why the unconfirmed ordinary stop was not visited'
+  null::text,
+  'timer cannot fabricate a system skip for an unconfirmed pending arrival'
 );
 
 update app_private.portal_reservations
@@ -110,7 +108,7 @@ where run_id = (select run_id from timed_state where group_id = '23000000-0000-0
 set local role service_role;
 select lives_ok(
   $$ select api.worker_dispatch_due_groups('duindorp-halloween-2026', 50) $$,
-  'the minute worker replans an expired unscanned ordinary reservation'
+  'the minute worker flags an expired unscanned ordinary reservation'
 );
 
 set local role postgres;
@@ -118,15 +116,15 @@ select is(
   (select count(*)::integer from app_private.run_stops
     where run_id = (select run_id from timed_state where group_id = '23000000-0000-0000-0000-000000000003')
       and stop_kind = 'ordinary' and state = 'completed' and outcome = 'system_skipped'),
-  1,
-  'the expired destination is retained in history as a safe system skip'
+  0,
+  'expiry cannot turn the pending current instruction into a system skip'
 );
 select is(
   (select stop_kind::text from app_private.run_stops stop
     join app_private.group_runs run on run.current_stop_id = stop.id
     where run.id = (select run_id from timed_state where group_id = '23000000-0000-0000-0000-000000000003')),
   'ordinary',
-  'an expired destination is replaced by one current capacity-safe ordinary destination'
+  'an expired destination remains the one current instruction'
 );
 
 update timed_state state set short_code = 'TEST-' || right(portal.name, 2)

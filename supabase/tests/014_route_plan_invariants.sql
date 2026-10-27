@@ -111,30 +111,34 @@ update app_private.portals set operation_status='open' where id='12000000-0000-0
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-select lives_ok(
+select throws_ok(
   $$ select api.admin_publish_plans('duindorp-halloween-2026', array['24000000-0000-0000-0000-000000000050']::uuid[], 'Publicatie na volledige hercontrole') $$,
-  'currently valid route publishes after server-side revalidation'
+  '40001','EXPECTED_ROUTE_FINGERPRINT_REQUIRED','old route publication cannot bypass current route fingerprints'
 );
 set local role postgres;
 select is(
   (select state::text from app_private.route_plan_versions where id = '24000000-0000-0000-0000-000000000050'),
-  'published',
-  'validated plan state is published'
+  'valid',
+  'blocked legacy publication leaves the validated plan private'
 );
 select is(
   (select status from app_private.walking_groups where id = '23000000-0000-0000-0000-000000000050'),
-  'ready',
-  'validated group becomes ready only after publication'
+  'draft',
+  'blocked legacy publication does not mark the group ready'
 );
 select ok(
-  exists (
+  not exists (
     select 1 from app_private.audit_events
     where action = 'route_plan.published' and resource_type = 'route_plan_batch'
       and minimal_change->>'planCount' = '1'
   ),
-  'successful publication creates an audit event'
+  'rejected legacy publication creates no successful publication audit'
 );
 
+-- Explicit privileged legacy fixture for the immutability/active-run checks
+-- below. This is not an application publication or a fingerprint bypass.
+update app_private.route_plan_versions set state='published',published_at=clock_timestamp() where id='24000000-0000-0000-0000-000000000050';
+update app_private.walking_groups set status='ready' where id='23000000-0000-0000-0000-000000000050';
 select throws_ok(
   $$ update app_private.route_plan_stops set planned_arrival_at = planned_arrival_at + interval '1 minute' where plan_version_id = '24000000-0000-0000-0000-000000000050' and position = 1 $$,
   '55000', 'PUBLISHED_PLAN_IMMUTABLE', 'a published route stop cannot be edited in place'
@@ -188,19 +192,19 @@ select is(
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-select lives_ok(
+select throws_ok(
   $$ select api.admin_publish_plans(
     'duindorp-halloween-2026',
     array[(select plan_id from route_revision_values)]::uuid[],
     'Nieuwe routeversie na expliciete hercontrole'
   ) $$,
-  'the reviewed correction publishes as a new immutable version'
+  '40001','EXPECTED_ROUTE_FINGERPRINT_REQUIRED','old correction publication cannot omit expected fingerprints'
 );
 set local role postgres;
 select is(
   (select state::text from app_private.route_plan_versions where group_id = '23000000-0000-0000-0000-000000000050' and revision = 2),
-  'published',
-  'the corrected route is independently published'
+  'valid',
+  'the unpublished correction remains a separate valid draft'
 );
 select is(
   (select status from app_private.walking_groups where id = '23000000-0000-0000-0000-000000000050'),

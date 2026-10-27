@@ -1,14 +1,14 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
-function promote(workflowPassed: boolean, exactSha = true, deploymentPassed = true, environmentPassed = true, branch = "staging") {
+function promote(workflowPassed: boolean, exactSha = true, deploymentPassed = true, environmentPassed = true, branch = "staging", loadPassed = true) {
   return spawnSync(process.execPath, ["--input-type=module", "-e", `
     globalThis.fetch = async (input) => {
       const url = String(input);
       let body;
       if (url.includes('/actions/workflows/')) {
         body = {workflow_runs:[{id:7,head_sha:${exactSha ? 'process.env.GITHUB_SHA' : '"wrong-sha"'},head_branch:${JSON.stringify(branch)},conclusion:${JSON.stringify(workflowPassed ? "success" : "failure")}}]};
-      } else if (url.includes('/jobs?')) body = {jobs:[{name:'Dedicated staging runner maintenance (no deployment)',conclusion:'success'},{name:'Validate, migrate, deploy and accept',conclusion:${JSON.stringify(deploymentPassed ? 'success' : 'skipped')}}]};
+      } else if (url.includes('/jobs?')) body = {jobs:[{name:'Dedicated staging runner maintenance (no deployment)',conclusion:'success'},{name:'Validate, migrate, deploy and accept',conclusion:${JSON.stringify(deploymentPassed ? 'success' : 'skipped')}},{name:'Staging evening load and preservation acceptance',conclusion:${JSON.stringify(loadPassed ? 'success' : 'skipped')}}]};
       else if (url.includes('/statuses')) body = [{state:${JSON.stringify(environmentPassed ? 'success' : 'failure')}}];
       else body = [{id:1}];
       return new Response(JSON.stringify(body));
@@ -52,3 +52,5 @@ describe("production staging workflow gate", () => {
     expect(result.status, result.stderr).toBe(0);
   });
 });
+
+it("requires the independent load and preservation job", () => { expect(promote(true,true,true,true,"staging",false).status).not.toBe(0); });

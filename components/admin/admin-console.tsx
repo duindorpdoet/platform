@@ -5,6 +5,12 @@ import {VirtualRehearsal} from "@/components/redesign/virtual-rehearsal";
 import {AdminPortalThanks} from "@/components/redesign/portal-thanks";
 
 import Image from "next/image";
+import {useSnapshotRefresh} from "@/lib/realtime/use-snapshot-refresh";
+import {createCoalescedRefresh} from "@/lib/realtime/coalesced-refresh";
+import {EveningFreshness,emptyEveningHealth} from "./evening-freshness";
+import {EveningReadiness} from "./evening-readiness";
+import {EveningActionDialog,type EveningAction} from "./evening-action-dialog";
+import "../../modern/evening-ops.css";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
@@ -54,6 +60,7 @@ import { PushNotificationSettings } from "@/components/pwa/pwa-experience";
 import { normalizeActivity } from "@/lib/domain/activity-labels";
 import { paymentRegistrationStage, type PaymentRegistrationStage } from "@/lib/domain/payment-registration-stage";
 import { createClient } from "@/lib/supabase/client";
+import {withRequestDeadline} from "@/lib/redesign/request-deadline";
 
 type Dashboard = {
   event: {
@@ -241,6 +248,7 @@ const sectionMeta = {
   share: { kicker: "Communicatie · delen", title: "Deelstudio", description: "Beheer deelkaarten, campagneperiodes en privacyvriendelijke funnels." },
   content: { kicker: "Website · redactie", title: "Content & sponsors", description: "Beheer zichtbare informatie en partners." },
   access: { kicker: "Organisatie · toegang", title: "Beheerders", description: "Bepaal wie welk onderdeel van de nacht mag beheren." },
+  readiness: {kicker:"De avond · voorbereiding",title:"Gereed voor de avond",description:"Voorbereiding per groep en poort, met bron en tijdstip."},
   live: { kicker: "De avond · live", title: "Avondcockpit", description: "Volg de groepen en poorten en help waar dat nodig is." },
   tickets: { kicker: "Eén doorlopend gesprek", title: "Messenger", description: "Nieuwe berichten, lopende gesprekken en antwoorden in één inbox." },
   updates: { kicker: "Communicatie · gericht", title: "Gerichte updates", description: "Bereik precies de groepen of huizen waarvoor een wijziging geldt." },
@@ -248,6 +256,7 @@ const sectionMeta = {
   thanks: { kicker: "Een warm bedankje", title: "Bedankjes", description: "Bekijk de dankwoorden van gezinnen voor de poortbewoners." },
   settings: { kicker: "Grenzen en toegang", title: "Instellingen", description: "Beheer inschrijfkanalen, groepsgrenzen en operationele voorbereiding." },
 } as const;
+const runStatusLabels:Record<string,string>={draft:"Concept",ready:"Voor vertrek",live:"Onderweg",paused:"Gepauzeerd",completed:"Afgerond",stopped:"Afgemeld",archived:"Gearchiveerd"};
 const paymentStatusLabels: Record<string, string> = {
   cancelled: "Afgezegd",
   needs_review: "Controle nodig",
@@ -279,7 +288,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const sectionAllowed=useCallback((key:string)=>{
     const can=(...items:string[])=>capabilities.includes('event_admin')||items.some(item=>capabilities.includes(item));
-    const allowed:Record<string,boolean>={overview:can('registration_manage','portals_manage','groups_manage','live_support'),registrations:can('registration_manage'),together:can('registration_manage','groups_manage'),groups:can('groups_manage'),payments:can('payments_manage'),poortenboek:can('groups_manage'),portals:can('portals_manage'),planner:can('groups_manage'),tickets:can('groups_manage','live_support'),updates:can('content_manage','live_support'),praatkamer:can('portals_manage','live_support'),editorial:editorialEnabled&&can('content_manage','content_publish','communications_manage','communications_send'),share:can('communications_manage'),content:can('content_manage','content_publish'),live:can('live_support'),simulation:can('live_support'),thanks:can('live_support'),settings:can(),security:can(),access:can(),imports:can('registration_manage','portals_manage','groups_manage'),statistics:can()};
+    const allowed:Record<string,boolean>={overview:can('registration_manage','portals_manage','groups_manage','live_support'),registrations:can('registration_manage'),together:can('registration_manage','groups_manage'),groups:can('groups_manage'),payments:can('payments_manage'),poortenboek:can('groups_manage'),portals:can('portals_manage'),planner:can('groups_manage'),tickets:can('groups_manage','live_support'),updates:can('content_manage','live_support'),praatkamer:can('portals_manage','live_support'),editorial:editorialEnabled&&can('content_manage','content_publish','communications_manage','communications_send'),share:can('communications_manage'),content:can('content_manage','content_publish'),readiness:can('live_support','groups_manage','portals_manage'),live:can('live_support'),simulation:can('live_support'),thanks:can('live_support'),settings:can(),security:can(),access:can(),imports:can('registration_manage','portals_manage','groups_manage'),statistics:can()};
     return allowed[key]??false;
   }, [capabilities, editorialEnabled]);
   const [section, setSection] = useState<
@@ -298,6 +307,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     | "share"
     | "content"
     | "access"
+    | "readiness"
     | "live"
     | "tickets"
     | "updates"
@@ -389,6 +399,9 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const [livePortals, setLivePortals] = useState<LivePortal[]>([]);
   const [portalOperations, setPortalOperations] = useState<PortalOperation[]>([]);
   const [portalRealtimeTopic, setPortalRealtimeTopic] = useState<string | null>(null);
+  const [eveningHealth,setEveningHealth]=useState(emptyEveningHealth);
+  const sourceRequests=useRef({dashboard:0,cockpit:0,portals:0});
+  const [eveningAction,setEveningAction]=useState<EveningAction|null>(null);
   const [liveConnection, setLiveConnection] = useState<"connecting" | "live" | "offline">("connecting");
   const [liveConnectionRetry, setLiveConnectionRetry] = useState(0);
   const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
@@ -448,56 +461,34 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const registrationChildCount = registrations.reduce((total, registration) => total + registration.childCount, 0);
   const [togetherRequests, setTogetherRequests] = useState<TogetherRequest[]>([]);
-  const load = useCallback(async () => {
-    const client = createClient();
-    if (!client) return;
-    const { data } = await client
-      .schema("api")
-      .rpc("admin_dashboard", { _event_slug: eventSlug });
-    const next = data as Dashboard;
-    setDashboard(next);
-  }, [eventSlug]);
-  const loadLive = useCallback(async () => {
-    const client = createClient();
-    if (!client) return;
-    const [cockpitResult, portalResult] = await Promise.all([
-      client.schema("api").rpc("admin_evening_cockpit", { _event_slug: eventSlug }),
-      client.schema("api").rpc("admin_portal_operations_snapshot", { _event_slug: eventSlug }),
+  const load=useCallback(async()=>{
+    const request=++sourceRequests.current.dashboard;
+    try{const client=createClient();if(!client)throw new Error();const result=await withRequestDeadline(client.schema("api").rpc("admin_dashboard",{_event_slug:eventSlug}));
+      if(request!==sourceRequests.current.dashboard)return;
+      if(!result||result.error||!result.data)throw new Error();
+      const next=result.data as Dashboard;if(!next.event?.id||!next.counts)throw new Error();setDashboard(next);setEveningHealth(current=>({...current,dashboard:{at:Date.now(),error:null}}));
+    }catch{if(request===sourceRequests.current.dashboard)setEveningHealth(current=>({...current,dashboard:{...current.dashboard,error:"Overzicht en meldingstellers konden niet worden bijgewerkt."}}));}
+  },[eventSlug]);
+  const loadLive=useCallback(async()=>{
+    const cockpitRequest=++sourceRequests.current.cockpit,portalRequest=++sourceRequests.current.portals;
+    const client=createClient();if(!client)return;
+    await Promise.allSettled([
+      (async()=>{try{const result=await withRequestDeadline(client.schema("api").rpc("admin_evening_cockpit",{_event_slug:eventSlug}));if(cockpitRequest!==sourceRequests.current.cockpit)return;if(result.error||!result.data)throw new Error();const cockpit=result.data as {groups:LiveRun[];portals:LivePortal[];alerts:LiveAlert[]};if(!Array.isArray(cockpit.groups)||!Array.isArray(cockpit.portals)||!Array.isArray(cockpit.alerts))throw new Error();setLiveRuns(cockpit.groups);setLivePortals(cockpit.portals);setLiveAlerts(cockpit.alerts);setEveningHealth(current=>({...current,cockpit:{at:Date.now(),error:null}}));}catch{if(cockpitRequest===sourceRequests.current.cockpit)setEveningHealth(current=>({...current,cockpit:{...current.cockpit,error:"Groepen en veiligheidssignalen konden niet worden bijgewerkt."}}));}})(),
+      (async()=>{try{const result=await withRequestDeadline(client.schema("api").rpc("admin_portal_operations_snapshot",{_event_slug:eventSlug}));if(portalRequest!==sourceRequests.current.portals)return;if(result.error||!result.data)throw new Error();const portals=result.data as {realtimeTopic?:string;portals?:PortalOperation[]};if(!Array.isArray(portals.portals))throw new Error();setPortalOperations(portals.portals??[]);setPortalRealtimeTopic(portals.realtimeTopic??null);setEveningHealth(current=>({...current,portals:{at:Date.now(),error:null}}));}catch{if(portalRequest===sourceRequests.current.portals)setEveningHealth(current=>({...current,portals:{...current.portals,error:"Poorten en capaciteit konden niet worden bijgewerkt."}}));}})()
     ]);
-    if (!cockpitResult.error) {
-      const cockpit = cockpitResult.data as { groups: LiveRun[]; portals: LivePortal[]; alerts: LiveAlert[] };
-      setLiveRuns(cockpit.groups);
-      setLivePortals(cockpit.portals);
-      setLiveAlerts(cockpit.alerts);
-    }
-    if (!portalResult.error) {
-      const portalSnapshot = portalResult.data as { realtimeTopic?: string; portals?: PortalOperation[] } | null;
-      setPortalOperations(portalSnapshot?.portals ?? []);
-      setPortalRealtimeTopic(portalSnapshot?.realtimeTopic ?? null);
-    }
-    if (cockpitResult.error && portalResult.error) setNotice("Live-overzicht is alleen beschikbaar voor bevoegde avondbeheerders.");
-  }, [eventSlug]);
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void load();
-      void loadLive();
-    }, 0);
-    const poll = window.setInterval(() => {
-      if (section === "overview" || section === "live") void loadLive();
-    }, 20_000);
-    return () => {
-      window.clearTimeout(timer);
-      window.clearInterval(poll);
-    };
-  }, [load, loadLive, section]);
+  },[eventSlug]);
+  const refreshEvening=useCallback(async()=>{await Promise.allSettled([load(),loadLive()]);},[load,loadLive]);
+  useSnapshotRefresh(refreshEvening);
+  useEffect(()=>{const timer=setTimeout(()=>void refreshEvening(),0);return()=>clearTimeout(timer);},[refreshEvening]);
   useEffect(() => {
     const client = createClient();
     if (!client || !portalRealtimeTopic || !["overview", "live"].includes(section)) return;
+    const refreshQueue = createCoalescedRefresh(refreshEvening);
     const channel = client.channel(portalRealtimeTopic, { config: { private: true } })
-      .on("broadcast", { event: "snapshot_changed" }, () => void loadLive())
+      .on("broadcast", { event: "snapshot_changed" }, refreshQueue.request)
       .subscribe((status: string) => setLiveConnection(status === "SUBSCRIBED" ? "live" : status === "CHANNEL_ERROR" || status === "TIMED_OUT" ? "offline" : "connecting"));
-    return () => { void client.removeChannel(channel); };
-  }, [liveConnectionRetry, loadLive, portalRealtimeTopic, section]);
+    return () => { refreshQueue.dispose(); void client.removeChannel(channel); };
+  }, [liveConnectionRetry, refreshEvening, portalRealtimeTopic, section]);
 
   async function dryRun(file: File) {
     const parsed = Papa.parse<Record<string, string>>(await file.text(), {
@@ -1038,44 +1029,8 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     await loadLive();
   }
 
-  async function redirectGroup(run: LiveRun, target: "ordinary" | "finale") {
-    if (!run.runId || run.runVersion === null) return;
-    let portalId: string | null = null;
-    if (target === "ordinary") {
-      const choices = livePortals.filter((portal) => !portal.isFinal && portal.operationStatus === "open");
-      portalId = window.prompt(`ID van de gewenste gewone poort:\n${choices.map((portal) => `${portal.name}: ${portal.id}`).join("\n")}`)?.trim() ?? null;
-      if (!portalId || !choices.some((portal) => portal.id === portalId))
-        return setNotice("Kies een open, goedgekeurde gewone poort uit de lijst.");
-    }
-    const client = createClient();
-    if (!client) return;
-    const { error } = await client.schema("api").rpc("admin_redirect_group", {
-      _run_id: run.runId,
-      _target: target,
-      _preferred_portal_id: portalId,
-      _expected_run_version: run.runVersion,
-      _reason: target === "finale" ? "Groep omgeleid naar laatste poort" : "Groep omgeleid naar gekozen gewone poort",
-    });
-    setNotice(error ? `Omleiding geweigerd: ${error.message}` : target === "finale" ? "De laatste poort is veilig gereserveerd en gepubliceerd." : "De gekozen volgende gewone poort is gereserveerd en gepubliceerd.");
-    await loadLive();
-  }
-
-  async function safeWithdraw(run: LiveRun) {
-    if (!run.runId || run.runVersion === null) return;
-    const email = window.prompt(`Welke verantwoordelijke volwassene neemt de groep mee?\n${run.responsibleAdults.map((adult) => adult.email).join("\n")}`)?.trim().toLowerCase();
-    const adult = run.responsibleAdults.find((candidate) => candidate.email.toLowerCase() === email);
-    if (!adult) return setNotice("Kies een geregistreerde volwassene uit deze groep.");
-    const client = createClient();
-    if (!client) return;
-    const { error } = await client.schema("api").rpc("admin_safe_withdraw_group", {
-      _run_id: run.runId,
-      _responsible_adult_user_id: adult.userId,
-      _expected_run_version: run.runVersion,
-      _reason: "Groep veilig afgemeld via avondcockpit",
-    });
-    setNotice(error ? `Afmelding geweigerd: ${error.message}` : "De veilige afmelding en verantwoordelijke volwassene zijn vastgelegd.");
-    await loadLive();
-  }
+  function redirectGroup(run:LiveRun,target:"ordinary"|"finale") {if(run.runId)setEveningAction({runId:run.runId,groupId:run.groupId,groupCode:run.systemCode||run.groupCode,mode:target,opener:document.activeElement as HTMLElement|null});}
+  function safeWithdraw(run:LiveRun) {if(run.runId)setEveningAction({runId:run.runId,groupId:run.groupId,groupCode:run.systemCode||run.groupCode,mode:"withdraw",opener:document.activeElement as HTMLElement|null});}
 
   async function activateEmergencyClosure() {
     if (!window.confirm("De voorbereide noodafsluiting activeren voor alle actieve groepen?")) return;
@@ -1119,6 +1074,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     + (canManageTogether ? dashboard?.counts.pendingTogetherRequests ?? 0 : 0)
     + (canUseTickets ? dashboard?.counts.openTickets ?? 0 : 0);
 
+  if (!dashboard&&eveningHealth.dashboard.error)return <div className="panel" role="alert"><h1>Beheergegevens niet beschikbaar</h1><p>{eveningHealth.dashboard.error}</p><button className="btn" onClick={()=>void refreshEvening()}>Opnieuw proberen</button></div>;
   if (!dashboard)
     return (
       <div className="panel loading-state">
@@ -1132,7 +1088,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     {key:"portals",label:"Poorten",icon:DoorOpen,sections:["portals"]},
     {key:"planning",label:"Startregie",icon:CalendarClock,sections:["planner"]},
     {key:"communications",label:"Communicatie",icon:MessageSquare,sections:["tickets","updates","praatkamer",...(editorialEnabled?["editorial"]:[]),"share","content"]},
-    {key:"evening",label:"De avond",icon:LifeBuoy,sections:["live","simulation","thanks"]},
+    {key:"evening",label:"De avond",icon:LifeBuoy,sections:["live","readiness","simulation","thanks"]},
     {key:"management",label:"Beheer",icon:SlidersHorizontal,sections:["settings","security","access","imports","statistics"]}
   ];
   const permittedNavGroups=navGroups.map(item=>({...item,sections:item.sections.filter(sectionAllowed)})).filter(item=>item.sections.length>0);
@@ -1141,6 +1097,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const commandResults=Object.entries(sectionMeta).filter(([key,value])=>sectionAllowed(key)&&(!commandQuery||`${value.title} ${value.description}`.toLowerCase().includes(commandQuery.toLowerCase())));
   return (
     <div className="admin-shell modern-admin-shell">
+      {eveningAction&&<EveningActionDialog key={eveningAction.runId+eveningAction.mode} action={eveningAction} onClose={()=>setEveningAction(null)} onSaved={async message=>{setNotice(message);await refreshEvening();}}/>}
       <EnvironmentTracker surface={section === "editorial" ? "editorial" : "admin"} />
       <Dialog open={commandOpen} onOpenChange={setCommandOpen}><DialogContent className="modern-command-dialog"><DialogTitle>Waar wil je naartoe?</DialogTitle><DialogDescription>Zoek een onderdeel van je evenement.</DialogDescription><div className="modern-command-input"><Search/><input autoFocus type="search" value={commandQuery} onChange={event=>setCommandQuery(event.target.value)} placeholder="Zoek inschrijvingen, startregie, berichten…" aria-label="Zoek onderdeel"/><kbd>ESC</kbd></div><div className="modern-command-results">{commandResults.map(([key,value])=><button key={key} onClick={()=>openSection(key as keyof typeof sectionMeta)}><span><strong>{value.title}</strong><small>{value.description}</small></span><ArrowUpRight/></button>)}{commandResults.length===0&&<p>Geen onderdeel gevonden. Probeer een andere zoekterm.</p>}</div></DialogContent></Dialog>
       {mobileNavOpen && <button className="admin-nav-backdrop" tabIndex={-1} aria-label="Navigatie sluiten" onClick={() => setMobileNavOpen(false)} />}
@@ -1196,7 +1153,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             </DialogContent>
           </Dialog>
         </header>
-        {activeGroup.sections.length>1&&<nav className="modern-admin-subnav" aria-label={`${activeGroup.label} onderdelen`}>{activeGroup.sections.map(key=><button key={key} className={section===key?"active":""} aria-current={section===key?"page":undefined} onClick={()=>openSection(key as keyof typeof sectionMeta)}>{({registrations:"Inschrijvingen",together:"Samenlopen",groups:"Groepsindeling",payments:"Betalingen",poortenboek:"Poortenboek",tickets:"Inbox",updates:"Updates",praatkamer:"Praatkamer",editorial:"Redactiekamer",share:"Deelstudio",content:"Website & sponsors",live:"Livecockpit",simulation:"Generale",thanks:"Bedankjes",settings:"Instellingen",security:"Push & beveiliging",access:"Beheerders",imports:"Imports",statistics:"Statistieken"} as Record<string,string>)[key]}</button>)}</nav>}
+        {activeGroup.sections.length>1&&<nav className="modern-admin-subnav" aria-label={`${activeGroup.label} onderdelen`}>{activeGroup.sections.map(key=><button key={key} className={section===key?"active":""} aria-current={section===key?"page":undefined} onClick={()=>openSection(key as keyof typeof sectionMeta)}>{({registrations:"Inschrijvingen",together:"Samenlopen",groups:"Groepsindeling",payments:"Betalingen",poortenboek:"Poortenboek",tickets:"Inbox",updates:"Updates",praatkamer:"Praatkamer",editorial:"Redactiekamer",share:"Deelstudio",content:"Website & sponsors",live:"Livecockpit",readiness:"Gereed voor de avond",simulation:"Generale",thanks:"Bedankjes",settings:"Instellingen",security:"Push & beveiliging",access:"Beheerders",imports:"Imports",statistics:"Statistieken"} as Record<string,string>)[key]}</button>)}</nav>}
         <main ref={contentRef} id="admin-content" className="admin-content" data-admin-section={section} tabIndex={-1}>
         {section === "statistics" ? null : ["praatkamer", "groups", "together", "poortenboek", "portals", "planner", "tickets", "updates", "editorial", "share", "content", "access"].includes(section) ? <h1 className="sr-only">{sectionMeta[section].title}</h1> : <header className="app-heading admin-page-heading row-between">
           <div>
@@ -1625,10 +1582,12 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         {section === "poortenboek" && canManageGroups && <PoortenboekAdmin />}
         {section === "groups" && (capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && <GroupCompositionBoard onOpenStarts={()=>openSection("planner")} eventSlug={eventSlug} />}
         {section === "planner" && <StartScheduleBoard eventSlug={eventSlug} maxGroupSize={dashboard.event.maxGroupSize} onOpenPortals={() => setSection("portals")} />}
+        {["overview","live"].includes(section)&&<EveningFreshness health={eveningHealth} connection={liveConnection} reload={refreshEvening}/>}
+        {section==="readiness"&&<EveningReadiness eventSlug={eventSlug}/>}
         {section === "live" && (
           <div className="admin-live-cockpit">
             <section className="panel">
-              <div className="row-between"><div><p className="kicker">Actuele, bevestigde toestand</p><h2>Avondcockpit</h2></div><button className="btn outline" onClick={() => void loadLive()}><RefreshCw />Vernieuwen</button></div>
+              <div className="row-between"><div><p className="kicker">Actuele, bevestigde toestand</p><h2>Avondcockpit</h2></div><button className="btn outline" onClick={() => void refreshEvening()}><RefreshCw />Vernieuwen</button></div>
               <p>De kaart toont alle goedgekeurde poorten met een geverifieerde positie en werkt hun operationele status live bij. Adressen zonder bevestigde coördinaten worden niet op een plek geschat.</p>
               <NightMap variant="admin" ariaLabel="Cockpitkaart met actuele, geverifieerde poorten" onPortalSelect={() => setSection("portals")} portals={portalOperations.map((portal) => ({ id: portal.portalId, code: portal.systemCode, name: portal.name, world: portal.world, coordinate: portal.coordinate, address: portal.formattedAddress ?? undefined, contactName: portal.contactName ?? undefined, phone: portal.phone ?? undefined, status: portal.operationStatus, isFinal: portal.isFinal }))} />
             </section>
@@ -1640,9 +1599,9 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
               <p className="kicker">Handmatige bediening</p><h2>Groepen</h2>
               {liveRuns.length === 0 ? <p>Geen ingedeelde groepen.</p> : liveRuns.map((run) => (
                 <div className="incident-row" key={run.groupId}>
-                  <div><strong>{[run.systemCode || run.groupCode, run.displayName].filter(Boolean).join(" · ")} · {run.currentPortal ?? "geen actieve bestemming"}</strong><small>{run.runStatus ?? run.status} · {run.childCount} kinderen · laatst bevestigd {run.lastConfirmedAt ? new Date(run.lastConfirmedAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "nog niet gestart"}</small><small>Stopgrens {run.effectiveStopAt ? new Date(run.effectiveStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "–"} · finale {run.expectedFinaleArrivalAt ? new Date(run.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "–"}</small></div>
+                  <div><strong>{[run.systemCode || run.groupCode, run.displayName].filter(Boolean).join(" · ")} · {run.currentPortal ?? "geen actieve bestemming"}</strong><small>{runStatusLabels[run.runStatus??run.status]??"Nog niet gestart"} · {run.childCount} kinderen · laatst bevestigd {run.lastConfirmedAt ? new Date(run.lastConfirmedAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "nog niet gestart"}</small><small>Stopgrens {run.effectiveStopAt ? new Date(run.effectiveStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "–"} · finale {run.expectedFinaleArrivalAt ? new Date(run.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "–"}</small></div>
                   <button className="btn outline" onClick={() => void startMessage("group", run.groupId, [run.systemCode || run.groupCode, run.displayName].filter(Boolean).join(" · "))}><MessageSquare />Bericht sturen</button>
-                  {run.runId && run.runVersion !== null && <div className="actions">
+                  {run.runId && run.runVersion !== null && ["live","paused"].includes(run.runStatus??"") && <div className="actions">
                     {run.currentStopId && <button className="btn outline" onClick={() => void liveCommand(run, "override")}>Scanoverride</button>}
                     <button className="btn outline" onClick={() => void liveCommand(run, run.runStatus === "paused" ? "live" : "paused")}>{run.runStatus === "paused" ? "Hervatten" : "Pauzeren"}</button>
                     {run.runStatus === "live" && run.currentKind !== "finale" && <button className="btn outline" onClick={() => void redirectGroup(run, "ordinary")}>Andere gewone poort</button>}

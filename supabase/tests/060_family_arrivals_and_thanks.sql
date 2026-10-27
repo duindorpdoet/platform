@@ -12,6 +12,7 @@ do $$declare e uuid;h uuid:=gen_random_uuid();reg uuid:=gen_random_uuid();c uuid
  insert into app_private.registrations(id,event_id,household_id,status,reference) values(reg,e,h,'submitted','ISOLATED-'||reg);
  insert into app_private.children(id,household_id,first_name,age_at_event) values(c,h,'Ander oefenkind',8);
  insert into app_private.registration_children(event_id,registration_id,child_id,unit_price_cents) values(e,reg,c,0);
+ insert into app_private.payment_requests(registration_id,purpose,amount_cents,reference,status) values(reg,'registration',0,'FAMILY-FIXTURE-'||reg,'waived');
  insert into app_private.group_registrations(group_id,registration_id,assignment_revision,published_at) values('23000000-0000-0000-0000-000000000002',reg,1,now());
 end $$;
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);

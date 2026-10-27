@@ -40,6 +40,7 @@ import { ParticipantTogether } from "@/components/registration/participant-toget
 import { ParentPoortenboek } from "@/components/poortenboek/parent";
 import {EarlyDeparture} from "@/components/redesign/early-departure";
 import {FamilyPortalThanks} from "@/components/redesign/portal-thanks";
+import {ObservedStartTime,useAccountObservation} from "@/components/group/start-appointment-observation";
 import { GroupExperience } from "@/components/group/group-experience";
 import { GroupJourneyPreference } from "@/components/group/group-journey-preference";
 import { GroupIdentity } from "@/components/group/group-identity";
@@ -178,9 +179,9 @@ export function ParticipantShell({
       </header>
       {inviteNotice && <div className="participant-notice" role="status">{inviteNotice}</div>}
       <main className="participant-content" id="participant-content">
-        {selectedRole.key === "walker" && <WalkerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
+        {selectedRole.key === "walker" && <WalkerSection key={userId} context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
         {selectedRole.key === "viewer" && <ViewerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
-        {selectedRole.key === "homeowner" && <HomeownerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
+        {selectedRole.key === "homeowner" && <HomeownerSection key={userId} context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
       </main>
     </div>
     <ParticipantNavigation role={selectedRole.key} activeSection={activeSection} />
@@ -229,6 +230,7 @@ type RegistrationPreferences = {
   editable?: boolean;
 };
 type GroupSnapshot = {
+  readinessRevision?:string|null;
   group: {
     id: string;
     code: string;
@@ -268,6 +270,7 @@ const paymentLabels: Record<string, string> = {
 };
 
 function WalkerSection({ context, eventSlug, userId, role, section }: { context: ParticipantContext; eventSlug: string; userId: string; role: ParticipantRole; section?: string }) {
+  useAccountObservation("group",role.groupId);
   const [registration, setRegistration] = useState<RegistrationSnapshot | null>(null);
   const [group, setGroup] = useState<GroupSnapshot | null>(null);
   const [preferences, setPreferences] = useState<RegistrationPreferences | null>(null);
@@ -288,7 +291,7 @@ function WalkerSection({ context, eventSlug, userId, role, section }: { context:
   useSnapshotRefresh(load);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
-  if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience groupId={role.groupId} userId={userId} /></ParticipantPageFrame>;
+  if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience groupId={role.groupId} userId={userId} contact={{email:context.event.supportEmail,phone:context.event.supportPhone}} /></ParticipantPageFrame>;
   if (loading) return <ParticipantLoading />;
   if (section === "groep") return <WalkerGroup group={group} registration={registration} preferences={preferences} groupId={role.groupId ?? undefined} reload={load} />;
   if (section === "nachtpas") return <NightPass snapshot={registration} group={group} reload={load} />;
@@ -334,7 +337,7 @@ function WalkerNow({ context, registration, group, reload }: { context: Particip
     <div className="member-prepare-hero"><div><span className="member-state-pill"><MoonStar size={14}/>{event.weekday} {event.dateShort}</span><h2>De wijk wacht op jullie.</h2><p>Een avond vol bijzondere deuren en kleine avonturen. Hier regel je rustig alles voor jullie vertrek.</p><Countdown target={group?.group.start?.startsAt??context.event.startsAt}/></div><img src="/images/05-meelopen-samen-op-pad.webp" alt="Samen op pad door Duindorp"/></div>
     <div className="participant-stat-grid"><StatusCard icon={allPaid ? CheckCircle2 : Clock3} label="Betaling" value={activeChildren.length ? `${paidCount} van ${activeChildren.length} kinderen betaald` : "Wordt voorbereid"} good={allPaid}/><StatusCard icon={Users} label="Jullie groep" value={group ? groupName : "Indeling volgt"}/><StatusCard icon={Clock3} label="Startmoment" value={group?.group.start ? formatTime(group.group.start.startsAt) : "Tijdslot volgt"}/></div>
     {!allPaid && record && <Link className="member-attention-card" href="/omgeving/meeloper/nachtpas"><span className="member-icon-tile"><WalletIcon/></span><div><strong>Controleer jullie betaalstatus</strong><p>{Math.max(0, activeChildren.length-paidCount)} {activeChildren.length-paidCount === 1 ? "kind wacht" : "kinderen wachten"} nog op bevestiging. Alles staat bij elkaar in de Nachtpas.</p></div><ArrowUpRight/></Link>}
-    {group?.group.start && <section className="participant-card member-start-appointment"><span className="member-icon-tile violet"><CalendarDays/></span><div><p className="participant-eyebrow">Jullie starttijd staat vast</p><h2>{formatDateTime(group.group.start.startsAt)}</h2><StartLocation start={group.group.start}/></div><Link className="btn outline" href="/omgeving/meeloper/groep">Bekijk afspraak<ChevronRight size={16}/></Link></section>}
+    {group?.group.start && <section className="participant-card member-start-appointment"><span className="member-icon-tile violet"><CalendarDays/></span><div><p className="participant-eyebrow">Jullie starttijd staat vast</p><ObservedStartTime groupId={group.group.id} revision={group.readinessRevision}>{formatDateTime(group.group.start.startsAt)}</ObservedStartTime><StartLocation start={group.group.start}/></div><Link className="btn outline" href="/omgeving/meeloper/groep">Bekijk afspraak<ChevronRight size={16}/></Link></section>}
     <div className="participant-preparation-grid">{record && <section className="participant-card participant-children-card"><div className="section-title"><div><p className="participant-eyebrow">Jullie inschrijving</p><h2>Deelnemende kinderen</h2></div><TicketCheck aria-hidden="true"/></div><ChildPaymentRows items={record.children} registrationId={record.id} legacyPayment={payment} reload={reload}/></section>}<PreparationList paid={allPaid} grouped={Boolean(group)}/></div>
     <section className="member-shortcuts" aria-label="Snel naar"><Link href="/poortenboek/ouder"><Sparkles/><span><strong>De voorpret gaat verder</strong><small>Open het Poortenboek</small></span><ChevronRight/></Link><Link href="/omgeving/meeloper/groep"><Users/><span><strong>Samen op pad</strong><small>Groep & samenlopen</small></span><ChevronRight/></Link><Link href="/deel-de-magie"><ArrowUpRight/><span><strong>Deel de magie</strong><small>Maak jullie deelkaart</small></span><ChevronRight/></Link></section>
   </ParticipantPageFrame>;
@@ -358,7 +361,7 @@ function WalkerGroup({ group, registration, preferences, groupId, reload }: { gr
       <StatusCard icon={MoonStar} label="Gewenste laatste poort" value={preferences?.desiredEndAt ? formatTime(preferences.desiredEndAt) : "Geen voorkeur"} />
       <StatusCard icon={Route} label="Voortgang" value={group.run ? `${group.run.history.length} bevestigd` : "Nog niet gestart"} />
     </div>
-    <section className="participant-card group-summary"><span className="group-summary-icon" aria-hidden="true"><Footprints /></span><div><p className="participant-eyebrow">Startmoment</p><h2>{group.group.start ? formatDateTime(group.group.start.startsAt) : "Wordt binnenkort gedeeld"}</h2>{group.group.start?<StartLocation start={group.group.start}/>:<p>Jullie startplek wordt binnenkort bekendgemaakt.</p>}</div><span className="group-code">{group.group.code}</span></section>
+    <section className="participant-card group-summary"><span className="group-summary-icon" aria-hidden="true"><Footprints /></span><div><p className="participant-eyebrow">Startmoment</p><ObservedStartTime groupId={group.group.id} revision={group.readinessRevision}>{group.group.start ? formatDateTime(group.group.start.startsAt) : "Wordt binnenkort gedeeld"}</ObservedStartTime>{group.group.start?<StartLocation start={group.group.start}/>:<p>Jullie startplek wordt binnenkort bekendgemaakt.</p>}</div><span className="group-code">{group.group.code}</span></section>
     <section className="participant-card"><div className="section-title"><div><p className="participant-eyebrow">Gekoppelde deelnemers</p><h2>{group.access.leader ? "Aanwezigheid en veiligheid" : "Jouw kinderen"}</h2></div><ShieldCheck /></div>
       {visibleChildren.length === 0 && <p>De deelnemerslijst verschijnt zodra de route start.</p>}
       <div className="participant-list">{visibleChildren.map((child) => <div key={child.id}><span className="participant-avatar">{child.firstName.slice(0, 1)}</span><span><strong>{child.firstName}</strong><small>{child.attendance === "present" ? "Aanwezig" : child.attendance === "absent" ? "Afwezig" : "Aangemeld"}</small></span>{child.status && <em>{child.status === "visited" ? "Bezocht" : child.status === "skipped" ? "Overgeslagen" : "Wacht"}</em>}</div>)}</div>
@@ -424,6 +427,7 @@ function HomeownerSection({ context, eventSlug, userId, role, section }: { conte
   const event=useEventDetails();
   const [arrivals, setArrivals] = useState<ArrivalsSnapshot | null>(null);
   const [portal, setPortal] = useState<PortalSnapshot>(null);
+  useAccountObservation("portal",portal?.portal?.id??role.portalId);
   const load = useCallback(async () => {
     const client = createClient(); if (!client) return;
     const portalResult = await client.schema("api").rpc("portal_snapshot", { _event_slug: eventSlug });

@@ -90,8 +90,10 @@ begin
     values (v_portal_id, 'Testpoort ' || lpad(i::text, 2, '0'), 'Fictieve teaser voor tests.', 'Duindorp', now())
     on conflict (portal_id) do nothing;
     insert into app_private.portal_owners(portal_id, user_id) values (v_portal_id, v_owner) on conflict do nothing;
+    -- The four synthetic groups overlap with 23 children in total. Capacity
+    -- failure tests set their own small bound; happy fixtures must physically fit.
     insert into app_private.portal_windows(portal_id, opens_at, closes_at, visit_minutes, buffer_minutes, max_concurrent_groups, max_children_per_visit)
-    values (v_portal_id, timestamptz '2026-10-31 18:00:00+01', timestamptz '2026-10-31 22:00:00+01', 5, 2, 10, 12)
+    values (v_portal_id, timestamptz '2026-10-31 18:00:00+01', timestamptz '2026-10-31 22:00:00+01', 5, 2, 10, 40)
     on conflict do nothing;
     insert into app_private.portal_flags(portal_id, flag_key, value)
     values (v_portal_id, 'fixture', true) on conflict do nothing;

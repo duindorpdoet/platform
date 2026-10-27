@@ -1,0 +1,151 @@
+{
+  "environment": "staging",
+  "revision": "f9608bd30e0d189ebd659a886cfe6f15b868ce17",
+  "fixtureEvent": "evening-load-1792848729046-426ad1",
+  "counts": {
+    "families": 200,
+    "portals": 30,
+    "admins": 4,
+    "observers": 20,
+    "groups": 25,
+    "distinctIdentities": 254
+  },
+  "phases": [
+    {
+      "name": "distinct-account-logins",
+      "operations": 254,
+      "requests": 254,
+      "responseStatuses": {
+        "200": 254
+      },
+      "byRpc": {},
+      "requestP95Ms": 269,
+      "concurrency": 1,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 606369,
+      "p50Ms": 2386,
+      "p95Ms": 2420,
+      "p99Ms": 2618,
+      "maxMs": 2768,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "before-start-role-snapshots",
+      "operations": 254,
+      "requests": 302,
+      "responseStatuses": {
+        "200": 302
+      },
+      "byRpc": {
+        "group_snapshot": {
+          "requests": 200,
+          "statuses": {
+            "200": 200
+          },
+          "p95Ms": 6215
+        },
+        "admin_evening_cockpit": {
+          "requests": 24,
+          "statuses": {
+            "200": 24
+          },
+          "p95Ms": 12642
+        },
+        "admin_dashboard": {
+          "requests": 24,
+          "statuses": {
+            "200": 24
+          },
+          "p95Ms": 9440
+        },
+        "admin_portal_operations_snapshot": {
+          "requests": 24,
+          "statuses": {
+            "200": 24
+          },
+          "p95Ms": 10186
+        },
+        "portal_room_snapshot": {
+          "requests": 30,
+          "statuses": {
+            "200": 30
+          },
+          "p95Ms": 12272
+        }
+      },
+      "requestP95Ms": 9056,
+      "concurrency": 254,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 12986,
+      "p50Ms": 3267,
+      "p95Ms": 9478,
+      "p99Ms": 12664,
+      "maxMs": 12982,
+      "overClientDeadline": 20
+    }
+  ],
+  "databaseSamples": [
+    {
+      "at": "2026-10-24T13:42:38.575775+00:00",
+      "active": 1,
+      "maximum": 60,
+      "waiting": 0,
+      "connections": 10
+    },
+    {
+      "at": "2026-10-24T13:42:40.53127+00:00",
+      "active": 6,
+      "maximum": 60,
+      "waiting": 0,
+      "connections": 18
+    },
+    {
+      "at": "2026-10-24T13:42:49.263651+00:00",
+      "active": 10,
+      "maximum": 60,
+      "waiting": 0,
+      "connections": 18
+    },
+    {
+      "at": "2026-10-24T13:42:55.924133+00:00",
+      "active": 5,
+      "maximum": 60,
+      "waiting": 0,
+      "connections": 21
+    }
+  ],
+  "realtime": {
+    "attempts": 0,
+    "subscribed": 0,
+    "errors": 0,
+    "messages": 0,
+    "byRole": {
+      "family": 0,
+      "portal": 0,
+      "admin": 0,
+      "observer": 0
+    }
+  },
+  "limitations": [
+    "Generated synthetic walking graph; no physical route or camera proof.",
+    "Native SDK role RPC waves and actual private subscriptions; not 254 rendered browsers or an automatic RPC request for every broadcast.",
+    "VPS HTTP phase measures the real authenticated application shell; scoped fixture route RPCs run on the actual linked Supabase service.",
+    "Observers exercise read requests using the existing live-support capability in the isolated test event.",
+    "Independent sessions are prepared sequentially within the configured shared-IP Auth limit; this is not a simultaneous sign-in capacity test."
+  ],
+  "authPreparation": {
+    "tokenRequestsPerFiveMinutes": 150,
+    "minimumSpacingMs": 2150,
+    "concurrency": 1
+  },
+  "status": "fail",
+  "failure": "initial role snapshots must fit the actual eight-second client deadline",
+  "syntheticAccountsSecured": 254,
+  "preservation": {
+    "originalTables": 22,
+    "originalRows": 7281,
+    "changedOriginalRows": 0
+  }
+}

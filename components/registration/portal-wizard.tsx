@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {withRequestDeadline} from "@/lib/redesign/request-deadline";
+import {VisitInformationFields,type VisitInformationDraft} from "@/components/portal/visit-information";
 
 async function digest(value: unknown) {
   return [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(value))))]
@@ -12,6 +14,8 @@ async function digest(value: unknown) {
 type ReviewStatus = "draft" | "changes_requested" | "submitted" | "approved" | "rejected" | "withdrawn";
 type WarningKey = "smoke" | "flashes" | "sound" | "actors" | "allergens";
 type PortalPayload = {
+  visitInformationRevision:number;
+  warningDisclosure: VisitInformationDraft["warningDisclosure"];
   email: string;
   contactName: string;
   phone: string;
@@ -33,6 +37,8 @@ type PortalPayload = {
 };
 
 const emptyPayload: PortalPayload = {
+  visitInformationRevision:0,
+  warningDisclosure:"unknown",
   email: "",
   contactName: "",
   phone: "",
@@ -53,13 +59,6 @@ const emptyPayload: PortalPayload = {
   locationConsent: false,
 };
 
-const warningLabels: Record<WarningKey, string> = {
-  smoke: "Rook of mist",
-  flashes: "Flitsend licht",
-  sound: "Hard geluid",
-  actors: "Acteurs of onverwachte beweging",
-  allergens: "Allergenen bij traktaties",
-};
 
 function restoredPayload(draft: Partial<PortalPayload>, fallbackWorld: string): PortalPayload {
   return {
@@ -83,17 +82,20 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [loading,setLoading]=useState(true);
+  const [reload,setReload]=useState(0);
 
   useEffect(() => {
     let active = true;
     async function restore() {
-      const client = createClient(); if (!client) return;
+      try {
+      const client = createClient(); if (!client) throw new Error('UNAVAILABLE');
       const [portalResult, eventResult] = await Promise.all([
-        client.schema("api").rpc("portal_snapshot", { _event_slug: eventSlug }),
-        client.schema("api").rpc("event_public_snapshot", { _event_slug: eventSlug }),
+        withRequestDeadline(client.schema("api").rpc("portal_snapshot", { _event_slug: eventSlug })),
+        withRequestDeadline(client.schema("api").rpc("event_public_snapshot", { _event_slug: eventSlug })),
       ]);
       if (!active) return;
-      if (portalResult.error || eventResult.error) { setNotice("Jullie gegevens konden niet worden opgehaald. Vernieuw de pagina om opnieuw te proberen."); return; }
+      if (portalResult.error || eventResult.error) throw new Error('SNAPSHOT_UNAVAILABLE');
       setLoaded(true);
       const availableWorlds = ((eventResult.data as { worlds?: Array<{ slug: string; name: string }> } | null)?.worlds ?? []);
       setWorlds(availableWorlds);
@@ -110,10 +112,11 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
       if (application.status === "submitted") setNotice("Jullie plek is ingediend en wacht op beoordeling.");
       if (application.status === "approved") setNotice("Je poort is goedgekeurd. Operationele informatie staat in je poortdashboard.");
       if (application.status === "rejected") setNotice("Deze aanvraag is afgewezen.");
+      }catch{if(active)setNotice("Jullie gegevens konden niet worden opgehaald. Probeer opnieuw; je bestaande aanmelding blijft behouden.");}finally{if(active)setLoading(false);}
     }
     void restore();
     return () => { active = false; };
-  }, [eventSlug]);
+  }, [eventSlug,reload]);
 
   const editable = loaded && status !== "rejected" && status !== "withdrawn";
 
@@ -129,11 +132,12 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     if (!editable) { setNotice("Deze aanvraag is al in behandeling en kan nu niet worden gewijzigd."); return null; }
     const client = createClient(); if (!client) return null;
     setBusy(true); setNotice("");
-    const { data, error } = await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: payload, _expected_version: saved?.version ?? null });
-    setBusy(false);
-    if (error) { setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie huidige concept blijft bewaard." : error.message.includes("STALE_VERSION") ? "Jullie gegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
-    const result = data as { id: string; version: number; status: ReviewStatus };
-    setSaved(result); setStatus(result.status); setNotice(result.status === "changes_requested" ? "Jullie wijzigingen zijn bewaard en kunnen opnieuw worden ingediend." : "Jullie gegevens zijn bewaard. Je kunt later verdergaan."); return result;
+    try {
+    const { data, error } = await withRequestDeadline(client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: payload, _expected_version: saved?.version ?? null }));
+    if (error) { setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie huidige concept blijft bewaard." : /STALE_/.test(error.message) ? "Jullie gegevens zijn intussen veranderd. Vernieuw de pagina en kijk het nog even na." : "Opslaan is niet gelukt. Probeer het nog eens."); return null; }
+    const result = data as { id: string; version: number; status: ReviewStatus; visitInformationRevision:number };
+    setSaved(result); setStatus(result.status);setPayload(current=>({...current,visitInformationRevision:result.visitInformationRevision})); setNotice(result.status === "changes_requested" ? "Jullie wijzigingen zijn bewaard en kunnen opnieuw worden ingediend." : "Jullie gegevens zijn bewaard. Je kunt later verdergaan."); return result;
+    }catch{setNotice("Er kwam geen bevestiging terug. Jullie ingevulde concept blijft op dit scherm staan. Vernieuw voordat je opnieuw opslaat.");return null;}finally{setBusy(false); }
   }
 
   async function submit() {
@@ -142,11 +146,12 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     const current = await save();
     const client = createClient(); if (!client || !current) return;
     setBusy(true);
-    const { data, error } = await client.schema("api").rpc("portal_application_submit", { _application_id: current.id, _expected_version: current.version, _idempotency_key: crypto.randomUUID(), _request_hash: await digest(payload) });
-    setBusy(false);
+    try {
+    const { data, error } = await withRequestDeadline(client.schema("api").rpc("portal_application_submit", { _application_id: current.id, _expected_version: current.version, _idempotency_key: crypto.randomUUID(), _request_hash: await digest(payload) }));
     if (error) return setNotice(error.message.includes("PORTAL_REGISTRATION_CLOSED") ? "Nieuwe locatieaanmeldingen zijn tijdelijk gepauzeerd. Jullie concept blijft bewaard." : "Indienen is niet gelukt. Controleer de gegevens en probeer opnieuw.");
     const result = data as { version: number };
     setSaved({ ...current, version: result.version }); setStatus("submitted"); setReviewFeedback(null); setNotice("Jullie plek is ingediend voor beoordeling.");
+    }catch{setNotice("Er kwam geen bevestiging van de indiening terug. Jullie ingevulde gegevens blijven staan; vernieuw om de actuele status op te halen.");}finally{setBusy(false); }
   }
 
   async function uploadAsset(file: File) {
@@ -157,31 +162,31 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
     const application = saved ?? await save();
     if (!application) return;
     setBusy(true); setNotice("");
+    try {
     const form = new FormData();
     form.set("applicationId", application.id);
     form.set("file", file);
-    const response = await fetch("/api/portal-assets", { method: "POST", body: form });
+    const response = await withRequestDeadline(fetch("/api/portal-assets", { method: "POST", body: form }));
     const body = await response.json() as { data?: { path: string }; error?: { message?: string } };
     if (!response.ok || !body.data?.path) {
-      setBusy(false); setNotice(body.error?.message ?? "Deze foto kunnen we nu niet toevoegen. Probeer een andere foto."); return;
+      setNotice(body.error?.message ?? "Deze foto kunnen we nu niet toevoegen. Probeer een andere foto."); return;
     }
     const nextPayload = { ...payload, assetPaths: [...new Set([...payload.assetPaths, body.data.path])] };
     const client = createClient();
-    const linked = client ? await client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: nextPayload, _expected_version: application.version }) : null;
-    setBusy(false);
+    const linked = client ? await withRequestDeadline(client.schema("api").rpc("portal_application_save", { _event_slug: eventSlug, _payload: nextPayload, _expected_version: application.version })) : null;
     if (!linked || linked.error) return setNotice("De foto is ontvangen, maar nog niet aan jullie aanmelding gekoppeld. Probeer het nog eens.");
-    const result = linked.data as { id: string; version: number; status: ReviewStatus };
-    setPayload(nextPayload); setSaved(result); setStatus(result.status); setNotice("De foto staat bij jullie aanmelding. Jullie kunnen later verdergaan.");
+    const result = linked.data as { id: string; version: number; status: ReviewStatus; visitInformationRevision:number };
+    setPayload({...nextPayload,visitInformationRevision:result.visitInformationRevision}); setSaved(result); setStatus(result.status); setNotice("De foto staat bij jullie aanmelding. Jullie kunnen later verdergaan.");
+    }catch{setNotice("De foto is nog niet bevestigd. Jullie ingevulde concept blijft behouden. Controleer de verbinding en probeer opnieuw.");}finally{setBusy(false); }
   }
 
-  function setWarning(key: WarningKey, value: boolean) {
-    setPayload({ ...payload, warnings: { ...payload.warnings, [key]: value } });
-  }
 
   if (status === "withdrawn") return <section className="panel"><h2>Deze poortaanmelding is ingetrokken</h2><p>Je kinderinschrijving, betaling en eigen kindboeken blijven beschikbaar. Wil je bewust opnieuw een poort aanmelden, begin dan hieronder. Een gearchiveerde operationele poort kan alleen de organisatie herstellen.</p><Link className="btn outline" href="/omgeving/meeloper">Verder als ouder</Link><button className="btn" type="button" disabled={busy} onClick={async()=>{const client=createClient();if(!client)return;setBusy(true);try{const r=await client.schema("api").rpc("portal_registration_restart",{_event_slug:eventSlug});if(r.error){setNotice(r.error.message);return;}setSaved({id:r.data.id,version:r.data.version});setStatus("draft");setNotice("Bewust opnieuw aangemeld. Vul je concept aan.");}catch{setNotice("Opnieuw aanmelden is niet bevestigd. Probeer opnieuw.");}finally{setBusy(false);}}}>Bewust opnieuw aanmelden als poort</button>{notice&&<p role="status">{notice}</p>}</section>;
   return <div className="panel production-form">
     <h2>Werk jullie poort uit</h2>
     <p>Je adres delen we alleen met de organisatie. Zo kunnen we jullie plek goed voorbereiden en kinderen veilig ontvangen.</p>
+    {!loaded&&<p role="status">{loading?'Jullie aanmelding ophalen…':'De aanmelding kon niet worden geladen.'}</p>}
+    {!loaded&&!loading&&<button className="btn outline" onClick={()=>{setLoading(true);setNotice('');setReload(value=>value+1);}}>Gegevens opnieuw ophalen</button>}
     {reviewFeedback && <div className="form-warning"><strong>Terugkoppeling van de organisatie:</strong> {reviewFeedback}</div>}
     <fieldset className="form-fieldset" disabled={busy || !editable}>
       <h3>Contact en locatie</h3>
@@ -199,13 +204,10 @@ export function PortalWizard({ eventSlug }: { eventSlug: string }) {
       <label className="field"><span>Naam van je poort (optioneel)</span><input maxLength={120} value={payload.portalName} onChange={(event) => setPayload({ ...payload, portalName: event.target.value })} /></label>
       <label className="field"><span>Beschrijving (optioneel)</span><textarea maxLength={1000} rows={5} value={payload.description} onChange={(event) => setPayload({ ...payload, description: event.target.value })} /></label>
       <label className="field"><span>Spanningsniveau (1–4)</span><input type="number" min={1} max={4} value={payload.intensity} onChange={(event) => setPayload({ ...payload, intensity: event.target.value })} /></label>
-      <div className="check-grid">{(Object.keys(warningLabels) as WarningKey[]).map((key) => <label className="checkfield" key={key}><input type="checkbox" checked={payload.warnings[key]} onChange={(event) => setWarning(key, event.target.checked)} />{warningLabels[key]}</label>)}</div>
-      <label className="field"><span>Toelichting op waarschuwingen of allergenen</span><textarea maxLength={500} value={payload.warningNotes} onChange={(event) => setPayload({ ...payload, warningNotes: event.target.value })} /></label>
+      <VisitInformationFields value={payload} onChange={value=>setPayload({...payload,...value})}/>
 
       <h3>Beschikbaarheid en bereikbaarheid</h3>
       <div className="two-fields"><label className="field"><span>Beschikbaar vanaf</span><input type="time" value={payload.availableFrom} onChange={(event) => setPayload({ ...payload, availableFrom: event.target.value })} /></label><label className="field"><span>Beschikbaar tot</span><input type="time" value={payload.availableUntil} onChange={(event) => setPayload({ ...payload, availableUntil: event.target.value })} /></label></div>
-      <label className="field"><span>Praktische toegankelijkheid (optioneel)</span><select className="choice" value={payload.accessibility} onChange={(event) => setPayload({ ...payload, accessibility: event.target.value as PortalPayload["accessibility"] })}><option value="">Niet ingevuld</option><option value="unknown">Nog te beoordelen</option><option value="step_free">Drempelvrij</option><option value="steps">Trappen of hoge drempels</option><option value="mixed">Gedeeltelijk toegankelijk</option></select></label>
-      <label className="field"><span>Toelichting toegankelijkheid</span><textarea maxLength={500} value={payload.accessibilityNotes} onChange={(event) => setPayload({ ...payload, accessibilityNotes: event.target.value })} /></label>
       <label className="field"><span>Foto van de opstelling (optioneel)</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAsset(file); event.currentTarget.value = ""; }} /><small>Een foto helpt ons alvast mee te denken. Kies een JPG, PNG of WebP van maximaal 8 MB.</small></label>
       {payload.assetPaths.length > 0 && <p className="note">{payload.assetPaths.length} afbeelding(en) veilig aan dit concept gekoppeld.</p>}
       <label className="checkfield"><input type="checkbox" checked={payload.availability} onChange={(event) => setPayload({ ...payload, availability: event.target.checked })} />Ik ben tijdens het opgegeven venster beschikbaar en meld wijzigingen tijdig.</label>

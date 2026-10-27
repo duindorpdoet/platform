@@ -1,5 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
+\ir fixtures/evening-route-publication.inc
 select no_plan();
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 create temp table choice(pid uuid,point_id uuid,schedule_id uuid,publication jsonb);
@@ -21,7 +22,7 @@ update app_private.event_route_settings set first_start_at='2026-10-31T15:00:00Z
   finale_max_concurrent_groups=10,finale_max_concurrent_children=100,finale_available=true,planner_mode='dynamic';
 select lives_ok($$update choice set schedule_id=(api.admin_startregie_move_group('23000000-0000-0000-0000-000000000001',point_id,'2026-10-31T16:30:00Z',(select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000001'),'neutral','Start toewijzen met alleen de ja-keuze bij de poort')->>'id')::uuid$$,'yes immediately makes the portal usable for a real group assignment');
 select lives_ok($$select api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000001',1,(select settings_version from app_private.events where slug='duindorp-halloween-2026'))$$,'selected portal can be confirmed without an inspection command');
-select lives_ok($$select api.admin_startregie_publish_times('duindorp-halloween-2026',array[(select schedule_id from choice)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from choice),'revision',1)),(select settings_version from app_private.events where slug='duindorp-halloween-2026'),gen_random_uuid()::text)$$,'the selected portal can be published normally');
+select lives_ok($$select pg_temp.publish_fingerprinted('duindorp-halloween-2026',array[(select schedule_id from choice)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from choice),'revision',1)),(select settings_version from app_private.events where slug='duindorp-halloween-2026'),gen_random_uuid()::text)$$,'the selected portal can be published normally');
 update choice set publication=(select to_jsonb(p) from app_private.group_start_publications p where group_id='23000000-0000-0000-0000-000000000001' order by publication_order desc limit 1);
 select lives_ok($$select api.admin_portal_start_point_set(pid,false,(select version from app_private.portals where id=pid)) from choice$$,'no disables future starts even when a published appointment exists');
 select ok(not (select active from app_private.start_points where id=(select point_id from choice)),'no removes the point from new-start availability');

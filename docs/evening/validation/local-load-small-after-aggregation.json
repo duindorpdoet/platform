@@ -1,0 +1,548 @@
+{
+  "environment": "local",
+  "revision": "local",
+  "fixtureEvent": "evening-load-1792847352910-0ed110",
+  "counts": {
+    "families": 9,
+    "portals": 4,
+    "admins": 1,
+    "observers": 1,
+    "groups": 2,
+    "distinctIdentities": 15
+  },
+  "phases": [
+    {
+      "name": "distinct-account-logins",
+      "operations": 15,
+      "requests": 15,
+      "responseStatuses": {
+        "200": 15
+      },
+      "byRpc": {},
+      "requestP95Ms": 199,
+      "concurrency": 20,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 203,
+      "p50Ms": 181,
+      "p95Ms": 199,
+      "p99Ms": 199,
+      "maxMs": 199,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "before-start-role-snapshots",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "byRpc": {
+        "admin_evening_cockpit": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 115
+        },
+        "group_snapshot": {
+          "requests": 9,
+          "statuses": {
+            "200": 9
+          },
+          "p95Ms": 122
+        },
+        "admin_portal_operations_snapshot": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 105
+        },
+        "portal_room_snapshot": {
+          "requests": 4,
+          "statuses": {
+            "200": 4
+          },
+          "p95Ms": 131
+        },
+        "admin_dashboard": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 108
+        }
+      },
+      "requestP95Ms": 131,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 136,
+      "p50Ms": 116,
+      "p95Ms": 135,
+      "p99Ms": 135,
+      "maxMs": 135,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "private-realtime-subscriptions",
+      "operations": 15,
+      "requests": 0,
+      "responseStatuses": {},
+      "byRpc": {},
+      "requestP95Ms": 0,
+      "concurrency": 20,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 180,
+      "p50Ms": 103,
+      "p95Ms": 180,
+      "p99Ms": 180,
+      "maxMs": 180,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "concurrent-group-starts",
+      "operations": 2,
+      "requests": 6,
+      "responseStatuses": {
+        "200": 6
+      },
+      "byRpc": {
+        "group_roster": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 6
+        },
+        "group_snapshot": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 11
+        },
+        "run_start": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 163
+        }
+      },
+      "requestP95Ms": 163,
+      "concurrency": 2,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 176,
+      "p50Ms": 101,
+      "p95Ms": 175,
+      "p99Ms": 175,
+      "maxMs": 175,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "live-role-snapshots-1",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "byRpc": {
+        "group_snapshot": {
+          "requests": 9,
+          "statuses": {
+            "200": 9
+          },
+          "p95Ms": 24
+        },
+        "admin_portal_operations_snapshot": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 21
+        },
+        "portal_room_snapshot": {
+          "requests": 4,
+          "statuses": {
+            "200": 4
+          },
+          "p95Ms": 40
+        },
+        "admin_dashboard": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 23
+        },
+        "admin_evening_cockpit": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 24
+        }
+      },
+      "requestP95Ms": 40,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 42,
+      "p50Ms": 24,
+      "p95Ms": 42,
+      "p99Ms": 42,
+      "maxMs": 42,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "live-role-snapshots-2",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "byRpc": {
+        "group_snapshot": {
+          "requests": 9,
+          "statuses": {
+            "200": 9
+          },
+          "p95Ms": 19
+        },
+        "admin_portal_operations_snapshot": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 17
+        },
+        "admin_dashboard": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 18
+        },
+        "admin_evening_cockpit": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 17
+        },
+        "portal_room_snapshot": {
+          "requests": 4,
+          "statuses": {
+            "200": 4
+          },
+          "p95Ms": 32
+        }
+      },
+      "requestP95Ms": 32,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 34,
+      "p50Ms": 17,
+      "p95Ms": 34,
+      "p99Ms": 34,
+      "maxMs": 34,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "live-role-snapshots-3",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "byRpc": {
+        "group_snapshot": {
+          "requests": 9,
+          "statuses": {
+            "200": 9
+          },
+          "p95Ms": 18
+        },
+        "admin_evening_cockpit": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 20
+        },
+        "admin_portal_operations_snapshot": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 17
+        },
+        "admin_dashboard": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 19
+        },
+        "portal_room_snapshot": {
+          "requests": 4,
+          "statuses": {
+            "200": 4
+          },
+          "p95Ms": 35
+        }
+      },
+      "requestP95Ms": 35,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 37,
+      "p50Ms": 19,
+      "p95Ms": 37,
+      "p99Ms": 37,
+      "maxMs": 37,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "authenticated-vps-application-shell",
+      "operations": 15,
+      "requests": 15,
+      "responseStatuses": {
+        "200": 15
+      },
+      "byRpc": {},
+      "requestP95Ms": 500,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 508,
+      "p50Ms": 504,
+      "p95Ms": 506,
+      "p99Ms": 506,
+      "maxMs": 506,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "simultaneous-real-arrivals",
+      "operations": 2,
+      "requests": 4,
+      "responseStatuses": {
+        "200": 4
+      },
+      "byRpc": {
+        "group_snapshot": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 10
+        },
+        "run_arrive_and_advance": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 232
+        }
+      },
+      "requestP95Ms": 232,
+      "concurrency": 2,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 243,
+      "p50Ms": 118,
+      "p95Ms": 243,
+      "p99Ms": 243,
+      "maxMs": 243,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "two-independent-client-arrival-retries",
+      "operations": 4,
+      "requests": 4,
+      "responseStatuses": {
+        "200": 4
+      },
+      "byRpc": {
+        "run_arrive_and_advance": {
+          "requests": 4,
+          "statuses": {
+            "200": 4
+          },
+          "p95Ms": 11
+        }
+      },
+      "requestP95Ms": 11,
+      "concurrency": 4,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 13,
+      "p50Ms": 9,
+      "p95Ms": 12,
+      "p99Ms": 12,
+      "maxMs": 12,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "owner-close-versus-pending-arrival",
+      "operations": 1,
+      "requests": 4,
+      "responseStatuses": {
+        "200": 3,
+        "400": 1
+      },
+      "byRpc": {
+        "group_snapshot": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 8
+        },
+        "portal_set_operational_state": {
+          "requests": 1,
+          "statuses": {
+            "200": 1
+          },
+          "p95Ms": 12
+        },
+        "run_arrive_and_advance": {
+          "requests": 1,
+          "statuses": {
+            "400": 1
+          },
+          "p95Ms": 15
+        }
+      },
+      "requestP95Ms": 15,
+      "concurrency": 1,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 109,
+      "p50Ms": 109,
+      "p95Ms": 109,
+      "p99Ms": 109,
+      "maxMs": 109,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "after-arrival-role-snapshots",
+      "operations": 15,
+      "requests": 19,
+      "responseStatuses": {
+        "200": 19
+      },
+      "byRpc": {
+        "group_snapshot": {
+          "requests": 9,
+          "statuses": {
+            "200": 9
+          },
+          "p95Ms": 13
+        },
+        "admin_portal_operations_snapshot": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 14
+        },
+        "admin_dashboard": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 18
+        },
+        "admin_evening_cockpit": {
+          "requests": 2,
+          "statuses": {
+            "200": 2
+          },
+          "p95Ms": 19
+        },
+        "portal_room_snapshot": {
+          "requests": 4,
+          "statuses": {
+            "200": 4
+          },
+          "p95Ms": 22
+        }
+      },
+      "requestP95Ms": 22,
+      "concurrency": 15,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 24,
+      "p50Ms": 14,
+      "p95Ms": 23,
+      "p99Ms": 23,
+      "maxMs": 23,
+      "overClientDeadline": 0
+    }
+  ],
+  "databaseSamples": [
+    {
+      "at": "2026-10-24T13:09:13.690005+00:00",
+      "active": 2,
+      "maximum": 100,
+      "waiting": 0,
+      "connections": 17
+    },
+    {
+      "at": "2026-10-24T13:09:14.774383+00:00",
+      "active": 2,
+      "maximum": 100,
+      "waiting": 0,
+      "connections": 24
+    },
+    {
+      "at": "2026-10-24T13:09:15.267222+00:00",
+      "active": 2,
+      "maximum": 100,
+      "waiting": 0,
+      "connections": 24
+    }
+  ],
+  "realtime": {
+    "attempts": 19,
+    "subscribed": 19,
+    "errors": 0,
+    "messages": 78,
+    "byRole": {
+      "family": 36,
+      "portal": 14,
+      "admin": 14,
+      "observer": 14
+    }
+  },
+  "limitations": [
+    "Generated synthetic walking graph; no physical route or camera proof.",
+    "Native SDK role RPC waves and actual private subscriptions; not 254 rendered browsers or an automatic RPC request for every broadcast.",
+    "VPS HTTP phase measures the real authenticated application shell; scoped fixture route RPCs run on the actual linked Supabase service.",
+    "Observers exercise read requests using the existing live-support capability in the isolated test event."
+  ],
+  "closeRace": {
+    "outcome": "closure-before-arrival",
+    "pendingInstructionRetained": true,
+    "newArrivals": 0
+  },
+  "invariants": {
+    "runs": 2,
+    "seals": 9,
+    "arrivals": 9,
+    "overbookedOrdinary": 0
+  },
+  "preservation": {
+    "originalTables": 22,
+    "originalRows": 208,
+    "changedOriginalRows": 0
+  },
+  "status": "pass",
+  "syntheticAccountsSecured": 15
+}

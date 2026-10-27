@@ -1,0 +1,121 @@
+{
+  "environment": "staging",
+  "revision": "8d613f3558df31998c878433fff66e3ad9dfa124",
+  "fixtureEvent": "evening-load-1792840432522-810e5f",
+  "counts": {
+    "families": 200,
+    "portals": 30,
+    "admins": 4,
+    "observers": 20,
+    "groups": 25,
+    "distinctIdentities": 254
+  },
+  "phases": [
+    {
+      "name": "distinct-account-logins",
+      "operations": 254,
+      "requests": 254,
+      "responseStatuses": {
+        "200": 254
+      },
+      "requestP95Ms": 457,
+      "concurrency": 1,
+      "errors": {},
+      "failed": 0,
+      "elapsedMs": 614124,
+      "p50Ms": 2406,
+      "p95Ms": 2597,
+      "p99Ms": 2735,
+      "maxMs": 2847,
+      "overClientDeadline": 0
+    },
+    {
+      "name": "before-start-role-snapshots",
+      "operations": 254,
+      "requests": 302,
+      "responseStatuses": {
+        "200": 293,
+        "500": 9
+      },
+      "requestP95Ms": 15375,
+      "concurrency": 254,
+      "errors": {
+        "57014": 9
+      },
+      "failed": 9,
+      "elapsedMs": 22198,
+      "p50Ms": 4384,
+      "p95Ms": 16205,
+      "p99Ms": 19897,
+      "maxMs": 22193,
+      "overClientDeadline": 42
+    }
+  ],
+  "databaseSamples": [
+    {
+      "at": "2026-10-24T11:24:31.923127+00:00",
+      "active": 1,
+      "maximum": 60,
+      "waiting": 0,
+      "connections": 10
+    },
+    {
+      "at": "2026-10-24T11:24:35.048611+00:00",
+      "active": 1,
+      "maximum": 60,
+      "waiting": 0,
+      "connections": 18
+    },
+    {
+      "at": "2026-10-24T11:24:43.772305+00:00",
+      "active": 11,
+      "maximum": 60,
+      "waiting": 9,
+      "connections": 18
+    },
+    {
+      "at": "2026-10-24T11:24:50.162745+00:00",
+      "active": 9,
+      "maximum": 60,
+      "waiting": 3,
+      "connections": 18
+    },
+    {
+      "at": "2026-10-24T11:24:54.25955+00:00",
+      "active": 1,
+      "maximum": 60,
+      "waiting": 0,
+      "connections": 18
+    }
+  ],
+  "realtime": {
+    "attempts": 0,
+    "subscribed": 0,
+    "errors": 0,
+    "messages": 0,
+    "byRole": {
+      "family": 0,
+      "portal": 0,
+      "admin": 0,
+      "observer": 0
+    }
+  },
+  "limitations": [
+    "Generated synthetic walking graph; no physical route or camera proof.",
+    "Native SDK role RPC waves and actual private subscriptions; not 254 rendered browsers or an automatic RPC request for every broadcast.",
+    "VPS HTTP phase measures the real authenticated application shell; scoped fixture route RPCs run on the actual linked Supabase service.",
+    "Observers exercise read requests using the existing live-support capability in the isolated test event.",
+    "Independent sessions are prepared sequentially within the configured shared-IP Auth limit; this is not a simultaneous sign-in capacity test."
+  ],
+  "authPreparation": {
+    "tokenRequestsPerFiveMinutes": 150,
+    "minimumSpacingMs": 2150,
+    "concurrency": 1
+  },
+  "phaseFailureDetails": {
+    "before-start-role-snapshots": "portal_room_snapshot"
+  },
+  "status": "fail",
+  "failure": "all roles load their actual application RPCs\n\n9 !== 0\n",
+  "syntheticAccountsSecured": 254
+}
