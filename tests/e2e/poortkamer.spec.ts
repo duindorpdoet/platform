@@ -452,6 +452,10 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   );
 });
 
+test.describe('late snapshot after disconnect',()=>{
+ // A controlling service worker can bypass Playwright routing, especially
+ // after the wake-up jitter. This test must hold the actual RPC response.
+ test.use({serviceWorkers:'block'});
 test("a successful snapshot arriving after disconnect cannot re-enable reception controls", async ({page,context})=>{
   await owner(context);await page.goto('/mijn-huis');
   await expect(page.getByRole('button',{name:'Open',exact:true})).toBeEnabled();
@@ -471,6 +475,7 @@ test("a successful snapshot arriving after disconnect cannot re-enable reception
   await expect(page.getByRole('button',{name:'Open',exact:true})).toBeDisabled();
   await page.unroute(pattern);await context.setOffline(false);
   await expect(page.getByRole('button',{name:'Open',exact:true})).toBeEnabled();
+});
 });
 
 test.describe('temporary guide availability',()=>{

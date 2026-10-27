@@ -174,7 +174,7 @@
           "isolatedBaselineRecheck": "same failure from unmodified HEAD test"
         }
       ],
-      "scope": "No migrations, seed or existing pgTAP assertions were edited. The complete database regression suite is not green."
+      "scope": "Initial local run retained as history. No migrations, seed or existing pgTAP assertions were edited. The subsequent explicit full reset and first GitHub CI run both pass all database assertions."
     },
     "renderedBrowser": {
       "status": "pass",
@@ -189,7 +189,7 @@
       "unusedRegistrationPreferencesRequests": 0,
       "hostedCapacityEvidence": false,
       "ciStepAdded": true,
-      "githubWorkflowRun": "not_run"
+      "githubWorkflowRun": "Passed in https://github.com/duindorpdoet/platform/actions/runs/40592410475/attempts/1; that full workflow failed in a separate WebKit interception test."
     },
     "existingOfflineRecoveryBrowser": {
       "status": "pass",
@@ -203,7 +203,7 @@
   "remainingAcceptanceEvidence": [
     "Agreed simultaneous screen counts and workload mix, including child books, real viewers, chats and reconnect reserve.",
     "Current production Realtime quotas, compute and PostgREST pool settings, verified with appropriate read-only access.",
-    "Resolved database regression failures and exact-SHA staging/deployment/backup verification.",
+    "Complete exact-SHA CI and staging/deployment/backup verification.",
     "Hosted mixed role HTTP and actual WebSocket phases, including browser refreshes, at the agreed workload and unchanged eight-second p95 threshold.",
     "Arrival, retry, closure, physical/finale capacity and preservation invariants during that same mixed load.",
     "Actual mobile-network, poster/short-code, route and leader-handover rehearsal."
@@ -233,6 +233,30 @@
       "privateBroadcasts": 21,
       "maximumConcurrentGroupSnapshotRequests": 1
     },
-    "hostedCapacityAcceptance": "not_run"
+    "hostedCapacityAcceptance": "not_run",
+    "releaseCiInitialAttempt": {
+      "url": "https://github.com/duindorpdoet/platform/actions/runs/40592410475/attempts/1",
+      "candidate": "5312ae99641681511a96c8492a71dc063b3130bf",
+      "status": "fail",
+      "application": "pass",
+      "databaseAssertionsPassed": 2312,
+      "parallelTransactionsAndLocalLoad": "pass",
+      "offlineAndReconnect": "pass",
+      "newPortalIdentityAndRealtimeTests": "pass",
+      "failure": "Existing late snapshot after disconnect test timed out in iPhone/WebKit; successful RPCs bypassed the intended Playwright route while a service worker controlled the page."
+    },
+    "lateSnapshotBrowserCorrection": {
+      "scope": "Block service workers only in the test that must intercept and hold the actual snapshot response. Application code, deadlines and all safety assertions remain unchanged.",
+      "reference": "https://playwright.dev/docs/network#missing-network-events-and-service-workers",
+      "browserImage": "mcr.microsoft.com/playwright:v1.63.0-noble",
+      "localDatabaseOnly": true,
+      "separateIphoneRepetitionsPassed": 3,
+      "projects": 5,
+      "repetitionsPerProject": 3,
+      "passed": 15,
+      "failed": 0,
+      "typecheck": "pass",
+      "fullFinalCandidateCi": "required before promotion"
+    }
   }
 }
