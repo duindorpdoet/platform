@@ -54,7 +54,7 @@ test("the mobile invitation is daily, dismissible and exposes honest manual inst
     analyticsEvents.push((route.request().postDataJSON() as { eventType: string }).eventType);
     await route.fulfill({ status: 202, contentType: "application/json", body: '{"data":{"accepted":true}}' });
   });
-  await page.goto("/omgeving");
+  await page.goto("/omgeving/meeloper/nu");
   const invitation = page.getByRole("dialog", { name: "Zet De Poorten op je beginscherm" });
   await expect(invitation).toBeVisible();
   await expect(invitation.getByText("Ik wil meldingen over mijn groep of poort ontvangen")).toBeVisible();
