@@ -126,11 +126,6 @@ select is(api.registration_preferences_snapshot('duindorp-halloween-2026') #>> '
 set local role postgres;
 update app_private.start_slots set starts_at = timestamptz '2026-10-31 19:00+01'
 where id = '20000000-0000-0000-0000-000000000001';
--- The immutable published appointment needs an actual available finale window.
-update app_private.event_route_settings set final_portal_id='12000000-0000-0000-0000-000000000030',finale_available=true,
- finale_opens_at=timestamptz '2026-10-31 20:00+01',finale_last_arrival_at=timestamptz '2026-10-31 22:00+01',
- finale_closes_at=timestamptz '2026-10-31 23:00+01',finale_show_seconds=60,finale_turnover_seconds=120
- where event_id=(select id from app_private.events where slug='duindorp-halloween-2026');
 insert into app_private.group_schedule_revisions(
   group_id, revision, state, start_slot_id, effective_ordinary_stop_at,
   expected_finale_arrival_at, preference_match, published_at

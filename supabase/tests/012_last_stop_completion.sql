@@ -74,7 +74,7 @@ select lives_ok(
   $test$,
   'leader advances through all six published stops after confirmed arrival and explicit all-skip confirmation'
 );
-select is((select final_result->>'status' from completion_values), 'live', 'last ordinary stop retains the live fixed finale wait');
+select is((select final_result->>'status' from completion_values), 'completed', 'last stop completes the run');
 select is((select final_result->>'hasNextStop' from completion_values), 'false', 'last stop reports no next destination');
 select is(
   api.group_snapshot('23000000-0000-0000-0000-000000000001') #> '{run,currentStop}',
@@ -102,13 +102,13 @@ select is(
 set local role postgres;
 select is(
   (select status::text from app_private.group_runs where id = (select run_id from completion_values)),
-  'live',
-  'persisted run waits for its own finale appointment'
+  'completed',
+  'persisted run status is completed'
 );
 select is(
   (select status::text from app_private.walking_groups where id = '23000000-0000-0000-0000-000000000001'),
-  'live',
-  'persisted group remains live until the real finale'
+  'completed',
+  'persisted walking group status is completed'
 );
 select ok(
   (select count(*) = 6 from app_private.run_stops where run_id = (select run_id from completion_values) and state = 'completed')

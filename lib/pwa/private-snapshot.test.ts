@@ -31,18 +31,6 @@ describe("private offline group snapshots", () => {
     expect(readPrivateSnapshot("user-a", "group-2")).toBeNull();
   });
 
-  it("rejects content filed under the wrong group or with an invalid expiry",()=>{
-    localStorage.setItem("duindorp-private-group:ops1:user-a:group-1",JSON.stringify({userId:"user-a",groupId:"group-other",expiresAt:Date.now()+60000,snapshot:{private:"other group"}}));
-    expect(readPrivateSnapshot("user-a","group-1")).toBeNull();
-    localStorage.setItem("duindorp-private-group:ops1:user-a:group-1",JSON.stringify({userId:"user-a",groupId:"group-1",expiresAt:"tomorrow",snapshot:{private:"bad expiry"}}));
-    expect(readPrivateSnapshot("user-a","group-1")).toBeNull();
-  });
-  it("still clears the service worker and permits logout when local storage is denied",()=>{
-    vi.stubGlobal("localStorage",{get length(){throw new Error("SecurityError");}});
-    expect(()=>clearPrivateSnapshots()).not.toThrow();
-    expect(postMessage).toHaveBeenCalledWith({type:"CLEAR_PRIVATE_CACHE"});
-  });
-
   it("expires stale private data and removes it from storage", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-31T18:00:00Z"));

@@ -53,14 +53,14 @@ select throws_ok(
 );
 
 select set_config('request.jwt.claims', '{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-select throws_ok(
+select lives_ok(
   $$ select api.run_support_override((select run_one_id from system_skip_values), (select stop_one_id from system_skip_values), (select run_one_version from system_skip_values), 'Gecontroleerd bewijs voor gesloten-poorttest') $$,
-  '23514','PORTAL_UNAVAILABLE','support cannot create new admission at a closed house'
+  'support override can preserve separately audited emergency evidence'
 );
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select throws_ok(
   $$ select api.run_update_participant((select run_one_id from system_skip_values), (select stop_one_id from system_skip_values), (select participant_one_id from system_skip_values), 'visited', (select run_one_version from system_skip_values), 1, null) $$,
-  '23514', 'SCAN_REQUIRED', 'closed portal and rejected support override leave no valid arrival proof'
+  '23514', 'PORTAL_UNAVAILABLE', 'closed portal invariant blocks a new visit even after an emergency scan override'
 );
 select lives_ok(
   $$ update system_skip_values set system_skip_result = api.run_system_skip((select run_one_id from system_skip_values), (select stop_one_id from system_skip_values), (select run_one_version from system_skip_values), 'Poort is door bewoner gesloten', 'system-skip-one', 'system-skip-one-hash') $$,

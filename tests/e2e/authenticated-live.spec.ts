@@ -3,7 +3,7 @@ import {prepareStartedLegacyFixtures} from "../../scripts/acceptance/started-fix
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { assertReadableLayout } from "./helpers/layout";
-import { readFile, writeFile,mkdir } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -231,9 +231,9 @@ test("forged cookies fail and offline group state reveals only the current stop 
 
   await context.setOffline(true);
   await page.getByRole("button", { name: "Vernieuwen" }).click();
-  await expect(page.locator(".offline-banner")).toContainText(/laatste geldige opgeslagen opdracht, bijgewerkt om/i);
+  await expect(page.locator(".offline-banner")).toContainText(/laatste route-informatie, bijgewerkt om/i);
   await expect(page.getByRole("heading", { name: "Testpoort 01" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "QR scannen" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "QR scannen" })).toBeDisabled();
   await expect(page.getByRole("button", { name: /overslaan/i }).first()).toBeDisabled();
   expect(await page.evaluate(() => JSON.stringify(Array.from({ length: localStorage.length }, (_, index) => localStorage.getItem(localStorage.key(index)!))))).not.toContain("Testpoort 02");
 
@@ -700,7 +700,7 @@ test("a portal draft survives refresh and rejects disguised executable upload co
   for (const removed of ["Bezoekduur", "Groepen tegelijk", "Kinderen per bezoek", "Kinderen totaal"]) {
     await expect(page.getByLabel(removed, { exact: false })).toHaveCount(0);
   }
-  await expect(page.getByRole("combobox", {name:"Praktische toegankelijkheid",exact:true})).toBeVisible();
+  await expect(page.getByLabel("Praktische toegankelijkheid (optioneel)")).toBeVisible();
   await expect(page.getByLabel("Straat")).toHaveValue("");
   await expect(page.getByLabel("Categorie of gewenste wereld")).toHaveValue("anders");
   await expect(page.getByLabel("Beschikbaar vanaf")).toHaveValue("17:00");
@@ -1650,106 +1650,4 @@ test("organization edits and removes resident portals while preserving existing 
   await page.reload(); await selectAdminSection(page, "Poorten");
   await page.getByRole("tab", { name: "Poorten beheren", exact: true }).click();
   await expect(page.locator(".manual-portal-list > article").filter({ hasText: updated })).toHaveCount(0);
-});
-
-
-test("an expired offline destination hides its address but retains the durable arrival for review",async({context,page},testInfo)=>{
- test.skip(testInfo.project.name!=="desktop-chromium","One stateful local recovery probe");requireLocalAuth();test.setTimeout(45000);
- const {client,session}=await fixtureClient();prepareStartedLegacyFixtures();
- let current=await rpc(client,"group_snapshot",{_group_id:groupId});
- if(!current.run){const roster=await rpc(client,"group_roster",{_group_id:groupId});await rpc(client,"run_start",{_group_id:groupId,_present_registration_child_ids:roster.map((row:{registrationChildId:string})=>row.registrationChildId),_expected_group_version:current.group.version,_idempotency_key:"evening-cache-start",_request_hash:"evening-cache-start"});current=await rpc(client,"group_snapshot",{_group_id:groupId});}
- const stop=current.run.currentStop;expect(stop).toBeTruthy();await context.addCookies(sessionCookies(session));await page.goto("/mijn-groep");
- await expect(page.getByRole("heading",{name:stop.portal.name,exact:true})).toBeVisible();await expect.poll(()=>page.evaluate(async()=>(await indexedDB.databases()).some(database=>database.name==="duindorp-private-arrivals-v1"))).toBe(true);await context.setOffline(true);
- await page.evaluate(()=>{for(const key of Object.keys(localStorage)){if(key.startsWith("duindorp-private-group:ops1:")){const value=JSON.parse(localStorage.getItem(key)!);value.expiresAt=Date.now()+5000;localStorage.setItem(key,JSON.stringify(value));}}});
- await page.getByRole("button",{name:"Groepsinformatie vernieuwen",exact:true}).click();await expect(page.locator(".offline-banner")).toBeVisible();
- await page.getByLabel("Korte poortcode").fill("UNCONFIRMED-CODE");await page.getByRole("button",{name:"Code controleren",exact:true}).click();
- const dialog=page.getByRole("dialog");await expect(dialog).toContainText("Poortcode nog niet bevestigd");await dialog.getByRole("button",{name:"Aankomst bewaren voor bevestiging",exact:true}).click();
- await expect(page.locator(".arrival-sync-notice.is-pending")).toContainText("Aankomst bewaard op deze telefoon");
- await expect(page.getByRole("heading",{name:"Jullie route kon niet worden opgehaald"})).toBeVisible({timeout:10000});
- await expect(page.getByRole("heading",{name:stop.portal.name,exact:true})).toHaveCount(0);if(stop.portal.address)await expect(page.locator(".group-app")).not.toContainText(stop.portal.address);
- await expect(page.locator(".arrival-sync-notice.is-pending")).toBeVisible();await page.getByText("Bewaarde aankomsten (1)",{exact:true}).click();await expect(page.locator(".arrival-sync-history")).toContainText("Wacht op bevestiging");
- const after=await rpc(client,"group_snapshot",{_group_id:groupId});expect(after.run.currentStop.id).toBe(stop.id);expect(after.run.currentStop.scanAccepted).toBe(false);expect(after.run.version).toBe(current.run.version);
- await mkdir("docs/evening/screenshots",{recursive:true});for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);await page.screenshot({path:`docs/evening/screenshots/recovery-expired-${width}.png`});}
-});
-
-
-test("outdoor preference survives reload and remains separate after a real account switch",async({context,page},testInfo)=>{
- test.skip(testInfo.project.name!=="desktop-chromium","One scoped preference transition");requireLocalAuth();
- await authenticate(context,"leader-a@example.invalid");await page.setViewportSize({width:390,height:844});await page.goto("/mijn-groep");
- const toggle=page.getByRole("button",{name:"Buitenmodus uit",exact:true});await expect(toggle).toHaveAttribute("aria-pressed","false");await toggle.click();
- await expect(page.getByRole("button",{name:"Buitenmodus aan",exact:true})).toHaveAttribute("aria-pressed","true");await page.reload();await expect(page.getByRole("button",{name:"Buitenmodus aan",exact:true})).toHaveAttribute("aria-pressed","true");
- for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);}
- await mkdir("docs/evening/screenshots",{recursive:true});await page.screenshot({path:"docs/evening/screenshots/outdoor-430.png"});
- await authenticate(context,"parent-a@example.invalid");await page.reload();await expect(page.getByRole("button",{name:"Buitenmodus uit",exact:true})).toHaveAttribute("aria-pressed","false");
- await authenticate(context,"leader-a@example.invalid");await page.reload();await expect(page.getByRole("button",{name:"Buitenmodus aan",exact:true})).toHaveAttribute("aria-pressed","true");
-});
-
-test("readiness records actual own observations and keeps manual contact separate on mobile",async({context,page},testInfo)=>{
- test.skip(testInfo.project.name!=="desktop-chromium","One real actor transition");requireLocalAuth();test.setTimeout(60000);
- const {client:admin}=await fixtureClient("admin@example.invalid");
- const observedCount=()=>sql("select count(*) from app_private.evening_readiness_evidence where check_name='account_opened' and source='observed'");
- const before=observedCount();await authenticate(context,"admin@example.invalid");await page.goto("/admin");await selectAdminSection(page,"Gereed voor de avond");
- await expect(page.getByRole("heading",{name:"Wie heeft nog een handje nodig?"})).toBeVisible();expect(observedCount()).toBe(before);
- await authenticate(context,"parent-a@example.invalid");await page.goto("/omgeving/meeloper/groep");await expect(page.locator(".group-summary")).toBeVisible();await page.locator(".group-summary").scrollIntoViewIfNeeded();
- type Subject={id:string;kind:string;observedHouseholds:number;criteria:{check:string;state:string}[]};
- const subject=async()=>((await rpc(admin,"admin_evening_readiness",{_event_slug:"duindorp-halloween-2026"})).subjects as Subject[]).find(row=>row.id===groupId&&row.kind==="group")!;
- await expect.poll(async()=>(await subject()).observedHouseholds).toBe(1);await expect.poll(async()=>(await subject()).criteria.find(row=>row.check==="start_time_seen")?.state).toBe("complete");
- await authenticate(context,"admin@example.invalid");await page.goto("/admin");await selectAdminSection(page,"Gereed voor de avond");
- const card=page.locator(".readiness-subject").filter({hasText:"G-01"});await expect(card).toContainText("1 van 1 gezinnen");
- await card.getByText("Waarnemingen per gezin",{exact:true}).click();await expect(card.locator(".readiness-households")).toContainText("Testgezin 1");
- const opener=card.locator(".readiness-check").filter({has:page.getByText("Account geopend",{exact:true})}).getByRole("button",{name:"Handmatig vastleggen",exact:true});
- await opener.click();const dialog=page.getByRole("dialog");await dialog.getByLabel("Notitie",{exact:true}).fill("Gebeld met de eigen verantwoordelijke; contact is afzonderlijk vastgelegd.");
- await expect(dialog.getByRole("button",{name:"Bevestiging bewaren",exact:true})).toBeDisabled();await dialog.getByRole("checkbox",{name:/Ik bevestig dat ik dit voor de huidige versie/}).check();
- await dialog.getByRole("button",{name:"Bevestiging bewaren",exact:true}).click();await expect(dialog).not.toBeVisible();await expect(opener).toBeFocused();
- expect((await subject()).observedHouseholds).toBe(1);await expect(card).toContainText("Gebeld met de eigen verantwoordelijke");
- await mkdir("docs/evening/screenshots",{recursive:true});for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);await card.scrollIntoViewIfNeeded();await page.screenshot({path:`docs/evening/screenshots/readiness-${width}.png`});}
-});
-
-test("own house warnings persist to the authorized current destination without opening future portals",async({context,page},testInfo)=>{
- test.skip(testInfo.project.name!=="desktop-chromium","One real owner to parent transition");requireLocalAuth();test.setTimeout(60000);
- const owner=await authenticate(context,"owner@example.invalid");await page.goto("/mijn-huis?poort=12000000-0000-0000-0000-000000000001");await page.getByRole("navigation",{name:"Poortkamer navigatie",exact:true}).getByRole("button",{name:"Meer",exact:true}).click();await page.getByRole("button",{name:"Instellingen",exact:true}).click();
- const editor=page.locator("section.production-form").filter({hasText:"Wat zien ouders vóór het bezoek?"});await expect(editor.getByRole("combobox",{name:"Effecten en bijzonderheden",exact:true})).toBeVisible();
- await editor.getByRole("combobox",{name:"Effecten en bijzonderheden",exact:true}).selectOption("listed");await editor.getByLabel("Rook of mist",{exact:true}).check();await editor.getByLabel("Hard geluid",{exact:true}).check();await editor.getByLabel("Toelichting op waarschuwingen of allergenen",{exact:true}).fill("Rook en muziek bij de deur; buiten blijven mag.");await editor.getByRole("combobox",{name:"Praktische toegankelijkheid",exact:true}).selectOption("step_free");await editor.getByLabel("Toelichting toegankelijkheid",{exact:true}).fill("Brede ingang via het pad.");await editor.getByRole("button",{name:"Bezoekinformatie bewaren",exact:true}).click();await expect(editor.getByRole("status")).toContainText("opgeslagen");
- const saved=await rpc(owner,"portal_visit_information",{_portal_id:"12000000-0000-0000-0000-000000000001"});expect(saved.information.warningDisclosure).toBe("listed");
- const leader=await authenticate(context,"leader-a@example.invalid");prepareStartedLegacyFixtures();let current=await rpc(leader,"group_snapshot",{_group_id:groupId});if(!current.run){const roster=await rpc(leader,"group_roster",{_group_id:groupId});await rpc(leader,"run_start",{_group_id:groupId,_present_registration_child_ids:roster.map((row:{registrationChildId:string})=>row.registrationChildId),_expected_group_version:current.group.version,_idempotency_key:"visit-info-browser-start",_request_hash:"visit-info-browser-start"});current=await rpc(leader,"group_snapshot",{_group_id:groupId});}
- expect(current.run.currentStop.portal.id).toBe("12000000-0000-0000-0000-000000000001");await page.goto("/mijn-groep");const warnings=page.getByRole("region",{name:"Praktisch voor jullie bezoek"});await expect(warnings).toContainText("Rook of nevel");await expect(warnings).toContainText("Hard geluid");await expect(warnings).toContainText("Brede ingang via het pad");await expect(warnings).toContainText("Ieder aanwezig kind");
- const denied=await leader.schema("api").rpc("portal_visit_information",{_portal_id:"12000000-0000-0000-0000-000000000002"});expect(denied.error?.message).toContain("NOT_AUTHORIZED");
- await mkdir("docs/evening/screenshots",{recursive:true});for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);await warnings.scrollIntoViewIfNeeded();await page.screenshot({path:`docs/evening/screenshots/visit-warnings-${width}.png`});}
-});
-
-test("fixed finale wait keeps its reservation and hides the address on mobile",async({context,page},testInfo)=>{
- test.skip(testInfo.project.name!=="desktop-chromium","One fresh isolated route fixture");requireLocalAuth();test.setTimeout(60000);
- expect(sql(`select count(*) from app_private.group_runs where group_id='${groupId}'`)).toBe("0");
- sql(`begin;
-  update app_private.portal_windows set opens_at=now()-interval '1 hour',closes_at=now()+interval '5 hours';
-  update app_private.start_slots set starts_at=now()-interval '1 minute';
-  update app_private.event_route_settings set first_start_at=now()-interval '2 hours',global_ordinary_stop_at=now()+interval '2 hours',
-   allowed_personal_stop_times=array[now()+interval '1 hour'],ordinary_visit_seconds=60,route_buffer_seconds=0,
-   final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at=now()-interval '1 hour',finale_last_arrival_at=now()+interval '4 hours',
-   finale_closes_at=now()+interval '5 hours',finale_show_seconds=60,finale_turnover_seconds=120,finale_max_concurrent_groups=10,
-   finale_max_concurrent_children=40,finale_available=true,planner_mode='dynamic',finale_waiting_area='',finale_safe_approach=''
-   where event_id=(select event_id from app_private.walking_groups where id='${groupId}');
-  with inserted as (insert into app_private.group_schedule_revisions(group_id,revision,state,start_slot_id,effective_ordinary_stop_at,expected_finale_arrival_at,preference_match,published_at)
-   select id,1,'published',start_slot_id,now()+interval '2 hours',now()+interval '1 hour','neutral',now() from app_private.walking_groups where id='${groupId}' returning id)
-  update app_private.walking_groups set route_mode='dynamic',current_schedule_revision_id=inserted.id,desired_ordinary_visits=1,version=version+1 from inserted where walking_groups.id='${groupId}';
-  commit;`);
- const leader=await authenticate(context,"leader-a@example.invalid");const before=await rpc(leader,"group_snapshot",{_group_id:groupId});
- const roster=await rpc(leader,"group_roster",{_group_id:groupId});await rpc(leader,"run_start",{_group_id:groupId,_present_registration_child_ids:roster.map((row:{registrationChildId:string})=>row.registrationChildId),_expected_group_version:before.group.version,_idempotency_key:"finale-mobile-start",_request_hash:"finale-mobile-start"});
- const started=await rpc(leader,"group_snapshot",{_group_id:groupId});const reservationId=started.run.finaleReservation.id;
- await page.goto("/mijn-groep");await expect(page.getByRole("heading",{name:started.run.currentStop.portal.name,exact:true})).toBeVisible();
- await page.getByLabel("Korte poortcode").fill("TEST-"+started.run.currentStop.portal.id.slice(-2));await page.getByRole("button",{name:"Code controleren",exact:true}).click();
- const dialog=page.getByRole("dialog");await expect(dialog).toContainText("Jullie zijn bij de juiste poort");await dialog.getByRole("checkbox").uncheck();await dialog.getByRole("button",{name:"Aankomst bevestigen & volgende poort",exact:true}).click();
- await expect(dialog).not.toBeVisible();await expect(page.getByRole("heading",{name:"Jullie finalemoment staat vast",exact:true})).toBeVisible();
- const waiting=await rpc(leader,"group_snapshot",{_group_id:groupId});expect(waiting.run.currentStop).toBeNull();expect(waiting.run.waitingReason).toBe("finale_window");expect(waiting.run.finaleReservation.id).toBe(reservationId);
- const futureAddress=sql("select concat_ws(' ',street,house_number,addition) from app_private.portal_private_locations where portal_id='12000000-0000-0000-0000-000000000030'");expect(JSON.stringify(waiting)).not.toContain(futureAddress);
- await expect(page.locator(".route-safe-wait")).toContainText("Blijf bij jullie groep en vraag de organisatie");await expect(page.locator(".route-safe-wait")).toContainText("Volgende aanwijzing vanaf");
- await mkdir("docs/evening/screenshots",{recursive:true});for(const width of [360,390,430]){await page.setViewportSize({width,height:844});await assertReadableLayout(page);await page.locator(".route-safe-wait").scrollIntoViewIfNeeded();await page.screenshot({path:`docs/evening/screenshots/finale-wait-${width}.png`});}
- await page.reload();await expect(page.getByRole("heading",{name:"Jullie finalemoment staat vast",exact:true})).toBeVisible();await expect(page.locator(".group-app")).not.toContainText(futureAddress);
- const {client:owner}=await fixtureClient("owner@example.invalid");const arrivals=await rpc(owner,"portal_arrivals_snapshot",{_portal_id:"12000000-0000-0000-0000-000000000030"});const arrival=arrivals.arrivals.find((row:{reservationId:string})=>row.reservationId===reservationId);expect(arrival).toBeTruthy();expect(new Date(arrival.plannedArrivalAt).getTime()).toBe(new Date(waiting.run.reservedArrivalAt).getTime());
- sql("update app_private.event_route_settings set finale_available=false where event_id=(select id from app_private.events where slug='duindorp-halloween-2026')");
- try{
-  expect(process.env.SUPABASE_SECRET_KEY).toBeTruthy();const worker=createClient(supabaseUrl!,process.env.SUPABASE_SECRET_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});await rpc(worker,"worker_dispatch_due_groups",{_event_slug:"duindorp-halloween-2026",_batch_size:50});
-  await page.getByRole("button",{name:"Groepsinformatie vernieuwen",exact:true}).click();await expect(page.getByRole("heading",{name:"Organisatiecontrole nodig",exact:true})).toBeVisible();await expect(page.locator(".loading-state .spin")).toHaveCount(0);await expect(page.locator(".group-app")).not.toContainText(futureAddress);
- }finally{sql("update app_private.event_route_settings set finale_available=true where event_id=(select id from app_private.events where slug='duindorp-halloween-2026')");}
- expect(sql(`select count(*) from app_private.run_stop_arrivals where run_id='${waiting.run.id}'`)).toBe("1");
 });

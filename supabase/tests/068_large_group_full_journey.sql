@@ -1,6 +1,5 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-\ir fixtures/evening-route-publication.inc
 select no_plan();
 create temp table large_chain(eid uuid,registration_id uuid,proposal jsonb,plan jsonb,group_id uuid,schedule_id uuid,start_id uuid,run_id uuid,stop_id uuid,point_version integer,event_version integer,payment_batch jsonb,preview jsonb,arrived jsonb,first_token text,run_version integer);
 insert into large_chain(eid) select id from app_private.events where slug='duindorp-halloween-2026';
@@ -42,7 +41,7 @@ update large_chain c set group_id=s.group_id,event_version=e.settings_version fr
 select is((select count(*)::integer from app_private.group_registrations a join app_private.registration_children c on c.registration_id=a.registration_id where a.group_id=(select group_id from large_chain) and a.superseded_at is null),45,'actual dynamic plan assigns the intact 45-child registration');
 do $$begin
  perform api.admin_startregie_confirm_start('duindorp-halloween-2026',(select group_id from large_chain),1,(select event_version from large_chain));
- perform pg_temp.publish_fingerprinted('duindorp-halloween-2026',array[(select schedule_id from large_chain)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from large_chain),'revision',1)),(select event_version from large_chain),gen_random_uuid()::text);
+ perform api.admin_startregie_publish_times('duindorp-halloween-2026',array[(select schedule_id from large_chain)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from large_chain),'revision',1)),(select event_version from large_chain),gen_random_uuid()::text);
  perform api.admin_assign_group_leader((select group_id from large_chain),'c0000000-0000-0000-0000-000000000001',(select version from app_private.walking_groups where id=(select group_id from large_chain)),'Afzonderlijke leider voor de werkelijke grote ketenproef');
 end $$;
 select is((select count(*)::integer from app_private.poortenboek_passport_seals where team_id=(select group_id from large_chain)),0,'publishing a large group never awards a fictitious seal');

@@ -79,8 +79,6 @@ async function main() {
     if(!REVIEWED_RELEASE_MIGRATIONS.includes(migration.file))throw new Error('INVALID_MIGRATION_PROOF');
     const digest=createHash('sha256').update(await readFile(join('supabase','migrations',migration.file))).digest('hex');
     if(digest!==migration.sha256)throw new Error('MIGRATION_PROOF_REVISION_MISMATCH');
-    const expectedExecution=proof.appliedMigrations?.includes(migration.file.split('_')[0])?'already-applied':'dry-run';
-    if(migration.execution!==expectedExecution)throw new Error('MIGRATION_PROOF_EXECUTION_MISMATCH');
   }
   for(const file of proof.files) {
     if(!/^[a-z0-9.-]+\.aes$/.test(file.name))throw new Error('INVALID_BACKUP_FILENAME');

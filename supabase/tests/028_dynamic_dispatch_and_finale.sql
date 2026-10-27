@@ -10,8 +10,7 @@ create temporary table dynamic_state(
   child_id uuid,
   group_version integer,
   schedule_id uuid,
-  run_id uuid,
-  finale_reservation_id uuid
+  run_id uuid
 ) on commit drop;
 
 insert into dynamic_state(child_id, group_version)
@@ -137,7 +136,6 @@ select is(
   1,
   'the dispatcher reserves a feasible finale window before releasing an ordinary portal'
 );
-update dynamic_state set finale_reservation_id=(select id from app_private.portal_reservations where run_id=dynamic_state.run_id and kind='finale' and status='held');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
@@ -185,16 +183,89 @@ select lives_ok(
   ) $$,
   'an audited organization action can send a group to the finale through the same reservation dispatcher'
 );
-select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,waitingReason}','finale_window','organization redirection waits for the fixed reserved departure');
-select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>'{run,currentStop}','null'::jsonb,'early redirection releases no premature finale address');
-select is(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,finaleReservation,id}',(select finale_reservation_id::text from dynamic_state),'redirection keeps the originally published reservation ID');
-select ok((api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,waitingUntil}')::timestamptz < (api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{run,reservedArrivalAt}')::timestamptz,'the safe waiting deadline includes the verified walk');
+select is(
+  api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,currentStop,kind}',
+  'finale',
+  'the currently published destination is now the designated terminal portal'
+);
+
 set local role postgres;
-select is((select count(*)::integer from app_private.portal_reservations where run_id=(select run_id from dynamic_state) and kind='finale' and status='active'),0,'waiting does not activate a prematurely released finale');
-select is((select count(*)::integer from app_private.portal_reservations where run_id=(select run_id from dynamic_state) and kind='finale' and status='held'),1,'the real fixed future reception slot stays held');
-select is((select status::text from app_private.group_runs where id=(select run_id from dynamic_state)),'live','waiting does not falsely complete the journey');
-select is((select count(*)::integer from app_private.run_stops where run_id=(select run_id from dynamic_state) and stop_kind='ordinary' and portal_id='12000000-0000-0000-0000-000000000030'),0,'the finale is never treated as an ordinary house');
-select is((select count(*)::integer from app_private.run_stop_arrivals a join app_private.run_stops s on s.id=a.run_stop_id where s.run_id=(select run_id from dynamic_state) and s.stop_kind='finale'),0,'safe waiting invents no finale arrivals or seals');
+update app_private.stop_participant_statuses status set
+  status = 'skipped', version = version + 1, changed_by = 'f0000000-0000-0000-0000-000000000001',
+  reason = 'test final cannot be skipped', decided_at = now()
+where status.run_stop_id = (select current_stop_id from app_private.group_runs where id = (select run_id from dynamic_state));
+
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select throws_ok(
+  $$ select api.run_complete_stop(
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,id}')::uuid,
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,currentStop,id}')::uuid,
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,version}')::integer,
+    true, 'finale-skip-denied', 'finale-skip-denied-hash'
+  ) $$,
+  '23514', 'SCAN_REQUIRED', 'even an all-skip finale requires confirmed physical arrival'
+);
+
+set local role postgres;
+update app_private.stop_participant_statuses status set
+  status = 'pending', version = version + 1, changed_by = null, reason = null, decided_at = null
+where status.run_stop_id = (select current_stop_id from app_private.group_runs where id = (select run_id from dynamic_state));
+
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select lives_ok(
+  $$ select api.run_scan(
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,id}')::uuid,
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,currentStop,id}')::uuid,
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,version}')::integer,
+    'TEST-30', 'short_code'
+  ) $$,
+  'the designated finale credential confirms arrival at the final portal'
+);
+select lives_ok(
+  $$ select api.run_update_participant(
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,id}')::uuid,
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,currentStop,id}')::uuid,
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,participants,0,id}')::uuid,
+    'visited',
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,version}')::integer,
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,participants,0,statusVersion}')::integer,
+    null
+  ) $$,
+  'the leader records the final show after the finale scan'
+);
+select lives_ok(
+  $$ select api.run_complete_stop(
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,id}')::uuid,
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,currentStop,id}')::uuid,
+    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,version}')::integer,
+    false, 'finale-complete', 'finale-complete-hash'
+  ) $$,
+  'completing the visited finale finishes the route'
+);
+select is(
+  api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,status}',
+  'completed',
+  'the group is complete only after the final portal is visited'
+);
+
+set local role postgres;
+select is(
+  (select count(*)::integer from app_private.run_stops where run_id = (select run_id from dynamic_state) and stop_kind = 'finale' and state = 'completed'),
+  1,
+  'a normal dynamic route has exactly one completed terminal finale stop'
+);
+select is(
+  (select count(*)::integer from app_private.run_stops where run_id = (select run_id from dynamic_state) and stop_kind = 'ordinary' and portal_id = '12000000-0000-0000-0000-000000000030'),
+  0,
+  'the designated final portal is never selected as an ordinary house'
+);
+select is(
+  (select count(*)::integer from app_private.portal_reservations where run_id = (select run_id from dynamic_state) and status in ('held', 'active')),
+  0,
+  'finishing the finale leaves no active capacity claim for the group'
+);
 
 select * from finish();
 rollback;

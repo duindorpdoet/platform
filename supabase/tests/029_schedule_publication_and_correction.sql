@@ -1,13 +1,12 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-\ir fixtures/evening-route-publication.inc
 select plan(15);
 create function pg_temp.publish_current_schedule(_ids uuid[],_reason text) returns jsonb language plpgsql security definer set search_path='' as $$
 declare expected jsonb; version integer;
 begin
  select jsonb_agg(jsonb_build_object('id',id,'revision',revision) order by id) into expected from app_private.group_schedule_revisions where id=any(_ids);
  select settings_version into version from app_private.events where slug='duindorp-halloween-2026';
- return pg_temp.publish_fingerprinted('duindorp-halloween-2026',_ids,expected,version,gen_random_uuid()::text,_reason);
+ return api.admin_startregie_publish_times('duindorp-halloween-2026',_ids,expected,version,gen_random_uuid()::text,_reason);
 end $$;
 grant execute on function pg_temp.publish_current_schedule(uuid[],text) to authenticated;
 create function pg_temp.event_settings_version() returns integer language sql security definer set search_path='' as $$select settings_version from app_private.events where slug='duindorp-halloween-2026'$$;

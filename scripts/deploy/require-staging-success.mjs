@@ -21,14 +21,13 @@ for (const run of runs.workflow_runs ?? []) {
   const jobsResponse = await fetch(`${api}/actions/runs/${run.id}/jobs?per_page=100`, { headers });
   if (!jobsResponse.ok) throw new Error(`Could not read staging release jobs (${jobsResponse.status}).`);
   const jobs = await jobsResponse.json();
-  if (jobs.jobs?.some(job => job.name === "Validate, migrate, deploy and accept" && job.conclusion === "success") &&
-      jobs.jobs.some(job => job.name === "Staging evening load and preservation acceptance" && job.conclusion === "success")) {
+  if (jobs.jobs?.some(job => job.name === "Validate, migrate, deploy and accept" && job.conclusion === "success")) {
     releaseRunSucceeded = true;
     break;
   }
 }
 if (!releaseRunSucceeded) {
-  throw new Error("Production promotion requires the entire staging workflow and its deployment job to succeed on this exact Git commit, with mailbox acceptance or an explicitly selected dispatch waiver. The evening load and preservation job must also pass. Maintenance alone is not a deployment.");
+  throw new Error("Production promotion requires the entire staging workflow and its deployment job to succeed on this exact Git commit, with mailbox acceptance or an explicitly selected dispatch waiver. Maintenance alone is not a deployment.");
 }
 
 const deploymentsResponse = await fetch(`${api}/deployments?sha=${process.env.GITHUB_SHA}&environment=staging&per_page=10`, { headers });

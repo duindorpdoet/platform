@@ -25,7 +25,6 @@ export async function portalPrint(portalId: string, version?: number) {
   const result = await client.schema('api').rpc('portal_print_access', args);
   if (result.error) throw new ApiError(/STALE_VERSION/.test(result.error.message) ? 409 : 403, 'PRINT_UNAVAILABLE', 'Controleer je poortrechten en vernieuw de pagina.');
   const { ciphertext, ...safe } = result.data;
-  safe.readinessRevision=safe.credentialId?`credential:${safe.credentialId}:${safe.credentialRevision}`:null;
   delete safe.credentialId;
   return { ...safe, ...(ciphertext ? JSON.parse(decryptValue(ciphertext, key, `portal-print:${portalId}`)) : {}), origin: new URL(serverEnv().APP_URL).origin };
 }

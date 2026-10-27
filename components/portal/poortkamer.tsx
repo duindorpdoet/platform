@@ -1,6 +1,4 @@
 "use client";
-import {PortalVisitInformationEditor} from "@/components/portal/visit-information";
-import {useAccountObservation} from "@/components/group/start-appointment-observation";
 import { useEventDetails } from "@/components/redesign/event-details";
 import {HousePortalThanks} from "@/components/redesign/portal-thanks";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
@@ -84,7 +82,6 @@ export function Poortkamer({
   const event = useEventDetails();
   const [room, setRoom] = useState<PortalRoom | null>(initial);
   const [portalId, setPortalId] = useState(initial.portal.id);
-  useAccountObservation("portal",admin?null:portalId);
   const [moreSection, setMoreSection] = useState("preparation");
   const [preparationSection, setPreparationSection] = useState("checklist");
   const [tab, setTab] = useState<Tab>("night");
@@ -899,7 +896,7 @@ export function Poortkamer({
                 })}
               </div>
             </section>}
-            {moreSection === "settings" && <>{canEdit&&<PortalVisitInformationEditor key={room.portal.id} portalId={room.portal.id} disabled={disabled}/>}
+            {moreSection === "settings" && <>
             <Link className={s.button} href="/omgeving/communicatie">Nachtpost en communicatievoorkeuren →</Link>
             <section className={s.card}>
               <h2>

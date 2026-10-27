@@ -28,7 +28,7 @@ export async function selectOrganizationSection(page: Page, name: string) {
   const groups: Record<string,string>={
     Inschrijvingen:'Deelnemers',Samenloop:'Deelnemers',Samenlopen:'Deelnemers',Groepsindeling:'Deelnemers',Betalingen:'Deelnemers',Poortenboek:'Deelnemers',
     Inbox:'Communicatie',Berichten:'Communicatie',Messenger:'Communicatie',Updates:'Communicatie',Praatkamer:'Communicatie',Redactiekamer:'Communicatie',Deelstudio:'Communicatie','Website & sponsors':'Communicatie',
-    Cockpit:'Overzicht',Live:'De avond',Livecockpit:'De avond',Generale:'De avond',Bedankjes:'De avond','Gereed voor de avond':'De avond',
+    Cockpit:'Overzicht',Live:'De avond',Livecockpit:'De avond',Generale:'De avond',Bedankjes:'De avond',
     Instellingen:'Beheer','Push & beveiliging':'Beheer',Beheerders:'Beheer',Toegangen:'Beheer',Imports:'Beheer',Statistieken:'Beheer',
   };
   const group=groups[label]??label;
