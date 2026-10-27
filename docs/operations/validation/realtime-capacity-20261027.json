@@ -1,0 +1,173 @@
+{
+  "investigatedOn": "2026-10-27",
+  "repository": "duindorpdoet/platform",
+  "baselineRevision": "86629f35df9ce2536106c6ac7957fb3a2b256be6",
+  "workingBranch": "codex/realtime-capacity-20261027",
+  "hostedAcceptance": "not_run",
+  "productionRealtimeCapacity": "unverified",
+  "expectedConcurrentHalloweenScreens": null,
+  "changes": {
+    "databaseSchema": false,
+    "arrivalCommandPayloadsOrIdempotency": false,
+    "capacityOrBookingTransactions": false,
+    "hostedConfiguration": false,
+    "paidCapacity": false,
+    "deployment": false,
+    "clientReadScheduling": true
+  },
+  "currentReadOnlyEvidence": {
+    "environmentProjectMapping": {
+      "source": "GitHub environment SUPABASE_PROJECT_REF variables, read with gh api; confirmed against connected Duindorpdoet Supabase projects",
+      "staging": "nocteiuvohesvqbowchw",
+      "production": "dtubngvxfbupgvgfrjko"
+    },
+    "health": [
+      {
+        "environment": "staging",
+        "url": "https://staging-halloween.duindorpdoet.nl/api/health",
+        "status": "ok",
+        "revision": "86629f35df9ce2536106c6ac7957fb3a2b256be6",
+        "registrationMode": "staging_test"
+      },
+      {
+        "environment": "production",
+        "url": "https://halloween.duindorpdoet.nl/api/health",
+        "status": "ok",
+        "revision": "86629f35df9ce2536106c6ac7957fb3a2b256be6",
+        "registrationMode": "live"
+      }
+    ],
+    "database": [
+      {
+        "environment": "staging",
+        "measuredAt": "2026-10-27T21:00:34.378292Z",
+        "postgresVersion": "17.6",
+        "maxConnections": 60,
+        "connectionsInCurrentDatabase": 12,
+        "active": 1,
+        "waitingForLock": 0
+      },
+      {
+        "environment": "production",
+        "measuredAt": "2026-10-27T21:00:37.134123Z",
+        "postgresVersion": "17.6",
+        "maxConnections": 60,
+        "connectionsInCurrentDatabase": 21,
+        "active": 2,
+        "waitingForLock": 0
+      }
+    ],
+    "databaseQuery": "select clock_timestamp() as measured_at, current_setting('server_version') as postgres_version, current_setting('max_connections')::integer as max_connections, count(*)::integer as connections, count(*) filter (where state='active')::integer as active, count(*) filter (where wait_event_type='Lock')::integer as waiting_for_lock from pg_stat_activity where datname=current_database();",
+    "observability": {
+      "method": "Connected Supabase read-only log source counts and security/performance advisors",
+      "realtimeLogRecordsInDefault24HourWindow": { "staging": 5, "production": 281 },
+      "unindexedForeignKeyAdvisories": { "staging": 206, "production": 204 },
+      "limitation": "Log record counts and generic index advisories do not establish error rate, saturation or the cause of slow RPCs. No blanket index or RLS changes were applied."
+    },
+    "limitations": [
+      "Low-load snapshots are not a capacity benchmark.",
+      "No current Realtime configuration, compute allocation or PostgREST pool size was returned by these read-only project/database tools.",
+      "Database max_connections and Realtime authorization connection_pool are different limits."
+    ]
+  },
+  "pr40Evidence": {
+    "url": "https://github.com/duindorpdoet/platform/pull/40",
+    "state": "open_draft",
+    "headRevision": "85d6d0591064489ee1df701643b41de87bfe6018",
+    "loadMeasuredRevision": "f9608bd30e0d189ebd659a886cfe6f15b868ce17",
+    "identityCounts": { "families": 200, "portalOwners": 30, "admins": 4, "supportObservers": 20, "total": 254 },
+    "plannedPrivateSubscriptions": 284,
+    "snapshotWave": {
+      "source": "https://github.com/duindorpdoet/platform/blob/85d6d0591064489ee1df701643b41de87bfe6018/docs/evening/validation/hosted-load-after-aggregation.json",
+      "operations": 254,
+      "requests": 302,
+      "http200": 302,
+      "roleOperationP95Ms": 9478,
+      "requestP95Ms": 9056,
+      "acceptanceLimitMs": 8000,
+      "operationsOverLimit": 20,
+      "realtimeAttempts": 0,
+      "changedOriginalRows": 0,
+      "originalRowsCompared": 7281,
+      "originalTablesCompared": 22,
+      "status": "fail"
+    },
+    "diagnostic32Accounts": {
+      "source": "https://github.com/duindorpdoet/platform/blob/85d6d0591064489ee1df701643b41de87bfe6018/docs/evening/validation/staging-capacity-diagnostics.json",
+      "diagnosticOnly": true,
+      "httpAbortMs": 12000,
+      "saturationProven": false
+    },
+    "lastConfirmedRealtimeConfiguration": {
+      "observedOn": "2026-10-24",
+      "run": "https://github.com/duindorpdoet/platform/actions/runs/40100882043",
+      "environment": "staging",
+      "maxConcurrentUsers": 200,
+      "authorizationConnectionPool": 2,
+      "maxEventsPerSecond": 100,
+      "maxJoinsPerSecond": 100,
+      "maxChannelsPerClient": 100,
+      "productionReadWithStagingCredentialHttpStatus": 403,
+      "recheckedInThisInvestigation": false
+    },
+    "limitations": [
+      "The PR40 candidate and the current deployed revision have different migration and application histories.",
+      "The full 254-identity hosted test stopped before joining WebSockets.",
+      "There is no measured production failure threshold at exactly 200 connections.",
+      "The 20 support observers exercise three admin RPCs, not the current group_viewer_snapshot screen.",
+      "The SDK test did not render 254 browsers or read automatically after every broadcast.",
+      "Prepared sequential logins do not establish simultaneous login capacity."
+    ]
+  },
+  "localValidation": {
+    "unit": { "command": "pnpm test", "passed": 534, "skipped": 1, "failed": 0, "filesPassed": 74 },
+    "lint": "pass",
+    "typecheck": "pass",
+    "productionBuild": "pass",
+    "clientArtifactScan": { "status": "pass", "filesScanned": 1177 },
+    "databaseSuite": {
+      "environment": "new isolated local database built from unchanged baseline migrations and seed",
+      "files": 94,
+      "assertions": 2312,
+      "failedAssertions": 3,
+      "status": "fail",
+      "failures": [
+        { "file": "042_night_regie_map_and_group_composition.sql", "test": 15, "description": "moved registration disappears from unassigned list", "actual": 5, "expected": 4, "isolatedBaselineRecheck": "pass; suite failure remains unresolved" },
+        { "file": "059_redesign_contracts.sql", "test": 68, "description": "new account day requires acknowledgment", "isolatedBaselineRecheck": "same failure from unmodified HEAD test" },
+        { "file": "059_redesign_contracts.sql", "test": 72, "description": "client cannot jump thirteen tutorial steps", "isolatedBaselineRecheck": "same failure from unmodified HEAD test" }
+      ],
+      "scope": "No migrations, seed or existing pgTAP assertions were edited. The complete database regression suite is not green."
+    },
+    "renderedBrowser": {
+      "status": "pass",
+      "command": "pnpm exec playwright test --config playwright.realtime.config.ts",
+      "browser": "Chromium",
+      "identities": 1,
+      "receivedPrivateBroadcasts": 21,
+      "groupSnapshotRequestsInMeasuredBurst": 2,
+      "groupSnapshotRequestsIncludingInitialLoads": 4,
+      "maximumConcurrentGroupSnapshotRequests": 1,
+      "unusedRegistrationSnapshotRequests": 0,
+      "unusedRegistrationPreferencesRequests": 0,
+      "hostedCapacityEvidence": false,
+      "ciStepAdded": true,
+      "githubWorkflowRun": "not_run"
+    },
+    "existingOfflineRecoveryBrowser": {
+      "status": "pass",
+      "file": "tests/e2e/authenticated-live.spec.ts",
+      "test": "forged cookies fail and offline group state reveals only the current stop before authoritative reconnect",
+      "browser": "Chromium",
+      "environment": "fresh isolated local Supabase database",
+      "hostedCapacityEvidence": false
+    }
+  },
+  "remainingAcceptanceEvidence": [
+    "Agreed simultaneous screen counts and workload mix, including child books, real viewers, chats and reconnect reserve.",
+    "Current production Realtime quotas, compute and PostgREST pool settings, verified with appropriate read-only access.",
+    "Resolved database regression failures and exact-SHA staging/deployment/backup verification.",
+    "Hosted mixed role HTTP and actual WebSocket phases, including browser refreshes, at the agreed workload and unchanged eight-second p95 threshold.",
+    "Arrival, retry, closure, physical/finale capacity and preservation invariants during that same mixed load.",
+    "Actual mobile-network, poster/short-code, route and leader-handover rehearsal."
+  ]
+}

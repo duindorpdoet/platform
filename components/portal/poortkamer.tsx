@@ -36,6 +36,8 @@ import {
 } from "@/components/pwa/pwa-experience";
 import { SupportWidget } from "@/components/support/support-widget";
 import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
+import { useSnapshotLoader } from "@/lib/realtime/use-snapshot-loader";
+import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 import { createClient } from "@/lib/supabase/client";
 import {
   canEditPortal,
@@ -103,7 +105,7 @@ export function Poortkamer({
     version.current += 1;
     setRoom(null);
   }, []);
-  const load = useCallback(async () => {
+  const { load, invalidate } = useSnapshotLoader(useCallback(async () => {
     if (document.hidden) return;
     if (!navigator.onLine) {
       setOffline(true);
@@ -118,11 +120,12 @@ export function Poortkamer({
         .rpc("portal_room_snapshot", {
           _event_slug: eventSlug,
           _portal_id: portalId,
-        });
+        }).abortSignal(AbortSignal.timeout(8_000));
       if (request !== version.current) return;
       if (!navigator.onLine) { setOffline(true); return; }
       if (error) {
         if (error.code === "42501" || error.code === "PGRST301") clearPrivate();
+        setOffline(true);
         setNotice(roomError(error.message));
         return;
       }
@@ -135,7 +138,8 @@ export function Poortkamer({
     } catch {
       if(request === version.current)setOffline(true);
     }
-  }, [eventSlug, portalId, userId, clearPrivate]);
+  }, [eventSlug, portalId, userId, clearPrivate]));
+  useSnapshotRefresh(load, { intervalMs: 20_000 });
   useEffect(() => {
     const client = createClient();
     if (!client) return;
@@ -145,31 +149,24 @@ export function Poortkamer({
           clearPrivate();
       },
     );
-    const poll = window.setInterval(() => void load(), 20_000);
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
-    const refresh = () => void load();
     const disconnected = () => {
       version.current += 1;
       setOffline(true);
     };
     window.addEventListener("pagehide", clearPrivate);
     window.addEventListener("beforeunload", clearPrivate);
-    window.addEventListener("online", refresh);
     window.addEventListener("offline", disconnected);
-    document.addEventListener("visibilitychange", refresh);
     return () => {
       listener.subscription.unsubscribe();
-      clearInterval(poll);
       clearInterval(timer);
       window.removeEventListener("pagehide", clearPrivate);
       window.removeEventListener("beforeunload", clearPrivate);
-      window.removeEventListener("online", refresh);
       window.removeEventListener("offline", disconnected);
-      document.removeEventListener("visibilitychange", refresh);
     };
   }, [load, clearPrivate, userId]);
-  const live = usePrivateBroadcast(room?.portalTopic, () => void load());
-  usePrivateBroadcast(room?.communityTopic, () => void load());
+  const live = usePrivateBroadcast(room?.portalTopic, invalidate);
+  usePrivateBroadcast(room?.communityTopic, invalidate);
   useEffect(() => {
     if (!offline) return;
     const timeout = window.setTimeout(clearPrivate, 5 * 60_000);

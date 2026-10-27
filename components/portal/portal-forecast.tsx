@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, RefreshCw, Users } from "lucide-react";
 import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
 import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
+import { useSnapshotLoader } from "@/lib/realtime/use-snapshot-loader";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/components/portal/portal-premium.module.css";
 
@@ -36,17 +37,17 @@ export function PortalForecast({ portalId, systemCode, name, operationStatus }: 
   const responseSequence = useRef(0);
   const [snapshot, setSnapshot] = useState<Forecast | null>(null);
   const [unavailable, setUnavailable] = useState(false);
-  const load = useCallback(async () => {
+  const { load, invalidate } = useSnapshotLoader(useCallback(async () => {
     const client = createClient(); if (!client) return;
     const ticket=++responseSequence.current;
     try {
-      const {data,error}=await client.schema("api").rpc("portal_arrivals_snapshot",{_portal_id:portalId}).abortSignal(AbortSignal.timeout(15000));
+      const {data,error}=await client.schema("api").rpc("portal_arrivals_snapshot",{_portal_id:portalId}).abortSignal(AbortSignal.timeout(8_000));
       if(ticket!==responseSequence.current)return;
       setUnavailable(Boolean(error));if(!error)setSnapshot(data as Forecast);
     }catch{if(ticket===responseSequence.current)setUnavailable(true);}
-  },[portalId]);
+  },[portalId]));
   useEffect(()=>{const first=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(first);},[load]);
-  usePrivateBroadcast(`portal:${portalId}`,()=>void load());
+  usePrivateBroadcast(`portal:${portalId}`, invalidate);
   useSnapshotRefresh(load);
 
   const assigned = useMemo(() => snapshot?.arrivals?.filter((item) => item.classification === "assigned" && item.state !== "completed") ?? [], [snapshot]);

@@ -267,6 +267,7 @@ const paymentLabels: Record<string, string> = {
 };
 
 function WalkerSection({ context, eventSlug, userId, role, section }: { context: ParticipantContext; eventSlug: string; userId: string; role: ParticipantRole; section?: string }) {
+  const needsOverview = section !== "route" || !role.groupId;
   const [registration, setRegistration] = useState<RegistrationSnapshot | null>(null);
   const [group, setGroup] = useState<GroupSnapshot | null>(null);
   const [preferences, setPreferences] = useState<RegistrationPreferences | null>(null);
@@ -284,8 +285,12 @@ function WalkerSection({ context, eventSlug, userId, role, section }: { context:
     if (!preferencesResult.error && preferencesResult.data) setPreferences(preferencesResult.data as RegistrationPreferences);
     setLoading(false);
   }, [eventSlug, role.groupId]);
-  useSnapshotRefresh(load);
-  useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
+  useSnapshotRefresh(load, { enabled: needsOverview });
+  useEffect(() => {
+    if (!needsOverview) return;
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load, needsOverview]);
 
   if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience groupId={role.groupId} userId={userId} /></ParticipantPageFrame>;
   if (loading) return <ParticipantLoading />;

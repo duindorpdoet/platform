@@ -7,6 +7,8 @@ import {AdminPortalThanks} from "@/components/redesign/portal-thanks";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSnapshotLoader } from "@/lib/realtime/use-snapshot-loader";
+import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 import Papa from "papaparse";
 import { paymentAmount, type PaymentBatch } from "@/components/payments/payment-details";
 import {
@@ -448,21 +450,25 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const registrationChildCount = registrations.reduce((total, registration) => total + registration.childCount, 0);
   const [togetherRequests, setTogetherRequests] = useState<TogetherRequest[]>([]);
-  const load = useCallback(async () => {
+  const { load } = useSnapshotLoader(useCallback(async () => {
     const client = createClient();
     if (!client) return;
-    const { data } = await client
+    const { data, error } = await client
       .schema("api")
-      .rpc("admin_dashboard", { _event_slug: eventSlug });
+      .rpc("admin_dashboard", { _event_slug: eventSlug }).abortSignal(AbortSignal.timeout(8_000));
+    if (error) {
+      setNotice("Het overzicht kon niet worden vernieuwd. De getoonde stand kan verouderd zijn.");
+      return;
+    }
     const next = data as Dashboard;
     setDashboard(next);
-  }, [eventSlug]);
-  const loadLive = useCallback(async () => {
+  }, [eventSlug]));
+  const { load: loadLive, invalidate: invalidateLive } = useSnapshotLoader(useCallback(async () => {
     const client = createClient();
     if (!client) return;
     const [cockpitResult, portalResult] = await Promise.all([
-      client.schema("api").rpc("admin_evening_cockpit", { _event_slug: eventSlug }),
-      client.schema("api").rpc("admin_portal_operations_snapshot", { _event_slug: eventSlug }),
+      client.schema("api").rpc("admin_evening_cockpit", { _event_slug: eventSlug }).abortSignal(AbortSignal.timeout(8_000)),
+      client.schema("api").rpc("admin_portal_operations_snapshot", { _event_slug: eventSlug }).abortSignal(AbortSignal.timeout(8_000)),
     ]);
     if (!cockpitResult.error) {
       const cockpit = cockpitResult.data as { groups: LiveRun[]; portals: LivePortal[]; alerts: LiveAlert[] };
@@ -475,29 +481,27 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
       setPortalOperations(portalSnapshot?.portals ?? []);
       setPortalRealtimeTopic(portalSnapshot?.realtimeTopic ?? null);
     }
-    if (cockpitResult.error && portalResult.error) setNotice("Live-overzicht is alleen beschikbaar voor bevoegde avondbeheerders.");
-  }, [eventSlug]);
+    if (cockpitResult.error || portalResult.error) setNotice("Een deel van het live-overzicht kon niet worden vernieuwd. De getoonde stand kan verouderd zijn.");
+  }, [eventSlug]));
+  const showLive = ["overview", "live"].includes(section);
+  useSnapshotRefresh(loadLive, { enabled: showLive, intervalMs: 20_000 });
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void load();
-      void loadLive();
-    }, 0);
-    const poll = window.setInterval(() => {
-      if (section === "overview" || section === "live") void loadLive();
-    }, 20_000);
-    return () => {
-      window.clearTimeout(timer);
-      window.clearInterval(poll);
-    };
-  }, [load, loadLive, section]);
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+  useEffect(() => {
+    if (!showLive) return;
+    const timer = window.setTimeout(() => void loadLive(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadLive, showLive]);
   useEffect(() => {
     const client = createClient();
-    if (!client || !portalRealtimeTopic || !["overview", "live"].includes(section)) return;
+    if (!client || !portalRealtimeTopic || !showLive) return;
     const channel = client.channel(portalRealtimeTopic, { config: { private: true } })
-      .on("broadcast", { event: "snapshot_changed" }, () => void loadLive())
+      .on("broadcast", { event: "snapshot_changed" }, invalidateLive)
       .subscribe((status: string) => setLiveConnection(status === "SUBSCRIBED" ? "live" : status === "CHANNEL_ERROR" || status === "TIMED_OUT" ? "offline" : "connecting"));
     return () => { void client.removeChannel(channel); };
-  }, [liveConnectionRetry, loadLive, portalRealtimeTopic, section]);
+  }, [liveConnectionRetry, invalidateLive, portalRealtimeTopic, showLive]);
 
   async function dryRun(file: File) {
     const parsed = Papa.parse<Record<string, string>>(await file.text(), {

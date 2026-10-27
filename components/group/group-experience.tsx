@@ -1,6 +1,8 @@
 "use client";
 
 import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
+import { useSnapshotLoader } from "@/lib/realtime/use-snapshot-loader";
+import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./group-experience.css";
 import "../../modern/route.css";
@@ -87,11 +89,15 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
   const consumedLink = useRef("");
   const portalHeading = useRef<HTMLHeadingElement>(null);
   const previousStopId = useRef<string | null>(null);
+  const sourceGeneration = useRef(0);
+  const invalidateSource = useCallback(() => { sourceGeneration.current++; }, []);
 
-  const load = useCallback(async () => {
+  const { load, invalidate } = useSnapshotLoader(useCallback(async () => {
     const client = createClient();
     if (!client) return;
-    const { data, error } = await client.schema("api").rpc("group_snapshot", { _group_id: groupId });
+    const generation = sourceGeneration.current;
+    const { data, error } = await client.schema("api").rpc("group_snapshot", { _group_id: groupId }).abortSignal(AbortSignal.timeout(8_000));
+    if (generation !== sourceGeneration.current) return;
     if (error) {
       const cached = readPrivateSnapshot<Snapshot>(userId, groupId);
       if (cached) { setSnapshot(cached); setOffline(true); }
@@ -101,25 +107,24 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
     setSnapshot(next); setOffline(!isArrivalConnected()); try { storePrivateSnapshot(userId, groupId, next); } catch { /* Route remains available; an arrival is only called saved after its own durable write. */ }
     try { await configureArrivalSync({accountId:userId,eventId:next.eventId,groupId}); } catch { setNotice("Een bewaarde aankomst vraagt herstelcontrole. Houd deze telefoon bij je en neem contact op met de organisatie."); }
     if (!next.run && next.access.leader) {
-      const rosterResult = await client.schema("api").rpc("group_roster", { _group_id: groupId });
+      const rosterResult = await client.schema("api").rpc("group_roster", { _group_id: groupId }).abortSignal(AbortSignal.timeout(8_000));
+      if (generation !== sourceGeneration.current) return;
       if (!rosterResult.error) {
         const items = rosterResult.data as RosterItem[];
         setRoster(items);
         setAttendance((current) => reconcileAttendance(items.map((item) => item.registrationChildId), current));
       }
     }
-  }, [groupId, userId]);
+  }, [groupId, userId]));
   useSnapshotRefresh(load);
+  usePrivateBroadcast(`group:${groupId}`, invalidate);
 
   useEffect(() => {
     const client = createClient(); if (!client) return;
     const timer = window.setTimeout(() => void load(), 0);
-    const channel = client.channel(`group:${groupId}`, { config: { private: true } }).on("broadcast", { event: "snapshot_changed" }, () => void load()).subscribe();
-    const auth = client.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => { if (!session || session.user.id !== userId) { clearPrivateSnapshots(); clearArrivalMemory(); } });
-    const reconnect = () => void load();
-    window.addEventListener("online", reconnect);
-    return () => { window.clearTimeout(timer); void client.removeChannel(channel); auth.data.subscription.unsubscribe(); window.removeEventListener("online", reconnect); };
-  }, [groupId, userId, load]);
+    const auth = client.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => { if (!session || session.user.id !== userId) { invalidateSource(); clearPrivateSnapshots(); clearArrivalMemory(); } });
+    return () => { invalidateSource(); window.clearTimeout(timer); auth.data.subscription.unsubscribe(); };
+  }, [groupId, userId, load, invalidateSource]);
 
   useEffect(() => {
     const stopId = snapshot?.run?.currentStop?.id ?? null;

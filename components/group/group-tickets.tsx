@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCheck, LifeBuoy, MessageSquarePlus, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
+import { useSnapshotLoader } from "@/lib/realtime/use-snapshot-loader";
+import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 
 type TicketMessage = {
   id: string;
@@ -47,24 +50,21 @@ export function GroupTickets({ groupId }: { groupId: string }) {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
+  const { load, invalidate } = useSnapshotLoader(useCallback(async () => {
     const client = createClient();
     if (!client) return;
-    const { data, error } = await client.schema("api").rpc("group_ticket_snapshot", { _group_id: groupId });
+    const { data, error } = await client.schema("api").rpc("group_ticket_snapshot", { _group_id: groupId }).abortSignal(AbortSignal.timeout(8_000));
     if (error) return setNotice("De berichten konden niet worden opgehaald.");
     const next = data as Ticket[];
     setTickets(next);
     setSelectedId((current) => current && next.some((ticket) => ticket.id === current) ? current : next[0]?.id ?? null);
-  }, [groupId]);
+  }, [groupId]));
+  usePrivateBroadcast(`group:${groupId}`, invalidate);
+  useSnapshotRefresh(load);
 
   useEffect(() => {
-    const client = createClient();
     const timer = window.setTimeout(() => void load(), 0);
-    if (!client) return () => window.clearTimeout(timer);
-    const channel = client.channel(`group:${groupId}`, { config: { private: true } })
-      .on("broadcast", { event: "snapshot_changed" }, () => void load())
-      .subscribe();
-    return () => { window.clearTimeout(timer); void client.removeChannel(channel); };
+    return () => window.clearTimeout(timer);
   }, [groupId, load]);
 
   const selected = tickets.find((ticket) => ticket.id === selectedId) ?? null;

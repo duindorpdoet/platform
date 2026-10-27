@@ -46,6 +46,8 @@ SUPABASE_URL="$API_URL" SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" node scripts
 
 Deze proef gebruikt één bevoegde testidentiteit en meet 600 snapshotrequests plus 200 gelijktijdige, identieke afrondingsverzoeken. Dit is lokaal regressiebewijs; productiecapaciteit en de echte telefoon-/netwerkproef vereisen aparte metingen.
 
+Het [capaciteitsonderzoek voor 31 oktober](docs/operations/HALLOWEEN-CAPACITEIT-2026.md) onderscheidt de huidige release, de rode schaalproef uit PR 40, de verschillende schermbelastingen en de nog te meten productiequota. Na een build tegen de lokale Supabase-configuratie controleert `pnpm exec playwright test --config playwright.realtime.config.ts` echte private broadcasts, begrensde routelezingen en het vervallen van ongebruikte ouderaanvragen. Gebruik uitsluitend een lokale testdatabase; bij afwijkende poorten is `TOGETHER_TEST_DB_CONTAINER` verplicht. Deze browserproef is ook opgenomen in CI.
+
 ## Releaseflow
 
 - `main`: geïntegreerde, lokaal en in CI geverifieerde code.

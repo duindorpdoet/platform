@@ -181,6 +181,18 @@ jobs:
           eval "$(pnpm exec supabase status -o env)"
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/authenticated-live.spec.ts tests/e2e/homeowner-responsive.spec.ts tests/e2e/participant-mobile-polish.spec.ts tests/e2e/together-management.spec.ts --project=desktop-chromium --workers=1
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/together-management.spec.ts --project=mobile-chromium
+      - name: Verify rendered realtime refresh pressure
+        env:
+          APP_ENVIRONMENT: test
+          REGISTRATION_MODE: staging_test
+          APP_URL: http://127.0.0.1:3187
+          ALLOWED_ORIGINS: http://127.0.0.1:3187
+          ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
+          TOGETHER_TEST_DB_CONTAINER: supabase_db_duindorphalloween
+        run: |
+          pnpm exec supabase db reset
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test --config playwright.realtime.config.ts
       - name: Run mobile PWA invitation and attendance acceptance
         env:
           APP_ENVIRONMENT: test
