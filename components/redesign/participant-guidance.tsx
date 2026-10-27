@@ -4,14 +4,18 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { Dialog as Primitive } from 'radix-ui';
 import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, ChevronDown, ExternalLink, HelpCircle, MessageCircle, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {configureArrivalSync} from '@/lib/redesign/arrival-sync';
 import { createClient } from '@/lib/supabase/client';
 import {consumeWelcomeReplay} from "@/lib/account/welcome-replay";
-import { GUIDANCE_VERSION, guidanceRole, type GuidanceRecord } from '@/lib/redesign/guidance-state';
+import { GUIDANCE_VERSION, guidanceRole, resumeGuidancePath, type GuidanceRecord } from '@/lib/redesign/guidance-state';
 import '../../modern/guidance.css';
+import {GuidanceRequests} from '@/lib/redesign/guidance-requests';
+import {GuidanceRequestError,guidanceProblem,readGuidanceResponse,type GuidanceProblem} from '@/lib/redesign/guidance-errors';
 import { WELCOME_VERSION } from '@/lib/account/model';
 import { InstallControls } from '@/components/pwa/install-controls';
 import { PushNotificationSettings } from '@/components/pwa/pwa-experience';
+import type {AuthChangeEvent,Session} from '@supabase/supabase-js';
 
 export const GENERAL_WHATSAPP = 'https://chat.whatsapp.com/KwdGfmllTNW5tPU4widIhg';
 export const HOUSE_WHATSAPP = 'https://chat.whatsapp.com/EaFlwGROVpW3N7YazyTx47';
@@ -56,18 +60,27 @@ function CommunityLinks({ house }: { house: boolean }) {
   return <div className="guidance-community-links"><a className="guidance-community-link" href={GENERAL_WHATSAPP} target="_blank" rel="noopener noreferrer"><span className="guidance-link-icon"><MessageCircle size={23}/></span><span><strong>Alle deelnemers</strong><small>Duindorpse Poorten · algemene community</small></span><ExternalLink size={17}/></a>{house && <a className="guidance-community-link house" href={HOUSE_WHATSAPP} target="_blank" rel="noopener noreferrer"><span className="guidance-link-icon"><ShieldCheck size={23}/></span><span><strong>Speciaal voor huizen & poortteams</strong><small>Praktisch overleg achter de poorten</small></span><ExternalLink size={17}/></a>}</div>;
 }
 
-export function ParticipantGuidance({ path, initial }: { path: string; initial: GuidanceRecord }) {
+function GuidanceError({problem,role,onReload}:{problem:GuidanceProblem;role?:'parent'|'house'|null;onReload:()=>void}) {
+  const destination=resumeGuidancePath(window.location.pathname+window.location.search,role??'parent');
+  return <div className="guidance-save-error" role="alert"><p>{problem.message}</p>{problem.requestId&&<small>Referentie: {problem.requestId}</small>}
+    {problem.kind==='session'?<a className="guidance-text-button" href={`/inloggen?next=${encodeURIComponent(destination)}`}>Opnieuw inloggen</a>:problem.kind==='access'?<><Link className="guidance-text-button" href="/omgeving/kiezen">Mijn toegang controleren</Link><a className="guidance-text-button" href="/contact">Contact met de organisatie</a></>:['invalid','conflict'].includes(problem.kind)?<button type="button" className="guidance-text-button" onClick={onReload}>Actuele uitleg opnieuw laden</button>:null}</div>;
+}
+
+export function ParticipantGuidance({ path, initial, persist, reload }: { path: string; initial: GuidanceRecord; persist:(input:Record<string,unknown>)=>Promise<GuidanceRecord>;reload:()=>Promise<boolean> }) {
   const router = useRouter();
   const navigate = useCallback((destination: string) => router.push(destination),[router]);
   const requested = guidanceRole(path);
   const role = requested && initial.roles.includes(requested) ? requested : null;
-  const [record, setRecord] = useState<GuidanceRecord>(initial);
-  const [saving,setSaving]=useState(false),[saveError,setSaveError]=useState('');
+  const record=initial;
+  const [saving,setSaving]=useState(false),[saveError,setSaveError]=useState<GuidanceProblem|null>(null);
+  const pending=useRef(false),mounted=useRef(true);
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
   async function save(input: Record<string,unknown>) {
-    setSaving(true);setSaveError('');
-    try { const response=await fetch('/api/redesign/guidance',{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(input)});if(!response.ok)throw new Error();const next=await response.json() as GuidanceRecord;setRecord(next);return true; }
-    catch {setSaveError('Dit kon niet worden bewaard. Controleer de verbinding en probeer opnieuw.');return false;}
-    finally {setSaving(false);}
+    if(pending.current)return false;
+    pending.current=true;setSaving(true);
+    try {await persist(input);if(!mounted.current)return false;setSaveError(null);return true;}
+    catch(error){if(mounted.current&&!(error instanceof DOMException&&error.name==='AbortError'))setSaveError(error instanceof GuidanceRequestError?error.problem:guidanceProblem());return false;}
+    finally {pending.current=false;if(mounted.current)setSaving(false);}
   }
   const [communityOpen, setCommunityOpen] = useState(false);
   const [dockOpen, setDockOpen] = useState(false);
@@ -81,27 +94,25 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
   const steps = tour?.role === 'house' ? houseSteps : parentSteps;
   const step = tour ? steps[tour.index] : null;
 
-  useEffect(() => { setRecord(initial); }, [initial]);
   useLayoutEffect(() => {
     document.documentElement.dataset.participantGuidanceActive = String(guidanceActive);
     window.dispatchEvent(new Event('poorten-guidance-status'));
     return () => {
-      document.documentElement.dataset.participantGuidanceActive = 'false';
+      document.documentElement.dataset.participantGuidanceActive = 'true';
       window.dispatchEvent(new Event('poorten-guidance-status'));
     };
   }, [guidanceActive]);
   useEffect(() => { const open=()=>{consumeWelcomeReplay();setCommunityOpen(true);};if(consumeWelcomeReplay())setCommunityOpen(true);window.addEventListener('poorten-open-welcome',open);return()=>window.removeEventListener('poorten-open-welcome',open); }, []);
   useEffect(() => {
-    if (!role || role === 'viewer' || role === 'admin' || welcomeDue || communityOpen || tour) return;
+    if (!role || role === 'viewer' || role === 'admin' || welcomeDue || communityOpen || tour || saving) return;
     if (record.completed[role] !== GUIDANCE_VERSION) {
       const saved = record.progress?.[role];
       const count = role === 'house' ? houseSteps.length : parentSteps.length;
       const resumable = saved?.version === GUIDANCE_VERSION && saved.index < count;
       const start = { role, mandatory: true, index: resumable ? saved.index : 0, returnPath: resumable ? saved.returnPath : window.location.pathname + window.location.search };
-      const next = { ...record, progress: { ...record.progress, [role]: { version: GUIDANCE_VERSION, index: start.index, returnPath: start.returnPath } } };
-      setRecord(next); setTour(start);
+      setTour({...start,returnPath:resumeGuidancePath(start.returnPath,role)});
     }
-  }, [role, welcomeDue, communityOpen, record, path, tour]);
+  }, [role, welcomeDue, communityOpen, record, path, tour,saving]);
   useEffect(() => {
     if (!tour || !step) { setRect(null); return; }
     setRect(null); setTargetFound(false);
@@ -128,40 +139,77 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
   }
   function replay() {
     const nextRole = role === 'house' ? 'house' : 'parent';
-    setDockOpen(false); setTour({role:nextRole,mandatory:false,index:0,returnPath:window.location.pathname+window.location.search});
+    setDockOpen(false); setTour({role:nextRole,mandatory:false,index:0,returnPath:resumeGuidancePath(window.location.pathname+window.location.search,nextRole)});
   }
   async function finish() {
-    if (!tour || saving || tour.index !== steps.length - 1) return;
-    if(tour.mandatory && !await save({action:'tutorial',role:tour.role,version:GUIDANCE_VERSION,index:tour.index,returnPath:tour.returnPath,completed:true}))return;
-    const back=tour.returnPath;setTour(null);navigate(back);
+    if (!tour || pending.current || tour.index !== steps.length - 1) return;
+    if(tour.mandatory && !await save({action:'tutorial',role:tour.role,version:GUIDANCE_VERSION,index:tour.index,returnPath:resumeGuidancePath(tour.returnPath,tour.role),completed:true}))return;
+    const back=resumeGuidancePath(tour.returnPath,tour.role);setTour(null);navigate(back);
   }
   async function moveStep(index:number) {
-    if(!tour||saving||index<0||index>=steps.length)return;
-    if(tour.mandatory && !await save({action:'tutorial',role:tour.role,version:GUIDANCE_VERSION,index,returnPath:tour.returnPath}))return;
-    setTour({...tour,index});
+    if(!tour||pending.current||index<0||index>=steps.length)return;
+    if(tour.mandatory && !await save({action:'tutorial',role:tour.role,version:GUIDANCE_VERSION,index,returnPath:resumeGuidancePath(tour.returnPath,tour.role)}))return;
+    if(mounted.current)setTour({...tour,index,returnPath:resumeGuidancePath(tour.returnPath,tour.role)});
   }
-  function closeReplay() { if (tour && !tour.mandatory) { const back = tour.returnPath; setTour(null); navigate(back); } }
-  if (!role && !tour && !communityOpen) return null;
+  function closeReplay() { if (tour && !tour.mandatory) { const back = resumeGuidancePath(tour.returnPath,tour.role); setTour(null); navigate(back); } }
+  async function recover(){if(pending.current)return;pending.current=true;setSaving(true);try{if(await reload()){setSaveError(null);setTour(null);}}finally{pending.current=false;if(mounted.current)setSaving(false);}}
+  if (!role && !communityOpen) return null;
   return <>
     <div className="guidance-dock"><button className="guidance-dock-toggle" type="button" aria-label="Hulp & community" aria-expanded={dockOpen} aria-controls="guidance-help-card" onClick={() => setDockOpen(!dockOpen)}><HelpCircle size={18}/><span>Hulp & community</span><ChevronDown size={13}/></button>{dockOpen && <aside id="guidance-help-card" className="guidance-help-card" aria-label="Rondleiding en WhatsApp"><div className="guidance-help-heading"><strong>Samen goed op pad</strong><button aria-label="Hulpkaart sluiten" onClick={() => setDockOpen(false)}><X size={17}/></button></div><CommunityLinks house={record.roles.includes('house')}/>{(role === "parent" || role === "house") && <button className="guidance-replay" onClick={replay}><BookOpen size={18}/><span><strong>Bekijk de rondleiding opnieuw</strong><small>{role === 'house' ? '14 stappen door jullie Poortkamer' : '14 stappen door de ouderomgeving'}</small></span><ArrowRight size={17}/></button>}<button className="guidance-text-button" onClick={() => { setCommunityOpen(true); setDockOpen(false); }}>Bekijk de community-melding</button></aside>}</div>
-    <Primitive.Root open={showCommunity} onOpenChange={open => { if (!welcomeDue) setCommunityOpen(open); }}><Primitive.Portal><Primitive.Overlay className="guidance-backdrop"/><Primitive.Content className="guidance-community-dialog" onEscapeKeyDown={e => { if (welcomeDue) e.preventDefault(); }} onPointerDownOutside={e => { if (welcomeDue) e.preventDefault(); }}><div className="guidance-dialog-symbol"><MessageCircle size={30}/></div><p className="guidance-kicker">Samen maken we de avond</p><Primitive.Title className="guidance-community-title">Samen goed op pad</Primitive.Title><Primitive.Description className="guidance-community-intro">Lees deze uitleg één keer voor jouw account. Hier vind je de communities, installatiehulp en de vrijwillige meldingen voor jouw apparaat.</Primitive.Description><CommunityLinks house={record.roles.includes('house')}/><InstallControls /><PushNotificationSettings compact /><div className="guidance-community-note"><ShieldCheck size={18}/><p>De startafspraak, route en officiële status blijven in je persoonlijke omgeving staan. Bij direct gevaar bel je 112.</p></div><p className="guidance-joining-note">De uitleg lezen is verplicht. Deelnemen aan WhatsApp, installeren en meldingen toestaan zijn jouw eigen keuze.</p>{saveError&&<p role="alert">{saveError}</p>}<button className="guidance-primary" disabled={saving} onClick={()=>void acknowledge()}><Check size={18}/>{welcomeDue ? 'Gelezen, verder naar mijn omgeving' : 'Melding sluiten'}</button><p className="guidance-daily-caption">Eenmaal per account en uitlegversie. Later opnieuw bereikbaar via App & meldingen.</p></Primitive.Content></Primitive.Portal></Primitive.Root>
-    <Primitive.Root open={Boolean(tour) && !showCommunity} onOpenChange={open => { if (!open) closeReplay(); }}><Primitive.Portal><Primitive.Overlay className="guidance-tour-backdrop"/>{rect && <div className="guidance-spotlight" style={rect} aria-hidden="true"/>}<Primitive.Content className="guidance-tour-dialog" onEscapeKeyDown={e => { if (tour?.mandatory) e.preventDefault(); }} onPointerDownOutside={e => e.preventDefault()} onOpenAutoFocus={e => { e.preventDefault(); tourTitle.current?.focus(); }}>{tour && step && <><div className="guidance-tour-top"><span><Sparkles size={16}/>{tour.role === 'house' ? 'Rondleiding voor poortteams' : 'Rondleiding voor ouders'}</span>{!tour.mandatory && <button aria-label="Rondleiding sluiten" onClick={closeReplay}><X size={18}/></button>}</div><div className="guidance-progress" role="progressbar" aria-label="Voortgang rondleiding" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={tour.index + 1}><span style={{ width: `${(tour.index + 1) / steps.length * 100}%` }}/></div><p className="guidance-step-count">Stap {tour.index + 1} van {steps.length} <span>{step.label}</span></p><Primitive.Title ref={tourTitle} tabIndex={-1} className="guidance-tour-title">{step.title}</Primitive.Title><Primitive.Description className="guidance-tour-copy">{step.text}</Primitive.Description><div className="guidance-tip"><CheckCircle2 size={18}/><p>{step.tip}</p></div><p className="guidance-screen-indicator"><span className={targetFound ? 'is-ready' : ''}/>{targetFound ? 'Dit onderdeel staat achter de uitleg in beeld.' : 'Deze stap hoort bij dit scherm. De inhoud kan per fase van de avond verschillen.'}</p>{saveError&&<p role="alert">{saveError}</p>}<div className="guidance-tour-actions"><button className="guidance-secondary" disabled={saving || tour.index === 0} onClick={() => moveStep(tour.index - 1)}><ArrowLeft size={16}/>Vorige</button>{tour.index < steps.length - 1 ? <button className="guidance-primary" disabled={saving} onClick={() => void moveStep(tour.index + 1)}>Verder<ArrowRight size={17}/></button> : <button className="guidance-primary" disabled={saving} onClick={()=>void finish()}><Check size={17}/>Rondleiding afronden</button>}</div>{tour.mandatory && <p className="guidance-required-note">Bekijk alle stappen één keer. Je voortgang blijft bewaard; je kunt de uitleg later opnieuw openen.</p>}</>}</Primitive.Content></Primitive.Portal></Primitive.Root>
+    <Primitive.Root open={showCommunity} onOpenChange={open => { if (!welcomeDue) setCommunityOpen(open); }}><Primitive.Portal><Primitive.Overlay className="guidance-backdrop"/><Primitive.Content className="guidance-community-dialog" onEscapeKeyDown={e => { if (welcomeDue) e.preventDefault(); }} onPointerDownOutside={e => { if (welcomeDue) e.preventDefault(); }}><div className="guidance-dialog-symbol"><MessageCircle size={30}/></div><p className="guidance-kicker">Samen maken we de avond</p><Primitive.Title className="guidance-community-title">Samen goed op pad</Primitive.Title><Primitive.Description className="guidance-community-intro">Lees deze uitleg één keer voor jouw account. Hier vind je de communities, installatiehulp en de vrijwillige meldingen voor jouw apparaat.</Primitive.Description><CommunityLinks house={record.roles.includes('house')}/><InstallControls /><PushNotificationSettings compact /><div className="guidance-community-note"><ShieldCheck size={18}/><p>De startafspraak, route en officiële status blijven in je persoonlijke omgeving staan. Bij direct gevaar bel je 112.</p></div><p className="guidance-joining-note">De uitleg lezen is verplicht. Deelnemen aan WhatsApp, installeren en meldingen toestaan zijn jouw eigen keuze.</p>{saveError&&<GuidanceError problem={saveError} role={role==='parent'||role==='house'?role:null} onReload={()=>void recover()}/>}<button className="guidance-primary" disabled={saving} onClick={()=>void acknowledge()}><Check size={18}/>{welcomeDue ? 'Gelezen, verder naar mijn omgeving' : 'Melding sluiten'}</button><p className="guidance-daily-caption">Eenmaal per account en uitlegversie. Later opnieuw bereikbaar via App & meldingen.</p></Primitive.Content></Primitive.Portal></Primitive.Root>
+    <Primitive.Root open={Boolean(tour) && !showCommunity} onOpenChange={open => { if (!open) closeReplay(); }}><Primitive.Portal><Primitive.Overlay className="guidance-tour-backdrop"/>{rect && <div className="guidance-spotlight" style={rect} aria-hidden="true"/>}<Primitive.Content className="guidance-tour-dialog" onEscapeKeyDown={e => { if (tour?.mandatory) e.preventDefault(); }} onPointerDownOutside={e => e.preventDefault()} onOpenAutoFocus={e => { e.preventDefault(); tourTitle.current?.focus(); }}>{tour && step && <><div className="guidance-tour-top"><span><Sparkles size={16}/>{tour.role === 'house' ? 'Rondleiding voor poortteams' : 'Rondleiding voor ouders'}</span>{!tour.mandatory && <button aria-label="Rondleiding sluiten" onClick={closeReplay}><X size={18}/></button>}</div><div className="guidance-progress" role="progressbar" aria-label="Voortgang rondleiding" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={tour.index + 1}><span style={{ width: `${(tour.index + 1) / steps.length * 100}%` }}/></div><p className="guidance-step-count">Stap {tour.index + 1} van {steps.length} <span>{step.label}</span></p><Primitive.Title ref={tourTitle} tabIndex={-1} className="guidance-tour-title">{step.title}</Primitive.Title><Primitive.Description className="guidance-tour-copy">{step.text}</Primitive.Description><div className="guidance-tip"><CheckCircle2 size={18}/><p>{step.tip}</p></div><p className="guidance-screen-indicator"><span className={targetFound ? 'is-ready' : ''}/>{targetFound ? 'Dit onderdeel staat achter de uitleg in beeld.' : 'Deze stap hoort bij dit scherm. De inhoud kan per fase van de avond verschillen.'}</p>{saveError&&<GuidanceError problem={saveError} role={role==='parent'||role==='house'?role:null} onReload={()=>void recover()}/>}<div className="guidance-tour-actions"><button className="guidance-secondary" disabled={saving || tour.index === 0} onClick={() => moveStep(tour.index - 1)}><ArrowLeft size={16}/>Vorige</button>{tour.index < steps.length - 1 ? <button className="guidance-primary" disabled={saving} onClick={() => void moveStep(tour.index + 1)}>Verder<ArrowRight size={17}/></button> : <button className="guidance-primary" disabled={saving} onClick={()=>void finish()}><Check size={17}/>Rondleiding afronden</button>}</div>{tour.mandatory && <p className="guidance-required-note">Bekijk alle stappen één keer. Je voortgang blijft bewaard; je kunt de uitleg later opnieuw openen.</p>}</>}</Primitive.Content></Primitive.Portal></Primitive.Root>
   </>;
 }
 
 export function GuidanceHost(){
- const path=usePathname();const [record,setRecord]=useState<GuidanceRecord|null>(null);
- const childBook=path==='/poortenboek'||path.startsWith('/poortenboek/');
- // A child screen has no adult arrival controls. Keep pending adult arrivals
- // gated until the adult returns and completes any required information.
- useLayoutEffect(()=>{if(childBook){document.documentElement.dataset.participantGuidanceActive='true';window.dispatchEvent(new Event('poorten-guidance-status'));}},[childBook]);
+ const path=usePathname();
+ const scope=guidanceRole(path)??(path==='/app/meldingen'?'account':'public');
+ const [record,setRecord]=useState<GuidanceRecord|null>(null),[loadError,setLoadError]=useState<GuidanceProblem|null>(null);
+ const coordinator=useRef(new GuidanceRequests()),currentScope=useRef(scope),authUser=useRef<string|null|undefined>(undefined),active=useRef(true);
+ const load=useCallback(async()=>{
+  if(scope==='public')return false;
+  const token=coordinator.current.beginRead();if(!token)return false;
+  try{
+   const response=await fetch('/api/redesign/guidance',{cache:'no-store'});
+   const next=await readGuidanceResponse(response);
+   if(!active.current||currentScope.current!==scope||!coordinator.current.acceptsRead(token)||(authUser.current!==undefined&&next.userId!==authUser.current))return false;
+   setRecord(next);setLoadError(null);
+   if(next.groupId)void configureArrivalSync({accountId:next.userId,eventId:next.eventId,groupId:next.groupId}).catch(()=>{});
+   return true;
+  }catch(error){
+   if(active.current&&currentScope.current===scope&&coordinator.current.acceptsRead(token)){
+    const problem=error instanceof GuidanceRequestError?error.problem:guidanceProblem();setLoadError(problem);
+    if(problem.kind==='session'||problem.kind==='access'){setRecord(null);document.documentElement.dataset.participantGuidanceActive='true';window.dispatchEvent(new Event('poorten-guidance-status'));}
+   }
+   return false;
+  }
+ },[scope]);
+ useLayoutEffect(()=>{
+  currentScope.current=scope;coordinator.current.invalidate();setRecord(null);setLoadError(null);
+  document.documentElement.dataset.participantGuidanceActive='true';window.dispatchEvent(new Event('poorten-guidance-status'));
+ },[scope]);
  useEffect(()=>{
-  let active=true;
-  document.documentElement.dataset.participantGuidanceActive='true';
-  async function load(){try{const response=await fetch('/api/redesign/guidance',{cache:'no-store'});if(!active)return;if(response.ok){const next=await response.json() as GuidanceRecord;setRecord(next);if(next.groupId)void configureArrivalSync({accountId:next.userId,eventId:next.eventId,groupId:next.groupId}).catch(()=>{});}else if(response.status===401||response.status===403){setRecord(null);document.documentElement.dataset.participantGuidanceActive='false';window.dispatchEvent(new Event('poorten-guidance-status'));}}
-  catch { /* Required participant information is retried on reconnect. */ }}
-  void load();const client=createClient();const auth=client?.auth.onAuthStateChange(()=>{if(active)void load();});const timer=setInterval(()=>void load(),30000);window.addEventListener('online',load);
-  return()=>{active=false;auth?.data.subscription.unsubscribe();clearInterval(timer);window.removeEventListener('online',load);};
- },[]);
- return record&&!childBook?<ParticipantGuidance key={record.userId+record.eventId} path={path} initial={record}/>:null;
+  const requests=coordinator.current;active.current=true;void load();
+  const client=createClient();
+  const auth=client?.auth.onAuthStateChange((_event:AuthChangeEvent,session:Session|null)=>{
+   const id=session?.user.id??null;
+   if(authUser.current!==id){authUser.current=id;coordinator.current.invalidate();setRecord(null);setLoadError(null);document.documentElement.dataset.participantGuidanceActive='true';window.dispatchEvent(new Event('poorten-guidance-status'));}
+   queueMicrotask(()=>{if(active.current)void load();});
+  });
+  const online=()=>void load(),timer=setInterval(online,30000);window.addEventListener('online',online);
+  return()=>{active.current=false;requests.invalidate();auth?.data.subscription.unsubscribe();clearInterval(timer);window.removeEventListener('online',online);};
+ },[load]);
+ async function persist(input:Record<string,unknown>){
+  const token=coordinator.current.beginWrite();if(token===null)throw new DOMException('Busy','AbortError');
+  const identity=record?.userId,event=record?.eventId,startedScope=scope;
+  try{
+   const response=await fetch('/api/redesign/guidance',{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(input)});
+   const next=await readGuidanceResponse(response);
+   if(!active.current||currentScope.current!==startedScope||!coordinator.current.acceptsWrite(token)||next.userId!==identity||next.eventId!==event)throw new DOMException('Context changed','AbortError');
+   setRecord(next);return next;
+  }finally{coordinator.current.endWrite(token);}
+ }
+ if(scope==='public')return null;
+ if(!record&&loadError)return <Primitive.Root open><Primitive.Portal><Primitive.Overlay className="guidance-backdrop"/><Primitive.Content className="guidance-community-dialog" onEscapeKeyDown={e=>e.preventDefault()} onPointerDownOutside={e=>e.preventDefault()}><Primitive.Title>De uitleg kon niet worden opgehaald</Primitive.Title><Primitive.Description>Je voortgang blijft bewaard. Herstel de verbinding of controleer je toegang om verder te gaan.</Primitive.Description><GuidanceError problem={loadError} role={scope==='house'?'house':'parent'} onReload={()=>void load()}/><button className="guidance-primary" onClick={()=>void load()}>Opnieuw proberen</button></Primitive.Content></Primitive.Portal></Primitive.Root>;
+ return record?<ParticipantGuidance key={record.userId+record.eventId+scope} path={path} initial={record} persist={persist} reload={load}/>:null;
 }

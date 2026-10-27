@@ -20,6 +20,8 @@ export function EmailOtpForm({
   variant = "default",
   rememberSession,
   onRememberChange,
+  alternativeAuth,
+  authBusy=false,
 }: {
   nextPath?: string;
   children?: ReactNode;
@@ -30,6 +32,8 @@ export function EmailOtpForm({
   variant?: "default" | "entry";
   rememberSession?: boolean;
   onRememberChange?: (remember: boolean) => void;
+  alternativeAuth?: (disabled:boolean) => ReactNode;
+  authBusy?:boolean;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState(initialEmail);
@@ -49,7 +53,7 @@ export function EmailOtpForm({
 
   async function requestCode(event?: FormEvent) {
     event?.preventDefault();
-    if (cooldown || codeRequestPending.current) return;
+    if (cooldown || codeRequestPending.current || authBusy) return;
     const supabase = createClient();
     if (!supabase) {
       setMessage("Inloggen is in deze omgeving nog niet gekoppeld. De organisatie is hiervan op de hoogte.");
@@ -86,7 +90,7 @@ export function EmailOtpForm({
 
   async function verifyCode(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || authBusy) return;
     const supabase = createClient();
     if (!supabase) return;
     setBusy(true);
@@ -112,11 +116,12 @@ export function EmailOtpForm({
     return (
       <form className={variant === "entry" ? "entry-otp-form auth-form" : "panel auth-form"} onSubmit={requestCode}>
         {variant !== "entry" && <><Mail size={32} /><h2>{children ? "Meld jullie plek aan" : "Ontvang je inlogcode."}</h2><p>{children ? "Vul je naam en telefoonnummer in. Bevestig daarna je e-mailadres met een code; vervolgens kun je de overige gegevens rustig aanvullen." : "We sturen een eenmalige code via e-mail. Je hebt geen wachtwoord nodig."}</p></>}
-        <label className="field"><span>E-mailadres{children ? " *" : ""}</span><input type="email" disabled={busy} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
+        <label className="field"><span>E-mailadres{children ? " *" : ""}</span><input type="email" disabled={busy||authBusy} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
+        {alternativeAuth?.(busy)}
         {children}
         {onRememberChange && <label className="entry-remember"><input type="checkbox" checked={rememberSession} onChange={event => onRememberChange(event.target.checked)} /><span>Ingelogd blijven op dit apparaat</span></label>}
         {message && <p className="form-error" role="alert">{message}</p>}
-        <button className="btn full" type="submit" disabled={busy || cooldown > 0 || !email.includes("@")}>{busy ? "Code aanvragen…" : cooldown ? `Nieuwe code over ${cooldown}s` : "Stuur eenmalige code"}<ArrowRight size={17} /></button>
+        <button className="btn full" type="submit" disabled={busy || authBusy || cooldown > 0 || !email.includes("@")}>{busy ? "Code aanvragen…" : cooldown ? `Nieuwe code over ${cooldown}s` : "Stuur eenmalige code"}<ArrowRight size={17} /></button>
       </form>
     );
   }

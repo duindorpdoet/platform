@@ -277,6 +277,13 @@ jobs:
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed production release
         run: node scripts/deploy/verify-deployment.mjs production "${APP_URL}"
+      - name: Activate Resend default for the authorized exact release
+        env:
+          RESEND_DEFAULT_RELEASE_SHA: ${{ vars.RESEND_DEFAULT_RELEASE_SHA }}
+          MAIL_TEST_WAIVER_SHA: ${{ vars.MAIL_TEST_WAIVER_SHA }}
+          MAIL_TEST_WAIVER_EXPIRES_AT: ${{ vars.MAIL_TEST_WAIVER_EXPIRES_AT }}
+          MAIL_TEST_WAIVER_REASON: ${{ vars.MAIL_TEST_WAIVER_REASON }}
+        run: node scripts/deploy/activate-resend-release.mjs
       - name: Validate active mail configuration without sending
         if: env.SKIP_MAIL_TESTS != 'true'
         run: node scripts/deploy/verify-mail-provider.mjs

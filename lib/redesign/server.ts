@@ -7,8 +7,12 @@ import { decryptValue, encryptValue, secretBytes } from '@/lib/poortenboek/crypt
 import { ApiError } from '@/lib/http/api';
 
 export async function authenticatedClient() {
-  const client = await createClient(), result = await client?.auth.getUser();
-  if (!client || result?.error || !result?.data.user) throw new ApiError(401, 'NOT_AUTHORIZED', 'Log opnieuw in.');
+  const client = await createClient();
+  if(!client)throw new ApiError(503,'AUTH_UNAVAILABLE','De aanmelding is tijdelijk niet bereikbaar.');
+  let result;
+  try {result=await client.auth.getUser();}catch{throw new ApiError(503,'AUTH_UNAVAILABLE','De aanmelding is tijdelijk niet bereikbaar.');}
+  if(result.error&&result.error.name!=='AuthSessionMissingError'&&(!result.error.status||result.error.status>=429))throw new ApiError(503,'AUTH_UNAVAILABLE','De aanmelding is tijdelijk niet bereikbaar.');
+  if (result.error || !result.data.user) throw new ApiError(401, 'NOT_AUTHORIZED', 'Log opnieuw in.');
   return { client, actor: result.data.user.id };
 }
 export async function portalPrint(portalId: string, version?: number) {

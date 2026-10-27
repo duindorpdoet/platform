@@ -1,17 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EmailOtpForm } from "@/components/auth/email-otp-form";
 import { createClient } from "@/lib/supabase/client";
+import {GoogleAuthButton} from "@/components/auth/google-auth-button";
 import { trackShareCampaignCompletion } from "@/lib/social-share/client-analytics";
 
-export function PortalRegistration({ eventSlug, email, hasApplication }: { eventSlug: string; email?: string; hasApplication: boolean }) {
+export function PortalRegistration({ eventSlug, email, hasApplication,googleAvailable }: { eventSlug: string; email?: string; hasApplication: boolean;googleAvailable:boolean|null }) {
   const router = useRouter();
   const [details, setDetails] = useState({ contactName: "", phone: "" });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [startedAt] = useState(() => Date.now());
+
+  useEffect(()=>{
+    if(!email)return;
+    try {const raw=sessionStorage.getItem('poorten:portal-oauth-draft');sessionStorage.removeItem('poorten:portal-oauth-draft');if(!raw)return;const draft=JSON.parse(raw);if(typeof draft.contactName==='string'&&draft.contactName.length<=120&&typeof draft.phone==='string'&&draft.phone.length<=30){
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore the local pre-OAuth form, never an identity or permission.
+      setDetails({contactName:draft.contactName,phone:draft.phone});
+    }}catch{/* The verified registration can be completed without local draft storage. */}
+  },[email]);
 
   async function saveConfirmedApplication() {
     setBusy(true); setNotice("");
@@ -67,7 +76,7 @@ export function PortalRegistration({ eventSlug, email, hasApplication }: { event
     <p className="note">Na bevestiging vul je in Mijn huis desgewenst het adres, de aankleding en andere praktische gegevens aan.</p>
   </fieldset>;
 
-  if (!email) return <EmailOtpForm analyticsSurface="homeowner" beforeRequestCode={saveIntake} onVerified={claimAfterVerification}>{fields}</EmailOtpForm>;
+  if (!email) return <EmailOtpForm analyticsSurface="homeowner" beforeRequestCode={saveIntake} onVerified={claimAfterVerification} authBusy={busy} alternativeAuth={disabled=><GoogleAuthButton destination="/huis-aanmelden" available={googleAvailable} disabled={disabled} onBusyChange={setBusy} beforeRedirect={()=>{try{sessionStorage.setItem('poorten:portal-oauth-draft',JSON.stringify(details));}catch{/* Fill the contact fields after verified sign-in. */}}}/>}>{fields}</EmailOtpForm>;
   return <form className="panel production-form" onSubmit={(event) => { event.preventDefault(); void saveConfirmedApplication(); }}>
     <h2>Meld jullie plek aan</h2>
     <p>Je e-mailadres is bevestigd{email ? `: ${email}` : ""}. Vul je naam en telefoonnummer in om verder te gaan.</p>
