@@ -11,7 +11,7 @@ const headers = {
 const api = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}`;
 // A deployment job can succeed before the separate mailbox job fails.
 // Require the entire staging workflow on this SHA. A receipt-test waiver is
-// available only as an explicit workflow_dispatch input, never on normal pushes.
+// bounded to an explicit dispatch or the audited, expiring exact-SHA release policy.
 const runsResponse = await fetch(`${api}/actions/workflows/deploy-staging.yml/runs?head_sha=${process.env.GITHUB_SHA}&status=success&per_page=100`, { headers });
 if (!runsResponse.ok) throw new Error(`Could not read staging workflow results (${runsResponse.status}).`);
 const runs = await runsResponse.json();
@@ -27,7 +27,7 @@ for (const run of runs.workflow_runs ?? []) {
   }
 }
 if (!releaseRunSucceeded) {
-  throw new Error("Production promotion requires the entire staging workflow and its deployment job to succeed on this exact Git commit, with mailbox acceptance or an explicitly selected dispatch waiver. Maintenance alone is not a deployment.");
+  throw new Error("Production promotion requires the entire staging workflow and its deployment job to succeed on this exact Git commit, with mail acceptance or an audited release-specific mail-test exception. Maintenance alone is not a deployment.");
 }
 
 const deploymentsResponse = await fetch(`${api}/deployments?sha=${process.env.GITHUB_SHA}&environment=staging&per_page=10`, { headers });

@@ -15,6 +15,7 @@ export function SiteChrome({children}:{children:ReactNode}) {
  const pathname=usePathname();const[menuState,setMenuState]=useState({path:pathname,open:false});const menuOpen=menuState.path===pathname&&menuState.open;const setMenuOpen=useCallback((open:boolean)=>setMenuState({path:pathname,open}),[pathname]);const headerRef=useRef<HTMLElement>(null);
  useEffect(()=>{headerRef.current?.querySelectorAll("details[open]").forEach(item=>item.removeAttribute("open"))},[pathname]);
  useEffect(()=>{const close=(e:KeyboardEvent)=>{if(e.key==='Escape')setMenuOpen(false)};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[setMenuOpen]);
+ if(pathname==='/inloggen'||pathname==='/omgeving/kiezen'||pathname==='/app'||pathname.startsWith('/app/'))return <>{children}</>;
  if(pathname.startsWith('/admin'))return <><a className="skip-link" href="#admin-content">Ga naar inhoud</a><div className="admin-route-surface">{children}</div></>;
  if(pathname.startsWith('/mijn-huis')||pathname.startsWith('/poortkamer'))return <><a className="skip-link" href="#poortkamer-content">Ga naar de Poortkamer</a>{children}</>;
  if(pathname.startsWith('/poortenboek'))return <><a className="skip-link" href="#poortenboek-content">Ga naar jouw Poortenboek</a>{children}</>;

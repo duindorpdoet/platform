@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sql, requireLocalTogetherDatabase } from "../../scripts/acceptance/together-fixtures.mjs";
 import { prepareFixtureGuidance } from "./helpers/guidance";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+test.skip(process.env.SKIP_MAIL_TESTS === "true", "Explicit release mail-test exception");
 test.skip(!url||!key||!process.env.MAIL_ADMIN_USER_IDS,"Requires isolated Auth/API and explicit system-mail admin fixture");
 test.describe.configure({mode:"serial"});
 async function login(context:BrowserContext,email="admin@example.invalid") {

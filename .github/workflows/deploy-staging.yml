@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       runner_maintenance:
-        description: 'Inspect the dedicated staging runner or clear only rebuildable build caches; does not deploy'
+        description: 'Run scoped staging diagnostics or rebuildable cache maintenance; never deploys'
         type: choice
         default: none
         required: false
@@ -24,3 +24,462 @@ on:
         description: 'Public RSA key for encrypted transport of a verified replacement credential'
         type: string
         required: false
+      skip_mail_tests:
+        description: 'Explicitly skip all mail tests for this release run; other release gates remain required'
+        type: boolean
+        default: false
+        required: false
+      skip_mail_acceptance:
+        description: 'Skip mailbox receipt acceptance for this explicitly approved release only'
+        type: boolean
+        default: false
+        required: false
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: staging-duindorphalloween
+  cancel-in-progress: false
+
+jobs:
+  release-policy:
+    name: Resolve release mail-test policy
+    runs-on: ubuntu-latest
+    outputs:
+      skip_mail_tests: ${{ steps.policy.outputs.skip_mail_tests }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Record exact release exception
+        id: policy
+        env:
+          SKIP_MAIL_TESTS_REQUESTED: ${{ inputs.skip_mail_tests || false }}
+          MAIL_TEST_WAIVER_SHA: ${{ vars.MAIL_TEST_WAIVER_SHA }}
+          MAIL_TEST_WAIVER_EXPIRES_AT: ${{ vars.MAIL_TEST_WAIVER_EXPIRES_AT }}
+          MAIL_TEST_WAIVER_REASON: ${{ vars.MAIL_TEST_WAIVER_REASON }}
+        run: node scripts/deploy/mail-test-policy.mjs
+  replace-mail-key:
+    name: Verify a replacement application mail credential
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'replace-mail-key' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Validate a replacement key without delivering mail
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          MAIL_REPAIR_PUBLIC_KEY: ${{ inputs.mail_repair_public_key }}
+        run: node scripts/deploy/replace-mail-key.mjs
+  restore-mail-send:
+    name: Restore the application's Mail Send permission
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'restore-mail-send' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    strategy:
+      matrix:
+        target: [staging, production]
+      fail-fast: false
+    environment: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Add only the missing mail.send scope and validate without delivery
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          TEST_EMAIL_1: halloween@duindorpdoet.nl
+        run: |
+          node scripts/deploy/restore-mail-send.mjs --apply
+          node scripts/deploy/diagnose-mail-gateway.mjs
+  portal-onboarding-diagnostics:
+    name: Inspect production portal onboarding (read only)
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'inspect-portal-onboarding' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Inspect saved manual portals and instruction delivery
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          TEST_EMAIL_1: halloween@duindorpdoet.nl
+        run: |
+          node scripts/deploy/inspect-portal-onboarding.mjs
+          node scripts/deploy/diagnose-mail-gateway.mjs
+  mail-gateway-diagnostics:
+    name: Inspect staging mail gateway without delivery
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'inspect-mail-gateway' && github.ref == 'refs/heads/codex/fix-public-registration-status'
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Inspect provider acceptance without sending a message
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+          SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+          TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
+        run: node scripts/deploy/diagnose-mail-gateway.mjs
+  runner-maintenance:
+    name: Dedicated staging runner maintenance (no deployment)
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'workflow_dispatch' && inputs.runner_maintenance != 'none'
+    environment: staging
+    permissions:
+      contents: read
+    runs-on: [self-hosted, Linux, X64, dg-sites, production, duindorphalloweenstg]
+    timeout-minutes: 10
+    steps:
+      - name: Verify dedicated staging boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = "refs/heads/staging"
+          test "$(id -un)" = "duindorphalloweenstg"
+          test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenstg-01"
+          [[ "${GITHUB_WORKSPACE}" == /srv/sites/duindorphalloweenstg/actions-runner/_work/* ]]
+      - name: Check out maintenance source without cleaning existing caches
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          clean: false
+      - name: Inspect disk and optionally clear rebuildable workspace caches
+        env:
+          MAINTENANCE_ACTION: ${{ startsWith(inputs.runner_maintenance, 'profile-') && 'inspect' || inputs.runner_maintenance }}
+        run: /srv/sites/duindorphalloweenstg/actions-runner/externals/node24/bin/node scripts/deploy/staging-runner-maintenance.mjs
+  backup-restore:
+    name: Encrypted backup and isolated restore before migration
+    needs: release-policy
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APP_ENVIRONMENT: staging
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CHILD_CODE_ENCRYPTION_KEY: ${{ secrets.CHILD_CODE_ENCRYPTION_KEY }}
+    outputs:
+      artifact: ${{ steps.artifact.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Prove and reconcile already installed portal hotfix history
+        if: github.ref == 'refs/heads/staging'
+        run: node scripts/deploy/repair-portal-hotfix-history.mjs
+      - name: Snapshot, encrypt, restore and dry-run exact migrations
+        run: node scripts/deploy/redesign-backup.mjs
+      - name: Retain only encrypted backup files and signed proof
+        id: artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: redesign-backup-staging-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/duindorp-release-backup/
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
+  deploy:
+    name: Validate, migrate, deploy and accept
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
+    needs: [backup-restore, release-policy]
+    environment:
+      name: staging
+      url: https://staging-halloween.duindorpdoet.nl
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+      - dg-sites
+      - production
+      - duindorphalloweenstg
+    timeout-minutes: 40
+    env:
+      APP_ENVIRONMENT: staging
+      APP_REVISION: ${{ github.sha }}
+      GITHUB_TOKEN: ${{ github.token }}
+      APP_URL: https://staging-halloween.duindorpdoet.nl
+      NEXT_PUBLIC_SITE_URL: https://staging-halloween.duindorpdoet.nl
+      ALLOWED_ORIGINS: https://staging-halloween.duindorpdoet.nl
+      AUTH_SITE_URL: https://staging-halloween.duindorpdoet.nl
+      EVENT_SLUG: duindorp-halloween-2026
+      EVENT_TIMEZONE: Europe/Amsterdam
+      REGISTRATION_MODE: staging_test
+      AUTH_MAIL_MODE: live
+      MAIL_MODE: allowlist
+      MAIL_ALLOWED_RECIPIENTS: ${{ vars.TEST_EMAIL_1 }},${{ vars.TEST_EMAIL_2 }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+      VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SKIP_MAIL_TESTS: ${{ needs.release-policy.outputs.skip_mail_tests }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      SENDGRID_SUPPRESSIONS_API_KEY: ${{ secrets.SENDGRID_SUPPRESSIONS_API_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RESEND_ADMIN_API_KEY: ${{ secrets.RESEND_ADMIN_API_KEY }}
+      RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+      RESEND_ACCEPTANCE_EVENT_ID: ${{ vars.RESEND_ACCEPTANCE_EVENT_ID }}
+      MAIL_IDENTITY_SECRET: ${{ secrets.MAIL_IDENTITY_SECRET }}
+      MAIL_ADMIN_USER_IDS: ${{ secrets.MAIL_ADMIN_USER_IDS || vars.MAIL_ADMIN_USER_IDS }}
+      SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY: ${{ secrets.SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY }}
+      SENDGRID_API: ${{ secrets.SENDGRID_API }}
+      SENDGRID_SUPPRESSIONS_API_KEY: ${{ secrets.SENDGRID_SUPPRESSIONS_API_KEY }}
+      SENDGRID_API_BASE_URL: ${{ vars.SENDGRID_API_BASE_URL || 'https://api.sendgrid.com/v3' }}
+      SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
+      SENDGRID_FROM_NAME: De Duindorpse Poorten van Halloween
+      SENDGRID_REPLY_TO: halloween@duindorpdoet.nl
+      SEND_EMAIL_HOOK_SECRET: ${{ secrets.SEND_EMAIL_HOOK_SECRET }}
+      EVENT_WEBHOOK_REQUIRED: "false"
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      PORTAL_CODE_PEPPER: ${{ secrets.PORTAL_CODE_PEPPER }}
+      CHILD_CODE_PEPPER: ${{ secrets.CHILD_CODE_PEPPER }}
+      CHILD_CODE_ENCRYPTION_KEY: ${{ secrets.CHILD_CODE_ENCRYPTION_KEY }}
+      POORTENBOEK_DEMO_ENABLED: "true"
+      REDACTIEKAMER_ENABLED: "true"
+      NEWSLETTER_SENDING_ENABLED: "true"
+      WEB_PUSH_SENDING_ENABLED: "true"
+      EDITORIAL_ALLOWED_RECIPIENTS: ${{ vars.TEST_EMAIL_1 }},${{ vars.TEST_EMAIL_2 }}
+      EDITORIAL_TOKEN_SECRET: ${{ secrets.EDITORIAL_TOKEN_SECRET }}
+      ABUSE_HASH_SECRET: ${{ secrets.ABUSE_HASH_SECRET }}
+      ORGANIZATION_SUPPORT_EMAIL: halloween@duindorpdoet.nl
+      ORGANIZATION_EVENT_PHONE: "0659019035"
+      TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
+      TEST_EMAIL_2: ${{ vars.TEST_EMAIL_2 }}
+      DG_RUNTIME_ENV_KEYS: >-
+        APP_ENVIRONMENT APP_REVISION APP_URL NEXT_PUBLIC_SITE_URL ALLOWED_ORIGINS AUTH_SITE_URL
+        EVENT_SLUG EVENT_TIMEZONE REGISTRATION_MODE MAIL_MODE AUTH_MAIL_MODE MAIL_ALLOWED_RECIPIENTS
+        NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT
+        REDACTIEKAMER_ENABLED NEWSLETTER_SENDING_ENABLED WEB_PUSH_SENDING_ENABLED EDITORIAL_ALLOWED_RECIPIENTS EDITORIAL_TOKEN_SECRET
+        SENDGRID_API SENDGRID_FROM_EMAIL SENDGRID_FROM_NAME SENDGRID_REPLY_TO SEND_EMAIL_HOOK_SECRET
+        RESEND_API_KEY RESEND_WEBHOOK_SECRET RESEND_ADMIN_API_KEY MAIL_ADMIN_USER_IDS
+        SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY
+        CRON_SECRET PORTAL_CODE_PEPPER ABUSE_HASH_SECRET CHILD_CODE_PEPPER CHILD_CODE_ENCRYPTION_KEY POORTENBOEK_DEMO_ENABLED ORGANIZATION_SUPPORT_EMAIL ORGANIZATION_EVENT_PHONE
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Verify dedicated runner boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = "duindorphalloweenstg"
+          test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenstg-01"
+          [[ "${GITHUB_WORKSPACE}" == /srv/sites/duindorphalloweenstg/actions-runner/_work/* ]]
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pnpm
+        run: npm install --global pnpm@11.25.0
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate staging configuration
+        run: node scripts/deploy/validate-environment.mjs staging
+      - name: Fetch encrypted release backup for private retention
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          artifact-ids: ${{ needs.backup-restore.outputs.artifact }}
+          path: ${{ runner.temp }}/duindorp-release-backup
+          merge-multiple: true
+      - name: Protect redesign migrations with private preflight and restore gate
+        env:
+          RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/duindorp-release-backup
+        run: node scripts/deploy/redesign-preflight.mjs
+      - name: Validate application
+        run: pnpm verify
+      - name: Link and migrate staging database
+        env:
+          PGOPTIONS: '-c lock_timeout=5000 -c statement_timeout=300000'
+        run: |
+          set -euo pipefail
+          pnpm exec supabase link --project-ref "${SUPABASE_PROJECT_REF}" --password "${SUPABASE_DB_PASSWORD}"
+          node scripts/deploy/push-staging-release.mjs
+          pnpm exec supabase db query --linked --file scripts/deploy/nachtpost-activation-report.sql --output json
+      - name: Compare existing data before deploying the application
+        run: node scripts/deploy/redesign-postmigration.mjs
+      - name: Initialize central provider configuration without activation
+        run: node scripts/deploy/bootstrap-mail-config.mjs
+      - name: Automatically preserve SendGrid suppressions
+        run: node scripts/deploy/import-mail-suppressions.mjs
+      - name: Provision own signed Resend webhook
+        run: node scripts/deploy/configure-resend-webhook.mjs
+      - name: Deploy shared signed email hook
+        run: |
+          set -euo pipefail
+          pnpm exec supabase secrets set --project-ref "${SUPABASE_PROJECT_REF}" \
+            "RESEND_API_KEY=${RESEND_API_KEY}" \
+            "MAIL_IDENTITY_SECRET=${MAIL_IDENTITY_SECRET}" \
+            "SENDGRID_API_KEY=${SENDGRID_API}" \
+            "SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}" \
+            "SENDGRID_FROM_NAME=${SENDGRID_FROM_NAME}" \
+            "SENDGRID_REPLY_TO=${SENDGRID_REPLY_TO}" \
+            "AUTH_SITE_URL=${AUTH_SITE_URL}" \
+            "SEND_EMAIL_HOOK_SECRET=${SEND_EMAIL_HOOK_SECRET}" \
+            "MAIL_MODE=${MAIL_MODE}" \
+            "AUTH_MAIL_MODE=${AUTH_MAIL_MODE}" \
+            "MAIL_ALLOWED_RECIPIENTS=${MAIL_ALLOWED_RECIPIENTS}" \
+            "APP_ENVIRONMENT=staging" \
+            "NEWSLETTER_SENDING_ENABLED=${NEWSLETTER_SENDING_ENABLED}" \
+            "EDITORIAL_ALLOWED_RECIPIENTS=${EDITORIAL_ALLOWED_RECIPIENTS}"
+          pnpm exec supabase functions deploy send-email-hook --project-ref "${SUPABASE_PROJECT_REF}" --no-verify-jwt --use-api
+      - name: Retain signed SendGrid webhook for migration history
+        run: node scripts/deploy/configure-sendgrid-webhook.mjs
+      - name: Deploy through the Sites VPS interface
+        run: |
+          /usr/local/bin/dg-site-deploy \
+            duindorphalloweenstg \
+            "${GITHUB_WORKSPACE}" \
+            "${GITHUB_SHA}" \
+            "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+      - name: Configure release controls, Auth and scheduler
+        run: node scripts/deploy/configure-supabase.mjs
+      - name: Check Supabase security advisors
+        run: node scripts/deploy/check-security-advisors.mjs
+      - name: Verify deployed staging release
+        run: node scripts/deploy/verify-deployment.mjs staging "${APP_URL}"
+      - name: Verify signed Auth email hook and mail provider
+        if: env.SKIP_MAIL_TESTS != 'true'
+        env:
+          MAIL_RECEIPT_ACCEPTANCE_WAIVED: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance }}
+        run: node scripts/deploy/verify-mail-provider.mjs
+      - name: Record explicitly selected mailbox acceptance waiver
+        if: github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance
+        run: echo "::notice title=Mailbox receipt acceptance skipped::This exact staging run skips the IMAP receipt test on explicit release approval. Provider and signed-hook checks remain enabled."
+      - name: Diagnose active mail provider delivery on deployment failure
+        if: failure() && env.SKIP_MAIL_TESTS != 'true'
+        continue-on-error: true
+        run: node scripts/deploy/diagnose-mail-delivery.mjs
+      - name: Exercise signed Resend Event Webhook
+        if: env.SKIP_MAIL_TESTS != 'true' && env.MAIL_ACTIVE_PROVIDER == 'resend'
+        run: node scripts/deploy/test-resend-webhook.mjs
+      - name: Exercise signed SendGrid Event Webhook
+        if: env.SKIP_MAIL_TESTS != 'true' && env.MAIL_ACTIVE_PROVIDER == 'sendgrid' && env.SENDGRID_EVENT_WEBHOOK_AVAILABLE == 'true'
+        run: node scripts/deploy/test-sendgrid-webhook.mjs
+      - name: Report unavailable SendGrid delivery tracking
+        if: env.SKIP_MAIL_TESTS != 'true' && env.MAIL_ACTIVE_PROVIDER == 'sendgrid' && env.SENDGRID_EVENT_WEBHOOK_AVAILABLE != 'true'
+        run: echo "::warning title=Staging delivery tracking skipped::The shared SendGrid account has no free application webhook slot; no existing webhook was changed."
+
+  account-app-acceptance:
+    name: Verify live account and app flows without mail or push delivery
+    needs: deploy
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_ENVIRONMENT: staging
+      APP_URL: https://staging-halloween.duindorpdoet.nl
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install locked browser tools
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: Verify staging with rollback and no delivery
+        run: node scripts/deploy/accept-account-app.mjs
+      - name: Retain public app-entry screenshots
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: account-app-staging-${{ github.sha }}
+          path: ${{ runner.temp }}/account-app-acceptance/
+          retention-days: 14
+          if-no-files-found: error
+
+  mail-acceptance:
+    name: Verify real OTP and transactional mail
+    needs: [deploy, release-policy]
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && !(github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance) && needs.release-policy.outputs.skip_mail_tests != 'true'
+    environment:
+      name: staging
+      url: https://staging-halloween.duindorpdoet.nl
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_URL: https://staging-halloween.duindorpdoet.nl
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
+      TEST_EMAIL_2: ${{ vars.TEST_EMAIL_2 }}
+      IMAP_HOST: ${{ vars.IMAP_HOST }}
+      IMAP_PORT: ${{ vars.IMAP_PORT }}
+      IMAP_SECURE: ${{ vars.IMAP_SECURE }}
+      IMAP_USER_1: ${{ secrets.IMAP_USER_1 }}
+      IMAP_PASSWORD_1: ${{ secrets.IMAP_PASSWORD_1 }}
+      IMAP_USER_2: ${{ secrets.IMAP_USER_2 }}
+      IMAP_PASSWORD_2: ${{ secrets.IMAP_PASSWORD_2 }}
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Verify exact revision
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - name: Verify allowed-mailbox OTP and transaction delivery
+        run: python3 -u scripts/acceptance/staging_mail.py
+      - name: Diagnose failed mail delivery
+        if: failure()
+        continue-on-error: true
+        env:
+          SENDGRID_API: ${{ secrets.SENDGRID_API }}
+        run: node scripts/deploy/diagnose-mail-delivery.mjs

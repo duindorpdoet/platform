@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Mail, RotateCcw } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { analyticsSurfaceForPath, trackProductAnalytics, type AnalyticsSurface } from "@/lib/analytics/client";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, setSessionRememberPreference } from "@/lib/supabase/client";
 import { safeReturnPath } from "@/lib/auth/redirect";
 
 const COOLDOWN_SECONDS = 60;
@@ -17,6 +17,9 @@ export function EmailOtpForm({
   beforeRequestCode,
   initialEmail = "",
   analyticsSurface,
+  variant = "default",
+  rememberSession,
+  onRememberChange,
 }: {
   nextPath?: string;
   children?: ReactNode;
@@ -24,6 +27,9 @@ export function EmailOtpForm({
   beforeRequestCode?: (email: string) => Promise<void>;
   initialEmail?: string;
   analyticsSurface?: AnalyticsSurface;
+  variant?: "default" | "entry";
+  rememberSession?: boolean;
+  onRememberChange?: (remember: boolean) => void;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState(initialEmail);
@@ -54,6 +60,7 @@ export function EmailOtpForm({
     setMessage(undefined);
     try {
       const normalizedEmail = email.trim().toLowerCase();
+      if (rememberSession !== undefined) setSessionRememberPreference(rememberSession);
       if (beforeRequestCode) await beforeRequestCode(normalizedEmail);
       const { error } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
@@ -85,6 +92,7 @@ export function EmailOtpForm({
     setBusy(true);
     setMessage(undefined);
     try {
+      if (rememberSession !== undefined) setSessionRememberPreference(rememberSession);
       const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: otp, type: "email" });
 
       if (error) {
@@ -102,12 +110,11 @@ export function EmailOtpForm({
 
   if (stage === "email") {
     return (
-      <form className="panel auth-form" onSubmit={requestCode}>
-        <Mail size={32} />
-        <h2>{children ? "Meld jullie plek aan" : "Ontvang je inlogcode."}</h2>
-        <p>{children ? "Vul je naam en telefoonnummer in. Bevestig daarna je e-mailadres met een code; vervolgens kun je de overige gegevens rustig aanvullen." : "We sturen een eenmalige code via e-mail. Je hebt geen wachtwoord nodig."}</p>
+      <form className={variant === "entry" ? "entry-otp-form auth-form" : "panel auth-form"} onSubmit={requestCode}>
+        {variant !== "entry" && <><Mail size={32} /><h2>{children ? "Meld jullie plek aan" : "Ontvang je inlogcode."}</h2><p>{children ? "Vul je naam en telefoonnummer in. Bevestig daarna je e-mailadres met een code; vervolgens kun je de overige gegevens rustig aanvullen." : "We sturen een eenmalige code via e-mail. Je hebt geen wachtwoord nodig."}</p></>}
         <label className="field"><span>E-mailadres{children ? " *" : ""}</span><input type="email" disabled={busy} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
         {children}
+        {onRememberChange && <label className="entry-remember"><input type="checkbox" checked={rememberSession} onChange={event => onRememberChange(event.target.checked)} /><span>Ingelogd blijven op dit apparaat</span></label>}
         {message && <p className="form-error" role="alert">{message}</p>}
         <button className="btn full" type="submit" disabled={busy || cooldown > 0 || !email.includes("@")}>{busy ? "Code aanvragen…" : cooldown ? `Nieuwe code over ${cooldown}s` : "Stuur eenmalige code"}<ArrowRight size={17} /></button>
       </form>
@@ -115,7 +122,7 @@ export function EmailOtpForm({
   }
 
   return (
-    <form className="panel auth-form" onSubmit={verifyCode}>
+    <form className={variant === "entry" ? "entry-otp-form auth-form" : "panel auth-form"} onSubmit={verifyCode}>
       <CheckCircle2 size={32} />
       <h2>Vul de zes cijfers in.</h2>
       <p>De code is verstuurd naar <strong>{email}</strong>. Plakken mag.</p>

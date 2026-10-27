@@ -171,7 +171,7 @@ describe("automatic SendGrid suppression preservation", () => {
       }
       if(u.hostname==='fixture.supabase.co')return Response.json(0);
       throw new Error('Unexpected outbound request');
-    };await import('./scripts/deploy/import-mail-suppressions.mjs');`;
+    };const entry=await import('./scripts/deploy/import-mail-suppressions.mjs');await entry.importMailSuppressions();`;
     const result = spawnSync(process.execPath, ["--input-type=module", "-e", code], { encoding: "utf8", timeout: 5000, env: {
       ...process.env, APP_ENVIRONMENT: "staging", SENDGRID_SUPPRESSIONS_API_KEY: "readonly-fixture", SENDGRID_API: "sending-fixture", SENDGRID_API_BASE_URL: "https://api.sendgrid.com/v3", NEXT_PUBLIC_SUPABASE_URL: "https://fixture.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "local-service-fixture",
     } });

@@ -59,7 +59,7 @@ select ok((select registration_close_at=now()-interval '1 hour' from app_private
 -- Before October 25 the generated deadline is still valid; afterwards the
 -- repair must remove it from an upcoming event that the organizer left open.
 update app_private.events set local_date=greatest((now() at time zone timezone)::date,make_date(extract(year from now())::integer,10,31)),
-  registration_close_at=make_timestamptz(extract(year from now())::integer,10,25,23,59,0,timezone)
+  registration_open_at=null, registration_close_at=make_timestamptz(extract(year from now())::integer,10,25,23,59,0,timezone)
 where slug='duindorp-halloween-2026';
 select lives_ok($$select api.configure_release_mode('duindorp-halloween-2026','production_open')$$, 'redeploy checks the legacy generated deadline');
 select ok((select registration_close_at is null or registration_close_at>now() from app_private.events where slug='duindorp-halloween-2026'),

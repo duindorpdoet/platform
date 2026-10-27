@@ -6,6 +6,7 @@ import "./home.css";
 import "./route-map.css";
 import "./maps.css";
 import "./worlds.css";
+import "./account-entry.css";
 import "./portal-design.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "@/modern/global.css";
@@ -20,6 +21,8 @@ import { EventProvider } from "@/components/redesign/event-details";
 import { publicEvent } from "@/lib/redesign/event";
 import { SiteChrome } from "@/components/brand/site-chrome";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
+import { AccountNavigation } from "@/components/account/navigation";
+import { SessionBoundary } from "@/components/auth/session-boundary";
 
 export const metadata: Metadata = {
   title: "De Duindorpse Poorten van Halloween",
@@ -82,8 +85,10 @@ export default async function RootLayout({
     <html lang="nl" className="dark modern-ui">
       <body className="antialiased">
         <ServiceWorkerRegistration />
+        <SessionBoundary />
         <EventProvider value={event}>
         <GuidanceHost />
+        <AccountNavigation />
         <SiteChrome>{children}</SiteChrome>
         </EventProvider>
       </body>

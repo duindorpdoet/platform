@@ -1,0 +1,5 @@
+import Link from "next/link";
+import { InstallControls } from "@/components/pwa/install-controls";
+import { EntryHeader } from "@/components/auth/account-login";
+export const metadata={title:"App & hulp · De Poorten",robots:{index:false,follow:false}};
+export default function AppHelpPage(){return <div className="entry-page entry-choice-page"><EntryHeader/><main className="entry-choice-wrap"><h1>De Poorten als app.</h1><p>Je boek en omgevingen blijven veilig gescheiden. Vraag een volwassene om hulp bij installeren en meldingen.</p><InstallControls/><p>Een browser en een beginscherm-app kunnen een eigen sessie hebben. Log in de app in met je gewone account of open je eigen boekcode. Je kunt daarna verder met dezelfde servervoortgang.</p><div className="actions"><Link className="entry-button entry-button-gold" href="/omgeving/kiezen">Volwassen account</Link><Link className="entry-button entry-button-outline" href="/poortenboek">Terug naar mijn boek</Link><Link className="device-text-button" href="/contact">Hulp van de organisatie</Link></div></main></div>}

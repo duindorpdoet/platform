@@ -24,7 +24,7 @@ export const STAGING_INSTALLED_MIGRATIONS = Object.freeze({
 });
 
 export function installedStagingHistory(context = process.env) {
-  return context.APP_ENVIRONMENT === "staging" && ISOLATED_RELEASE_BRANCHES.some(branch => context.GITHUB_REF === `refs/heads/${branch}`)
+  return context.APP_ENVIRONMENT === "staging" && (context.GITHUB_REF === "refs/heads/staging" || ISOLATED_RELEASE_BRANCHES.some(branch => context.GITHUB_REF === `refs/heads/${branch}`))
     ? Object.keys(STAGING_INSTALLED_MIGRATIONS) : [];
 }
 

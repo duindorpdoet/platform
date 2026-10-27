@@ -70,7 +70,8 @@ function fromPortal(portal: Portal): Draft {
     approvalStatus: portal.approvalStatus,
     operationStatus: portal.operationStatus as Draft["operationStatus"],
     candidateStartPoint: portal.candidateStartPoint, isFinal: portal.isFinal };
-  const saved = portal.maintenanceDraft;
+  // Hydrate real form fields only; request metadata never survives a fresh preview.
+  const saved = portal.maintenanceDraft ? Object.fromEntries(Object.entries(portal.maintenanceDraft).filter(([key]) => Object.hasOwn(base,key))) as Partial<Draft> : null;
   if (!saved || portal.lifecycleStatus === "archived") return base;
   return {...base,...saved,id:portal.id,version:portal.version,
     plannedOpensAt: localDateTime(Object.hasOwn(saved,"plannedOpensAt") ? saved.plannedOpensAt??null : portal.plannedOpensAt),plannedClosesAt:localDateTime(Object.hasOwn(saved,"plannedClosesAt") ? saved.plannedClosesAt??null : portal.plannedClosesAt),

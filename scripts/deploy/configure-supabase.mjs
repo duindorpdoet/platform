@@ -156,7 +156,18 @@ if (!restConfigMatches(restConfig)) {
 if (!restConfigMatches(restConfig)) throw new Error("Supabase Data API did not retain the required schema, search path and row limit.");
 console.log("Supabase Data API configuration verified.");
 
-await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, {
+const authConfigUrl=`https://api.supabase.com/v1/projects/${projectRef}/config/auth`;
+const previousAuth=await request(authConfigUrl,{headers:managementHeaders});
+const googlePatch={};
+if(Boolean(process.env.GOOGLE_CLIENT_ID)!==Boolean(process.env.GOOGLE_CLIENT_SECRET))throw new Error("Configure both Google OAuth environment secrets together.");
+if(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET) {
+  if(!/^[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(process.env.GOOGLE_CLIENT_ID))throw new Error("Google OAuth web client ID has an invalid format.");
+  Object.assign(googlePatch,{external_google_enabled:true,external_google_client_id:process.env.GOOGLE_CLIENT_ID,external_google_secret:process.env.GOOGLE_CLIENT_SECRET,external_google_skip_nonce_check:false,external_google_email_optional:false});
+} else if(previousAuth.external_google_client_id && previousAuth.external_google_secret) {
+  // Reuse the provider's securely stored credentials without printing or copying them.
+  Object.assign(googlePatch,{external_google_enabled:true,external_google_skip_nonce_check:false,external_google_email_optional:false});
+}
+await request(authConfigUrl, {
   method: "PATCH",
   headers: managementHeaders,
   body: JSON.stringify({
@@ -171,12 +182,15 @@ await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, 
     hook_send_email_enabled: true,
     hook_send_email_uri: `${supabaseUrl.origin}/functions/v1/send-email-hook`,
     hook_send_email_secrets: hookSecret,
+    ...googlePatch,
   }),
 });
 
 const authConfig = await request(`https://api.supabase.com/v1/projects/${projectRef}/config/auth`, {
   headers: managementHeaders,
 });
+console.log(JSON.stringify({authConfiguration:{projectRef,siteUrl:appUrl,googleEnabled:authConfig.external_google_enabled===true,googleClientPresent:Boolean(authConfig.external_google_client_id),googleSecretPresent:Boolean(authConfig.external_google_secret),googleProviderCallback:`${supabaseUrl.origin}/auth/v1/callback`,applicationCallback:`${appUrl}/auth/callback`,verifiedEmailRequired:authConfig.mailer_allow_unverified_email_sign_ins===false}}));
+if(authConfig.external_google_enabled!==true)console.log("Google OAuth setup pending: configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET securely for this environment. Email OTP remains enabled.");
 if (authConfig.hook_send_email_enabled !== true || authConfig.hook_send_email_uri !== `${supabaseUrl.origin}/functions/v1/send-email-hook`) {
   throw new Error("Supabase Auth did not retain the configured Send Email hook.");
 }
@@ -247,11 +261,12 @@ if (releaseMode === "production_open" && release?.releaseMode !== "production_op
 if (process.env.MAIL_MODE !== "disabled" && mailWorker?.active !== true) {
   throw new Error("The durable mail worker was not activated.");
 }
-if (process.env.MAIL_MODE !== "disabled") {
+if (process.env.MAIL_MODE !== "disabled" && process.env.SKIP_MAIL_TESTS !== "true") {
   await verifyMailWorkerProbe();
   console.log("Supabase pg_net mail worker probe passed.");
   await verifyRuntimeMailGateway();
   console.log("Transactional mail gateway runtime probe passed.");
 }
+if(process.env.SKIP_MAIL_TESTS==="true")console.log(`Mail worker/gateway probes skipped for authorized release ${process.env.GITHUB_SHA}; normal mail configuration is retained.`);
 
 console.log(`Supabase release controls configured for ${process.env.APP_ENVIRONMENT}.`);

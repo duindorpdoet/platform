@@ -316,6 +316,10 @@ export async function POST(request: Request, context: Context) {
     const demo = await readDemo();
     if (action === "logout") {
       const token = store.get(CHILD_COOKIE)?.value;
+      // Always clear this device's child cookies, including on a temporary
+      // revocation error. Never leave the previous book attached to an account switch.
+      store.set(CHILD_COOKIE, "", { ...cookieOptions, maxAge: 0 });
+      store.set(DEMO_COOKIE, "", { ...cookieOptions, maxAge: 0 });
       if (token && !demo) {
         try {
           await childRpc("poortenboek_child_action", {
@@ -330,8 +334,6 @@ export async function POST(request: Request, context: Context) {
             throw error;
         }
       }
-      store.set(CHILD_COOKIE, "", { ...cookieOptions, maxAge: 0 });
-      store.set(DEMO_COOKIE, "", { ...cookieOptions, maxAge: 0 });
       return response({ ok: true });
     }
     if (demo) {

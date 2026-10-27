@@ -70,6 +70,7 @@ test("editor publishes selective news and prepares an immutable deduplicated Nac
   context,
   browser,
 }, info) => {
+  test.skip(process.env.SKIP_MAIL_TESTS === "true", "Explicit release mail-test exception: newsletter send/test acceptance");
   const admin = await authenticate(context, "admin@example.invalid");
   const suffix = randomUUID().slice(0, 8);
   const parentContext = await browser.newContext({

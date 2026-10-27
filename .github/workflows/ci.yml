@@ -17,8 +17,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-policy:
+    name: Resolve release mail-test policy
+    runs-on: ubuntu-latest
+    outputs:
+      skip_mail_tests: ${{ steps.policy.outputs.skip_mail_tests }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Record exact release exception
+        id: policy
+        env:
+          SKIP_MAIL_TESTS_REQUESTED: ${{ inputs.skip_mail_tests || false }}
+          MAIL_TEST_WAIVER_SHA: ${{ vars.MAIL_TEST_WAIVER_SHA }}
+          MAIL_TEST_WAIVER_EXPIRES_AT: ${{ vars.MAIL_TEST_WAIVER_EXPIRES_AT }}
+          MAIL_TEST_WAIVER_REASON: ${{ vars.MAIL_TEST_WAIVER_REASON }}
+        run: node scripts/deploy/mail-test-policy.mjs
   application:
     name: Application and browser tests
+    needs: release-policy
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -48,8 +69,11 @@ jobs:
 
   database:
     name: Database migrations, contracts and lint
+    needs: release-policy
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      SKIP_MAIL_TESTS: ${{ needs.release-policy.outputs.skip_mail_tests }}
     steps:
       - name: Check out exact revision
         uses: actions/checkout@v7
@@ -70,16 +94,19 @@ jobs:
       - name: Run pgTAP contracts
         run: pnpm exec supabase test db
       - name: Exercise full planboard and signed Resend mail chain locally
+        if: needs.release-policy.outputs.skip_mail_tests != 'true'
         env:
           MAIL_INTEGRATION_CONTAINER: supabase_db_duindorphalloween
         run: pnpm exec vitest run tests/integration/resend-planboard.test.ts
       - name: Restore isolated fixtures after mail chain acceptance
         run: pnpm exec supabase db reset
       - name: Verify one-time Nachtpost account activation
+        if: needs.release-policy.outputs.skip_mail_tests != 'true'
         env:
           LOCAL_DB_CONTAINER: supabase_db_duindorphalloween
         run: node scripts/acceptance/nachtpost-activation.mjs
       - name: Run local Auth one-time-code acceptance
+        if: needs.release-policy.outputs.skip_mail_tests != 'true'
         run: |
           eval "$(pnpm exec supabase status -o env)"
           SUPABASE_URL="$API_URL" SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" MAILPIT_URL="$MAILPIT_URL" node scripts/acceptance/local-auth.mjs
@@ -195,6 +222,7 @@ jobs:
           export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
           export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
           pnpm exec playwright test --config playwright.planboard.config.ts
+          pnpm exec playwright test --config playwright.account-app.config.ts
       - name: Run editorial publication, newsletter and push acceptance
         env:
           APP_ENVIRONMENT: staging

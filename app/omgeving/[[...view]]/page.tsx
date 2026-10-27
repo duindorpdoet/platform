@@ -18,13 +18,16 @@ export default async function ParticipantEnvironmentPage({
   searchParams,
 }: {
   params: Promise<{ view?: string[] }>;
-  searchParams: Promise<{ meekijkuitnodiging?: string }>;
+  searchParams: Promise<{ meekijkuitnodiging?: string; toegang?: string }>;
 }) {
   const actor = await getActor();
   const segments = (await params).view ?? [];
-  const rawInvite = (await searchParams).meekijkuitnodiging;
+  const query = await searchParams;
+  const rawInvite = query.meekijkuitnodiging;
+  const accessReference = query.toegang;
   const inviteToken = rawInvite && /^[a-f0-9]{64}$/.test(rawInvite) ? rawInvite : undefined;
-  const destination = inviteToken ? `/omgeving?meekijkuitnodiging=${inviteToken}` : `/omgeving/${segments.join("/")}`;
+  if (segments.length === 0 && !inviteToken) redirect("/omgeving/kiezen");
+  const destination = inviteToken ? `/omgeving?meekijkuitnodiging=${inviteToken}` : `/omgeving/${segments.join("/")}${accessReference ? `?toegang=${encodeURIComponent(accessReference)}` : ""}`;
   if (!actor) redirect(`/inloggen?next=${encodeURIComponent(destination)}`);
 
   const eventSlug = serverEnv().EVENT_SLUG;
@@ -38,9 +41,8 @@ export default async function ParticipantEnvironmentPage({
 
   const context = data as ParticipantContext;
   const requestedRole = roleBySlug[segments[0] ?? ""];
-  const selectedRole = context.roles.some((role) => role.key === requestedRole)
-    ? requestedRole
-    : context.roles[0]?.key;
+  if (requestedRole && !context.roles.some(role => role.key === requestedRole && (!accessReference || requestedRole !== "viewer" || (role.accessId ?? role.groupId) === accessReference))) redirect("/omgeving/kiezen");
+  const selectedRole = requestedRole ?? context.roles[0]?.key;
 
   return (
     <>
@@ -52,6 +54,7 @@ export default async function ParticipantEnvironmentPage({
         role={selectedRole}
         section={segments[1]}
         inviteToken={inviteToken}
+        accessReference={accessReference}
       />
     </>
   );

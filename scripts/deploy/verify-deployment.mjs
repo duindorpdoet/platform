@@ -43,10 +43,16 @@ for (const path of ["/", "/verhaal", "/werelden", "/kaart", "/ontdek", "/faq", "
   await response.arrayBuffer();
 }
 
+const loginResponse=await get("/inloggen");
+const loginHtml=await loginResponse.text();
+if(!loginResponse.ok||!loginHtml.includes("Doorgaan met Google")||!loginHtml.includes("e-mailadres"))throw new Error("Complete Google/OTP app login is unavailable.");
+const accountResponse=await get("/api/account");
+if(accountResponse.status!==401||!accountResponse.headers.get("cache-control")?.includes("no-store"))throw new Error("Account chooser API must require adult authentication and never cache.");
+
 const manifestResponse = await get("/manifest.webmanifest");
 if (!manifestResponse.ok) throw new Error("PWA manifest is unavailable.");
 const manifest = await manifestResponse.json();
-if (manifest.id !== "/omgeving" || manifest.start_url !== "/omgeving" || !manifest.icons?.some((icon) => icon.purpose === "maskable")) {
+if (manifest.id !== "/omgeving" || manifest.start_url !== "/app" || !manifest.icons?.some((icon) => icon.purpose === "maskable")) {
   throw new Error("PWA manifest does not match the installation contract.");
 }
 for (const path of ["/sw.js", "/offline.html", "/pwa/icons/pwa-192.png", "/pwa/icons/pwa-512.png", "/pwa/icons/maskable-512.png", "/pwa/icons/apple-touch-icon-180.png"]) {
@@ -55,7 +61,7 @@ for (const path of ["/sw.js", "/offline.html", "/pwa/icons/pwa-192.png", "/pwa/i
   await response.arrayBuffer();
 }
 
-for (const path of ["/mijn-inschrijving", "/mijn-huis", "/mijn-groep", "/admin"]) {
+for (const path of ["/app", "/omgeving/kiezen", "/mijn-inschrijving", "/mijn-huis", "/mijn-groep", "/admin"]) {
   const response = await get(path);
   if (![302, 307, 308].includes(response.status)) throw new Error(`Protected route ${path} did not redirect.`);
   if (!response.headers.get("cache-control")?.includes("no-store")) throw new Error(`Protected route ${path} is cacheable.`);

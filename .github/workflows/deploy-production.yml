@@ -6,6 +6,11 @@ on:
       - production
   workflow_dispatch:
     inputs:
+      skip_mail_tests:
+        description: 'Explicitly skip all mail tests for this release run; other release gates remain required'
+        type: boolean
+        default: false
+        required: false
       readonly_baseline:
         description: Capture read-only schema and preservation fingerprints; no deployment
         type: boolean
@@ -21,6 +26,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release-policy:
+    name: Resolve release mail-test policy
+    runs-on: ubuntu-latest
+    outputs:
+      skip_mail_tests: ${{ steps.policy.outputs.skip_mail_tests }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Record exact release exception
+        id: policy
+        env:
+          SKIP_MAIL_TESTS_REQUESTED: ${{ inputs.skip_mail_tests || false }}
+          MAIL_TEST_WAIVER_SHA: ${{ vars.MAIL_TEST_WAIVER_SHA }}
+          MAIL_TEST_WAIVER_EXPIRES_AT: ${{ vars.MAIL_TEST_WAIVER_EXPIRES_AT }}
+          MAIL_TEST_WAIVER_REASON: ${{ vars.MAIL_TEST_WAIVER_REASON }}
+        run: node scripts/deploy/mail-test-policy.mjs
   readonly-baseline:
     name: Read-only production evening baseline
     if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && github.ref == 'refs/heads/production'
@@ -48,6 +73,7 @@ jobs:
           if-no-files-found: error
   backup-restore:
     name: Encrypted production backup and isolated restore
+    needs: release-policy
     if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline
     environment: production
     runs-on: ubuntu-latest
@@ -86,7 +112,7 @@ jobs:
   deploy:
     name: Promote exact staging release
     if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline
-    needs: backup-restore
+    needs: [backup-restore, release-policy]
     environment:
       name: production
       url: https://halloween.duindorpdoet.nl
@@ -120,12 +146,16 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SKIP_MAIL_TESTS: ${{ needs.release-policy.outputs.skip_mail_tests }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      SENDGRID_SUPPRESSIONS_API_KEY: ${{ secrets.SENDGRID_SUPPRESSIONS_API_KEY }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       RESEND_ADMIN_API_KEY: ${{ secrets.RESEND_ADMIN_API_KEY }}
       RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
       RESEND_ACCEPTANCE_EVENT_ID: ${{ vars.RESEND_ACCEPTANCE_EVENT_ID }}
       MAIL_IDENTITY_SECRET: ${{ secrets.MAIL_IDENTITY_SECRET }}
-      MAIL_ADMIN_USER_IDS: ${{ vars.MAIL_ADMIN_USER_IDS }}
+      MAIL_ADMIN_USER_IDS: ${{ secrets.MAIL_ADMIN_USER_IDS || vars.MAIL_ADMIN_USER_IDS }}
       SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY: ${{ secrets.SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY }}
       SENDGRID_API: ${{ secrets.SENDGRID_API }}
       SENDGRID_SUPPRESSIONS_API_KEY: ${{ secrets.SENDGRID_SUPPRESSIONS_API_KEY }}
@@ -247,10 +277,11 @@ jobs:
       - name: Verify deployed production release
         run: node scripts/deploy/verify-deployment.mjs production "${APP_URL}"
       - name: Validate active mail configuration without sending
+        if: env.SKIP_MAIL_TESTS != 'true'
         run: node scripts/deploy/verify-mail-provider.mjs
       - name: Exercise signed Resend Event Webhook
-        if: env.MAIL_ACTIVE_PROVIDER == 'resend'
+        if: env.SKIP_MAIL_TESTS != 'true' && env.MAIL_ACTIVE_PROVIDER == 'resend'
         run: node scripts/deploy/test-resend-webhook.mjs
       - name: Exercise signed SendGrid Event Webhook
-        if: env.MAIL_ACTIVE_PROVIDER == 'sendgrid'
+        if: env.SKIP_MAIL_TESTS != 'true' && env.MAIL_ACTIVE_PROVIDER == 'sendgrid'
         run: node scripts/deploy/test-sendgrid-webhook.mjs

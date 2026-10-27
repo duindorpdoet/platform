@@ -103,6 +103,7 @@ export function ParticipantShell({
   role,
   section,
   inviteToken,
+  accessReference,
 }: {
   context: ParticipantContext;
   eventSlug: string;
@@ -110,11 +111,12 @@ export function ParticipantShell({
   role?: ParticipantRoleKey;
   section?: string;
   inviteToken?: string;
+  accessReference?: string;
 }) {
   const event=useEventDetails();
   const router = useRouter();
   const [inviteNotice, setInviteNotice] = useState(inviteToken ? "Meekijkuitnodiging controleren…" : "");
-  const selectedRole = role ? context.roles.find((item) => item.key === role) : undefined;
+  const selectedRole = role ? context.roles.find((item) => item.key === role && (!accessReference || role !== "viewer" || (item.accessId ?? item.groupId) === accessReference)) : undefined;
   const items = selectedRole ? navigation[selectedRole.key] : [];
   const activeSection = items.some((item) => item.key === section) ? section! : items[0]?.key;
 
@@ -167,14 +169,14 @@ export function ParticipantShell({
       <Link className="participant-brand" href="/"><img src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" /><span>De Poorten<small>Duindorp · Halloween {event.year}</small></span></Link>
       <RoleIdentity role={selectedRole} />
       <p className="participant-sidebar-caption">Jouw omgeving</p>
-      <ParticipantNavigation role={selectedRole.key} activeSection={activeSection} desktop />
+      <ParticipantNavigation role={selectedRole.key} activeSection={activeSection} accessReference={accessReference} desktop />
       <div className="member-sidebar-event"><CalendarDays aria-hidden="true"/><div><strong>{event.weekday} {event.dateShort}</strong><span>{event.times} · Duindorp</span></div></div>
       <div className="participant-sidebar-foot"><Link className="member-sidebar-link" href="/">Naar de website <ArrowUpRight size={15}/></Link><SignOutButton /></div>
     </aside>
     <div className="participant-main">
       <header className="participant-topbar">
         <div className="participant-topbar-identity"><span className="participant-topbar-mark" aria-hidden="true"><MoonStar /></span><div><p className="participant-eyebrow">Jouw Halloweenavond <ChevronRight size={11}/></p><strong>{sectionLabel}</strong></div></div>
-        <div className="member-topbar-actions"><span className="member-event-chip"><span/>{event.dateLong}</span>{context.roles.length > 1 && <RoleSwitcher roles={context.roles} selected={selectedRole.key} />}<Link className="member-profile-shortcut" href={`/omgeving/${roleSlugs[selectedRole.key]}/meer`} aria-label="Profiel en instellingen"><UserRound size={18}/></Link></div>
+        <div className="member-topbar-actions"><span className="member-event-chip"><span/>{event.dateLong}</span>{context.roles.length > 1 && <RoleSwitcher />}<Link className="member-profile-shortcut" href={`/omgeving/${roleSlugs[selectedRole.key]}/meer`} aria-label="Profiel en instellingen"><UserRound size={18}/></Link></div>
       </header>
       {inviteNotice && <div className="participant-notice" role="status">{inviteNotice}</div>}
       <main className="participant-content" id="participant-content">
@@ -183,7 +185,7 @@ export function ParticipantShell({
         {selectedRole.key === "homeowner" && <HomeownerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
       </main>
     </div>
-    <ParticipantNavigation role={selectedRole.key} activeSection={activeSection} />
+    <ParticipantNavigation role={selectedRole.key} activeSection={activeSection} accessReference={accessReference} />
     <SupportWidget key={`${selectedRole.key}:${selectedRole.groupId ?? selectedRole.portalId ?? selectedRole.accessId ?? "personal"}`} eventSlug={eventSlug} role={selectedRole.key} groupId={selectedRole.groupId ?? undefined} portalId={selectedRole.portalId ?? undefined} viewerAccessId={selectedRole.accessId ?? undefined} />
   </div>;
 }
@@ -193,18 +195,15 @@ function RoleIdentity({ role }: { role: ParticipantRole }) {
   return <div className="role-identity"><span><Icon aria-hidden="true" /></span><div><small>Persoonlijke omgeving</small><strong>{role.label}</strong></div><span className="member-role-dot" aria-label="Toegang actief"/></div>;
 }
 
-function RoleSwitcher({ roles, selected }: { roles: ParticipantRole[]; selected: ParticipantRoleKey }) {
-  const router = useRouter();
-  return <label className="role-switcher"><span>Omgeving</span><select value={selected} onChange={(event) => router.push(`/omgeving/${roleSlugs[event.target.value as ParticipantRoleKey]}`)}>
-    {roles.map((role) => <option key={role.key} value={role.key}>{role.label}</option>)}
-  </select></label>;
+function RoleSwitcher() {
+  return <Link className="role-switcher" href="/omgeving/kiezen">Wissel omgeving</Link>;
 }
 
-function ParticipantNavigation({ role, activeSection, desktop = false }: { role: ParticipantRoleKey; activeSection?: string; desktop?: boolean }) {
+function ParticipantNavigation({ role, activeSection, accessReference, desktop = false }: { role: ParticipantRoleKey; activeSection?: string; accessReference?: string; desktop?: boolean }) {
   return <nav className={desktop ? "participant-nav desktop" : "participant-bottomnav"} aria-label={desktop ? "Omgevingsnavigatie" : "Mobiele omgevingsnavigatie"}>
     {navigation[role].map((item) => {
       const Icon = item.icon;
-      return <Link key={item.key} className={activeSection === item.key ? "active" : ""} href={`/omgeving/${roleSlugs[role]}/${item.key}`} aria-current={activeSection === item.key ? "page" : undefined}><Icon /><span>{item.label}</span>{desktop && activeSection === item.key && <span className="member-nav-indicator"/>}</Link>;
+      return <Link key={item.key} className={activeSection === item.key ? "active" : ""} href={`/omgeving/${roleSlugs[role]}/${item.key}${role === "viewer" && accessReference ? `?toegang=${encodeURIComponent(accessReference)}` : ""}`} aria-current={activeSection === item.key ? "page" : undefined}><Icon /><span>{item.label}</span>{desktop && activeSection === item.key && <span className="member-nav-indicator"/>}</Link>;
     })}
   </nav>;
 }

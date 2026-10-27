@@ -5,6 +5,7 @@ import { getActor } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { validatePushEndpoint } from "@/lib/pwa/push-policy";
 import { validPushKeys } from "@/lib/pwa/push-security";
+import { serverEnv } from "@/lib/config/server-env";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -30,7 +31,15 @@ export async function GET(request:Request) {
     const client=await authenticatedClient();
     const {data,error}=await client.schema("api").rpc("push_subscription_state");
     if (error) throw error;
-    return apiSuccess(data);
+    const hash=request.headers.get("x-push-endpoint-hash");
+    let registered=false;
+    if(hash) {
+      if(!/^[a-f0-9]{64}$/.test(hash))throw new ApiError(400,"INVALID_DEVICE","Schrijf dit apparaat opnieuw in.");
+      const device=await client.schema("api").rpc("account_push_device",{_event_slug:serverEnv().EVENT_SLUG,_endpoint_hash:hash});
+      if(device.error)throw new ApiError(503,"PUSH_STATE_UNAVAILABLE","De apparaatinschrijving kon niet worden gecontroleerd.");
+      registered=device.data?.registered===true;
+    }
+    return apiSuccess({...data,currentDeviceRegistered:registered});
   } catch(error) {return apiFailure(error,correlationId(request));}
 }
 async function write(request:Request,operation:"POST"|"PATCH"|"DELETE") {

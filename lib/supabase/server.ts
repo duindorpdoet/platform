@@ -2,6 +2,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getPublicSupabaseConfig } from "@/lib/config/public-env";
+import { REMEMBER_COOKIE, sessionCookieOptions } from "@/lib/auth/session-lifetime";
 
 export async function createClient() {
   const config = getPublicSupabaseConfig();
@@ -12,7 +13,7 @@ export async function createClient() {
       getAll: () => cookieStore.getAll(),
       setAll(cookiesToSet) {
         try {
-          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, sessionCookieOptions(name, options, cookieStore.get(REMEMBER_COOKIE)?.value !== "0")));
         } catch {
           // Server Components mogen geen cookies schrijven; proxy.ts verzorgt refresh.
         }

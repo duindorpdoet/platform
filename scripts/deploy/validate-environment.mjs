@@ -1,3 +1,4 @@
+import {createECDH} from "node:crypto";
 const target = process.argv[2];
 if (!new Set(["staging", "production"]).has(target)) {
   throw new Error("Usage: node scripts/deploy/validate-environment.mjs <staging|production>");
@@ -43,6 +44,11 @@ for (const name of ["CHILD_CODE_PEPPER", "CHILD_CODE_ENCRYPTION_KEY"]) {
 }
 if (process.env.CHILD_CODE_PEPPER === process.env.CHILD_CODE_ENCRYPTION_KEY) throw new Error("Child lookup and encryption keys must be independent.");
 if (target === "production" && process.env.POORTENBOEK_DEMO_ENABLED !== "false") throw new Error("Production must disable the child demo.");
+
+const vapid=createECDH('prime256v1');
+try{vapid.setPrivateKey(Buffer.from(process.env.VAPID_PRIVATE_KEY,'base64url'));if(vapid.getPublicKey().toString('base64url')!==process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)throw new Error();}
+catch{throw new Error('Configured VAPID public/private keys do not match. Preserve the existing pair; investigate configuration before rotating.');}
+console.log('Existing VAPID key pair matches; no keys were generated or rotated.');
 
 const hookKey = process.env.SEND_EMAIL_HOOK_SECRET.replace(/^v1,whsec_/, "");
 const decodedHookKey = Buffer.from(hookKey, "base64");

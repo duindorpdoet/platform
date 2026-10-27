@@ -99,11 +99,11 @@ test("world overview presents six optional themes in a stable grid", async ({ pa
   expect(boxes[3].top).toBeGreaterThan(boxes[0].top);
 });
 
-test("authentication uses a six-digit email OTP without a role picker", async ({ page }) => {
+test("authentication offers Google beside the existing email OTP", async ({ page }) => {
   await page.goto("/inloggen");
-  await expect(page.getByRole("heading", { name: /Inloggen met e-mail/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "De deur staat open." })).toBeVisible();
   await expect(page.getByLabel("E-mailadres")).toBeVisible();
-  await expect(page.locator("body")).toContainText("geen wachtwoord nodig");
+  await expect(page.locator("body")).toContainText("Een wachtwoord is niet nodig");
   await expect(page.locator("body")).not.toContainText("Kies een rol");
 });
 
@@ -126,7 +126,7 @@ test("service worker is a real script with private network-only rules", async ({
   expect(response.ok()).toBeTruthy();
   expect(response.headers()["cache-control"]).toContain("no-store");
   const body = await response.text();
-  expect(body).toContain('VERSION = "duindorp-public-v6"');
+  expect(body).toContain('VERSION = "duindorp-public-v7"');
   expect(body).toContain('OFFLINE_URL = "/offline.html"');
   expect(body).toContain("SAFE_ASSETS");
   expect(body).toContain("CLEAR_PRIVATE_CACHE");

@@ -6,8 +6,12 @@ import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, ChevronDown, Exte
 import { usePathname, useRouter } from 'next/navigation';
 import {configureArrivalSync} from '@/lib/redesign/arrival-sync';
 import { createClient } from '@/lib/supabase/client';
-import { amsterdamDay, GUIDANCE_VERSION, guidanceRole, type GuidanceRecord } from '@/lib/redesign/guidance-state';
+import {consumeWelcomeReplay} from "@/lib/account/welcome-replay";
+import { GUIDANCE_VERSION, guidanceRole, type GuidanceRecord } from '@/lib/redesign/guidance-state';
 import '../../modern/guidance.css';
+import { WELCOME_VERSION } from '@/lib/account/model';
+import { InstallControls } from '@/components/pwa/install-controls';
+import { PushNotificationSettings } from '@/components/pwa/pwa-experience';
 
 export const GENERAL_WHATSAPP = 'https://chat.whatsapp.com/KwdGfmllTNW5tPU4widIhg';
 export const HOUSE_WHATSAPP = 'https://chat.whatsapp.com/EaFlwGROVpW3N7YazyTx47';
@@ -56,7 +60,7 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
   const router = useRouter();
   const navigate = useCallback((destination: string) => router.push(destination),[router]);
   const requested = guidanceRole(path);
-  const role = requested && initial.roles.includes(requested) ? requested : initial.roles.includes('parent') ? 'parent' : initial.roles.includes('viewer') ? 'viewer' : 'house';
+  const role = requested && initial.roles.includes(requested) ? requested : null;
   const [record, setRecord] = useState<GuidanceRecord>(initial);
   const [saving,setSaving]=useState(false),[saveError,setSaveError]=useState('');
   async function save(input: Record<string,unknown>) {
@@ -65,16 +69,15 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
     catch {setSaveError('Dit kon niet worden bewaard. Controleer de verbinding en probeer opnieuw.');return false;}
     finally {setSaving(false);}
   }
-  const [today, setToday] = useState(amsterdamDay);
   const [communityOpen, setCommunityOpen] = useState(false);
   const [dockOpen, setDockOpen] = useState(false);
   const [tour, setTour] = useState<Tour | null>(null);
   const [rect, setRect] = useState<Rect | null>(null);
   const [targetFound, setTargetFound] = useState(false);
   const tourTitle = useRef<HTMLHeadingElement>(null);
-  const dailyDue = Boolean(role && record.acknowledgedDay !== today);
-  const showCommunity = Boolean(role && (dailyDue || communityOpen));
-  const guidanceActive = showCommunity || Boolean(tour) || Boolean(role && role !== 'viewer' && record.completed[role] !== GUIDANCE_VERSION);
+  const welcomeDue = (record.welcomeVersion ?? 0) < WELCOME_VERSION;
+  const showCommunity = Boolean((role || communityOpen) && (welcomeDue || communityOpen));
+  const guidanceActive = welcomeDue || showCommunity || Boolean(tour) || Boolean(role && role !== 'viewer' && role !== 'admin' && record.completed[role] !== GUIDANCE_VERSION);
   const steps = tour?.role === 'house' ? houseSteps : parentSteps;
   const step = tour ? steps[tour.index] : null;
 
@@ -87,12 +90,9 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
       window.dispatchEvent(new Event('poorten-guidance-status'));
     };
   }, [guidanceActive]);
+  useEffect(() => { const open=()=>{consumeWelcomeReplay();setCommunityOpen(true);};if(consumeWelcomeReplay())setCommunityOpen(true);window.addEventListener('poorten-open-welcome',open);return()=>window.removeEventListener('poorten-open-welcome',open); }, []);
   useEffect(() => {
-    const timer = window.setInterval(() => setToday(amsterdamDay()), 30_000);
-    return () => clearInterval(timer);
-  }, []);
-  useEffect(() => {
-    if (!role || role === 'viewer' || dailyDue || communityOpen || tour) return;
+    if (!role || role === 'viewer' || role === 'admin' || welcomeDue || communityOpen || tour) return;
     if (record.completed[role] !== GUIDANCE_VERSION) {
       const saved = record.progress?.[role];
       const count = role === 'house' ? houseSteps.length : parentSteps.length;
@@ -101,7 +101,7 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
       const next = { ...record, progress: { ...record.progress, [role]: { version: GUIDANCE_VERSION, index: start.index, returnPath: start.returnPath } } };
       setRecord(next); setTour(start);
     }
-  }, [role, dailyDue, communityOpen, record, path, tour]);
+  }, [role, welcomeDue, communityOpen, record, path, tour]);
   useEffect(() => {
     if (!tour || !step) { setRect(null); return; }
     setRect(null); setTargetFound(false);
@@ -124,7 +124,7 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
   }, [tour, step, path, navigate]);
   async function acknowledge() {
     if(saving)return;
-    if(!dailyDue || await save({action:'acknowledge'})){setCommunityOpen(false);setDockOpen(false);}
+    if(!welcomeDue || await save({action:'acknowledge'})){setCommunityOpen(false);setDockOpen(false);}
   }
   function replay() {
     const nextRole = role === 'house' ? 'house' : 'parent';
@@ -141,10 +141,10 @@ export function ParticipantGuidance({ path, initial }: { path: string; initial: 
     setTour({...tour,index});
   }
   function closeReplay() { if (tour && !tour.mandatory) { const back = tour.returnPath; setTour(null); navigate(back); } }
-  if (!role && !tour) return null;
+  if (!role && !tour && !communityOpen) return null;
   return <>
-    <div className="guidance-dock"><button className="guidance-dock-toggle" type="button" aria-label="Hulp & community" aria-expanded={dockOpen} aria-controls="guidance-help-card" onClick={() => setDockOpen(!dockOpen)}><HelpCircle size={18}/><span>Hulp & community</span><ChevronDown size={13}/></button>{dockOpen && <aside id="guidance-help-card" className="guidance-help-card" aria-label="Rondleiding en WhatsApp"><div className="guidance-help-heading"><strong>Samen goed op pad</strong><button aria-label="Hulpkaart sluiten" onClick={() => setDockOpen(false)}><X size={17}/></button></div><CommunityLinks house={role === 'house'}/><button className="guidance-replay" onClick={replay}><BookOpen size={18}/><span><strong>Bekijk de rondleiding opnieuw</strong><small>{role === 'house' ? '14 stappen door jullie Poortkamer' : '14 stappen door de ouderomgeving'}</small></span><ArrowRight size={17}/></button><button className="guidance-text-button" onClick={() => { setCommunityOpen(true); setDockOpen(false); }}>Bekijk de community-melding</button></aside>}</div>
-    <Primitive.Root open={showCommunity} onOpenChange={open => { if (!dailyDue) setCommunityOpen(open); }}><Primitive.Portal><Primitive.Overlay className="guidance-backdrop"/><Primitive.Content className="guidance-community-dialog" onEscapeKeyDown={e => { if (dailyDue) e.preventDefault(); }} onPointerDownOutside={e => { if (dailyDue) e.preventDefault(); }}><div className="guidance-dialog-symbol"><MessageCircle size={30}/></div><p className="guidance-kicker">Samen maken we de avond</p><Primitive.Title className="guidance-community-title">Blijf op de hoogte via WhatsApp</Primitive.Title><Primitive.Description className="guidance-community-intro">Er is een WhatsApp-community voor alle deelnemers van de Duindorpse Poorten van Halloween. Voor informatie, vragen en contact rondom de avond.</Primitive.Description><CommunityLinks house={role === 'house'}/><div className="guidance-community-note"><ShieldCheck size={18}/><p>De startafspraak, route en officiële status blijven in je persoonlijke omgeving staan. Bij direct gevaar bel je 112.</p></div><p className="guidance-joining-note">De melding lezen is verplicht. Deelnemen aan WhatsApp is jouw keuze.</p>{saveError&&<p role="alert">{saveError}</p>}<button className="guidance-primary" disabled={saving} onClick={()=>void acknowledge()}><Check size={18}/>{dailyDue ? 'Gelezen, verder naar mijn omgeving' : 'Melding sluiten'}</button>{dailyDue && <p className="guidance-daily-caption">Je krijgt deze melding één keer per dag te zien · Nederlandse tijd</p>}</Primitive.Content></Primitive.Portal></Primitive.Root>
+    <div className="guidance-dock"><button className="guidance-dock-toggle" type="button" aria-label="Hulp & community" aria-expanded={dockOpen} aria-controls="guidance-help-card" onClick={() => setDockOpen(!dockOpen)}><HelpCircle size={18}/><span>Hulp & community</span><ChevronDown size={13}/></button>{dockOpen && <aside id="guidance-help-card" className="guidance-help-card" aria-label="Rondleiding en WhatsApp"><div className="guidance-help-heading"><strong>Samen goed op pad</strong><button aria-label="Hulpkaart sluiten" onClick={() => setDockOpen(false)}><X size={17}/></button></div><CommunityLinks house={record.roles.includes('house')}/>{(role === "parent" || role === "house") && <button className="guidance-replay" onClick={replay}><BookOpen size={18}/><span><strong>Bekijk de rondleiding opnieuw</strong><small>{role === 'house' ? '14 stappen door jullie Poortkamer' : '14 stappen door de ouderomgeving'}</small></span><ArrowRight size={17}/></button>}<button className="guidance-text-button" onClick={() => { setCommunityOpen(true); setDockOpen(false); }}>Bekijk de community-melding</button></aside>}</div>
+    <Primitive.Root open={showCommunity} onOpenChange={open => { if (!welcomeDue) setCommunityOpen(open); }}><Primitive.Portal><Primitive.Overlay className="guidance-backdrop"/><Primitive.Content className="guidance-community-dialog" onEscapeKeyDown={e => { if (welcomeDue) e.preventDefault(); }} onPointerDownOutside={e => { if (welcomeDue) e.preventDefault(); }}><div className="guidance-dialog-symbol"><MessageCircle size={30}/></div><p className="guidance-kicker">Samen maken we de avond</p><Primitive.Title className="guidance-community-title">Samen goed op pad</Primitive.Title><Primitive.Description className="guidance-community-intro">Lees deze uitleg één keer voor jouw account. Hier vind je de communities, installatiehulp en de vrijwillige meldingen voor jouw apparaat.</Primitive.Description><CommunityLinks house={record.roles.includes('house')}/><InstallControls /><PushNotificationSettings compact /><div className="guidance-community-note"><ShieldCheck size={18}/><p>De startafspraak, route en officiële status blijven in je persoonlijke omgeving staan. Bij direct gevaar bel je 112.</p></div><p className="guidance-joining-note">De uitleg lezen is verplicht. Deelnemen aan WhatsApp, installeren en meldingen toestaan zijn jouw eigen keuze.</p>{saveError&&<p role="alert">{saveError}</p>}<button className="guidance-primary" disabled={saving} onClick={()=>void acknowledge()}><Check size={18}/>{welcomeDue ? 'Gelezen, verder naar mijn omgeving' : 'Melding sluiten'}</button><p className="guidance-daily-caption">Eenmaal per account en uitlegversie. Later opnieuw bereikbaar via App & meldingen.</p></Primitive.Content></Primitive.Portal></Primitive.Root>
     <Primitive.Root open={Boolean(tour) && !showCommunity} onOpenChange={open => { if (!open) closeReplay(); }}><Primitive.Portal><Primitive.Overlay className="guidance-tour-backdrop"/>{rect && <div className="guidance-spotlight" style={rect} aria-hidden="true"/>}<Primitive.Content className="guidance-tour-dialog" onEscapeKeyDown={e => { if (tour?.mandatory) e.preventDefault(); }} onPointerDownOutside={e => e.preventDefault()} onOpenAutoFocus={e => { e.preventDefault(); tourTitle.current?.focus(); }}>{tour && step && <><div className="guidance-tour-top"><span><Sparkles size={16}/>{tour.role === 'house' ? 'Rondleiding voor poortteams' : 'Rondleiding voor ouders'}</span>{!tour.mandatory && <button aria-label="Rondleiding sluiten" onClick={closeReplay}><X size={18}/></button>}</div><div className="guidance-progress" role="progressbar" aria-label="Voortgang rondleiding" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={tour.index + 1}><span style={{ width: `${(tour.index + 1) / steps.length * 100}%` }}/></div><p className="guidance-step-count">Stap {tour.index + 1} van {steps.length} <span>{step.label}</span></p><Primitive.Title ref={tourTitle} tabIndex={-1} className="guidance-tour-title">{step.title}</Primitive.Title><Primitive.Description className="guidance-tour-copy">{step.text}</Primitive.Description><div className="guidance-tip"><CheckCircle2 size={18}/><p>{step.tip}</p></div><p className="guidance-screen-indicator"><span className={targetFound ? 'is-ready' : ''}/>{targetFound ? 'Dit onderdeel staat achter de uitleg in beeld.' : 'Deze stap hoort bij dit scherm. De inhoud kan per fase van de avond verschillen.'}</p>{saveError&&<p role="alert">{saveError}</p>}<div className="guidance-tour-actions"><button className="guidance-secondary" disabled={saving || tour.index === 0} onClick={() => moveStep(tour.index - 1)}><ArrowLeft size={16}/>Vorige</button>{tour.index < steps.length - 1 ? <button className="guidance-primary" disabled={saving} onClick={() => void moveStep(tour.index + 1)}>Verder<ArrowRight size={17}/></button> : <button className="guidance-primary" disabled={saving} onClick={()=>void finish()}><Check size={17}/>Rondleiding afronden</button>}</div>{tour.mandatory && <p className="guidance-required-note">Bekijk alle stappen één keer. Je voortgang blijft bewaard; je kunt de uitleg later opnieuw openen.</p>}</>}</Primitive.Content></Primitive.Portal></Primitive.Root>
   </>;
 }

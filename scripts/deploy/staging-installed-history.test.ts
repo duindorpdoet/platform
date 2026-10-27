@@ -18,8 +18,11 @@ describe("isolated hotfix staging history", () => {
   it("preserves the same pinned history for the registration status release", () => {
     expect(installedStagingHistory({ ...context, GITHUB_REF: `refs/heads/${REGISTRATION_STATUS_BRANCH}` })).toEqual(Object.keys(STAGING_INSTALLED_MIGRATIONS));
   });
+  it("preserves installed experiments on staging without promoting them to production", () => {
+    expect(installedStagingHistory({ ...context, GITHUB_REF: "refs/heads/staging" })).toEqual(Object.keys(STAGING_INSTALLED_MIGRATIONS));
+  });
   it("does not permit missing migration history on production or other branches", () => {
-    for (const input of [{ ...context, APP_ENVIRONMENT: "production" }, { ...context, GITHUB_REF: "refs/heads/staging" }, {}]) {
+    for (const input of [{ ...context, APP_ENVIRONMENT: "production" }, { ...context, GITHUB_REF: "refs/heads/main" }, {}]) {
       expect(installedStagingHistory(input)).toEqual([]);
       expect(() => missingInstalledFiles([], [Object.keys(STAGING_INSTALLED_MIGRATIONS)[0].split("_")[0]], input)).toThrow();
     }

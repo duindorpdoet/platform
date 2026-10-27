@@ -25,7 +25,7 @@ describe("production staging workflow gate", () => {
   it("rejects a successful deployment when mailbox acceptance failed", () => {
     const result = promote(false);
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("mailbox acceptance or an explicitly selected dispatch waiver");
+    expect(result.stderr).toContain("mail acceptance or an audited release-specific mail-test exception");
   });
   it("rejects success for another revision", () => {
     expect(promote(true, false).status).not.toBe(0);

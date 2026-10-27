@@ -42,8 +42,19 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261026042247_manual_portal_verified_onboarding.sql',
   '20261026044234_preserve_release_mode_on_redeploy.sql',
   '20261026045351_keep_unavailable_route_portals_visible.sql',
-
   '20261026135955_honor_explicit_registration_open.sql',
   '20261026145449_visible_manual_portal_concepts.sql',
   '20261027011056_resend_durable_gateway.sql',
   '20261027033940_portal_draft_command_metadata_and_final_conflict_errors.sql',
+  '20261027072938_account_app_access_and_welcome.sql',
+
+]);
+
+export function assertReviewedReleaseMigrations(files) {
+  if(!Array.isArray(files)||JSON.stringify(files)!==JSON.stringify(REVIEWED_RELEASE_MIGRATIONS))throw new Error('REVIEWED_MIGRATION_SET_CHANGED');
+}
+export function reviewedRepositoryMigrations(repositoryFiles) {
+  const pendingScope=repositoryFiles.filter(name=>name>=REVIEWED_RELEASE_MIGRATIONS[0]).sort();
+  assertReviewedReleaseMigrations(pendingScope);
+  return pendingScope;
+}

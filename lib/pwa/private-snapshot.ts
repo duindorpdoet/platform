@@ -19,9 +19,11 @@ export function readPrivateSnapshot<T>(userId: string, groupId: string): T | nul
 }
 
 export function clearPrivateSnapshots() {
+  try {
   for (let index = localStorage.length - 1; index >= 0; index -= 1) {
     const key = localStorage.key(index);
     if (key?.startsWith(LEGACY_PREFIX)) localStorage.removeItem(key);
   }
+  } catch { /* Storage can be unavailable; sign-out must remain usable. */ }
   navigator.serviceWorker?.controller?.postMessage({ type: "CLEAR_PRIVATE_CACHE" });
 }

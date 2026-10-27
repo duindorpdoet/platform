@@ -1,4 +1,4 @@
-const VERSION = "duindorp-public-v6";
+const VERSION = "duindorp-public-v7";
 const ASSET_CACHE = `${VERSION}:assets`;
 const LEGACY_PUBLIC_CACHE_PREFIX = "duindorp-public-";
 const PRIVATE_CACHE_PREFIX = "duindorp-private";
@@ -13,7 +13,7 @@ const SAFE_ASSETS = [
   "/pwa/icons/pwa-512.png",
   "/pwa/icons/maskable-512.png",
 ];
-const PRIVATE_PREFIXES = ["/mijn-", "/omgeving", "/admin", "/api/", "/auth/", "/poortenboek", "/uitnodiging", "/nachtpost"];
+const PRIVATE_PREFIXES = ["/mijn-", "/omgeving", "/app", "/inloggen", "/admin", "/api/", "/auth/", "/poortenboek", "/uitnodiging", "/nachtpost"];
 
 function isPrivatePath(pathname) {
   return PRIVATE_PREFIXES.some((prefix) => pathname.startsWith(prefix));

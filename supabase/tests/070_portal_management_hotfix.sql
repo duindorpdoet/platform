@@ -35,7 +35,7 @@ select is((select intensity::integer from app_private.portals where id=(select p
 select is((select internal_notes from app_private.portals where id=(select pid from portal_test)),'Bestaande interne notitie','name edit preserves internal notes');
 select results_eq($$select * from app_private.portal_windows where portal_id=(select pid from portal_test)$$,$$select * from original_windows$$,'unrelated edit preserves full original window rows and limits');
 select is((select addition from app_private.portal_private_locations where portal_id=(select pid from portal_test)),'B','name edit preserves address addition');
-select throws_ok($$select api.admin_manual_portal_save('duindorp-halloween-2026',pid,payload,version,'Een verouderd formulier mag niet overschrijven') from portal_test$,'P0001','STALE_VERSION','stale edit is rejected without an API retry loop');
+select throws_ok($$select api.admin_manual_portal_save('duindorp-halloween-2026',pid,payload,version,'Een verouderd formulier mag niet overschrijven') from portal_test$$,'P0001','STALE_VERSION','stale edit is rejected without an API retry loop');
 update portal_test set version=(select p.version from app_private.portals p where p.id=pid),payload=pg_temp.portal_payload(pid);
 select lives_ok($$select api.admin_manual_portal_save('duindorp-halloween-2026',pid,payload||'{"visitMinutes":10,"maxChildren":18}',version,'Organisatie wijzigt expliciet de planning') from portal_test$$,'single window planning can be edited');
 select is((select visit_minutes from app_private.portal_windows where portal_id=(select pid from portal_test)),10,'visit duration changed');

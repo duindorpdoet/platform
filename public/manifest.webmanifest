@@ -4,7 +4,7 @@
   "description": "Veilige avondloop door Duindorp op 31 oktober 2026.",
   "lang": "nl-NL",
   "id": "/omgeving",
-  "start_url": "/omgeving",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#08101e",
