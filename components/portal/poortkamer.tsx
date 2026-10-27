@@ -308,7 +308,7 @@ export function Poortkamer({
               </button>
             ))}
           </nav>
-          <div className={s.sidebarFoot}><span className={s.sidebarDate}><CalendarDays size={16} />{event.dateShort} · {event.times}</span><Link className={s.sidebarReturn} href={admin ? "/admin" : "/omgeving"}>Mijn omgeving <ArrowRight size={15} /></Link></div>
+          <div className={s.sidebarFoot}><span className={s.sidebarDate}><CalendarDays size={16} />{event.dateShort} · {event.times}</span><Link className={s.sidebarReturn} href={admin ? "/admin" : "/omgeving/kiezen"}>{admin ? "Mijn omgeving" : "Wissel omgeving"} <ArrowRight size={15} /></Link></div>
         </aside>
         <div className={s.workspace}>
           <header className={s.top}>
@@ -354,7 +354,7 @@ export function Poortkamer({
                 </>
               )}
             </div>
-            <Link className={s.headerReturn} href={admin ? "/admin" : "/omgeving"}>Mijn omgeving</Link>
+            <Link className={s.headerReturn} href={admin ? "/admin" : "/omgeving/kiezen"}>{admin ? "Mijn omgeving" : "Wissel omgeving"}</Link>
           </header>
           <main
             ref={contentRef}
@@ -994,7 +994,7 @@ export function Poortkamer({
                 toont buiten jullie team alleen voornaam en poortnaam. Chat
                 wordt één maand na het evenement verwijderd.
               </p>
-              <SignOutButton />
+              <div className={s.actions}><Link className={s.button} href="/omgeving/kiezen">Wissel omgeving <ArrowRight size={16}/></Link><Link className={s.button} href="/app/meldingen"><Bell size={16}/> App & meldingen</Link><SignOutButton /></div>
             </section>
             </>}
             {moreSection === "recap" && <NightRecap room={room} />}
