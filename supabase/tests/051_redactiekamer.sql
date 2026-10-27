@@ -34,6 +34,8 @@ select
   set_config('test.content', '{"title":"De nacht komt dichterbij","intro":"Een veilige introductie","heroId":"b8100000-0000-0000-0000-000000000001","heroAlt":"Een verlichte poort","heroCaption":"Onze wijk","author":"Organisatie","categoryId":null,"body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Samen maken we de nacht."}]}]},"cta":{"label":"Lees meer","url":"/verhaal"}}', true);
 insert into app_private.editorial_media (id, event_id, alt, width, height, byte_size, created_by)
   values ('b8100000-0000-0000-0000-000000000001', current_setting('test.eid')::uuid, 'Een verlichte poort', 1600, 900, 25000, 'f0000000-0000-0000-0000-000000000001');
+-- Isolate this test's explicit consent from account activation in newer migrations.
+update app_private.participant_preferences set optional_updates_consent=false,editorial_consented_at=null where event_id=current_setting('test.eid')::uuid;
 -- Parent B acts as a draft-only editor, without publication or send powers.
 insert into app_private.event_capabilities (event_id, user_id, capability)
   values (current_setting('test.eid')::uuid, 'a0000000-0000-0000-0000-000000000002', 'content_manage');

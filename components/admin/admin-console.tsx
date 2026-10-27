@@ -1,4 +1,5 @@
 "use client";
+import { SettingsTabs } from "./email-settings";
 import {useEventDetails} from "@/components/redesign/event-details";
 import {VirtualRehearsal} from "@/components/redesign/virtual-rehearsal";
 import {AdminPortalThanks} from "@/components/redesign/portal-thanks";
@@ -276,11 +277,11 @@ const requiredColumns: Record<string, string[]> = {
 export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false }: { eventSlug: string; capabilities: string[]; editorialEnabled?: boolean }) {
   const event=useEventDetails();
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
-  const sectionAllowed=(key:string)=>{
+  const sectionAllowed=useCallback((key:string)=>{
     const can=(...items:string[])=>capabilities.includes('event_admin')||items.some(item=>capabilities.includes(item));
     const allowed:Record<string,boolean>={overview:can('registration_manage','portals_manage','groups_manage','live_support'),registrations:can('registration_manage'),together:can('registration_manage','groups_manage'),groups:can('groups_manage'),payments:can('payments_manage'),poortenboek:can('groups_manage'),portals:can('portals_manage'),planner:can('groups_manage'),tickets:can('groups_manage','live_support'),updates:can('content_manage','live_support'),praatkamer:can('portals_manage','live_support'),editorial:editorialEnabled&&can('content_manage','content_publish','communications_manage','communications_send'),share:can('communications_manage'),content:can('content_manage','content_publish'),live:can('live_support'),simulation:can('live_support'),thanks:can('live_support'),settings:can(),security:can(),access:can(),imports:can('registration_manage','portals_manage','groups_manage'),statistics:can()};
     return allowed[key]??false;
-  };
+  }, [capabilities, editorialEnabled]);
   const [section, setSection] = useState<
     | "praatkamer"
     | "overview"
@@ -305,6 +306,14 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     | "settings"
     | "security"
   >(()=>{const requested=new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("view");return requested&&requested in sectionMeta&&sectionAllowed(requested)?requested as keyof typeof sectionMeta:(sectionAllowed("overview")?"overview":Object.keys(sectionMeta).find(sectionAllowed)??"overview") as keyof typeof sectionMeta});
+  useEffect(() => {
+    const followHistory = () => {
+      const requested = new URLSearchParams(window.location.search).get("view");
+      if (requested && requested in sectionMeta && sectionAllowed(requested)) setSection(requested as keyof typeof sectionMeta);
+    };
+    window.addEventListener("popstate", followHistory);
+    return () => window.removeEventListener("popstate", followHistory);
+  }, [sectionAllowed]);
   const canUsePraatkamer = capabilities.some(c => ["event_admin", "portals_manage", "live_support"].includes(c));
   const canManageGroups = capabilities.includes("event_admin") || capabilities.includes("groups_manage");
   const canManageTogether = canManageGroups || capabilities.includes("registration_manage");
@@ -1204,7 +1213,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         )}
         {section === "security" && <PushSecurity/>}
         {section === "settings" && (
-          <>
+          <SettingsTabs>
             <section className="panel registration-controls">
               <p className="kicker">Aanmeldingen beheren</p>
               <div className="row-between registration-controls-heading">
@@ -1256,7 +1265,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
                 </article>}
               </div>
             </section>
-          </>
+          </SettingsTabs>
         )}
         {section === "overview" && (
           <>

@@ -16,6 +16,7 @@ const required = [
   "SUPABASE_SERVICE_ROLE_KEY",
   "SENDGRID_API",
   "SEND_EMAIL_HOOK_SECRET",
+  "MAIL_IDENTITY_SECRET",
   "CRON_SECRET",
   "PORTAL_CODE_PEPPER",
   "ABUSE_HASH_SECRET",
@@ -80,3 +81,7 @@ if (process.env.REDACTIEKAMER_ENABLED === "true") {
 }
 
 console.log(`${target} environment contract is valid.`);
+
+if(process.env.MAIL_IDENTITY_SECRET.length<32)throw new Error("MAIL_IDENTITY_SECRET must contain at least 32 characters.");
+if(process.env.MAIL_IDENTITY_SECRET===process.env.SEND_EMAIL_HOOK_SECRET)throw new Error("Mail identity and hook signing keys must be independent.");
+for(const id of (process.env.MAIL_ADMIN_USER_IDS??'').split(',').map(v=>v.trim()).filter(Boolean))if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))throw new Error('MAIL_ADMIN_USER_IDS must contain verified Auth UUIDs.');

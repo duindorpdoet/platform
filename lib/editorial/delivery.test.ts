@@ -33,7 +33,7 @@ vi.mock("@/lib/pwa/push-delivery",()=>({deliverScopedPush:async(target:unknown,_
 import { editorialTick } from "./worker";
 import { editorialImageVariants } from "./media";
 import { sendSendGrid } from "../mail/sendgrid";
-import { sendTransactionalDelivery } from "../../supabase/functions/send-email-hook/send";
+import { handleMail } from "../../supabase/functions/send-email-hook/handler";
 const id = "a0000000-0000-0000-0000-000000000001";
 const job = {
   id,
@@ -160,7 +160,7 @@ describe("signed Nachtpost transport", () => {
   it("retains signing/correlation and emits one-click headers through the real provider adapter", async () => {
     const provider = vi
       .fn()
-      .mockResolvedValue(new Response(null, { status: 202 }));
+      .mockResolvedValue(Response.json({ id: "e07af2b0-ad41-4b87-81f1-6f633c83e87f" }));
     vi.stubGlobal(
       "fetch",
       vi.fn(async (_url: string, init: RequestInit) => {
@@ -170,34 +170,28 @@ describe("signed Nachtpost transport", () => {
           headers,
         ) as { message: typeof message & { replyTo: string } };
         expect(body.message.editorial).toBe(true);
-        await sendTransactionalDelivery({
-          ...body.message,
-          email: body.message.to,
-          from: "news@example.invalid",
-          fromName: body.message.senderName,
-          apiKey: "fixture",
-          sandbox: false,
+        return handleMail(new Request("https://fixture.supabase.co/functions/v1/send-email-hook", init), {
+          env: name => ({ ...state.env, RESEND_API_KEY: "test-only", MAIL_IDENTITY_SECRET: "independent-stable-local-test-identity-secret" } as Record<string,string>)[name],
+          verify: () => body,
+          rpc: async <T>(name: string, args: Record<string,unknown>) => (name === "worker_mail_config" ? { id, provider: "resend", version: 2, from_email: "news@example.invalid", from_name: "De Nachtpost", reply_to: "reply@example.invalid" } : name === "worker_mail_prepare" ? { id, claim_token: id, provider: "resend", dispatch: true, payload: args._payload } : {}) as T,
           fetcher: provider,
-        });
-        return new Response(null, {
-          status: 200,
-          headers: { "x-provider-message-id": "fixture-accepted" },
         });
       }),
     );
     expect(await sendSendGrid(message)).toEqual({
       accepted: true,
-      providerId: "fixture-accepted",
+      validated: false,
+      provider: "resend",
+      providerId: "e07af2b0-ad41-4b87-81f1-6f633c83e87f",
     });
     const sent = JSON.parse(String(provider.mock.calls[0][1].body));
     expect(sent.headers).toEqual({
       "List-Unsubscribe": `<${message.unsubscribeUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     });
-    expect(sent.personalizations).toEqual([
-      { to: [{ email: message.to }], custom_args: { outbox_id: id } },
-    ]);
-    expect(sent.tracking_settings.open_tracking.enable).toBe(false);
+    expect(sent.to).toEqual([message.to]);
+    expect(sent.tags).toContainEqual({ name: "outbox_id", value: id });
+    expect(sent.tags).toContainEqual({ name: "environment", value: "staging" });
   });
   it("staging cannot send editorial mail outside its allowlist even if MAIL_MODE is live", async () => {
     const fetcher = vi.fn();
@@ -211,7 +205,7 @@ describe("signed Nachtpost transport", () => {
     state.env.NEWSLETTER_SENDING_ENABLED = "false";
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(new Response(null, { status: 200 })),
+      vi.fn().mockResolvedValue(new Response(null, { status: 200, headers: { "x-mail-status": "accepted", "x-mail-provider": "resend", "x-provider-message-id": id } })),
     );
     await expect(sendSendGrid(message)).rejects.toMatchObject({
       code: "EDITORIAL_RECIPIENT_NOT_ALLOWED",

@@ -13,6 +13,8 @@ describe("mail delivery state", () => {
       { status: "accepted" },
       { status: "deferred" },
       { status: "failed" },
-    ])).toEqual({ accepted: 1, deferred: 1, failed: 1 });
+      { status: "validated" },
+      { status: "unknown" },
+    ])).toEqual({ accepted: 1, deferred: 1, failed: 1, validated: 1, unknown: 1 });
   });
 });

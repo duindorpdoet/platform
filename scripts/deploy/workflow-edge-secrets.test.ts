@@ -12,6 +12,10 @@ describe("Auth email hook deployment", () => {
 
     expect(secretBlock).toBeDefined();
     expect(secretBlock).toContain('"AUTH_SITE_URL=${AUTH_SITE_URL}"');
-    expect(secretBlock).toContain('"SENDGRID_REPLY_TO=${SENDGRID_REPLY_TO}"');
+    expect(secretBlock).toContain('"RESEND_API_KEY=${RESEND_API_KEY}"');
+    expect(secretBlock).toContain('"MAIL_IDENTITY_SECRET=${MAIL_IDENTITY_SECRET}"');
+    expect(secretBlock).toContain('"AUTH_MAIL_MODE=${AUTH_MAIL_MODE}"');
+    expect(source).toContain('MAIL_MODE AUTH_MAIL_MODE MAIL_ALLOWED_RECIPIENTS');
+    expect(source).toContain('RESEND_API_KEY RESEND_WEBHOOK_SECRET RESEND_ADMIN_API_KEY MAIL_ADMIN_USER_IDS');
   });
 });

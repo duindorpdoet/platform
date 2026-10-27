@@ -22,7 +22,7 @@ export function configuredBrand(): PremiumMailBrand {
   }
 
   const baseUrl = site.href.replace(/\/$/, "");
-  const supportEmail = process.env.ORGANIZATION_SUPPORT_EMAIL || process.env.SENDGRID_REPLY_TO || "halloween@duindorpdoet.nl";
+  const supportEmail = process.env.ORGANIZATION_SUPPORT_EMAIL || "halloween@duindorpdoet.nl";
   return {
     name: "De Duindorpse Poorten van Halloween",
     supportEmail,

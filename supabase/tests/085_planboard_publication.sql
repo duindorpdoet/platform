@@ -13,6 +13,9 @@ update board set schedule=(api.admin_startregie_move_group(gid,point,'2026-10-31
 update board set snapshot=api.admin_live_planboard_snapshot('duindorp-halloween-2026');
 
 select api.admin_startregie_confirm_and_send('duindorp-halloween-2026',jsonb_build_array(jsonb_build_object('id',schedule,'revision',(select revision from app_private.group_schedule_revisions where id=schedule))),(select settings_version from app_private.events where id=eid),'planboard-initial-publication-01') from board;
+create temp table board_recipients as select * from app_private.group_adult_recipients((select gid from board));
+select api.worker_group_schedule_mail_payload(id) from app_private.email_outbox where payload->>'groupId'=(select gid::text from board) and message_type='group_schedule_published';
+update app_private.email_outbox set status='accepted',provider='sendgrid',provider_id='legacy-accepted-'||id::text,accepted_at=clock_timestamp() where payload->>'groupId'=(select gid::text from board) and message_type='group_schedule_published';
 update board set snapshot=api.admin_live_planboard_snapshot('duindorp-halloween-2026'),mail_count=(select count(*) from app_private.email_outbox);
 update board set vid=(select id from app_private.live_route_visits where group_id=gid order by sequence limit 1);
 update board set command=jsonb_build_object('action','move','visitId',vid,'portalId',pid,'startsAt','2026-10-31T17:10:00Z','shiftFollowing',true);
@@ -27,7 +30,10 @@ select is((select count(*) from app_private.email_outbox),(select mail_count fro
 update board set snapshot=api.admin_live_planboard_snapshot('duindorp-halloween-2026'),schedule=(select current_schedule_revision_id from app_private.walking_groups where id=gid);
 select lives_ok($$select api.admin_live_planboard_publish('duindorp-halloween-2026',gid,snapshot->>'inputHash',schedule,(select revision from app_private.group_schedule_revisions where id=schedule),(select settings_version from app_private.events where id=eid),'planboard-replacement-publication-01') from board$$,'publication reuses the existing atomic confirmation/outbox command');
 select is((app_private.current_start_publication((select gid from board))).starts_at,'2026-10-31T17:10Z'::timestamptz,'replacement publication becomes authoritative');
-select ok((select count(*) from app_private.email_outbox)>(select mail_count from board),'publication queues appropriate semantic communication');
+select is((select count(*) from app_private.email_outbox)-(select mail_count from board),(select count(*) from board_recipients),'publication creates exactly one semantic correction per intended adult recipient');
+select is((select count(*) from app_private.email_outbox o join board_recipients r on r.user_id::text=o.recipient_ref and r.email=o.recipient_email where o.payload->>'groupId'=(select gid::text from board) and o.status='pending'),(select count(*) from board_recipients),'only the individual intended recipients have pending corrections');
+select api.worker_group_schedule_mail_payload(id) from app_private.email_outbox where payload->>'groupId'=(select gid::text from board) and status='pending';
+select ok(not exists(select 1 from app_private.email_outbox where payload->>'groupId'=(select gid::text from board) and status='pending' and (message_type<>'group_schedule_corrected' or (payload->>'oldStartsAt')::timestamptz<>'2026-10-31T17:00Z' or (payload->>'startsAt')::timestamptz<>'2026-10-31T17:10Z')),'earlier SendGrid acceptance produces the exact old/new correction content');
 select lives_ok($$select api.admin_live_planboard_publish('duindorp-halloween-2026',gid,snapshot->>'inputHash',schedule,(select revision from app_private.group_schedule_revisions where id=schedule),(select settings_version from app_private.events where id=eid),'planboard-replacement-publication-01') from board$$,'same publication retry returns its original receipt despite changed hash');
 update board set preview=api.admin_live_planboard_preview('duindorp-halloween-2026','{"action":"undo","restoreKey":"published-draft-consent-01"}',app_private.live_planboard_hash(eid));
 select is((select preview->>'requiresConfirmation' from board),'true','undo after publication requires a new reviewed draft and explicit publication');

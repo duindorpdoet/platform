@@ -69,6 +69,12 @@ jobs:
         run: pnpm exec supabase db reset
       - name: Run pgTAP contracts
         run: pnpm exec supabase test db
+      - name: Exercise full planboard and signed Resend mail chain locally
+        env:
+          MAIL_INTEGRATION_CONTAINER: supabase_db_duindorphalloween
+        run: pnpm exec vitest run tests/integration/resend-planboard.test.ts
+      - name: Restore isolated fixtures after mail chain acceptance
+        run: pnpm exec supabase db reset
       - name: Verify one-time Nachtpost account activation
         env:
           LOCAL_DB_CONTAINER: supabase_db_duindorphalloween
@@ -174,8 +180,9 @@ jobs:
           pnpm exec supabase db reset
           node scripts/acceptance/poortkamer-concurrency.mjs
           pnpm exec playwright test --config playwright.poortkamer.config.ts
-      - name: Run real live planboard and parent recovery acceptance over HTTPS
+      - name: Run real live planboard, mail settings and parent recovery acceptance over HTTPS
         env:
+          MAIL_ADMIN_USER_IDS: f0000000-0000-0000-0000-000000000001
           APP_ENVIRONMENT: staging
           POORTENBOEK_DEMO_ENABLED: "true"
           REGISTRATION_MODE: staging_test

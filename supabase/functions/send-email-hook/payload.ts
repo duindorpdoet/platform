@@ -1,7 +1,8 @@
 import type { AuthMailTemplate } from "./auth-template.ts";
 
 export type HookPayload = {
-  user: { email?: string; new_email?: string };
+  metadata?: { uuid?: string };
+  user: { id?: string; email?: string; new_email?: string; confirmation_sent_at?: string; recovery_sent_at?: string; email_change_sent_at?: string; reauthentication_sent_at?: string; updated_at?: string };
   email_data: { token?: string; token_new?: string; token_hash?: string; token_hash_new?: string; email_action_type?: string };
 };
 

@@ -2,6 +2,7 @@ import type { MailDetail, PremiumMailBrand, PremiumMailContent } from "./premium
 import { validatedPaymentUrl } from "./payment-url";
 
 export const MAIL_MESSAGE_TYPES = [
+  "mail_provider_test",
   "auth_otp",
   "auth_email_change",
   "auth_email_change_new",
@@ -66,6 +67,11 @@ type CatalogDefinition = Omit<PremiumMailContent, "paragraphs" | "primaryAction"
 };
 
 const CATALOG: Record<MailMessageType, CatalogDefinition> = {
+  mail_provider_test: {
+    kind: "confirmation", subject: "De Poorten · gecontroleerde testmail", preheader: "Bewuste controle van de mailkoppeling.", eyebrow: "Mailkoppeling", title: "Een test van De Poorten.",
+    paragraphs: () => ["Dit is een bewust verstuurde testmail van De Duindorpse Poorten.", "Provideracceptatie is nog geen aflevering. Alleen een bijbehorende geldige afleverwebhook bevestigt ontvangst bij de mailserver."],
+    footerReason: "Een bevoegde beheerder heeft deze test aangevraagd.",
+  },
   auth_otp: {
     kind: "otp", subject: "Je code voor De Duindorpse Poorten", preheader: "Je code voor toegang tot je persoonlijke omgeving.", eyebrow: "Een veilige toegang", title: "De poort gaat voor je open.",
     paragraphs: () => ["Vul de code hieronder in op de pagina waar je hem aanvroeg. Deel deze code met niemand."],

@@ -13,9 +13,9 @@ function verify(suppression: string, timeoutAt = "") {
       if (url.pathname.endsWith('/whitelabel/domains')) body = [{valid:true,domain:'example.invalid'}];
       if (url.pathname.endsWith('/messages')) body = {messages:[{status:'delivered'}]};
       if (url.pathname.endsWith('/send-email-hook')) { console.log('HOOK_PROBE_SENT'); body = {}; }
-      return new Response(JSON.stringify(body), {status:200});
+      return new Response(JSON.stringify(body), {status:200,headers:{"x-mail-status":"validated"}});
     };
-    await import('./scripts/deploy/verify-mail-provider.mjs');
+    await import('./scripts/deploy/verify-sendgrid-provider.mjs');
   `;
   return spawnSync(process.execPath, ["--input-type=module", "-e", code], {
     encoding: "utf8",
@@ -41,7 +41,7 @@ describe("deployment mail acceptance", () => {
     expect(result.stdout).toContain("HOOK_PROBE_SENT");
     expect(result.stdout).toContain("550 old rejection for [redacted-email]");
     expect(result.stdout).not.toContain("test-one@example.invalid");
-    expect(result.stdout).toContain("Signed Auth email hook and SendGrid provider acceptance passed");
+    expect(result.stdout).toContain("Signed gateway and legacy SendGrid configuration validated without sending");
   });
   it.each([
     ["/send-email-hook", "signed Supabase Auth email hook"],

@@ -120,6 +120,13 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RESEND_ADMIN_API_KEY: ${{ secrets.RESEND_ADMIN_API_KEY }}
+      RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
+      RESEND_ACCEPTANCE_EVENT_ID: ${{ vars.RESEND_ACCEPTANCE_EVENT_ID }}
+      MAIL_IDENTITY_SECRET: ${{ secrets.MAIL_IDENTITY_SECRET }}
+      MAIL_ADMIN_USER_IDS: ${{ vars.MAIL_ADMIN_USER_IDS }}
+      SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY: ${{ secrets.SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY }}
       SENDGRID_API: ${{ secrets.SENDGRID_API }}
       SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
       SENDGRID_FROM_NAME: De Duindorpse Poorten van Halloween
@@ -141,11 +148,12 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
       DG_RUNTIME_ENV_KEYS: >-
         APP_ENVIRONMENT APP_REVISION APP_URL NEXT_PUBLIC_SITE_URL ALLOWED_ORIGINS AUTH_SITE_URL
-        EVENT_SLUG EVENT_TIMEZONE REGISTRATION_MODE MAIL_MODE MAIL_ALLOWED_RECIPIENTS
+        EVENT_SLUG EVENT_TIMEZONE REGISTRATION_MODE MAIL_MODE AUTH_MAIL_MODE MAIL_ALLOWED_RECIPIENTS
         NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
         NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT
         REDACTIEKAMER_ENABLED NEWSLETTER_SENDING_ENABLED WEB_PUSH_SENDING_ENABLED EDITORIAL_TOKEN_SECRET
         SENDGRID_API SENDGRID_FROM_EMAIL SENDGRID_FROM_NAME SENDGRID_REPLY_TO SEND_EMAIL_HOOK_SECRET
+        RESEND_API_KEY RESEND_WEBHOOK_SECRET RESEND_ADMIN_API_KEY MAIL_ADMIN_USER_IDS
         SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY
         CRON_SECRET PORTAL_CODE_PEPPER ABUSE_HASH_SECRET CHILD_CODE_PEPPER CHILD_CODE_ENCRYPTION_KEY POORTENBOEK_DEMO_ENABLED ORGANIZATION_SUPPORT_EMAIL ORGANIZATION_EVENT_PHONE
     steps:
@@ -197,10 +205,16 @@ jobs:
           pnpm exec supabase db query --linked --file scripts/deploy/nachtpost-activation-report.sql --output json
       - name: Compare existing production data before deploying the application
         run: node scripts/deploy/redesign-postmigration.mjs
-      - name: Deploy SendGrid Auth hook
+      - name: Initialize central provider configuration without activation
+        run: node scripts/deploy/bootstrap-mail-config.mjs
+      - name: Provision own signed Resend webhook
+        run: node scripts/deploy/configure-resend-webhook.mjs
+      - name: Deploy shared signed email hook
         run: |
           set -euo pipefail
           pnpm exec supabase secrets set --project-ref "${SUPABASE_PROJECT_REF}" \
+            "RESEND_API_KEY=${RESEND_API_KEY}" \
+            "MAIL_IDENTITY_SECRET=${MAIL_IDENTITY_SECRET}" \
             "SENDGRID_API_KEY=${SENDGRID_API}" \
             "SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}" \
             "SENDGRID_FROM_NAME=${SENDGRID_FROM_NAME}" \
@@ -213,7 +227,7 @@ jobs:
             "APP_ENVIRONMENT=production" \
             "NEWSLETTER_SENDING_ENABLED=${NEWSLETTER_SENDING_ENABLED}"
           pnpm exec supabase functions deploy send-email-hook --project-ref "${SUPABASE_PROJECT_REF}" --no-verify-jwt --use-api
-      - name: Configure signed SendGrid Event Webhook
+      - name: Retain signed SendGrid webhook for migration history
         run: node scripts/deploy/configure-sendgrid-webhook.mjs
       - name: Deploy through the Sites VPS interface
         run: |
@@ -228,5 +242,11 @@ jobs:
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed production release
         run: node scripts/deploy/verify-deployment.mjs production "${APP_URL}"
+      - name: Validate active mail configuration without sending
+        run: node scripts/deploy/verify-mail-provider.mjs
+      - name: Exercise signed Resend Event Webhook
+        if: env.MAIL_ACTIVE_PROVIDER == 'resend'
+        run: node scripts/deploy/test-resend-webhook.mjs
       - name: Exercise signed SendGrid Event Webhook
+        if: env.MAIL_ACTIVE_PROVIDER == 'sendgrid'
         run: node scripts/deploy/test-sendgrid-webhook.mjs

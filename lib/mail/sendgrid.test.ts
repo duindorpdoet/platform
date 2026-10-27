@@ -5,8 +5,7 @@ vi.mock("server-only", () => ({}));
 const environment = {
   NEXT_PUBLIC_SUPABASE_URL: "https://project-ref.supabase.co",
   SEND_EMAIL_HOOK_SECRET: `v1,whsec_${Buffer.alloc(32, 1).toString("base64")}`,
-  SENDGRID_REPLY_TO: "halloween@duindorpdoet.nl",
-  MAIL_MODE: "allowlist",
+    MAIL_MODE: "allowlist",
 };
 
 vi.mock("@/lib/config/server-env", () => ({
@@ -43,12 +42,14 @@ describe("signed transactional mail gateway adapter", () => {
 
   it("signs the transactional envelope and preserves outbox correlation", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(null, { status: 200, headers: { "x-provider-message-id": "provider-123" } }),
+      new Response(null, { status: 200, headers: { "x-provider-message-id": "provider-123", "x-mail-provider": "resend", "x-mail-status": "accepted" } }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(sendSendGrid({ ...message, to: " HalloweenTest1@DuindorpDoet.nl " })).resolves.toEqual({
       accepted: true,
+      validated: false,
+      provider: "resend",
       providerId: "provider-123",
     });
 
@@ -67,7 +68,6 @@ describe("signed transactional mail gateway adapter", () => {
         text: "Tekst",
         html: "<p>Tekst</p>",
         outboxId: "outbox-1",
-        replyTo: "halloween@duindorpdoet.nl",
         providerProbe: false,
       },
     });
@@ -83,7 +83,7 @@ describe("signed transactional mail gateway adapter", () => {
   });
 
   it("marks runtime probes for provider sandbox validation without weakening the allowlist", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200, headers: { "x-mail-provider": "resend", "x-mail-status": "validated" } }));
     vi.stubGlobal("fetch", fetchMock);
 
     await sendSendGrid({ ...message, sandbox: true });

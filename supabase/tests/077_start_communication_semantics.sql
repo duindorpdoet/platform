@@ -42,5 +42,26 @@ select is((select (material->>'startsAt')::timestamptz from communication),'2026
 select is((select count(*)::integer from app_private.email_outbox where payload->>'groupId'=(select gid::text from communication) and status='pending' and message_type in ('group_schedule_published','group_schedule_corrected')),1,'intermediate pending time is suppressed');
 select is((app_private.published_start_projection((select gid from communication),'2026-10-31T16:49:59Z')->>'addressReleased')::boolean,false,'first location remains secret before exact T-60');
 select is((app_private.published_start_projection((select gid from communication),'2026-10-31T16:50:00Z')->>'addressReleased')::boolean,true,'own location released at exact T-60');
+-- Reproduce a later provider callback on an older accepted SendGrid mail.
+-- Deterministic timestamps model separate transactions inside this rollback-only test.
+select api.worker_update_outbox((select mail_id from communication),'accepted','second-legacy-provider-id');
+update app_private.email_outbox set provider='sendgrid' where id in(select first_mail from communication union all select mail_id from communication);
+-- Older SendGrid material lost timeEventId/revision; its original semantic
+-- identity still exists in the legacy group-schedule dedupe contract.
+update app_private.email_outbox o set dedupe_key='group-schedule:'||(o.payload->>'groupId')||':'||p.revision||':'||o.recipient_ref
+from app_private.start_time_communications t join app_private.group_start_publications p on p.publication_order=t.publication_order
+where t.id=split_part(o.dedupe_key,':',2)::uuid and o.id in(select first_mail from communication union all select mail_id from communication);
+update app_private.email_outbox set payload=payload-'timeEventId' where id in(select first_mail from communication union all select mail_id from communication);
+select api.worker_store_email_event('late-old-start-delivery',(select first_mail from communication),'delivered',now());
+alter table app_private.email_outbox disable trigger email_outbox_touch;
+update app_private.email_outbox set updated_at=clock_timestamp()+interval '1 hour' where id=(select first_mail from communication);
+alter table app_private.email_outbox enable trigger email_outbox_touch;
+update communication set schedule_id=(api.admin_startregie_move_group(gid,point_id,first_time+interval '60 minutes',(select version from app_private.walking_groups where id=gid),'neutral','Nieuwe tijd na late callback op een oudere verzending')->>'id')::uuid;
+update communication set revision=(select s.revision from app_private.group_schedule_revisions s where s.id=schedule_id);
+select api.admin_startregie_confirm_and_send('duindorp-halloween-2026',jsonb_build_array(jsonb_build_object('id',schedule_id,'revision',revision)),(select settings_version from app_private.events where id=eid),gen_random_uuid()::text) from communication;
+update communication set mail_id=(select o.id from app_private.email_outbox o where o.payload->>'groupId'=gid::text and o.status='pending' order by o.created_at desc limit 1);
+update communication set material=api.worker_group_schedule_mail_payload(mail_id);
+select is((select (material->>'oldStartsAt')::timestamptz from communication),'2026-10-31T17:50Z'::timestamptz,'late callback on an older mail never changes the last semantically communicated time');
+select is((select (material->>'startsAt')::timestamptz from communication),'2026-10-31T18:00Z'::timestamptz,'the next correction retains the new published time');
 select * from finish();
 rollback;

@@ -1,6 +1,6 @@
 # De Duindorpse Poorten van Halloween
 
-Productieplatform voor de Halloween-avondloop in Duindorp op 31 oktober 2026. De applicatie gebruikt Next.js App Router, strict TypeScript, Supabase Auth/Postgres/Realtime/Storage/Cron en SendGrid. De aangeleverde ontwerpversie 4 blijft de visuele basis; productie bevat geen rollenknop, universele democode of fictieve deelnemers.
+Productieplatform voor de Halloween-avondloop in Duindorp op 31 oktober 2026. De applicatie gebruikt Next.js App Router, strict TypeScript, Supabase Auth/Postgres/Realtime/Storage/Cron en een gedeelde mailgateway met Resend en SendGrid-migratiehistorie. De aangeleverde ontwerpversie 4 blijft de visuele basis; productie bevat geen rollenknop, universele democode of fictieve deelnemers.
 
 ## Lokaal ontwikkelen
 
@@ -55,3 +55,7 @@ Deze proef gebruikt één bevoegde testidentiteit en meet 600 snapshotrequests p
 De stagingworkflow opent alleen de testregistratie en beperkt transactionele mail tot de twee geautoriseerde testmailboxen. Aangevraagde inlogcodes worden ook op staging naar het eigen e-mailadres verstuurd. Productie blijft via zowel runtimeconfig als databasecontrol `closed`/`draft`; echte routeplannen worden alleen door een bevoegde beheerder gepubliceerd. De productie-mailmodus wordt pas bereikt na de exacte-staging-commitgate.
 
 Zie [RUNBOOK.md](docs/operations/RUNBOOK.md), [ROLLBACK.md](docs/operations/ROLLBACK.md), [STATUS.md](docs/implementation/STATUS.md) en [ACCEPTANCE.md](docs/implementation/ACCEPTANCE.md).
+
+## E-mailbeheer en Resend-migratie
+
+Zie [het Resend-draaiboek](docs/operations/RESEND.md) voor concept/activering, omgevingsbrede rechten, secrets, suppressie-import, signed webhooks, idempotentie en rollback. Lokale validatie verstuurt geen live mail; echte staging-Auth- en postbusacceptatie blijven vereist.
