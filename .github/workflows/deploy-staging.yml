@@ -15,6 +15,7 @@ on:
           - none
           - inspect
           - clear-build-cache
+          - recover-shared-disk
           - compact-git-checkout
           - inspect-mail-gateway
           - inspect-portal-onboarding
@@ -154,9 +155,42 @@ jobs:
           SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
           TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
         run: node scripts/deploy/diagnose-mail-gateway.mjs
+  recover-shared-disk:
+    name: Recover rebuildable production runner caches without deployment
+    if: github.event_name == 'workflow_dispatch' && inputs.runner_maintenance == 'recover-shared-disk' && (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/fix-participant-guidance-20261027')
+    # No environment or deployment secrets: this only removes this repo's own
+    # rebuildable caches through the still-online runner on the shared VPS.
+    runs-on: [self-hosted, Linux, X64, dg-sites, production, duindorphalloweenprod]
+    timeout-minutes: 5
+    steps:
+      - name: Free only checked workspace build caches without checkout or deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = "duindorphalloweenprod"
+          test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenprod-01"
+          /srv/sites/duindorphalloweenprod/actions-runner/externals/node24/bin/node --input-type=module <<'NODE'
+          import {lstat,realpath,rm,statfs} from 'node:fs/promises';
+          import {execFileSync} from 'node:child_process';
+          import {join,relative,sep} from 'node:path';
+          const root='/srv/sites/duindorphalloweenprod';
+          const workspace=await realpath(process.env.GITHUB_WORKSPACE);
+          if(!workspace.startsWith(root+'/actions-runner/_work/'))throw Error('DEDICATED_WORKSPACE_REQUIRED');
+          execFileSync('df',['-h',root],{stdio:'inherit'});
+          for(const name of ['.next/cache','node_modules/.cache']){
+            const path=join(workspace,name);let entry;
+            try{entry=await lstat(path);}catch(e){if(e.code==='ENOENT')continue;throw e;}
+            const resolved=await realpath(path),inside=relative(workspace,resolved);
+            if(entry.isSymbolicLink()||!entry.isDirectory()||inside.startsWith('..')||inside.startsWith(sep))throw Error('CACHE_BOUNDARY_REQUIRED');
+            execFileSync('du',['-xsh',path],{stdio:'inherit'});
+            await rm(path,{recursive:true,force:false});console.log('Removed rebuildable workspace cache: '+name);
+          }
+          const disk=await statfs(root);console.log(JSON.stringify({availableBytes:disk.bavail*disk.bsize,deployment:false,releasesAndBackupsUnchanged:true}));
+          execFileSync('df',['-h',root],{stdio:'inherit'});
+          NODE
   runner-maintenance:
     name: Dedicated staging runner maintenance (no deployment)
-    if: github.ref == 'refs/heads/staging' && github.event_name == 'workflow_dispatch' && inputs.runner_maintenance != 'none'
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'workflow_dispatch' && inputs.runner_maintenance != 'none' && inputs.runner_maintenance != 'recover-shared-disk'
     environment: staging
     permissions:
       contents: read
