@@ -7,3 +7,5 @@
 @media(min-width:801px) and (max-width:1100px){.guidance-dock{left:13px;bottom:calc(86px + env(safe-area-inset-bottom))}}
 
 .guidance-save-error{margin:12px 0;padding:12px;border:1px solid #efb38166;border-radius:9px;background:#d46d4212;color:#f2c7a4;overflow-wrap:anywhere}.guidance-save-error p{margin:0 0 8px}.guidance-save-error small{display:block;margin:7px 0;font-size:11px}.guidance-save-error .guidance-text-button{display:inline-flex;margin:6px 10px 0 0;text-decoration:underline}.guidance-save-error a:focus-visible{outline:2px solid #eac28b;outline-offset:3px}
+
+.guidance-load-warning{position:fixed;z-index:45;bottom:86px;right:16px;left:16px;margin-left:auto;max-width:490px;padding:14px;border:1px solid #a9865655;border-radius:12px;background:#101c2cf5;color:#e9e2d7;box-shadow:0 8px 28px #0005}.guidance-load-warning>.guidance-save-error{margin:8px 0;padding:0;border:0;background:none}.guidance-load-warning>.guidance-text-button{padding:8px 0}

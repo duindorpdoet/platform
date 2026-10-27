@@ -195,9 +195,10 @@ export function GuidanceHost(){
  useEffect(()=>{
   const requests=coordinator.current;active.current=true;void load();
   const client=createClient();
-  const auth=client?.auth.onAuthStateChange((_event:AuthChangeEvent,session:Session|null)=>{
-   const id=session?.user.id??null;
-   if(authUser.current!==id){authUser.current=id;coordinator.current.invalidate();setRecord(null);setLoadError(null);document.documentElement.dataset.participantGuidanceActive='true';window.dispatchEvent(new Event('poorten-guidance-status'));}
+  const auth=client?.auth.onAuthStateChange((event:AuthChangeEvent,session:Session|null)=>{
+   // An empty initial browser snapshot is not a verified server logout.
+   const id=event==='SIGNED_OUT'?null:session?.user.id;
+   if(id!==undefined&&authUser.current!==id){authUser.current=id;coordinator.current.invalidate();setRecord(null);setLoadError(null);document.documentElement.dataset.participantGuidanceActive='true';window.dispatchEvent(new Event('poorten-guidance-status'));}
    queueMicrotask(()=>{if(active.current)void load();});
   });
   const online=()=>void load(),timer=setInterval(online,30000);window.addEventListener('online',online);
@@ -214,6 +215,7 @@ export function GuidanceHost(){
   }finally{coordinator.current.endWrite(token);}
  }
  if(scope==='public')return null;
+ if(!record&&loadError&&['network','server'].includes(loadError.kind))return <aside className="guidance-load-warning" aria-label="Uitleg tijdelijk niet beschikbaar"><strong>Uitleg tijdelijk niet beschikbaar</strong><GuidanceError problem={loadError} onReload={()=>void load()}/><button type="button" className="guidance-text-button" onClick={()=>void load()}>Opnieuw proberen</button></aside>;
  if(!record&&loadError)return <Primitive.Root open><Primitive.Portal><Primitive.Overlay className="guidance-backdrop"/><Primitive.Content className="guidance-community-dialog" onEscapeKeyDown={e=>e.preventDefault()} onPointerDownOutside={e=>e.preventDefault()}><Primitive.Title>De uitleg kon niet worden opgehaald</Primitive.Title><Primitive.Description>Je voortgang blijft bewaard. Herstel de verbinding of controleer je toegang om verder te gaan.</Primitive.Description><GuidanceError problem={loadError} role={scope==='house'?'house':'parent'} onReload={()=>void load()}/><button className="guidance-primary" onClick={()=>void load()}>Opnieuw proberen</button></Primitive.Content></Primitive.Portal></Primitive.Root>;
  return record?<ParticipantGuidance key={record.userId+record.eventId+scope} path={path} initial={record} persist={persist} reload={load}/>:null;
 }

@@ -473,6 +473,24 @@ test("a successful snapshot arriving after disconnect cannot re-enable reception
   await expect(page.getByRole('button',{name:'Open',exact:true})).toBeEnabled();
 });
 
+test.describe('temporary guide availability',()=>{
+ test.use({serviceWorkers:'block'});
+test("a temporary guide failure keeps house controls visible and arrival verification closed",async({page,context})=>{
+  await owner(context);
+  const pattern='**/api/redesign/guidance';
+  await page.route(pattern,route=>route.request().method()==='GET'?route.fulfill({status:503,json:{error:{code:'AUTH_UNAVAILABLE'}}}):route.continue());
+  await page.goto('/mijn-huis');
+  await expect(page.getByRole('complementary',{name:'Uitleg tijdelijk niet beschikbaar'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Open',exact:true})).toBeEnabled();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.dataset.participantGuidanceActive)).toBe('true');
+  await page.unroute(pattern);await page.evaluate(()=>window.dispatchEvent(new Event('online')));
+  await expect(page.getByRole('complementary',{name:'Uitleg tijdelijk niet beschikbaar'})).toHaveCount(0);
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.dataset.participantGuidanceActive)).toBe('false');
+  await expect(page.getByRole('button',{name:'Open',exact:true})).toBeEnabled();
+});
+});
+
 test("standalone presentation and offline reload never recover cached private data", async ({
   page,
   context,
