@@ -32,7 +32,11 @@ export async function dryRunReleaseMigrations(files,appliedVersions,localQuery) 
 
 export function fingerprintQuery(catalog) {
   if(!catalog.length)throw new Error('EMPTY_DATABASE_INVENTORY');
-  return catalog.map(table=>{
+  // Point/geometric JSON uses extra_float_digits. Managed roles can default
+  // to rounded output (0), while an isolated restore defaults to precise (1).
+  // Compare the same full-precision representation in a transaction on both
+  // sides; never round away a real coordinate change or alter role defaults.
+  return "set local timezone='UTC';set local datestyle='ISO';set local extra_float_digits=3;"+catalog.map(table=>{
     const key=table.schema+'.'+table.name,columns=table.columns.map(c=>'t.'+quote(c)).join(',');
     return `select jsonb_build_object('table',${literal(key)},'rows',count(*),'sha256',encode(sha256(convert_to(coalesce(string_agg(h,'' order by h),''),'UTF8')),'hex')) as fingerprint
       from (select encode(sha256(convert_to(to_jsonb(row(${columns}))::text,'UTF8')),'hex') h from ${quote(table.schema)}.${quote(table.name)} t) row_hashes`;
@@ -215,7 +219,7 @@ async function main() {
     if(restoredStreams[1].status==='rejected')throw restoredStreams[1].reason;
     if(restoredStreams[0].status==='rejected')throw restoredStreams[0].reason;
     for(const role of roles.filter(role=>role.eventTriggerOwner&&!role.superuser))await localQuery('alter role '+quote(role.name)+' nosuperuser');
-    const restored=(await localQuery(fingerprintQuery(catalog))).split('\n').map(JSON.parse);
+    const restored=(await localQuery('begin;'+fingerprintQuery(catalog)+';commit')).split('\n').map(JSON.parse);
     const restoreDifferences=compareFingerprints(before,restored);
     if(restoreDifferences.length)throw new Error('RESTORE_DATA_MISMATCH: '+restoreDifferences.join(', '));
     const vaultAfter=JSON.parse(await localQuery(vaultFingerprint));
@@ -223,7 +227,7 @@ async function main() {
     console.log(`Isolated restore preserved all ${catalog.length} table fingerprints.`);
     const migrations=await dryRunReleaseMigrations(reviewedMigrations,appliedMigrations,localQuery);
     if(migrations.length!==REVIEWED_RELEASE_MIGRATIONS.length)throw new Error('REVIEWED_MIGRATION_SET_CHANGED');
-    const migrated=(await localQuery(fingerprintQuery(catalog))).split('\n').map(JSON.parse);
+    const migrated=(await localQuery('begin;'+fingerprintQuery(catalog)+';commit')).split('\n').map(JSON.parse);
     const migrationDifferences=compareFingerprints(before,migrated);
     if(migrationDifferences.length)throw new Error('MIGRATION_DATA_MISMATCH: '+migrationDifferences.join(', '));
     // Preview historical exceptions only on the restored copy. Installing the
