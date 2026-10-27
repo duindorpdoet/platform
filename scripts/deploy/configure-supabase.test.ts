@@ -95,7 +95,10 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
     encoding: "utf8",
     timeout: 5_000,
     env: {
-      ...process.env,
+      // This child has a total fetch stub and fixture credentials only.
+      PATH:process.env.PATH,
+      NODE_ENV:"test",
+      SKIP_MAIL_TESTS:"false",
       SUPABASE_ACCESS_TOKEN: "access-token",
       SUPABASE_PROJECT_REF: "project-ref",
       NEXT_PUBLIC_SUPABASE_URL: "https://project-ref.supabase.co",
@@ -189,4 +192,14 @@ describe("Data API deployment configuration", () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("Data API did not retain");
   });
+});
+
+
+describe("release mail-test exclusion with local fixtures",()=>{
+ it("does not request either runtime probe when the release explicitly skips mail tests",()=>{
+  const result=configure({found:true,statusCode:401,timedOut:false},503,{SKIP_MAIL_TESTS:"true",GITHUB_SHA:"a".repeat(40)});
+  expect(result.status,result.stderr).toBe(0);
+  expect(result.stdout).toContain("Mail worker/gateway probes skipped");
+  expect(result.stdout).not.toContain("probe passed");
+ });
 });

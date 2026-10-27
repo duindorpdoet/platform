@@ -104,3 +104,17 @@ test('manual concept is visible in organization before mail confirmation',async(
  await page.reload();await selectOrganizationSection(page,'Poorten');await page.getByRole('tab',{name:/^Conceptpoorten/}).click();await expect(card).toBeVisible();
  const impact=await rpc(admin,'admin_portal_change_impact',{_portal_id:created.id});await rpc(admin,'admin_portal_remove_reviewed',{_portal_id:created.id,_expected_version:Number(sql(`select version from app_private.portals where id='${created.id}'`)),_input_hash:impact.inputHash,_reason:'Synthetisch concept na de browsercontrole archiveren',_key:randomUUID()});
 });
+
+test('a stale maintenance form keeps input until an explicit current-version reload, then saves again',async({page,context})=>{
+ const admin=await login(context),name='Versieherstel browserpoort';
+ const created=await rpc(admin,'admin_manual_portal_save',{_event_slug:event,_portal_id:null,_payload:{name,worldSlug:'anders',lifecycleStatus:'concept',approvalStatus:'draft',commandKey:randomUUID()},_expected_version:null,_reason:'Synthetische conceptpoort voor expliciet formulierherstel'});
+ await page.goto('/admin');await selectOrganizationSection(page,'Poorten');await page.getByRole('tab',{name:/^Conceptpoorten/}).click();
+ await page.locator('.manual-portal-list article').filter({hasText:name}).getByRole('button',{name:'Bewerken',exact:true}).click();
+ const dialog=page.locator('.manual-portal-editor');await dialog.getByRole('textbox',{name:'Poortnaam',exact:true}).fill('Mijn nog niet opgeslagen invoer');
+ await rpc(admin,'admin_manual_portal_save',{_event_slug:event,_portal_id:created.id,_payload:{name:'Intussen opgeslagen actuele naam',worldSlug:'anders',saveMode:'draft',commandKey:randomUUID()},_expected_version:created.version,_reason:'Een tweede bewerking maakt het geopende formulier verouderd'});
+ await dialog.getByRole('button',{name:'Concept opslaan',exact:true}).click();await expect(dialog.getByRole('button',{name:'Actuele versie laden en opnieuw beoordelen'})).toBeVisible();
+ await expect(dialog.getByRole('textbox',{name:'Poortnaam',exact:true})).toHaveValue('Mijn nog niet opgeslagen invoer');
+ await dialog.getByRole('button',{name:'Actuele versie laden en opnieuw beoordelen'}).click();await expect(dialog.getByRole('textbox',{name:'Poortnaam',exact:true})).toHaveValue('Intussen opgeslagen actuele naam');
+ await dialog.getByRole('textbox',{name:'Poortnaam',exact:true}).fill('Na actuele beoordeling opgeslagen');await dialog.getByRole('button',{name:'Concept opslaan',exact:true}).click();await expect(dialog).toHaveCount(0);
+ expect(sql(`select payload->>'name' from app_private.portal_maintenance_drafts where portal_id='${created.id}'`)).toBe('Na actuele beoordeling opgeslagen');
+});

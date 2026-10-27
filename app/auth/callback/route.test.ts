@@ -1,10 +1,12 @@
 import {beforeEach,describe,it,expect,vi} from 'vitest';
-const mock=vi.hoisted(()=>({exchange:vi.fn(),create:vi.fn()}));
+const mock=vi.hoisted(()=>({exchange:vi.fn(),create:vi.fn(),child:vi.fn()}));
 vi.mock('@supabase/ssr',async importOriginal=>({...await importOriginal<typeof import('@supabase/ssr')>(),createServerClient:mock.create}));
 vi.mock('@/lib/config/public-env',()=>({getPublicSupabaseConfig:()=>({url:'https://project.supabase.co',publishableKey:'public-fixture'})}));
 vi.mock('@/lib/config/server-env',()=>({serverEnv:()=>({APP_URL:'https://app.invalid'})}));
+vi.mock('@/lib/poortenboek/server',()=>({CHILD_COOKIE:'__Host-poortenboek-session',DEMO_COOKIE:'__Host-poortenboek-demo',cookieOptions:{path:'/',secure:true,httpOnly:true,sameSite:'lax'},childRpc:mock.child}));
+vi.mock('@/lib/poortenboek/crypto',()=>({tokenHash:()=> 'hashed-previous-child-fixture'}));
 import {GET} from './route';
-beforeEach(()=>{mock.exchange.mockReset();mock.create.mockReset();mock.create.mockImplementation((_url,_key,options)=>{
+beforeEach(()=>{mock.exchange.mockReset();mock.create.mockReset();mock.child.mockReset();mock.child.mockResolvedValue({ok:true});mock.create.mockImplementation((_url,_key,options)=>{
  expect(options.cookies.getAll()).toEqual(expect.arrayContaining([{name:'sb-project-auth-token-code-verifier',value:'pkce-fixture'}]));
  options.cookies.setAll([{name:'sb-project-auth-token.0',value:'session-part-one',options:{maxAge:31536000,secure:true}},{name:'sb-project-auth-token.1',value:'session-part-two',options:{maxAge:31536000,secure:true}},{name:'sb-project-auth-token-code-verifier',value:'',options:{maxAge:0}}]);
  return {auth:{exchangeCodeForSession:mock.exchange}};
@@ -17,7 +19,7 @@ describe('real PKCE callback contract using an isolated auth adapter',()=>{
   expect(mock.exchange).toHaveBeenCalledWith('single-use-fixture');
   expect(r.headers.get('location')).toBe('https://app.invalid/omgeving/kiezen');
   expect(r.headers.get('cache-control')).toContain('no-store');
-  expect(r.headers.getSetCookie()).toHaveLength(4);
+  expect(r.headers.getSetCookie()).toHaveLength(6);
   expect(r.cookies.get('sb-project-auth-token.0')?.value).toBe('session-part-one');
   expect(r.cookies.get('sb-project-auth-token.1')?.value).toBe('session-part-two');
   expect(r.headers.getSetCookie().find(c=>c.startsWith('sb-project-auth-token.0='))).not.toContain('Max-Age');
@@ -42,4 +44,17 @@ describe('real PKCE callback contract using an isolated auth adapter',()=>{
   const r=await GET(new Request('https://app.invalid/auth/callback?code=fixture',{headers}));
   expect(r.headers.get('location')).toContain('/inloggen?error=callback');
  });
+});
+
+it('confirmed adult OAuth clears and revokes the previous browser child session',async()=>{
+ mock.exchange.mockResolvedValue({error:null,data:{session:{},user:{id:'different-verified-adult'}}});
+ const r=await GET(new Request('https://app.invalid/auth/callback?code=fixture',{headers:{cookie:headers.cookie+'; __Host-poortenboek-session='+ 'a'.repeat(43)}}));
+ expect(mock.child).toHaveBeenCalledWith('poortenboek_child_action',{_token_hash:'hashed-previous-child-fixture',_action:'logout',_payload:{}});
+ expect(r.cookies.get('__Host-poortenboek-session')?.maxAge).toBe(0);
+ expect(r.cookies.get('__Host-poortenboek-demo')?.maxAge).toBe(0);
+});
+it('temporary child revocation failure still clears its cookie without undoing confirmed adult authentication',async()=>{
+ mock.exchange.mockResolvedValue({error:null,data:{session:{},user:{id:'verified'}}});mock.child.mockRejectedValue(new Error('network'));
+ const r=await GET(new Request('https://app.invalid/auth/callback?code=fixture',{headers:{cookie:headers.cookie+'; __Host-poortenboek-session='+ 'a'.repeat(43)}}));
+ expect(r.headers.get('location')).toBe('https://app.invalid/omgeving/kiezen');expect(r.cookies.get('__Host-poortenboek-session')?.maxAge).toBe(0);
 });

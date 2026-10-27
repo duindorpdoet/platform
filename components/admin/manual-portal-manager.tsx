@@ -89,6 +89,7 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
   const [draft, setDraft] = useState<Draft | null>(null);
   const [notice, setNotice] = useState("");
   const [timeError,setTimeError] = useState("");
+  const [stalePortal,setStalePortal] = useState<Portal|null>(null);
   const [busy, setBusy] = useState(false);
   useDialogFocus(Boolean(draft),".manual-portal-editor",()=>setDraft(null),busy);
   const load = useCallback(async () => {
@@ -106,16 +107,18 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
       const portal = rows.find((row) => row.id === initialPortalId);
       if (portal) { if(portal.lifecycleStatus === "archived")setRecordFilter("all"); setDraft(fromPortal(portal)); }
     }
+    return rows;
   }, [eventSlug, initialPortalId]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
   usePrivateBroadcast(topic,()=>void load());
-  useSnapshotRefresh(load);
+  useSnapshotRefresh(async()=>{await load();});
 
   async function save(mode: "draft" | "activate" = "activate", reviewedHash?: string) {
     if (!draft || busy) return;
     if(draft.lifecycleStatus === "archived") { await saveArchive(); return; }
     setTimeError("");
+    if(stalePortal && stalePortal.id===draft.id){setTimeError("Laad eerst de actuele poortversie en beoordeel je wijziging opnieuw. Je huidige invoer staat hieronder nog klaar.");return;}
     const original = portals.find((portal) => portal.id === draft.id);
     const plannedOpensAt = original && draft.plannedOpensAt === localDateTime(original.plannedOpensAt)
       ? original.plannedOpensAt : draft.plannedOpensAt ? amsterdamInputToIso(draft.plannedOpensAt) : null;
@@ -165,7 +168,17 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
       _event_slug: eventSlug, _portal_id: draft.id, _payload: {...payload,commandKey:saveCommand.current.key}, _expected_version: draft.version,
       _reason: draft.id ? "Poortgegevens bijgewerkt door de organisatie" : "Poort handmatig door de organisatie toegevoegd",
     }).abortSignal(AbortSignal.timeout(20_000));
-    if (error?.message.includes("STALE_VERSION")) await load();
+    if (error?.message.includes("STALE_VERSION")) {
+      setChange(null);saveCommand.current=null;
+      const rows=await load();
+      const current=rows?.find(portal=>portal.id===draft.id);
+      if(current){
+        setStalePortal(current);
+        // Invalidate the earlier confirmation and fetch fresh impact. The old
+        // draft stays visible until the administrator deliberately reloads it.
+        await client.schema("api").rpc("admin_portal_change_impact",{_portal_id:current.id});
+      }
+    }
     if (error) setTimeError(`Opslaan geweigerd: ${commandError(error.message)}`);
     else if (!data?.id || !Number.isInteger(data.version)) setTimeError("De server heeft de opslag niet bevestigd. Vernieuw en controleer de poort; je invoer is bewaard.");
     else {
@@ -261,7 +274,7 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
     <div className="manual-portal-list">{visiblePortals.map((portal) => <article key={portal.id}>
       <header><span className="portal-code">{portal.systemCode}</span><div><strong>{portal.name}</strong><small>{portal.world} · {portal.recordSource === "manual" ? "Handmatig toegevoegd" : "Bewonersaanmelding"} · {portal.lifecycleStatus} · live: {portal.operationStatus}</small></div>{portal.isFinal && <span className="portal-status-badge">Eindpoort</span>}</header>
       <dl><div><dt>Beschikbaar</dt><dd>{portal.plannedOpensAt ? `${localDateTime(portal.plannedOpensAt).slice(11)}–${localDateTime(portal.plannedClosesAt).slice(11)}` : "Nog niet gepland"}</dd></div><div><dt>Locatie</dt><dd>{portal.latitude!==null?"Locatie ingevuld":"Locatie ontbreekt"}</dd></div><div><dt>Contact</dt><dd>{portal.contactName || "Niet ingevuld"}</dd></div></dl>
-      <p>Instructiemail: {portalInstructionStatusLabel(portal.instructionStatus, Boolean(portal.email))}</p><div className="actions"><label className="field"><span>Startpunt</span><select aria-label={`Startpunt voor ${portal.systemCode}`} value={portal.candidateStartPoint ? "yes" : "no"} disabled={busy || portal.lifecycleStatus === "archived"} onChange={(event) => void setStartPoint(portal,event.target.value === "yes")}><option value="no">Nee</option><option value="yes">Ja</option></select></label><button className="btn outline" type="button" disabled={busy} onClick={() => { setTimeError(""); setDraft(fromPortal(portal)); }}><Edit3 />Bewerken</button>{portal.recordSource === "manual" && portal.lifecycleStatus !== "archived" && <button className="btn outline" type="button" disabled={busy} onClick={() => void inviteOwner(portal)}><UserPlus />Instructies opnieuw versturen</button>}<button className="text-link danger" type="button" disabled={busy || portal.lifecycleStatus === "archived"} onClick={() => void remove(portal)}>{portal.lifecycleStatus === "concept" ? <Trash2 /> : <Archive />}Verwijderen</button></div>
+      <p>Instructiemail: {portalInstructionStatusLabel(portal.instructionStatus, Boolean(portal.email))}</p><div className="actions"><label className="field"><span>Startpunt</span><select aria-label={`Startpunt voor ${portal.systemCode}`} value={portal.candidateStartPoint ? "yes" : "no"} disabled={busy || portal.lifecycleStatus === "archived"} onChange={(event) => void setStartPoint(portal,event.target.value === "yes")}><option value="no">Nee</option><option value="yes">Ja</option></select></label><button className="btn outline" type="button" disabled={busy} onClick={() => { setTimeError(""); setStalePortal(null); setDraft(fromPortal(portal)); }}><Edit3 />Bewerken</button>{portal.recordSource === "manual" && portal.lifecycleStatus !== "archived" && <button className="btn outline" type="button" disabled={busy} onClick={() => void inviteOwner(portal)}><UserPlus />Instructies opnieuw versturen</button>}<button className="text-link danger" type="button" disabled={busy || portal.lifecycleStatus === "archived"} onClick={() => void remove(portal)}>{portal.lifecycleStatus === "concept" ? <Trash2 /> : <Archive />}Verwijderen</button></div>
     </article>)}{visiblePortals.length === 0 && <div className="portal-empty"><ShieldAlert /><p>Er zijn geen poorten met deze status.</p></div>}</div>
 
     {draft && <div className="manual-portal-backdrop" role="presentation" onMouseDown={(event) => { if (!busy && event.target === event.currentTarget) setDraft(null); }}><aside className="manual-portal-editor" role="dialog" aria-modal="true" aria-labelledby="manual-portal-title">
@@ -273,7 +286,7 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
         <section><h4>Geplande beschikbaarheid</h4>{draft.id && (portals.find((portal) => portal.id === draft.id)?.windowCount ?? 0) > 1 && <p>Deze poort heeft meerdere tijdvakken. Bestaande tijdvakken blijven behouden; pas hier alleen de overige poortgegevens aan.</p>}<div className="settings-grid"><label className="field"><span>Live avondstatus</span><select value={draft.operationStatus} onChange={(event) => setDraft({ ...draft, operationStatus: event.target.value as Draft["operationStatus"] })}><option value="scheduled">Onbekend / nog niet gestart</option><option value="open">Open</option><option value="paused">Pauze</option><option value="closed">Gestopt</option></select></label><label className="field"><span>Opent</span><input type="datetime-local" value={draft.plannedOpensAt} onChange={(event) => setDraft({ ...draft, plannedOpensAt: event.target.value })} /></label><label className="field"><span>Sluit</span><input type="datetime-local" value={draft.plannedClosesAt} onChange={(event) => setDraft({ ...draft, plannedClosesAt: event.target.value })} /></label><label className="field"><span>Groepen tegelijk</span><input type="number" min={1} value={draft.maxGroups} onChange={(event) => setDraft({ ...draft, maxGroups: event.target.value })} /></label><label className="field"><span>Kinderen per bezoek</span><input type="number" min={1} value={draft.maxChildren} onChange={(event) => setDraft({ ...draft, maxChildren: event.target.value })} /></label><label className="field"><span>Bezoekduur</span><input type="number" min={1} value={draft.visitMinutes} onChange={(event) => setDraft({ ...draft, visitMinutes: event.target.value })} /></label><label className="field"><span>Buffer</span><input type="number" min={0} value={draft.bufferMinutes} onChange={(event) => setDraft({ ...draft, bufferMinutes: event.target.value })} /></label></div></section>
         <section><h4>Beheer</h4><label className="field"><span>Interne notities</span><textarea value={draft.internalNotes} onChange={(event) => setDraft({ ...draft, internalNotes: event.target.value })} /></label><label className="field"><span>Startpunt</span><select value={draft.candidateStartPoint ? "yes" : "no"} onChange={(event) => setDraft({ ...draft, candidateStartPoint: event.target.value === "yes" })}><option value="no">Nee</option><option value="yes">Ja</option></select></label><label className="check-row"><input type="checkbox" checked={draft.isFinal} onChange={(event) => setDraft({ ...draft, isFinal: event.target.checked, confirmFinal: false })} /><span>Instellen als eindpoort</span></label>{changesFinalPortal && <label className="check-row critical"><input type="checkbox" checked={draft.confirmFinal} onChange={(event) => setDraft({ ...draft, confirmFinal: event.target.checked })} /><span>Ik begrijp dat dit de eindpoortconfiguratie wijzigt.</span></label>}</section></>}
       </div>
-      {activationMissing.length > 0 && <p className="form-warning" role="alert">Voor een actieve poort: {activationMissing.join(" ")}</p>}{timeError && <p className="form-warning" role="alert">{timeError}</p>}<footer>{draft.id && draft.lifecycleStatus !== "archived" && <button className="text-link danger" type="button" disabled={busy} onClick={() => { const portal = portals.find((item) => item.id === draft.id); if (portal) void remove(portal); }}><Trash2 />Poort verwijderen</button>}<button className="btn outline" disabled={busy} type="button" onClick={() => setDraft(null)}>Annuleren</button>{draft.lifecycleStatus !== "archived" && <button className="btn outline" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug} onClick={() => void save("draft")}>Concept opslaan</button>}<button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug || activationMissing.length > 0 || (changesFinalPortal && !draft.confirmFinal)} onClick={() => void save()}><Save />{draft.lifecycleStatus === "archived" ? "Archiefgegevens opslaan" : "Activeren / gegevens afronden"}</button></footer>
+      {activationMissing.length > 0 && <p className="form-warning" role="alert">Voor een actieve poort: {activationMissing.join(" ")}</p>}{timeError && <p className="form-warning" role="alert">{timeError}</p>}{stalePortal && stalePortal.id===draft.id && <div className="form-warning" role="status"><p>Deze poort is intussen gewijzigd. Je huidige invoer blijft staan totdat je hieronder kiest. Laden vervangt de invoer door de actuele opgeslagen gegevens; controleer je wijziging daarna opnieuw. Een eerdere impactbevestiging is vervallen.</p><button className="btn outline" type="button" disabled={busy} onClick={()=>{setDraft(fromPortal(stalePortal));setStalePortal(null);setChange(null);saveCommand.current=null;setTimeError("Actuele versie geladen. Controleer je wijziging opnieuw; eventuele impact vraagt opnieuw bevestiging.");}}>Actuele versie laden en opnieuw beoordelen</button></div>}<footer>{draft.id && draft.lifecycleStatus !== "archived" && <button className="text-link danger" type="button" disabled={busy} onClick={() => { const portal = portals.find((item) => item.id === draft.id); if (portal) void remove(portal); }}><Trash2 />Poort verwijderen</button>}<button className="btn outline" disabled={busy} type="button" onClick={() => setDraft(null)}>Annuleren</button>{draft.lifecycleStatus !== "archived" && <button className="btn outline" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug} onClick={() => void save("draft")}>Concept opslaan</button>}<button className="btn" type="button" disabled={busy || draft.name.trim().length < 2 || !draft.worldSlug || activationMissing.length > 0 || (changesFinalPortal && !draft.confirmFinal)} onClick={() => void save()}><Save />{draft.lifecycleStatus === "archived" ? "Archiefgegevens opslaan" : "Activeren / gegevens afronden"}</button></footer>
     </aside></div>}
   </div>;
 }

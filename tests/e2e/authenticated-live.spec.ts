@@ -1613,7 +1613,7 @@ test("organization edits and removes resident portals while preserving existing 
   await page.screenshot({ path: `test-results/portal-editor-${test.info().project.name}.png` });
   await dialog.getByRole("button", { name: "Activeren / gegevens afronden", exact: true }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(page.getByRole("status")).toContainText("Poort bijgewerkt");
+  await expect(page.getByRole("status")).toContainText("Conceptpoort opgeslagen");
   const saved = (await rpc(client, "admin_portal_editor_snapshot", { _event_slug: event })).portals.find((portal: { id: string }) => portal.id === created.id);
   expect(Date.parse(saved.plannedOpensAt)).toBe(Date.parse("2026-10-31T17:00:31+01:00"));
   expect(Date.parse(saved.plannedClosesAt)).toBe(Date.parse("2026-10-31T20:00:42+01:00"));

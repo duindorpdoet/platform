@@ -48,6 +48,13 @@ for (const width of [320, 375, 390, 430]) {
     for (const path of ["/mijn-groep", "/omgeving", "/omgeving/meeloper/route", "/omgeving/meeloper/groep", "/omgeving/meeloper/nachtpas", "/omgeving/meeloper/meer"]) {
       if (path === "/omgeving") await authenticate(context, "parent-size-5@example.invalid");
       await page.goto(path);
+      if(path==='/omgeving'){
+        await expect(page).toHaveURL(/\/omgeving\/kiezen$/);
+        await expect(page.getByRole('heading',{name:'Ouder & meeloper'})).toBeVisible();
+        await expect(page.getByRole('combobox',{name:'Kies een kinderomgeving'})).toBeVisible();
+        await assertPhoneLayout(page);
+        continue;
+      }
       await expect(page.locator(".group-route-context,.participant-page-head").first()).toBeVisible();
       await expect(page.locator(".loading-state,.participant-loading")).toHaveCount(0);
       await assertPhoneLayout(page);

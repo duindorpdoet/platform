@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient, parseCookieHeader, type CookieOptions } from "@supabase/ssr";
+import {CHILD_COOKIE,DEMO_COOKIE,cookieOptions,childRpc} from "@/lib/poortenboek/server";
+import {tokenHash} from "@/lib/poortenboek/crypto";
 import { serverEnv } from "@/lib/config/server-env";
 import { safeReturnPath } from "@/lib/auth/redirect";
 import { getPublicSupabaseConfig } from "@/lib/config/public-env";
@@ -30,8 +32,18 @@ export async function GET(request: Request) {
     destination.searchParams.set("error", url.searchParams.get("error") === "access_denied" ? "google_cancelled" : "callback");
     destination.searchParams.set("next", next);
   }
+  if(success){
+    const previousChild=incoming.find(cookie=>cookie.name===CHILD_COOKIE)?.value;
+    if(previousChild && /^[A-Za-z0-9_-]{43}$/.test(previousChild)){
+      let timeout:ReturnType<typeof setTimeout>|undefined;
+      try{await Promise.race([childRpc("poortenboek_child_action",{_token_hash:tokenHash(previousChild),_action:"logout",_payload:{}}),new Promise(resolve=>{timeout=setTimeout(resolve,3000);})]);}
+      catch{/* The cookie is cleared even when server revocation is temporarily unavailable. */}
+      finally{clearTimeout(timeout);}
+    }
+  }
   const response = NextResponse.redirect(destination);
   response.headers.set("Cache-Control", "private, no-store");
+  if(success){response.cookies.set(CHILD_COOKIE,"",{...cookieOptions,maxAge:0});response.cookies.set(DEMO_COOKIE,"",{...cookieOptions,maxAge:0});}
   for (const cookie of pending) response.cookies.set(cookie.name, cookie.value, cookie.options);
   response.cookies.set(AUTH_RETURN_COOKIE,"",{path:"/",sameSite:"lax",secure:origin.startsWith("https:"),maxAge:0});
   return response;
