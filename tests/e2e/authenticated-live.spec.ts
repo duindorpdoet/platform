@@ -696,6 +696,12 @@ test("a portal draft survives refresh and rejects disguised executable upload co
   await page.getByRole("button", { name: "Plek aanmelden" }).click();
   await expect(page).toHaveURL(/\/mijn-huis$/);
   await expect(page.getByRole("heading", { name: "Werk jullie poort uit" })).toBeVisible();
+  // An intake/draft is not an active house role. No fictitious tour may
+  // hide its draft controls; active owner onboarding is tested separately.
+  const guidance=await page.request.get("/api/redesign/guidance");
+  expect([200,204]).toContain(guidance.status());
+  if(guidance.status()===200)expect((await guidance.json()).roles).not.toContain("house");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByLabel("E-mailadres *")).toHaveValue(email);
   for (const removed of ["Bezoekduur", "Groepen tegelijk", "Kinderen per bezoek", "Kinderen totaal"]) {
     await expect(page.getByLabel(removed, { exact: false })).toHaveCount(0);

@@ -21,6 +21,9 @@ export async function GET(request: Request, context: Context) {
     else throw new ApiError(404, 'NOT_FOUND', 'Niet gevonden.');
     if (result.error) {
       if(action==='guidance'&&['PGRST301','PGRST303'].includes(result.error.code))throw new ApiError(401,'NOT_AUTHORIZED','Log opnieuw in.');
+      // A verified account may own an intake/draft without an active participant
+      // role. There is no tour to require; the page retains its own authorization.
+      if(action==='guidance'&&result.error.message==='NOT_AUTHORIZED')return new NextResponse(null,{status:204,headers:{'Cache-Control':'private, no-store',Vary:'Cookie'}});
       if(result.error.message==='NOT_AUTHORIZED'||result.error.code==='42501')throw new ApiError(403, 'NOT_AUTHORIZED', 'Dit onderdeel is niet beschikbaar voor jouw account.');
       throw new ApiError(500,'FETCH_FAILED','Dit onderdeel kon niet worden opgehaald. Probeer opnieuw.');
     }

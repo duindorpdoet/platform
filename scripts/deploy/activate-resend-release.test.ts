@@ -19,6 +19,10 @@ describe('bounded Resend default release configuration without mail delivery',()
   for(const patch of [{status:'pending'},{click_tracking:true}])await expect(verifyResendConfiguration(env,before.from_email,async(url:string)=>Response.json(url.includes('/domains/')?{...configurationResponse(url),...patch}:configurationResponse(url)))).rejects.toThrow('RESEND_DOMAIN_CONFIGURATION_REQUIRED');
   await expect(verifyResendConfiguration(env,before.from_email,async(url:string)=>Response.json(url.includes('/webhooks/')?{...hook,endpoint:'https://other.invalid'}:configurationResponse(url)))).rejects.toThrow('RESEND_OWN_SIGNED_WEBHOOK_REQUIRED');
  });
+ it('reports only the query phase and safe SQLSTATE, never private database error details',async()=>{
+  const request=vi.fn(async()=>Response.json({message:'ERROR: 42501: private-sensitive-value',code:'42501'},{status:400}));
+  await expect(activateResendRelease(env,request)).rejects.toThrow('RESEND_RELEASE_DATABASE_INSPECTION_HTTP_400_42501');
+ });
  it('requires suppression completion and a currently verified allowlisted event administrator',async()=>{
   for(const patch of [{imported:false},{authorized_admins:0}]){
    const request=vi.fn(async()=>Response.json([{...before,...patch}]));await expect(activateResendRelease(env,request)).rejects.toThrow();expect(request).toHaveBeenCalledTimes(1);
@@ -29,7 +33,7 @@ describe('bounded Resend default release configuration without mail delivery',()
   const query=activationQuery(env,before);expect(query).toContain("'mail.config.release_activate'");expect(query).toContain('"deliveryValidated":false');expect(query).toContain('for update');expect(query).toContain('CONFIG_VERSION_CONFLICT');expect(query).not.toMatch(/insert into app_private.(mail_envelopes|email_events)|40001|draft_id=/);
   const request=vi.fn(async(url:string,options:RequestInit)=>{
    if(url.startsWith('https://api.resend.com'))return Response.json(configurationResponse(url));
-   const body=JSON.parse(options.body as string);return Response.json(body.read_only?[before]:[{provider:'resend'}]);
+   const body=JSON.parse(options.body as string);expect(body.read_only).toBeUndefined();return Response.json(body.query.startsWith('begin read only;')?[before]:[{provider:'resend'}]);
   });await activateResendRelease(env,request);expect(request).toHaveBeenCalledTimes(5);
  });
 });

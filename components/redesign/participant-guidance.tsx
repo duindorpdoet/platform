@@ -171,6 +171,10 @@ export function GuidanceHost(){
   const token=coordinator.current.beginRead();if(!token)return false;
   try{
    const response=await fetch('/api/redesign/guidance',{cache:'no-store'});
+   if(response.status===204){
+    if(!active.current||currentScope.current!==scope||!coordinator.current.acceptsRead(token))return false;
+    setRecord(null);setLoadError(null);return true;
+   }
    const next=await readGuidanceResponse(response);
    if(!active.current||currentScope.current!==scope||!coordinator.current.acceptsRead(token)||(authUser.current!==undefined&&next.userId!==authUser.current))return false;
    setRecord(next);setLoadError(null);

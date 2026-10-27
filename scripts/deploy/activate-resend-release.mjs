@@ -70,9 +70,14 @@ export async function verifyResendConfiguration(env,fromEmail,request=fetch){
 }
 export async function activateResendRelease(env=process.env,request=fetch){
  if(!activationPolicy(env)){console.log('Resend default activation not requested for this exact commit; existing provider retained.');return;}
+ // Use the existing deployment admin connection for protected Auth metadata;
+ // enforce the inspection transaction as READ ONLY inside Postgres itself.
  async function query(sql,readOnly){
-  const r=await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}/database/query`,{method:'POST',headers:{Authorization:`Bearer ${env.SUPABASE_ACCESS_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({query:sql,read_only:readOnly}),signal:AbortSignal.timeout(30000)});
-  if(!r.ok)throw new Error(`RESEND_RELEASE_DATABASE_HTTP_${r.status}`);return r.json();
+  const r=await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}/database/query`,{method:'POST',headers:{Authorization:`Bearer ${env.SUPABASE_ACCESS_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({query:readOnly?`begin read only;${sql};commit;`:sql}),signal:AbortSignal.timeout(30000)});
+  if(!r.ok){
+   const body=await r.json().catch(()=>null);const code=/^[0-9A-Z]{5}$/.test(body?.code??'')?body.code:(typeof body?.message==='string'?body.message.match(/ERROR:\s*([0-9A-Z]{5}):/)?.[1]:null);
+   throw new Error(`RESEND_RELEASE_DATABASE_${readOnly?'INSPECTION':'ACTIVATION'}_HTTP_${r.status}_${code??'UNKNOWN'}`);
+  }return r.json();
  }
  const before=(await query(inspectionQuery(env),true))[0];
  if(!before?.imported)throw new Error('COMPLETE_SUPPRESSION_IMPORT_REQUIRED');
