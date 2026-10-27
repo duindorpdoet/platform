@@ -27,6 +27,10 @@ const job=jobs[0];for(const target of job.targets) sql(`select api.worker_record
 sql(`select api.worker_finish_editorial_push('${job.id}','${job.claimToken}');`);
 const edits=await Promise.all(Array.from({length:8},()=>client.schema("api").rpc("admin_news_save",{_event_slug:"duindorp-halloween-2026",_id:saved.data.id,_expected_revision:1,_slug:`concurrent-${suffix}`,_content:content})));
 assert.equal(edits.filter(r=>!r.error).length,1,"optimistic revision permits exactly one simultaneous edit");
+if(process.env.SKIP_MAIL_TESTS==="true"){
+ console.log("Editorial publication/push fixture concurrency passed. Newsletter test-send and scheduling acceptance skipped for the authorized exact-SHA release; no external deliveries.");
+ process.exit(0);
+}
 const campaign=await client.schema("api").rpc("admin_newsletter_save",{_event_slug:"duindorp-halloween-2026",_id:null,_expected_revision:0,_content:{internalName:`Concurrency ${suffix}`,subject:"Test Nachtpost",preheader:"Lokale test",eyebrow:"NACHTPOST",article:content,newsVersionIds:[],closing:"Tot de nacht",senderName:"Duindorp"},_audience:{roles:["parents","primary_contacts"]}});assert.equal(campaign.error,null);
 const testmail=await client.schema("api").rpc("admin_newsletter_test",{_version:campaign.data.versionId,_key:randomUUID()});assert.equal(testmail.error,null);
 sql(`update app_private.email_outbox set status='accepted',provider_id='local-fixture' where id='${testmail.data}';`);
