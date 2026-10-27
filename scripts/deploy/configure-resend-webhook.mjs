@@ -35,7 +35,10 @@ if(!process.env.RESEND_ADMIN_API_KEY) {
  const secret=own.signing_secret;
  if(typeof secret!=='string'||!/^whsec_[A-Za-z0-9+/=]+$/.test(secret))throw new Error('RESEND_SIGNING_SECRET_MISSING');
  if(!process.env.GITHUB_ENV)throw new Error('GITHUB_ENV_REQUIRED_FOR_SECURE_PROVISIONING');
- // Write only to the protected environment handoff. Never print the value.
+ // Register the derived secret before later Actions steps enumerate runtime env.
+ // GitHub consumes this workflow command and redacts the value from job logs.
+ if(process.env.GITHUB_ACTIONS==='true')console.log('::add-mask::'+secret);
+ // Outside Actions, never print the value. Use only the protected env handoff.
  await appendFile(process.env.GITHUB_ENV,`RESEND_WEBHOOK_SECRET=${secret}\nRESEND_WEBHOOK_ID=${own.id}\n`);
  console.log('Own Resend webhook configured; signing secret provisioned through deployment runtime.');
 }
