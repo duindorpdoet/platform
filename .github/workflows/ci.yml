@@ -32,7 +32,7 @@ jobs:
       - name: Record exact release exception
         id: policy
         env:
-          SKIP_MAIL_TESTS_REQUESTED: ${{ inputs.skip_mail_tests || false }}
+          SKIP_MAIL_TESTS_REQUESTED: "false"
           MAIL_TEST_WAIVER_SHA: ${{ vars.MAIL_TEST_WAIVER_SHA }}
           MAIL_TEST_WAIVER_EXPIRES_AT: ${{ vars.MAIL_TEST_WAIVER_EXPIRES_AT }}
           MAIL_TEST_WAIVER_REASON: ${{ vars.MAIL_TEST_WAIVER_REASON }}
