@@ -414,7 +414,7 @@ jobs:
     needs: deploy
     environment: staging
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       APP_ENVIRONMENT: staging
       APP_URL: https://staging-halloween.duindorpdoet.nl
@@ -432,6 +432,7 @@ jobs:
         run: |
           npm install --global pnpm@11.25.0
           pnpm install --frozen-lockfile
+          bash scripts/acceptance/prepare-browser-runner.sh
           pnpm exec playwright install --with-deps chromium
       - name: Verify staging with rollback and no delivery
         run: node scripts/deploy/accept-account-app.mjs
