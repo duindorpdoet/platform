@@ -43,6 +43,8 @@ export function NightMap({
   const [zoom, setZoom] = useState(14.8);
   const [statusFilter, setStatusFilter] = useState<Record<string, boolean>>({ scheduled: true, open: true, paused: true, closed: true });
   const mappable = useMemo(() => portals.filter((portal) => validCoordinate(portal.coordinate) && (variant !== "admin" || statusFilter[portal.status ?? "scheduled"] !== false)), [portals, statusFilter, variant]);
+  // Preserve marker DOM/focus when zoom changes within the same cluster mode.
+  const clusterAll = mappable.length >= 20 && zoom < 16;
   const routeCoordinates = useMemo(() => route.filter(validCoordinate), [route]);
   const routeKey = useMemo(() => routeCoordinates.map((coordinate) => coordinate.join(",")).join("|"), [routeCoordinates]);
 
@@ -113,7 +115,6 @@ export function NightMap({
       return;
     }
 
-    const clusterAll = mappable.length >= 20 && zoom < 16;
     const clusters = new Map<string, NightMapPortal[]>();
     mappable.forEach((portal) => {
       const coordinate = portal.coordinate;
@@ -233,7 +234,7 @@ export function NightMap({
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
     };
-  }, [state, mappable, variant, zoom]);
+  }, [state, mappable, variant, clusterAll]);
 
   useEffect(() => {
     const map = mapRef.current;

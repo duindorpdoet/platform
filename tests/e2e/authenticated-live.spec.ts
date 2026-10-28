@@ -533,6 +533,9 @@ test("the night cockpit exposes verified portals and the group board without lea
   requireLocalAuth();
   test.setTimeout(60_000);
   const admin = await authenticate(context, "admin@example.invalid");
+  // Exercise camera/marker focus under the slower rendering seen on CI runners.
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   await page.goto("/admin");
 
   const mapPanel = page.locator(".cockpit-map-panel");
