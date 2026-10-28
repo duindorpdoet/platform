@@ -539,19 +539,29 @@ test("the night cockpit exposes verified portals and the group board without lea
   await expect(mapPanel).toContainText(/bevestigde bestemming/i);
   await expect(mapPanel.getByRole("group", { name: "Filter poorten op status" })).toBeVisible({ timeout: 15_000 });
   await expect(mapPanel.getByRole("button", { name: "Open", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await page.waitForTimeout(850); // Let the initial fit animation settle before verifying keyboard focus.
+  await expect(mapPanel.locator(".night-map-fallback")).toHaveCount(0, { timeout: 15_000 });
   for (let attempt = 0; attempt < 4 && await mapPanel.locator(".night-map-portal-pin").count() === 0; attempt += 1) {
     const cluster = mapPanel.locator(".night-map-cluster").first();
-    await expect(cluster).toBeVisible();
+    let focusedCluster = false;
     await expect.poll(async () => {
-      if (!(await cluster.isVisible())) return false;
-      return cluster.evaluate((element) => {
+      // Fitting the larger map may expand the cluster while focus is being
+      // checked. Individual pins are verified below; a detached cluster is not
+      // an inaccessible control.
+      if (await mapPanel.locator(".night-map-portal-pin").count()) return true;
+      focusedCluster = await cluster.evaluate((element) => {
+        element.scrollIntoView({ block: "nearest" });
         (element as HTMLElement).focus();
         return document.activeElement === element;
       }).catch(() => false);
+      return focusedCluster;
     }, { timeout: 5_000 }).toBe(true);
-    await cluster.click();
-    await page.waitForTimeout(550);
+    if (!focusedCluster) break;
+    try {
+      await cluster.click({ timeout: 2_000 });
+    } catch (cause) {
+      if (await mapPanel.locator(".night-map-portal-pin").count() === 0) throw cause;
+    }
+    await page.waitForTimeout(550); // Cluster zoom animation takes 450ms.
   }
   const pins = mapPanel.locator(".night-map-portal-pin");
   await mapPanel.scrollIntoViewIfNeeded();
