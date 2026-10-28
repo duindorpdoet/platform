@@ -19,6 +19,8 @@ test('one organizer resets, groups, confirms composition, distributes existing g
  let state=await rpc('admin_startregie_snapshot',{_event_slug:event});
  await rpc('admin_startregie_settings_save',{_event_slug:event,_settings:{...state.settings,plannerMode:'dynamic',firstStartAt:'2026-10-31T15:00:00Z',globalOrdinaryStopAt:'2026-10-31T19:30:00Z',finalPortalId:'12000000-0000-0000-0000-000000000030',finaleOpensAt:'2026-10-31T18:00:00Z',finaleLastArrivalAt:'2026-10-31T20:30:00Z',finaleClosesAt:'2026-10-31T21:00:00Z',finaleMaxGroups:50,finaleMaxChildren:500,finaleAvailable:true},_expected_version:state.settings.version,_reason:'Afgeschermde browserproef van de volledige groepsketen'});
  await page.goto('/admin?view=groups');await selectOrganizationSection(page,'Groepsindeling');
+ async function openGroupActions(){const details=page.locator('.group-composition > .group-operations details');if(await details.getAttribute('open')===null)await details.locator('summary').click();}
+ await openGroupActions();
  await page.getByRole('button',{name:'Alle groepen terugzetten',exact:true}).click();
  let dialog=page.getByRole('dialog');await expect(dialog).toContainText('gepubliceerde afspraken');
  await dialog.getByRole('textbox',{name:'Typ ALLE GROEPEN TERUGZETTEN'}).fill('ALLE GROEPEN TERUGZETTEN');
@@ -29,6 +31,8 @@ test('one organizer resets, groups, confirms composition, distributes existing g
  const snapshot=await rpc('admin_group_composition_snapshot',{_event_slug:event});expect(snapshot.groups.length).toBeGreaterThan(0);
  const first=snapshot.groups.find((g:{childCount:number})=>g.childCount>0);
  const column=page.locator(`[data-column-id="${first.id}"]`);
+ const picker=page.getByRole('combobox',{name:'Kies groep'});
+ if(await picker.isVisible())await picker.selectOption(first.id);
  await expect(column).toContainText('Voorkeurstijd');await expect(column).toContainText('streef 15');
  await column.getByRole('button',{name:'Inklappen',exact:true}).click();await expect(column.locator('.group-composition-dropzone')).toBeHidden();
  await expect(column).toContainText(`${first.childCount} kinderen`);await column.getByRole('button',{name:'Uitklappen',exact:true}).click();
@@ -36,6 +40,7 @@ test('one organizer resets, groups, confirms composition, distributes existing g
  await mkdir('docs/ops/screenshots/group-operations',{recursive:true});
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await assertReadableLayout(page);await page.screenshot({animations:"disabled",path:`docs/ops/screenshots/group-operations/groups-${width}.png`});}
  const before=(await rpc('admin_group_composition_snapshot',{_event_slug:event})).groups.map((g:{id:string;registrations:Array<{id:string}>})=>({id:g.id,members:g.registrations.map(r=>r.id).sort()}));
+ await openGroupActions();
  await page.getByRole('button',{name:'Groepen over startpunten verdelen',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Iedere groep een goede start.'})).toBeVisible();
  state=await rpc('admin_startregie_snapshot',{_event_slug:event});

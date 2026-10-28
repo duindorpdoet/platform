@@ -1,16 +1,43 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { AdminDialog } from "./admin-dialog";
 import { createClient } from "@/lib/supabase/client";
 import { proposeGroupAutofill, type AutofillGroup } from "@/lib/domain/group-autofill";
 import type { CompositionRegistration } from "@/lib/domain/group-composition";
 
 type Impact = { inputHash: string; groups: number; registrations: number; children: number; confirmedCompositions: number; draftAppointments: number; publishedAppointments: number; reservations: number; communicationRecipients: number; blockers: Array<{ code: string; reason: string }> };
-type Group = { id: string; systemCode: string; compositionConfirmed?: boolean | null; locked: boolean };
-export function GroupOperationsActions({ eventSlug, inputHash, unassigned, groups, target, maximum, reload, notice }: {
-  eventSlug: string; inputHash: string; unassigned: CompositionRegistration[]; groups: Group[]; target: number; maximum: number; reload: () => Promise<void>; notice: (message: string) => void;
-}) {
+type Group = {
+  id: string;
+  systemCode: string;
+  compositionConfirmed?: boolean | null;
+  locked: boolean;
+};
+type GroupOperationsProps = {
+  eventSlug: string;
+  inputHash: string;
+  unassigned?: CompositionRegistration[];
+  groups?: Group[];
+  group?: Group;
+  target: number;
+  maximum: number;
+  reload: () => Promise<void>;
+  notice: (message: string) => void;
+  onOpenStarts?: () => void;
+};
+
+export function GroupOperationsActions({
+  eventSlug,
+  inputHash,
+  unassigned = [],
+  group,
+  target,
+  maximum,
+  reload,
+  notice,
+  onOpenStarts,
+}: GroupOperationsProps) {
+  const dialogTitleId = useId();
   const [dialog, setDialog] = useState<{ action: string; impact: Impact; key: string; group?: Group; proposal?: AutofillGroup[] } | null>(null);
   const [confirmation, setConfirmation] = useState("");
   const [reason, setReason] = useState("");
@@ -43,12 +70,30 @@ export function GroupOperationsActions({ eventSlug, inputHash, unassigned, group
     finally { pending.current = false; setBusy(false); }
   }
   const titles: Record<string, string> = { reset: "Alle groepen terugzetten", autofill: "Groepen automatisch vullen", confirm: "Groep bevestigen", reopen: "Samenstelling heropenen" };
-  return <section className="group-operations" aria-label="Groepsacties">
-    <div className="actions"><button className="btn" type="button" disabled={busy || !unassigned.length} onClick={() => void preview("autofill")}>Groepen automatisch vullen</button><button className="btn outline" type="button" disabled={busy} onClick={() => void preview("reset")}>Alle groepen terugzetten</button></div>
-    <p>Streef {target} kinderen · evenementmaximum {maximum}. Groepsbevestiging en startafspraak hebben elk hun eigen bevestiging.</p>
-    <div className="actions">{groups.map(group => <button className="btn outline" type="button" key={group.id} disabled={busy} onClick={() => void preview(group.compositionConfirmed || group.locked ? "reopen" : "confirm", group)}>{group.systemCode} · {group.compositionConfirmed || group.locked ? "Heropenen" : "Groep bevestigen"}</button>)}</div>
-    {dialog && <AdminDialog labelledBy="group-operation-title" close={() => { if (!busy) setDialog(null); }}>
-      <h2 id="group-operation-title">{titles[dialog.action]}{dialog.group ? ` · ${dialog.group.systemCode}` : ""}</h2>
+  return <section className={`group-operations${group ? " group-operations-inline" : ""}`} aria-label={group ? `Acties voor ${group.systemCode}` : "Groepsacties"}>
+    {group ? (
+      <button
+        className="btn outline"
+        type="button"
+        disabled={busy}
+        aria-label={`${group.systemCode} · ${group.compositionConfirmed || group.locked ? "Heropenen" : "Groep bevestigen"}`}
+        onClick={() => void preview(group.compositionConfirmed || group.locked ? "reopen" : "confirm", group)}
+      >
+        {group.compositionConfirmed || group.locked ? "Heropenen" : "Groep bevestigen"}
+      </button>
+    ) : (
+      <details className="group-operations-menu">
+        <summary>Groepsacties</summary>
+        <div className="actions">
+          {onOpenStarts && <button className="btn outline" type="button" disabled={busy} onClick={onOpenStarts}>Groepen over startpunten verdelen</button>}
+          <button className="btn" type="button" disabled={busy || !unassigned.length} onClick={() => void preview("autofill")}>Groepen automatisch vullen</button>
+          <button className="btn outline" type="button" disabled={busy} onClick={() => void preview("reset")}>Alle groepen terugzetten</button>
+        </div>
+        <p>Streef {target} kinderen · evenementmaximum {maximum}. Groepsbevestiging en startafspraak hebben elk hun eigen bevestiging.</p>
+      </details>
+    )}
+    {dialog && <AdminDialog labelledBy={dialogTitleId} close={() => { if (!busy) setDialog(null); }}>
+      <h2 id={dialogTitleId}>{titles[dialog.action]}{dialog.group ? ` · ${dialog.group.systemCode}` : ""}</h2>
       {dialog.action === "reset" && <>
         <p>{dialog.impact.groups} groepen · {dialog.impact.registrations} inschrijvingen · {dialog.impact.children} kinderen.</p>
         <p>{dialog.impact.confirmedCompositions} bevestigde samenstellingen · {dialog.impact.draftAppointments} conceptafspraken · {dialog.impact.publishedAppointments} gepubliceerde afspraken · {dialog.impact.reservations} reserveringen.</p>
