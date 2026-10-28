@@ -248,18 +248,25 @@ export function PortalApplicationSubmit({
               </ul>
             ) : (
               <p>
-                De adres- en toestemmingsgegevens zijn vastgelegd. Inhoudelijke
+                De aanvullende adresgegevens zijn aanwezig. Inhoudelijke
                 beoordeling blijft een aparte stap.
               </p>
             )}
+            <p>
+              Goedkeuring, locatiecontrole en activatie blijven afzonderlijke
+              beheerhandelingen.
+            </p>
+          </section>
+          <section aria-label="Toestemmingsstatus">
+            <h3>Toestemmingsstatus zoals vastgelegd</h3>
             <p>
               Beschikbaarheid: {consentLabel(p.consent.availability)}.
               Locatietoestemming: {consentLabel(p.consent.locationConsent)}.
             </p>
             <p>
-              Alleen de bewoner bevestigt ontbrekende toestemming. Goedkeuring,
-              locatiecontrole en activatie blijven afzonderlijke
-              beheerhandelingen.
+              Dit zijn de verklaringen zoals de bewoner ze heeft vastgelegd.
+              Deze actie vult niets aan. De bestaande goedkeuringsregels blijven
+              gelden.
             </p>
           </section>
           <p>

@@ -35,7 +35,7 @@ update submit_case set preview=api.admin_portal_application_submit_preview('duin
 select is(pg_temp.submit_state(),(select baseline from submit_case),'preview and cancellation have zero domain, audit, outbox or identity writes');
 select is((select preview->>'allowed' from submit_case),'true','relaxed submit accepts missing address, portal name, description and unconfirmed consents');
 select is((select jsonb_array_length(preview->'missingFields') from submit_case),0,'approval-only fields are not missing submit fields');
-select is((select jsonb_array_length(preview->'approvalRequirements') from submit_case),3,'address, availability and location consent are separately required before approval');
+select is((select jsonb_array_length(preview->'approvalRequirements') from submit_case),1,'only missing address is an additional requirement under the current approval policy');
 select is((select preview#>>'{contact,email}' from submit_case),'parent-size-5@example.invalid','canonical recipient comes from the actual verified applicant');
 select is((select preview#>>'{consent,locationConsent}' from submit_case),'false','preview reports actual consent without inventing agreement');
 select ok((select not (preview ? 'private_draft_data' or preview ? 'raw_user_meta_data' or preview ? 'encrypted_password') from submit_case),'preview is a safe DTO');
@@ -121,7 +121,7 @@ select is((select count(*) from app_private.audit_events where resource_id=(sele
 update auth.users set email_confirmed_at=null where id='a0000000-0000-0000-0000-000000000005';
 select throws_ok($$select api.admin_portal_application_submit('duindorp-halloween-2026',aid,version,preview->>'inputHash','Bewoner vroeg de organisatie om indiening','actual-submit-receipt-093') from submit_case$$,'23514','SUBMISSION_REPLAY_CONTEXT_CHANGED','receipt replay still rechecks the current verified resident context');
 update auth.users u set email_confirmed_at=o.email_confirmed_at from original_confirmation o where o.id=u.id;
-select throws_ok($$select api.admin_review_portal_application(aid,(result->>'version')::integer,'approved','heksenrijk',null,null,'Afzonderlijke goedkeuringscontrole') from submit_case$$,'23514','INCOMPLETE_APPLICATION','approval still requires explicit resident consent even though submission does not');
+select throws_ok($$select api.admin_review_portal_application(aid,(result->>'version')::integer,'approved','heksenrijk',null,null,'Afzonderlijke goedkeuringscontrole') from submit_case$$,'23514','CONTACT_ADDRESS_REQUIRED','approval still requires the complete address that submission may omit');
 update app_private.event_capabilities set revoked_at=now() where user_id='f0000000-0000-0000-0000-000000000001' and capability='portals_manage' and event_id=(select event_id from app_private.portal_applications where id=(select aid from submit_case)) and revoked_at is null;
 select throws_ok($$select api.admin_portal_application_submit('duindorp-halloween-2026',aid,version,preview->>'inputHash','Bewoner vroeg de organisatie om indiening','actual-submit-receipt-093') from submit_case$$,'42501','NOT_AUTHORIZED','revoked permission also blocks receipt replay');
 

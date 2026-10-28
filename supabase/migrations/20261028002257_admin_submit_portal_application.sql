@@ -50,9 +50,7 @@ begin
   blockers:=blockers||jsonb_build_array(jsonb_build_object('field','portal','message','De gekoppelde poort is afgesloten, ingetrokken of afgewezen. Gebruik de bestaande beheerprocedure.','repair','review'));
  end if;
  select coalesce(jsonb_agg(jsonb_build_object('field',field,'message',message)),'[]'::jsonb) into approval from (values
- ('address','Vul vóór goedkeuring het volledige adres in.',nullif(trim(a.private_draft_data #>> '{address,street}'),'') is null or nullif(trim(a.private_draft_data #>> '{address,houseNumber}'),'') is null or upper(replace(trim(coalesce(a.private_draft_data #>> '{address,postalCode}','')),' ','')) !~ '^[0-9]{4}[A-Z]{2}$'),
- ('availability','De bewoner moet de beschikbaarheid zelf bevestigen.',a.private_draft_data->'availability' is distinct from 'true'::jsonb),
- ('locationConsent','De bewoner moet de locatietoestemming zelf bevestigen.',a.private_draft_data->'locationConsent' is distinct from 'true'::jsonb)
+ ('address','Vul vóór goedkeuring het volledige adres in.',nullif(trim(a.private_draft_data #>> '{address,street}'),'') is null or nullif(trim(a.private_draft_data #>> '{address,houseNumber}'),'') is null or upper(replace(trim(coalesce(a.private_draft_data #>> '{address,postalCode}','')),' ','')) !~ '^[0-9]{4}[A-Z]{2}$')
  ) requirements(field,message,missing) where missing;
  body:=jsonb_build_object('applicationId',a.id,'code',a.system_code,'version',a.version,'targetStatus','submitted',
   'allowed',jsonb_array_length(blockers)=0,'blockingReasons',blockers,'missingFields',validation->'missingFields','approvalRequirements',approval,
@@ -119,24 +117,7 @@ end $$;
 revoke all on function api.admin_portal_application_submit_preview(text,uuid),api.admin_portal_application_submit(text,uuid,integer,text,text,text) from public,anon;
 grant execute on function api.admin_portal_application_submit_preview(text,uuid),api.admin_portal_application_submit(text,uuid,integer,text,text,text) to authenticated;
 
--- Restore the consent guard from 20260924144126, bypassed by the later contact/address wrapper.
--- This is an approval requirement, deliberately absent from submission validation.
-alter function api.admin_review_portal_application(uuid,integer,text,text,numeric,numeric,text) rename to admin_review_portal_application_before_organization_submit;
-revoke all on function api.admin_review_portal_application_before_organization_submit(uuid,integer,text,text,numeric,numeric,text) from public,anon,authenticated;
-create function api.admin_review_portal_application(_application_id uuid,_expected_version integer,_decision text,_world_slug text,_latitude numeric,_longitude numeric,_reason text)
-returns jsonb language plpgsql security definer set search_path='' as $$
-declare a app_private.portal_applications; eid uuid;
-begin
- select event_id into eid from app_private.portal_applications where id=_application_id;
- perform 1 from app_private.events where id=eid for no key update;
- select * into a from app_private.portal_applications where id=_application_id for update;
- if auth.uid() is null or a.id is null or not app_private.has_capability(a.event_id,'portals_manage',auth.uid()) then raise exception 'NOT_AUTHORIZED' using errcode='42501'; end if;
- if _decision='approved' and (a.private_draft_data->'availability' is distinct from 'true'::jsonb or a.private_draft_data->'locationConsent' is distinct from 'true'::jsonb) then raise exception 'INCOMPLETE_APPLICATION' using errcode='23514'; end if;
- return api.admin_review_portal_application_before_organization_submit(_application_id,_expected_version,_decision,_world_slug,_latitude,_longitude,_reason);
-end $$;
-revoke all on function api.admin_review_portal_application(uuid,integer,text,text,numeric,numeric,text) from public,anon;
-grant execute on function api.admin_review_portal_application(uuid,integer,text,text,numeric,numeric,text) to authenticated;
-
+-- The existing contact/address approval policy is deliberately unchanged.
 alter function api.admin_portal_management_snapshot(text) rename to admin_portal_management_snapshot_before_organization_submit;
 revoke all on function api.admin_portal_management_snapshot_before_organization_submit(text) from public,anon,authenticated;
 create function api.admin_portal_management_snapshot(_event_slug text)

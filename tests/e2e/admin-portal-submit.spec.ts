@@ -134,8 +134,11 @@ test("explicit organization submission previews, cancels, preserves consent and 
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText(fixture.email, { exact: false })).toBeVisible();
   await expect(
+    dialog.getByRole("region", { name: "Toestemmingsstatus" }),
+  ).toContainText("Locatietoestemming: Niet bevestigd");
+  await expect(
     dialog.getByRole("region", { name: "Nog nodig vóór goedkeuren" }),
-  ).toContainText("locatietoestemming");
+  ).not.toContainText("Locatietoestemming");
   await expect(
     dialog.getByRole("button", {
       name: "Indienen voor beoordeling",
@@ -318,12 +321,10 @@ test("real simultaneous requests serialize managers and return identical receipt
   };
   const simultaneous = await Promise.all([
     first.schema("api").rpc("admin_portal_application_submit", payload),
-    second
-      .schema("api")
-      .rpc("admin_portal_application_submit", {
-        ...payload,
-        _idempotency_key: randomUUID(),
-      }),
+    second.schema("api").rpc("admin_portal_application_submit", {
+      ...payload,
+      _idempotency_key: randomUUID(),
+    }),
   ]);
   expect(simultaneous.filter((result) => !result.error)).toHaveLength(1);
   expect(simultaneous.find((result) => result.error)?.error?.code).toBe(

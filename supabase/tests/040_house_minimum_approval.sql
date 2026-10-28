@@ -18,10 +18,8 @@ select
       'houseNumber', '12',
       'postalCode', '2583 PS'
     ),
-    -- Submission may omit these confirmations; approval requires the resident's
-    -- explicit confirmations. Operational/category details remain optional here.
-    'availability', true,
-    'locationConsent', true
+    'availability', false,
+    'locationConsent', false
   ),
   now()
 from app_private.events event
@@ -35,7 +33,7 @@ select lives_ok(
     '11000000-0000-0000-0000-000000000940', 1, 'approved', null,
     null, null, 'Contact en adres zijn gecontroleerd'
   ) $$,
-  'the organisation can approve contact, address and explicit consent without operational details'
+  'the organisation can approve with only contact details and a complete address'
 );
 
 set local role postgres;
@@ -103,7 +101,7 @@ select
   event.id,
   'b0000000-0000-0000-0000-000000000001',
   'submitted',
-  jsonb_build_object('contactName', 'Zonder adres', 'phone', '0612345678', 'availability', true, 'locationConsent', true),
+  jsonb_build_object('contactName', 'Zonder adres', 'phone', '0612345678'),
   now()
 from app_private.events event
 where event.slug = 'duindorp-halloween-2026';
