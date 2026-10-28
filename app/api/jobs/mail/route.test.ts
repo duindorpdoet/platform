@@ -21,21 +21,34 @@ describe("outbox worker acceptance and uncertainty contract",()=>{
   state.send.mockResolvedValue({accepted:false,validated:true,provider:"resend",providerId:null});
   const response=await POST(request());const body=await response.json();expect(response.status).toBe(200);expect(body).toMatchObject({accepted:0,validated:1,unknown:0});expect(body.results[0].status).toBe("validated");
   expect(state.rpc).toHaveBeenCalledWith("worker_claim_outbox",{_batch_size:10,_lease_seconds:300,_environment:"staging"});
-  expect(state.rpc).toHaveBeenCalledWith("worker_update_outbox",expect.objectContaining({_status:"validated",_provider_id:null}));
+  expect(state.rpc).toHaveBeenCalledWith("worker_update_outbox_v2",expect.objectContaining({_status:"validated",_provider_id:null}));
  });
  it("a lost gateway response makes ordinary registration mail unknown rather than proving rejection",async()=>{
   state.send.mockRejectedValue(new ApiError(502,"MAIL_GATEWAY_NETWORK","Veilige fout"));
   const response=await POST(request());expect((await response.json()).unknown).toBe(1);expect(state.send).toHaveBeenCalledOnce();
-  expect(state.rpc).toHaveBeenCalledWith("worker_update_outbox",expect.objectContaining({_status:"unknown",_provider_id:null}));
+  expect(state.rpc).toHaveBeenCalledWith("worker_update_outbox_v2",expect.objectContaining({_status:"unknown",_provider_id:null}));
  });
  it("does not hide a durable-store failure after acceptance or initiate another send",async()=>{
   state.send.mockResolvedValue({accepted:true,validated:false,provider:"resend",providerId:row.id});
-  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[row]:null,error:name==="worker_update_outbox"?{code:"offline"}:null}));
-  await expect(POST(request())).rejects.toMatchObject({code:"MAIL_STATUS_STORE_FAILED"});expect(state.send).toHaveBeenCalledOnce();
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[row]:null,error:name==="worker_update_outbox_v2"?{code:"offline"}:null}));
+  const response=await POST(request());expect(response.status).toBe(200);expect(await response.json()).toMatchObject({unknown:1,results:[{id:row.id,status:"unknown",errorCode:"MAIL_STATUS_STORE_FAILED"}]});expect(state.send).toHaveBeenCalledOnce();
+  expect(state.rpc.mock.calls.filter(c=>c[0]==="worker_update_outbox_v2")).toHaveLength(1);
  });
  it("persists provider throttling delay instead of a shorter generic backoff",async()=>{
   state.send.mockRejectedValue(new MailGatewayError("RESEND_RATE_LIMIT","deferred",120));
   const started=Date.now();const response=await POST(request());expect((await response.json()).deferred).toBe(1);
-  const args=state.rpc.mock.calls.find(c=>c[0]==="worker_update_outbox")![1];expect(args._status).toBe("deferred");expect(Date.parse(args._next_attempt_at)-started).toBeGreaterThanOrEqual(120000);expect(state.send).toHaveBeenCalledOnce();
+  const args=state.rpc.mock.calls.find(c=>c[0]==="worker_update_outbox_v2")![1];expect(args._status).toBe("deferred");expect(Date.parse(args._next_attempt_at)-started).toBeGreaterThanOrEqual(120000);expect(state.send).toHaveBeenCalledOnce();
+ });
+ it.each(["after-acceptance","handling-provider-error"])("continues the claimed batch when status persistence fails %s",async(mode)=>{
+  const second={...row,id:"9607af2b-ad41-4b87-81f1-6f633c83e87f"};
+  const logged=vi.spyOn(console,"error").mockImplementation(()=>{});
+  state.rpc.mockImplementation(async(name:string,args:Record<string,unknown>)=>({data:name==="worker_claim_outbox"?[row,second]:null,error:name==="worker_update_outbox_v2"&&args._id===row.id?{code:"42501",message:"private recipient and payload"}:null}));
+  if(mode==="handling-provider-error")state.send.mockRejectedValueOnce(new MailGatewayError("RESEND_RATE_LIMIT","deferred",120));
+  state.send.mockResolvedValue({accepted:true,validated:false,provider:"resend",providerId:second.id});
+  const response=await POST(request());expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({claimed:2,unknown:1,accepted:1,results:[{id:row.id,status:"unknown",errorCode:"MAIL_STATUS_STORE_FAILED"},{id:second.id,status:"accepted"}]});
+  expect(state.send).toHaveBeenCalledTimes(2);
+  expect(state.rpc.mock.calls.filter(c=>c[0]==="worker_update_outbox_v2"&&c[1]._id===row.id)).toHaveLength(1);
+  expect(JSON.stringify(logged.mock.calls)).not.toContain("private recipient");logged.mockRestore();
  });
 });

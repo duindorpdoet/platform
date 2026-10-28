@@ -12,6 +12,7 @@ for (const name of ['worker_update_outbox', 'worker_update_outbox_v2']) {
   const body = await response.json().catch(() => null);
   const code = typeof body?.code === 'string' && /^[A-Z0-9_]{1,100}$/.test(body.code) ? body.code : 'NO_CODE';
   console.log(JSON.stringify({ rpc: name, http: response.status, code, outboxChanged: false }));
+  if (process.argv.includes('--require-v2') && name === 'worker_update_outbox_v2' && (code !== 'P0001' || body?.message !== 'OUTBOX_NOT_FOUND')) throw new Error('TEXT_STATUS_RPC_NOT_USABLE');
 }
 try {
   const logs = execFileSync('journalctl', ['--user', '--since', '2026-10-28 00:00:00 UTC', '--no-pager', '--output=cat'], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });

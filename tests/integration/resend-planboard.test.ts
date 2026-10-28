@@ -31,12 +31,12 @@ function sqlAsync(query:string):Promise<string> {
 }
 const literal=(v:unknown)=>v===null||v===undefined?"null":typeof v==="number"||typeof v==="boolean"?String(v):"'"+(typeof v==="string"?v:JSON.stringify(v)).replaceAll("'","''")+"'";
 async function rpc(name:string,args:Record<string,unknown>) {
- if(!/^[a-z_]+$/.test(name)||Object.keys(args).some(k=>!/^_[a-z_]+$/.test(k)))throw new Error("INVALID_TEST_RPC");
+ if(!/^[a-z][a-z0-9_]*$/.test(name)||Object.keys(args).some(k=>!/^_[a-z_]+$/.test(k)))throw new Error("INVALID_TEST_RPC");
  const call=`api.${name}(${Object.entries(args).map(([k,v])=>`${k}=>${literal(v)}`).join(",")})`;
  const query=name==="worker_claim_outbox"?`select coalesce(jsonb_agg(to_jsonb(r)),'[]') from ${call} r;`:`select to_jsonb(${call});`;
  // Hold real claim locks briefly so concurrent kicks necessarily overlap in
  // separate PostgreSQL transactions rather than serializing in the JS bridge.
- const transactional=name==="worker_claim_outbox"?`begin;${query} select pg_sleep(0.15);commit;`:query;
+ const transactional=`begin;set local role service_role;${query}${name==="worker_claim_outbox"?" select pg_sleep(0.15);":""}commit;`;
  return JSON.parse(await sqlAsync(transactional)||"null");
 }
 const actor="select set_config('request.jwt.claims','{\"sub\":\"f0000000-0000-0000-0000-000000000001\",\"role\":\"authenticated\"}',false);";

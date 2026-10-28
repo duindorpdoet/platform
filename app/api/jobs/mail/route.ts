@@ -69,8 +69,12 @@ export async function POST(request: Request) {
   }
 
   async function updateOutbox(args: Record<string, unknown>) {
-    const stored = await supabase!.schema("api").rpc("worker_update_outbox", args);
-    if (stored.error) throw new ApiError(503, "MAIL_STATUS_STORE_FAILED", "De mailstatus kon niet worden opgeslagen.");
+    const stored = await supabase!.schema("api").rpc("worker_update_outbox_v2", args);
+    if (stored.error) {
+      const code = /^[A-Z0-9_]{1,100}$/.test(stored.error.code ?? "") ? stored.error.code : "RPC_ERROR";
+      console.error("mail_status_store_failed", { code, outboxId: args._id });
+      throw new ApiError(503, "MAIL_STATUS_STORE_FAILED", "De mailstatus kon niet worden opgeslagen.");
+    }
   }
 
   const { data, error } = await supabase
@@ -78,6 +82,8 @@ export async function POST(request: Request) {
     .rpc("worker_claim_outbox", { _batch_size: 10, _lease_seconds: 300, _environment: env.APP_ENVIRONMENT });
 
   if (error) {
+    const code = /^[A-Z0-9_]{1,100}$/.test(error.code ?? "") ? error.code : "RPC_ERROR";
+    console.error("mail_claim_failed", { code });
     return NextResponse.json({ error: "claim-failed" }, { status: 500 });
   }
 
@@ -165,26 +171,34 @@ export async function POST(request: Request) {
             ? cause.name.slice(0, 100)
             : "UNKNOWN";
 
-      await updateOutbox( {
-        _id: row.id,
-        _status: uncertain ? "unknown" : terminal ? "failed" : "deferred",
-        _provider_id: null,
-        _error_code: errorCode,
-        _next_attempt_at: terminal ? null : cause instanceof MailGatewayError ? new Date(Date.now() + cause.retryAfterSeconds * 1000).toISOString() : nextRetry(row.attempts).toISOString(),
-      });
+      // A status-store outage must not abort the remaining claimed rows. Never
+      // resend here: the durable gateway owns any accepted/uncertain attempt.
+      let statusStored = false;
+      if (!(cause instanceof ApiError && cause.code === "MAIL_STATUS_STORE_FAILED")) {
+        try {
+          await updateOutbox({
+            _id: row.id,
+            _status: uncertain ? "unknown" : terminal ? "failed" : "deferred",
+            _provider_id: null,
+            _error_code: errorCode,
+            _next_attempt_at: terminal ? null : cause instanceof MailGatewayError ? new Date(Date.now() + cause.retryAfterSeconds * 1000).toISOString() : nextRetry(row.attempts).toISOString(),
+          });
+          statusStored = true;
+        } catch {
+          console.error("mail_result_unpersisted", { code: "MAIL_STATUS_STORE_FAILED", outboxId: row.id });
+        }
+      }
 
       results.push({
         id: row.id,
-        status: uncertain ? "unknown" : terminal ? "failed" : "deferred",
-        errorCode,
+        status: !statusStored || uncertain ? "unknown" : terminal ? "failed" : "deferred",
+        errorCode: statusStored ? errorCode : "MAIL_STATUS_STORE_FAILED",
       });
     }
   }
 
-  // Every row outcome above is persisted in the outbox. A deferred or terminally
-  // failed message is a handled delivery result, not an outage of this worker.
-  // Returning 5xx here would make the scheduler retry the whole HTTP batch while
-  // the outbox already owns the retry policy and lease state.
+  // Unpersisted outcomes stay unknown; gateway reconciliation/lease expiry owns
+  // recovery. Other row failures are handled without retrying this HTTP batch.
   return NextResponse.json({
     claimed: rows.length,
     ...summarizeMailWorkerResults(results),

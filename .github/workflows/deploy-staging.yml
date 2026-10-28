@@ -371,6 +371,8 @@ jobs:
         run: node scripts/deploy/redesign-preflight.mjs
       - name: Validate application
         run: pnpm verify
+      - name: Diagnose worker result RPC before migration (no delivery)
+        run: node scripts/deploy/diagnose-mail-worker.mjs
       - name: Link and migrate staging database
         env:
           PGOPTIONS: '-c lock_timeout=5000 -c statement_timeout=300000'
@@ -421,6 +423,8 @@ jobs:
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed staging release
         run: node scripts/deploy/verify-deployment.mjs staging "${APP_URL}"
+      - name: Verify text status RPC through the real service role route
+        run: node scripts/deploy/diagnose-mail-worker.mjs --require-v2
       - name: Activate Resend default for the authorized exact release
         env:
           RESEND_DEFAULT_RELEASE_SHA: ${{ vars.RESEND_DEFAULT_RELEASE_SHA }}

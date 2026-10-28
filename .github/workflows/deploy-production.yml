@@ -32,7 +32,7 @@ concurrency:
 jobs:
   mail-worker-diagnostics:
     name: Inspect mail worker RPC and application error codes
-    if: github.event_name == 'workflow_dispatch' && inputs.mail_worker_diagnostics && (github.ref == 'refs/heads/production' || github.ref == 'refs/heads/codex/mail-worker-hotfix-20261028')
+    if: github.event_name == 'workflow_dispatch' && inputs.mail_worker_diagnostics && github.ref == 'refs/heads/production'
     environment: production
     runs-on: [self-hosted, Linux, X64, dg-sites, production, duindorphalloweenprod]
     timeout-minutes: 5
@@ -134,7 +134,7 @@ jobs:
           if-no-files-found: error
   deploy:
     name: Promote exact staging release
-    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline
+    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics
     needs: [backup-restore, release-policy]
     environment:
       name: production
@@ -249,6 +249,8 @@ jobs:
         run: node scripts/deploy/redesign-preflight.mjs
       - name: Validate application
         run: pnpm verify
+      - name: Diagnose worker result RPC before migration (no delivery)
+        run: node scripts/deploy/diagnose-mail-worker.mjs
       - name: Link and migrate production database
         env:
           PGOPTIONS: '-c lock_timeout=5000 -c statement_timeout=300000'
@@ -298,6 +300,8 @@ jobs:
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed production release
         run: node scripts/deploy/verify-deployment.mjs production "${APP_URL}"
+      - name: Verify text status RPC through the real service role route
+        run: node scripts/deploy/diagnose-mail-worker.mjs --require-v2
       - name: Activate Resend default for the authorized exact release
         env:
           RESEND_DEFAULT_RELEASE_SHA: ${{ vars.RESEND_DEFAULT_RELEASE_SHA }}
