@@ -26,6 +26,7 @@ describe("together organizer view", () => {
   it("shows group conflicts and asks for renewed preview on stale data", () => {
     expect(groupLabel(party)).toBe("Nog niet ingedeeld");
     expect(groupLabel({ ...party, walkingGroups: [{ id: "g", systemCode: "G-02", displayName: "Nachtlopers", status: "draft", locked: false }] })).toBe("G-02 · Nachtlopers");
+    expect(groupLabel({ ...party, walkingGroups: [{ id: "g", systemCode: "G-02", displayName: "G-02", status: "draft", locked: false }] })).toBe("G-02");
     expect(togetherError("STALE_VERSION")).toContain("opnieuw");
   });
 });

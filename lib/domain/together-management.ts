@@ -1,3 +1,4 @@
+import { walkingGroupLabel } from "./contact-identity";
 import { dominantStartPreference } from "./start-preference";
 export type TogetherGroup = {
   id: string;
@@ -64,7 +65,7 @@ export type TogetherPreview = {
 export const partyIdentity = (party: TogetherParty) => party.clusterReference ??
   (party.memberCount > 1 ? "Samenloop · reference ontbreekt" : party.members[0]?.reference ?? "Inschrijving niet beschikbaar");
 export const groupLabel = (party: TogetherParty) => party.walkingGroups.length
-  ? party.walkingGroups.map((group) => [group.systemCode, group.displayName].filter(Boolean).join(" · ")).join(", ")
+  ? party.walkingGroups.map((group) => walkingGroupLabel({ groupCode: group.systemCode, groupName: group.displayName })).join(", ")
   : "Nog niet ingedeeld";
 export const togetherProblemLabels: Record<string, string> = {
   missing_reference: "Samenloopnummer ontbreekt.",
