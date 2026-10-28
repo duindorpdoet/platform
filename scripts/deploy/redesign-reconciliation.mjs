@@ -10,9 +10,10 @@ export function releaseMetadataQuery(before) {
   const tracked=before?`(${originalActive}) or r.runid>${boundary}`:`r.status in ${active}`;
   const mailIds=before?.mailEventIds;
   if(before&&(!Array.isArray(mailIds)||mailIds.some(id=>typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id))))throw new Error('MAIL_EVENT_BASELINE_REQUIRED');
-  const originalMail=before?`e.id = any(array[${mailIds.map(id=>`'${id}'::uuid`).join(',')}]::uuid[])`:'true';
+  const originalIds=before?`array[${mailIds.map(id=>`'${id}'::uuid`).join(',')}]::uuid[]`:'array[]::uuid[]';
+  const originalMail=before?'e.id in (select id from original_mail_ids)':'true';
   const addedMail=before?`not (${originalMail})`:'false';
-  return `set local timezone='UTC';set local datestyle='ISO';set local extra_float_digits=3;select jsonb_build_object(
+  return `set local timezone='UTC';set local datestyle='ISO';set local extra_float_digits=3;with original_mail_ids as (select unnest(${originalIds}) as id) select jsonb_build_object(
     'migrationHistory',(select coalesce(jsonb_agg(jsonb_build_object('version',m.version,'sha256',encode(sha256(convert_to(to_jsonb(m)::text,'UTF8')),'hex')) order by m.version),'[]') from supabase_migrations.schema_migrations m),
     'cronBoundary',(select coalesce(max(runid),0)::text from cron.job_run_details),
     'cronTerminal',(select jsonb_build_object('rows',count(*),'sha256',encode(sha256(convert_to(coalesce(string_agg(h,'' order by h),''),'UTF8')),'hex')) from (select encode(sha256(convert_to(to_jsonb(r)::text,'UTF8')),'hex') h from cron.job_run_details r where ${terminal}) hashes),
