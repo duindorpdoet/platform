@@ -144,6 +144,112 @@ async function screenshot(page: Page, name: string, project: string) {
     path: `docs/screenshots/poortkamer/${project}-${name}.png`,
   });
 }
+
+function eveningDomainState() {
+  requireLocalTogetherDatabase();
+  const tables = ["portals", "run_stops", "portal_reservations", "poortenboek_passport_seals", "portal_room_messages", "messenger_conversations", "messenger_messages", "portal_incidents", "portal_incident_history", "email_outbox", "portal_push_outbox", "portal_simulation_runs", "portal_simulation_events"];
+  return Object.fromEntries(tables.map(table => [table, sql(`select md5(coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text,'')) from app_private.${table} t`)]));
+}
+
+test("fictional rehearsal completes guided and free scenarios without live commands or domain changes", async ({ page, context }, info) => {
+  await owner(context);
+  await page.addLocatorHandler(page.getByRole("button", { name: "Installatievenster sluiten" }), async close => close.click());
+  await page.goto("/mijn-huis");
+  await page.getByRole("button", { name: "Meer", exact: true }).click();
+  await page.getByRole("button", { name: "Voorbereiden", exact: true }).click();
+  await page.getByRole("button", { name: "Oefenen", exact: true }).click();
+  const practice = page.locator(".pes");
+  await expect(practice.getByText("Oefenstand — fictieve groepen", { exact: true })).toBeVisible();
+  const before = eveningDomainState();
+  const commands: string[] = [];
+  page.on("request", request => {
+    if (request.method() === "POST" && /\/rpc\/(portal_room_command|.*simulation.*|.*incident.*|.*passport.*|.*scan.*|.*chat.*|.*message_send.*|.*operation.*)/.test(request.url())) commands.push(request.url());
+  });
+  await practice.getByRole("button", { name: "Start de oefenavond", exact: true }).click();
+  const coach = practice.locator(".pes-coach");
+  const metrics = practice.locator(".pes-metrics strong");
+  await coach.getByRole("button", { name: "Open de oefenpoort", exact: true }).click();
+  await expect(practice.getByRole("img", { name: /Fictieve oefenstraat met jullie open poort/ })).toBeVisible();
+  await coach.getByRole("button", { name: "Stuur een oefengroep", exact: true }).click();
+  await practice.getByRole("button", { name: "4×", exact: true }).click();
+  await expect(practice.locator(".pes-map-group.arrived")).toHaveCount(1);
+  await practice.locator(".pes-scene-top").scrollIntoViewIfNeeded();
+  await screenshot(page, "oefenstraat", info.project.name);
+  await expect(metrics).toHaveText(["0", "0", "0"]);
+  await practice.locator(".pes-current-visit").getByRole("button", { name: "Bevestig oefenaankomst", exact: true }).dblclick();
+  await expect(metrics).toHaveText(["1", "12", "0"]);
+  await practice.locator(".pes-current-visit").getByRole("button", { name: "Bezoek afronden & oefenzegel", exact: true }).dblclick();
+  await expect(metrics).toHaveText(["1", "12", "12"]);
+  await expect(practice.locator(".pes-map-group.done")).toHaveCount(1);
+  await coach.getByRole("button", { name: "Maak het wat drukker", exact: true }).click();
+  await expect(practice.locator(".pes-map-group.waiting")).toHaveCount(1);
+  await coach.getByRole("button", { name: "Pauzeer de oefenpoort", exact: true }).click();
+  await expect(practice.getByRole("button", { name: "Een groep op pad", exact: true })).toBeDisabled();
+  await expect(practice.locator(".pes-map-group.arrived")).toHaveCount(1);
+  await practice.locator(".pes-current-visit").getByRole("button", { name: "Bevestig oefenaankomst", exact: true }).click();
+  await practice.locator(".pes-current-visit").getByRole("button", { name: "Bezoek afronden & oefenzegel", exact: true }).click();
+  await expect(metrics).toHaveText(["2", "22", "22"]);
+  await expect(practice.locator(".pes-map-group.waiting")).toHaveCount(1);
+  await expect(practice.locator(".pes-map-group.approaching")).toHaveCount(0);
+  await practice.getByRole("button", { name: "Bericht oefenen", exact: true }).click();
+  await practice.getByLabel("Oefenbericht aan de fictieve regie").fill("Dit is uitsluitend een fictieve hulpvraag");
+  await practice.getByRole("button", { name: "Oefenbericht versturen", exact: true }).click();
+  await expect(practice.locator(".pes-regie-note")).toContainText("lokaal gemaakt");
+  await practice.getByRole("button", { name: "Hulpvraag oefenen", exact: true }).click();
+  await expect(practice.locator(".pes-regie-note")).toContainText("lokale demo");
+  await coach.getByRole("button", { name: "Hervat de oefenpoort", exact: true }).click();
+  await expect(practice.locator(".pes-map-group.waiting")).toHaveCount(0);
+  await expect(practice.locator(".pes-map-group.arrived")).toHaveCount(1);
+  await coach.getByRole("button", { name: "Ontvang de laatste oefengroep", exact: true }).click();
+  await coach.getByRole("button", { name: "Rond huidig oefenbezoek af", exact: true }).click();
+  await practice.getByRole("button", { name: "Bekijk de oefenfinale", exact: true }).click();
+  await expect(practice.locator(".pes-village.is-finale")).toBeVisible();
+  await coach.getByRole("button", { name: "Sluit de oefenpoort", exact: true }).click();
+  await expect(practice.locator(".pes-steps .is-done")).toHaveCount(9);
+  await expect(metrics).toHaveText(["3", "30", "30"]);
+  await expect(coach).toContainText("Jullie openden de poort");
+  await noOverflow(page);
+  await screenshot(page, "oefenavond", info.project.name);
+  // An unmount/remount, a real snapshot refresh and temporary offline mode keep
+  // local progress; a hard reload deliberately starts a new fictional exercise.
+  await page.getByRole("button", { name: "Checklist", exact: true }).click();
+  await page.getByRole("button", { name: "Oefenen", exact: true }).click();
+  await expect(metrics).toHaveText(["3", "30", "30"]);
+  const refreshed = page.waitForResponse(response => response.url().includes("/rpc/portal_room_snapshot") && response.ok());
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await refreshed;
+  await expect(metrics).toHaveText(["3", "30", "30"]);
+  await practice.getByRole("button", { name: "Vrij oefenen", exact: true }).click();
+  await context.setOffline(true);
+  await practice.locator(".pes-gate-buttons").getByRole("button", { name: "Open", exact: true }).click();
+  await practice.getByRole("button", { name: "Even lekker druk", exact: true }).click();
+  await expect(practice.locator(".pes-map-group.waiting")).toHaveCount(1);
+  await practice.getByRole("button", { name: "Opnieuw", exact: true }).click();
+  const reset = page.getByRole("dialog", { name: "Nog een rondje oefenen?" });
+  await expect(reset.getByRole("button", { name: "Verder oefenen", exact: true })).toBeFocused();
+  await reset.getByRole("button", { name: "Opnieuw beginnen", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(reset.getByRole("button", { name: "Resetvenster sluiten", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(reset).toHaveCount(0);
+  await expect(metrics).toHaveText(["3", "30", "30"]);
+  await practice.getByRole("button", { name: "Opnieuw", exact: true }).click();
+  await reset.getByRole("button", { name: "Opnieuw beginnen", exact: true }).click();
+  await expect(practice.getByRole("button", { name: "Start de oefenavond", exact: true })).toBeFocused();
+  await expect(metrics).toHaveText(["0", "0", "0"]);
+  await context.setOffline(false);
+  await practice.getByRole("button", { name: "Start de oefenavond", exact: true }).click();
+  await page.reload();
+  await page.getByRole("button", { name: "Meer", exact: true }).click();
+  await page.getByRole("button", { name: "Voorbereiden", exact: true }).click();
+  await page.getByRole("button", { name: "Oefenen", exact: true }).click();
+  await expect(practice.getByRole("button", { name: "Start de oefenavond", exact: true })).toBeVisible();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await practice.evaluate(element => Array.from(element.querySelectorAll("*"), el => getComputedStyle(el).animationDuration).every(duration => duration === "0s" || duration === "1e-05s" || duration === "0.00001s"))).toBe(true);
+  expect(commands).toEqual([]);
+  expect(eveningDomainState()).toEqual(before);
+});
+
 test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revocation", async ({
   page,
   context,
@@ -373,7 +479,7 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   await expect(page.getByRole("heading", { name: "Meld wat de ontvangst belemmert" })).toBeVisible();
   await page.getByRole("button", { name: "Voorbereiden", exact: true }).click();
   await page.getByRole("button", { name: "Oefenen", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Oefen de avond zonder echte gegevens" })).toBeVisible();
+  await expect(page.getByText("Oefenstand — fictieve groepen", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Checklist", exact: true }).click();
   await expect(page.getByText(/snoepvoorraad/i)).toHaveCount(0);
   const installDismiss = page.getByRole("button", {

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { PortalEveningSimulation } from "./portal-evening-simulation";
 import {
   AlertTriangle,
   CheckCircle2,
-  ChevronRight,
   Eye,
   FileCheck2,
-  FlaskConical,
   Gauge,
   ShieldAlert,
   Sparkles,
@@ -23,8 +22,6 @@ type Command = (
   operation: string,
   payload: Record<string, unknown>,
 ) => Promise<boolean>;
-
-const simulationLabels: Record<string, string> = { quiet: "Nog rustig", open: "Poort open", approaching: "Groep onderweg", arrived: "Groep aangekomen", busy: "Drukte bij de poort", paused: "Even pauze", stopped: "Poort gesloten", incident: "Hulp vragen", chat: "Bericht proberen", seal: "Zegel ontvangen", finale: "De laatste poort", completed: "Oefening klaar" };
 
 const incidentLabels = {
   crowding: "Drukte bij de poort",
@@ -97,7 +94,6 @@ export function PoortkamerLiveV2({ room }: { room: PortalRoom }) {
 
 export function PoortkamerManagementV2({
   room,
-  busy,
   disabled,
   canEdit,
   command,
@@ -120,12 +116,12 @@ export function PoortkamerManagementV2({
       />
       }
       {section === "incident" && <IncidentCard room={room} disabled={disabled} command={command} />}
-      {section === "simulation" && <SimulationCard
-        room={room}
-        disabled={disabled || busy}
-        command={command}
-      />
-      }
+      {section === "simulation" && <PortalEveningSimulation
+        key={`${room.eventId}:${room.portal.id}:${room.userId}`}
+        scope={`${room.eventId}:${room.portal.id}:${room.userId}`}
+        portalName={room.portal.name} portalCode={room.portal.code}
+      />}
+
     </>
   );
 }
@@ -318,59 +314,6 @@ function IncidentCard({
           </article>
         ))}
       </div>
-    </section>
-  );
-}
-
-function SimulationCard({
-  room,
-  disabled,
-  command,
-}: {
-  room: PortalRoom;
-  disabled: boolean;
-  command: Command;
-}) {
-  const sim = room.v2.simulation;
-  const active = sim?.state === "running";
-  return (
-    <section className={`${s.card} ${s.v2Feature} ${s.simulation}`}>
-      <img className={s.cardImage} src="/images/poortkamer-v2/simulation-hero-wide.webp" alt="Een oefensituatie achter een verlichte poort" />
-      <p className={s.eyebrow}>Oefen de avond</p>
-      <h2>Oefen de avond zonder echte gegevens</h2>
-      <p>
-        Probeer rustig wat er gebeurt als een groep aankomt of jullie even pauze nodig hebben. In deze oefening is alles verzonnen en ontvangt niemand een echt bericht.
-      </p>
-      {sim && <p className={s.v2SimulationLabel}><FlaskConical /> Oefenstand · {simulationLabels[sim.phase] ?? sim.phase}</p>}
-      {active && sim.scenario && (
-        <div className={s.v2Queue}>
-          <div><strong>{sim.scenario.visits}</strong><span>oefenbezoeken</span></div>
-          <div><strong>{sim.scenario.children}</strong><span>fictieve kinderen</span></div>
-        </div>
-      )}
-      {!active ? (
-        <div className={s.actions}>
-          <button className={`${s.button} ${s.primary}`} disabled={disabled} onClick={() => void command("simulation_start", {})}>Start oefenstand</button>
-          {sim && <button className={s.button} disabled={disabled} onClick={() => void command("simulation_reset", { simulationRunId: sim.id })}>Oefenrun verwijderen</button>}
-        </div>
-      ) : (
-        <div className={s.actions}>
-          {(["open", "approaching", "arrived", "busy", "paused", "stopped", "incident", "chat", "seal", "finale", "completed"] as const).map((phase) => (
-            <button className={s.button} key={phase} disabled={disabled} onClick={() => void command("simulation_step", { simulationRunId: sim.id, phase })}>
-              {simulationLabels[phase] ?? phase} <ChevronRight />
-            </button>
-          ))}
-          <ul className={s.muted}>
-            <li>Statusbediening: {['open','paused','stopped'].includes(sim.phase) ? 'getest' : 'nog testen'}</li>
-            <li>Wachtrij: gezien</li>
-            <li>Chat: {sim.scenario.chatTested ? 'getest' : 'nog testen'}</li>
-            <li>Incident: {sim.scenario.incident ? 'getest' : 'nog testen'}</li>
-            <li>Poortenboekzegel: {sim.scenario.sealTested ? 'getest' : 'nog testen'}</li>
-            <li>Eindpoort: {sim.scenario.finaleTested ? 'getest' : 'nog testen'}</li>
-          </ul>
-          <button className={s.button} disabled={disabled} onClick={() => void command("simulation_reset", { simulationRunId: sim.id })}>Alleen oefendata wissen</button>
-        </div>
-      )}
     </section>
   );
 }

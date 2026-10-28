@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  testMatch: ["realtime-pressure.spec.ts", "manual-portal-identity.spec.ts"],
+  testMatch: ["realtime-pressure.spec.ts", "manual-portal-identity.spec.ts", "admin-portal-submit.spec.ts"],
   outputDir: "test-results/realtime",
   workers: 1,
   retries: 0,

@@ -28,7 +28,7 @@ type TimelineEntry = { label: string; at: string };
 type PortalRegistration = {
   id: string; intakeId: string | null; applicationId: string | null; portalId: string | null; code: string;
   status: PortalRegistrationStatus;
-  portalArchived?: boolean;
+  portalArchived?: boolean; intakeWithdrawn?: boolean;
   applicationStatus: "draft" | "submitted" | "changes_requested" | "approved" | "rejected" | "withdrawn" | null;
   applicationVersion: number | null; email: string | null; contactName: string | null; phone: string | null;
   address: Address; requestedWorldSlug: string | null; reviewFeedback: string | null; lastActivityAt: string;
@@ -47,7 +47,7 @@ type ActivePortal = {
   locationVerified: boolean; coordinate: [number, number] | null; activeReservations: number; expectedChildren: number;
 };
 
-type Snapshot = { conceptPortals?: Array<{id:string}>; realtimeTopic: string | null; worlds: World[]; registrations: PortalRegistration[]; activePortals: ActivePortal[] };
+type Snapshot = { canSubmitApplications?: boolean; conceptPortals?: Array<{id:string}>; realtimeTopic: string | null; worlds: World[]; registrations: PortalRegistration[]; activePortals: ActivePortal[] };
 
 const reviewLabels = { approved: "Goedgekeurd", changes_requested: "Aanpassing gevraagd", rejected: "Afgewezen" } as const;
 const operationLabels: Record<ActivePortal["operationStatus"], string> = {
@@ -231,7 +231,7 @@ export function PortalReviews({ eventSlug, canPlan = false }: { eventSlug: strin
               <span className="portal-code">{registration.code}</span>
               <span className="portal-primary"><strong>{registration.contactName || "Naam nog niet ingevuld"}</strong><small>{address}</small></span>
               <span className="portal-phone">{registration.phone ? <a href={`tel:${registration.phone.replace(/\s/g, "")}`} onClick={(event) => event.stopPropagation()}><Phone />{registration.phone}</a> : "Geen telefoonnummer"}</span>
-              <span className="portal-status-badge">{portalRegistrationStatusLabels[registration.status]}</span>
+              <span className="portal-status-badge">{registration.applicationStatus === "draft" && progress.completed === 4 ? "Nog niet ingediend" : portalRegistrationStatusLabels[registration.status]}</span>
               <time dateTime={registration.lastActivityAt}><Clock3 />{formatDate(registration.lastActivityAt)}</time>
               <ChevronDown className="portal-expand-icon" />
             </summary>
@@ -246,7 +246,7 @@ export function PortalReviews({ eventSlug, canPlan = false }: { eventSlug: strin
                 <section className="portal-progress-card" aria-label={`${progress.completed} van ${progress.total} onderdelen ingevuld`}>
                   <div><span>Voortgang aanvraag</span><strong>{progress.completed} van {progress.total} onderdelen</strong></div>
                   <div className="portal-progress-track"><span style={{ width: `${progress.percentage}%` }} /></div>
-                  <div className="portal-progress-steps"><span data-complete={registration.progress.contact}>Contact</span><span data-complete={registration.progress.address}>Adres</span><span data-complete={registration.progress.experience}>Beleving</span><span data-complete={registration.progress.planning}>Planning</span></div>
+                  {progress.completed === 4 && ["draft","changes_requested"].includes(registration.applicationStatus ?? "") && <p><strong>Gegevens ingevuld · nog niet ingediend</strong><br/>Vier categorieën ingevuld. Indienen is een aparte stap; de server controleert de vereiste gegevens.</p>}<div className="portal-progress-steps"><span data-complete={registration.progress.contact}>Contact</span><span data-complete={registration.progress.address}>Adres</span><span data-complete={registration.progress.experience}>Beleving</span><span data-complete={registration.progress.planning}>Planning</span></div>
                 </section>
                 <section className="portal-filled-data">
                   <h4>Ingevulde gegevens</h4>
@@ -262,7 +262,7 @@ export function PortalReviews({ eventSlug, canPlan = false }: { eventSlug: strin
               </div>
               <aside className="portal-timeline"><h4>Tijdlijn</h4>{registration.timeline.length === 0 ? <p>Nog geen tijdlijn beschikbaar.</p> : registration.timeline.map((entry, index) => <div key={`${entry.label}-${entry.at}-${index}`}><span /><p><strong>{entry.label}</strong><time dateTime={entry.at}>{formatDate(entry.at)}</time></p></div>)}</aside>
               <div className="portal-row-actions">
-                {(registration.intakeId || registration.applicationId) && <PortalRegistrationActions operational={Boolean(registration.portalId)} eventSlug={eventSlug} kind={registration.intakeId ? "intake" : "application"} id={(registration.intakeId ?? registration.applicationId)!} reload={load} />}
+                {(registration.intakeId || registration.applicationId) && <PortalRegistrationActions applicationId={registration.applicationId} worlds={snapshot.worlds} canSubmit={Boolean(snapshot.canSubmitApplications && registration.applicationId && registration.applicationVersion && ["draft","changes_requested"].includes(registration.applicationStatus ?? "") && !registration.intakeWithdrawn && !registration.portalArchived && registration.status !== "closed")} onSubmitted={()=>setNotice("Aanvraag namens bewoner ingediend. Goedkeuren en activeren blijven aparte stappen.")} onEditPortal={()=>{setEditingPortalId(registration.portalId!);setActiveTab("manual");}} operational={Boolean(registration.portalId)} eventSlug={eventSlug} kind={registration.intakeId ? "intake" : "application"} id={(registration.intakeId ?? registration.applicationId)!} reload={load} />}
                 {registration.portalId && <button className="btn outline" type="button" onClick={() => { setEditingPortalId(registration.portalId!); setActiveTab("manual"); }}>Gegevens bewerken</button>}
                 {registration.phone && <a className="btn outline" href={`tel:${registration.phone.replace(/\s/g, "")}`}><Phone />Bellen</a>}
                 {registration.email && <a className="btn outline" href={emailHref(registration)}><Mail />Bericht sturen</a>}
