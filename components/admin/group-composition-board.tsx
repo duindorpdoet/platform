@@ -20,6 +20,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
+import "./group-composition-board.css";
 import { dominantStartPreference } from "@/lib/domain/start-preference";
 import { GroupOperationsActions } from "./group-operations-actions";
 import { AdminDialog } from "@/components/admin/admin-dialog";
@@ -98,28 +99,6 @@ const repairErrorMessage = (message: string) => {
     return "Deze samenloop kan niet automatisch worden gecorrigeerd. Vernieuw de indeling.";
   return `Corrigeren geweigerd: ${message}`;
 };
-const boardColumns = (board: HTMLDivElement) =>
-  [...board.children].filter(
-    (child): child is HTMLElement =>
-      child instanceof HTMLElement && Boolean(child.dataset.columnId),
-  );
-const pinnedColumn = (board: HTMLDivElement) => {
-  const unassigned = boardColumns(board).find(
-    (column) => column.dataset.columnId === "unassigned",
-  );
-  return unassigned && getComputedStyle(unassigned).position === "sticky"
-    ? unassigned
-    : null;
-};
-const boardGap = (board: HTMLDivElement) =>
-  Number.parseFloat(getComputedStyle(board).columnGap) || 0;
-const columnAnchor = (board: HTMLDivElement) => {
-  const pinned = pinnedColumn(board);
-  return pinned
-    ? pinned.getBoundingClientRect().right + boardGap(board)
-    : board.getBoundingClientRect().left +
-        (Number.parseFloat(getComputedStyle(board).paddingLeft) || 0);
-};
 
 export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: string; onOpenStarts?: () => void }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -150,7 +129,6 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
   const commandRetry = useRef<{signature:string;key:string}|null>(null);
   function commandKey(signature:string){if(commandRetry.current?.signature!==signature)commandRetry.current={signature,key:crypto.randomUUID()};return commandRetry.current.key;}
   const revealColumn = useRef<string | null>(null);
-  const pendingAlignment = useRef<string | null>(null);
   const request = useRef(0);
   const boardRef = useRef<HTMLDivElement>(null);
   const dragScrollFrame = useRef<number | null>(null);
@@ -169,7 +147,6 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
     else {
       setSnapshot(data as Snapshot);
       if (revealColumn.current) {
-        pendingAlignment.current = revealColumn.current;
         setQuery("");
         setAssignmentFilter("all");
         setTypeFilter("all");
@@ -398,29 +375,6 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
     visibleColumns.findIndex((column) => column.id === activeColumnId),
   );
   const selectedColumnId = visibleColumns[activeColumn]?.id ?? "";
-  const visibleColumnOrder = JSON.stringify(
-    visibleColumns.map((column) => column.id),
-  );
-  const scrollToColumn = (id: string, behavior: ScrollBehavior) => {
-    const board = boardRef.current;
-    if (!board) return;
-    const element = boardColumns(board).find(
-      (child) => child.dataset.columnId === id,
-    );
-    if (!element) return;
-    const pinned = pinnedColumn(board);
-    const targetLeft =
-      element === pinned
-        ? board.getBoundingClientRect().left
-        : columnAnchor(board);
-    board.scrollTo({
-      left:
-        board.scrollLeft +
-        element.getBoundingClientRect().left -
-        targetLeft,
-      behavior,
-    });
-  };
   const stopDragAutoScroll = useCallback(() => {
     dragScrollSpeed.current = 0;
     if (dragScrollFrame.current !== null) {
@@ -431,15 +385,15 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
   const startDragAutoScroll = useCallback(() => {
     if (dragScrollFrame.current !== null) return;
     const step = () => {
-      const board = boardRef.current;
+      const board = boardRef.current?.closest<HTMLElement>(".admin-content");
       const speed = dragScrollSpeed.current;
       if (!board || speed === 0) {
         dragScrollFrame.current = null;
         return;
       }
-      const previous = board.scrollLeft;
-      board.scrollLeft += speed;
-      if (board.scrollLeft === previous) {
+      const previous = board.scrollTop;
+      board.scrollTop += speed;
+      if (board.scrollTop === previous) {
         stopDragAutoScroll();
         return;
       }
@@ -447,26 +401,19 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
     };
     dragScrollFrame.current = requestAnimationFrame(step);
   }, [stopDragAutoScroll]);
-  const updateDragAutoScroll = useCallback((clientX: number) => {
-    const board = boardRef.current;
-    if (!board || board.scrollWidth <= board.clientWidth) {
+  const updateDragAutoScroll = useCallback((clientY: number) => {
+    const content = boardRef.current?.closest<HTMLElement>(".admin-content");
+    if (!content || content.scrollHeight <= content.clientHeight) {
       stopDragAutoScroll();
       return;
     }
-    const bounds = board.getBoundingClientRect();
-    const pinned = pinnedColumn(board);
-    const left = pinned
-      ? pinned.getBoundingClientRect().right + boardGap(board)
-      : bounds.left;
-    const width = Math.max(0, bounds.right - left);
-    const edge = Math.min(110, Math.max(64, width * 0.12));
+    const bounds = content.getBoundingClientRect();
+    const edge = Math.min(96, bounds.height * 0.15);
     let speed = 0;
-    if (clientX < left + edge) {
-      speed = -Math.ceil(5 + 19 * (1 - Math.max(0, clientX - left) / edge));
-    } else if (clientX > bounds.right - edge) {
-      speed = Math.ceil(
-        5 + 19 * (1 - Math.max(0, bounds.right - clientX) / edge),
-      );
+    if (clientY < bounds.top + edge) {
+      speed = -Math.ceil(5 + 19 * (1 - Math.max(0, clientY - bounds.top) / edge));
+    } else if (clientY > bounds.bottom - edge) {
+      speed = Math.ceil(5 + 19 * (1 - Math.max(0, bounds.bottom - clientY) / edge));
     }
     dragScrollSpeed.current = speed;
     if (speed === 0) stopDragAutoScroll();
@@ -476,32 +423,18 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
     const column = visibleColumns[index];
     if (!column) return;
     setActiveColumnId(column.id);
-    scrollToColumn(column.id, "smooth");
   };
-  const alignColumn = useEffectEvent(() => {
-    const target = pendingAlignment.current ?? selectedColumnId;
-    setActiveColumnId(target);
-    scrollToColumn(target, "instant");
-    // Filtering can queue an old scroll event before the new column is measured.
-    // Keep the explicit reveal authoritative until the alignment has painted.
-    requestAnimationFrame(() => { pendingAlignment.current = null; });
+  const revealSelectedColumn = useEffectEvent(() => {
+    const column = boardRef.current?.querySelector<HTMLElement>(
+      `[data-column-id="${selectedColumnId}"]`,
+    );
+    column?.scrollIntoView({ block: "nearest", inline: "nearest" });
   });
   useEffect(() => {
-    const board = boardRef.current;
-    if (!board) return;
-    let frame = 0;
-    const align = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => alignColumn());
-    };
-    align();
-    const observer = new ResizeObserver(align);
-    observer.observe(board);
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-    };
-  }, [visibleColumnOrder, revealRequest]);
+    if (!revealRequest) return;
+    const frame = requestAnimationFrame(() => revealSelectedColumn());
+    return () => cancelAnimationFrame(frame);
+  }, [revealRequest]);
   useEffect(() => () => stopDragAutoScroll(), [stopDragAutoScroll]);
   if (!snapshot)
     return (
@@ -552,6 +485,7 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
           {notice}
         </p>
       )}
+      <GroupOperationsActions eventSlug={eventSlug} inputHash={snapshot.inputHash} unassigned={snapshot.unassigned} onOpenStarts={onOpenStarts} target={snapshot.targetGroupSize} maximum={snapshot.maxGroupSize} reload={load} notice={setNotice} />
       <div className="group-mobile-picker">
         <button
           aria-label="Vorige groep"
@@ -588,15 +522,14 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
           <ChevronRight />
         </button>
       </div>
-      {onOpenStarts && <button type="button" className="btn outline" onClick={onOpenStarts}>Groepen over startpunten verdelen</button>}
-      <GroupOperationsActions eventSlug={eventSlug} inputHash={snapshot.inputHash} unassigned={snapshot.unassigned} groups={snapshot.groups} target={snapshot.targetGroupSize} maximum={snapshot.maxGroupSize} reload={load} notice={setNotice} />
+
       <div
         ref={boardRef}
         className="group-composition-board"
         aria-label="Groepskolommen"
         onDragOver={(event) => {
           event.preventDefault();
-          updateDragAutoScroll(event.clientX);
+          updateDragAutoScroll(event.clientY);
         }}
         onDragLeave={(event) => {
           if (
@@ -607,34 +540,14 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
         }}
         onDragEnd={stopDragAutoScroll}
         onDrop={stopDragAutoScroll}
-        onScroll={(event) => {
-          if (pendingAlignment.current) return;
-          const board = event.currentTarget;
-          const elements = boardColumns(board);
-          const pinned = pinnedColumn(board);
-          const candidates = pinned
-            ? elements.filter((element) => element !== pinned)
-            : elements;
-          if (!candidates.length) {
-            if (pinned?.dataset.columnId)
-              setActiveColumnId(pinned.dataset.columnId);
-            return;
-          }
-          const anchor = columnAnchor(board);
-          const nearest = candidates.reduce((best, element) => {
-            const distance = (node: HTMLElement) =>
-              Math.abs(node.getBoundingClientRect().left - anchor);
-            return distance(element) < distance(best) ? element : best;
-          });
-          if (nearest.dataset.columnId)
-            setActiveColumnId(nearest.dataset.columnId);
-        }}
+
       >
         {visibleColumns.map((column) => (
           <section
             className={`group-composition-column${column.id === "unassigned" ? " unassigned" : ""}${column.locked ? " locked" : ""}`}
             key={column.id}
             data-column-id={column.id}
+            data-active={column.id === selectedColumnId}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
@@ -650,7 +563,7 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
                 <h3>{column.title}</h3>
               </div>
               <span>
-                {column.childCount} kinderen / streef {snapshot.targetGroupSize}
+                {column.childCount} kinderen{column.id !== "unassigned" && ` / streef ${snapshot.targetGroupSize}`}
               </span>
             </header>
             <p>Voorkeurstijd {clock(dominantStartPreference(column.registrations))} · {column.registrations.length} inschrijvingen · {compositionItems(column.registrations).filter(item => item.registrations.length > 1).length} samenloopblokken</p>
@@ -659,6 +572,17 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
             {!snapshot.groups.find(group => group.id === column.id)?.start && snapshot.groups.find(group => group.id === column.id)?.draftStart && <p>Conceptstart {clock(snapshot.groups.find(group => group.id === column.id)!.draftStart!.startsAt)}</p>}
             {column.registrations.some(r => r.paymentEligible === false) && <p className="form-warning">Betaling open of in controle · deelname blijft mogelijk</p>}
             {snapshot.groups.find(group=>group.id===column.id)?.communication && (()=>{const mail=snapshot.groups.find(group=>group.id===column.id)!.communication!;return <p>Mail: {(mail.pending??0)+(mail.processing??0)+(mail.deferred??0)} in wachtrij · {mail.accepted??0} geaccepteerd · {mail.delivered??0} bewezen bezorgd · {mail.failed??0} fout · {mail.unknown??0} onzeker</p>;})()}
+            {snapshot.groups.find(group => group.id === column.id) && (
+              <GroupOperationsActions
+                eventSlug={eventSlug}
+                inputHash={snapshot.inputHash}
+                group={snapshot.groups.find(group => group.id === column.id)!}
+                target={snapshot.targetGroupSize}
+                maximum={snapshot.maxGroupSize}
+                reload={load}
+                notice={setNotice}
+              />
+            )}
             {column.id !== "unassigned" && <button type="button" className="btn outline" aria-expanded={!collapsed[column.id]} aria-controls={`group-content-${column.id}`} onClick={() => setCollapsed(value => ({...value, [column.id]: !value[column.id]}))}>{collapsed[column.id] ? "Uitklappen" : "Inklappen"}</button>}
             {column.locked && (
               <p className="group-locked">

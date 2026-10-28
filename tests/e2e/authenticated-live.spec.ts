@@ -1247,36 +1247,36 @@ async function openFixtureBoard(
   return { moves, creates, repairs };
 }
 
-async function expectColumnAligned(page: Page, id: string) {
+async function expectSelectedColumn(page: Page, id: string) {
   await expect(page.getByRole("combobox", { name: "Kies groep" })).toHaveValue(id);
-  await expect.poll(() => page.locator(`[data-column-id="${id}"]`).evaluate((element) => {
-    const board = element.parentElement!;
-    return Math.abs(element.getBoundingClientRect().left - board.getBoundingClientRect().left);
-  })).toBeLessThan(2);
+  const selected = page.locator(`[data-column-id="${id}"]`);
+  await expect(selected).toHaveAttribute("data-active", "true");
+  await expect(selected).toBeVisible();
+  await expect(page.locator(".group-composition-column:visible")).toHaveCount(1);
 }
 
-test("group board keeps swipes, filtered picker and previous/next aligned across gaps", async ({ page, context }) => {
+test("group board keeps the mobile picker and previous/next selection valid after filtering", async ({ page, context }) => {
   await openFixtureBoard(page, context);
   const picker = page.getByRole("combobox", { name: "Kies groep" });
+  await expectSelectedColumn(page, "unassigned");
   await page.getByRole("button", { name: "Volgende groep" }).click();
-  await expectColumnAligned(page, "a");
-  // A swipe's scroll event must update the same selection used by the picker.
-  await page.locator('[data-column-id="b"]').evaluate((element) => element.scrollIntoView({ block: "nearest", inline: "start" }));
-  await expectColumnAligned(page, "b");
+  await expectSelectedColumn(page, "a");
+  await picker.selectOption("b");
+  await expectSelectedColumn(page, "b");
   await page.getByRole("button", { name: "Vorige groep" }).click();
-  await expectColumnAligned(page, "a");
+  await expectSelectedColumn(page, "a");
   await page.getByRole("button", { name: /^Filters/ }).click();
   await page.getByRole("combobox", { name: "Groepsstatus", exact: true }).selectOption("free");
   await page.getByRole("button", { name: "Toepassen" }).click();
   await expect(picker.locator("option")).toHaveCount(2);
-  await expectColumnAligned(page, "a");
+  await expectSelectedColumn(page, "a");
   await page.getByRole("button", { name: "Volgende groep" }).click();
-  await expectColumnAligned(page, "b");
+  await expectSelectedColumn(page, "b");
   await expect(page.getByRole("button", { name: "Volgende groep" })).toBeDisabled();
   await page.getByRole("button", { name: /^Filters/ }).click();
   await page.getByRole("combobox", { name: "Groepsstatus", exact: true }).selectOption("locked");
   await page.getByRole("button", { name: "Toepassen" }).click();
-  await expectColumnAligned(page, "locked");
+  await expectSelectedColumn(page, "locked");
   await page.getByRole("textbox", { name: "Zoek in groepsindeling" }).fill("geen-resultaat");
   await expect(picker).toBeDisabled();
   await expect(page.getByRole("button", { name: "Vorige groep" })).toBeDisabled();
@@ -1284,60 +1284,56 @@ test("group board keeps swipes, filtered picker and previous/next aligned across
   await expect(page.getByText("Geen groepen binnen deze filters.")).toBeVisible();
 });
 
-test("group board pins the waiting lane, fits its scrollbar and auto-scrolls while dragging", async ({ page, context }) => {
-  await openFixtureBoard(page, context, 1440, 760);
-  const board = page.getByLabel("Groepskolommen");
-  const waiting = page.locator('[data-column-id="unassigned"]');
-  const firstGroup = page.locator('[data-column-id="a"]');
+for (const width of [390, 768, 1440]) {
+  test(`group board exposes its cards without horizontal scrolling at ${width}px`, async ({ page, context }) => {
+    await openFixtureBoard(page, context, width, 760);
+    const board = page.getByLabel("Groepskolommen");
+    const controls = page.locator(".group-composition > .group-operations");
+    await expect(controls.locator("summary")).toContainText("Groepsacties");
+    await expect(controls.locator("details")).not.toHaveAttribute("open");
+    await expect(controls.getByRole("button", { name: "Alle groepen terugzetten", exact: true })).toBeHidden();
+    // Confirmation belongs to the affected card, never a list before the board.
+    await expect(controls.getByRole("button", { name: /G-.* · (Groep bevestigen|Heropenen)/, includeHidden: true })).toHaveCount(0);
+    await expect.poll(() => board.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+    await assertReadableLayout(page);
 
-  await expect.poll(() => board.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
-  const initial = await page.evaluate(() => {
-    const boardElement = document.querySelector<HTMLElement>('[aria-label="Groepskolommen"]')!;
-    const waitingElement = document.querySelector<HTMLElement>('[data-column-id="unassigned"]')!;
-    const groupElement = document.querySelector<HTMLElement>('[data-column-id="a"]')!;
-    const content = document.querySelector<HTMLElement>('.admin-content')!;
-    return {
-      boardBottom: boardElement.getBoundingClientRect().bottom,
-      contentBottom: content.getBoundingClientRect().bottom,
-      viewportHeight: window.innerHeight,
-      waitingLeft: waitingElement.getBoundingClientRect().left,
-      groupLeft: groupElement.getBoundingClientRect().left,
-      columnsFit: [...boardElement.children].every((column) => {
-        const bounds = column.getBoundingClientRect();
-        const boardBounds = boardElement.getBoundingClientRect();
-        return bounds.top >= boardBounds.top - 1 && bounds.bottom <= boardBounds.bottom + 1;
-      }),
-    };
+    if (width <= 700) {
+      await expectSelectedColumn(page, "unassigned");
+      const firstCard = page.locator('[data-column-id="unassigned"] .group-registration-card').first();
+      await expect(firstCard).toBeVisible();
+      const bounds = await firstCard.boundingBox();
+      const contentBottom = await page.locator(".admin-content").evaluate(element => element.getBoundingClientRect().bottom);
+      expect(bounds!.y).toBeLessThan(contentBottom - 44);
+      // Real scroll keys must reach the last registration; overflow clipping
+      // can leave a card visible in the DOM but unreachable on a phone.
+      const content = page.locator(".admin-content");
+      await content.focus();
+      await page.keyboard.press("End");
+      const lastRegistration = page.locator('[data-column-id="unassigned"] .group-registration-card').last();
+      await expect(lastRegistration).toBeInViewport();
+      expect(await content.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+      await page.getByRole("combobox", { name: "Kies groep" }).selectOption("a");
+      await expectSelectedColumn(page, "a");
+      await expect(page.locator('[data-column-id="a"]').getByRole("button", { name: "G-a · Groep bevestigen", exact: true })).toBeVisible();
+    } else {
+      await expect(page.locator(".group-composition-column:visible")).toHaveCount(5);
+      const positions = await board.locator(".group-composition-column").evaluateAll(columns => columns.map(column => {
+        const rect = column.getBoundingClientRect();
+        return { top: Math.round(rect.top), left: rect.left, right: rect.right, position: getComputedStyle(column).position };
+      }));
+      expect(positions[0].top).toBe(positions[1].top);
+      expect(positions[1].left).toBeGreaterThanOrEqual(positions[0].right);
+      expect(new Set(positions.map(position => position.top)).size).toBeGreaterThan(1);
+      expect(positions[0].position).not.toBe("sticky");
+      // A card on the next row must be reachable in the page's vertical scroll.
+      const lastCard = board.locator(".group-composition-column").last();
+      await lastCard.scrollIntoViewIfNeeded();
+      await expect(lastCard).toBeInViewport();
+      const content = page.locator(".admin-content");
+      expect(await content.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+    }
   });
-  expect(initial.boardBottom).toBeLessThanOrEqual(initial.contentBottom + 1);
-  expect(initial.boardBottom).toBeLessThanOrEqual(initial.viewportHeight);
-  expect(initial.columnsFit).toBe(true);
-
-  await board.evaluate((element) => {
-    element.scrollLeft = element.scrollWidth;
-  });
-  await expect.poll(() => waiting.evaluate((element) => element.getBoundingClientRect().left)).toBeCloseTo(initial.waitingLeft, 0);
-  await expect.poll(() => firstGroup.evaluate((element) => element.getBoundingClientRect().left)).toBeLessThan(initial.groupLeft - 100);
-
-  await board.evaluate((element) => {
-    element.scrollLeft = 0;
-  });
-  const transfer = await page.evaluateHandle(() => new DataTransfer());
-  const rightEdge = await board.evaluate((element) => element.getBoundingClientRect().right - 4);
-  await board.dispatchEvent("dragover", { clientX: rightEdge, dataTransfer: transfer });
-  await expect.poll(() => board.evaluate((element) => element.scrollLeft)).toBeGreaterThan(30);
-  await board.dispatchEvent("dragend", { dataTransfer: transfer });
-
-  await board.evaluate((element) => {
-    element.scrollLeft = element.scrollWidth;
-  });
-  const beforeLeftScroll = await board.evaluate((element) => element.scrollLeft);
-  const groupsLeftEdge = await waiting.evaluate((element) => element.getBoundingClientRect().right + 8);
-  await board.dispatchEvent("dragover", { clientX: groupsLeftEdge, dataTransfer: transfer });
-  await expect.poll(() => board.evaluate((element) => element.scrollLeft)).toBeLessThan(beforeLeftScroll - 30);
-  await board.dispatchEvent("dragend", { dataTransfer: transfer });
-  await transfer.dispose();
-});
+}
 
 test("group board preference filters preserve complete parties and combine with assignment filters", async ({ page, context }) => {
   await openFixtureBoard(page, context);
@@ -1355,7 +1351,7 @@ test("group board preference filters preserve complete parties and combine with 
   await page.getByRole("combobox", { name: "Voorkeurstijd", exact: true }).selectOption("2026-10-31T18:00:00Z");
   await page.getByRole("combobox", { name: "Indeling", exact: true }).selectOption("assigned");
   await page.getByRole("button", { name: "Toepassen" }).click();
-  await expectColumnAligned(page, "a");
+  await expectSelectedColumn(page, "a");
   await expect(page.locator(".group-registration-card")).toHaveCount(1);
   await expect(page.locator(".group-registration-card")).toContainText("TEST-assigned");
   await filter.click();
@@ -1402,7 +1398,7 @@ test("group board offers one safe correction into the party majority group", asy
   await expect(
     page.getByText("Samenloop verdeeld over meerdere groepen."),
   ).toHaveCount(0);
-  await expectColumnAligned(page, "a");
+  await expectSelectedColumn(page, "a");
   await assertReadableLayout(page);
 });
 
@@ -1447,7 +1443,7 @@ test("group dialogs trap focus, cancel safely and submit once before revealing t
     (element as HTMLFormElement).requestSubmit();
   });
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expectColumnAligned(page, "created");
+  await expectSelectedColumn(page, "created");
   await expect(filter).toHaveText("Filters");
   await expect(page.getByRole("textbox", { name: "Zoek in groepsindeling" })).toHaveValue("");
   expect(creates).toEqual([{ _event_slug: "duindorp-halloween-2026", _display_name: "Nieuwe groep" }]);

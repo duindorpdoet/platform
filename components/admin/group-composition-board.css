@@ -1,0 +1,144 @@
+/* The page owns vertical scrolling; group containers wrap within its width. */
+.admin-route-surface .admin-content[data-admin-section="groups"] {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.admin-route-surface .admin-content[data-admin-section="groups"] > .group-composition {
+  flex: 0 0 auto;
+  gap: 16px;
+  overflow: visible;
+}
+.group-composition .group-board-toolbar {
+  gap: 16px;
+  padding-bottom: 16px;
+}
+.group-composition .group-operations-menu {
+  border: 1px solid var(--surface-line);
+  border-radius: 12px;
+  background: #132534;
+}
+.group-operations-menu > summary {
+  padding: 12px 16px;
+  color: #edc18d;
+  font-weight: 600;
+  cursor: pointer;
+}
+.group-operations-menu > .actions {
+  padding: 0 16px;
+}
+.group-composition .group-operations-menu > p {
+  margin: 12px 16px 14px;
+}
+.group-operations-menu .actions {
+  flex-wrap: wrap;
+  margin: 0;
+}
+.group-composition .group-operations-menu p {
+  color: #a9bbc6;
+}
+.admin-route-surface .admin-content[data-admin-section="groups"] .group-composition-board {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  align-items: start;
+  gap: 16px;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  scroll-snap-type: none;
+}
+.group-composition .group-composition-column,
+.group-composition .group-composition-column.unassigned {
+  position: relative;
+  left: auto;
+  z-index: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 180px;
+  height: auto;
+  padding: 16px;
+  box-shadow: none;
+  scroll-snap-align: none;
+}
+.group-composition .group-composition-column > header {
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+.group-composition-column > header > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.group-composition .group-composition-column > header h3 {
+  margin: 4px 0 0;
+  font-size: 21px;
+}
+.group-composition-column > header > span {
+  color: #d2dce4;
+  font-size: 12px;
+}
+.group-composition .group-composition-column > p,
+.group-composition .group-composition-column > button {
+  margin: 0;
+}
+.group-composition .group-operations-inline > .btn {
+  width: 100%;
+}
+.group-composition .group-composition-dropzone {
+  flex: none;
+  overflow: visible;
+  padding: 0;
+}
+.group-composition .group-composition-dropzone[hidden] {
+  display: none;
+}
+@media (max-width: 700px) {
+  .admin-route-surface .admin-content[data-admin-section="groups"] > .group-composition {
+    gap: 10px;
+  }
+  .group-composition .group-board-toolbar .kicker {
+    margin: 0 0 4px;
+  }
+  .group-composition .group-board-controls input {
+    width: 100%;
+    max-width: none;
+  }
+
+  .group-composition .group-board-toolbar {
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+  .group-composition .group-board-toolbar h2 {
+    font-size: 25px;
+  }
+  .group-composition .group-board-controls {
+    gap: 8px;
+  }
+  .group-composition .group-mobile-picker {
+    min-width: 0;
+    margin: 0;
+  }
+  .group-mobile-picker > span,
+  .group-mobile-picker select {
+    min-width: 0;
+    width: 100%;
+  }
+  .group-composition .group-mobile-picker select {
+    font-size: 16px;
+  }
+  .admin-route-surface .admin-content[data-admin-section="groups"] .group-composition-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .group-composition .group-composition-column[data-active="false"] {
+    display: none;
+  }
+  .group-composition .group-operations-menu .actions {
+    display: grid;
+  }
+}
