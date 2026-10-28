@@ -171,6 +171,7 @@ test("fictional rehearsal completes guided and free scenarios without live comma
   await coach.getByRole("button", { name: "Open de oefenpoort", exact: true }).click();
   await expect(practice.getByRole("img", { name: /Fictieve oefenstraat met jullie open poort/ })).toBeVisible();
   await coach.getByRole("button", { name: "Stuur een oefengroep", exact: true }).click();
+  await expect(practice.locator(".pes-queue")).toContainText(/Verwachte aankomst: \d{2}:\d{2} \(oefentijd\)/);
   await practice.getByRole("button", { name: "4×", exact: true }).click();
   await expect(practice.locator(".pes-map-group.arrived")).toHaveCount(1);
   await practice.locator(".pes-scene-top").scrollIntoViewIfNeeded();

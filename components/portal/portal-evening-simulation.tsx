@@ -86,7 +86,8 @@ export function PortalEveningSimulation({
     ["waiting", "approaching", "arrived"].includes(group.status),
   );
   const finished = state.completed.length >= simulationSteps.length;
-  const controlsDisabled = !state.started || (finished && state.mode === "guided");
+  const controlsDisabled =
+    !state.started || (finished && state.mode === "guided");
   const lastSealed = state.groups.filter((group) => group.sealed).at(-1);
   useEffect(() => {
     if (
@@ -661,6 +662,21 @@ export function PortalEveningSimulation({
                           <span>
                             {group.children} kinderen ·{" "}
                             {groupLabel[group.status]}
+                            {group.status === "approaching" && (
+                              <>
+                                <br />
+                                Verwachte aankomst:{" "}
+                                {clock(
+                                  state.clock +
+                                    Math.ceil(
+                                      (100 - group.progress) /
+                                        (10 * state.speed),
+                                    ) *
+                                      state.speed,
+                                )}{" "}
+                                (oefentijd)
+                              </>
+                            )}
                           </span>
                         </div>
                         <span className={`pes-group-state ${group.status}`}>
@@ -672,7 +688,7 @@ export function PortalEveningSimulation({
                             <span>•</span>
                           )}
                           {group.status === "approaching"
-                            ? `${Math.max(1, Math.ceil((100 - group.progress) / 20))} stapjes`
+                            ? `${Math.max(1, Math.ceil((100 - group.progress) / (10 * state.speed)))} stapjes`
                             : group.status === "inside"
                               ? "Welkom"
                               : group.status === "arrived"
