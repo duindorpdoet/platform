@@ -13,6 +13,7 @@ export type TogetherMember = {
   status: string;
   householdLabel: string;
   parentName: string;
+  personName?: string | null;
   parentEmail: string | null;
   childCount: number;
   children: Array<{ name: string; age: number | null }>;

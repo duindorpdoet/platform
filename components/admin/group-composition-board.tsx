@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import "./group-composition-board.css";
+import { contactPersonName } from "@/lib/domain/contact-identity";
 import { dominantEndPreference, dominantStartPreference } from "@/lib/domain/start-preference";
 import { GroupOperationsActions } from "./group-operations-actions";
 import { AdminDialog } from "@/components/admin/admin-dialog";
@@ -948,7 +949,7 @@ function Card({
         <strong>
           {itemIdentity(item)}
         </strong>
-        <span>{multiple ? `${item.registrations.length} inschrijvingen` : rep.householdLabel || "Huishouden onbekend"}</span>
+        <span>{multiple ? `${item.registrations.length} inschrijvingen` : contactPersonName(rep)}</span>
         <small>
           {itemChildren(item)} kinderen ·{" "}
           {multiple
@@ -987,7 +988,8 @@ function Card({
             <div key={registration.id}>
               <strong>{registration.reference}</strong>
               <span>
-                {registration.householdLabel || "Contact niet beschikbaar"}
+                {contactPersonName(registration)}
+                {registration.householdLabel ? ` · Gezelschap: ${registration.householdLabel}` : ""}
                 {registration.parentEmail
                   ? ` · ${registration.parentEmail}`
                   : ""}

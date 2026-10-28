@@ -2,18 +2,20 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCheck, MessageCircle, Minus, RefreshCw, Send, Wifi, WifiOff, X } from "lucide-react";
+import { conversationIdentityLabel, messengerSenderLabel, type ContactIdentity } from "@/lib/domain/contact-identity";
 import { createClient } from "@/lib/supabase/client";
 
 type MessengerMessage = {
   id: string;
   senderSide: "participant" | "organization";
+  senderName?: string | null;
   body: string;
   createdAt: string;
   isMine: boolean;
   readAt?: string | null;
 };
 
-type MessengerConversation = {
+type MessengerConversation = ContactIdentity & {
   id: string;
   subjectKind: "group" | "portal" | "viewer" | "user";
   subjectId: string;
@@ -27,7 +29,7 @@ type MessengerConversation = {
   messages: MessengerMessage[];
 };
 
-type MessengerContext = {
+type MessengerContext = ContactIdentity & {
   available: boolean;
   subjectKind: MessengerConversation["subjectKind"];
   subjectId: string;
@@ -166,8 +168,8 @@ export function SupportWidget({ eventSlug, role, groupId, portalId, viewerAccess
 
   const unread = conversation?.unreadCount ?? 0;
   const subjectLabel = useMemo(
-    () => [context?.systemCode, context?.displayName || context?.subjectLabel].filter((value, index, values) => value && values.indexOf(value) === index).join(" · "),
-    [context?.displayName, context?.subjectLabel, context?.systemCode],
+    () => context ? conversationIdentityLabel(context) : "",
+    [context],
   );
 
   function closeDialog() {
@@ -299,7 +301,7 @@ export function SupportWidget({ eventSlug, role, groupId, portalId, viewerAccess
                 )}
                 {conversation?.messages.map((message) => (
                   <article className={"messenger-message " + (message.isMine ? "is-mine" : "is-theirs")} key={message.id}>
-                    <strong>{message.isMine ? "Jij" : "Organisatie"}</strong>
+                    <strong>{message.isMine ? "Jij" : messengerSenderLabel(message)}</strong>
                     <p>{message.body}</p>
                     <small>
                       {new Date(message.createdAt).toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}

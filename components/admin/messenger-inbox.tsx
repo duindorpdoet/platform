@@ -1,18 +1,19 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCheck, Inbox, RefreshCw, Search, Send } from "lucide-react";
+import { conversationIdentityLabel, messengerSenderLabel, type ContactIdentity } from "@/lib/domain/contact-identity";
 import { createClient } from "@/lib/supabase/client";
 import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
 import "@/components/ui/chat.css";
-type Message = { id: string; senderSide: "participant" | "organization"; body: string; createdAt: string; readAt?: string | null; isMine?: boolean };
-type Conversation = {
+type Message = { id: string; senderName?: string | null; senderSide: "participant" | "organization"; body: string; createdAt: string; readAt?: string | null; isMine?: boolean };
+type Conversation = ContactIdentity & {
   id: string; subjectKind: "group" | "portal" | "viewer" | "user"; subjectId: string;
   subjectLabel?: string | null; systemCode?: string | null; displayName?: string | null;
   status: "queued" | "live" | "awaiting_participant" | "awaiting_organization" | "closed";
   version: number; claimedBy?: string | null; updatedAt: string; unreadCount: number; messages: Message[];
 };
 const statusLabel = { queued: "Nieuw gesprek", live: "In gesprek", awaiting_participant: "Wacht op antwoord", awaiting_organization: "Nieuwe reactie", closed: "Afgerond" };
-const title = (c: Conversation) => [c.systemCode, c.displayName || c.subjectLabel].filter(Boolean).join(" · ") || "Privégesprek";
+const title = (conversation: Conversation) => conversationIdentityLabel(conversation);
 const time = (value: string) => new Date(value).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" });
 async function digest(value: unknown) {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(value)));
@@ -123,7 +124,7 @@ export function MessengerInbox({ eventSlug }: { eventSlug: string }) {
       <div className="messenger-conversations" aria-label="Gesprekken">{!loaded ? <p className="chat-empty">Gesprekken ophalen…</p> : !visible.length ? <div className="chat-empty"><Inbox size={36} /><h3>{query ? "Geen gesprek gevonden" : "Alles bijgewerkt"}</h3><p>{query ? "Probeer een andere naam of groepscode." : "Nieuwe gesprekken verschijnen vanzelf in deze inbox."}</p></div> : visible.map(c => { const latest = c.messages.at(-1); return <button type="button" className="messenger-conversation" key={c.id} onClick={() => { follow.current = true; setSelectedId(c.id); }}><span className="chat-avatar">{title(c).slice(0, 1).toUpperCase()}</span><span className="messenger-conversation-copy"><strong>{title(c)}</strong><span>{latest?.body ?? "Nieuw gesprek"}</span><small>{statusLabel[c.status]}</small></span><span className="messenger-conversation-time"><time>{time(latest?.createdAt ?? c.updatedAt)}</time>{c.unreadCount > 0 && <b className="chat-unread">{c.unreadCount}</b>}</span></button>; })}</div>
     </> : <>
       <div className="chat-history" ref={scroll} role="log" aria-label="Gesprek" aria-live="polite" onScroll={() => { const el = scroll.current; follow.current = !!el && el.scrollHeight - el.scrollTop - el.clientHeight < 100; }}>
-        {selected.messages.map((m, i) => <div className="chat-entry" key={m.id}>{(i === 0 || new Date(m.createdAt).toDateString() !== new Date(selected.messages[i - 1].createdAt).toDateString()) && <div className="chat-date">{new Date(m.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "long" })}</div>}<article className={`chat-bubble ${m.senderSide === "organization" || m.isMine ? "is-mine" : ""}`}><strong className="chat-sender">{m.senderSide === "organization" ? "Organisatie" : title(selected)}</strong><p>{m.body}</p><footer><time dateTime={m.createdAt}>{time(m.createdAt)}</time>{m.readAt && m.senderSide === "organization" && <span aria-label="Gelezen"><CheckCheck size={14} /></span>}</footer></article></div>)}
+        {selected.messages.map((m, i) => <div className="chat-entry" key={m.id}>{(i === 0 || new Date(m.createdAt).toDateString() !== new Date(selected.messages[i - 1].createdAt).toDateString()) && <div className="chat-date">{new Date(m.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "long" })}</div>}<article className={`chat-bubble ${m.senderSide === "organization" || m.isMine ? "is-mine" : ""}`}><strong className="chat-sender">{messengerSenderLabel(m)}</strong><p>{m.body}</p><footer><time dateTime={m.createdAt}>{time(m.createdAt)}</time>{m.readAt && m.senderSide === "organization" && <span aria-label="Gelezen"><CheckCheck size={14} /></span>}</footer></article></div>)}
       </div>
       {selected.status === "queued" ? <div className="chat-composer"><button className="btn" disabled={busy} onClick={() => void claim()}>Gesprek openen</button></div> : selected.status === "closed" ? <p className="chat-readonly">Dit gesprek is afgerond.</p> : <form className="chat-composer" onSubmit={sendReply}><div className="chat-compose-line"><label htmlFor="messenger-reply" className="sr-only">Antwoord</label><textarea id="messenger-reply" rows={2} maxLength={4000} placeholder="Schrijf je antwoord…" value={reply} disabled={busy} onChange={e => setDrafts(previous => ({ ...previous, [selected.id]: e.target.value }))} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && matchMedia("(pointer:fine)").matches) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} /><button className="chat-send" type="submit" aria-label="Versturen" disabled={busy || !reply.trim()}><Send size={20} /></button></div></form>}
     </>}

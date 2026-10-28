@@ -25,6 +25,12 @@ $$;
 
 create temp table f as select (select id from app_private.events where slug='duindorp-halloween-2026') event_id,
  pg_temp.fixture_party(2,1) team, pg_temp.fixture_party(1,1) outsider;
+-- The event's real calendar deadline can pass while this suite runs. Keep
+-- this rollback-only election open relative to the test transaction's clock;
+-- the later assertions still explicitly exercise expired and closed rounds.
+update app_private.poortenboek_settings set round_one_deadline=now()+interval '1 hour',
+  round_two_deadline=now()+interval '2 hours',closes_at=now()+interval '3 hours'
+where event_id=(select event_id from f);
 create temp table kids as select row_number() over(order by m.child_id)::int n,m.* from f,app_private.poortenboek_members(f.event_id,f.team) m;
 create function pg_temp.child(_n int) returns uuid language sql as $$select child_id from kids where n=_n$$;
 create function pg_temp.actor() returns uuid language sql as $$select 'f0000000-0000-0000-0000-000000000001'::uuid$$;

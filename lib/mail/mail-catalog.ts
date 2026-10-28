@@ -1,3 +1,4 @@
+import { usablePersonName, walkingGroupLabel } from "../domain/contact-identity";
 import type { MailDetail, PremiumMailBrand, PremiumMailContent } from "./premium-template";
 import { validatedPaymentUrl } from "./payment-url";
 
@@ -103,8 +104,8 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
           ]
         : [
           `${greeting(payload)}de betaallink voor jullie inschrijving staat klaar. Hieronder zie je het totale bedrag en voor wie deze betaling bedoeld is.`,
-          text(payload, ["payerName"])
-            ? `${text(payload, ["payerName"])} regelt deze gezamenlijke betaling voor alle hieronder genoemde gezinnen. Betaal het totaalbedrag één keer; de andere gezinnen hoeven niet afzonderlijk te betalen.`
+          mailPayerName(payload)
+            ? `${mailPayerName(payload)} regelt deze gezamenlijke betaling voor alle hieronder genoemde gezinnen. Betaal het totaalbedrag één keer; de andere gezinnen hoeven niet afzonderlijk te betalen.`
             : "Dit is één gezamenlijke betaling voor alle hieronder genoemde gezinnen. Spreek samen af wie het totaalbedrag betaalt; ieder gezin hoeft deze link dus niet afzonderlijk te betalen.",
           "De bijdrage is bedoeld om waar nodig snoep te verdelen onder de deelnemende huizen. Je kunt de betaling ook terugvinden in jullie persoonlijke omgeving.",
         ]
@@ -148,23 +149,23 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     action: { label: "Bekijk de uitnodiging", path: "/omgeving/meekijker" }, footerReason: "Je ontvangt dit bericht omdat je voor deze groep bent uitgenodigd.",
   },
   group_merge_requested: {
-    kind: "group", subject: "Aanvraag om samen te lopen", preheader: "Jullie groepen zijn nog niet samengevoegd.", eyebrow: "Samen door de wijk", title: "Er wil een groep aansluiten.",
-    paragraphs: (payload) => [`Er is een aanvraag om aan te sluiten bij ${groupName(payload)}. De hoofdgroep en de organisatie controleren eerst de beschikbare capaciteit en de voorwaarden. Tot bevestiging blijven beide groepen zelfstandig.`],
-    action: { label: "Bekijk de aanvraag", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit bericht vanwege een aanvraag om twee groepen samen te voegen.",
+    kind: "group", subject: "Aanvraag om samen te lopen", preheader: "Jullie gezelschappen zijn nog niet gekoppeld.", eyebrow: "Samen door de wijk", title: "Er is een samenloopverzoek.",
+    paragraphs: () => ["Er is een aanvraag om jullie gezelschappen samen te laten lopen. De organisatie controleert eerst de beschikbare capaciteit en de voorwaarden. Tot bevestiging blijven de inschrijvingen afzonderlijk."],
+    action: { label: "Bekijk de aanvraag", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit bericht vanwege een samenloopverzoek.",
   },
   group_merge_approved: {
-    kind: "group", subject: "Jullie lopen voortaan samen", preheader: "De hoofdgroep is leidend voor start en route.", eyebrow: "Samen is de wijk mooier", title: "Jullie groepen zijn één groep.",
-    paragraphs: (payload) => [`De samenvoeging met ${headGroup(payload)} is bevestigd. Iedereen loopt als één groep vanaf de start en volgt dezelfde actuele poorten. Bekijk jullie startgegevens in de omgeving.`, ...(typeof payload.clusterReference === "string" && /^SL-[0-9]{4}-[A-HJ-NP-Z2-9]{6}$/.test(payload.clusterReference) ? [`Samenloopnummer: ${payload.clusterReference}`] : [])],
-    action: { label: "Bekijk onze groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt deze bevestiging omdat jouw groep is samengevoegd.",
+    kind: "group", subject: "Jullie samenloop is bevestigd", preheader: "Bekijk jullie samenloop en de actuele groepsindeling.", eyebrow: "Samen is de wijk mooier", title: "Jullie samenloop is bevestigd.",
+    paragraphs: () => ["Jullie samenloop is bevestigd. De aangesloten gezelschappen lopen samen. Bekijk jullie samenloop en de actuele groepsindeling in de persoonlijke omgeving. De organisatie bevestigt de definitieve startafspraak afzonderlijk."],
+    action: { label: "Bekijk onze groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt deze bevestiging omdat jullie samenloop is bevestigd.",
   },
   group_merge_declined: {
-    kind: "group", subject: "De groepen blijven afzonderlijk", preheader: "Je eigen inschrijving blijft gewoon bestaan.", eyebrow: "Update over jullie aanvraag", title: "Deze keer lopen jullie apart.",
-    paragraphs: (payload) => [`De aanvraag om bij ${headGroup(payload)} aan te sluiten kon niet worden bevestigd. Je eigen groep en inschrijving blijven bestaan. Bekijk jullie actuele gegevens in de omgeving.`],
-    action: { label: "Bekijk mijn groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit bericht omdat een samenvoegingsaanvraag is beoordeeld.",
+    kind: "group", subject: "Jullie samenloopverzoek is beoordeeld", preheader: "Je eigen inschrijving blijft gewoon bestaan.", eyebrow: "Update over jullie aanvraag", title: "Het samenloopverzoek is niet bevestigd.",
+    paragraphs: () => ["Het samenloopverzoek kon niet worden bevestigd. Jullie eigen inschrijving blijft bestaan. Bekijk de actuele gegevens in de persoonlijke omgeving."],
+    action: { label: "Bekijk mijn groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit bericht omdat een samenloopverzoek is beoordeeld.",
   },
   group_composition_confirmed: {
     kind: "group", subject: "Jullie groep voor Halloween is gekozen", preheader: "De starttijd wordt afzonderlijk bevestigd.", eyebrow: "Jullie groep", title: "Jullie groep is gekozen.",
-    paragraphs: (payload) => [`Jullie groep voor de Duindorpse Poorten van Halloween is gekozen: ${groupName(payload)}${text(payload, ["groupCode"]) ? ` (${text(payload, ["groupCode"])})` : ""}. Bekijk jullie groep in de persoonlijke omgeving.`, "Jullie definitieve starttijd wordt afzonderlijk bevestigd zodra de startplanning klaarstaat. Een al gedeelde afspraak vind je in jullie omgeving."],
+    paragraphs: (payload) => [`Jullie groep voor de Duindorpse Poorten van Halloween is gekozen: ${groupName(payload)}. Bekijk jullie groep in de persoonlijke omgeving.`, "Jullie definitieve starttijd wordt afzonderlijk bevestigd zodra de startplanning klaarstaat. Een al gedeelde afspraak vind je in jullie omgeving."],
     action: { label: "Bekijk jullie groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit bericht omdat jullie groepssamenstelling is bevestigd.",
   },
   group_assignment_withdrawn: {
@@ -313,10 +314,10 @@ function text(payload: Payload, keys: string[], fallback = "") {
   return fallback;
 }
 
-function firstName(payload: Payload) { return text(payload, ["firstName", "voornaam"]); }
-function greeting(payload: Payload) { const name = firstName(payload); return name ? `Hoi ${name}, ` : ""; }
-function groupName(payload: Payload) { return text(payload, ["groupName", "groepsnaam", "groupCode"], "jullie groep"); }
-function headGroup(payload: Payload) { return text(payload, ["headGroup", "hoofdgroep", "groupName"], "de hoofdgroep"); }
+function mailPersonName(payload: Payload) { return ["personName", "parentName", "contactName", "firstName", "voornaam"].map(key => usablePersonName(payload[key])).find(Boolean) ?? ""; }
+function mailPayerName(payload: Payload) { return usablePersonName(payload.payerName) ?? ""; }
+function greeting(payload: Payload) { const name = mailPersonName(payload); return name ? `Hoi ${name}, ` : ""; }
+function groupName(payload: Payload) { return walkingGroupLabel({ groupCode: text(payload, ["groupCode"]), groupName: text(payload, ["groupName", "groepsnaam"]) }); }
 function requestedStops(payload: Payload) { return text(payload, ["requestedStops", "gevraagde_stops"], "extra poorten"); }
 function decision(payload: Payload) { return text(payload, ["decision", "besluit"], "beoordeeld"); }
 function explanation(payload: Payload) { return text(payload, ["explanation", "toelichting"], "Bekijk de actuele afspraak in jullie omgeving."); }
@@ -340,6 +341,12 @@ function eventDateTime(value: unknown) {
 function detailsFor(messageType: MailMessageType, payload: Payload): MailDetail[] {
   const entries: Array<[string, string]> = [];
   const add = (label: string, value: string) => { if (value) entries.push([label, value]); };
+  if (["group_merge_requested", "group_merge_approved", "group_merge_declined"].includes(messageType)) {
+    const togetherReference = text(payload, ["clusterReference"]);
+    if (/^SL-[0-9]{4}-[A-HJ-NP-Z2-9]{6}$/.test(togetherReference)) add("Samenloopnummer", togetherReference);
+    const group = groupName(payload);
+    if (group !== "jullie groep") add("Wandelgroep", group);
+  }
   if (messageType === "registration_received") {
     add("Inschrijfnummer", reference(payload));
     add("Aantal kinderen", text(payload, ["childCount"]));
@@ -385,7 +392,7 @@ function detailsFor(messageType: MailMessageType, payload: Payload): MailDetail[
       add("Totaal te betalen", new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100));
     }
   } else if (messageType === "payment_link_ready" || (["payment_confirmed", "payment_reported"].includes(messageType) && Array.isArray(payload.paymentChildren))) {
-    add("Betaler", text(payload, ["payerName"]));
+    add("Betaler", mailPayerName(payload));
     if (Array.isArray(payload.paymentChildren)) {
       add("Betaalknop bij", text(payload, ["anchorChildName"]));
       for (const child of payload.paymentChildren) {

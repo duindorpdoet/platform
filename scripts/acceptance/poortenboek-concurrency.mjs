@@ -7,6 +7,11 @@ import {
   sql,
 } from "./together-fixtures.mjs";
 requireLocalTogetherDatabase();
+// This isolated fixture needs an open election regardless of the real event's
+// calendar deadline. Keep production settings and deadline enforcement intact.
+sql(`update app_private.poortenboek_settings
+  set round_one_deadline=now()+interval '1 hour',round_two_deadline=now()+interval '2 hours',closes_at=now()+interval '3 hours'
+  where event_id=(select id from app_private.events where slug='duindorp-halloween-2026');`);
 const [party] = createTogetherFixtures(1, 1, 2);
 const children = JSON.parse(
   sql(

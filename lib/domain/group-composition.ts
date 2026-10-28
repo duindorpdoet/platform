@@ -4,6 +4,8 @@ export type CompositionRegistration = {
   id: string;
   reference: string;
   householdLabel: string;
+  personName?: string | null;
+  parentName?: string | null;
   parentEmail: string | null;
   childCount: number;
   children: Array<{ name: string; age: number | null }>;

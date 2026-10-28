@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, RefreshCw, X } from "lucide-react";
+import { contactPersonName } from "@/lib/domain/contact-identity";
 import { createClient } from "@/lib/supabase/client";
 import { AdminDialog } from "@/components/admin/admin-dialog";
 import {
@@ -77,7 +78,7 @@ function PartyCard({ party, query, showProblems }: { party: TogetherParty; query
   const matches = matchingMembers(party, query);
   return <details className="together-card" data-party-id={party.partyId}><summary><PartySummary party={party} />{party.memberCount > 1 && <small>Samenloop bevestigd</small>}{matches.length > 0 && <small>Gevonden via: {matches.join(", ")}</small>}<span className="text-link">Leden en details</span></summary>
     {showProblems && <ul className="form-warning">{party.problems.map((problem) => <li key={problem}>{togetherProblemLabels[problem] ?? problem}</li>)}</ul>}
-    <div className="together-members">{party.members.map((member) => <article key={member.id}><strong>{member.reference}</strong><span>{member.parentName || member.householdLabel}</span><span>{member.childCount} kinderen · Samenloopcode: <b>{member.togetherCode}</b></span>{member.parentEmail && <span>{member.parentEmail}</span>}<ul>{member.children.map((child, index) => <li key={`${child.name}-${index}`}>{child.name}{child.age !== null ? ` · ${child.age} jaar` : ""}</li>)}</ul></article>)}</div>
+    <div className="together-members">{party.members.map((member) => <article key={member.id}><strong>{member.reference}</strong><span>{contactPersonName(member)}</span>{member.householdLabel && <small>Gezelschap: {member.householdLabel}</small>}<span>{member.childCount} kinderen · Samenloopcode: <b>{member.togetherCode}</b></span>{member.parentEmail && <span>{member.parentEmail}</span>}<ul>{member.children.map((child, index) => <li key={`${child.name}-${index}`}>{child.name}{child.age !== null ? ` · ${child.age} jaar` : ""}</li>)}</ul></article>)}</div>
   </details>;
 }
 

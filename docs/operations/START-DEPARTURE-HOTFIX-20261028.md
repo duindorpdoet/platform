@@ -16,4 +16,4 @@ Het voorstel toont dominante start- en eindwens, gekozen poort, vertrek, gewone 
 
 Regressies omvatten de volgordevoorbeelden, echte gezinsstemmen en samenloopblokken, neutrale en gelijke stemmen, fysieke slotaliassen, bestaande/publicatiebezetting, onhaalbare eindtijden, volledige finalecapaciteit, conceptwissels, gelijktijdige schrijvers en idempotente herhaling. De browserketen controleert ook behoud van samenstelling en onveranderde mailaantallen na conceptopslag.
 
-Deze hotfix wordt op een aparte branch gepusht en nog niet gedeployd: uitrol wacht op de volgende taak. De bestaande releasecontroles, versleutelde backup-/herstelproef en afgesproken beperkte mailboxuitzondering blijven intact. Andere mailcontroles worden niet vrijgesteld.
+De aanvankelijk uitgestelde uitrol wordt samen met de daaropvolgende persoonsnamenhotfix uitgevoerd via main → staging → production. De bestaande releasecontroles, versleutelde backup-/herstelproef en afgesproken beperkte mailboxuitzondering blijven intact. Andere mailcontroles worden niet vrijgesteld.
