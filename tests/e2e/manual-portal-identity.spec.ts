@@ -11,7 +11,8 @@ test("an approved portal with an old empty-number draft can be edited and activa
   const portalId = "12000000-0000-0000-0000-000000000029";
   // Existing approved fixture has its real owner, verified position and window.
   // Recreate P-38's broken draft shape without touching any hosted records.
-  sql(`update app_private.portals set record_source='manual',lifecycle_status='approved' where id='${portalId}';
+  sql(`update app_private.portals set application_id=null,record_source='manual',lifecycle_status='approved',operation_status='scheduled',
+    contact_name='Handmatige poortwachter',contact_phone='0612345678',contact_email='parent-size-5@example.invalid' where id='${portalId}';
     insert into app_private.portal_maintenance_drafts(portal_id,actor_id,payload)
     values('${portalId}','f0000000-0000-0000-0000-000000000001','{"systemNumber":null,"lifecycleStatus":"approved","approvalStatus":"approved","saveMode":"activate"}')
     on conflict(portal_id) do update set payload=excluded.payload;`);
@@ -29,6 +30,11 @@ test("an approved portal with an old empty-number draft can be edited and activa
     if (request.url().endsWith("/rpc/admin_manual_portal_save")) lastSave = request.postDataJSON();
   });
   await page.goto("/admin?view=portals");
+  await page.getByRole("tab", { name: /Actieve poorten/ }).click();
+  await expect(page.locator(`#portal-${portalId}`)).toBeVisible();
+  await expect(page.locator(`#portal-${portalId}`)).toContainText("Handmatige poortwachter");
+  await expect(page.locator(`#portal-${portalId}`)).toContainText("Voorbereiding");
+  expect(sql(`select lifecycle_status from app_private.portals where id='${portalId}'`)).toBe("approved");
   await page.getByRole("tab", { name: "Poorten beheren", exact: true }).click();
   const card = page.locator(".manual-portal-list article").filter({ has: page.getByText("P-29", { exact: true }) });
   await expect(card).toBeVisible();

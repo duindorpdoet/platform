@@ -41,7 +41,7 @@ type PortalRegistration = {
 };
 
 type ActivePortal = {
-  portalId: string; applicationId: string; systemCode: string; name: string; world: string; worldSlug: string;
+  portalId: string; applicationId: string | null; systemCode: string; name: string; world: string; worldSlug: string;
   operationStatus: "scheduled" | "open" | "paused" | "closed"; version: number; isFinal: boolean;
   contactName: string | null; phone: string | null; email: string | null; formattedAddress: string | null;
   locationVerified: boolean; coordinate: [number, number] | null; activeReservations: number; expectedChildren: number;
@@ -277,7 +277,7 @@ export function PortalReviews({ eventSlug, canPlan = false }: { eventSlug: strin
     </div>}
 
     {activeTab === "active" && <div role="tabpanel" className="portal-list-panel">
-      <div className="portal-list-intro"><div><p className="kicker">Goedgekeurd en operationeel beschikbaar</p><h3>Actieve poorten</h3></div><p>Deze lijst bevat uitsluitend goedgekeurde poorten waarvoor een actief poortrecord bestaat.</p></div>
+      <div className="portal-list-intro"><div><p className="kicker">Goedgekeurde poorten</p><h3>Actieve poorten</h3></div><p>Goedgekeurde bewonerspoorten en handmatig toegevoegde poorten. De operationele status staat per poort vermeld.</p></div>
       {snapshot.activePortals.length === 0 ? <div className="portal-empty"><ShieldCheck /><p>Er zijn nog geen actieve poorten.</p></div> : <div className="portal-premium-list active-portals-list">
         {snapshot.activePortals.map((portal) => <details className={`portal-list-row operation-${portal.operationStatus}${portal.isFinal ? " is-final" : ""}`} id={`portal-${portal.portalId}`} key={portal.portalId}>
           <summary><span className="portal-code">{portal.systemCode}</span><span className="portal-primary"><strong>{portal.name}</strong><small>{portal.world} · {portal.contactName || "Contactpersoon niet ingevuld"}</small></span><span className="portal-phone">{portal.phone ? <a href={`tel:${portal.phone.replace(/\s/g, "")}`} onClick={(event) => event.stopPropagation()}><Phone />{portal.phone}</a> : "Geen telefoonnummer"}</span><span className={`portal-status-badge operation-${portal.operationStatus}`}>{operationLabels[portal.operationStatus]}</span><span className="portal-arrivals"><strong>{portal.activeReservations}</strong> groepen · <strong>{portal.expectedChildren}</strong> kinderen</span><ChevronDown className="portal-expand-icon" /></summary>
