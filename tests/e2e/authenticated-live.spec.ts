@@ -419,7 +419,11 @@ test("a multi-child registration draft survives refresh and submits once", async
 
   // The newly submitted registration has just acquired its participant role.
   await prepareFixtureGuidance(client);
-  await page.goto("/mijn-inschrijving");
+  // Follow the actual success action. A forced document navigation immediately
+  // after replacing the controlling worker can stall Playwright's navigation;
+  // the real app uses this client-router link (the hard reload was tested above).
+  await page.getByRole("link", { name: "Bekijk jullie inschrijving", exact: true }).click();
+  await expect(page).toHaveURL(/\/mijn-inschrijving$/);
   await expect(page.getByText("Eerste testkind")).toBeVisible();
   await expect(page.getByText("Wacht op betaallink", { exact: true })).toBeVisible();
   await expect(page.getByText(snapshot.registration.togetherCode, { exact: true })).toBeVisible();
