@@ -170,6 +170,8 @@ jobs:
       - name: Exercise coherent grouping and reservation races
         run: |
           eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" node scripts/acceptance/start-departure-concurrency.mjs
+          pnpm exec supabase db reset
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/group-operations-concurrency.mjs
           pnpm exec supabase db reset
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm exec playwright test tests/e2e/group-operations.spec.ts --project=desktop-chromium --workers=1

@@ -1,0 +1,19 @@
+# Tienminutenvertrekken en groepsvoorkeuren
+
+De planner gebruikte verzamelcapaciteit als gelijktijdige vertrekcapaciteit en sorteerde bestaande groepen op omvang en intern ID. De `fixedGroupId`-keten liet `desiredEndAt` weg; de weergave en de oude servertrigger namen daarnaast de vroegste individuele eindwens. De voorkeuren-API kopieerde de eindwens naar de gewone stoptijd, waardoor ook indirect een minderheidsveto ontstond.
+
+Vertrekken gebruiken nu een vaste tienminutenreeks binnen het startvenster en de beschikbaarheid van de startpoort. Eén fysieke poort en één werkelijk tijdstip bieden één vertrek, ook bij meerdere slot-ID's of startpunten die naar dezelfde poort verwijzen. Verzamelcapaciteit en finalecapaciteit blijven afzonderlijke grenzen. Oude slotconfiguraties en bevestigde/gepubliceerde afspraken worden door de migratie niet herschreven.
+
+Start- en eindvoorkeur gebruiken dezelfde gedeelde stemregel: één stem per oorspronkelijke unieke inschrijving, ontbrekende stemmen neutraal, hoogste aantal stemmen, vervolgens kleinste totale absolute afwijking en vroegste tijd. Kinderaantallen geven geen extra stemmen. Eerst telt de dominante startvoorkeur; bij dezelfde startvoorkeur krijgt de vroegste dominante eindwens voorrang. Bij gelijke startafwijking gaat een later vertrek voor een eerder vertrek.
+
+Acceptatievoorbeeld, Europe/Amsterdam op 31 oktober 2026: A en B willen beide om 17:00 beginnen. B wil overwegend om 20:00 eindigen, A om 21:00. Bij één poort krijgt B 17:00 en A 17:10, ook bij omgekeerde invoer, verwisselde interne ID's en andere kinderaantallen. Drie groepen krijgen 17:00, 17:10 en 17:20; verschillende poorten mogen tegelijkertijd vertrekken.
+
+De gewenste eindtijd is de afronding van de finaleshow. De gewone stoptijd, overdracht naar de finale en finaleomlooptijd blijven apart. Een oude gewone stoptijd die exact gelijk is aan de eindvoorkeur wordt als afgeleide voorkeur geïnterpreteerd; een afwijkende expliciete gewone stoptijd blijft gelden. De migratie verandert hiervoor geen bestaande inschrijvingen. Nieuwe voorkeurenopslag maakt die afgeleide koppeling niet meer.
+
+De planner reserveert bestaande concepten en onveranderlijke publicaties vóór nieuwe toewijzingen. Alleen de concepten die deel uitmaken van dezelfde herverdeling worden gezamenlijk vervangen. De server vergrendelt het evenement, controleert beschermde afspraken, slaat de hele conceptverdeling transactioneel op en valideert de uiteindelijke fysieke vertrek- en finalecapaciteit. Herhaalde opdrachten gebruiken de bestaande idempotentiebonnen. Een bevestigde groepssamenstelling kan zo haar eerste startafspraak krijgen zonder de samenstelling of samenlopen te wijzigen.
+
+Het voorstel toont dominante start- en eindwens, gekozen poort, vertrek, gewone stoptijd, finale-aankomst en afwijkingsreden. Een kortere gewone route voor een haalbare finaleplek wordt expliciet genoemd. Een onhaalbaar voorstel krijgt een conflict en kan niet als volledige conceptverdeling worden opgeslagen. Berekenen en conceptopslag voegen geen deelnemersmails toe; bevestigen/publiceren blijft een afzonderlijke handeling.
+
+Regressies omvatten de volgordevoorbeelden, echte gezinsstemmen en samenloopblokken, neutrale en gelijke stemmen, fysieke slotaliassen, bestaande/publicatiebezetting, onhaalbare eindtijden, volledige finalecapaciteit, conceptwissels, gelijktijdige schrijvers en idempotente herhaling. De browserketen controleert ook behoud van samenstelling en onveranderde mailaantallen na conceptopslag.
+
+Deze hotfix wordt op een aparte branch gepusht en nog niet gedeployd: uitrol wacht op de volgende taak. De bestaande releasecontroles, versleutelde backup-/herstelproef en afgesproken beperkte mailboxuitzondering blijven intact. Andere mailcontroles worden niet vrijgesteld.

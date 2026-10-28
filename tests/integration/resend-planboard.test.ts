@@ -16,11 +16,11 @@ import {handleMail} from "@/supabase/functions/send-email-hook/handler";
 import type {Rpc} from "@/supabase/functions/send-email-hook/store";
 const container=process.env.MAIL_INTEGRATION_CONTAINER;
 function sql(query:string) {
- if(!container||!["duindorp-resend-db","supabase_db_duindorphalloween","supabase_db_duindorp-resend-browser"].includes(container))throw new Error("ISOLATED_MAIL_TEST_DATABASE_REQUIRED");
+ if(!container||!["duindorp-resend-db","supabase_db_duindorphalloween","supabase_db_duindorp-resend-browser","supabase_db_duindorp-start-slots-20261028"].includes(container))throw new Error("ISOLATED_MAIL_TEST_DATABASE_REQUIRED");
  return execFileSync("docker",["exec","-i",container,"psql","-X","-qAt","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1"],{input:query,encoding:"utf8",stdio:["pipe","pipe","pipe"]}).trim();
 }
 function sqlAsync(query:string):Promise<string> {
- if(!container||!["duindorp-resend-db","supabase_db_duindorphalloween","supabase_db_duindorp-resend-browser"].includes(container))throw new Error("ISOLATED_MAIL_TEST_DATABASE_REQUIRED");
+ if(!container||!["duindorp-resend-db","supabase_db_duindorphalloween","supabase_db_duindorp-resend-browser","supabase_db_duindorp-start-slots-20261028"].includes(container))throw new Error("ISOLATED_MAIL_TEST_DATABASE_REQUIRED");
  return new Promise((resolve,reject)=>{
   const child=spawn("docker",["exec","-i",container,"psql","-X","-qAt","-U","postgres","-d","postgres","-v","ON_ERROR_STOP=1"]);
   let output="";child.stdout.on("data",chunk=>{output+=chunk.toString();});child.stderr.resume();

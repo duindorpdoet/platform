@@ -21,7 +21,7 @@ where walking_group.id = '23000000-0000-0000-0000-000000000001';
 
 update app_private.portal_windows set opens_at = now() - interval '1 hour', closes_at = now() + interval '5 hours'
 where portal_id in (select id from app_private.portals where event_id = (select id from app_private.events where slug = 'duindorp-halloween-2026'));
-update app_private.start_slots set starts_at = now() - interval '1 minute'
+update app_private.start_slots set starts_at = date_bin(interval '10 minutes', now(), timestamptz '2000-01-01 00:00:00Z') - interval '10 minutes'
 where id = '20000000-0000-0000-0000-000000000001';
 update app_private.event_route_settings set
   first_start_at = now() - interval '1 hour',
@@ -48,7 +48,7 @@ with inserted as (
   ) values (
     '23000000-0000-0000-0000-000000000001', 1, 'draft',
     '20000000-0000-0000-0000-000000000001', now() + interval '2 hours',
-    now() + interval '1 hour', 'neutral', 'f0000000-0000-0000-0000-000000000001'
+    now() + interval '3 hours', 'neutral', 'f0000000-0000-0000-0000-000000000001'
   ) returning id
 )
 update dynamic_state set schedule_id = inserted.id from inserted;

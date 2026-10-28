@@ -9,7 +9,7 @@ update app_private.walking_edges set approved_at=null;
 update app_private.walking_nodes set verified_at=null;
 update app_private.start_points set walking_node_id=null,verified_at=null,version=version+1;
 update app_private.portal_windows set opens_at=clock_timestamp()-interval '1 hour',closes_at=clock_timestamp()+interval '5 hours';
-update app_private.event_route_settings set first_start_at=clock_timestamp()-interval '5 minutes',global_ordinary_stop_at=clock_timestamp()+interval '1 hour',
+update app_private.event_route_settings set first_start_at=date_bin(interval '10 minutes',statement_timestamp(),'2000-01-01Z'::timestamptz)-interval '30 minutes',global_ordinary_stop_at=clock_timestamp()+interval '1 hour',
   final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at=clock_timestamp(),finale_last_arrival_at=clock_timestamp()+interval '4 hours',
   finale_closes_at=clock_timestamp()+interval '5 hours',ordinary_visit_seconds=60,route_buffer_seconds=0,
   finale_max_concurrent_groups=10,finale_max_concurrent_children=100,finale_available=true,planner_mode='dynamic'
@@ -20,7 +20,7 @@ select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-00000000
 do $$begin perform api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',
   (select version from app_private.start_points where id='20000000-0000-0000-0000-000000000001'));end $$;
 update journey set schedule_id=(api.admin_startregie_move_group('23000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001',
-  clock_timestamp()-interval '1 minute',(select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000002'),
+  date_bin(interval '10 minutes',statement_timestamp(),'2000-01-01Z'::timestamptz)-interval '10 minutes',(select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000002'),
   'neutral','Synthetische avond zonder straatnetwerk')->>'id')::uuid;
 do $$begin
  perform api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000002',1,(select event_version from journey));

@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import "./group-composition-board.css";
-import { dominantStartPreference } from "@/lib/domain/start-preference";
+import { dominantEndPreference, dominantStartPreference } from "@/lib/domain/start-preference";
 import { GroupOperationsActions } from "./group-operations-actions";
 import { AdminDialog } from "@/components/admin/admin-dialog";
 import { createClient } from "@/lib/supabase/client";
@@ -566,7 +566,7 @@ export function GroupCompositionBoard({ eventSlug, onOpenStarts }: { eventSlug: 
                 {column.childCount} kinderen{column.id !== "unassigned" && ` / streef ${snapshot.targetGroupSize}`}
               </span>
             </header>
-            <p>Voorkeurstijd {clock(dominantStartPreference(column.registrations))} · {column.registrations.length} inschrijvingen · {compositionItems(column.registrations).filter(item => item.registrations.length > 1).length} samenloopblokken</p>
+            <p>Dominante startvoorkeur {clock(dominantStartPreference(column.registrations))} · gewenst einde {clock(dominantEndPreference(column.registrations))} · {column.registrations.length} inschrijvingen · {compositionItems(column.registrations).filter(item => item.registrations.length > 1).length} samenloopblokken</p>
             {snapshot.groups.find(group => group.id === column.id)?.compositionConfirmed && <p>Groep bevestigd</p>}
             {snapshot.groups.find(group => group.id === column.id)?.start?.startsAt && <p>Starttijd bevestigd {clock(snapshot.groups.find(group => group.id === column.id)!.start!.startsAt)} · startpunt gekoppeld</p>}
             {!snapshot.groups.find(group => group.id === column.id)?.start && snapshot.groups.find(group => group.id === column.id)?.draftStart && <p>Conceptstart {clock(snapshot.groups.find(group => group.id === column.id)!.draftStart!.startsAt)}</p>}

@@ -94,7 +94,8 @@ describe("group and finale planner", () => {
       targetGroupSize: 1,
       maxGroupSize: 1,
       parties: Array.from({ length: 4 }, (_, index) => ({ id: `p-${index}`, childCount: 1, paymentEligible: true })),
-      starts: [{ ...base.starts[0], maxGroups: 10, maxChildren: 20 }],
+      starts: Array.from({ length: 4 }, (_, index) => ({ ...base.starts[0], id: `slot-${index}`, startPointId: `point-${index}`, maxGroups: 10, maxChildren: 20 })),
+      finaleOpensAt: "2026-10-31T20:40:00+01:00",
       finaleLastArrivalAt: "2026-10-31T20:41:00+01:00",
       finaleMaxGroups: 1,
     });
@@ -109,14 +110,14 @@ describe("group and finale planner", () => {
     expect(result.groups[0].warnings).toContain("PAYMENT_NOT_CONFIRMED");
   });
 
-  it("spreads one hundred groups over fifteen physical start points at 17:30 and 18:30", () => {
-    const starts = Array.from({ length: 15 }, (_, index) => ({
-      id: `start-${String(index + 1).padStart(2, "0")}`,
+  it("spreads one hundred groups over fifteen physical start points in ten-minute departures", () => {
+    const starts = Array.from({ length: 15 }, (_, index) => Array.from({ length: 7 }, (_, slot) => ({
+      id: `start-${index}-${slot}`,
       startPointId: `point-${String(index + 1).padStart(2, "0")}`,
-      startsAt: index % 2 === 0 ? "2026-10-31T17:30:00+01:00" : "2026-10-31T18:30:00+01:00",
+      startsAt: new Date(Date.parse("2026-10-31T17:30:00+01:00") + slot * 600_000).toISOString(),
       maxGroups: 7,
       maxChildren: 7,
-    }));
+    }))).flat();
     const result = proposePlan({
       ...base,
       targetGroupSize: 1,
@@ -130,7 +131,7 @@ describe("group and finale planner", () => {
 
     expect(result.conflicts).toEqual([]);
     expect(result.groups).toHaveLength(100);
-    expect(new Set(result.groups.map((group) => group.startId))).toEqual(new Set(starts.map((start) => start.id)));
+    expect(new Set(result.groups.map((group) => group.startId)).size).toBe(100);
     expect(result.groups.every((group) => Date.parse(group.expectedFinaleArrivalAt) <= Date.parse(base.finaleLastArrivalAt))).toBe(true);
   });
 
@@ -143,7 +144,7 @@ describe("group and finale planner", () => {
     });
     expect(result.conflicts).toEqual([]);
     expect(result.groups[0]).toMatchObject({ startId: "start-b", preferenceMatch: "good" });
-    expect(result.groups[0].explanation).toContain("exact op de voorkeur");
+    expect(result.groups[0].explanation).toContain("exact op de dominante startvoorkeur");
   });
 
   it("marks a deviation over thirty minutes red", () => {

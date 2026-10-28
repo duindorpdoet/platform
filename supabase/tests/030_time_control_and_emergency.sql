@@ -1,9 +1,10 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(22);
 
 create temporary table timed_state(
   group_id uuid primary key,
+  start_slot_id uuid default gen_random_uuid(),
   child_ids uuid[],
   group_version integer,
   run_id uuid,
@@ -24,8 +25,17 @@ grant select, update on timed_state to authenticated;
 
 update app_private.portal_windows set opens_at = now() - interval '1 hour', closes_at = now() + interval '5 hours'
 where portal_id in (select id from app_private.portals where event_id = (select id from app_private.events where slug = 'duindorp-halloween-2026'));
-update app_private.start_slots set starts_at = now() - interval '2 minutes'
-where id = '20000000-0000-0000-0000-000000000001';
+-- Three distinct already-departed ten-minute slots share the same start point.
+-- Runtime overlap is legitimate after sequential departures.
+insert into app_private.start_slots(id,event_id,name,location_name,private_address,latitude,longitude,location_verified_at,starts_at,max_groups,max_children,start_point_id)
+select state.start_slot_id,slot.event_id,'Timed departure ' || state.group_id,slot.location_name,slot.private_address,slot.latitude,slot.longitude,slot.location_verified_at,
+  date_bin(interval '10 minutes', now(), timestamptz '2000-01-01 00:00:00Z') - interval '40 minutes'
+    + row_number() over(order by state.group_id) * interval '10 minutes',1,slot.max_children,slot.start_point_id
+from timed_state state cross join app_private.start_slots slot where slot.id='20000000-0000-0000-0000-000000000001';
+select is((select count(distinct slot.starts_at)::integer from timed_state state join app_private.start_slots slot on slot.id=state.start_slot_id),
+  3,'the timed-control groups have distinct physical departures');
+select is((select max(slot.starts_at)-min(slot.starts_at) from timed_state state join app_private.start_slots slot on slot.id=state.start_slot_id),
+  interval '20 minutes','three departures occupy consecutive ten-minute slots');
 update app_private.event_route_settings set
   first_start_at = now() - interval '1 hour', global_ordinary_stop_at = now() + interval '2 hours',
   ordinary_visit_seconds = 60, route_buffer_seconds = 0,
@@ -42,7 +52,7 @@ insert into app_private.group_schedule_revisions(
   group_id, revision, state, start_slot_id, effective_ordinary_stop_at,
   expected_finale_arrival_at, preference_match, created_by, published_at
 )
-select state.group_id, 1, 'published', '20000000-0000-0000-0000-000000000001',
+select state.group_id, 1, 'published', state.start_slot_id,
   now() + interval '2 hours', now() + interval '3 hours', 'neutral',
   'f0000000-0000-0000-0000-000000000001', now()
 from timed_state state;
@@ -68,7 +78,7 @@ select lives_ok(
     group_id, child_ids[1:1], group_version,
     'timed-start-' || group_id::text, 'timed-start-hash-' || group_id::text
   ) ->> 'runId')::uuid where group_id = '23000000-0000-0000-0000-000000000003' $$,
-  'a second simultaneous group receives another capacity-safe destination'
+  'a second group from the next departure receives another capacity-safe destination'
 );
 
 set local role postgres;

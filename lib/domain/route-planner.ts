@@ -1,4 +1,4 @@
-import { dominantStartPreference } from "./start-preference";
+import { dominantEndPreference, dominantStartPreference, explicitOrdinaryStopPreference } from "./start-preference";
 export type StartTimePreference = "early" | "indifferent" | "later";
 
 export type PlanningParty = {
@@ -44,6 +44,9 @@ export type ExistingPlanningSchedule = {
   /** Current draft and still-published revision can reserve two starts for the same physical group. */
   groupId?: string;
   startId: string;
+  /** Physical reservation survives hidden slots and aliases of the same departure. */
+  startPointId?: string;
+  startsAt?: string;
   childCount: number;
   expectedFinaleArrivalAt: string;
   finaleEndsAt?: string | null;
@@ -55,6 +58,8 @@ export type PlannedGroup = {
   partyIds: string[];
   childCount: number;
   startId: string;
+  dominantStartAt: string | null;
+  dominantEndAt: string | null;
   effectiveStopAt: string;
   expectedFinaleArrivalAt: string;
   preferenceMatch: PreferenceMatch;
@@ -177,15 +182,23 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   if (input.finaleShowSeconds < 60 || input.finaleMaxGroups < 1 || input.finaleMaxChildren < 1) conflicts.push({ code: "INVALID_FINALE_CAPACITY", message: "De eindpoortcapaciteit is niet geldig." });
   const serviceMs = (input.finaleShowSeconds + input.finaleTurnoverSeconds) * 1_000;
   const existingSchedules = new Map<string, ExistingPlanningSchedule>();
+  const physicalStart = (pointId: string, startsAt: number) => `${pointId}:${startsAt}`;
+  const allStartsById = new Map(input.starts.map(start => [start.id, start]));
+  const existingDeparture = (schedule: ExistingPlanningSchedule) => {
+    const slot = allStartsById.get(schedule.startId);
+    const pointId = schedule.startPointId ?? slot?.startPointId;
+    const startsAt = millis(schedule.startsAt ?? slot?.startsAt);
+    return pointId && startsAt !== null ? { key: physicalStart(pointId, startsAt), pointId, startsAt } : null;
+  };
   for (const schedule of input.existingSchedules ?? []) {
     const arrival = millis(schedule.expectedFinaleArrivalAt);
     const end = schedule.finaleEndsAt ? millis(schedule.finaleEndsAt) : arrival === null ? null : arrival + serviceMs;
-    if (!schedule.id || !schedule.startId || !Number.isInteger(schedule.childCount) || schedule.childCount < 0 || arrival === null || end === null || end <= arrival) {
+    if (!schedule.id || !schedule.startId || !existingDeparture(schedule) || !Number.isInteger(schedule.childCount) || schedule.childCount < 0 || arrival === null || end === null || end <= arrival) {
       conflicts.push({ code: "INVALID_EXISTING_RESERVATION", subjectId: schedule.id, message: "Een bestaande afspraak heeft ongeldige capaciteitsgegevens. Controleer de opgeslagen planning." });
       continue;
     }
     const previous = existingSchedules.get(schedule.id);
-    if (previous && (previous.groupId !== schedule.groupId || previous.startId !== schedule.startId || previous.childCount !== schedule.childCount
+    if (previous && (previous.groupId !== schedule.groupId || previous.startId !== schedule.startId || existingDeparture(previous)?.key !== existingDeparture(schedule)?.key || previous.childCount !== schedule.childCount
       || millis(previous.expectedFinaleArrivalAt) !== arrival
       || (previous.finaleEndsAt ? millis(previous.finaleEndsAt) : millis(previous.expectedFinaleArrivalAt)! + serviceMs) !== end
       || JSON.stringify([...(previous.partyIds ?? [])].sort()) !== JSON.stringify([...(schedule.partyIds ?? [])].sort()))) {
@@ -202,13 +215,19 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     const availableUntil = millis(start.availableUntil);
     const portalOpensAt = millis(start.portalOpensAt);
     const portalClosesAt = millis(start.portalClosesAt);
-    return Number.isFinite(value) && start.markerValid !== false
+    return Number.isFinite(value) && value % 600_000 === 0 && start.maxGroups >= 1 && start.maxChildren >= 1 && start.markerValid !== false
       && (availableFrom === null || value >= availableFrom)
       && (availableUntil === null || value <= availableUntil)
       && (portalOpensAt === null || value >= portalOpensAt)
       && (portalClosesAt === null || value <= portalClosesAt);
   }).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt) || a.id.localeCompare(b.id));
   const clusters = new Map<string, PlanningParty[]>();
+  const reservedGroupIds = new Set([...existingSchedules.values()].flatMap(schedule => schedule.groupId ? [schedule.groupId] : []));
+  const suppliedReservedGroups = new Set(input.parties.flatMap(party => party.fixedGroupId && reservedGroupIds.has(party.fixedGroupId) ? [party.fixedGroupId] : []));
+  for (const groupId of [...suppliedReservedGroups].sort()) {
+    conflicts.push({ code: "GROUP_ALREADY_SCHEDULED", subjectId: groupId, message: "Deze groep heeft al een bestaande startafspraak. Verwijder een bewerkbaar concept bewust uit de invoer voordat je opnieuw verdeelt; bevestigde en gepubliceerde afspraken blijven behouden." });
+  }
+  if (conflicts.length) return { groups: [], conflicts };
   const assignedPartyIds = new Set([...existingSchedules.values()].flatMap((schedule) => schedule.partyIds ?? []));
   for (const party of stable(input.parties).filter((party) => !assignedPartyIds.has(party.id))) {
     const key = party.fixedGroupId ? `fixed:${party.fixedGroupId}` : party.togetherKey ? `together:${party.togetherKey}` : `party:${party.id}`;
@@ -244,80 +263,161 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     }
   }
 
-  const startLoads = new Map(starts.map((start) => [start.id, { groups: 0, children: 0 }]));
+  // Slot IDs and gathering capacity do not create additional physical departures.
+  const physicalStarts = new Map<string, PlanningStart>();
+  for (const start of starts) {
+    const key = physicalStart(start.startPointId, Date.parse(start.startsAt));
+    const previous = physicalStarts.get(key);
+    physicalStarts.set(key, previous ? { ...previous, maxChildren: Math.min(previous.maxChildren, start.maxChildren) } : start);
+  }
+  const candidateStarts = [...physicalStarts.values()];
+  const startLoads = new Map<string, { groups: number; children: number }>();
   const finaleReservations: Array<{ groupKey: string; startsAt: number; endsAt: number; children: number }> = [];
-  const existingStartReservations = new Map<string, { startId: string; children: number }>();
+  const existingStartReservations = new Map<string, { physicalKey: string; children: number }>();
   for (const schedule of existingSchedules.values()) {
     const groupKey = `existing:${schedule.groupId ?? schedule.id}`;
-    const reservationKey = `${groupKey}:${schedule.startId}`;
+    const physicalKey = existingDeparture(schedule)!.key;
+    const reservationKey = `${groupKey}:${physicalKey}`;
     const previous = existingStartReservations.get(reservationKey);
-    existingStartReservations.set(reservationKey, { startId: schedule.startId, children: Math.max(previous?.children ?? 0, schedule.childCount) });
+    existingStartReservations.set(reservationKey, { physicalKey, children: Math.max(previous?.children ?? 0, schedule.childCount) });
     const startsAt = millis(schedule.expectedFinaleArrivalAt)!;
     finaleReservations.push({ groupKey, startsAt, endsAt: schedule.finaleEndsAt ? millis(schedule.finaleEndsAt)! : startsAt + serviceMs, children: schedule.childCount });
   }
   for (const reservation of existingStartReservations.values()) {
-    const load = startLoads.get(reservation.startId);
-    if (load) { load.groups += 1; load.children += reservation.children; }
+    const load = startLoads.get(reservation.physicalKey) ?? { groups: 0, children: 0 };
+    load.groups += 1;
+    load.children += reservation.children;
+    startLoads.set(reservation.physicalKey, load);
   }
+  const orderedGroups = draftGroups.map(group => ({
+    ...group,
+    dominantStartAt: dominantStartPreference(group.parties),
+    dominantEndAt: dominantEndPreference(group.parties),
+  })).sort((a, b) => {
+    const preferenceAt = (group: typeof a) => millis(group.dominantStartAt)
+      ?? (group.preference === "early" ? millis(input.earlyPreferenceLatestAt) ?? Number.NEGATIVE_INFINITY
+        : group.preference === "later" ? millis(input.laterPreferenceEarliestAt) ?? Number.POSITIVE_INFINITY : Number.POSITIVE_INFINITY);
+    return preferenceAt(a) - preferenceAt(b)
+      || (millis(a.dominantEndAt) ?? Number.POSITIVE_INFINITY) - (millis(b.dominantEndAt) ?? Number.POSITIVE_INFINITY)
+      || a.key.localeCompare(b.key);
+  });
   const groups: PlannedGroup[] = [];
-  for (const group of draftGroups) {
-    const preferredStartAt = millis(dominantStartPreference(group.parties));
-    const selected = [...starts]
-      .filter((start) => {
-        const load = startLoads.get(start.id)!;
-        return load.groups < start.maxGroups && load.children + group.childCount <= start.maxChildren;
-      })
-      .sort((a, b) => preferenceScore(group.preference, Date.parse(a.startsAt), input, preferredStartAt) - preferenceScore(group.preference, Date.parse(b.startsAt), input, preferredStartAt)
-        || Date.parse(a.startsAt) - Date.parse(b.startsAt) || a.id.localeCompare(b.id))[0];
-    if (!selected) {
-      conflicts.push({ code: "START_CAPACITY_EXCEEDED", subjectId: group.key, message: `Geen passend geverifieerd startmoment voor ${group.key}.` });
+  for (const group of orderedGroups) {
+    const preferredStartAt = millis(group.dominantStartAt);
+    const desiredEndAt = millis(group.dominantEndAt);
+    const requestedStops = group.parties.map(party => millis(explicitOrdinaryStopPreference(party))).filter((value): value is number => value !== null);
+    // Desired completion, ordinary-portal stopping and finale occupancy are distinct limits.
+    const effectiveStop = Math.min(globalStop!, ...requestedStops,
+      desiredEndAt === null ? Number.POSITIVE_INFINITY : desiredEndAt - (input.finaleShowSeconds + input.finalePlanningTransferSeconds) * 1_000);
+    const availableStarts = candidateStarts.filter(start => {
+      const load = startLoads.get(physicalStart(start.startPointId, Date.parse(start.startsAt))) ?? { groups: 0, children: 0 };
+      return load.groups === 0 && group.childCount <= start.maxChildren;
+    }).sort((a, b) => {
+      const aTime = Date.parse(a.startsAt);
+      const bTime = Date.parse(b.startsAt);
+      return preferenceScore(group.preference, aTime, input, preferredStartAt) - preferenceScore(group.preference, bTime, input, preferredStartAt)
+        // Equidistant departures prefer the next later slot over a previous one.
+        || (preferredStartAt === null ? 0 : Number(aTime < preferredStartAt) - Number(bTime < preferredStartAt))
+        || aTime - bTime || a.startPointId.localeCompare(b.startPointId) || a.id.localeCompare(b.id);
+    });
+    if (!availableStarts.length) {
+      conflicts.push({ code: "START_CAPACITY_EXCEEDED", subjectId: group.key, message: `Geen vrij tienminutenvertrek met voldoende capaciteit voor ${group.key}.` });
       continue;
     }
-    const requestedStops = group.parties.map((party) => millis(party.requestedStopAt)).filter((value): value is number => value !== null);
-    const effectiveStop = Math.min(globalStop!, ...(requestedStops.length ? requestedStops : [globalStop!]));
-    let finaleArrival = Math.max(finaleOpen!, effectiveStop + input.finalePlanningTransferSeconds * 1_000);
-    let reserved = false;
-    while (finaleArrival <= finaleLast! && finaleArrival + serviceMs <= finaleClose!) {
-      const overlapping = finaleReservations.filter((reservation) => finaleArrival < reservation.endsAt && finaleArrival + serviceMs > reservation.startsAt);
-      // A draft and a still-published appointment are alternatives for one group, not two actual groups.
-      const occupiedGroups = new Map<string, number>();
-      for (const reservation of overlapping) occupiedGroups.set(reservation.groupKey, Math.max(occupiedGroups.get(reservation.groupKey) ?? 0, reservation.children));
-      if (occupiedGroups.size < input.finaleMaxGroups
-        && [...occupiedGroups.values()].reduce((sum, children) => sum + children, 0) + group.childCount <= input.finaleMaxChildren) {
-        finaleReservations.push({ groupKey: `proposal:${group.key}`, startsAt: finaleArrival, endsAt: finaleArrival + serviceMs, children: group.childCount });
-        reserved = true;
+    let selected: PlanningStart | null = null;
+    let finaleArrival: number | null = null;
+    let selectedEffectiveStop = effectiveStop;
+    let timeFeasible = false;
+    const finaleFits = new Map<number, boolean>();
+    const fitsFinale = (arrival: number) => {
+      const cached = finaleFits.get(arrival);
+      if (cached !== undefined) return cached;
+      const overlapping = finaleReservations.filter(reservation => arrival < reservation.endsAt && arrival + serviceMs > reservation.startsAt);
+      // Check actual concurrency at each increasing occupancy boundary, not the
+      // union of groups that pass through at different moments during our show.
+      const ticks = new Set([arrival, ...overlapping.filter(reservation => reservation.startsAt > arrival).map(reservation => reservation.startsAt)]);
+      const fits = [...ticks].every(tick => {
+        // Draft and published revisions remain alternatives for one physical group.
+        const occupiedGroups = new Map<string, number>();
+        for (const reservation of overlapping) {
+          if (reservation.startsAt <= tick && reservation.endsAt > tick) {
+            occupiedGroups.set(reservation.groupKey, Math.max(occupiedGroups.get(reservation.groupKey) ?? 0, reservation.children));
+          }
+        }
+        return occupiedGroups.size < input.finaleMaxGroups
+          && [...occupiedGroups.values()].reduce((sum, children) => sum + children, 0) + group.childCount <= input.finaleMaxChildren;
+      });
+      finaleFits.set(arrival, fits);
+      return fits;
+    };
+    const normalArrival = Math.max(finaleOpen!, effectiveStop + input.finalePlanningTransferSeconds * 1_000);
+    const latestArrival = Math.min(finaleLast!, finaleClose! - serviceMs,
+      desiredEndAt === null ? Number.POSITIVE_INFINITY : desiredEndAt - input.finaleShowSeconds * 1_000);
+    // These boundaries and their occupancy are shared by every candidate departure.
+    const forwardArrivals = [...new Set([normalArrival, ...finaleReservations.map(reservation => reservation.endsAt)])]
+      .filter(arrival => arrival >= normalArrival && arrival <= latestArrival).sort((a, b) => a - b);
+    const earlierArrivals = [...new Set([Math.min(normalArrival, latestArrival), ...finaleReservations.map(reservation => reservation.startsAt - serviceMs)])]
+      .filter(arrival => arrival <= latestArrival && arrival <= normalArrival).sort((a, b) => b - a);
+    for (const candidate of availableStarts) {
+      const candidateStart = Date.parse(candidate.startsAt);
+      if (candidateStart > effectiveStop) continue;
+      const earliestArrival = Math.max(finaleOpen!, candidateStart + input.finalePlanningTransferSeconds * 1_000);
+      if (earliestArrival > latestArrival) continue;
+      timeFeasible = true;
+      // Occupancy can improve forwards exactly when an existing reservation ends.
+      // Boundary candidates avoid missing a gap when show durations include seconds.
+      let arrival = forwardArrivals.find(fitsFinale);
+      if (arrival === undefined) {
+        // Only shorten the ordinary route if the usual/later finale windows do not fit.
+        // Backwards, capacity improves when our complete show+turnover ends at a reservation.
+        arrival = earlierArrivals.find(value => value >= earliestArrival && fitsFinale(value));
+      }
+      if (arrival !== undefined) {
+        selected = candidate;
+        finaleArrival = arrival;
+        selectedEffectiveStop = Math.min(effectiveStop, arrival - input.finalePlanningTransferSeconds * 1_000);
         break;
       }
-      finaleArrival += 60_000;
     }
-    if (!reserved) {
-      conflicts.push({ code: "FINALE_CAPACITY_EXCEEDED", subjectId: group.key, message: `De eindpoort kan ${group.key} niet binnen het ingestelde venster ontvangen.` });
+    if (!selected || finaleArrival === null) {
+      conflicts.push({
+        code: !timeFeasible && desiredEndAt !== null ? "DESIRED_END_UNREACHABLE" : !timeFeasible ? "ROUTE_TIME_CONFLICT" : "FINALE_CAPACITY_EXCEEDED",
+        subjectId: group.key,
+        message: !timeFeasible && desiredEndAt !== null ? `De dominante gewenste eindtijd van ${group.key} is niet haalbaar met een vrij vertrek, de overdracht en de finale.`
+          : !timeFeasible ? `Geen vrij vertrek voor ${group.key} past vóór het stoppen bij gewone poorten.`
+            : `De eindpoort kan ${group.key} niet binnen het ingestelde venster en de gewenste eindtijd ontvangen.`,
+      });
       continue;
     }
-    const load = startLoads.get(selected.id)!;
-    load.groups += 1;
-    load.children += group.childCount;
+    finaleReservations.push({ groupKey: `proposal:${group.key}`, startsAt: finaleArrival, endsAt: finaleArrival + serviceMs, children: group.childCount });
+    startLoads.set(physicalStart(selected.startPointId, Date.parse(selected.startsAt)), { groups: 1, children: group.childCount });
     const warnings: string[] = [];
-    if (group.parties.some((party) => party.paymentEligible === false)) warnings.push("PAYMENT_NOT_CONFIRMED");
+    if (group.parties.some(party => party.paymentEligible === false)) warnings.push("PAYMENT_NOT_CONFIRMED");
+    const shortenedMinutes = (effectiveStop - selectedEffectiveStop) / 60_000;
+    if (shortenedMinutes > 0) warnings.push("ORDINARY_ROUTE_SHORTENED_FOR_FINALE");
     const selectedStart = Date.parse(selected.startsAt);
     const preferenceResult = evaluatePartyPreferences(group.parties, selectedStart, input);
     const deviationMinutes = preferenceResult.maxPreferenceDeviationMinutes;
     if (preferenceResult.preferenceMatch === "large_deviation") warnings.push("HOUSEHOLD_START_PREFERENCE_DEVIATION");
     else if (preferenceResult.preferenceMatch === "small_deviation") warnings.push("HOUSEHOLD_START_PREFERENCE_CHECK");
-    const remainingChildren = selected.maxChildren - load.children;
-    const preferenceReason = deviationMinutes === null
+    const dominantDeviation = preferredStartAt === null ? null : Math.abs(selectedStart - preferredStartAt) / 60_000;
+    const preferenceReason = dominantDeviation === null
       ? group.preference === "indifferent" ? "Er is geen vaste startvoorkeur" : "Er is geen exacte starttijd opgegeven; controleer de tijdsvoorkeur"
-      : deviationMinutes === 0 ? "Dit moment ligt exact op de voorkeur van ieder gezin met een opgegeven tijdsvoorkeur" : `De grootste afwijking voor een gezin is ${deviationMinutes} minuten; controleer de voorkeur per inschrijving`;
+      : dominantDeviation === 0 ? "Dit moment ligt exact op de dominante startvoorkeur"
+        : `Het dichtstbijzijnde haalbare vrije vertrek wijkt ${dominantDeviation} minuten af van de dominante startvoorkeur`;
+    const householdReason = deviationMinutes === null ? "" : `; de grootste afwijking voor een gezin is ${deviationMinutes} minuten`;
     groups.push({
       key: group.key,
-      partyIds: group.parties.map((party) => party.id).sort(),
+      partyIds: group.parties.map(party => party.id).sort(),
       childCount: group.childCount,
       startId: selected.id,
-      effectiveStopAt: new Date(effectiveStop).toISOString(),
+      dominantStartAt: group.dominantStartAt,
+      dominantEndAt: group.dominantEndAt,
+      effectiveStopAt: new Date(selectedEffectiveStop).toISOString(),
       expectedFinaleArrivalAt: new Date(finaleArrival).toISOString(),
       ...preferenceResult,
       warnings,
-      explanation: `${preferenceReason}; ${selected.pointName ?? "het startpunt"} heeft daarna nog ruimte voor ${Math.max(0, remainingChildren)} kinderen.`,
+      explanation: `${preferenceReason}${householdReason}; één vertrek bij ${selected.pointName ?? "het startpunt"} is gereserveerd.${shortenedMinutes > 0 ? ` Stop ${shortenedMinutes} minuten eerder bij gewone poorten om binnen een vrije finaleplek en de eindtijd te blijven.` : ""}`,
     });
   }
   return { groups, conflicts };

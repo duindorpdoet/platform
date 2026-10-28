@@ -131,8 +131,9 @@ insert into app_private.group_schedule_revisions(
   expected_finale_arrival_at, preference_match, published_at
 ) values (
   '23000000-0000-0000-0000-000000000001', 99, 'published',
-  '20000000-0000-0000-0000-000000000001', timestamptz '2026-10-31 20:30+01',
-  timestamptz '2026-10-31 21:00+01', 'large_deviation', now()
+  -- Ordinary stop, travel and the final show fit inside the real finale window.
+  '20000000-0000-0000-0000-000000000001', timestamptz '2026-10-31 20:20+01',
+  timestamptz '2026-10-31 20:40+01', 'large_deviation', now()
 );
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(16);
 create function pg_temp.publish_current_schedule(_ids uuid[],_reason text) returns jsonb language plpgsql security definer set search_path='' as $$
 declare expected jsonb; version integer;
 begin
@@ -34,13 +34,20 @@ update app_private.event_route_settings set
   planner_mode = 'dynamic'
 where event_id = (select id from app_private.events where slug = 'duindorp-halloween-2026');
 
+-- Seeded legacy groups retain their published 18:30 appointment. The test's
+-- explicit correction starts at 18:20 and cannot borrow their occupied slot.
+insert into app_private.start_slots(id,event_id,name,location_name,private_address,latitude,longitude,location_verified_at,starts_at,max_groups,max_children,start_point_id)
+select '20000000-0000-0000-0000-000000000011',event_id,'Teststart 1 18:20',location_name,private_address,latitude,longitude,location_verified_at,
+  timestamptz '2026-10-31 18:20:00+01',1,max_children,start_point_id
+from app_private.start_slots where id='20000000-0000-0000-0000-000000000001';
+
 with inserted as (
   insert into app_private.group_schedule_revisions(
     group_id, revision, state, start_slot_id, effective_ordinary_stop_at,
     expected_finale_arrival_at, preference_match, created_by
   ) values (
     '23000000-0000-0000-0000-000000000001', 1, 'draft',
-    '20000000-0000-0000-0000-000000000001', timestamptz '2026-10-31 20:00:00+01',
+    '20000000-0000-0000-0000-000000000011', timestamptz '2026-10-31 20:00:00+01',
     timestamptz '2026-10-31 20:15:00+01', 'neutral', 'f0000000-0000-0000-0000-000000000001'
   ) returning id
 )
@@ -91,11 +98,17 @@ select is(
 );
 select is(
   api.registration_preferences_snapshot('duindorp-halloween-2026') #>> '{confirmedSchedule,startsAt}',
-  '2026-10-31T17:30:00+00:00',
+  '2026-10-31T17:20:00+00:00',
   'Mijn inschrijving exposes the exact confirmed start in an unambiguous timestamp'
 );
 
 set local role postgres;
+select is(
+  (select count(*)::integer from app_private.walking_groups g cross join lateral app_private.current_start_publication(g.id) publication
+   where g.id in ('23000000-0000-0000-0000-000000000002','23000000-0000-0000-0000-000000000003','23000000-0000-0000-0000-000000000004')
+     and publication.starts_at = timestamptz '2026-10-31 18:30:00+01'),
+  3, 'publishing one correction preserves every other legacy published departure'
+);
 select is(
   (select count(*)::integer from app_private.email_outbox where payload->>'groupId'='23000000-0000-0000-0000-000000000001' and message_type in ('group_schedule_published','group_schedule_corrected')),
   1,

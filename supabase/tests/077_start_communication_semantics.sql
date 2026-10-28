@@ -6,6 +6,9 @@ create temp table communication(eid uuid,gid uuid,point_id uuid,schedule_id uuid
 insert into communication(eid,gid,point_id,first_time) select id,'23000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','2026-10-31T17:00:00Z' from app_private.events where slug='duindorp-halloween-2026';
 update app_private.event_route_settings set first_start_at='2026-10-31T15:00:00Z',global_ordinary_stop_at='2026-10-31T19:30:00Z',final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at='2026-10-31T18:00:00Z',finale_last_arrival_at='2026-10-31T20:30:00Z',finale_closes_at='2026-10-31T21:00:00Z',finale_max_concurrent_groups=10,finale_max_concurrent_children=100,finale_available=true,planner_mode='dynamic' where event_id=(select eid from communication);
 select app_private.withdraw_group_appointment((select gid from communication),'Afzonderlijke fixture zonder eerder gedeelde tijd');
+-- This communication-only fixture isolates the physical departure from other seeded groups.
+select app_private.withdraw_group_appointment(id,'Andere seedafspraken buiten de geïsoleerde communicatieproef')
+from app_private.walking_groups where event_id=(select eid from communication) and id<>(select gid from communication);
 update app_private.payment_requests set status='awaiting_link' where registration_id in(select registration_id from app_private.group_registrations where group_id=(select gid from communication) and superseded_at is null);
 select api.admin_startregie_confirm_point('duindorp-halloween-2026',point_id,(select version from app_private.start_points where id=point_id)) from communication;
 do $$declare i integer;begin for i in 1..3 loop

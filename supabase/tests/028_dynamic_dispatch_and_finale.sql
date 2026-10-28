@@ -4,12 +4,13 @@ create function pg_temp.rehearsal_short_code(stopid uuid) returns text language 
  select 'TEST-'||right(coalesce(s.portal_id,p.portal_id)::text,2) from app_private.run_stops s left join app_private.route_plan_stops p on p.id=s.plan_stop_id where s.id=stopid
 $$;
 grant execute on function pg_temp.rehearsal_short_code(uuid) to authenticated;
-select plan(20);
+select plan(21);
 
 create temporary table dynamic_state(
   child_id uuid,
   group_version integer,
   schedule_id uuid,
+  corrected_slot_id uuid,
   run_id uuid
 ) on commit drop;
 
@@ -22,7 +23,8 @@ where walking_group.id = '23000000-0000-0000-0000-000000000001';
 
 update app_private.portal_windows set opens_at = now() - interval '1 hour', closes_at = now() + interval '5 hours'
 where portal_id in (select id from app_private.portals where event_id = (select id from app_private.events where slug = 'duindorp-halloween-2026'));
-update app_private.start_slots set starts_at = now() + interval '1 hour'
+-- The assigned departure is still in the future, on the Amsterdam ten-minute grid.
+update app_private.start_slots set starts_at = date_bin(interval '10 minutes', now() + interval '1 hour', timestamptz '2000-01-01 00:00:00Z')
 where id = '20000000-0000-0000-0000-000000000001';
 update app_private.event_route_settings set
   first_start_at = now() - interval '1 hour',
@@ -49,7 +51,7 @@ with inserted as (
   ) values (
     '23000000-0000-0000-0000-000000000001', 1, 'draft',
     '20000000-0000-0000-0000-000000000001', now() + interval '2 hours',
-    now() + interval '1 hour', 'neutral', 'f0000000-0000-0000-0000-000000000001'
+    now() + interval '3 hours', 'neutral', 'f0000000-0000-0000-0000-000000000001'
   ) returning id
 )
 update dynamic_state set schedule_id = inserted.id from inserted;
@@ -97,14 +99,22 @@ select throws_ok(
 );
 
 set local role postgres;
-update app_private.start_slots set starts_at = now() - interval '1 minute'
-where id = '20000000-0000-0000-0000-000000000001';
--- A changed live slot alone cannot rewrite an immutable published appointment.
--- Publish a distinct corrected fixture revision before exercising later arrivals.
+select throws_ok(
+  $$ update app_private.start_slots set starts_at = date_bin(interval '10 minutes', now(), timestamptz '2000-01-01 00:00:00Z') - interval '10 minutes'
+     where id = '20000000-0000-0000-0000-000000000001' $$,
+  '23514', 'START_APPOINTMENT_PROTECTED', 'a published departure cannot be moved by editing its shared slot'
+);
+-- Publish a distinct correction at a fresh valid slot. The original immutable
+-- appointment and all other groups that share its historical slot stay intact.
+update dynamic_state set corrected_slot_id = gen_random_uuid();
+insert into app_private.start_slots(id,event_id,name,location_name,private_address,latitude,longitude,location_verified_at,starts_at,max_groups,max_children,start_point_id)
+select (select corrected_slot_id from dynamic_state),event_id,'Corrected past departure',location_name,private_address,latitude,longitude,location_verified_at,
+  date_bin(interval '10 minutes', now(), timestamptz '2000-01-01 00:00:00Z') - interval '10 minutes',1,max_children,start_point_id
+from app_private.start_slots where id='20000000-0000-0000-0000-000000000001';
 update app_private.group_schedule_revisions set state='superseded' where id=(select schedule_id from dynamic_state);
 with correction as (
  insert into app_private.group_schedule_revisions(group_id,revision,state,start_slot_id,effective_ordinary_stop_at,expected_finale_arrival_at,preference_match,published_at)
- select group_id,revision+1,'published',start_slot_id,effective_ordinary_stop_at,expected_finale_arrival_at,preference_match,clock_timestamp()
+ select group_id,revision+1,'published',(select corrected_slot_id from dynamic_state),effective_ordinary_stop_at,expected_finale_arrival_at,preference_match,clock_timestamp()
  from app_private.group_schedule_revisions where id=(select schedule_id from dynamic_state) returning id
 ) update dynamic_state set schedule_id=correction.id from correction;
 update app_private.walking_groups set current_schedule_revision_id=(select schedule_id from dynamic_state) where id='23000000-0000-0000-0000-000000000001';

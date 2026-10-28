@@ -5,7 +5,10 @@ import { proposePlan, evaluatePartyPreferences, type PlanningInput, type Existin
 const at = (time: string) => `2026-10-31T${time}:00+01:00`;
 const base: PlanningInput = {
   parties: [{ id: 'new-family', childCount: 2, preferredStartAt: at('18:30'), paymentEligible: true }],
-  starts: [{ id: 'slot-a', startPointId: 'point-a', startsAt: at('18:30'), maxGroups: 2, maxChildren: 10 }],
+  starts: [
+    { id: 'slot-a', startPointId: 'point-a', startsAt: at('18:30'), maxGroups: 2, maxChildren: 10 },
+    { id: 'slot-b', startPointId: 'point-a', startsAt: at('18:40'), maxGroups: 2, maxChildren: 10 },
+  ],
   targetGroupSize: 6, maxGroupSize: 10,
   globalOrdinaryStopAt: at('20:30'), finaleOpensAt: at('19:00'), finaleLastArrivalAt: at('21:30'), finaleClosesAt: at('22:00'),
   finaleShowSeconds: 360, finaleTurnoverSeconds: 0, finalePlanningTransferSeconds: 600, finaleMaxGroups: 2, finaleMaxChildren: 20,
@@ -55,7 +58,7 @@ test('OPS08: existing children consume start capacity even with remaining group 
 });
 
 test('OPS08: existing finale occupation blocks an otherwise available start', () => {
-  const result = proposePlan({ ...base, existingSchedules: [existing], finaleMaxGroups: 1, finaleLastArrivalAt: at('20:45') });
+  const result = proposePlan({ ...base, existingSchedules: [existing], finaleMaxGroups: 1, finaleOpensAt: at('20:40'), finaleLastArrivalAt: at('20:45') });
   assert.deepEqual(result.groups, []);
   assert.ok(result.conflicts.some(c => c.code === 'FINALE_CAPACITY_EXCEEDED'));
 });
@@ -86,17 +89,19 @@ test('OPS08: current draft and published revision reserve both starts and one ov
   const result = proposePlan({ ...base, starts: [
     { ...base.starts[0], maxGroups: 1 },
     { ...base.starts[0], id: 'slot-b', startsAt: at('19:00'), maxGroups: 2 },
+    { ...base.starts[0], id: 'slot-c', startsAt: at('19:10'), maxGroups: 2 },
   ], existingSchedules: [old, draft], finaleMaxGroups: 2 });
   assert.deepEqual(result.conflicts, []);
-  assert.equal(result.groups[0].startId, 'slot-b');
+  assert.equal(result.groups[0].startId, 'slot-c');
   assert.equal(result.groups[0].expectedFinaleArrivalAt, new Date(at('20:40')).toISOString());
 });
 
-test('OPS08: two revisions of the same group at the same slot consume one start group', () => {
+test('OPS08: two revisions of the same group reserve one physical departure, leaving the next slot free', () => {
   const old = { ...existing, groupId: 'group-A' };
   const result = proposePlan({ ...base, existingSchedules: [old, { ...old, id: 'draft-A' }] });
   assert.deepEqual(result.conflicts, []);
   assert.equal(result.groups.length, 1);
+  assert.equal(result.groups[0].startId, 'slot-b');
 });
 
 test('OPS08: same-start draft with a changed finale time retains both possible finale windows', () => {

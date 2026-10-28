@@ -33,7 +33,7 @@ test('one organizer resets, groups, confirms composition, distributes existing g
  const column=page.locator(`[data-column-id="${first.id}"]`);
  const picker=page.getByRole('combobox',{name:'Kies groep'});
  if(await picker.isVisible())await picker.selectOption(first.id);
- await expect(column).toContainText('Voorkeurstijd');await expect(column).toContainText('streef 15');
+ await expect(column).toContainText('Dominante startvoorkeur');await expect(column).toContainText('gewenst einde');await expect(column).toContainText('streef 15');
  await column.getByRole('button',{name:'Inklappen',exact:true}).click();await expect(column.locator('.group-composition-dropzone')).toBeHidden();
  await expect(column).toContainText(`${first.childCount} kinderen`);await column.getByRole('button',{name:'Uitklappen',exact:true}).click();
  await page.getByRole('button',{name:`${first.systemCode} · Groep bevestigen`,exact:true}).click();dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Groep bevestigen',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(column).toContainText('Groep bevestigd');
@@ -46,11 +46,29 @@ test('one organizer resets, groups, confirms composition, distributes existing g
  state=await rpc('admin_startregie_snapshot',{_event_slug:event});
  for(const point of state.startPoints.filter((p:{active:boolean})=>p.active))await rpc('admin_startregie_confirm_point',{_event_slug:event,_point_id:point.id,_expected_version:point.version});
  await page.getByRole('button',{name:'Vernieuwen',exact:true}).first().click();
+ const communicationBefore=(await rpc('admin_group_composition_snapshot',{_event_slug:event})).groups.map((g:{id:string;communication:unknown})=>({id:g.id,communication:g.communication}));
  await page.getByRole('button',{name:'Groepen automatisch over startpunten verdelen',exact:true}).click();
  await expect(page.getByRole('button',{name:'Conceptslotverdeling opslaan'})).toBeEnabled();
+ const proposal=page.getByRole('region',{name:'Bestaande groepen automatisch plannen'});
+ await expect(proposal.locator('.proposal-row').first()).toContainText('Dominante startvoorkeur');
+ await expect(proposal.locator('.proposal-row').first()).toContainText('gewenst einde');
+ await expect(proposal.locator('.proposal-row').first()).toContainText('vertrek');
+ await expect(proposal.locator('.proposal-row').first()).toContainText('Waarom hier?');
  await page.getByRole('button',{name:'Conceptslotverdeling opslaan'}).click();
  await expect(page.getByRole('button',{name:'Conceptslotverdeling opslaan'})).not.toBeVisible();
  const after=(await rpc('admin_group_composition_snapshot',{_event_slug:event})).groups.map((g:{id:string;registrations:Array<{id:string}>})=>({id:g.id,members:g.registrations.map(r=>r.id).sort()}));expect(after).toEqual(before);
+ const savedGroups=(await rpc('admin_group_composition_snapshot',{_event_slug:event})).groups;
+ expect(savedGroups.map((g:{id:string;communication:unknown})=>({id:g.id,communication:g.communication}))).toEqual(communicationBefore);
+ expect(savedGroups.find((g:{id:string})=>g.id===first.id).compositionConfirmed).toBe(true);
+ state=await rpc('admin_startregie_snapshot',{_event_slug:event});
+ const departureKeys:string[]=[];
+ for(const group of state.groups.filter((g:{schedule:unknown})=>g.schedule)){
+  const point=state.startPoints.find((p:{slots:Array<{id:string}>})=>p.slots.some(slot=>slot.id===group.schedule.startSlotId));
+  const slot=point.slots.find((s:{id:string})=>s.id===group.schedule.startSlotId);
+  expect(Date.parse(slot.startsAt)%600000).toBe(0);
+  departureKeys.push(`${point.linkedPortalId??point.id}:${Date.parse(slot.startsAt)}`);
+ }
+ expect(new Set(departureKeys).size).toBe(departureKeys.length);
  const card=page.locator('.start-ops-assignment').filter({has:page.getByText(first.systemCode,{exact:true})});
  await card.getByRole('button',{name:'Startafspraken bevestigen en versturen',exact:true}).click();dialog=page.getByRole('dialog');await expect(dialog).toContainText('Adres vanaf');
  await dialog.getByRole('button',{name:'Startafspraken bevestigen en versturen',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(card).toContainText('Starttijd gepubliceerd');

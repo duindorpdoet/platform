@@ -49,6 +49,7 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261027072938_account_app_access_and_welcome.sql',
   '20261028002257_admin_submit_portal_application.sql',
   '20261028090744_mail_worker_text_status_rpc.sql',
+  '20261028161813_ten_minute_majority_departures.sql',
 
 ]);
 

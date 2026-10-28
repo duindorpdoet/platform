@@ -15,7 +15,7 @@ select throws_ok($$select app_private.parse_amsterdam_instant('2026-10-25T01:30:
 select throws_ok($$select app_private.parse_amsterdam_instant('2026-10-31T17:30')$$,'22023','INVALID_AMSTERDAM_TIME','server JSON commands require an explicit UTC instant or offset');
 
 update app_private.portal_windows set opens_at=clock_timestamp()-interval '1 hour',closes_at=clock_timestamp()+interval '5 hours';
-update app_private.event_route_settings set first_start_at=clock_timestamp()-interval '5 minutes',global_ordinary_stop_at=clock_timestamp()+interval '1 hour',
+update app_private.event_route_settings set first_start_at=date_bin(interval '10 minutes',statement_timestamp(),'2000-01-01Z'::timestamptz)-interval '30 minutes',global_ordinary_stop_at=clock_timestamp()+interval '1 hour',
   final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at=clock_timestamp(),finale_last_arrival_at=clock_timestamp()+interval '4 hours',
   finale_closes_at=clock_timestamp()+interval '5 hours',ordinary_visit_seconds=60,route_buffer_seconds=0,
   finale_max_concurrent_groups=10,finale_max_concurrent_children=100,finale_available=true,planner_mode='dynamic'
@@ -23,7 +23,7 @@ where event_id=(select eid from ops_house);
 update app_private.walking_groups set desired_ordinary_visits=2 where id='23000000-0000-0000-0000-000000000001';
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 do $$begin perform api.admin_startregie_verify_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',1,true,'Fictieve gecontroleerde vertrekstoep');end $$;
-update ops_house set schedule_id=(api.admin_startregie_move_group('23000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',clock_timestamp()-interval '1 minute',(select group_version from ops_house),'neutral','Geïsoleerde start voor de nieuwe-huisproef')->>'id')::uuid;
+update ops_house set schedule_id=(api.admin_startregie_move_group('23000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',date_bin(interval '10 minutes',statement_timestamp(),'2000-01-01Z'::timestamptz)-interval '10 minutes',(select group_version from ops_house),'neutral','Geïsoleerde start voor de nieuwe-huisproef')->>'id')::uuid;
 do $$begin
  perform api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000001',1,(select event_version from ops_house));
  perform api.admin_startregie_publish_times('duindorp-halloween-2026',array[(select schedule_id from ops_house)],jsonb_build_array(jsonb_build_object('id',(select schedule_id from ops_house),'revision',1)),(select event_version from ops_house),gen_random_uuid()::text);
@@ -86,7 +86,7 @@ set local role postgres;
 select is((select count(*)::integer from app_private.run_stop_arrivals where run_id=(select run_id from ops_house)),1,'the outside child receives exactly one real arrival at the first house');
 select is((select count(*)::integer from app_private.run_stops where run_id=(select run_id from ops_house) and state='completed'),1,'new-house planning preserves completed stop history');
 insert into app_private.portal_credentials(portal_id,token_hash,short_code_hash,version,valid_from)
-select new_portal,extensions.digest('TEST-NEW-HOUSE-OPS-TOKEN','sha256'),extensions.digest('NEWOPS','sha256'),1,clock_timestamp()-interval '1 minute' from ops_house;
+select new_portal,extensions.digest('TEST-NEW-HOUSE-OPS-TOKEN','sha256'),extensions.digest('NEWOPS','sha256'),1,date_bin(interval '10 minutes',statement_timestamp(),'2000-01-01Z'::timestamptz)-interval '10 minutes' from ops_house;
 update app_private.portals set operation_status='open' where id=(select new_portal from ops_house);
 set local role authenticated;
 select lives_ok($$select pg_temp.new_house_arrive('TEST-NEW-HOUSE-OPS-TOKEN','new-house-second-arrival')$$,'the second outside arrival uses the actual new portal credential');
