@@ -15,6 +15,10 @@ on:
         description: Capture read-only schema and preservation fingerprints; no deployment
         type: boolean
         default: false
+      mail_worker_diagnostics:
+        description: Inspect real worker RPCs and sanitized application error codes; no deployment or mail
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -26,6 +30,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  mail-worker-diagnostics:
+    name: Inspect mail worker RPC and application error codes
+    if: github.event_name == 'workflow_dispatch' && inputs.mail_worker_diagnostics && (github.ref == 'refs/heads/production' || github.ref == 'refs/heads/codex/mail-worker-hotfix-20261028')
+    environment: production
+    runs-on: [self-hosted, Linux, X64, dg-sites, production, duindorphalloweenprod]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          clean: false
+      - name: Reproduce via PostgREST without changing an outbox row
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: /srv/sites/duindorphalloweenprod/actions-runner/externals/node24/bin/node scripts/deploy/diagnose-mail-worker.mjs
   release-policy:
     name: Resolve release mail-test policy
     runs-on: ubuntu-latest
@@ -74,7 +95,7 @@ jobs:
   backup-restore:
     name: Encrypted production backup and isolated restore
     needs: release-policy
-    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline
+    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 35
