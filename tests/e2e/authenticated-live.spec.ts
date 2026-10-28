@@ -1,4 +1,4 @@
-import {sql} from "../../scripts/acceptance/together-fixtures.mjs";
+import {sql, requireLocalTogetherDatabase} from "../../scripts/acceptance/together-fixtures.mjs";
 import {prepareStartedLegacyFixtures} from "../../scripts/acceptance/started-fixtures.mjs";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
@@ -316,12 +316,19 @@ test("forged cookies fail and offline group state reveals only the current stop 
   await expect.poll(trackStates).toEqual([["ended"], ["ended"], ["ended"]]);
 });
 
-test("a multi-child registration draft survives refresh and submits once", async ({ context, page }, testInfo) => {
+test("a multi-child registration draft survives refresh and submits once", async ({ context, page }) => {
   requireLocalAuth();
+  // This complete flow includes a real service-worker update and the newly
+  // acquired role's onboarding RPCs. Its budget is not a request latency SLO.
+  test.setTimeout(90_000);
+  requireLocalTogetherDatabase();
   await page.setViewportSize({ width: 320, height: 844 });
-  const registrationEmail = testInfo.project.name === "mobile-chromium"
-    ? "browser-registration-mobile@example.invalid"
-    : "browser-registration-desktop@example.invalid";
+  // Every attempt starts with its own verified local identity. A retry must not
+  // inherit a successfully saved/submitted draft from an earlier attempt.
+  const registrationEmail = `browser-registration-${crypto.randomUUID()}@example.invalid`;
+  expect(process.env.SUPABASE_SECRET_KEY).toBeTruthy();
+  const fixtureAdmin = createClient(supabaseUrl!, process.env.SUPABASE_SECRET_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+  expect((await fixtureAdmin.auth.admin.createUser({ email: registrationEmail, password: "local-test-only", email_confirm: true })).error).toBeNull();
   const client = await authenticate(context, registrationEmail);
   const source = await fixtureClient("parent-a@example.invalid");
   const sourceSnapshot = await rpc(source.client, "registration_snapshot", { _event_slug: "duindorp-halloween-2026" }) as { registration: { togetherCode: string } };
@@ -1531,11 +1538,16 @@ test("mobile admin scroll reaches complete panels while its toolbar and dock sta
       await expect(page.locator(".portal-list-row").first()).toBeVisible();
       await expect.poll(() => page.locator(".portal-management").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(2);
     }
-    await content.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    // RPC responses may still grow the panel after the first scroll. Keep
+    // checking the actual last element at the current bottom of the page.
+    await expect.poll(async () => {
+      await content.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+      const viewport = await content.boundingBox();
+      const bottom = await content.locator(":scope > :last-child").evaluate(el => el.getBoundingClientRect().bottom);
+      return bottom - (viewport!.y + viewport!.height);
+    }).toBeLessThanOrEqual(2);
     await expect.poll(() => content.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
     const bounds = await content.boundingBox();
-    const lastBottom = await content.locator(":scope > :last-child").evaluate((el) => el.getBoundingClientRect().bottom);
-    expect(lastBottom).toBeLessThanOrEqual(bounds!.y + bounds!.height + 2);
     expect((await toolbar.boundingBox())!.y).toBeCloseTo(toolbarTop, 0);
     expect(bounds!.y).toBeGreaterThanOrEqual((await toolbar.boundingBox())!.y + (await toolbar.boundingBox())!.height - 1);
     expect(bounds!.y + bounds!.height).toBeLessThanOrEqual((await dock.boundingBox())!.y + 1);
