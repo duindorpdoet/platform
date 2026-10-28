@@ -97,6 +97,10 @@ jobs:
         env:
           BACKUP_FINGERPRINT_DB_CONTAINER: supabase_db_duindorphalloween
         run: node scripts/acceptance/backup-fingerprints.mjs
+      - name: Verify existing mail event preservation during signed provider appends
+        env:
+          BACKUP_FINGERPRINT_DB_CONTAINER: supabase_db_duindorphalloween
+        run: node scripts/acceptance/mail-event-preservation.mjs
       - name: Exercise full planboard and signed Resend mail chain locally
         if: needs.release-policy.outputs.skip_mail_tests != 'true'
         env:

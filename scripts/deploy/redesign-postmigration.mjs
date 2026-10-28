@@ -13,7 +13,7 @@ try {
     management('/database/query',{read_only:true,query:releaseMetadataQuery(before)}),
   ]);
   const after={rows:response.map(row=>row.fingerprint),...metadata[0].metadata},reconciliation=reconcileReleaseMetadata(before,after,before.expectedMigrationVersions);
-  const metadataTables=new Set(['supabase_migrations.schema_migrations','cron.job_run_details']);
+  const metadataTables=new Set(['supabase_migrations.schema_migrations','cron.job_run_details','app_private.email_events']);
   const changed=[...new Set([...compareFingerprints(before.rows,after.rows).filter(table=>!metadataTables.has(table)),...reconciliation.failures])];
   await writeFile(process.env.RELEASE_PRIVATE_BASELINE_FILE+'.after',sealBackup(Buffer.from(JSON.stringify({after,changed,reconciliation})),key,context+':post-migration'),{flag:'wx',mode:0o600});
   if(changed.length)throw new Error('EXISTING_DATA_CHANGED_REQUIRES_RECONCILIATION: '+changed.join(','));
