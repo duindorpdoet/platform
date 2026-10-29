@@ -2,7 +2,8 @@ begin;
 \ir fixtures/legacy-start-available.inc
 create extension if not exists pgtap with schema extensions;
 select no_plan();
-create temp table coverage(eid uuid,version integer,fingerprint text,run_id uuid,stop_id uuid,run_version integer,participants uuid[],children uuid[]);
+create temp table coverage(eid uuid,version integer,fingerprint text,run_id uuid,stop_id uuid,run_version integer,participants uuid[],children uuid[],
+ route_revision_before integer,board_hash_before text,route_revision_after integer,board_hash_after text,event_settings_before integer);
 insert into coverage(eid) select id from app_private.events where slug='duindorp-halloween-2026';
 
 -- Synthetic house coverage: the three named worlds are absent. The group channel is independent.
@@ -67,12 +68,21 @@ select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-00000000
 select throws_ok($$select api.admin_accept_world_coverage_revision('duindorp-halloween-2026',1,'00000000000000000000000000000000','Ik controleer deze wereldregeling')$$,'40001','STALE_WORLD_COVERAGE','outdated revision or fingerprint cannot be applied');
 select throws_ok($$select api.admin_accept_world_coverage_revision('duindorp-halloween-2026',null,null,'Ik controleer deze wereldregeling')$$,'22023','VALIDATION_ERROR','null revision cannot retire the active policy');
 update coverage c set version=p.version from app_private.world_coverage_policies p where p.event_id=c.eid and p.policy_status='pending';
+update coverage c set route_revision_before=app_private.start_ops_route_revision(eid),board_hash_before=app_private.live_planboard_hash(eid),
+ event_settings_before=(select settings_version from app_private.events e where e.id=c.eid);
 select lives_ok($$select api.admin_accept_world_coverage_revision('duindorp-halloween-2026',version,fingerprint,'Late goedgekeurde themapoort gecontroleerd') from coverage$$,'authorized review activates the exact visible candidate');
 select ok(not(app_private.world_coverage_missing((select eid from coverage)) @> array['vampierrijk']),'reviewed policy now reflects the late themed house');
+select isnt(app_private.start_ops_route_revision((select eid from coverage)),(select route_revision_before from coverage),'accepting coverage invalidates route revision even after portal change was already observed');
+select isnt(app_private.live_planboard_hash((select eid from coverage)),(select board_hash_before from coverage),'accepted coverage invalidates stale planboard commands through the shared route revision');
+select is((select settings_version from app_private.events where id=(select eid from coverage)),(select event_settings_before from coverage),'coverage review preserves unrelated event settings and start confirmations');
+update coverage set route_revision_after=app_private.start_ops_route_revision(eid),board_hash_after=app_private.live_planboard_hash(eid);
 select lives_ok($$select api.admin_accept_world_coverage_revision('duindorp-halloween-2026',version,fingerprint,'Late goedgekeurde themapoort gecontroleerd') from coverage$$,'identical acceptance retry is idempotent');
+select is(app_private.start_ops_route_revision((select eid from coverage)),(select route_revision_after from coverage),'exact repeated acceptance preserves the route revision');
+select is(app_private.live_planboard_hash((select eid from coverage)),(select board_hash_after from coverage),'exact repeated acceptance preserves the planboard input hash');
 select is((select count(*) from app_private.child_world_awards where child_id=any((select children from coverage)::uuid[]) and origin='compensation'),(select 3*cardinality(children)::bigint from coverage),'all previously earned awards survive a changed policy');
 select ok(not has_function_privilege('authenticated','app_private.award_missing_worlds(uuid,uuid,uuid,uuid,boolean,text)','execute'),'direct API clients cannot forge compensation');
 select ok(not has_table_privilege('authenticated','app_private.world_coverage_policies','update'),'clients cannot bypass policy review');
+select ok(not has_function_privilege('authenticated','app_private.start_ops_route_revision_before_closure_policy(uuid)','execute'),'clients cannot bypass policy-aware route revision');
 
 -- Same initialization path used for events already closed at migration time, without a fake close.
 update app_private.world_coverage_policies set policy_status='retired' where event_id=(select eid from coverage) and policy_status='active';

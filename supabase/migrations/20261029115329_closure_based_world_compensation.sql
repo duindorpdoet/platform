@@ -86,6 +86,19 @@ language sql stable security definer set search_path='' as $$
 $$;
 revoke all on function app_private.world_coverage_missing(uuid) from public,anon,authenticated;
 
+-- Accepted coverage steers ordinary Anders selection. It is a route input,
+-- independent of event settings and protected published start confirmations.
+alter function app_private.start_ops_route_revision(uuid) rename to start_ops_route_revision_before_closure_policy;
+revoke all on function app_private.start_ops_route_revision_before_closure_policy(uuid) from public,anon,authenticated;
+create function app_private.start_ops_route_revision(_event_id uuid) returns integer
+language sql stable security definer set search_path='' as $$
+ select ('x'||substr(md5(jsonb_build_array(
+  app_private.start_ops_route_revision_before_closure_policy(_event_id),
+  app_private.world_coverage_current_version(_event_id),
+  app_private.world_coverage_missing(_event_id))::text),1,7))::bit(28)::integer;
+$$;
+revoke all on function app_private.start_ops_route_revision(uuid) from public,anon,authenticated;
+
 create function app_private.world_coverage_registration_changed() returns trigger
 language plpgsql security definer set search_path='' as $$
 begin

@@ -1636,7 +1636,10 @@ test("organization edits and removes resident portals while preserving existing 
   await expect(dialog.getByRole("spinbutton", { name: "Spanningsniveau" })).toHaveValue("3");
   await expect(dialog.getByRole("spinbutton", { name: "Bezoekduur" })).toHaveValue("9");
   await expect(dialog.getByRole("spinbutton", { name: "Buffer", exact: true })).toHaveValue("4");
-  await expect(dialog.getByRole("textbox", { name: "Interne notities" })).toHaveValue("Bestaande notitie behouden");
+  await expect(dialog.getByRole("textbox", { name: "Interne notities", exact: true })).toHaveValue("Bestaande notitie behouden");
+  const entrance = dialog.getByRole("textbox", { name: "Ingangsinstructie voor ouders", exact: true });
+  await expect(entrance).toHaveValue("");
+  await expect(entrance).toHaveAccessibleDescription("Alleen zichtbaar bij deze vrijgegeven bestemming. Gebruik geen contactgegevens of interne notities.");
   const updated = `${name} gewijzigd`;
   await dialog.getByRole("textbox", { name: "Poortnaam", exact: true }).fill(updated);
   await dialog.getByRole("textbox", { name: "Telefoonnummer", exact: true }).fill("0707654321");

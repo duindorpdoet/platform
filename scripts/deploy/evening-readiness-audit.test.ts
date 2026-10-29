@@ -10,7 +10,7 @@ async function fixtureEnv(extra = {}) {
  const directory = await mkdtemp(join(tmpdir(), "coded-readonly-audit-")); directories.push(directory);
  return { SUPABASE_PROJECT_REF: "abcdefghijklmnopqrst", SUPABASE_ACCESS_TOKEN: "fixture-never-log", RUNNER_TEMP: directory, ...extra };
 }
-const baseAudit = { readOnly: true, groups: [{ code: "G-TEST", ordinaryHouses: null }], checkpoint: { appointments: "same", routesAndRuns: "same" } };
+const baseAudit = { readOnly: true, groups: [{ code: "G-TEST", ordinaryHouses: null, expectedCompletionAt: "2026-10-31T20:10:00Z" }], checkpoint: { appointments: "same", routesAndRuns: "same" } };
 describe("coded pure route inspection during the protected production release", () => {
  it("keeps privileged previews inside a fixed bounded read-only transaction and the existing verified capability", () => {
   expect(PREVIEW_AUDIT_QUERY).toMatch(/^begin read only;/);
@@ -36,7 +36,10 @@ describe("coded pure route inspection during the protected production release", 
  });
  it("preserves SELECT output after COMMIT and joins only coded current source checks", async () => {
   vi.spyOn(console, "log").mockImplementation(() => {});
-  const routeCheck = { code: "G-TEST", source: "current_ops_preview", ordinaryHouses: 19, finales: 1, duplicatePhysicalLocations: [], startMarkerValid: true, ordinaryAndersReachable: true };
+  const routeCheck = { code: "G-TEST", source: "current_ops_preview", ordinaryHouses: 19, finales: 1, duplicatePhysicalLocations: [], startMarkerValid: true, ordinaryAndersReachable: true,
+   linkedFirstVisitConfigured: true, linkedFirstVisitCount: 1,
+   projectedOrdinaryEndsAt: "2026-10-31T19:30:00Z", projectedFinaleArrivalAt: "2026-10-31T19:45:00Z",
+   projectedCompletionAt: "2026-10-31T19:51:00Z", projectedPhysicalEndsAt: "2026-10-31T19:53:00Z" };
   const request = vi.fn(async (_url: string, options: RequestInit) => {
    const body = JSON.parse(String(options.body));
    if (body.read_only === false) {
@@ -48,6 +51,8 @@ describe("coded pure route inspection during the protected production release", 
   const path = await runAudit(await fixtureEnv({ GITHUB_REPOSITORY: "duindorpdoet/platform", GITHUB_REF: "refs/heads/production", APP_ENVIRONMENT: "production" }), request);
   const result = JSON.parse(await readFile(path, "utf8"));
   expect(result.groups[0].routeCheck).toEqual(routeCheck);
+  expect(result.groups[0].expectedCompletionAt).toBe("2026-10-31T20:10:00Z");
+  expect(result.groups[0].routeCheck.projectedCompletionAt).not.toBe(result.groups[0].expectedCompletionAt);
   expect(result.checkpoint).toEqual(baseAudit.checkpoint);
   expect(result.changedRows).toBe(0); expect(result.messagesSent).toBe(0);
   expect(JSON.stringify(result)).not.toContain("fixture-never-log");

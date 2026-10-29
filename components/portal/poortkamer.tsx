@@ -1128,7 +1128,7 @@ export function Poortkamer({
                     defaultValue={room.portal.description}
                   />
                 </label>
-                <label>Ingangsinstructie voor ouders<textarea name="publicEntranceInstructions" maxLength={500} defaultValue={room.portal.publicEntranceInstructions ?? ""} placeholder="Bijvoorbeeld: ingang via het hof; volg het steegje links."/><small>Verschijnt alleen bij jullie vrijgegeven bestemming. Zet hier geen contactgegevens of interne notities.</small></label>
+                <label>Ingangsinstructie voor ouders<textarea aria-label="Ingangsinstructie voor ouders" aria-describedby="portal-room-public-entrance-help" name="publicEntranceInstructions" maxLength={500} defaultValue={room.portal.publicEntranceInstructions ?? ""} placeholder="Bijvoorbeeld: ingang via het hof; volg het steegje links."/><small id="portal-room-public-entrance-help">Verschijnt alleen bij jullie vrijgegeven bestemming. Zet hier geen contactgegevens of interne notities.</small></label>
               </>
             ) : (
               <>

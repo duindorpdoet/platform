@@ -26,7 +26,7 @@ Dezelfde aantallen bezoeken en waarschuwingen blijven behouden: respectievelijk 
 
 Reproduceren: draai `scripts/acceptance/live-planboard-performance.mjs` tegen de expliciet gecontroleerde lokale database. Gebruik `BOARD_BENCH_GROUPS=50 BOARD_BENCH_PORTALS=30` voor de grote fixture en `BOARD_BENCH_REFERENCE=true` uitsluitend voor de lokale referentie. CI controleert beide actuele fixtures met `BOARD_BENCH_REQUIRE_FAST=true`.
 
-Lokale verificatie: lint en typecheck geslaagd, 632 unittests geslaagd met één bestaande integratieskip, productiebuild en clientartifactcontrole geslaagd. Een volledige migratieherbouw slaagt met 2.682 databaseasserties in 104 bestanden. De vier nieuwe start-/ingangsbrowserproeven slagen op desktop en mobiel; de echte planbordbewerking en nieuwe time-out/herstelproef slagen eveneens. De aparte initialisatie-, aankomstconcurrentie- en bewaartoetsen gebruiken uitsluitend geïsoleerde synthetische data. De exacte release krijgt daarna opnieuw de volledige bestaande CI-, staging- en productiepoorten. De gevraagde mailtestvrijstelling blijft aan één SHA en vervaldatum gebonden.
+Lokale verificatie: lint en typecheck geslaagd, 632 unittests geslaagd met één bestaande integratieskip, productiebuild en clientartifactcontrole geslaagd. Een volledige migratieherbouw slaagt met 2.688 databaseasserties in 104 bestanden. De vier nieuwe start-/ingangsbrowserproeven slagen op desktop en mobiel; alle elf bestaande en nieuwe planbordbrowserproeven slagen eveneens. De aparte initialisatie-, aankomstconcurrentie- en bewaartoetsen gebruiken uitsluitend geïsoleerde synthetische data. De exacte release krijgt daarna opnieuw de volledige bestaande CI-, staging- en productiepoorten. De gevraagde mailtestvrijstelling blijft aan één SHA en vervaldatum gebonden.
 
 ## Beoordelen en vastzetten
 
@@ -35,6 +35,8 @@ Volg de stappen in [het operationele runbook](RUNBOOK.md#startafspraken-beoordel
 De beschermde productierelease bewaart een alleen-lezen gecodeerd overzicht vóór migratie en na deployment als `readiness-before-production-<SHA>` en `readiness-after-production-<SHA>`. Het overzicht bevat groeps-/poortcodes, revisies, tijden, aantallen en waarschuwingen; geen deelnemersnamen, contactgegevens, adressen of coördinaten. Een pure routeprojectie gebruikt een begrensde expliciete `READ ONLY`-transactie met een bestaande bevoegde beheeridentiteit. De schrijvende planbordsnapshot wordt daarbij niet aangeroepen. Als die projectie niet beschikbaar is, vermeldt het rapport dat expliciet.
 
 Een bestaand planbord kan bewust een oudere bewaarde route-intentie tonen. Het overzicht vermeldt daarom zowel de bronrevisie als een eventueel verschil met de actuele routecontrole. Dat verschil wordt niet tijdens deployment opgelost. Alleen startafspraken bevestigen zet ook niet alle toekomstige dynamische bestemmingen vast.
+
+Een expliciet geaccepteerde revisie van het wereldbeleid verandert de route-invoerversie en daarmee de geldigheidscode van planbordacties. Een actie uit de oude toestand vraagt opnieuw beoordeling. Herhaald accepteren van dezelfde revisie verandert die codes niet opnieuw. De evenementinstellingen en bestaande startbevestigingen worden hiervoor niet herschreven. Het overzicht houdt bovendien de opgeslagen tijdkaders en de berekende bezoek-/finaletijden zichtbaar apart, met het gekoppelde eerste huis eenmaal geteld.
 
 ## Bewaren en terugvallen
 

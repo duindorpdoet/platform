@@ -179,8 +179,8 @@ begin
    and pg_get_function_identity_arguments(p.oid)='_group_id uuid') then raise exception 'AUDIT_STABLE_PREVIEW_REQUIRED'; end if;
 end $scope$;
 ${AUDIT_QUERY.replace('select audit from report', `,
- preview_sources as materialized(select g.id,g.system_code,g.current_schedule_revision_id,g.current_plan_version_id,g.route_mode,
-  selected.revision source_schedule_revision,selected.id source_schedule_id,
+ preview_sources as materialized(select g.id,g.system_code,g.current_schedule_revision_id,g.current_plan_version_id,g.start_slot_id,g.route_mode,
+  selected.revision source_schedule_revision,selected.id source_schedule_id,selected.state source_schedule_state,selected.start_slot_id source_start_slot_id,
   case when g.route_mode='legacy' and selected.id is null then
    (select jsonb_build_object('revision',plan.revision,'stops',coalesce((select jsonb_agg(jsonb_build_object('portalId',stop.portal_id,
     'kind',case when stop.position=(select max(last.position) from app_private.route_plan_stops last where last.plan_version_id=plan.id) then 'finale' else 'ordinary' end,
@@ -190,7 +190,18 @@ ${AUDIT_QUERY.replace('select audit from report', `,
   case when g.route_mode='legacy' and selected.id is null then 'stored_legacy_plan' else 'current_ops_preview' end source
   from groups g left join lateral(select * from app_private.group_runs run where run.group_id=g.id order by case when run.status in ('live','paused') then 0 else 1 end,run.created_at desc,run.id desc limit 1) run on true
   left join app_private.group_schedule_revisions selected on selected.id=coalesce(run.schedule_revision_id,g.current_schedule_revision_id)),
- checked_stops as materialized(select source.id group_id,source.system_code,(stop->>'portalId')::uuid portal_id,stop->>'kind' kind,(stop->>'sequence')::integer sequence
+ preview_origins as materialized(select source.id,
+  case when frozen.point_snapshot is not null then coalesce((frozen.point_snapshot->>'counts_as_first_portal_visit')::boolean,false) else coalesce(point.counts_as_first_portal_visit,false) end counts_as_first,
+  case when frozen.point_snapshot is not null then (frozen.point_snapshot->>'linked_portal_id')::uuid else point.linked_portal_id end linked_portal_id
+  from preview_sources source left join lateral (
+   select pub.point_snapshot from app_private.group_start_publications pub where pub.group_id=source.id
+    and ((source.source_schedule_state='published' and pub.schedule_id=source.source_schedule_id)
+     or(source.source='stored_legacy_plan' and pub.id=(select id from publications where group_id=source.id)))
+   order by pub.publication_order desc limit 1) frozen on true
+  left join app_private.start_slots slot on slot.id=coalesce(source.source_start_slot_id,source.start_slot_id)
+  left join app_private.start_points point on point.id=slot.start_point_id),
+ checked_stops as materialized(select source.id group_id,source.system_code,(stop->>'portalId')::uuid portal_id,stop->>'kind' kind,(stop->>'sequence')::integer sequence,
+  (stop->>'plannedArrivalAt')::timestamptz planned_arrival_at,(stop->>'expectedCompletionAt')::timestamptz expected_completion_at,(stop->>'physicalEndsAt')::timestamptz physical_ends_at
   from preview_sources source cross join lateral jsonb_array_elements(coalesce(source.route->'stops','[]'::jsonb)) stop),
  preview_checks as materialized(select jsonb_build_object('code',source.system_code,'source',source.source,
   'sourceScheduleRevision',source.source_schedule_revision,'routeRevision',source.route->'revision',
@@ -203,6 +214,13 @@ ${AUDIT_QUERY.replace('select audit from report', `,
   'ordinaryHouses',(select count(distinct coalesce(p.application_id,p.id)) from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id and stop.kind='ordinary'),
   'finales',(select count(distinct coalesce(p.application_id,p.id)) from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id and stop.kind='finale'),
   'totalPhysicalVisits',(select count(distinct coalesce(p.application_id,p.id)) from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id and stop.kind in('ordinary','finale')),
+  'linkedFirstVisitConfigured',origin.counts_as_first and origin.linked_portal_id is not null,
+  'linkedFirstVisitCount',(select count(*) from checked_stops stop where stop.group_id=source.id and stop.portal_id=origin.linked_portal_id and stop.kind='ordinary' and origin.counts_as_first),
+  'projectedOrdinaryEndsAt',(select stop.planned_arrival_at+make_interval(secs=>coalesce(app_private.portal_service_seconds(stop.portal_id,stop.planned_arrival_at),settings.ordinary_visit_seconds+settings.route_buffer_seconds))
+   from checked_stops stop cross join settings where stop.group_id=source.id and stop.kind='ordinary' and stop.planned_arrival_at is not null order by stop.sequence desc limit 1),
+  'projectedFinaleArrivalAt',(select stop.planned_arrival_at from checked_stops stop where stop.group_id=source.id and stop.kind='finale' order by stop.sequence desc limit 1),
+  'projectedCompletionAt',(select stop.expected_completion_at from checked_stops stop where stop.group_id=source.id and stop.kind='finale' order by stop.sequence desc limit 1),
+  'projectedPhysicalEndsAt',(select stop.physical_ends_at from checked_stops stop where stop.group_id=source.id and stop.kind='finale' order by stop.sequence desc limit 1),
   'duplicatePhysicalLocations',coalesce((select jsonb_agg(jsonb_build_object('portalCodes',codes,'visits',n)) from(
    select array_agg(distinct p.system_code order by p.system_code) codes,count(*) n from checked_stops stop join portals p on p.id=stop.portal_id
    where stop.group_id=source.id and stop.kind in('ordinary','finale') group by coalesce(p.application_id,p.id) having count(*)>1) duplicates),'[]'::jsonb),
@@ -224,7 +242,7 @@ ${AUDIT_QUERY.replace('select audit from report', `,
   'storedBoardPortalOrderMatches',case when lp.group_id is null then null else
    (select coalesce(jsonb_agg(stop.portal_id order by stop.sequence),'[]'::jsonb) from checked_stops stop where stop.group_id=source.id and stop.kind<>'start')=
    (select coalesce(jsonb_agg(visit.portal_id order by visit.sequence),'[]'::jsonb) from app_private.live_route_visits visit where visit.group_id=source.id and visit.retired_at is null and visit.kind<>'start') end) item
- from preview_sources source left join app_private.live_route_plans lp on lp.group_id=source.id)
+ from preview_sources source join preview_origins origin on origin.id=source.id left join app_private.live_route_plans lp on lp.group_id=source.id)
 select audit||jsonb_build_object('routeProjection',jsonb_build_object('readable',true,'databaseReadOnly',current_setting('transaction_read_only')='on',
  'authorizedExistingAdmin',true,'source','same stable route projector as Startregie','inputHash',app_private.start_planning_input_hash(e.id),
  'routeRevision',app_private.start_ops_route_revision(e.id),'groups',(select coalesce(jsonb_agg(item order by item->>'code'),'[]'::jsonb) from preview_checks))) audit from report cross join e`)};
