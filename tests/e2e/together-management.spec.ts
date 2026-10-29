@@ -7,6 +7,9 @@ import { assertReadableLayout } from "./helpers/layout";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const slug = "duindorp-halloween-2026";
+// These independent UI scenarios mutate one event-wide grouping hash. Keep
+// their fixtures separate in time; explicit command races inside tests remain.
+test.describe.configure({ mode: "default" });
 test.beforeEach(() => {
   test.skip(!url || !key, "Requires the local Supabase acceptance job");
   requireLocalTogetherDatabase();

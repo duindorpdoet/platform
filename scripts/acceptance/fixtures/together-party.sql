@@ -3,6 +3,8 @@ create function pg_temp.fixture_party(_members integer default 1, _children inte
 returns uuid language plpgsql as $$
 declare p uuid := gen_random_uuid(); h uuid; r uuid; c uuid; e uuid := (select id from app_private.events where slug = 'duindorp-halloween-2026');
 begin
+  -- Match the real commands: lock before event foreign keys take KEY SHARE.
+  perform 1 from app_private.events where id=e for update;
   for i in 1.._members loop
     insert into app_private.households(label, primary_contact_user_id) values ('Cluster test ' || i, 'f0000000-0000-0000-0000-000000000001') returning id into h;
     insert into app_private.household_members(household_id,user_id,relation_role) values(h,'f0000000-0000-0000-0000-000000000001','owner');

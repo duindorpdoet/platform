@@ -550,13 +550,17 @@ test("the night cockpit exposes verified portals and the group board without lea
       // Fitting the larger map may expand the cluster while focus is being
       // checked. Individual pins are verified below; a detached cluster is not
       // an inaccessible control.
-      if (await mapPanel.locator(".night-map-portal-pin").count()) return true;
-      focusedCluster = await cluster.evaluate((element) => {
+      const focus = await mapPanel.evaluate((panel) => {
+        if (panel.querySelector(".night-map-portal-pin")) return { ready: true, clusterFocused: false };
+        const element = panel.querySelector<HTMLButtonElement>(".night-map-cluster");
+        if (!element) return { ready: false, clusterFocused: false };
         element.scrollIntoView({ block: "nearest" });
-        (element as HTMLElement).focus();
-        return document.activeElement === element;
-      }).catch(() => false);
-      return focusedCluster;
+        element.focus();
+        const clusterFocused = document.activeElement === element;
+        return { ready: clusterFocused, clusterFocused };
+      });
+      focusedCluster = focus.clusterFocused;
+      return focus.ready;
     }, { timeout: 5_000 }).toBe(true);
     if (!focusedCluster) break;
     try {
