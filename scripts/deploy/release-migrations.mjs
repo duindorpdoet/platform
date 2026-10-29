@@ -66,6 +66,7 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261029171520_shared_physical_arrival_validation.sql',
   '20261029171645_canonical_joint_route_versions.sql',
   '20261029193334_persistent_portal_print_material.sql',
+  '20261029215417_bounded_physical_planboard_warnings.sql',
 
 ]);
 
