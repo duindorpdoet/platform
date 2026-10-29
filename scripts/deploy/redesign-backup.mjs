@@ -57,6 +57,20 @@ export function preservationQuery(catalog,coverageBefore) {
     'rows',(select jsonb_agg(fingerprint) from (${fingerprints.slice(session.length)}) fingerprints),
     'worldPolicyInitialization',(select coverage_initialization from coverage)) as preservation`;
 }
+// Management's read_only role cannot execute the existing private location
+// helper. Use the deployment owner for this fixed inspection only, while
+// PostgreSQL itself rejects writes and SET LOCAL cannot leak into the pool.
+function ownerReadOnlyRequest(query) {
+  return {read_only:false,query:"begin read only;set local statement_timeout='5min';set local lock_timeout='3s';"+
+    "do $preservation_read_only$begin if current_setting('transaction_read_only')<>'on' then raise exception 'PRESERVATION_READ_ONLY_REQUIRED';end if;end $preservation_read_only$;"+
+    query+';commit;'};
+}
+export function preservationManagementRequest(catalog,coverageBefore) {
+  return ownerReadOnlyRequest(preservationQuery(catalog,coverageBefore));
+}
+export function fingerprintManagementRequest(catalog) {
+  return ownerReadOnlyRequest(fingerprintQuery(catalog));
+}
 export function compareFingerprints(before,after) {
   const current=new Map(after.map(row=>[row.table,row]));
   return before.filter(row=>{const next=current.get(row.table);return !next||row.rows!==next.rows||row.sha256!==next.sha256;}).map(row=>row.table);

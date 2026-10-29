@@ -2,16 +2,17 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { startLocationInventoryQuery } from './start-location-inventory.mjs';
-import { fingerprintQuery } from './redesign-backup.mjs';
+import { fingerprintManagementRequest } from './redesign-backup.mjs';
 
-async function query(sql) {
+async function request(body) {
   const response = await fetch(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_REF}/database/query`, {
     method: 'POST', headers: {Authorization:`Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, 'Content-Type':'application/json'},
-    body: JSON.stringify({query:sql, read_only:true}), signal:AbortSignal.timeout(60000),
+    body: JSON.stringify(body), signal:AbortSignal.timeout(60000),
   });
   if (!response.ok) throw new Error(`BASELINE_READ_${response.status}`);
   return response.json();
 }
+const query=sql=>request({query:sql,read_only:true});
 const schemas="'app_private','api','auth','storage','supabase_migrations','vault','cron','supabase_functions','public'";
 const [tables, migrations, functions, constraints, policies, indexes, jobs] = await Promise.all([
   query(`select n.nspname as schema,c.relname as name,c.relrowsecurity as rls,
@@ -26,7 +27,7 @@ const [tables, migrations, functions, constraints, policies, indexes, jobs] = aw
   query(`select * from pg_indexes where schemaname in (${schemas}) order by schemaname,tablename,indexname`),
   query("select jobid,schedule,active,encode(sha256(convert_to(command,'UTF8')),'hex') as command_sha256 from cron.job order by jobid"),
 ]);
-const fingerprints = await query(fingerprintQuery(tables));
+const fingerprints = await request(fingerprintManagementRequest(tables));
 const startLocations = await query(startLocationInventoryQuery);
 const directory=join(process.env.RUNNER_TEMP ?? '/tmp','duindorp-evening-baseline');
 await mkdir(directory,{recursive:true,mode:0o700});

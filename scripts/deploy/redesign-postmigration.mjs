@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { backupKey, management, openBackup, sealBackup } from './redesign-preflight.mjs';
-import { compareFingerprints, preservationQuery } from './redesign-backup.mjs';
+import { compareFingerprints, preservationManagementRequest } from './redesign-backup.mjs';
 import { reconcileReleaseMetadata, releaseMetadataQuery } from './redesign-reconciliation.mjs';
 import { reconcileWorldPolicyInitialization } from './world-policy-reconciliation.mjs';
 
@@ -10,7 +10,7 @@ try {
   if(!process.env.RELEASE_PRIVATE_BASELINE_FILE)throw new Error('PRE_MIGRATION_BASELINE_REQUIRED');
   const before=JSON.parse(openBackup(await readFile(process.env.RELEASE_PRIVATE_BASELINE_FILE),key,context+':migration-baseline').toString());
   const [response,metadata]=await Promise.all([
-    management('/database/query',{read_only:true,query:preservationQuery(before.catalog,before.worldPolicyInitialization)}),
+    management('/database/query',preservationManagementRequest(before.catalog,before.worldPolicyInitialization)),
     management('/database/query',{read_only:true,query:releaseMetadataQuery(before)}),
   ]);
   const after={rows:response[0].preservation.rows,...metadata[0].metadata},reconciliation=reconcileReleaseMetadata(before,after,before.expectedMigrationVersions);

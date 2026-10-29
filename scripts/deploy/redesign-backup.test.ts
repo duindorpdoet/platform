@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { createHash } from 'node:crypto';
-import { encryptStream, verifyBackupFile, compareFingerprints, dryRunReleaseMigrations } from './redesign-backup.mjs';
+import { encryptStream, verifyBackupFile, compareFingerprints, dryRunReleaseMigrations, preservationManagementRequest, fingerprintManagementRequest } from './redesign-backup.mjs';
 
 it('authenticates a streamed backup and rejects a corrupt archive',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'duindorp-backup-contract-'));
@@ -22,6 +22,27 @@ it('blocks missing or changed original rows while allowing additive tables',()=>
   expect(compareFingerprints(original,[...original,{table:'new_table',rows:0,sha256:'new'}])).toEqual([]);
   expect(compareFingerprints(original,[])).toEqual(['app_private.events']);
   expect(compareFingerprints(original,[{...original[0],sha256:'changed'}])).toEqual(['app_private.events']);
+});
+
+it('bounds the owner-only management inspection with database-enforced read-only state and transaction-local settings',()=>{
+  const request=preservationManagementRequest([{schema:'app_private',name:'events',columns:['id','settings']}],{auditBoundary:'42'});
+  expect(request.read_only).toBe(false);
+  expect(request.query).toMatch(/^begin read only;set local statement_timeout='5min';set local lock_timeout='3s';/);
+  expect(request.query).toContain("if current_setting('transaction_read_only')<>'on' then raise exception 'PRESERVATION_READ_ONLY_REQUIRED'");
+  expect(request.query).toContain("set local timezone='UTC';set local datestyle='ISO';set local extra_float_digits=3;");
+  expect(request.query).toContain('from "app_private"."events" t');
+  expect(request.query).toContain('a.id<=42');
+  expect(request.query).toContain('app_private.portal_location_ready(p.id)');
+  expect(request.query).toMatch(/;commit;$/);
+  expect(request.query).not.toMatch(/\b(insert|update|delete|grant|alter|set role)\b/i);
+  expect(()=>preservationManagementRequest([{schema:'app_private',name:'events',columns:['id']}],{auditBoundary:'42;commit;delete from app_private.events'})).toThrow('INVALID_COVERAGE_AUDIT_BASELINE');
+  const fingerprint=fingerprintManagementRequest([{schema:'app_private',name:'events',columns:['id']}]);
+  expect(fingerprint.read_only).toBe(false);
+  expect(fingerprint.query).toMatch(/^begin read only;/);
+  expect(fingerprint.query).toContain("current_setting('transaction_read_only')<>'on'");
+  expect(fingerprint.query).toContain('from "app_private"."events" t');
+  expect(fingerprint.query).not.toContain('coverage_initialization');
+  expect(fingerprint.query).toMatch(/;commit;$/);
 });
 
 it('dry-runs only unapplied migrations and retains a proof for every reviewed file',async()=>{

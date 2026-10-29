@@ -30,7 +30,13 @@ export async function management(path,body) {
     method:body?'POST':'GET',headers:{Authorization:`Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,'Content-Type':'application/json'},
     ...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(60000),
   });
-  if(!response.ok)throw new Error(`PREFLIGHT_API_${response.status}`);
+  if(!response.ok) {
+    const error=await response.json().catch(()=>null);
+    const sqlstate=/^[0-9A-Z]{5}$/.test(error?.code??'')?error.code:
+      (typeof error?.message==='string'?error.message.match(/\bERROR:\s*([0-9A-Z]{5}):/)?.[1]:null);
+    // SQLSTATE is diagnostic; the body can include private SQL and row data.
+    throw new Error(`PREFLIGHT_API_${response.status}${sqlstate?'_'+sqlstate:''}`);
+  }
   return response.json();
 }
 async function main() {
@@ -72,7 +78,7 @@ async function main() {
   if(!/^[a-f0-9]{64}$/.test(signature??'')||!timingSafeEqual(expected,Buffer.from(signature,'hex')))throw new Error('INVALID_RESTORE_PROOF');
   if(proof.revision!==revision||proof.environment!==environment||proof.restoreVerified!==true||proof.storageVerified!==true||proof.vaultVerified!==true||proof.migrationDryRunVerified!==true||proof.migrations?.length!==REVIEWED_RELEASE_MIGRATIONS.length)throw new Error('BACKUP_AND_ISOLATED_RESTORE_NOT_PROVEN');
   assertReviewedReleaseMigrations(proof.migrations.map(migration=>migration.file));
-  const {verifyBackupFile,preservationQuery}=await import('./redesign-backup.mjs');
+  const {verifyBackupFile,preservationManagementRequest}=await import('./redesign-backup.mjs');
   for(const migration of proof.migrations) {
     const wasApplied=proof.appliedMigrations.includes(migration.file.split('_')[0]);
     if(migration.execution!==(wasApplied?'already-applied':'dry-run'))throw new Error('MIGRATION_EXECUTION_PROOF_MISMATCH');
@@ -92,7 +98,7 @@ async function main() {
   // history are compared separately as complete rows, so ongoing cron activity
   // cannot make a cross-query metadata hash look like lost participant data.
   const [current,metadata]=await Promise.all([
-    management('/database/query',{read_only:true,query:preservationQuery(catalog)}),
+    management('/database/query',preservationManagementRequest(catalog)),
     management('/database/query',{read_only:true,query:releaseMetadataQuery()}),
   ]);
   const baseline=join(directory,'migration-baseline.aes');
