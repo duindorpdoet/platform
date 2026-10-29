@@ -1,6 +1,11 @@
 export const LEGACY_HOTFIX:string;
 export const CANONICAL_HOTFIX:string;
+export const ENTRANCE_WRAPPER:string;
+export const RECEPTION_WRAPPER:string;
 export const hotfixProofQuery:string;
-type Proof={save_hash:string;cleanup_hash:string;trigger_valid:boolean;contaminated_drafts:number;versions:string[]};
+export type Proof={save_hash:string;save_functions:Record<string,{hash:string;normalized_hash:string}>;cleanup_hash:string;trigger_valid:boolean;contaminated_drafts:number;versions:string[];wrapper_versions:string[]};
 export function assertEquivalentHotfix(staging:Proof,production:Proof):void;
 export function assertInstalledHotfix(row:Proof):void;
+export function hotfixRepairActions(row:Proof,environment:'staging'|'production'):Array<{version:string;status:'applied'|'reverted'}>;
+export function sanitizedHotfixProof(row:unknown):Record<string,unknown>;
+export function runHotfixHistoryRepair():Promise<void>;
