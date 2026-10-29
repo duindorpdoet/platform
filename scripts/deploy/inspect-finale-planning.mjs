@@ -16,14 +16,14 @@ const response = await fetch(`https://api.supabase.com/v1/projects/${process.env
   reservations as(
    select g.id group_id,s.id schedule_id,s.start_slot_id,slot.starts_at,slot.start_point_id,s.expected_finale_arrival_at,
     (select count(*) from app_private.group_registrations a join app_private.registration_children c on c.registration_id=a.registration_id and c.participation_status='active' where a.group_id=g.id and a.superseded_at is null) children
-   from app_private.walking_groups g join e on e.id=g.event_id join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id and s.state in ('draft','published')
-   join app_private.start_slots slot on slot.id=s.start_slot_id where g.retired_at is null and g.id not in(select id from focus)
+   from app_private.walking_groups g join e on e.id=g.event_id join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id and s.state='draft'
+   join app_private.start_slots slot on slot.id=s.start_slot_id where g.retired_at is null and g.status not in ('finished','completed','stopped','cancelled') and not exists(select 1 from app_private.group_runs run where run.group_id=g.id and run.status in ('stopped','completed')) and g.id not in(select id from focus)
    union
    select p.group_id,p.schedule_id,(p.slot_snapshot->>'id')::uuid,p.starts_at,(p.slot_snapshot->>'start_point_id')::uuid,s.expected_finale_arrival_at,
     (select count(*) from app_private.group_registrations a join app_private.registration_children c on c.registration_id=a.registration_id and c.participation_status='active' where a.group_id=p.group_id and a.superseded_at is null)
    from app_private.group_start_publications p join e on e.id=p.event_id join app_private.walking_groups g on g.id=p.group_id and g.retired_at is null
-   join app_private.group_schedule_revisions s on s.id=p.schedule_id
-   where p.group_id not in(select id from focus) and not exists(select 1 from app_private.group_start_publications later where later.group_id=p.group_id and later.publication_order>p.publication_order)
+   left join app_private.group_schedule_revisions s on s.id=p.schedule_id
+   where g.status not in ('finished','completed','stopped','cancelled') and not exists(select 1 from app_private.group_runs run where run.group_id=g.id and run.status in ('stopped','completed')) and p.group_id not in(select id from focus) and not exists(select 1 from app_private.group_start_publications later where later.group_id=p.group_id and later.publication_order>p.publication_order)
    and not exists(select 1 from app_private.group_start_withdrawals w where w.group_id=p.group_id and w.through_publication_order>=p.publication_order)
   ) select jsonb_build_object(
    'settings',(select jsonb_build_object('targetGroupSize',least(coalesce((e.settings->>'targetGroupSize')::integer,15),coalesce((e.settings->>'maxGroupSize')::integer,20)),'maxGroupSize',coalesce((e.settings->>'maxGroupSize')::integer,20),'globalOrdinaryStopAt',s.global_ordinary_stop_at,
@@ -40,8 +40,8 @@ const response = await fetch(`https://api.supabase.com/v1/projects/${process.env
     'maxGroups',1,'maxChildren',least(slot.max_children,p.max_gathering_children),'availableFrom',p.available_from,'availableUntil',p.available_until,
     'markerValid',coalesce(p.marker_latitude,p.geocoded_latitude,p.latitude) is not null and coalesce(p.marker_longitude,p.geocoded_longitude,p.longitude) is not null))
     from slots slot join points p on p.id=slot.start_point_id join physical on physical.id=p.id where slot.active and p.active),'[]'::jsonb),
-   'existingSchedules',coalesce((select jsonb_agg(jsonb_build_object('id','reservation-'||n,'groupId','group-'||gn,'startId','old-'||n,'startPointId','point-'||p.anonymous_id,'startsAt',r.starts_at,'childCount',r.children,'expectedFinaleArrivalAt',r.expected_finale_arrival_at))
-    from(select r.*,row_number() over(order by r.schedule_id) n,dense_rank() over(order by r.group_id) gn from reservations r) r join physical p on p.id=r.start_point_id),'[]'::jsonb),
+   'existingSchedules',coalesce((select jsonb_agg(jsonb_build_object('id','reservation-'||n,'groupId','group-'||gn,'startId','old-'||n,'startPointId','point-'||p.anonymous_id,'startsAt',r.starts_at,'childCount',r.children,'expectedFinaleArrivalAt',coalesce(r.expected_finale_arrival_at,(select finale_last_arrival_at from app_private.event_route_settings where event_id=(select id from e)))))
+    from(select r.*,row_number() over(order by r.schedule_id,r.group_id,r.starts_at) n,dense_rank() over(order by r.group_id) gn from reservations r) r join physical p on p.id=r.start_point_id),'[]'::jsonb),
    'stored',(select jsonb_build_object('ordinaryStop',s.effective_ordinary_stop_at,'arrival',s.expected_finale_arrival_at,'state',s.state)
     from focus g join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id),
    'started',(select exists(select 1 from app_private.group_runs r join focus g on g.id=r.group_id))
