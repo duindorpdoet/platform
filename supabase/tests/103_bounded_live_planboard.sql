@@ -22,8 +22,8 @@ insert into app_private.live_route_plans(group_id,event_id,schedule_id)
 select g.id,g.event_id,g.current_schedule_revision_id from app_private.walking_groups g where g.event_id=(select eid from bounded)
 on conflict(group_id) do nothing;
 
--- Five independent, stored legacy proposals make cold initialization observable
--- without invoking a dynamic planner or depending on today's clock.
+-- Five stored legacy proposals make lightweight cold-read initialization observable.
+-- Reading them must not silently turn them into a newly approved joint route.
 create temp table cold_groups(group_id uuid,plan_id uuid,n integer,registration_id uuid);
 insert into cold_groups select gen_random_uuid(),gen_random_uuid(),n,pg_temp.fixture_route_registration() from generate_series(1,6) n;
 insert into app_private.walking_groups(id,event_id,code,status,route_mode,start_slot_id)
@@ -44,18 +44,22 @@ select group_id,(select eid from bounded),7 from cold_groups where n=6;
 create temp table empty_route as select p.* from app_private.live_route_plans p join cold_groups c on c.group_id=p.group_id where c.n=6;
 
 update bounded set snapshot=api.admin_live_planboard_snapshot('duindorp-halloween-2026');
-select is((select count(*) from app_private.live_route_plans p join cold_groups c on c.group_id=p.group_id where c.n<=5),2::bigint,'one cold request initializes at most two physical groups');
-select is((select (snapshot->>'initializationPending')::integer from bounded),3,'snapshot explicitly reports the remaining groups instead of pretending completeness');
-select throws_ok($$select api.admin_live_planboard_preview('duindorp-halloween-2026','{"action":"move","visitId":"00000000-0000-0000-0000-000000000000"}',snapshot->>'inputHash') from bounded$$,'55000','LIVE_PLANBOARD_INITIALIZING','direct route mutation is blocked while part of the event is still initializing');
+select is((select count(*) from app_private.live_route_plans p join cold_groups c on c.group_id=p.group_id where c.n<=5),5::bigint,'cold read records lightweight route metadata without independently planning groups');
+select is((select (snapshot->>'initializationPending')::integer from bounded),0,'lightweight metadata initialization does not queue hidden independent route calculations');
+select throws_ok($$select api.admin_joint_route_plan_apply('duindorp-halloween-2026','{}',false,'Een gezamenlijk routeconcept vereist een expliciete beoordeling','0ff10300-0000-4000-8000-000000000001')$$,'22023','JOINT_ROUTE_CONFIRMATION_REQUIRED','direct joint apply requires explicit review rather than promoting a cold read');
+select is((select count(distinct c.group_id) from bounded,jsonb_array_elements(snapshot->'warnings') warning cross join lateral jsonb_array_elements_text(warning->'groupIds') id(group_id) join cold_groups c on c.group_id::text=id.group_id where c.n<=5 and warning->>'code'='JOINT_ROUTE_REVIEW_REQUIRED'),5::bigint,'every unreviewed physical group is explicitly identified in snapshot warnings');
+select is((select count(*) from app_private.joint_route_plan_versions where event_id=(select eid from bounded)),0::bigint,'viewing saved legacy proposals creates no accepted joint version');
 update bounded set snapshot=api.admin_live_planboard_snapshot('duindorp-halloween-2026');
-select is((select count(*) from app_private.live_route_plans p join cold_groups c on c.group_id=p.group_id where c.n<=5),4::bigint,'second request advances the next bounded batch exactly once');
-select is((select (snapshot->>'initializationPending')::integer from bounded),1,'remaining initialization count follows actual saved plans');
-update bounded set snapshot=api.admin_live_planboard_snapshot('duindorp-halloween-2026');
-select is((select count(*) from app_private.live_route_plans p join cold_groups c on c.group_id=p.group_id where c.n<=5),5::bigint,'subsequent read completes the finite proposal set');
-select is((select (snapshot->>'initializationPending')::integer from bounded),0,'completed initialization is reported accurately');
-select is((select count(*) from app_private.live_route_visits v join cold_groups c on c.group_id=v.group_id where v.retired_at is null),10::bigint,'bounded batches preserve each complete two-stop proposal without duplicate visits');
+select is((select count(*) from app_private.live_route_plans p join cold_groups c on c.group_id=p.group_id where c.n<=5),5::bigint,'a second read retains the same finite metadata set');
+select is((select (snapshot->>'initializationPending')::integer from bounded),0,'warm completeness reports stored metadata accurately');
+select is((select count(*) from app_private.live_route_visits v join cold_groups c on c.group_id=v.group_id where v.retired_at is null),0::bigint,'cold and warm reads never copy independent legacy routes into physical intentions');
 select is((select count(*) from app_private.live_route_visits v join empty_route p on p.group_id=v.group_id),0::bigint,'an initialized empty route remains intentionally empty');
 
+-- A deliberately stored manual intention is a fixture, not a planner side effect.
+-- Its identity/version must survive warm refresh even while joint review is pending.
+insert into app_private.live_route_visits(event_id,group_id,sequence,portal_id,starts_at,duration_seconds,buffer_seconds,kind,source)
+select (select eid from bounded),group_id,1,'12000000-0000-0000-0000-000000000001','2026-10-31T18:40:00+01',300,120,'ordinary','manual' from cold_groups where n=1;
+update bounded set snapshot=api.admin_live_planboard_snapshot('duindorp-halloween-2026');
 update bounded set hash=snapshot->>'inputHash',visits=snapshot->'visits',plans=(select jsonb_agg(to_jsonb(p) order by p.group_id) from app_private.live_route_plans p where p.event_id=bounded.eid);
 select is(api.admin_live_planboard_snapshot('duindorp-halloween-2026')->>'inputHash',(select hash from bounded),'warm reads retain exact input hash');
 select is(api.admin_live_planboard_snapshot('duindorp-halloween-2026')->'visits',(select visits from bounded),'warm reads preserve all intent identities, times and versions');
@@ -95,7 +99,8 @@ create temp table reception(portal uuid,own_group uuid,other_group uuid,occupanc
 insert into reception select '12000000-0000-0000-0000-000000000028',
  (select group_id from cold_groups where n=1),(select group_id from cold_groups where n=2),'[]'::jsonb;
 update app_private.portal_windows set opens_at='2026-10-31T18:00:00+01',closes_at='2026-10-31T22:00:00+01',
- max_concurrent_groups=1,max_children_per_visit=8,max_children_total=8 where portal_id=(select portal from reception);
+ max_concurrent_groups=1,max_children_per_visit=8,max_children_total=8,visit_minutes=5,buffer_minutes=0 where portal_id=(select portal from reception);
+update app_private.portals set arrival_headway_seconds=300,ordinary_end_grace_seconds=0,ordinary_hard_close=true where id=(select portal from reception);
 update reception set occupancy=jsonb_build_array(jsonb_build_object('group_id',other_group,'starts_at','2026-10-31T18:00:00+01','ends_at','2026-10-31T18:10:00+01','child_count',4));
 select ok(app_private.portal_interval_available_from_occupancy(portal,own_group,'2026-10-31T18:10:00+01','2026-10-31T18:15:00+01',4,occupancy),'touching physical intervals do not overlap') from reception;
 select ok(not app_private.portal_interval_available_from_occupancy(portal,own_group,'2026-10-31T18:09:59+01','2026-10-31T18:15:00+01',4,occupancy),'one second overlap still exceeds actual one-group capacity') from reception;
@@ -119,7 +124,7 @@ select ok(app_private.portal_interval_available(portal,own_group,'2026-10-31T18:
 insert into app_private.portal_reservations(event_id,portal_id,group_id,kind,status,reserved_from,reserved_until,child_count)
 select (select eid from bounded),portal,other_group,'ordinary','held','2026-10-31T18:20:00+01','2026-10-31T18:30:00+01',3 from reception;
 update app_private.portal_windows set max_concurrent_groups=2 where portal_id=(select portal from reception);
-select ok(app_private.portal_interval_available(portal,own_group,'2026-10-31T18:20:00+01','2026-10-31T18:25:00+01',4,clock_timestamp()),'dispatcher deduplicates real alternative reservations of one physical group') from reception;
+select ok(app_private.portal_interval_available(portal,own_group,'2026-10-31T18:25:00+01','2026-10-31T18:30:00+01',4,clock_timestamp()),'dispatcher deduplicates real alternative reservations of one physical group') from reception;
 insert into app_private.portal_reservations(event_id,portal_id,group_id,kind,status,reserved_from,reserved_until,child_count)
 select (select eid from bounded),portal,(select group_id from cold_groups where n=3),'ordinary','held','2026-10-31T18:40:00+01','2026-10-31T18:45:00+01',1 from reception;
 select ok(not app_private.portal_interval_available(portal,own_group,'2026-10-31T18:30:00+01','2026-10-31T18:35:00+01',4,clock_timestamp()),'dispatcher cannot bypass real total-child reception budget using a non-overlapping time') from reception;

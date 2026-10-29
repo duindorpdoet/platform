@@ -10,6 +10,7 @@ update app_private.walking_groups set desired_ordinary_visits=3 where id=(select
 update app_private.registrations set requested_ordinary_stop_at=null,preferred_start_at=null where id in(select registration_id from app_private.group_registrations where group_id=(select gid from board));
 update board set point=(api.admin_portal_start_point_set(pid,true,(select version from app_private.portals where id=pid))->>'startPointId')::uuid;
 select api.admin_startregie_confirm_point('duindorp-halloween-2026',point,(select version from app_private.start_points where id=point)) from board;
+select app_private.withdraw_group_appointment(gid,'Synthetische seedafspraak bewust vervangen voor planbordregressie')from board;
 update board set schedule=(api.admin_startregie_move_group(gid,point,'2026-10-31T17:00Z',(select version from app_private.walking_groups where id=gid),'neutral','Live planbord synthetische keten voorbereiden')->>'id')::uuid;
 update board set snapshot=pg_temp.ready_live_planboard('duindorp-halloween-2026');
 update board set vid=(select id from app_private.live_route_visits where group_id=gid and sequence=2),pid=(select portal_id from app_private.live_route_visits where group_id=gid and sequence=2);

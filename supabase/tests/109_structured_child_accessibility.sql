@@ -1,0 +1,30 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+update app_private.events set settings=settings||'{"groupRegistrationOpen":true}'::jsonb,registration_open_at=null,registration_close_at=null where slug='duindorp-halloween-2026';
+insert into auth.users(id,instance_id,aud,role,email,email_confirmed_at,created_at,updated_at,raw_app_meta_data,raw_user_meta_data) values
+ ('d1090000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','structured-parent@example.invalid',now(),now(),now(),'{}','{}'),
+ ('d1090000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','invalid-structured-parent@example.invalid',now(),now(),now(),'{}','{}');
+select set_config('request.jwt.claims','{"sub":"d1090000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+select api.registration_save_draft('duindorp-halloween-2026','{"adult":{"name":"Synthetic Parent","phone":"0612345678"},"children":[{"name":"Synthetic Same Name","age":"8","accessibilityNote":"Synthetic non-sensitive note","stepFreeRequired":true},{"name":"Synthetic Same Name","age":"8","accessibilityNote":"Synthetic non-sensitive note","stepFreeRequired":false},{"name":"Synthetic Review","age":"9","accessibilityNote":"Synthetic non-sensitive note","stepFreeRequired":null}]}',null);
+create temp table structured_registration as select api.registration_submit('duindorp-halloween-2026','2026-1','2026-1','structured-parent-submit',repeat('1',64)) result;
+create temp table original_children as select rc.id,rc.child_id from app_private.registration_children rc where rc.registration_id=(select(result->>'id')::uuid from structured_registration);
+select is((select count(*)::integer from original_children),3,'three children retain distinct registration identities');
+select is((select count(*)::integer from original_children o join app_private.children c on c.id=o.child_id where c.first_name='Synthetic Same Name'),2,'same name and age never merge distinct children');
+select is((select count(*)::integer from original_children o join app_private.children c on c.id=o.child_id where c.step_free_required is true),1,'public submit stores the explicit step-free requirement');
+select is((select count(*)::integer from original_children o join app_private.children c on c.id=o.child_id where c.step_free_required is false),1,'a free note does not override an explicit no');
+select is((select count(*)::integer from original_children o where app_private.child_step_free_requirement(o.child_id) is null),1,'an unclassified existing note remains a review case');
+select is((select count(*)::integer from jsonb_array_elements(api.registration_snapshot('duindorp-halloween-2026')#>'{registration,children}')child where child->'stepFreeRequired'='true'::jsonb),1,'parent snapshot exposes the actual structured declaration');
+create temp table structured_added as select api.registration_child_add((result->>'id')::uuid,(select version from app_private.registrations r where r.id=(result->>'id')::uuid),'Synthetic Added',7,'Synthetic guidance note',true)result from structured_registration;
+select is((select c.step_free_required from structured_added a join app_private.registration_children rc on rc.id=(a.result->>'registrationChildId')::uuid join app_private.children c on c.id=rc.child_id),true,'authorized parent add stores the field on the returned stable child ID');
+select is((select count(*)::integer from original_children o join app_private.registration_children rc on rc.id=o.id and rc.child_id=o.child_id),3,'adding a child preserves every pre-existing identity');
+select is((select price_snapshot_cents from app_private.registrations where id=(select(result->>'id')::uuid from structured_registration)),(select 4*price_cents from app_private.events where slug='duindorp-halloween-2026'),'parent addition uses the existing contribution calculation');
+select set_config('request.jwt.claims','{"sub":"d1090000-0000-0000-0000-000000000002","role":"authenticated"}',true);
+select throws_ok($$select api.registration_child_add((result->>'id')::uuid,(select version from app_private.registrations where id=(result->>'id')::uuid),'Unauthorized',8,null,true)from structured_registration$$,'42501',null,'the structured overload retains the parent ownership guard');
+select api.registration_save_draft('duindorp-halloween-2026','{"adult":{"name":"Synthetic Invalid Parent","phone":"0612345678"},"children":[{"name":"Synthetic Invalid","age":"8","stepFreeRequired":"yes"}]}',null);
+select throws_ok($$select api.registration_submit('duindorp-halloween-2026','2026-1','2026-1','structured-parent-invalid',repeat('2',64))$$,'22023','INVALID_ACCESSIBILITY_REQUIREMENT','public API rejects non-boolean declarations');
+select is((select count(*)::integer from app_private.registrations r join app_private.households h on h.id=r.household_id where h.primary_contact_user_id='d1090000-0000-0000-0000-000000000002'),0,'invalid declaration rolls back the registration and children');
+select ok(not has_function_privilege('anon','api.registration_child_add(uuid,integer,text,integer,text,boolean)','execute'),'anonymous API cannot use structured parent additions');
+select ok(has_function_privilege('authenticated','api.registration_child_add(uuid,integer,text,integer,text)','execute'),'existing five-argument clients remain compatible');
+select * from finish();
+rollback;

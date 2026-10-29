@@ -14,7 +14,7 @@ type ScheduledGroup = {
   registrations: Registration[];
   schedule: null | { id: string; state: string; startSlotId: string; expectedFinaleArrivalAt: string };
 };
-type Point = { id: string; linkedPortalId: string | null; slots: Array<{ id: string; startsAt: string }> };
+type Point = { id: string; linkedPortalId: string | null; physicalDepartureKey?: string; slots: Array<{ id: string; startsAt: string }> };
 
 /** Retain the original households inside each fixed group, including neutral votes. */
 export function fixedGroupPlanningParties(groups: ScheduledGroup[]): PlanningParty[] {
@@ -32,7 +32,7 @@ export function fixedGroupPlanningParties(groups: ScheduledGroup[]): PlanningPar
 
 /** Hydrate all reservations, including slots absent from the new ten-minute grid. */
 export function existingStartReservations(reservations: ExistingPlanningSchedule[] | undefined, groups: ScheduledGroup[], points: Point[]): ExistingPlanningSchedule[] {
-  const slots = new Map(points.flatMap(point => point.slots.map(slot => [slot.id, { startPointId: point.linkedPortalId ?? point.id, startsAt: slot.startsAt }] as const)));
+  const slots = new Map(points.flatMap(point => point.slots.map(slot => [slot.id, { startPointId: point.physicalDepartureKey ?? point.linkedPortalId ?? point.id, startsAt: slot.startsAt }] as const)));
   const groupBySchedule = new Map(groups.flatMap(group => group.schedule ? [[group.schedule.id, group.id] as const] : []));
   const existing: ExistingPlanningSchedule[] = reservations ?? groups.flatMap(group => group.schedule && ["draft", "confirmed", "published"].includes(group.schedule.state) ? [{
     id: group.schedule.id, groupId: group.id, startId: group.schedule.startSlotId,

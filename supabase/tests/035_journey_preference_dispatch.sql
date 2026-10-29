@@ -5,6 +5,7 @@ create function pg_temp.rehearsal_short_code(stopid uuid) returns text language 
 $$;
 grant execute on function pg_temp.rehearsal_short_code(uuid) to authenticated;
 select plan(6);
+\ir helpers/prepolicy-dynamic-run.inc
 create temporary table dynamic_state(
   child_id uuid,
   group_version integer,
@@ -67,7 +68,12 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select lives_ok($$select api.group_journey_preference_save('23000000-0000-0000-0000-000000000001',(select group_version from dynamic_state),1)$$,'leader chooses one ordinary visit before start');
 update dynamic_state set group_version=group_version+1;
-update dynamic_state set run_id=(api.run_start('23000000-0000-0000-0000-000000000001',array[(select child_id from dynamic_state)],(select group_version from dynamic_state),'pref-start','pref-start')->>'runId')::uuid;
+-- This historical compatibility episode retains its original immediate finale
+-- dispatch after the chosen count. New accepted routes keep their fixed finale
+-- appointment instead; those starts and bindings are checked in069/111.
+set local role postgres;
+update dynamic_state set run_id=(pg_temp.prepolicy_dynamic_run('23000000-0000-0000-0000-000000000001',array[child_id],group_version,'preference-historical-start','preference-historical-start')->>'runId')::uuid;
+set local role authenticated;
 select throws_ok($$select api.group_journey_preference_save('23000000-0000-0000-0000-000000000001',(api.group_snapshot('23000000-0000-0000-0000-000000000001')#>>'{group,version}')::integer,5)$$,
 '23514','JOURNEY_ALREADY_STARTED','live journey changes require organization support');
 do $$ declare s jsonb; begin

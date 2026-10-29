@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import {sql,requireLocalTogetherDatabase,createTogetherFixtures} from '../../scripts/acceptance/together-fixtures.mjs';
 import {prepareFixtureGuidance,selectOrganizationSection} from './helpers/guidance';
 import type {BoardSnapshot} from '../../lib/domain/live-planboard';
+import {prepareOtherRouteAppointments,reviewCanonicalFixtureRoutes} from './helpers/canonical-routes';
 const event='duindorp-halloween-2026',gid='23000000-0000-0000-0000-000000000002';
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL!,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 async function login(context:BrowserContext,email='admin@example.invalid') {
@@ -32,6 +33,9 @@ test('real planboard route, keyboard move, equal shift, undo/redo and responsive
  const point=await rpc(client,'admin_portal_start_point_set',{_portal_id:'12000000-0000-0000-0000-000000000001',_enabled:true,_expected_version:Number(sql("select version from app_private.portals where id='12000000-0000-0000-0000-000000000001'"))});
  await rpc(client,'admin_startregie_confirm_point',{_event_slug:event,_point_id:point.startPointId,_expected_version:Number(sql(`select version from app_private.start_points where id='${point.startPointId}'`))});
  await rpc(client,'admin_startregie_move_group',{_group_id:gid,_start_point_id:point.startPointId,_starts_at:'2026-10-31T17:00:00Z',_expected_group_version:Number(sql(`select version from app_private.walking_groups where id='${gid}'`)),_preference_match:'neutral',_reason:'Synthetische browserketen voor het echte live planbord'});
+ const state=await rpc(client,'admin_startregie_snapshot',{_event_slug:event});const working=state.groups.find((group:{id:string})=>group.id===gid).schedule;
+ await rpc(client,'admin_startregie_confirm_and_send',{_event_slug:event,_expected_revisions:[{id:working.id,revision:working.revision}],_expected_settings_version:state.settings.eventSettingsVersion,_idempotency_key:randomUUID()});
+ prepareOtherRouteAppointments(event,gid);await reviewCanonicalFixtureRoutes(client,event);
  const before=await snapshot(client);expect(before.visits.filter(v=>v.groupId===gid).length).toBeGreaterThan(1);
  await page.goto('/admin');await selectOrganizationSection(page,'Poorten');await page.getByRole('tab',{name:'Live planbord',exact:true}).click();
  await expect(page.locator('.planboard-row')).toHaveCount(before.portals.length);
@@ -39,7 +43,7 @@ test('real planboard route, keyboard move, equal shift, undo/redo and responsive
  await page.getByRole('checkbox',{name:'Volgende stops meeschuiven',exact:true}).check();await page.locator(`[data-visit-id="${visit.id}"]`).focus();await page.keyboard.press('ArrowRight');
  const dialog=page.getByRole('dialog');await expect(dialog).toContainText('geen starttijdmail');await dialog.getByRole('textbox').fill('Alle volgende conceptstops in de echte browser gelijk verschuiven');await dialog.getByRole('button',{name:'Route-intentie opslaan',exact:true}).click();await expect(dialog).toHaveCount(0);
  await expect.poll(async()=>Date.parse((await snapshot(client)).visits.find(v=>v.id===visit.id)!.startsAt)).not.toBe(Date.parse(visit.startsAt));
- const after=await snapshot(client);const shifted=after.visits.filter(v=>v.groupId===gid&&v.sequence>=2);const deltas=shifted.map(v=>Date.parse(v.startsAt)-Date.parse(before.visits.find(old=>old.id===v.id)!.startsAt));expect(new Set(deltas).size).toBe(1);expect(sql('select count(*) from app_private.email_outbox')).toBe(mailBefore);
+ const after=await snapshot(client);const shifted=after.visits.filter(v=>v.groupId===gid&&v.sequence>=2&&v.editable);const deltas=shifted.map(v=>Date.parse(v.startsAt)-Date.parse(before.visits.find(old=>old.id===v.id)!.startsAt));expect(new Set(deltas).size).toBe(1);for(const fixed of before.visits.filter(v=>v.groupId===gid&&!v.editable))expect(after.visits.find(v=>v.id===fixed.id)?.startsAt).toBe(fixed.startsAt);expect(sql('select count(*) from app_private.email_outbox')).toBe(mailBefore);
  await page.getByRole('button',{name:'Ongedaan',exact:true}).click();await page.getByRole('dialog').getByRole('textbox').fill('De conceptverplaatsing gecontroleerd ongedaan maken');await page.getByRole('dialog').getByRole('button',{name:'Route-intentie opslaan',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
  expect((await snapshot(client)).visits.find(v=>v.id===visit.id)!.startsAt).toBe(visit.startsAt);
  await page.getByRole('button',{name:'Opnieuw',exact:true}).click();await page.getByRole('dialog').getByRole('textbox').fill('Dezelfde gecontroleerde conceptverplaatsing opnieuw toepassen');await page.getByRole('dialog').getByRole('button',{name:'Route-intentie opslaan',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);

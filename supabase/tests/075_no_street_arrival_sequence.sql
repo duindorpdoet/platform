@@ -1,6 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();
+\ir helpers/prepolicy-dynamic-run.inc
 create temp table journey(eid uuid,event_version integer,schedule_id uuid,run_id uuid,stop_id uuid,run_version integer,
   stop_hash text,publication_hash text,credential text,choices jsonb,arrival jsonb,new_portal uuid,route_revision integer);
 insert into journey(eid,event_version) select id,settings_version from app_private.events where slug='duindorp-halloween-2026';
@@ -29,7 +30,7 @@ do $$begin
 end $$;
 update journey set publication_hash=(select md5(jsonb_agg(to_jsonb(p) order by p.publication_order)::text) from app_private.group_start_publications p);
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-update journey set run_id=(api.run_start('23000000-0000-0000-0000-000000000002',
+update journey set run_id=(pg_temp.prepolicy_dynamic_run('23000000-0000-0000-0000-000000000002',
   (select array_agg(id) from (select c.id from app_private.registration_children c join app_private.group_registrations a on a.registration_id=c.registration_id
     where a.group_id='23000000-0000-0000-0000-000000000002' and a.superseded_at is null and c.participation_status='active' order by c.id limit 2) present),
   (select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000002'),'no-street-run-start','no-street-run-start')->>'runId')::uuid;

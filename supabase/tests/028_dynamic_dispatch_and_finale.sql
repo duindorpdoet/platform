@@ -5,6 +5,7 @@ create function pg_temp.rehearsal_short_code(stopid uuid) returns text language 
 $$;
 grant execute on function pg_temp.rehearsal_short_code(uuid) to authenticated;
 select plan(21);
+\ir helpers/prepolicy-dynamic-run.inc
 
 create temporary table dynamic_state(
   child_id uuid,
@@ -120,15 +121,15 @@ with correction as (
 update app_private.walking_groups set current_schedule_revision_id=(select schedule_id from dynamic_state) where id='23000000-0000-0000-0000-000000000001';
 
 
-set local role authenticated;
+-- Preserve the continuous historical dispatcher contract for an already-begun
+-- journey. The publication and early-start checks above still use the real API;
+-- new reviewed run_start coverage lives in069 and canonical runtime in111.
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select lives_ok(
-  $$ update dynamic_state set run_id = (api.run_start(
-    '23000000-0000-0000-0000-000000000001', array[(select child_id from dynamic_state)],
-    (select group_version from dynamic_state), 'dynamic-start', 'dynamic-start-hash'
-  ) ->> 'runId')::uuid $$,
-  'a paid group starts after its assigned time and receives one server-selected stop'
+  $$ update dynamic_state set run_id=(pg_temp.prepolicy_dynamic_run('23000000-0000-0000-0000-000000000001',array[child_id],group_version,'dynamic-historical-start','dynamic-historical-start')->>'runId')::uuid $$,
+  'an already-begun historical group retains one server-selected stop'
 );
+set local role authenticated;
 select is(
   api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,currentStop,kind}',
   'ordinary',

@@ -1,6 +1,10 @@
 "use client";
 
 import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
+import { startSnapshotPolling } from "@/lib/realtime/snapshot-polling";
+import { participantAccessKey } from "@/lib/domain/group-access";
+import { clearPrivateSnapshots } from "@/lib/pwa/private-snapshot";
+import { clearArrivalMemory } from "@/lib/redesign/arrival-sync";
 import {useEventDetails} from "@/components/redesign/event-details";
 import Link from "next/link";
 import type { ParticipantPayment } from "@/components/payments/payment-details";
@@ -116,9 +120,30 @@ export function ParticipantShell({
   const event=useEventDetails();
   const router = useRouter();
   const [inviteNotice, setInviteNotice] = useState(inviteToken ? "Meekijkuitnodiging controleren…" : "");
+  const [invalidContext, setInvalidContext] = useState<ParticipantContext | null>(null);
   const selectedRole = role ? context.roles.find((item) => item.key === role && (!accessReference || role !== "viewer" || (item.accessId ?? item.groupId) === accessReference)) : undefined;
   const items = selectedRole ? navigation[selectedRole.key] : [];
   const activeSection = items.some((item) => item.key === section) ? section! : items[0]?.key;
+
+  useEffect(() => {
+    let active = true;
+    let replacing = false;
+    const client = createClient();
+    if (!client) return;
+    const stop = startSnapshotPolling(async () => {
+      if (replacing) return;
+      const identity = await client.auth.getUser();
+      if (!active || identity.data.user?.id !== userId) return;
+      const { data, error } = await client.schema("api").rpc("participant_context", { _event_slug: eventSlug }).abortSignal(AbortSignal.timeout(8_000));
+      if (!active || error || !data || data.event?.id !== context.event.id || !Array.isArray(data.roles)) return;
+      if (participantAccessKey(data.roles) !== participantAccessKey(context.roles)) {
+        replacing = true;
+        clearPrivateSnapshots(); clearArrivalMemory(); setInvalidContext(context);
+        router.refresh();
+      }
+    });
+    return () => { active = false; stop(); };
+  }, [context, eventSlug, router, userId]);
 
   useEffect(() => {
     document.documentElement.dataset.readable = context.preferences?.readableMode ? "true" : "false";
@@ -148,6 +173,8 @@ export function ParticipantShell({
     })();
     return () => { active = false; };
   }, [inviteToken, router]);
+
+  if (invalidContext === context) return <div className="panel loading-state" role="status"><RefreshCw className="spin" /><p>Jullie groepsindeling is gewijzigd. De actuele omgeving wordt opgehaald…</p></div>;
 
   if (!selectedRole) {
     return <div className="participant-empty page-transition">
@@ -180,8 +207,8 @@ export function ParticipantShell({
       </header>
       {inviteNotice && <div className="participant-notice" role="status">{inviteNotice}</div>}
       <main className="participant-content" id="participant-content">
-        {selectedRole.key === "walker" && <WalkerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
-        {selectedRole.key === "viewer" && <ViewerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
+        {selectedRole.key === "walker" && <WalkerSection key={`${userId}:${selectedRole.groupId ?? "unassigned"}`} context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
+        {selectedRole.key === "viewer" && <ViewerSection key={`${userId}:${selectedRole.accessId ?? selectedRole.groupId}`} context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
         {selectedRole.key === "homeowner" && <HomeownerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
       </main>
     </div>
@@ -292,7 +319,7 @@ function WalkerSection({ context, eventSlug, userId, role, section }: { context:
     return () => window.clearTimeout(timer);
   }, [load, needsOverview]);
 
-  if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience groupId={role.groupId} userId={userId} /></ParticipantPageFrame>;
+  if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience key={role.groupId} groupId={role.groupId} userId={userId} /></ParticipantPageFrame>;
   if (loading) return <ParticipantLoading />;
   if (section === "groep") return <WalkerGroup group={group} registration={registration} preferences={preferences} groupId={role.groupId ?? undefined} reload={load} />;
   if (section === "nachtpas") return <NightPass snapshot={registration} group={group} reload={load} />;

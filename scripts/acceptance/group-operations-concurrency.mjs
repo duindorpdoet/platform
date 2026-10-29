@@ -28,7 +28,7 @@ sql(`update app_private.event_route_settings set first_start_at=date_bin(interva
  -- finale needs its own twenty physical places for these dispatch forecasts.
  update app_private.portal_windows set max_concurrent_groups=20 where portal_id='12000000-0000-0000-0000-000000000030';
  update app_private.start_points set active=true;
- update app_private.walking_groups set retired_at=null,status='draft' where id in ('23000000-0000-0000-0000-000000000001','23000000-0000-0000-0000-000000000002');
+ update app_private.walking_groups set retired_at=null,status='draft',route_mode='dynamic' where id in ('23000000-0000-0000-0000-000000000001','23000000-0000-0000-0000-000000000002');
  insert into app_private.group_registrations(group_id,registration_id,assignment_revision) select old.group_id,old.registration_id,(select max(a.assignment_revision)+1 from app_private.group_registrations a where a.registration_id=old.registration_id) from (select distinct on(registration_id) * from app_private.group_registrations where group_id in ('23000000-0000-0000-0000-000000000001','23000000-0000-0000-0000-000000000002') order by registration_id,assignment_revision desc) old;
 `);
 const groups=['23000000-0000-0000-0000-000000000001','23000000-0000-0000-0000-000000000002'];
@@ -36,9 +36,14 @@ const pointId='20000000-0000-0000-0000-000000000001';
 await rpc('admin_startregie_confirm_point',{_event_slug:event,_point_id:pointId,_expected_version:Number(sql(`select version from app_private.start_points where id='${pointId}'`))});
 const runs=[];
 for(const [index,group] of groups.entries()){
+ // Preserve distinct historical finale appointments as well as departures.
+ sql(`update app_private.event_route_settings set finale_planning_transfer_seconds=${(index+1)*600} where event_id=(select id from app_private.events where slug='${event}')`);
  const schedule=await rpc('admin_startregie_move_group',{_group_id:group,_start_point_id:pointId,_starts_at:new Date(Math.floor(Date.now()/600000)*600000-(index+1)*600000).toISOString(),_expected_group_version:Number(sql(`select version from app_private.walking_groups where id='${group}'`)),_preference_match:'neutral',_reason:'Isolated concurrent live dispatch reservation test'});
- await rpc('admin_startregie_confirm_and_send',{_event_slug:event,_expected_revisions:[{id:schedule.id,revision:schedule.revision}],_expected_settings_version:Number(sql(`select settings_version from app_private.events where slug='${event}'`)),_idempotency_key:randomUUID()});
- const run=sql(`insert into app_private.group_runs(group_id,schedule_revision_id,status,started_at) values('${group}','${schedule.id}','live',clock_timestamp()) returning id;`);
+ // This half of the fixture is an already-begun historical dispatch race.
+ // Do not call new publication/start APIs without their required joint review.
+ await rpc('admin_startregie_confirm_start',{_event_slug:event,_group_id:group,_expected_revision:schedule.revision,_expected_settings_version:Number(sql(`select settings_version from app_private.events where slug='${event}'`))});
+ sql(`update app_private.group_schedule_revisions set state='published',published_at=(select activated_at-interval '2 minutes' from app_private.joint_route_policy_releases where policy_version='joint-reception-v1') where id='${schedule.id}'`);
+ const run=sql(`insert into app_private.group_runs(group_id,schedule_revision_id,status,started_at) select '${group}','${schedule.id}','live',activated_at-interval '1 minute' from app_private.joint_route_policy_releases where policy_version='joint-reception-v1' returning id;`);
  sql(`insert into app_private.run_participants(run_id,registration_child_id,attendance) select '${run}',c.id,'present' from app_private.registration_children c join app_private.group_registrations a on a.registration_id=c.registration_id and a.group_id='${group}' and a.superseded_at is null where c.participation_status='active';`);
  runs.push(run);
 }

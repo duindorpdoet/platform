@@ -6,6 +6,7 @@ export type TransactionalHookMessage = {
   outboxId?: string;
   testKey?: string;
   messageType?: string;
+  registrationBindingHash?: string;
   checkConfigId?: string;
   testConfigId?: string;
   replyTo?: string;
@@ -81,6 +82,8 @@ export function transactionalMessageForPayload(payload: unknown): TransactionalH
   if (message.checkConfigId !== undefined && (typeof message.checkConfigId !== "string" || !/^[0-9a-f-]{36}$/i.test(message.checkConfigId))) return null;
   if (message.testKey !== undefined && (typeof message.testKey !== "string" || !/^[a-zA-Z0-9_-]{8,100}$/.test(message.testKey))) return null;
   if (message.messageType !== undefined && (typeof message.messageType !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(message.messageType))) return null;
+  if (message.registrationBindingHash !== undefined && (typeof message.registrationBindingHash !== "string" || !/^[a-f0-9]{64}$/.test(message.registrationBindingHash))) return null;
+  if (["registration_activation", "registration_group_changed"].includes(String(message.messageType)) && !message.registrationBindingHash) return null;
   if (message.senderName !== undefined && (!boundedString(message.senderName, 1, 120) || /[\r\n]/.test(message.senderName))) return null;
   if (message.unsubscribeUrl !== undefined) {
     if (!boundedString(message.unsubscribeUrl, 1, 2000)) return null;
@@ -98,6 +101,7 @@ export function transactionalMessageForPayload(payload: unknown): TransactionalH
     outboxId: message.outboxId as string | undefined,
     testKey: message.testKey as string | undefined,
     messageType: message.messageType as string | undefined,
+    registrationBindingHash: message.registrationBindingHash as string | undefined,
     checkConfigId: message.checkConfigId as string | undefined,
     testConfigId: message.testConfigId as string | undefined,
     replyTo,

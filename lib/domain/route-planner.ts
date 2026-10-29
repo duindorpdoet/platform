@@ -18,6 +18,8 @@ export type PlanningParty = {
 export type PlanningStart = {
   id: string;
   startPointId: string;
+  /** Canonical physical door; gathering capacity remains attached to the point. */
+  physicalDepartureKey?: string;
   startsAt: string;
   maxGroups: number;
   maxChildren: number;
@@ -89,6 +91,8 @@ export type PlanningInput = {
   maxGroupOverrunSeconds: number;
   finaleShowSeconds: number;
   finaleTurnoverSeconds: number;
+  /** The shared physical arrival policy supplied by the server. */
+  finaleHeadwaySeconds?: number;
   finalePlanningTransferSeconds: number;
   finaleWindows?: Array<{ opensAt: string; closesAt: string; maxGroups: number; maxChildren: number; maxTotalChildren: number }>;
   finaleMaxGroups: number;
@@ -191,13 +195,16 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   if (missingTimes.length) conflicts.push({ code: "ROUTE_CONFIGURATION_INCOMPLETE", message: `Vul bij Kaders de ontbrekende tijden in en sla ze op: ${missingTimes.join(", ")}.` });
   if (!Number.isSafeInteger(input.maxGroupOverrunSeconds) || input.maxGroupOverrunSeconds < 0) conflicts.push({ code: "PLANNING_POLICY_MISSING", message: "Vernieuw de planning om het serverbeleid voor maximale groepsuitloop op te halen." });
   if (![input.finaleTurnoverSeconds,input.finalePlanningTransferSeconds,input.finaleShowSeconds,input.finaleMaxGroups,input.finaleMaxChildren].every(Number.isSafeInteger) || input.finaleTurnoverSeconds < 0 || input.finalePlanningTransferSeconds < 0 || input.finaleShowSeconds < 60 || input.finaleMaxGroups < 1 || input.finaleMaxChildren < 1) conflicts.push({ code: "INVALID_FINALE_CAPACITY", message: "De eindpoortcapaciteit is niet geldig." });
+  if (input.finaleHeadwaySeconds !== undefined && (!Number.isSafeInteger(input.finaleHeadwaySeconds) || input.finaleHeadwaySeconds < 0)) conflicts.push({ code: "PLANNING_POLICY_MISSING", message: "Vernieuw de planning om de actuele finale-aankomstafstand op te halen." });
+  const headwayMs = (input.finaleHeadwaySeconds ?? 0) * 1_000;
   const serviceMs = (input.finaleShowSeconds + input.finaleTurnoverSeconds) * 1_000;
   const existingSchedules = new Map<string, ExistingPlanningSchedule>();
   const physicalStart = (pointId: string, startsAt: number) => `${pointId}:${startsAt}`;
   const allStartsById = new Map(input.starts.map(start => [start.id, start]));
+  const departurePoint = (start: PlanningStart) => start.physicalDepartureKey ?? start.startPointId;
   const existingDeparture = (schedule: ExistingPlanningSchedule) => {
     const slot = allStartsById.get(schedule.startId);
-    const pointId = schedule.startPointId ?? slot?.startPointId;
+    const pointId = schedule.startPointId ?? slot?.physicalDepartureKey ?? slot?.startPointId;
     const startsAt = millis(schedule.startsAt ?? slot?.startsAt);
     return pointId && startsAt !== null ? { key: physicalStart(pointId, startsAt), pointId, startsAt } : null;
   };
@@ -317,7 +324,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     const idealStop = Math.min(hardStop, desiredEnd === null ? hardStop : desiredEnd - showMs - transferMs);
     const latestArrival = Math.min(finaleLast!, finaleClose! - serviceMs,
       desiredEnd === null ? Infinity : desiredEnd + input.maxGroupOverrunSeconds * 1_000 - showMs);
-    const possibleStarts = candidateStarts.filter(start => !startLoads.has(physicalStart(start.startPointId, Date.parse(start.startsAt)))
+    const possibleStarts = candidateStarts.filter(start => !startLoads.has(physicalStart(departurePoint(start), Date.parse(start.startsAt)))
       && group.childCount <= start.maxChildren);
     const preferenceCost = (start: PlanningStart) => {
       const time = Date.parse(start.startsAt);
@@ -340,7 +347,10 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   type Choice = { group: Prepared; start: PlanningStart; arrival: number; stop: number; cost: number; routeLoss: number; waiting: number };
   const fitsFinale = (arrival: number, children: number, reservations: Reservation[]) => {
     const windows = input.finaleWindows?.filter(w => arrival >= Date.parse(w.opensAt) && arrival + serviceMs <= Date.parse(w.closesAt) && children <= w.maxChildren);
-    if (windows && !windows.length) return false;
+    if (windows && !windows.length || reservations.some(r => Math.abs(r.startsAt - arrival) < headwayMs)) return false;
+    const received = new Map<string, number>();
+    for (const reservation of reservations) received.set(reservation.groupKey, Math.max(received.get(reservation.groupKey) ?? 0, reservation.children));
+    const receivedChildren = children + [...received.values()].reduce((sum, count) => sum + count, 0);
     const overlaps = reservations.filter(r => arrival < r.endsAt && arrival + serviceMs > r.startsAt);
     const ticks = new Set([arrival, ...overlaps.filter(r => r.startsAt > arrival).map(r => r.startsAt)]);
     return [...ticks].every(tick => {
@@ -348,25 +358,25 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
       for (const r of overlaps) if (r.startsAt <= tick && r.endsAt > tick) occupied.set(r.groupKey, Math.max(occupied.get(r.groupKey) ?? 0, r.children));
       const totalChildren = [...occupied.values()].reduce((sum, n) => sum + n, 0) + children;
       return occupied.size < input.finaleMaxGroups && totalChildren <= input.finaleMaxChildren
-        && (!windows || windows.some(w => occupied.size < w.maxGroups && totalChildren <= w.maxTotalChildren));
+        && (!windows || windows.some(w => occupied.size < w.maxGroups && receivedChildren <= w.maxTotalChildren));
     });
   };
   const reservationFor = (c: Choice): Reservation => ({ groupKey: `proposal:${c.group.key}`, startsAt: c.arrival, endsAt: c.arrival + serviceMs, children: c.group.childCount });
   const choose = (group: Prepared, choices: Choice[]): Choice | null => {
     const reservations = [...finaleReservations, ...choices.map(reservationFor)];
-    const occupiedStarts = new Set(choices.map(c => physicalStart(c.start.startPointId, Date.parse(c.start.startsAt))));
+    const occupiedStarts = new Set(choices.map(c => physicalStart(departurePoint(c.start), Date.parse(c.start.startsAt))));
     // Costs are piecewise linear except for a convex route-loss penalty. Minima
     // occur at target, availability and reservation boundaries, including seconds.
     const arrivals = [...new Set([finaleOpen!, group.latestArrival, group.idealStop + transferMs, group.hardStop + transferMs,
       ...(group.desiredEnd === null ? [] : [group.desiredEnd - showMs]),
-      ...reservations.flatMap(r => [r.endsAt, r.startsAt - serviceMs]),
+      ...reservations.flatMap(r => [r.endsAt, r.startsAt - serviceMs, r.startsAt - headwayMs, r.startsAt + headwayMs]),
       ...(input.finaleWindows ?? []).flatMap(w => [Date.parse(w.opensAt), Date.parse(w.closesAt) - serviceMs])])]
       .filter(a => a >= finaleOpen! && a <= group.latestArrival).sort((a, b) => a - b);
     const fits = new Map<number, boolean>();
     let best: Choice | null = null;
     for (const start of group.possibleStarts) {
       const startAt = Date.parse(start.startsAt);
-      if (occupiedStarts.has(physicalStart(start.startPointId, startAt)) || startAt > group.hardStop) continue;
+      if (occupiedStarts.has(physicalStart(departurePoint(start), startAt)) || startAt > group.hardStop) continue;
       const earliest = Math.max(finaleOpen!, startAt + transferMs);
       for (const arrival of new Set([...arrivals, earliest])) {
         if (arrival < earliest || arrival > group.latestArrival) continue;
@@ -415,7 +425,7 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   }
   const groups: PlannedGroup[] = [];
   for (const group of prepared.filter(g => !best.some(c => c.group === g))) {
-    const remainingStarts = group.possibleStarts.filter(s => !best.some(c => physicalStart(c.start.startPointId, Date.parse(c.start.startsAt)) === physicalStart(s.startPointId, Date.parse(s.startsAt))));
+    const remainingStarts = group.possibleStarts.filter(s => !best.some(c => physicalStart(departurePoint(c.start), Date.parse(c.start.startsAt)) === physicalStart(departurePoint(s), Date.parse(s.startsAt))));
     const eligibleStarts = remainingStarts.filter(s => Date.parse(s.startsAt) <= group.hardStop);
     const earliestArrival = Math.min(...eligibleStarts.map(s => Math.max(finaleOpen!, Date.parse(s.startsAt) + transferMs)));
     const time = (value: number) => Number.isFinite(value) ? new Date(value).toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" }) : "geen passend moment";

@@ -5,13 +5,14 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { auditPhysicalCalendar, codedJointProposal } from "./physical-calendar.mjs";
 
 export const AUDIT_QUERY = `with
  e as materialized(select * from app_private.events where slug='duindorp-halloween-2026'),
  settings as materialized(select s.* from app_private.event_route_settings s join e on e.id=s.event_id),
  groups as materialized(select g.* from app_private.walking_groups g join e on e.id=g.event_id where g.retired_at is null),
  group_children as materialized(select g.id group_id,case when exists(select 1 from app_private.group_runs r where r.group_id=g.id and r.status in('live','paused'))
-  then(select count(*) from app_private.run_participants rp join app_private.group_runs r on r.id=rp.run_id where r.group_id=g.id and r.status in('live','paused') and rp.attendance='present' and rp.departed_at is null)
+  then(select count(*) from app_private.run_participants rp where rp.run_id=(select r.id from app_private.group_runs r where r.group_id=g.id and r.status in('live','paused') order by r.created_at desc,r.id desc limit 1) and rp.attendance='present' and rp.departed_at is null)
   else(select count(*) from app_private.group_registrations a join app_private.registration_children c on c.registration_id=a.registration_id and c.participation_status='active' where a.group_id=g.id and a.superseded_at is null) end children from groups g),
  votes as materialized(select distinct a.group_id,r.id,r.desired_end_at from app_private.group_registrations a
   join groups g on g.id=a.group_id join app_private.registrations r on r.id=a.registration_id
@@ -65,11 +66,26 @@ export const AUDIT_QUERY = `with
   union all select r.group_id,r.reserved_from,r.reserved_until from app_private.portal_reservations r cross join settings s
   where r.portal_id=s.final_portal_id and r.status in('held','active','completed')),
  coverage as materialized(select p.* from app_private.world_coverage_policies p join e on e.id=p.event_id),
+ calendar_runs as materialized(select distinct on(r.group_id) r.* from app_private.group_runs r join groups g on g.id=r.group_id
+  order by r.group_id,case when r.status in('live','paused') then 0 else 1 end,r.created_at desc,r.id desc),
+ calendar_visits as materialized(select v.group_id,v.portal_id,v.kind,v.sequence,v.starts_at,v.duration_seconds,v.buffer_seconds,v.source,'stored_visit' timing_evidence,v.run_stop_id
+  from app_private.live_route_visits v join groups g on g.id=v.group_id left join calendar_runs run on run.group_id=g.id
+  where v.retired_at is null and (run.id is null or run.status not in('completed','stopped') or v.run_stop_id is not null or v.kind='start')
+   and (v.run_stop_id is null or exists(select 1 from app_private.run_stops stop where stop.id=v.run_stop_id and stop.run_id=run.id))
+  union all select run.group_id,coalesce(stop.portal_id,planned.portal_id),coalesce(stop.stop_kind::text,'ordinary'),stop.sequence,
+   coalesce(reservation.reserved_from,stop.opened_at),greatest(30,coalesce(extract(epoch from reservation.reserved_until-reservation.reserved_from)::integer,300)),0,'actual','reservation_occupation_only',stop.id
+  from calendar_runs run join app_private.run_stops stop on stop.run_id=run.id
+  left join app_private.route_plan_stops planned on planned.id=stop.plan_stop_id left join app_private.portal_reservations reservation on reservation.id=stop.reservation_id
+  where not exists(select 1 from app_private.live_route_visits visit where visit.run_stop_id=stop.id)),
+ calendar_portals as materialized(select p.*,coalesce((to_jsonb(p)->>'arrival_headway_seconds')::integer,300) headway,
+  case when p.id=settings.final_portal_id or coalesce((to_jsonb(p)->>'ordinary_hard_close')::boolean,false) then 0 else coalesce((to_jsonb(p)->>'ordinary_end_grace_seconds')::integer,0) end grace,
+  (select min(other.system_code) from portals other where coalesce(other.application_id,other.id)=coalesce(p.application_id,p.id)) physical_code
+  from portals p cross join settings),
  report as(select jsonb_build_object(
   'readOnly',true,'eventDate',e.local_date,'settingsVersion',e.settings_version,
   'registrationChannels',jsonb_build_object('housesOpen',coalesce((e.settings->>'portalRegistrationOpen')::boolean,true),'participantsOpen',coalesce((e.settings->>'groupRegistrationOpen')::boolean,false)),
   'counts',jsonb_build_object('groups',(select count(*) from groups),'approvedActiveHouses',(select count(*) from portals where approval_status='approved' and lifecycle_status='active'),
-   'storedBoardVisits',(select count(*) from stored_visits),'begunRuns',(select count(*) from app_private.group_runs r join groups g on g.id=r.group_id)),
+   'storedBoardVisits',(select count(*) from stored_visits),'runRecords',(select count(*) from app_private.group_runs r join groups g on g.id=r.group_id),'begunRuns',(select count(*) from app_private.group_runs r join groups g on g.id=r.group_id where r.started_at is not null)),
   'finale',coalesce((select jsonb_build_object('portalCode',p.system_code,'plannerMode',s.planner_mode,'available',s.finale_available,
    'portalApprovedActive',p.approval_status='approved' and p.lifecycle_status='active','markerValid',coalesce(p.lat between -90 and 90 and p.lon between -180 and 180,false),
    'opensAt',s.finale_opens_at,'lastArrivalAt',s.finale_last_arrival_at,'closesAt',s.finale_closes_at,
@@ -124,7 +140,7 @@ export const AUDIT_QUERY = `with
    'finaleConcurrentChildren',(select sum(c.children) from group_children c where c.group_id in(select f.group_id from finale_occupancy f where f.starts_at<=s.expected_finale_arrival_at and f.ends_at>s.expected_finale_arrival_at)),
    'ordinaryWindowWarnings',coalesce((select jsonb_agg(distinct p.system_code) from stored_visits v join portals p on p.id=v.portal_id where v.group_id=g.id and v.kind='ordinary'
     and not exists(select 1 from app_private.portal_windows w where w.portal_id=v.portal_id and v.starts_at>=w.opens_at
-     and v.starts_at+make_interval(secs=>v.duration_seconds+v.buffer_seconds)<=w.closes_at
+     and v.starts_at<w.closes_at and v.starts_at+make_interval(secs=>v.duration_seconds+v.buffer_seconds)<=w.closes_at+make_interval(secs=>case when p.id=rs.final_portal_id or coalesce((to_jsonb(p)->>'ordinary_hard_close')::boolean,false) then 0 else coalesce((to_jsonb(p)->>'ordinary_end_grace_seconds')::integer,0) end)
      and w.max_children_per_visit>=(select children from group_children c where c.group_id=g.id))),'[]'::jsonb),
    'departureConcurrentGroups',(select count(distinct other.group_id) from schedule_rows other join point_locations op on op.id=other.start_point_id
     where coalesce(op.linked_portal_id,op.id)=coalesce(point.linked_portal_id,point.id) and floor(extract(epoch from other.starts_at)/600)=floor(extract(epoch from slot.starts_at)/600))
@@ -133,6 +149,32 @@ export const AUDIT_QUERY = `with
    left join app_private.start_slots slot on slot.id=coalesce(s.start_slot_id,g.start_slot_id) left join point_locations point on point.id=coalesce(slot.start_point_id,(pub.slot_snapshot->>'start_point_id')::uuid)
    left join portals linked on linked.id=point.linked_portal_id
    left join dominant d on d.group_id=g.id left join app_private.live_route_plans lp on lp.group_id=g.id cross join settings rs),'[]'::jsonb),
+  'physicalCalendar',jsonb_build_object('source','stored_current_board_and_current_run','groups',coalesce((select jsonb_agg(jsonb_build_object(
+   'code',g.system_code,'children',children.children,'desiredEndAt',desired.desired_end_at,
+   'latestCompletionAt',desired.desired_end_at+make_interval(secs=>coalesce((schedule.input_snapshot->>'maxGroupOverrunSeconds')::integer,1800)),
+   'hasStoredSchedule',schedule.id is not null,'scheduledFinaleAt',schedule.expected_finale_arrival_at,'ordinaryStopAt',schedule.effective_ordinary_stop_at,
+   'requiresStepFree',exists(select 1 from app_private.group_registrations assignment join app_private.registration_children participation on participation.registration_id=assignment.registration_id and participation.participation_status='active'
+    join app_private.children child on child.id=participation.child_id where assignment.group_id=g.id and assignment.superseded_at is null and (to_jsonb(child)->>'step_free_required')::boolean is true),
+   'accessibilityReviewChildren',(select count(*) from app_private.group_registrations assignment join app_private.registration_children participation on participation.registration_id=assignment.registration_id and participation.participation_status='active'
+    join app_private.children child on child.id=participation.child_id where assignment.group_id=g.id and assignment.superseded_at is null and to_jsonb(child)->>'step_free_required' is null and nullif(trim(child.accessibility_note),'') is not null)
+   ) order by g.system_code) from groups g left join group_children children on children.group_id=g.id left join dominant desired on desired.group_id=g.id
+   left join calendar_runs run on run.group_id=g.id left join app_private.group_schedule_revisions schedule on schedule.id=coalesce(run.schedule_revision_id,g.current_schedule_revision_id)),'[]'::jsonb),
+   'portals',coalesce((select jsonb_agg(jsonb_build_object('code',p.system_code,'physicalCode',p.physical_code,'finale',p.id=settings.final_portal_id,
+    'headwaySeconds',p.headway,'ordinaryEndGraceSeconds',p.grace,'hardClose',p.id=settings.final_portal_id or coalesce((to_jsonb(p)->>'ordinary_hard_close')::boolean,false),
+    'windows',coalesce((select jsonb_agg(jsonb_build_object(
+     'opensAt',case when p.id=settings.final_portal_id then greatest(win.opens_at,settings.finale_opens_at) else win.opens_at end,
+     'arrivalClosesAt',case when p.id=settings.final_portal_id then least(settings.finale_last_arrival_at,win.closes_at-make_interval(secs=>settings.finale_show_seconds+settings.finale_turnover_seconds)) else win.closes_at end,
+     'physicalClosesAt',case when p.id=settings.final_portal_id then least(win.closes_at,settings.finale_closes_at) else win.closes_at+make_interval(secs=>p.grace) end,
+     'arrivalCloseInclusive',p.id=settings.final_portal_id,'maxGroups',case when p.id=settings.final_portal_id then least(win.max_concurrent_groups,settings.finale_max_concurrent_groups) else win.max_concurrent_groups end,
+     'maxChildren',case when p.id=settings.final_portal_id then least(win.max_children_per_visit,settings.finale_max_concurrent_children) else win.max_children_per_visit end,'maxTotalChildren',win.max_children_total,
+     'maxConcurrentChildren',case when p.id=settings.final_portal_id then settings.finale_max_concurrent_children else null end,
+     'visitSeconds',case when p.id=settings.final_portal_id then settings.finale_show_seconds else win.visit_minutes*60 end,
+     'bufferSeconds',case when p.id=settings.final_portal_id then settings.finale_turnover_seconds else win.buffer_minutes*60 end
+     ) order by win.opens_at) from app_private.portal_windows win where win.portal_id=p.id),'[]'::jsonb)) order by p.system_code) from calendar_portals p cross join settings),'[]'::jsonb),
+   'visits',coalesce((select jsonb_agg(jsonb_build_object('groupCode',g.system_code,'portalCode',coalesce(p.system_code,'MISSING_PORTAL'),'physicalCode',coalesce(p.physical_code,'MISSING_PORTAL'),
+    'kind',visit.kind,'sequence',visit.sequence,'startsAt',visit.starts_at,'durationSeconds',visit.duration_seconds,'bufferSeconds',visit.buffer_seconds,'source',visit.source,'timingEvidence',visit.timing_evidence,
+    'children',coalesce((select reservation.child_count from app_private.run_stops stop join app_private.portal_reservations reservation on reservation.id=stop.reservation_id where stop.id=visit.run_stop_id),(select children from group_children where group_id=visit.group_id)))
+    order by g.system_code,visit.sequence,visit.starts_at) from calendar_visits visit join groups g on g.id=visit.group_id left join calendar_portals p on p.id=visit.portal_id),'[]'::jsonb)),
   'possiblePhysicalAliases',coalesce((select jsonb_agg(jsonb_build_object('portalCodes',codes,'basis',basis)) from(
    select array_agg(system_code order by system_code) codes,'same_application' basis from portals
     where approval_status='approved' and lifecycle_status='active' and application_id is not null group by application_id having count(*)>1
@@ -179,6 +221,12 @@ begin
    and pg_get_function_identity_arguments(p.oid)='_group_id uuid') then raise exception 'AUDIT_STABLE_PREVIEW_REQUIRED'; end if;
 end $scope$;
 ${AUDIT_QUERY.replace('select audit from report', `,
+ portal_print_counts as materialized(select p.system_code,
+  count(c.id) active_credentials,count(c.id) filter(where material.credential_id is not null) encrypted_print_credentials
+  from portals p left join app_private.portal_credentials c on c.portal_id=p.id and c.revoked_at is null
+   and c.valid_from<=statement_timestamp() and (c.valid_until is null or c.valid_until>statement_timestamp())
+  left join app_private.portal_print_material material on material.credential_id=c.id
+  where p.approval_status='approved' and p.lifecycle_status='active' group by p.system_code),
  preview_sources as materialized(select g.id,g.system_code,g.current_schedule_revision_id,g.current_plan_version_id,g.start_slot_id,g.route_mode,
   selected.revision source_schedule_revision,selected.id source_schedule_id,selected.state source_schedule_state,selected.start_slot_id source_start_slot_id,
   case when g.route_mode='legacy' and selected.id is null then
@@ -201,7 +249,7 @@ ${AUDIT_QUERY.replace('select audit from report', `,
   left join app_private.start_slots slot on slot.id=coalesce(source.source_start_slot_id,source.start_slot_id)
   left join app_private.start_points point on point.id=slot.start_point_id),
  checked_stops as materialized(select source.id group_id,source.system_code,(stop->>'portalId')::uuid portal_id,stop->>'kind' kind,(stop->>'sequence')::integer sequence,
-  (stop->>'plannedArrivalAt')::timestamptz planned_arrival_at,(stop->>'expectedCompletionAt')::timestamptz expected_completion_at,(stop->>'physicalEndsAt')::timestamptz physical_ends_at
+  (stop->>'plannedArrivalAt')::timestamptz planned_arrival_at,coalesce((stop->>'visitSeconds')::integer,(stop->>'durationSeconds')::integer) visit_seconds,(stop->>'expectedCompletionAt')::timestamptz expected_completion_at,(stop->>'physicalEndsAt')::timestamptz physical_ends_at
   from preview_sources source cross join lateral jsonb_array_elements(coalesce(source.route->'stops','[]'::jsonb)) stop),
  preview_checks as materialized(select jsonb_build_object('code',source.system_code,'source',source.source,
   'sourceScheduleRevision',source.source_schedule_revision,'routeRevision',source.route->'revision',
@@ -216,7 +264,7 @@ ${AUDIT_QUERY.replace('select audit from report', `,
   'totalPhysicalVisits',(select count(distinct coalesce(p.application_id,p.id)) from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id and stop.kind in('ordinary','finale')),
   'linkedFirstVisitConfigured',origin.counts_as_first and origin.linked_portal_id is not null,
   'linkedFirstVisitCount',(select count(*) from checked_stops stop where stop.group_id=source.id and stop.portal_id=origin.linked_portal_id and stop.kind='ordinary' and origin.counts_as_first),
-  'projectedOrdinaryEndsAt',(select stop.planned_arrival_at+make_interval(secs=>coalesce(app_private.portal_service_seconds(stop.portal_id,stop.planned_arrival_at),settings.ordinary_visit_seconds+settings.route_buffer_seconds))
+  'projectedOrdinaryEndsAt',(select stop.planned_arrival_at+make_interval(secs=>coalesce(stop.visit_seconds,(select win.visit_minutes*60 from app_private.portal_windows win where win.portal_id=stop.portal_id and stop.planned_arrival_at>=win.opens_at and stop.planned_arrival_at<win.closes_at order by win.opens_at limit 1),settings.ordinary_visit_seconds))
    from checked_stops stop cross join settings where stop.group_id=source.id and stop.kind='ordinary' and stop.planned_arrival_at is not null order by stop.sequence desc limit 1),
   'projectedFinaleArrivalAt',(select stop.planned_arrival_at from checked_stops stop where stop.group_id=source.id and stop.kind='finale' order by stop.sequence desc limit 1),
   'projectedCompletionAt',(select stop.expected_completion_at from checked_stops stop where stop.group_id=source.id and stop.kind='finale' order by stop.sequence desc limit 1),
@@ -243,9 +291,43 @@ ${AUDIT_QUERY.replace('select audit from report', `,
    (select coalesce(jsonb_agg(stop.portal_id order by stop.sequence),'[]'::jsonb) from checked_stops stop where stop.group_id=source.id and stop.kind<>'start')=
    (select coalesce(jsonb_agg(visit.portal_id order by visit.sequence),'[]'::jsonb) from app_private.live_route_visits visit where visit.group_id=source.id and visit.retired_at is null and visit.kind<>'start') end) item
  from preview_sources source join preview_origins origin on origin.id=source.id left join app_private.live_route_plans lp on lp.group_id=source.id)
-select audit||jsonb_build_object('routeProjection',jsonb_build_object('readable',true,'databaseReadOnly',current_setting('transaction_read_only')='on',
+select audit||jsonb_build_object('portalPrintStatus',coalesce((select jsonb_agg(jsonb_build_object(
+ 'portalCode',system_code,'activeCredentials',active_credentials,'encryptedPrintCredentials',encrypted_print_credentials,
+ 'needsProvisioning',encrypted_print_credentials=0) order by system_code) from portal_print_counts),'[]'::jsonb),
+ 'routeProjection',jsonb_build_object('readable',true,'databaseReadOnly',current_setting('transaction_read_only')='on',
  'authorizedExistingAdmin',true,'source','same stable route projector as Startregie','inputHash',app_private.start_planning_input_hash(e.id),
  'routeRevision',app_private.start_ops_route_revision(e.id),'groups',(select coalesce(jsonb_agg(item order by item->>'code'),'[]'::jsonb) from preview_checks))) audit from report cross join e`)};
+commit;`;
+
+export const JOINT_PROPOSAL_INPUT_QUERY = `begin read only;
+set local statement_timeout='15000ms';
+set local lock_timeout='500ms';
+do $joint_audit$
+declare eid uuid; actor uuid; input jsonb; result jsonb;
+begin
+ if current_setting('transaction_read_only')<>'on' then raise exception 'AUDIT_READ_ONLY_REQUIRED'; end if;
+ if to_regprocedure('api.admin_joint_route_planning_input(text)') is null then
+  result:=jsonb_build_object('available',false,'reasonCode','JOINT_PLANNING_MIGRATION_NOT_INSTALLED');
+ elsif not exists(select 1 from pg_proc proc where proc.oid=to_regprocedure('api.admin_joint_route_planning_input(text)') and proc.provolatile='s') then
+  result:=jsonb_build_object('available',false,'reasonCode','STABLE_JOINT_INPUT_REQUIRED');
+ else
+  select id into eid from app_private.events where slug='duindorp-halloween-2026';
+  select capability.user_id into actor from app_private.event_capabilities capability join auth.users account on account.id=capability.user_id
+   where capability.event_id=eid and capability.capability in('groups_manage','event_admin') and capability.revoked_at is null
+    and account.email_confirmed_at is not null and account.deleted_at is null and (account.banned_until is null or account.banned_until<=statement_timestamp())
+   order by capability.user_id limit 1;
+  if actor is null then raise exception 'AUDIT_EXISTING_AUTHORIZED_ADMIN_REQUIRED'; end if;
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',actor,'role','authenticated')::text,true);
+  if not app_private.has_capability(eid,'groups_manage',auth.uid()) and not app_private.has_capability(eid,'event_admin',auth.uid()) then raise exception 'AUDIT_EXISTING_AUTHORIZED_ADMIN_REQUIRED'; end if;
+  if (select count(*) from app_private.walking_groups where event_id=eid and retired_at is null)>60 then raise exception 'AUDIT_PREVIEW_SIZE_LIMIT'; end if;
+  execute 'select api.admin_joint_route_planning_input($1)' into input using 'duindorp-halloween-2026';
+  result:=jsonb_build_object('available',true,'databaseReadOnly',true,'authorizedExistingAdmin',true,'inputFunctionStable',true,'readAt',statement_timestamp(),'input',input,
+   'codeMaps',jsonb_build_object('groups',(select coalesce(jsonb_object_agg(g.id::text,g.system_code),'{}') from app_private.walking_groups g where g.event_id=eid),
+    'portals',(select coalesce(jsonb_object_agg(p.id::text,p.system_code),'{}') from app_private.portals p where p.event_id=eid)));
+ end if;
+ perform set_config('app.readiness_joint_input',result::text,true);
+end $joint_audit$;
+select current_setting('app.readiness_joint_input')::jsonb joint_input;
 commit;`;
 
 export function ownerPreviewAllowed(env) {
@@ -260,7 +342,7 @@ export const SNAPSHOT_STATS_QUERY = `select calls,round(mean_exec_time::numeric,
 export async function runAudit(env = process.env, request = fetch) {
   if (!/^[a-z0-9]{15,30}$/.test(env.SUPABASE_PROJECT_REF ?? "") || !env.SUPABASE_ACCESS_TOKEN) throw new Error("READ_ONLY_AUDIT_CONFIGURATION_REQUIRED");
   async function query(sql, ownerReadOnly = false) {
-    if (ownerReadOnly && (sql !== PREVIEW_AUDIT_QUERY || !ownerPreviewAllowed(env))) throw new Error("OWNER_READ_ONLY_AUDIT_BOUNDARY");
+    if (ownerReadOnly && (![PREVIEW_AUDIT_QUERY, JOINT_PROPOSAL_INPUT_QUERY].includes(sql) || !ownerPreviewAllowed(env))) throw new Error("OWNER_READ_ONLY_AUDIT_BOUNDARY");
     const response = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}/database/query`, {
       method: "POST", headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}`, "Content-Type": "application/json" },
       body: JSON.stringify({ read_only: !ownerReadOnly, query: sql }), signal: AbortSignal.timeout(60_000),
@@ -285,16 +367,37 @@ export async function runAudit(env = process.env, request = fetch) {
       audit.routeProjection = { readable: false, reasonCode: /^OWNER_READ_ONLY_AUDIT_[A-Z0-9_]+$/.test(error?.message ?? "") ? error.message : "BOUNDED_PREVIEW_INSPECTION_UNAVAILABLE" };
     }
   } else audit.routeProjection = { readable: false, reasonCode: "PROTECTED_PRODUCTION_ENVIRONMENT_REQUIRED" };
+  let proposalArtifact = { code: "READ_ONLY_CODED_JOINT_ROUTE_PROPOSAL", readOnly: true, available: false, reasonCode: "PROTECTED_PRODUCTION_ENVIRONMENT_REQUIRED", saved: false, applied: false, published: false, changedRows: 0, messagesSent: 0 };
+  if (ownerPreviewAllowed(env)) {
+    try {
+      const [row] = await query(JOINT_PROPOSAL_INPUT_QUERY, true);
+      const source = row?.joint_input;
+      if (!source?.available) proposalArtifact = { ...proposalArtifact, reasonCode: source?.reasonCode === "JOINT_PLANNING_MIGRATION_NOT_INSTALLED" ? source.reasonCode : "STABLE_JOINT_INPUT_UNAVAILABLE" };
+      else {
+        if (!source.databaseReadOnly || !source.authorizedExistingAdmin || !source.inputFunctionStable || !source.input) throw new Error("OWNER_READ_ONLY_AUDIT_PROOF_MISSING");
+        const { proposeJointRoutes, validateJointRoutes } = await import("../../lib/domain/joint-route-planner.ts");
+        const computed = proposeJointRoutes(source.input);
+        proposalArtifact = codedJointProposal(source.input, computed, validateJointRoutes(source.input, source.input.before), source.readAt, source.codeMaps);
+      }
+    } catch (error) {
+      proposalArtifact = { ...proposalArtifact, reasonCode: /^OWNER_READ_ONLY_AUDIT_[A-Z0-9_]+$/.test(error?.message ?? "") ? error.message : "BOUNDED_JOINT_PROPOSAL_UNAVAILABLE" };
+    }
+  }
+  proposalArtifact = { revision: env.GITHUB_SHA ?? null, generatedAt: new Date().toISOString(), ...proposalArtifact };
+  const physicalCalendar = audit.physicalCalendar ? { readOnly: true, available: true, ...audit.physicalCalendar, analysis: auditPhysicalCalendar(audit.physicalCalendar), changedRows: 0, messagesSent: 0 } : { readOnly: true, available: false, reasonCode: "STORED_PHYSICAL_CALENDAR_UNAVAILABLE" };
+  audit.physicalCalendarSummary = physicalCalendar.analysis ?? null;
   let statementStats;
   try { statementStats = { readable: true, statements: await query(SNAPSHOT_STATS_QUERY) }; }
   catch { statementStats = { readable: false, reason: "Statement statistics unavailable to the read-only management role" }; }
   const result = { code: "READ_ONLY_EVENING_READINESS_AUDIT", generatedAt: new Date().toISOString(), revision: env.GITHUB_SHA ?? null,
-    ...audit, statementStats, changedRows: 0, messagesSent: 0 };
+    ...audit, jointProposal: { available: proposalArtifact.available, valid: proposalArtifact.after?.valid ?? null, reasonCode: proposalArtifact.reasonCode ?? null }, statementStats, changedRows: 0, messagesSent: 0 };
   const directory = join(env.RUNNER_TEMP ?? "/tmp", "duindorp-evening-baseline");
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const output = join(directory, "audit.json");
   await writeFile(output, `${JSON.stringify(result, null, 2)}\n`, { mode: 0o600 });
-  console.log(JSON.stringify(result));
+  await writeFile(join(directory, "calendar.json"), `${JSON.stringify(physicalCalendar, null, 2)}\n`, { mode: 0o600 });
+  await writeFile(join(directory, "proposal.json"), `${JSON.stringify(proposalArtifact, null, 2)}\n`, { mode: 0o600 });
+  console.log(JSON.stringify({ code: result.code, revision: result.revision, groups: result.groups.length, physicalCalendar: physicalCalendar.analysis?.counts ?? null, jointProposal: result.jointProposal, changedRows: 0, messagesSent: 0 }));
   return output;
 }
 

@@ -50,6 +50,7 @@ type RouteSettings = {
   finaleWindows: PlanningInput["finaleWindows"];
   finaleShowSeconds: number;
   finaleTurnoverSeconds: number;
+  finaleHeadwaySeconds?: number;
   finalePlanningTransferSeconds: number;
   finaleMaxGroups: number;
   finaleMaxChildren: number;
@@ -66,7 +67,7 @@ type RouteSettings = {
 type Slot = { id: string; startsAt: string; maxGroups: number; maxChildren: number; active: boolean };
 type StartPoint = {
   confirmed: boolean; readiness: StartPointReadiness;
-  id: string; name: string; publicLabel: string; pointType: "gathering" | "portal"; linkedPortalId: string | null;
+  id: string; name: string; publicLabel: string; pointType: "gathering" | "portal"; linkedPortalId: string | null; physicalDepartureKey?: string;
   privateAddress: string | null; publicArrivalInstructions: string | null; internalNotes: string | null;
   availableFrom: string | null; availableUntil: string | null; safeApproach: string | null;
   countsAsFirstPortalVisit: boolean; contactName: string | null; contactPhone: string | null;
@@ -399,7 +400,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       if (!point) return [];
       const portal = point.linkedPortalId ? portalById.get(point.linkedPortalId) : null;
       return [{
-        ...start, startPointId: point.linkedPortalId ?? point.id, pointName: point.publicLabel,
+        ...start, startPointId: point.linkedPortalId ?? point.id, physicalDepartureKey: point.physicalDepartureKey, pointName: point.publicLabel,
         availableFrom: point.availableFrom, availableUntil: point.availableUntil,
         portalOpensAt: portal?.plannedOpensAt, portalClosesAt: portal?.plannedClosesAt,
         markerValid: point.verified,
@@ -417,7 +418,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       globalOrdinaryStopAt: settings.globalOrdinaryStopAt ?? "", finaleOpensAt: settings.finaleOpensAt ?? "",
       finaleLastArrivalAt: settings.finaleLastArrivalAt ?? "", finaleClosesAt: settings.finaleClosesAt ?? "",
       maxGroupOverrunSeconds: settings.maxGroupOverrunSeconds, finaleWindows: settings.finaleWindows,
-      finaleShowSeconds: settings.finaleShowSeconds, finaleTurnoverSeconds: settings.finaleTurnoverSeconds,
+      finaleShowSeconds: settings.finaleShowSeconds, finaleTurnoverSeconds: settings.finaleTurnoverSeconds, finaleHeadwaySeconds: settings.finaleHeadwaySeconds,
       finalePlanningTransferSeconds: settings.finalePlanningTransferSeconds, finaleMaxGroups: settings.finaleMaxGroups,
       finaleMaxChildren: settings.finaleMaxChildren, earlyPreferenceLatestAt: settings.earlyPreferenceLatestAt,
       laterPreferenceEarliestAt: settings.laterPreferenceEarliestAt, preferenceGreenMinutes: settings.preferenceGreenMinutes,

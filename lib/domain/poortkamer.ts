@@ -121,6 +121,12 @@ export type PortalRoom = {
     worldSlug: string;
     state: keyof typeof portalStates;
     version: number;
+    arrivalHeadwaySeconds?: number;
+    ordinaryEndGraceSeconds?: number;
+    ordinaryHardClose?: boolean;
+    accessibilityStatus?: "unknown" | "step_free" | "not_step_free" | null;
+    canManagePlanningPolicy?: boolean;
+    isFinale?: boolean;
     pauseUntil: string | null;
     stock: keyof typeof stockLabels;
     lastActivity: string;

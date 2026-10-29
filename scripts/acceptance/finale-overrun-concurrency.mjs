@@ -34,7 +34,10 @@ sql(`begin;select set_config('request.jwt.claims','{"sub":"${actor}","role":"aut
  select api.admin_save_group_schedule(${quote(groups[winner])},${quote(slots[winner])},'2026-10-31T20:20:00+01','2026-10-31T20:40:00+01',null,'good','Synthetische voorbereiding van aparte live vensters');
  select api.admin_save_group_schedule(${quote(groups[loser])},${quote(slots[loser])},'2026-10-31T20:20:00+01','2026-10-31T21:00:00+01',null,'good','Synthetische voorbereiding van aparte live vensters');commit;
  update app_private.group_schedule_revisions s set state='published',published_at=clock_timestamp() from app_private.walking_groups g where s.id=g.current_schedule_revision_id and g.id in(${groups.map(quote)});
- insert into app_private.group_runs(group_id,status,schedule_revision_id) select id,'live',current_schedule_revision_id from app_private.walking_groups where id in(${groups.map(quote)});
+ -- This live-reservation regression preserves journeys already underway at rollout.
+ -- New reviewed run_start is covered by canonical route integration tests.
+ insert into app_private.group_runs(group_id,status,schedule_revision_id,started_at) select id,'live',current_schedule_revision_id,
+  (select activated_at-interval '1 minute' from app_private.joint_route_policy_releases where policy_version='joint-reception-v1') from app_private.walking_groups where id in(${groups.map(quote)});
  insert into app_private.run_participants(run_id,registration_child_id,attendance) select r.id,c.id,'present' from app_private.group_runs r join app_private.group_registrations a on a.group_id=r.group_id and a.superseded_at is null join app_private.registration_children c on c.registration_id=a.registration_id where r.group_id in(${groups.map(quote)});`);
 const runs = groups.map(g => sql(`select id from app_private.group_runs where group_id=${quote(g)}`));
 const reserve = id => `begin;select jsonb_build_object('id',app_private.try_reserve_finale(${quote(id)},'2026-10-31T21:20:00+01','2026-10-31T21:00:00+01'));select pg_sleep(0.2);commit;`;

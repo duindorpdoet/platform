@@ -1,6 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();
+\ir helpers/ready_live_planboard.inc
 create temp table large_chain(eid uuid,registration_id uuid,proposal jsonb,plan jsonb,group_id uuid,schedule_id uuid,start_id uuid,run_id uuid,stop_id uuid,point_version integer,event_version integer,payment_batch jsonb,preview jsonb,arrived jsonb,first_token text,run_version integer);
 insert into large_chain(eid) select id from app_private.events where slug='duindorp-halloween-2026';
 grant select,update on large_chain to authenticated;
@@ -45,6 +46,8 @@ do $$begin
  perform api.admin_assign_group_leader((select group_id from large_chain),'c0000000-0000-0000-0000-000000000001',(select version from app_private.walking_groups where id=(select group_id from large_chain)),'Afzonderlijke leider voor de werkelijke grote ketenproef');
 end $$;
 select is((select count(*)::integer from app_private.poortenboek_passport_seals where team_id=(select group_id from large_chain)),0,'publishing a large group never awards a fictitious seal');
+-- Explicit route review precedes this genuinely new 45-child run.
+select pg_temp.ready_live_planboard('duindorp-halloween-2026');
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 update large_chain set run_id=(api.run_start(group_id,array(select c.id from app_private.registration_children c where c.registration_id=large_chain.registration_id),(select version from app_private.walking_groups where id=large_chain.group_id),'large-chain-start','large-chain-start')->>'runId')::uuid;
 select is((select count(*)::integer from app_private.run_participants where run_id=(select run_id from large_chain) and attendance='present'),45,'all 45 children start through the real run command');

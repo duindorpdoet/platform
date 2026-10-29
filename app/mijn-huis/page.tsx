@@ -14,13 +14,13 @@ import { EnvironmentTracker } from "@/components/analytics/environment-tracker";
 
 export const dynamic = "force-dynamic";
 
-export default async function MyPortalPage({ searchParams }: { searchParams: Promise<{ poort?: string }> }) {
+export default async function MyPortalPage({ searchParams }: { searchParams: Promise<{ poort?: string; qr?: string }> }) {
   if (!await getActor()) redirect("/inloggen?next=/mijn-huis");
   const eventSlug = serverEnv().EVENT_SLUG;
   const client = await createClient();
-  const selected = (await searchParams).poort;
+  const { poort: selected, qr } = await searchParams;
   const roomResult = client ? await client.schema("api").rpc("portal_room_snapshot", { _event_slug: eventSlug, _portal_id: selected && /^[0-9a-f-]{36}$/i.test(selected) ? selected : null }) : null;
-  if (roomResult?.data) return <><EnvironmentTracker surface="homeowner" /><Poortkamer eventSlug={eventSlug} initial={roomResult.data as PortalRoom} /></>;
+  if (roomResult?.data) return <><EnvironmentTracker surface="homeowner" /><Poortkamer eventSlug={eventSlug} initial={roomResult.data as PortalRoom} initialQr={qr === "1"} /></>;
   const pending=client ? await client.schema("api").rpc("my_pending_manual_portals",{_event_slug:eventSlug}) : null;
   if(Array.isArray(pending?.data) && pending.data.length) return <div className="page wrap"><h1>Poort wacht op activering</h1>{pending.data.map((p:{id:string;code:string;name:string})=><p key={p.id}>{p.code} · {p.name}: je persoonlijke uitnodiging is bevestigd. De organisatie moet de poort nog activeren.</p>)}<Link className="btn" href="/omgeving">Mijn omgeving</Link><Link className="btn outline" href="/poortenboek/ouder">Poortenboeken van mijn kinderen</Link></div>;
   const { data } = client ? await client.schema("api").rpc("my_context", { _event_slug: eventSlug }) : { data: null };

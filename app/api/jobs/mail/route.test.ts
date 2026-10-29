@@ -17,6 +17,35 @@ beforeEach(()=>{
  state.rpc.mockReset().mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[row]:null,error:null}));state.send.mockReset();
 });
 describe("outbox worker acceptance and uncertainty contract",()=>{
+ it.each(["registration_activation","registration_group_changed"])("revalidates %s before rendering and suppresses obsolete events",async(messageType)=>{
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:messageType}]:null,error:null}));
+  const response=await POST(request());expect(response.status).toBe(200);expect(state.send).not.toHaveBeenCalled();
+  expect(state.rpc).toHaveBeenCalledWith(messageType==="registration_activation"?"worker_registration_activation_mail_payload":"worker_registration_management_mail_payload",{_outbox_id:row.id});
+  expect(state.rpc).toHaveBeenCalledWith("worker_update_outbox_v2",expect.objectContaining({_status:"suppressed"}));
+ });
+ it.each(["registration_activation","registration_group_changed"])("renders revalidated %s material rather than its queued snapshot",async(messageType)=>{
+  const rpcName=messageType==="registration_activation"?"worker_registration_activation_mail_payload":"worker_registration_management_mail_payload";
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:messageType,payload:{personName:"OBSOLETE-SNAPSHOT"}}]:name===rpcName?{personName:"Actuele Testouder",children:["Actueel Testkind"],groupCode:"G-TEST",actionPath:"/mijn-inschrijving",registrationBindingHash:"a".repeat(64)}:null,error:null}));
+  state.send.mockResolvedValue({accepted:false,validated:true,provider:"resend",providerId:null});
+  const response=await POST(request());expect(await response.json()).toMatchObject({validated:1});
+  expect(state.send).toHaveBeenCalledWith(expect.objectContaining({outboxId:row.id,messageType,text:expect.stringContaining("Actuele Testouder")}));
+  expect(state.send.mock.calls[0][0].text).not.toContain("OBSOLETE-SNAPSHOT");
+ });
+ it("defers a move email when current registration data is temporarily unavailable",async()=>{
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:"registration_group_changed"}]:null,error:name==="worker_registration_management_mail_payload"?{code:"offline"}:null}));
+  const response=await POST(request());expect(await response.json()).toMatchObject({deferred:1});expect(state.send).not.toHaveBeenCalled();
+  expect(state.rpc).toHaveBeenCalledWith("worker_update_outbox_v2",expect.objectContaining({_status:"deferred",_error_code:"REGISTRATION_MATERIAL_UNAVAILABLE"}));
+ });
+ it("suppresses a revoked invitation when the gateway recheck catches a concurrent correction",async()=>{
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:"registration_activation"}]:name==="worker_registration_activation_mail_payload"?{personName:"Testouder",registrationBindingHash:"a".repeat(64)}:null,error:null}));
+  state.send.mockRejectedValue(new ApiError(422,"REGISTRATION_MAIL_SUPERSEDED","Vervangen uitnodiging"));
+  const response=await POST(request());expect(response.status).toBe(200);expect(state.send).toHaveBeenCalledOnce();
+  expect(state.rpc).toHaveBeenCalledWith("worker_update_outbox_v2",expect.objectContaining({_status:"suppressed",_error_code:"REGISTRATION_MAIL_SUPERSEDED"}));
+ });
+ it("retains a new registration event for retry when its binding is unavailable",async()=>{
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:"registration_activation"}]:name==="worker_registration_activation_mail_payload"?{personName:"Testouder"}:null,error:null}));
+  const response=await POST(request());expect(await response.json()).toMatchObject({deferred:1});expect(state.send).not.toHaveBeenCalled();
+ });
  it("reports sandbox validation only, and preserves the new envelope claim protocol",async()=>{
   state.send.mockResolvedValue({accepted:false,validated:true,provider:"resend",providerId:null});
   const response=await POST(request());const body=await response.json();expect(response.status).toBe(200);expect(body).toMatchObject({accepted:0,validated:1,unknown:0});expect(body.results[0].status).toBe("validated");

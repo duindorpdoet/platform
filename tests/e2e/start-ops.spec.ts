@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import {syntheticPushMaterial} from '../../scripts/acceptance/push-fixtures.mjs';
 import {prepareFixtureGuidance,selectOrganizationSection} from './helpers/guidance';
 import {assertReadableLayout} from './helpers/layout';
+import {prepareOtherRouteAppointments,reviewCanonicalFixtureRoutes} from './helpers/canonical-routes';
 
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const event='duindorp-halloween-2026',groupId='23000000-0000-0000-0000-000000000001';
@@ -27,12 +28,13 @@ test('real Startregie concepts, confirmation, private route and publication pers
  await page.setViewportSize({width:1348,height:926});await page.goto('/admin');await selectOrganizationSection(page,'Startregie');
  await expect(page.getByRole('heading',{name:'Iedere groep een goede start.'})).toBeVisible();
  await page.locator('.start-ops-point-shortcuts summary').click();
- const pointCard=page.locator('.start-ops-point-checks article').first();
+ const seededPoint=before.startPoints.find((point:{id:string})=>point.id==='20000000-0000-0000-0000-000000000001');
+ const pointCard=page.locator('.start-ops-point-checks article').filter({has:page.getByText(seededPoint.publicLabel||seededPoint.name,{exact:true})});
  await expect(pointCard.getByRole('textbox')).toHaveCount(0);await expect(pointCard.getByRole('checkbox')).toHaveCount(0);
  const confirmation=page.waitForResponse(response=>response.url().includes('/rpc/admin_startregie_confirm_point'));
  await pointCard.getByRole('button',{name:'Startpunt bevestigen'}).click();expect((await confirmation).ok()).toBe(true);
  await expect(pointCard).toContainText('Startpunt: ja');await expect(pointCard).not.toContainText('75 meter');
- before=await snapshot();const group=before.groups.find((item:{id:string})=>item.id===groupId),point=before.startPoints[0];
+ before=await snapshot();const group=before.groups.find((item:{id:string})=>item.id===groupId),point=before.startPoints.find((point:{id:string})=>point.id===seededPoint.id);
  const card=page.locator('.start-ops-assignment').filter({has:page.getByText(group.systemCode,{exact:true})});
  await card.getByRole('combobox',{name:`Startpunt voor ${group.systemCode}`}).selectOption(point.id);
  await card.getByRole('combobox',{name:`Starttijd voor ${group.systemCode}`}).selectOption({label:'17:30 uur'});
@@ -42,6 +44,8 @@ test('real Startregie concepts, confirmation, private route and publication pers
  const publication=page.getByRole('dialog');await expect(publication).toContainText('Adres vanaf 16:30');
  await mkdir('docs/ops/screenshots',{recursive:true});await page.screenshot({path:'docs/ops/screenshots/publication-desktop.png'});
  await publication.getByRole('button',{name:'Startafspraken bevestigen en versturen',exact:true}).click();await expect(publication).not.toBeVisible();await expect(card).toContainText('Starttijd gepubliceerd');
+ prepareOtherRouteAppointments(event,groupId);await reviewCanonicalFixtureRoutes(client,event);
+ await page.reload();await expect(card).toContainText('Starttijd gepubliceerd');
  await card.getByRole('button',{name:'Poortvolgorde controleren'}).click();
  const route=page.getByRole('dialog');await expect(route).toContainText('Privé poortvolgorde');await expect(route.locator('.start-ops-route-stops li')).not.toHaveCount(0);
  await page.screenshot({path:'docs/ops/screenshots/route-desktop.png'});

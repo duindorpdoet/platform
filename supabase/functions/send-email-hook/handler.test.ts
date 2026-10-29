@@ -20,6 +20,21 @@ const rpc:Rpc=async <T>(name:string,args:Record<string,unknown>)=>{
 const request=()=>new Request("https://edge.example.com",{method:"POST",body:"verified in dependency"});
 beforeEach(()=>{calls=[];envelopes.clear();env.AUTH_MAIL_MODE="live";env.MAIL_MODE="allowlist";env.AUTH_SITE_URL="https://staging.example.com";});
 describe("shared durable Auth and outbox dispatch",()=>{
+ it.each(["registration_activation","registration_group_changed"])("carries the database binding through signed %s gateway preparation",async(messageType)=>{
+  const fetcher=vi.fn().mockResolvedValue(Response.json({id}));
+  const message={kind:"transactional",message:{to:"old@example.com",subject:"Synthetisch gezinsbericht",text:"Testtekst",html:"<p>Testtekst</p>",outboxId:id,messageType,registrationBindingHash:"a".repeat(64)}};
+  const response=await handleMail(request(),{env:(key:string)=>env[key],rpc,verify:()=>message,fetcher});expect(response.status).toBe(200);
+  const prepared=calls.find(c=>c[0]==="worker_mail_prepare")![1];
+  expect((prepared._payload as {tags:unknown[]}).tags).toContainEqual({name:"registration_binding",value:"a".repeat(64)});
+  expect(fetcher).toHaveBeenCalledOnce();
+ });
+ it("does not contact the provider for an invitation revoked before preparation",async()=>{
+  const fetcher=vi.fn();
+  const guardedRpc:Rpc=async<T>(name:string,args:Record<string,unknown>)=>name==="worker_mail_prepare"?{dispatch:false,status:"failed",error_code:"REGISTRATION_MAIL_SUPERSEDED"} as T:rpc<T>(name,args);
+  const message={kind:"transactional",message:{to:"old@example.com",subject:"Synthetische uitnodiging",text:"Testtekst",html:"<p>Testtekst</p>",outboxId:id,messageType:"registration_activation",registrationBindingHash:"a".repeat(64)}};
+  const response=await handleMail(request(),{env:(key:string)=>env[key],rpc:guardedRpc,verify:()=>message,fetcher});
+  expect(response.status).toBe(422);expect(await response.json()).toMatchObject({error:{message:"REGISTRATION_MAIL_SUPERSEDED"}});expect(fetcher).not.toHaveBeenCalled();
+ });
  it("recovers partial dual email_change without repeating the accepted delivery or storing OTP content",async()=>{
   let newAddressRateLimited=false;
   const fetcher=vi.fn().mockImplementation(async(_url:string,init:RequestInit)=>{

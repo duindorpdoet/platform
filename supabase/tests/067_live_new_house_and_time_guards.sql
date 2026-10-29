@@ -1,6 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();
+\ir helpers/prepolicy-dynamic-run.inc
 create temp table ops_house(eid uuid,event_version integer,group_version integer,schedule_id uuid,run_id uuid,stop_id uuid,stop_hash text,
   child_id uuid,new_portal uuid,new_node uuid,new_version integer,expected_arrival timestamptz);
 insert into ops_house(eid,event_version,group_version,child_id)
@@ -31,7 +32,7 @@ end $$;
 update ops_house set group_version=g.version from app_private.walking_groups g where g.id='23000000-0000-0000-0000-000000000001';
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-update ops_house set run_id=(api.run_start('23000000-0000-0000-0000-000000000001',array[(select child_id from ops_house)],(select group_version from ops_house),'new-house-start-fixture','new-house-start-fixture')->>'runId')::uuid;
+update ops_house set run_id=(pg_temp.prepolicy_dynamic_run('23000000-0000-0000-0000-000000000001',array[(select child_id from ops_house)],(select group_version from ops_house),'new-house-start-fixture','new-house-start-fixture')->>'runId')::uuid;
 set local role postgres;
 update ops_house set stop_id=r.current_stop_id from app_private.group_runs r where r.id=run_id;
 update ops_house set stop_hash=md5(to_jsonb(s)::text) from app_private.run_stops s where s.id=stop_id;

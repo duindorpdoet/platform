@@ -10,9 +10,10 @@ update app_private.walking_groups set desired_ordinary_visits=3 where id=(select
 update app_private.registrations set requested_ordinary_stop_at=null,preferred_start_at=null where id in(select registration_id from app_private.group_registrations where group_id=(select gid from board));
 update board set point=(api.admin_portal_start_point_set(pid,true,(select version from app_private.portals where id=pid))->>'startPointId')::uuid;
 select api.admin_startregie_confirm_point('duindorp-halloween-2026',point,(select version from app_private.start_points where id=point)) from board;
+select app_private.withdraw_group_appointment(gid,'Synthetische seedafspraak bewust vervangen voor planbordregressie')from board;
 update board set schedule=(api.admin_startregie_move_group(gid,point,'2026-10-31T17:00Z',(select version from app_private.walking_groups where id=gid),'neutral','Live planbord synthetische keten voorbereiden')->>'id')::uuid;
 update board set snapshot=pg_temp.ready_live_planboard('duindorp-halloween-2026');
-select ok(jsonb_array_length((select snapshot->'visits' from board))>1,'snapshot materializes a full durable expected route, not only one destination');
+select ok(jsonb_array_length((select snapshot->'visits' from board))>1,'explicit fixture review stores a full durable route; snapshot only projects it');
 select is((select snapshot->>'inputHash' from board),api.admin_live_planboard_snapshot('duindorp-halloween-2026')->>'inputHash','read refresh keeps stable visit identities and versions');
 select ok(not exists(select 1 from jsonb_array_elements((select snapshot->'visits' from board)) v where v->>'status'<>'planned'),'passing a planned clock never creates arrival or completion');
 select ok(not has_table_privilege('authenticated','app_private.live_route_visits','select'),'durable route intentions remain private');

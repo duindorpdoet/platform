@@ -8,6 +8,8 @@ export const MAIL_MESSAGE_TYPES = [
   "auth_email_change",
   "auth_email_change_new",
   "registration_received",
+  "registration_activation",
+  "registration_group_changed",
   "payment_link_ready",
   "payment_reminder",
   "payment_reported",
@@ -92,6 +94,26 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     kind: "confirmation", subject: "Jullie inschrijving is ontvangen", preheader: "Je inschrijving staat klaar; betaling en starttijd volgen apart.", eyebrow: "Jullie avontuur begint", title: "De eerste stap is gezet.", hero: true,
     paragraphs: (payload) => [`${greeting(payload)}we hebben jullie inschrijving ontvangen. De betaling en de startindeling bevestigen we afzonderlijk. Je vindt de actuele stand altijd in jullie omgeving.`, "De bijdrage is bedoeld om waar nodig snoep te verdelen onder de deelnemende huizen."],
     action: { label: "Bekijk jullie inschrijving", path: "/mijn-inschrijving" }, footerReason: "Je ontvangt deze bevestiging naar aanleiding van jullie inschrijving.",
+  },
+  registration_activation: {
+    kind: "confirmation", subject: "Jullie inschrijving staat klaar", preheader: "Log veilig in om de door de organisatie gemaakte inschrijving te activeren.", eyebrow: "Uitnodiging van de organisatie", title: "Jullie inschrijving staat klaar.", hero: true,
+    paragraphs: (payload) => [
+      `${greeting(payload)}de organisatie heeft jullie gezinsinschrijving met de hieronder genoemde kinderen aangemaakt. Log in met het e-mailadres waarop je deze uitnodiging ontvangt, via een inlogcode of Google. Daarna wordt deze inschrijving geactiveerd; je hoeft geen nieuw inschrijfformulier in te vullen.`,
+      payload.groupCode || payload.groupName ? `Jullie zijn ingedeeld bij ${groupName(payload)}. De actuele afspraak staat na activatie in jullie eigen omgeving.` : "Jullie zijn nog niet bij een loopgroep ingedeeld. De organisatie maakt de groepsindeling afzonderlijk bekend.",
+      "Activeren bevestigt jullie deelname. De betaalstatus blijft afzonderlijk zichtbaar; deze uitnodiging betekent niet dat er al is betaald.",
+    ],
+    action: { label: "Log in en activeer jullie inschrijving", path: "/mijn-inschrijving" }, footerReason: "De organisatie heeft deze inschrijving voor jullie aangemaakt of de uitnodiging opnieuw verstuurd.",
+  },
+  registration_group_changed: {
+    kind: "group", subject: "Jullie groepsindeling is aangepast", preheader: "Bekijk de nieuwe groep en de actuele startafspraak van jullie gezin.", eyebrow: "Jullie nieuwe groep", title: "Jullie groepsindeling is aangepast.",
+    paragraphs: (payload) => [
+      `${greeting(payload)}de organisatie heeft jullie gezinsinschrijving met de hieronder genoemde kinderen verplaatst naar ${groupName(payload)}. De actuele afspraak staat ook in jullie eigen omgeving.`,
+      payload.startConfirmed === true && eventDateTime(payload.startsAt)
+        ? `De startafspraak van jullie nieuwe groep is bevestigd: ${eventDateTime(payload.startsAt)}. ${releaseNotice(payload)}`
+        : "De startafspraak van jullie nieuwe groep is nog niet bevestigd. Een eventuele concepttijd is voorlopig; de definitieve startafspraak volgt afzonderlijk.",
+      ...(payload.activationPending === true ? ["Jullie inschrijving wacht nog op activatie. Log in met het uitgenodigde e-mailadres en activeer de bestaande inschrijving; jullie nieuwe groepsindeling blijft daarbij behouden."] : []),
+    ],
+    action: { label: "Bekijk jullie nieuwe groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit persoonlijke bericht omdat de organisatie jullie gezinsinschrijving heeft verplaatst.",
   },
   payment_link_ready: {
     kind: "payment", subject: "Betaling van je inschrijving", preheader: "De betaallink voor jullie inschrijving staat klaar.", eyebrow: "Betaling van je inschrijving", title: "Nog één stap tot de avond.",
@@ -341,6 +363,15 @@ function eventDateTime(value: unknown) {
 function detailsFor(messageType: MailMessageType, payload: Payload): MailDetail[] {
   const entries: Array<[string, string]> = [];
   const add = (label: string, value: string) => { if (value) entries.push([label, value]); };
+  if (["registration_activation", "registration_group_changed"].includes(messageType)) {
+    add("Inschrijfnummer", reference(payload));
+    if (Array.isArray(payload.children)) {
+      for (const child of payload.children) if (typeof child === "string" && child.trim()) add("Voor kind", child.trim().slice(0, 120));
+    }
+    if (payload.groupCode || payload.groupName) add("Loopgroep", groupName(payload));
+    if (messageType === "registration_group_changed" && payload.startConfirmed === true) add("Bevestigde starttijd", eventDateTime(payload.startsAt));
+    if (messageType === "registration_activation") add("Uitnodiging geldig tot", eventDateTime(payload.expiresAt));
+  }
   if (["group_merge_requested", "group_merge_approved", "group_merge_declined"].includes(messageType)) {
     const togetherReference = text(payload, ["clusterReference"]);
     if (/^SL-[0-9]{4}-[A-HJ-NP-Z2-9]{6}$/.test(togetherReference)) add("Samenloopnummer", togetherReference);
@@ -434,7 +465,7 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
   const codeValue = text(payload, ["code", "token"]);
   const paymentUrl = messageType === "payment_link_ready" ? validatedPaymentUrl(payload.externalUrl) : undefined;
   const action = paymentUrl ? { label: "Open de betaallink", url: paymentUrl } : definition.action
-    ? { label: definition.action.label, url: new URL(actionPath(payload, definition.action.path), brand.homeUrl).toString() }
+    ? { label: messageType === "registration_group_changed" && payload.activationPending === true ? "Log in en activeer jullie inschrijving" : definition.action.label, url: new URL(actionPath(payload, definition.action.path), brand.homeUrl).toString() }
     : undefined;
   const code = definition.kind === "otp"
     ? { value: codeValue, expiresText: text(payload, ["expiresText", "verlooptijd"], "De code verloopt over 10 minuten.") }

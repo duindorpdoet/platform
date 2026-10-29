@@ -1,6 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();
+\ir helpers/ready_live_planboard.inc
 \ir fixtures/legacy-start-available.inc
 create temp table entrance_case(gid uuid,portal uuid,children uuid[],key uuid default gen_random_uuid(),new_key uuid default gen_random_uuid(),version integer,run uuid,leader jsonb,parent jsonb,publication_hash text);
 insert into entrance_case(gid,portal) values('23000000-0000-0000-0000-000000000001','12000000-0000-0000-0000-000000000001');
@@ -30,9 +31,13 @@ update app_private.event_route_settings set first_start_at='2026-10-31T15:00Z',g
  final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at='2026-10-31T18:00Z',finale_last_arrival_at='2026-10-31T20:30Z',finale_closes_at='2026-10-31T21:00Z',
  finale_max_concurrent_groups=10,finale_max_concurrent_children=100,finale_available=true,planner_mode='dynamic';
 select api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',(select version from app_private.start_points where id='20000000-0000-0000-0000-000000000001'));
+select app_private.withdraw_group_appointment('23000000-0000-0000-0000-000000000002','Synthetische seedstart bewust vervangen door ingang B');
+update app_private.start_points set counts_as_first_portal_visit=true where id='20000000-0000-0000-0000-000000000001';
+update app_private.walking_groups set desired_ordinary_visits=2 where id='23000000-0000-0000-0000-000000000002';
 select api.admin_startregie_move_group('23000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','2026-10-31T16:30Z',
  (select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000002'),'neutral','Synthetische planning met handmatige ingang');
-select is(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000002')#>'{start,coordinate}','[4.261111,52.091111]'::jsonb,'actual planned sequence starts from stored manual entrance B');
+select pg_temp.ready_live_planboard('duindorp-halloween-2026');
+select is(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000002')#>'{start,coordinate}','[4.261111,52.091111]'::jsonb,'actual explicitly reviewed sequence starts from stored manual entrance B');
 select ok(exists(select 1 from jsonb_array_elements(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000002')->'stops') stop where stop->>'portalId'=(select portal::text from entrance_case) and stop->'coordinate'='[4.261234,52.091234]'::jsonb),'actual route preview uses house entrance B while retaining address A');
 select ok(not exists(select 1 from jsonb_array_elements(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000002')->'stops') stop where stop->'coordinate' is distinct from app_private.routing_coordinate(app_private.portal_location((stop->>'portalId')::uuid))),'every planned stop including finale uses the canonical validated pair');
 
@@ -41,7 +46,7 @@ select api.admin_startregie_publish_times('duindorp-halloween-2026',array[(selec
  (select jsonb_build_array(jsonb_build_object('id',g.current_schedule_revision_id,'revision',s.revision)) from app_private.walking_groups g join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id where g.id='23000000-0000-0000-0000-000000000002'),
  (select settings_version from app_private.events where slug='duindorp-halloween-2026'),'marker-frozen-start-publication');
 update app_private.start_points set marker_latitude=52.092222,marker_longitude=4.262222,version=version+1 where id='20000000-0000-0000-0000-000000000001';
-select is(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000002')#>'{start,coordinate}','[4.262222,52.092222]'::jsonb,'existing revision flow creates a separate reviewable draft at C after point edit');
+select is(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000002')#>'{start,coordinate}','[4.261111,52.091111]'::jsonb,'published start remains frozen at entrance B after the current point is edited to C');
 insert into app_private.group_runs(group_id,schedule_revision_id,status,started_at)
  select '23000000-0000-0000-0000-000000000002',p.schedule_id,'live',statement_timestamp() from app_private.current_start_publication('23000000-0000-0000-0000-000000000002') p;
 select is(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000002')#>'{start,coordinate}','[4.261111,52.091111]'::jsonb,'begun run preview retains frozen published entrance B independently of current draft C');

@@ -2,6 +2,7 @@ begin;
 \ir helpers/ready_live_planboard.inc
 create extension if not exists pgtap with schema extensions;
 select no_plan();
+\ir helpers/prepolicy-dynamic-run.inc
 create temp table journey(eid uuid,event_version integer,schedule_id uuid,run_id uuid,stop_id uuid,run_version integer,
   stop_hash text,publication_hash text,credential text,choices jsonb,arrival jsonb,new_portal uuid,route_revision integer);
 insert into journey(eid,event_version) select id,settings_version from app_private.events where slug='duindorp-halloween-2026';
@@ -30,7 +31,7 @@ do $$begin
 end $$;
 update journey set publication_hash=(select md5(jsonb_agg(to_jsonb(p) order by p.publication_order)::text) from app_private.group_start_publications p);
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-update journey set run_id=(api.run_start('23000000-0000-0000-0000-000000000002',
+update journey set run_id=(pg_temp.prepolicy_dynamic_run('23000000-0000-0000-0000-000000000002',
   (select array_agg(id) from (select c.id from app_private.registration_children c join app_private.group_registrations a on a.registration_id=c.registration_id
     where a.group_id='23000000-0000-0000-0000-000000000002' and a.superseded_at is null and c.participation_status='active' order by c.id limit 2) present),
   (select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000002'),'no-street-run-start','no-street-run-start')->>'runId')::uuid;
@@ -40,7 +41,7 @@ select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-00000000
 create temp table intent(snapshot jsonb,visit_id uuid,target uuid,command jsonb,preview jsonb,result jsonb,before_hash text,mails bigint);
 insert into intent(snapshot,mails) select pg_temp.ready_live_planboard('duindorp-halloween-2026'),(select count(*) from app_private.email_outbox);
 update intent set visit_id=(select id from app_private.live_route_visits where group_id='23000000-0000-0000-0000-000000000002' and run_stop_id is null and kind='ordinary' order by sequence limit 1),target=(select p.id from app_private.portals p where p.id<>'12000000-0000-0000-0000-000000000030' and not exists(select 1 from app_private.live_route_visits v where v.group_id='23000000-0000-0000-0000-000000000002' and v.portal_id=p.id) and p.lifecycle_status='active' and app_private.portal_location_ready(p.id) order by p.id limit 1),before_hash=(select md5(to_jsonb(s)::text) from app_private.run_stops s where s.id=(select stop_id from journey));
-update intent set command=jsonb_build_object('action','move','visitId',visit_id,'portalId',target,'startsAt',date_trunc('hour',clock_timestamp())+(ceil(extract(minute from clock_timestamp())/10)+2)*interval '10 minutes','shiftFollowing',true);
+update intent set command=jsonb_build_object('action','move','visitId',visit_id,'portalId',target,'startsAt',(select to_timestamp(ceil(extract(epoch from starts_at)/600)*600)+interval '10 minutes'from app_private.live_route_visits where id=visit_id),'shiftFollowing',true);
 update intent set preview=api.admin_live_planboard_preview('duindorp-halloween-2026',command,snapshot->>'inputHash');
 select lives_ok($$update intent set result=api.admin_live_planboard_apply('duindorp-halloween-2026',command,snapshot->>'inputHash',false,'Een volgende poort van de lopende groep bewust aanpassen','live-run-route-intent-01')$$,'started group uses evening route intent rather than rewriting its original start');
 select is((select md5(to_jsonb(s)::text) from app_private.run_stops s where s.id=(select stop_id from journey)),(select before_hash from intent),'manual future edit preserves every field of the current operational stop');
@@ -51,7 +52,10 @@ update journey set credential=(select 'TEST-PORTAL-'||right(portal_id::text,2)||
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 update journey set arrival=api.run_arrive_and_advance(run_id,stop_id,run_version,credential,choices,'live-run-intent-arrival-01');
 select ok(not exists(select 1 from app_private.run_stops s where s.run_id=(select run_id from journey) and s.portal_id=(select target from intent)),'future manual appointment waits until its genuine dispatch interval');
-select lives_ok($$select app_private.dispatch_next_stop((select run_id from journey),(select starts_at from app_private.live_route_visits where id=(select visit_id from intent)),false,null)$$,'dispatcher rechecks capacity and releases the manually intended gate when due');
+select lives_ok($$select app_private.dispatch_next_stop((select run_id from journey),(select v.starts_at-make_interval(secs=>estimate.duration_seconds::integer)from app_private.live_route_visits v cross join lateral app_private.destination_estimate(
+ (app_private.portal_location((select portal_id from app_private.run_stops where id=(select stop_id from journey)))->>'latitude')::numeric,
+ (app_private.portal_location((select portal_id from app_private.run_stops where id=(select stop_id from journey)))->>'longitude')::numeric,
+ (app_private.portal_location(v.portal_id)->>'latitude')::numeric,(app_private.portal_location(v.portal_id)->>'longitude')::numeric)estimate where v.id=(select visit_id from intent)),false,null)$$,'dispatcher rechecks capacity and releases the manually intended gate when due');
 select is((select s.portal_id from app_private.group_runs r join app_private.run_stops s on s.id=r.current_stop_id where r.id=(select run_id from journey)),(select target from intent),'actual dispatch respects the manually selected next portal');
 select ok((api.group_snapshot('23000000-0000-0000-0000-000000000002')->'run'->'currentStop') is not null,'authorized group receives its new actual current destination');
 select * from finish();

@@ -1,4 +1,6 @@
 "use client";
+
+import { PortalPlanningPolicyEditor } from "./portal-planning-policy";
 import { useEventDetails } from "@/components/redesign/event-details";
 import {HousePortalThanks} from "@/components/redesign/portal-thanks";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
@@ -76,17 +78,19 @@ export function Poortkamer({
   eventSlug,
   initial,
   admin = false,
+  initialQr = false,
 }: {
   eventSlug: string;
   initial: PortalRoom;
   admin?: boolean;
+  initialQr?: boolean;
 }) {
   const event = useEventDetails();
   const [room, setRoom] = useState<PortalRoom | null>(initial);
   const [portalId, setPortalId] = useState(initial.portal.id);
-  const [moreSection, setMoreSection] = useState("preparation");
+  const [moreSection, setMoreSection] = useState(initialQr ? "qr" : "preparation");
   const [preparationSection, setPreparationSection] = useState("checklist");
-  const [tab, setTab] = useState<Tab>("night");
+  const [tab, setTab] = useState<Tab>(initialQr ? "more" : "night");
   const [visitTab, setVisitTab] = useState<"next" | "expected" | "past">(
     "next",
   );
@@ -175,6 +179,13 @@ export function Poortkamer({
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0;
   }, [tab, moreSection]);
+  useEffect(() => {
+    if (admin) return;
+    const url = new URL(window.location.href), showQr = tab === "more" && moreSection === "qr";
+    if (showQr === (url.searchParams.get("qr") === "1")) return;
+    if (showQr) url.searchParams.set("qr", "1"); else url.searchParams.delete("qr");
+    window.history.replaceState(window.history.state, "", url);
+  }, [admin, tab, moreSection]);
   useEffect(() => {
     const open = (event: Event) => {
       const detail = (event as CustomEvent).detail || {};
@@ -428,7 +439,7 @@ export function Poortkamer({
               onChange={(e) => {
                 window.location.assign(
                   new URL(
-                    `/mijn-huis?poort=${encodeURIComponent(e.target.value)}`,
+                    `/mijn-huis?poort=${encodeURIComponent(e.target.value)}${tab === "more" && moreSection === "qr" ? "&qr=1" : ""}`,
                     window.location.origin,
                   ).toString(),
                 );
@@ -894,6 +905,7 @@ export function Poortkamer({
               </div>
             </section>}
             {moreSection === "settings" && <>
+            <PortalPlanningPolicyEditor portal={room.portal} onChanged={load} disabled={disabled}/>
             <Link className={s.button} href="/omgeving/communicatie">Nachtpost en communicatievoorkeuren →</Link>
             <section className={s.card}>
               <h2>

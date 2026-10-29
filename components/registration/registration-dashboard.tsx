@@ -143,7 +143,7 @@ export function RegistrationDashboard({
   );
   const [notice, setNotice] = useState("");
   const [childMutation, setChildMutation] = useState<string | null>(null);
-  const [newChild, setNewChild] = useState({ firstName: "", ageAtEvent: "", accessibilityNote: "" });
+  const [newChild, setNewChild] = useState({ firstName: "", ageAtEvent: "", accessibilityNote: "", stepFreeRequired: null as boolean | null });
   const [preferences, setPreferences] = useState<PreferenceSnapshot | null>(null);
   const [preferenceDraft, setPreferenceDraft] = useState<{ preferredStartAt: string; desiredEndAt: string }>({ preferredStartAt: "", desiredEndAt: "" });
   const inviteAttempted = useRef(false);
@@ -304,9 +304,10 @@ export function RegistrationDashboard({
         _first_name: newChild.firstName.trim(),
         _age_at_event: age,
         _accessibility_note: newChild.accessibilityNote.trim() || null,
+        _step_free_required: newChild.stepFreeRequired,
       });
       setNotice(error ? childMutationMessage(error.message) : `${newChild.firstName.trim()} is aan de inschrijving toegevoegd.`);
-      if (!error) setNewChild({ firstName: "", ageAtEvent: "", accessibilityNote: "" });
+      if (!error) setNewChild({ firstName: "", ageAtEvent: "", accessibilityNote: "", stepFreeRequired: null });
       await load();
     } catch {
       setNotice("De verbinding is onderbroken. Probeer het opnieuw.");
@@ -453,6 +454,7 @@ export function RegistrationDashboard({
               <label className="field"><span>Voornaam</span><input value={newChild.firstName} maxLength={80} autoComplete="off" onChange={(event) => setNewChild({ ...newChild, firstName: event.target.value })} /></label>
               <label className="field"><span>Leeftijd op 31 oktober</span><input type="number" inputMode="numeric" min={0} max={20} value={newChild.ageAtEvent} onChange={(event) => setNewChild({ ...newChild, ageAtEvent: event.target.value })} /></label>
             </div>
+            <label className="field"><span>Drempelvrije route nodig?</span><select value={newChild.stepFreeRequired === null ? "review" : newChild.stepFreeRequired ? "yes" : "no"} onChange={(event) => setNewChild({ ...newChild, stepFreeRequired: event.target.value === "review" ? null : event.target.value === "yes" })}><option value="review">Nog niet aangegeven</option><option value="no">Nee</option><option value="yes">Ja, zonder trappen of drempels</option></select><small>Vermeld een benodigde drempelvrije route apart van andere bijzonderheden.</small></label>
             <label className="field"><span>Bijzonderheden voor begeleiding (optioneel)</span><textarea rows={3} maxLength={500} value={newChild.accessibilityNote} onChange={(event) => setNewChild({ ...newChild, accessibilityNote: event.target.value })} /></label>
             <button className="btn" disabled={childMutation !== null || !newChild.firstName.trim() || newChild.ageAtEvent === ""} onClick={() => void addChild()}>{childMutation === "add" ? "Toevoegen…" : "Kind toevoegen"}</button>
           </div>

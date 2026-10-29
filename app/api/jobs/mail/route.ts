@@ -99,6 +99,19 @@ export async function POST(request: Request) {
 
   for (const row of rows) {
     try {
+      if (row.message_type === "registration_activation" || row.message_type === "registration_group_changed") {
+        const invitation = row.message_type === "registration_activation";
+        const material = await supabase.schema("api").rpc(invitation ? "worker_registration_activation_mail_payload" : "worker_registration_management_mail_payload", { _outbox_id: row.id });
+        if (material.error) throw new ApiError(503, "REGISTRATION_MATERIAL_UNAVAILABLE", "Probeer het later opnieuw.");
+        if (!material.data) {
+          await updateOutbox({ _id: row.id, _status: "suppressed", _provider_id: null, _error_code: invitation ? "REGISTRATION_INVITATION_SUPERSEDED" : "REGISTRATION_MOVE_SUPERSEDED", _next_attempt_at: null });
+          continue;
+        }
+        if (typeof material.data.registrationBindingHash !== "string" || !/^[a-f0-9]{64}$/.test(material.data.registrationBindingHash)) {
+          throw new ApiError(503, "REGISTRATION_MATERIAL_UNAVAILABLE", "Probeer het later opnieuw.");
+        }
+        row.payload = material.data;
+      }
       if (["group_schedule_published", "group_schedule_corrected", "group_composition_confirmed", "group_assignment_withdrawn"].includes(row.message_type)) {
         const appointment = await supabase.schema("api").rpc("worker_group_schedule_mail_payload", { _outbox_id: row.id });
         if (appointment.error) throw new ApiError(503, "APPOINTMENT_MATERIAL_UNAVAILABLE", "Probeer het later opnieuw.");
@@ -146,6 +159,7 @@ export async function POST(request: Request) {
         ...rendered,
         outboxId: row.id,
         messageType: row.message_type,
+        ...(["registration_activation", "registration_group_changed"].includes(row.message_type) ? { registrationBindingHash: String(row.payload.registrationBindingHash) } : {}),
         ...(row.message_type === "mail_provider_test" ? { testConfigId: String(row.payload.configId) } : {}),
         editorial: row.message_type === "nachtpost",
       });
@@ -160,6 +174,11 @@ export async function POST(request: Request) {
 
       results.push({ id: row.id, status: sent.validated ? "validated" : "accepted" });
     } catch (cause) {
+      if (cause instanceof ApiError && cause.code === "REGISTRATION_MAIL_SUPERSEDED") {
+        try { await updateOutbox({ _id: row.id, _status: "suppressed", _provider_id: null, _error_code: cause.code, _next_attempt_at: null }); }
+        catch { results.push({ id: row.id, status: "unknown", errorCode: "MAIL_STATUS_STORE_FAILED" }); }
+        continue;
+      }
       const unknownTemplate = cause instanceof UnknownMailTemplateError;
       const uncertain = cause instanceof MailGatewayError ? cause.outcome === "unknown" : cause instanceof ApiError && ["MAIL_GATEWAY_NETWORK", "MAIL_PROVIDER_TIMEOUT", "MAIL_ACCEPTANCE_UNCERTAIN", "MAIL_STATUS_STORE_FAILED", "MAIL_RECONCILIATION_REQUIRED"].includes(cause.code);
       const terminal = unknownTemplate || (cause instanceof ApiError && ["MAIL_PROVIDER_REJECTED", "RECIPIENT_NOT_ALLOWED"].includes(cause.code)) || (!uncertain && row.attempts >= 8);

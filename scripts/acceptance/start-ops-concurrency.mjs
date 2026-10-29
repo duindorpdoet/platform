@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
+import {proposeJointRoutes} from '../../lib/domain/joint-route-planner.ts';
 import {requireLocalTogetherDatabase,createTogetherFixtures,sql} from './together-fixtures.mjs';
 requireLocalTogetherDatabase();
 const event='duindorp-halloween-2026',options={auth:{persistSession:false,autoRefreshToken:false}};
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 async function actor(email,password='local-test-only'){const client=createClient(url,key,options);assert.equal((await client.auth.signInWithPassword({email,password})).error,null);return client;}
 const admin=await actor('admin@example.invalid');
+// This isolated publication race plans only the new synthetic family group.
+// Retire unrelated seed groups instead of fabricating routes for them.
+sql("update app_private.walking_groups set retired_at=clock_timestamp();");
 sql('update app_private.walking_edges set approved_at=null; update app_private.walking_nodes set verified_at=null; update app_private.start_points set walking_node_id=null,verified_at=null;');
 async function rpc(name,args,client=admin){const result=await client.schema('api').rpc(name,args);assert.equal(result.error,null,`${name}: ${result.error?.message}`);return result.data;}
 const snapshot=()=>rpc('admin_startregie_snapshot',{_event_slug:event});
@@ -36,6 +40,12 @@ const mixed=await admin.schema('api').rpc('admin_apply_dynamic_plan',{...args[lo
 const pointBefore=state.startPoints.find(p=>p.id===point.id);
 const lower=await admin.schema('api').rpc('admin_startregie_start_point_save',{_event_slug:event,_point_id:point.id,_expected_version:pointBefore.version,_payload:{...pointBefore,pointType:'gathering',geocodedLatitude:pointBefore.latitude,geocodedLongitude:pointBefore.longitude,maxGroups:1,maxChildren:2,active:true},_reason:'Afwijzing bij capaciteit onder de bestaande drie kinderen'});assert.equal(lower.error?.message,'START_POINT_CAPACITY_EXCEEDED');assert.equal((await snapshot()).startPoints.find(p=>p.id===point.id).version,pointBefore.version);
 await rpc('admin_startregie_confirm_start',{_event_slug:event,_group_id:group.id,_expected_revision:working.revision,_expected_settings_version:state.settings.eventSettingsVersion});
+// New publication is a real reviewed canonical route, never an empty-dynamic
+// compatibility fixture. The independent race below still uses two real users.
+const routeInput=await rpc('admin_joint_route_planning_input',{_event_slug:event});
+assert.equal(routeInput.groups.length,1);
+const routeProposal=proposeJointRoutes(routeInput);assert.equal(routeProposal.valid,true,JSON.stringify(routeProposal.conflicts));
+await rpc('admin_joint_route_plan_apply',{_event_slug:event,_proposal:routeProposal,_confirmed:true,_reason:'Expliciet beoordeelde gezamenlijke route voor echte publicatierace',_idempotency_key:randomUUID()});
 const publish={_event_slug:event,_schedule_ids:[schedule],_expected_revisions:[{id:schedule,revision:working.revision}],_expected_settings_version:state.settings.eventSettingsVersion};
 const published=await Promise.all(clients.map(client=>client.schema('api').rpc('admin_startregie_publish_times',{...publish,_idempotency_key:randomUUID()})));
 assert.equal(published.filter(r=>!r.error).length,1);assert.equal(published.filter(r=>r.error).length,1);assert.equal(sql(`select count(*) from app_private.group_start_publications where schedule_id='${schedule}'`),'1');

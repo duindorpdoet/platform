@@ -9,8 +9,8 @@ select (select event_id from app_private.portals where id=pid),pid,g1,'ordinary'
 select is(app_private.portal_interval_available(pid,g2,'2026-10-31T17:04:00Z','2026-10-31T17:12:00Z',15,'2026-10-31T17:01:00Z'),false,'completed scan still physically occupies its 6+2 reception interval') from capacity_test;
 select is(app_private.portal_interval_available(pid,g2,'2026-10-31T17:10:00Z','2026-10-31T17:18:00Z',15,'2026-10-31T17:01:00Z'),true,'freed later gap is available automatically to the common dispatcher check') from capacity_test;
 update app_private.portal_windows set max_concurrent_groups=2 where portal_id=(select pid from capacity_test);
-select is(app_private.portal_interval_available(pid,g2,'2026-10-31T17:04:00Z','2026-10-31T17:12:00Z',15,'2026-10-31T17:01:00Z'),true,'two allowed groups can overlap: per-visit children are not a combined cap') from capacity_test;
-select is(app_private.portal_interval_available(pid,g2,'2026-10-31T17:04:00Z','2026-10-31T17:12:00Z',16,'2026-10-31T17:01:00Z'),false,'physical per-visit child cap remains binding') from capacity_test;
+select is(app_private.portal_interval_available(pid,g2,'2026-10-31T17:05:00Z','2026-10-31T17:13:00Z',15,'2026-10-31T17:01:00Z'),true,'two allowed groups can overlap after the minimum arrival interval: per-visit children are not a combined cap') from capacity_test;
+select is(app_private.portal_interval_available(pid,g2,'2026-10-31T17:05:00Z','2026-10-31T17:13:00Z',16,'2026-10-31T17:01:00Z'),false,'physical per-visit child cap remains binding') from capacity_test;
 select is(app_private.portal_interval_available(pid,g2,'2026-10-31T20:58:00Z','2026-10-31T21:06:00Z',1,'2026-10-31T17:01:00Z'),false,'whole reception interval must fit opening window') from capacity_test;
 select is(app_private.portal_interval_available(pid,g2,'2026-10-31T17:08:00Z','2026-10-31T17:16:00Z',15,'2026-10-31T17:09:00Z'),true,'half-open intervals release capacity at the precise end') from capacity_test;
 update app_private.portal_windows set max_children_total=20 where portal_id=(select pid from capacity_test);

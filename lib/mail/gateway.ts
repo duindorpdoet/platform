@@ -15,6 +15,7 @@ type Message = {
   outboxId?: string;
   testKey?: string;
   messageType?: string;
+  registrationBindingHash?: string;
   checkConfigId?: string;
   testConfigId?: string;
   sandbox?: boolean;
@@ -55,6 +56,7 @@ export async function sendMailViaGateway(message: Message) {
       outboxId: message.outboxId,
       testKey: message.testKey,
       messageType: message.messageType,
+      registrationBindingHash: message.registrationBindingHash,
       checkConfigId: message.checkConfigId,
       testConfigId: message.testConfigId,
       providerProbe: message.sandbox === true,
@@ -88,6 +90,10 @@ export async function sendMailViaGateway(message: Message) {
   }
 
   if (!response.ok) {
+    if ([409, 422].includes(response.status) && message.registrationBindingHash) {
+      const body = await response.clone().json().catch(() => null);
+      if (body?.error?.message === "REGISTRATION_MAIL_SUPERSEDED") throw new ApiError(422, "REGISTRATION_MAIL_SUPERSEDED", "Deze uitnodiging of groepswijziging is vervangen door een actuele versie.");
+    }
     if (response.status === 409) throw new ApiError(409, "MAIL_RECONCILIATION_REQUIRED", "Deze verzendpoging vereist controle.");
     if ([400, 413, 422].includes(response.status)) throw new ApiError(422, "MAIL_PROVIDER_REJECTED", "De mailprovider heeft het bericht afgewezen.");
     if (response.status === 403) {

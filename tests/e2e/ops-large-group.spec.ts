@@ -5,14 +5,15 @@ import {randomBytes,createHash} from 'node:crypto';
 import {requireLocalTogetherDatabase,sql} from '../../scripts/acceptance/together-fixtures.mjs';
 import {prepareFixtureGuidance} from './helpers/guidance';
 import {assertReadableLayout} from './helpers/layout';
+import {fixtureSql} from './helpers/canonical-routes';
 
 test('45 children retain their real mobile roster, individual book and downloadable personal PDF',async({page,context})=>{
  requireLocalTogetherDatabase();
  // Reuse the independently passing real-command chain as a synthetic local fixture.
  // This suite gets its own reset before running; it never calls a remote database.
- const fixture=readFileSync('supabase/tests/068_large_group_full_journey.sql','utf8');
- const output=sql(fixture.replace('rollback;',`select jsonb_build_object('groupId',group_id,'childId',(select c.child_id from app_private.registration_children c where c.registration_id=large_chain.registration_id order by c.child_id limit 1)) from large_chain; commit;`));
- expect(output).not.toMatch(/not ok \d/);const line=output.split('\n').find(value=>value.startsWith('{')&&value.includes('groupId'));expect(line).toBeTruthy();const ids=JSON.parse(line!) as {groupId:string;childId:string};
+ const fixture=fixtureSql('supabase/tests/068_large_group_full_journey.sql');
+ const output=sql(fixture.replace('rollback;',`select jsonb_build_object('fixtureType','large-group-browser','groupId',group_id,'childId',(select c.child_id from app_private.registration_children c where c.registration_id=large_chain.registration_id order by c.child_id limit 1)) from large_chain; commit;`));
+ expect(output).not.toMatch(/not ok \d/);const line=output.split('\n').find(value=>{if(!value.startsWith('{'))return false;const parsed=JSON.parse(value) as Record<string,unknown>;return parsed.fixtureType==='large-group-browser'&&typeof parsed.groupId==='string'&&typeof parsed.childId==='string';});expect(line).toBeTruthy();const ids=JSON.parse(line!) as {groupId:string;childId:string};
  sql(`select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',false);select api.admin_assign_group_leader('${ids.groupId}','b0000000-0000-0000-0000-000000000001',(select version from app_private.walking_groups where id='${ids.groupId}'),'Afzonderlijke mobiele testleider met alleen deze grote groep');`);
  const client=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});
  const result=await client.auth.signInWithPassword({email:'parent-b@example.invalid',password:'local-test-only'});expect(result.error).toBeNull();await prepareFixtureGuidance(client);

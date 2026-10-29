@@ -27,6 +27,12 @@ describe("start schedule input chain", () => {
     expect(reservation).not.toHaveProperty("startPointId");
   });
 
+  it("hydrates the canonical door while retaining the real gathering point", () => {
+    const points = [{ id: "real-gathering-point", linkedPortalId: "portal-alias", physicalDepartureKey: "canonical-application", slots: [{ id: "slot", startsAt: at("17:00") }] }];
+    expect(existingStartReservations([{ id: "draft", startId: "slot", childCount: 2, expectedFinaleArrivalAt: at("20:00") }], [], points)[0].startPointId).toBe("canonical-application");
+    expect(points[0].id).toBe("real-gathering-point");
+  });
+
   it("includes group identity in fallback reservations so replacing one's own draft does not double-reserve", () => {
     const [reservation] = existingStartReservations(undefined, [{ id: "fixed", childCount: 2, registrations: [registration("one", null, null)], schedule: { id: "draft", state: "draft", startSlotId: "slot", expectedFinaleArrivalAt: at("20:00") } }], [{ id: "point", linkedPortalId: null, slots: [{ id: "slot", startsAt: at("17:00") }] }]);
     expect(reservation).toMatchObject({ groupId: "fixed", startPointId: "point", startsAt: at("17:00"), partyIds: ["one"] });

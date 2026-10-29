@@ -6,6 +6,7 @@ vi.mock('@/lib/config/server-env',()=>({serverEnv:()=>({APP_URL:'https://app.inv
 vi.mock('@/lib/poortenboek/server',()=>({CHILD_COOKIE:'__Host-poortenboek-session',DEMO_COOKIE:'__Host-poortenboek-demo',cookieOptions:{path:'/',secure:true,httpOnly:true,sameSite:'lax'},childRpc:mock.child}));
 vi.mock('@/lib/poortenboek/crypto',()=>({tokenHash:()=> 'hashed-previous-child-fixture'}));
 import {GET} from './route';
+import {registrationActivationReturnPath} from '@/lib/auth/registration-activation';
 beforeEach(()=>{mock.exchange.mockReset();mock.create.mockReset();mock.child.mockReset();mock.child.mockResolvedValue({ok:true});mock.create.mockImplementation((_url,_key,options)=>{
  expect(options.cookies.getAll()).toEqual(expect.arrayContaining([{name:'sb-project-auth-token-code-verifier',value:'pkce-fixture'}]));
  options.cookies.setAll([{name:'sb-project-auth-token.0',value:'session-part-one',options:{maxAge:31536000,secure:true}},{name:'sb-project-auth-token.1',value:'session-part-two',options:{maxAge:31536000,secure:true}},{name:'sb-project-auth-token-code-verifier',value:'',options:{maxAge:0}}]);
@@ -13,6 +14,14 @@ beforeEach(()=>{mock.exchange.mockReset();mock.create.mockReset();mock.child.moc
 });});
 const headers={cookie:'sb-project-auth-token-code-verifier=pkce-fixture; poorten-remember=0; poorten-auth-next=%2Fomgeving%2Fkiezen'};
 describe('real PKCE callback contract using an isolated auth adapter',()=>{
+ it('returns a verified Google login to the common registration claim step without activating from a stale cookie',async()=>{
+  const next=registrationActivationReturnPath('b'.repeat(64));
+  mock.exchange.mockResolvedValue({error:null,data:{session:{},user:{id:'verified-invited-parent'}}});
+  const response=await GET(new Request('https://app.invalid/auth/callback?code=invitation-fixture',{headers:{cookie:'sb-project-auth-token-code-verifier=pkce-fixture; poorten-auth-next='+encodeURIComponent(next)}}));
+  expect(response.headers.get('location')).toBe('https://app.invalid'+next);
+  expect(response.headers.get('cache-control')).toContain('no-store');
+  expect(response.cookies.get('poorten-auth-next')?.maxAge).toBe(0);
+ });
  it('passes the verifier and preserves all cookie chunks/deletions on success',async()=>{
   mock.exchange.mockResolvedValue({error:null,data:{session:{},user:{id:'verified'}}});
   const r=await GET(new Request('https://app.invalid/auth/callback?code=single-use-fixture',{headers}));

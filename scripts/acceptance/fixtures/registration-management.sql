@@ -1,0 +1,1 @@
+../../../supabase/tests/helpers/registration-management.inc

@@ -57,6 +57,8 @@ import { PushNotificationSettings } from "@/components/pwa/pwa-experience";
 import { normalizeActivity } from "@/lib/domain/activity-labels";
 import { paymentRegistrationStage, type PaymentRegistrationStage } from "@/lib/domain/payment-registration-stage";
 import { createClient } from "@/lib/supabase/client";
+import { AdminRegistrationActions, AdminRegistrationCreateButton, RegistrationAdministrationStatus } from "@/components/admin/admin-registration-management";
+import type { AdminRegistration } from "@/lib/domain/admin-registrations";
 
 type Dashboard = {
   event: {
@@ -180,27 +182,6 @@ type TogetherRequest = {
   maxGroupSize: number;
   limitOverridden: boolean;
   createdAt: string;
-};
-type AdminRegistration = {
-  id: string;
-  reference: string;
-  status: string;
-  submittedAt: string | null;
-  updatedAt: string;
-  parentName: string;
-  parentEmail: string;
-  phone: string | null;
-  groupId: string | null;
-  groupCode: string | null;
-  groupName: string;
-  togetherCode: string | null;
-  partyId: string | null;
-  clusterReference: string | null;
-  preferredStartAt: string | null;
-  desiredEndAt: string | null;
-  childCount: number;
-  children: Array<{ id: string; name: string; age: number | null; accessibilityNote: string | null; status: string }>;
-  priceCents: number;
 };
 async function digest(value: unknown) {
   return [
@@ -447,6 +428,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   >([]);
   const [registrations, setRegistrations] = useState<AdminRegistration[]>([]);
   const [registrationsLoading, setRegistrationsLoading] = useState(false);
+  const [registrationsLoaded, setRegistrationsLoaded] = useState(false);
   const [registrationSearch, setRegistrationSearch] = useState("");
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const registrationChildCount = registrations.reduce((total, registration) => total + registration.childCount, 0);
@@ -603,7 +585,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const loadRegistrations = useCallback(async () => {
     const client = createClient();
     if (!client) return;
-    setRegistrationsLoading(true);
+    if (!registrationsLoaded) setRegistrationsLoading(true);
     const { data, error } = await client
       .schema("api")
       .rpc("admin_registrations_snapshot", { _event_slug: eventSlug });
@@ -612,8 +594,9 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
       return setNotice(
         "De inschrijvingen konden niet worden opgehaald. Controleer je beheerrechten of probeer opnieuw.",
       );
+    setRegistrationsLoaded(true);
     setRegistrations((data ?? []) as AdminRegistration[]);
-  }, [eventSlug]);
+  }, [eventSlug, registrationsLoaded]);
 
   useEffect(() => {
     if (section !== "registrations") return;
@@ -1466,12 +1449,12 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
               <div>
                 <p className="kicker">Actuele deelnemerslijst</p>
                 <h2>Alle inschrijvingen</h2>
-                <p>Een definitieve inschrijving verschijnt hier direct. Open een groep voor contactgegevens, kinderen en voorkeurstijden.</p>
+                <p>Alle gezinnen, hun kinderen en de huidige loopgroep. Activatie, gereserveerde plaatsen en betaling blijven apart zichtbaar.</p>
               </div>
-              <span className="registration-total">
+              <div className="registration-roster-controls"><span className="registration-total">
                 {registrations.length} {registrations.length === 1 ? "inschrijving" : "inschrijvingen"} ·{" "}
                 {registrationChildCount} {registrationChildCount === 1 ? "kind" : "kinderen"}
-              </span>
+              </span><AdminRegistrationCreateButton eventSlug={eventSlug} capabilities={capabilities} onSaved={async () => { await Promise.all([loadRegistrations(), load()]); }} onExisting={id => { setRegistrationSearch(""); setSelectedRegistrationId(id); requestAnimationFrame(() => document.getElementById(`registration-${id}`)?.focus()); }} /></div>
             </div>
             <label className="field registration-search">
               <span>Zoek op groepsnaam, ouder, e-mailadres of referentie</span>
@@ -1480,20 +1463,21 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
             {registrationsLoading ? <div className="registration-roster-empty"><RefreshCw className="spin" /> Inschrijvingen ophalen…</div> : (() => {
               const query = registrationSearch.trim().toLocaleLowerCase("nl");
               const visible = registrations.filter((registration) => !query || [registration.groupName, registration.groupCode, registration.parentName, registration.parentEmail, registration.reference, registration.clusterReference, registration.togetherCode, ...registration.children.map((child) => child.name)].some((value) => value?.toLocaleLowerCase("nl").includes(query)));
-              if (visible.length === 0) return <div className="registration-roster-empty"><UsersRound /><strong>{registrations.length ? "Geen inschrijvingen gevonden" : "Nog geen inschrijvingen"}</strong><span>{registrations.length ? "Pas je zoekterm aan." : "Een afgeronde deelnemersinschrijving verschijnt hier automatisch."}</span></div>;
+              if (visible.length === 0) return <div className="registration-roster-empty"><UsersRound /><strong>{registrations.length ? "Geen inschrijvingen gevonden" : "Nog geen inschrijvingen"}</strong><span>{registrations.length ? "Pas je zoekterm aan." : "Een aangemaakte gezinsinschrijving verschijnt hier direct, ook vóór activatie."}</span></div>;
               return <div className="registration-list">{visible.map((registration) => {
                 const open = selectedRegistrationId === registration.id;
-                return <article className={"registration-admin-card" + (open ? " open" : "")} key={registration.id}>
+                return <article id={`registration-${registration.id}`} tabIndex={-1} className={"registration-admin-card" + (open ? " open" : "")} key={registration.id}>
                   <div className="registration-admin-summary">
                     <span className="registration-group-mark">{registration.groupCode ?? registration.groupName.slice(0, 2).toUpperCase()}</span>
-                    <div className="registration-admin-name"><strong>{contactPersonName(registration)}</strong><span>{walkingGroupLabel(registration)} · {registration.childCount} {registration.childCount === 1 ? "kind" : "kinderen"}</span></div>
+                    <div className="registration-admin-name"><strong>{contactPersonName(registration)}</strong><span>{walkingGroupLabel(registration)} · {registration.childCount} {registration.childCount === 1 ? "kind" : "kinderen"}</span><RegistrationAdministrationStatus registration={registration} /></div>
                     <div className="registration-admin-meta"><span>{registration.reference}</span><span>{registration.submittedAt ? new Date(registration.submittedAt).toLocaleString("nl-NL", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Amsterdam" }) : "Inschrijving ontvangen"}</span></div>
                     <button className="btn outline registration-row-open" aria-expanded={open} onClick={() => setSelectedRegistrationId(open ? null : registration.id)}>{open ? "Sluit details" : "Bekijk details"}<ArrowRight /></button>
                   </div>
                   {open && <div className="registration-admin-details">
                     <div className="registration-contact-card"><p className="kicker">Contactpersoon</p><strong>{contactPersonName(registration)}</strong><a href={"mailto:" + registration.parentEmail}>{registration.parentEmail}</a>{registration.phone ? <a href={"tel:" + registration.phone.replace(/\s/g, "")}>{registration.phone}</a> : <span>Geen telefoonnummer vastgelegd</span>}</div>
-                    <div className="registration-preference-card"><p className="kicker">Voorkeuren</p><span><CalendarClock />Start: {registration.preferredStartAt ? new Date(registration.preferredStartAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "maakt niet uit"}</span><span><CalendarClock />Gewone poorten stoppen: {registration.desiredEndAt ? new Date(registration.desiredEndAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "nog niet gekozen"}</span>{registration.clusterReference && <span>Samenloopnummer: <strong>{registration.clusterReference}</strong></span>}{registration.togetherCode && <span>Samenloopcode: <strong>{registration.togetherCode}</strong></span>}</div>
-                    <div className="registration-children-card"><p className="kicker">Kinderen</p>{registration.children.map((child) => <div key={child.id}><strong>{child.name}</strong><span>{child.age === null ? "Leeftijd niet ingevuld" : child.age + " jaar"}{child.status !== "active" ? " · " + child.status : ""}</span>{child.accessibilityNote && <small>{child.accessibilityNote}</small>}</div>)}</div>
+                    <div className="registration-preference-card"><p className="kicker">Voorkeuren</p><span><CalendarClock />Start: {registration.preferredStartAt ? new Date(registration.preferredStartAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "maakt niet uit"}</span><span><CalendarClock />Gewenst klaar (inclusief finale): {registration.desiredEndAt ? new Date(registration.desiredEndAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "nog niet gekozen"}</span>{registration.clusterReference && <span>Samenloopnummer: <strong>{registration.clusterReference}</strong></span>}{registration.togetherCode && <span>Samenloopcode: <strong>{registration.togetherCode}</strong></span>}</div>
+                    <div className="registration-children-card"><p className="kicker">Kinderen</p>{registration.children.map((child) => <div key={child.id}><strong>{child.name}</strong><span>{child.age === null ? "Leeftijd niet ingevuld" : child.age + " jaar"}{child.status !== "active" ? " · deelname verwijderd" : ""}</span><small>{child.stepFreeRequired===true?"Drempelvrije route nodig":child.requiresAccessibilityReview||child.stepFreeRequired==null&&Boolean(child.accessibilityNote?.trim())?"Toegankelijkheid nog expliciet beoordelen":"Geen drempelvrije route-eis opgegeven"}</small>{child.accessibilityNote && <small>{child.accessibilityNote}</small>}</div>)}</div>
+                    <AdminRegistrationActions eventSlug={eventSlug} registration={registration} capabilities={capabilities} onSaved={async () => { await Promise.all([loadRegistrations(), load()]); }} />
                   </div>}
                 </article>;
               })}</div>;

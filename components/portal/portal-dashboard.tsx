@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Check, Clock, DoorOpen, Download, Mail, MapPin, Pause, Phone, QrCode, RefreshCw, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { AlertTriangle, Check, Clock, DoorOpen, Mail, MapPin, Pause, Phone, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { PortalWizard } from "@/components/registration/portal-wizard";
 import { PortalForecast } from "@/components/portal/portal-forecast";
+import { GatePoster } from "@/components/redesign/gate-poster";
 import { worlds } from "@/features/content/public-content";
 import styles from "@/components/portal/portal-premium.module.css";
 
 type Snapshot = { application: { id: string; status: string; version: number; draft: Record<string, unknown>; reviewFeedback?: string | null }; portal: null | { id: string; systemCode?: string | null; name: string; description: string; intensity: number; approvalStatus: string; operationStatus: "scheduled" | "open" | "paused" | "closed"; version: number; world: string; hasCredential: boolean; nextArrival?: string | null } };
-type CredentialMaterial = { credentialVersion: number; shortCode: string; qrDataUrl: string };
 const operationLabels = { scheduled: "Ingepland", open: "Open", paused: "Pauze", closed: "Gesloten" } as const;
 const warningLabels: Record<string, string> = { smoke: "Rookeffecten", flashes: "Flitsend licht", sound: "Hard geluid", actors: "Acteurs of schrikmomenten", allergens: "Mogelijke allergenen" };
 const accessibilityLabels: Record<string, string> = { step_free: "Drempelvrij", steps: "Trappen of hoge drempels", mixed: "Gedeeltelijk toegankelijk", unknown: "Nog te beoordelen" };
@@ -19,7 +19,6 @@ const accessibilityLabels: Record<string, string> = { step_free: "Drempelvrij", 
 export function PortalDashboard({ eventSlug }: { eventSlug: string }) {
   const [loaded, setLoaded] = useState(false);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [credentialMaterial, setCredentialMaterial] = useState<CredentialMaterial | null>(null);
   const [notice, setNotice] = useState("");
   const [statePending, setStatePending] = useState(false);
   const load = useCallback(async () => { const client = createClient(); if (!client) return; const { data, error } = await client.schema("api").rpc("portal_snapshot", { _event_slug: eventSlug }); if (error) { setNotice("Jullie gegevens konden niet worden opgehaald. Vernieuw de pagina om opnieuw te proberen."); return; } setSnapshot(data as Snapshot | null); setLoaded(true); }, [eventSlug]);
@@ -34,18 +33,6 @@ export function PortalDashboard({ eventSlug }: { eventSlug: string }) {
       await load();
     } catch { setNotice("De statuswijziging is niet bevestigd. Vernieuw de gegevens en probeer het opnieuw."); }
     finally { setStatePending(false); }
-  }
-  async function rotateCredential() {
-    const client = createClient(); if (!client || !snapshot?.portal) return;
-    if (snapshot.portal.hasCredential && !window.confirm("De huidige QR-code wordt direct ongeldig. Nieuwe code maken?")) return;
-    const { data, error } = await client.schema("api").rpc("portal_rotate_credential", { _portal_id: snapshot.portal.id, _expected_portal_version: snapshot.portal.version, _reason: snapshot.portal.hasCredential ? "QR-code vervangen door bewoner" : "Eerste QR-code aangemaakt door bewoner" });
-    if (error) { setNotice("De QR-code kon niet worden vervangen. De actuele poortversie is opgehaald."); await load(); return; }
-    const material = data as { credentialVersion: number; credential: string; shortCode: string };
-    const { default: QRCode } = await import("qrcode");
-    const qrDataUrl = await QRCode.toDataURL(material.credential, { errorCorrectionLevel: "H", width: 720, margin: 3, color: { dark: "#06101B", light: "#FFFFFF" } });
-    setCredentialMaterial({ credentialVersion: material.credentialVersion, shortCode: material.shortCode, qrDataUrl });
-    setNotice("Nieuwe QR-code aangemaakt. Download of print hem nu; het geheime materiaal wordt hierna niet opnieuw getoond.");
-    await load();
   }
   if (!loaded) return <div className={styles.card}>{notice || "Poortgegevens ophalen…"}</div>;
   if (!snapshot) return <div className={styles.card}><h2>Meld jullie plek aan</h2><p>Begin met je contactgegevens en adres.</p><Link className="btn" href="/huis-aanmelden">Plek aanmelden</Link></div>;
@@ -96,11 +83,7 @@ export function PortalDashboard({ eventSlug }: { eventSlug: string }) {
           {email && <div><Mail aria-hidden="true" /><span><small>E-mailadres</small><a href={`mailto:${email}`}>{email}</a></span></div>}
         </div>
       </section>
-      <section className={`${styles.card} owner-scan-card`}><QrCode className={styles.cardIcon} aria-hidden="true" /><p className={styles.eyebrow}>Bij aankomst</p><h2>Bezoekscan en scanmateriaal</h2><p>{portal.hasCredential ? "Laat de groepsleider jullie bezoekcode scannen. Daarmee bevestigt de groep het bezoek aan deze poort." : "Maak na goedkeuring een eerste QR-code en korte bezoekcode voor de groepsleider."}</p>
-        <p className={styles.credentialNote}>{portal.hasCredential ? "Vervangen maakt alle eerdere codes direct ongeldig. Doe dit alleen als het materiaal kwijt, beschadigd of mogelijk gedeeld is." : "Het geheime scanmateriaal wordt maar één keer getoond. Download het meteen nadat je het hebt aangemaakt."}</p>
-        <button className={`btn outline ${styles.credentialButton}`} onClick={() => void rotateCredential()}><RefreshCw aria-hidden="true" />{portal.hasCredential ? "QR en bezoekcode vervangen" : "Eerste QR en bezoekcode maken"}</button>
-        {credentialMaterial && <div className={styles.credentialSheet}><h3>Bezoekcode versie {credentialMaterial.credentialVersion}</h3><img src={credentialMaterial.qrDataUrl} alt={`Nieuwe QR-code voor ${portal.name}`} /><p>Korte bezoekcode</p><div className="registration-code">{credentialMaterial.shortCode}</div><div className="actions"><a className="btn" href={credentialMaterial.qrDataUrl} download={`duindorp-poort-${credentialMaterial.credentialVersion}.png`}><Download aria-hidden="true" />Download PNG</a><button className="btn outline" onClick={() => setCredentialMaterial(null)}>Verwijder van scherm</button></div></div>}
-      </section>
+      <GatePoster key={portal.id} portal={{...portal,systemCode:portal.systemCode??undefined}} onRefresh={load}/>
     </div>
     <div className={`${styles.profile} owner-profile`}><PortalWizard eventSlug={eventSlug} /></div>
   </div>;

@@ -4,6 +4,7 @@ import { mkdir } from "node:fs/promises";
 import { sql, requireLocalTogetherDatabase } from "../../scripts/acceptance/together-fixtures.mjs";
 import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { assertReadableLayout } from "./helpers/layout";
+import { prepareOtherRouteAppointments, reviewCanonicalFixtureRoutes } from "./helpers/canonical-routes";
 
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL, key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const event="duindorp-halloween-2026",groupId="23000000-0000-0000-0000-000000000001",pointId="20000000-0000-0000-0000-000000000001";
@@ -35,6 +36,7 @@ test("mobile organization and participant complete the destination sequence with
   let providerCalls=0;
   await context.route(/directions|route\.project-osrm|api\.openrouteservice/,async route=>{providerCalls++;await route.fulfill({status:503,body:"Synthetic provider unavailable"});});
   const admin=await login(context,"admin@example.invalid");
+  prepareOtherRouteAppointments(event,groupId);
   const created=await admin.schema("api").rpc("admin_startregie_start_point_save",{_event_slug:event,_point_id:null,_expected_version:null,
     _payload:{name:"Welcome to the Freakshow",publicLabel:"Welcome to the Freakshow",pointType:"gathering",privateAddress:"FICTIEF STARTADRES",geocodedLatitude:52.10,geocodedLongitude:4.27,active:true,maxGroups:1,maxChildren:30},
     _reason:"Afzonderlijke synthetische locatie voor de handmatige markerproef"});expect(created.error).toBeNull();
@@ -60,6 +62,7 @@ test("mobile organization and participant complete the destination sequence with
   await card.getByRole("button",{name:"Startafspraken bevestigen en versturen"}).click();
   await page.getByRole("dialog").getByRole("button",{name:"Startafspraken bevestigen en versturen",exact:true}).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
+  await reviewCanonicalFixtureRoutes(admin,event);await page.reload();
   await card.getByRole("button",{name:"Poortvolgorde controleren"}).click();
   const preview=page.getByRole("dialog");await expect(preview).toContainText("Privé poortvolgorde");await expect(preview).toContainText("hemelsbreed");
   expect(await preview.locator(".start-ops-route-stops li").count()).toBeGreaterThan(2);await assertReadableLayout(page);

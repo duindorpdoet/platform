@@ -71,7 +71,7 @@ jobs:
     name: Database migrations, contracts and lint
     needs: release-policy
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       SKIP_MAIL_TESTS: ${{ needs.release-policy.outputs.skip_mail_tests }}
     steps:
@@ -203,6 +203,40 @@ jobs:
           pnpm exec supabase db reset
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm exec playwright test tests/e2e/released-destination.spec.ts --project=desktop-chromium --workers=1
           pnpm exec supabase db reset
+      - name: Verify organizer family creation, activation, editing and targeted moves
+        env:
+          APP_ENVIRONMENT: test
+          REGISTRATION_MODE: staging_test
+          MAIL_MODE: disabled
+          APP_URL: http://127.0.0.1:3100
+          ALLOWED_ORIGINS: http://127.0.0.1:3100
+          ABUSE_HASH_SECRET: local-ci-registration-management-hash-secret
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/registration-activation-concurrency.mjs
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/registration-management-concurrency.mjs
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/registration-management.spec.ts --project=desktop-chromium --workers=1
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" pnpm exec playwright test tests/e2e/registration-management.spec.ts --project=mobile-chromium --workers=1
+          pnpm exec supabase db reset
+      - name: Verify shared route proposals, physical policy and true-time planboard
+        env:
+          APP_ENVIRONMENT: test
+          REGISTRATION_MODE: staging_test
+          MAIL_MODE: disabled
+          APP_URL: http://127.0.0.1:3100
+          ALLOWED_ORIGINS: http://127.0.0.1:3100
+          ABUSE_HASH_SECRET: local-ci-joint-route-hash-secret
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY" node scripts/acceptance/joint-route-concurrency.mjs
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm exec playwright test tests/e2e/joint-route-planboard.spec.ts --project=desktop-chromium --workers=1
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm exec playwright test tests/e2e/joint-route-planboard.spec.ts --project=mobile-chromium --workers=1
+          pnpm exec supabase db reset
       - name: Run offline, reconnect and private-payload browser acceptance
         env:
           APP_ENVIRONMENT: test
@@ -275,6 +309,24 @@ jobs:
           pnpm exec playwright test --config playwright.account-app.config.ts
           pnpm exec supabase db reset
           pnpm exec playwright test --config playwright.guidance.config.ts
+      - name: Verify persistent printable gate QR and manual codes over HTTPS
+        env:
+          APP_ENVIRONMENT: staging
+          POORTENBOEK_DEMO_ENABLED: "true"
+          REGISTRATION_MODE: staging_test
+          MAIL_MODE: disabled
+          APP_URL: https://127.0.0.1:3443
+          ALLOWED_ORIGINS: https://127.0.0.1:3443,http://127.0.0.1:3100
+          ABUSE_HASH_SECRET: local-ci-gate-print-hash-secret
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+          pnpm exec supabase db reset
+          pnpm exec playwright test --config playwright.portal-qr.config.ts --project=qr-desktop
+          pnpm exec supabase db reset
+          pnpm exec playwright test --config playwright.portal-qr.config.ts --project=qr-mobile
+          pnpm exec supabase db reset
       - name: Run editorial publication, newsletter and push acceptance
         env:
           APP_ENVIRONMENT: staging

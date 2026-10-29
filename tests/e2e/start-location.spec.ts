@@ -178,6 +178,7 @@ test("organizer can create and edit a portal on mobile and edit an existing fina
     await dialog.getByRole("button", { name: "Activeren / gegevens afronden", exact: true }).click();
     const creation = await created; expect(creation.ok(), await creation.text()).toBe(true);
     id = (await creation.json()).id;
+    expect(sql(`select accessibility_status from app_private.portals where id='${id}'`)).toBe("unknown");
     await expect(dialog).not.toBeVisible();
     let card = list.locator("article").filter({ has: page.getByText(name, { exact: true }) });
     await card.getByRole("button", { name: "Bewerken", exact: true }).click();

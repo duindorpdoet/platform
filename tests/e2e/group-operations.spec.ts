@@ -4,6 +4,7 @@ import {sql} from '../../scripts/acceptance/together-fixtures.mjs';
 import {mkdir} from 'node:fs/promises';
 import {prepareFixtureGuidance,selectOrganizationSection} from './helpers/guidance';
 import {assertReadableLayout} from './helpers/layout';
+import {reviewCanonicalFixtureRoutes} from './helpers/canonical-routes';
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,event='duindorp-halloween-2026';
 async function login(context:BrowserContext){
  const client=createClient(url!,key!,{auth:{persistSession:false,autoRefreshToken:false}}),result=await client.auth.signInWithPassword({email:'admin@example.invalid',password:'local-test-only'});expect(result.error).toBeNull();
@@ -22,6 +23,25 @@ test('one organizer resets, groups, confirms composition, distributes existing g
  async function rpc(name:string,args:Record<string,unknown>){const r=await client.schema('api').rpc(name,args);expect(r.error).toBeNull();return r.data;}
  let state=await rpc('admin_startregie_snapshot',{_event_slug:event});
  await rpc('admin_startregie_settings_save',{_event_slug:event,_settings:{...state.settings,plannerMode:'dynamic',firstStartAt:'2026-10-31T15:00:00Z',globalOrdinaryStopAt:'2026-10-31T19:30:00Z',finalPortalId:'12000000-0000-0000-0000-000000000030',finaleOpensAt:'2026-10-31T18:00:00Z',finaleLastArrivalAt:'2026-10-31T20:30:00Z',finaleClosesAt:'2026-10-31T21:00:00Z',finaleMaxGroups:50,finaleMaxChildren:500,finaleAvailable:true},_expected_version:state.settings.version,_reason:'Afgeschermde browserproef van de volledige groepsketen'});
+ // Auto-grouping deliberately targets 15 children, while the seeded ordinary
+ // houses receive at most 12. Add a real separate synthetic receiver through
+ // the normal API; every existing house keeps its original hard capacity.
+ const receiverPayload={name:'Synthetische groepsontvangst 15',worldSlug:'heksenrijk',lifecycleStatus:'active',approvalStatus:'approved',operationStatus:'scheduled',
+   street:'FICTIEVE EXTRA TESTLOCATIE',houseNumber:'999',postalCode:'0000AA',city:'Teststad',latitude:52.10055,longitude:4.27055,
+   plannedOpensAt:'2026-10-31T15:00:00Z',plannedClosesAt:'2026-10-31T19:30:00Z',maxGroups:1,maxChildren:15,
+   visitMinutes:5,bufferMinutes:2,accessibilityStatus:'unknown',candidateStartPoint:false,saveMode:'activate'};
+ const receiver=await rpc('admin_manual_portal_save',{_event_slug:event,_portal_id:null,_expected_version:null,
+  _payload:{...receiverPayload,lifecycleStatus:'concept',approvalStatus:'draft'},
+  _reason:'Afzonderlijke synthetische ontvangstlocatie voor de beoogde 15 kinderen'});
+ expect(receiver.id).toMatch(/^[a-f0-9-]{36}$/);
+ // Reuse the seed's already verified portal owner; activation still passes
+ // the actual primary-owner constraint and the complete management API.
+ sql(`insert into app_private.portal_owners(portal_id,user_id)
+  select '${receiver.id}',o.user_id from app_private.portal_owners o join auth.users u on u.id=o.user_id
+  where o.portal_id='12000000-0000-0000-0000-000000000001' and o.role='owner' and o.revoked_at is null and u.email_confirmed_at is not null`);
+ await rpc('admin_manual_portal_save',{_event_slug:event,_portal_id:receiver.id,_expected_version:receiver.version,_payload:receiverPayload,
+  _reason:'Synthetische ontvangst activeren met de bestaande geverifieerde testeigenaar'});
+ expect(sql("select bool_and(max_children_per_visit=12) from app_private.portal_windows where portal_id::text like '12000000-%' and portal_id<>'12000000-0000-0000-0000-000000000030'")).toBe('t');
  await page.goto('/admin?view=groups');await selectOrganizationSection(page,'Groepsindeling');
  async function openGroupActions(){const details=page.locator('.group-composition > .group-operations details');if(await details.getAttribute('open')===null)await details.locator('summary').click();}
  await openGroupActions();
@@ -73,6 +93,7 @@ test('one organizer resets, groups, confirms composition, distributes existing g
   departureKeys.push(`${point.linkedPortalId??point.id}:${Date.parse(slot.startsAt)}`);
  }
  expect(new Set(departureKeys).size).toBe(departureKeys.length);
+ await reviewCanonicalFixtureRoutes(client,event);
  const card=page.locator('.start-ops-assignment').filter({has:page.getByText(first.systemCode,{exact:true})});
  await card.getByRole('button',{name:'Startafspraken bevestigen en versturen',exact:true}).click();dialog=page.getByRole('dialog');await expect(dialog).toContainText('Adres vanaf');
  await dialog.getByRole('button',{name:'Startafspraken bevestigen en versturen',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(card).toContainText('Starttijd gepubliceerd');

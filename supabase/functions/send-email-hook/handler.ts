@@ -101,7 +101,7 @@ export async function handleMail(request: Request, deps: Dependencies): Promise<
         from: `${transactional?.editorial ? transactional.senderName ?? config.from_name : config.from_name} <${config.from_email}>`, to: [recipient], reply_to: config.reply_to,
         subject: rendered.subject, text: rendered.text, html: rendered.html,
         ...(transactional?.editorial && transactional.unsubscribeUrl ? { headers: { "List-Unsubscribe": `<${transactional.unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } } : {}),
-        tags: [{ name: "environment", value: environment }, { name: "message_type", value: transactional?.messageType ?? (transactional ? transactional.editorial ? "nachtpost" : "transactional" : delivery.template) }, ...(transactional?.outboxId ? [{ name: "outbox_id", value: transactional.outboxId }] : [])],
+        tags: [{ name: "environment", value: environment }, { name: "message_type", value: transactional?.messageType ?? (transactional ? transactional.editorial ? "nachtpost" : "transactional" : delivery.template) }, ...(transactional?.outboxId ? [{ name: "outbox_id", value: transactional.outboxId }] : []), ...(transactional?.registrationBindingHash ? [{ name: "registration_binding", value: transactional.registrationBindingHash }] : [])],
       };
       const fingerprint = await mailFingerprint(env("MAIL_IDENTITY_SECRET")!, JSON.stringify(message));
       const envelope = await rpc<Envelope>("worker_mail_prepare", {
@@ -111,7 +111,7 @@ export async function handleMail(request: Request, deps: Dependencies): Promise<
       });
       if (!envelope.dispatch) {
         if (envelope.status === "accepted" && envelope.provider_id) return result(200, undefined, { "x-mail-status": "accepted", "x-mail-provider": envelope.provider, "x-provider-message-id": envelope.provider_id });
-        return result(envelope.status === "reconcile" ? 409 : envelope.status === "failed" ? 422 : 503, envelope.error_code ?? "MAIL_ATTEMPT_IN_PROGRESS", { "retry-after": "2" });
+        return result(envelope.status === "reconcile" ? 409 : envelope.status === "failed" ? 422 : 503, envelope.error_code ?? "MAIL_ATTEMPT_IN_PROGRESS", { "retry-after": "2", ...(envelope.status === "deferred" ? { "x-mail-status": "deferred" } : {}) });
       }
       const material = envelope.payload ?? message;
       const send = envelope.provider === "resend"

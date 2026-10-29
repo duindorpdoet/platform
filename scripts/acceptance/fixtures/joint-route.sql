@@ -1,0 +1,1 @@
+../../../supabase/tests/helpers/joint-route-fixture.inc

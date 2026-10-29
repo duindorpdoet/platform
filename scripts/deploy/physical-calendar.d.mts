@@ -1,0 +1,12 @@
+import type { JointRouteInput, JointRouteProposal, JointRouteDiagnostic } from "../../lib/domain/joint-route-planner";
+export type CodedCalendarWindow = { opensAt: string; arrivalClosesAt: string; physicalClosesAt: string; arrivalCloseInclusive: boolean; maxGroups: number; maxChildren: number; maxTotalChildren: number; maxConcurrentChildren?: number | null; visitSeconds: number; bufferSeconds: number };
+export type CodedCalendar = {
+ groups: Array<{ code: string; children: number | null; desiredEndAt?: string | null; latestCompletionAt?: string | null; scheduledFinaleAt?: string | null; ordinaryStopAt?: string | null; hasStoredSchedule?: boolean; requiresStepFree?: boolean; accessibilityReviewChildren?: number }>;
+ portals: Array<{ code: string; physicalCode: string; finale: boolean; headwaySeconds: number; windows: CodedCalendarWindow[] }>;
+ visits: Array<{ groupCode: string; portalCode: string; physicalCode?: string; kind: string; sequence: number; startsAt: string | null; durationSeconds: number; bufferSeconds: number; source: string; timingEvidence?: string; children?: number | null }>;
+};
+export type CodedCalendarAnalysis = { counts: Record<string, number>; byGroup: Array<{ code: string; ordinaryVisits: number | null; computed: boolean; hasStoredSchedule: boolean; finales: number; administrativeStarts: number; requiresStepFree: boolean; accessibilityReviewChildren: number; conflictCodes: string[] }>; conflicts: Array<{ code: string; groupCodes: string[]; portalCodes: string[]; [key: string]: unknown }> };
+export type CodedJointMetrics = { totalOrdinaryVisits: number | null; [key: string]: unknown };
+export type CodedJointProposal = { code: string; available: true; readOnly: true; before: { valid: boolean; metrics: CodedJointMetrics; groups: Array<{ code: string; [key: string]: unknown }>; [key: string]: unknown }; after: { valid: boolean; metrics: CodedJointMetrics; groups: Array<{ code: string; [key: string]: unknown }>; [key: string]: unknown }; saved: false; applied: false; published: false; changedRows: 0; messagesSent: 0; [key: string]: unknown };
+export function auditPhysicalCalendar(calendar: CodedCalendar): CodedCalendarAnalysis;
+export function codedJointProposal(input: JointRouteInput, proposal: JointRouteProposal, beforeConflicts: JointRouteDiagnostic[], readAt: string, codeMaps?: { groups?: Record<string,string>; portals?: Record<string,string> }): CodedJointProposal;

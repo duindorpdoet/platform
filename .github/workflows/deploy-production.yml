@@ -130,7 +130,10 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: readiness-before-production-${{ github.sha }}
-          path: ${{ runner.temp }}/duindorp-evening-baseline/audit.json
+          path: |
+            ${{ runner.temp }}/duindorp-evening-baseline/audit.json
+            ${{ runner.temp }}/duindorp-evening-baseline/calendar.json
+            ${{ runner.temp }}/duindorp-evening-baseline/proposal.json
           retention-days: 14
           if-no-files-found: error
       - name: Verify the canonical live portal hotfix with production credentials
@@ -322,7 +325,10 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: readiness-after-production-${{ github.sha }}
-          path: ${{ runner.temp }}/duindorp-evening-baseline/audit.json
+          path: |
+            ${{ runner.temp }}/duindorp-evening-baseline/audit.json
+            ${{ runner.temp }}/duindorp-evening-baseline/calendar.json
+            ${{ runner.temp }}/duindorp-evening-baseline/proposal.json
           retention-days: 14
           if-no-files-found: error
       - name: Verify text status RPC through the real service role route

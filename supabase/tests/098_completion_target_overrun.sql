@@ -117,15 +117,15 @@ update app_private.group_registrations set superseded_at=clock_timestamp() where
 create temp table completion_new_command as select gen_random_uuid()::text key,
  app_private.start_planning_input_hash((select id from app_private.events where slug='duindorp-halloween-2026')) hash,
  jsonb_build_object('groups',jsonb_build_array(jsonb_build_object('partyIds',jsonb_build_array(rid),'childCount',1,'startId',slot,
- 'effectiveStopAt','2026-10-31T20:30:00+01','expectedFinaleArrivalAt','2026-10-31T20:54:00+01','preferenceMatch','good'))) payload,
+ 'effectiveStopAt','2026-10-31T20:30:00+01','expectedFinaleArrivalAt','2026-10-31T20:55:00+01','preferenceMatch','good'))) payload,
  null::jsonb result from completion_fixtures where label='new-valid';
 select lives_ok($$update completion_new_command set result=api.admin_apply_dynamic_plan('duindorp-halloween-2026',payload,hash,key,'server computes request hash')$$,
- 'new-group bulk proposal persists a valid four-minute overrun');
+ 'new-group bulk proposal persists a valid five-minute overrun after the minimum arrival interval');
 select is(api.admin_apply_dynamic_plan('duindorp-halloween-2026',payload,hash,key,'server computes request hash'),result,'new-group overrun retry returns its receipt') from completion_new_command;
 -- Same group draft/published/live alternatives count once; other groups count.
-select lives_ok($$select api.admin_save_group_schedule(gid,slot,'2026-10-31T20:30:00+01','2026-10-31T21:20:00+01',null,'good','Tweede fysieke groep naast gepubliceerde en live revisie') from completion_fixtures where label='other'$$,
+select lives_ok($$select api.admin_save_group_schedule(gid,slot,'2026-10-31T20:30:00+01','2026-10-31T21:15:00+01',null,'good','Tweede fysieke groep naast gepubliceerde en live revisie') from completion_fixtures where label='other'$$,
  'published and live reservation of one group do not consume two places');
-select throws_ok($$select api.admin_save_group_schedule(gid,slot,'2026-10-31T20:30:00+01','2026-10-31T21:20:00+01',null,'good','Derde groep past niet in de echte finale capaciteit') from completion_fixtures where label='bulk'$$,
+select throws_ok($$select api.admin_save_group_schedule(gid,slot,'2026-10-31T20:30:00+01','2026-10-31T21:10:00+01',null,'good','Derde groep past niet in de echte finale capaciteit') from completion_fixtures where label='bulk'$$,
  '23514','FINALE_CAPACITY_EXCEEDED','another physical group still consumes finale capacity');
 -- Explicit ordinary bounds stay hard despite the finale allowance.
 select is((select effective_ordinary_stop_at from app_private.group_schedule_revisions s join completion_fixtures f on f.schedule=s.id where label='late'),
@@ -133,12 +133,20 @@ select is((select effective_ordinary_stop_at from app_private.group_schedule_rev
 select throws_ok($$select app_private.assert_group_schedule_timing(gid,slot,'2026-10-31T20:30:01+01','2026-10-31T21:10:00+01') from completion_fixtures where label='bulk'$$,
  '23514','GROUP_END_TIME_INFEASIBLE','ordinary visit beyond closure is rejected even during allowed overrun');
 -- A newly published extended ordinary route is not cut off at the old wish.
+-- Release the completed independent early-boundary fixture before this separate
+-- runtime case; two physical groups may not share its exact arrival instant.
+select app_private.withdraw_group_appointment(gid,'Synthetische grensproef vrijgeven voor onafhankelijke liveproef')
+ from completion_fixtures where label='early';
 update app_private.event_route_settings set global_ordinary_stop_at='2026-10-31T20:45:00+01',finale_planning_transfer_seconds=300,
  finale_max_concurrent_groups=4 where event_id=(select id from app_private.events where slug='duindorp-halloween-2026');
 select pg_temp.completion_fixture('live-soft','2026-10-31T20:30:00+01');
 update completion_fixtures set schedule=(api.admin_save_group_schedule(gid,slot,'2026-10-31T20:40:00+01','2026-10-31T20:50:00+01',null,'good','Nieuwe gepubliceerde route mag na de oude eindwens gewone poorten bezoeken')->>'id')::uuid where label='live-soft';
 select lives_ok($$select pg_temp.completion_publish('live-soft')$$,'new ordinary extension is explicitly published');
-with inserted as(insert into app_private.group_runs(group_id,status,schedule_revision_id) select gid,'live',schedule from completion_fixtures where label='live-soft' returning id)
+-- This is the preserved legacy journey. SQL111 independently proves the new
+-- reviewed canonical runtime, which requires explicit acceptance before start.
+with inserted as(insert into app_private.group_runs(group_id,status,schedule_revision_id,started_at)
+ select gid,'live',schedule,(select activated_at-interval '1 second'from app_private.joint_route_policy_releases where policy_version='joint-reception-v1')
+ from completion_fixtures where label='live-soft' returning id)
  update completion_fixtures set run=inserted.id from inserted where label='live-soft';
 insert into app_private.run_participants(run_id,registration_child_id,attendance)
  select f.run,c.id,'present' from completion_fixtures f join app_private.registration_children c on c.registration_id=f.rid where label='live-soft';

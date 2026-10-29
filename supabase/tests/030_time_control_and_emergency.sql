@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(23);
 
 create temporary table timed_state(
   group_id uuid primary key,
@@ -23,7 +23,8 @@ where walking_group.id in (
 group by walking_group.id, walking_group.version;
 grant select, update on timed_state to authenticated;
 
-update app_private.portal_windows set opens_at = now() - interval '1 hour', closes_at = now() + interval '5 hours'
+update app_private.portal_windows set opens_at = now() - interval '1 hour', closes_at = now() + interval '5 hours',
+  visit_minutes=1,buffer_minutes=0
 where portal_id in (select id from app_private.portals where event_id = (select id from app_private.events where slug = 'duindorp-halloween-2026'));
 -- Three distinct already-departed ten-minute slots share the same start point.
 -- Runtime overlap is legitimate after sequential departures.
@@ -53,7 +54,8 @@ insert into app_private.group_schedule_revisions(
   expected_finale_arrival_at, preference_match, created_by, published_at
 )
 select state.group_id, 1, 'published', state.start_slot_id,
-  now() + interval '2 hours', now() + interval '3 hours', 'neutral',
+  case when state.group_id='23000000-0000-0000-0000-000000000002' then now()-interval '1 minute' else now()+interval '2 hours' end,
+  now() + interval '3 hours', 'neutral',
   'f0000000-0000-0000-0000-000000000001', now()
 from timed_state state;
 update app_private.walking_groups walking_group set route_mode = 'dynamic', status = 'ready',
@@ -64,21 +66,37 @@ where schedule.group_id = walking_group.id and schedule.state = 'published'
 update timed_state state set group_version = walking_group.version
 from app_private.walking_groups walking_group where walking_group.id = state.group_id;
 
-set local role authenticated;
+-- These compatibility journeys were already underway before the policy
+-- deployment. Their original hard stop is fixed before creating the run.
+-- No public start API, cutover rewrite or post-start schedule edit is used.
+create function pg_temp.timed_legacy_run(_group uuid,_decision_at timestamptz)returns uuid language plpgsql as $$
+declare rid uuid;
+begin
+ insert into app_private.group_runs(group_id,schedule_revision_id,status,started_at)
+ select g.id,g.current_schedule_revision_id,'live',least(_decision_at-interval '1 minute',
+  (select activated_at-interval '1 second'from app_private.joint_route_policy_releases where policy_version='joint-reception-v1'))
+ from app_private.walking_groups g where g.id=_group returning id into rid;
+ insert into app_private.run_participants(run_id,registration_child_id,attendance)
+ select rid,rc.id,case when row_number()over(order by rc.id)=1 then 'present'::app_private.attendance_status else 'absent'::app_private.attendance_status end
+ from app_private.group_registrations a join app_private.registration_children rc on rc.registration_id=a.registration_id and rc.participation_status='active'
+ where a.group_id=_group and a.superseded_at is null;
+ update app_private.walking_groups set status='live',version=version+1 where id=_group;
+ perform app_private.dispatch_next_stop(rid,_decision_at);
+ return rid;
+end $$;
+
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select lives_ok(
-  $$ update timed_state set run_id = (api.run_start(
-    group_id, child_ids[1:1], group_version,
-    'timed-start-' || group_id::text, 'timed-start-hash-' || group_id::text
-  ) ->> 'runId')::uuid where group_id = '23000000-0000-0000-0000-000000000002' $$,
-  'the first timed-control group starts with one ordinary destination'
+  $$ update timed_state set run_id=pg_temp.timed_legacy_run(group_id,now()-interval '3 minutes') where group_id='23000000-0000-0000-0000-000000000002' $$,
+  'the first already-begun legacy group initially had one ordinary destination before its fixed cutoff'
 );
+select throws_ok($$update app_private.group_schedule_revisions set effective_ordinary_stop_at=now()-interval '2 minutes'
+ where group_id='23000000-0000-0000-0000-000000000002'and state='published'$$,'23514','GROUP_ALREADY_STARTED',
+ 'even a direct schedule edit cannot rewrite a published cutoff after a journey has begun');
+savepoint unscanned_episode;
 select lives_ok(
-  $$ update timed_state set run_id = (api.run_start(
-    group_id, child_ids[1:1], group_version,
-    'timed-start-' || group_id::text, 'timed-start-hash-' || group_id::text
-  ) ->> 'runId')::uuid where group_id = '23000000-0000-0000-0000-000000000003' $$,
-  'a second group from the next departure receives another capacity-safe destination'
+  $$ update timed_state set run_id=pg_temp.timed_legacy_run(group_id,now()-interval '3 minutes') where group_id='23000000-0000-0000-0000-000000000003' $$,
+  'the next already-begun legacy group initially had another capacity-safe ordinary destination'
 );
 
 set local role postgres;
@@ -87,9 +105,6 @@ select is(
   2,
   'both groups have exactly one active ordinary reservation'
 );
-update app_private.group_schedule_revisions set effective_ordinary_stop_at = now() - interval '1 minute'
-where group_id = '23000000-0000-0000-0000-000000000002' and state = 'published';
-
 set local role service_role;
 select lives_ok(
   $$ select api.worker_dispatch_due_groups('duindorp-halloween-2026', 50) $$,
@@ -139,6 +154,16 @@ select is(
   'an expired destination is replaced by one current capacity-safe ordinary destination'
 );
 
+-- The expiry episode needs enough real visit and walking time for a new
+-- ordinary destination. Isolate the subsequent already-scanned boundary
+-- episode so its fixed five-second cutoff never invalidates that replan.
+-- Both scenarios use the real worker clock and immutable begun schedules.
+rollback to unscanned_episode;
+update app_private.group_schedule_revisions set effective_ordinary_stop_at=clock_timestamp()+interval '5 seconds'
+ where group_id='23000000-0000-0000-0000-000000000003'and state='published';
+update timed_state set run_id=pg_temp.timed_legacy_run(group_id,now()-interval '3 minutes')
+ where group_id='23000000-0000-0000-0000-000000000003';
+
 update timed_state state set short_code = 'TEST-' || right(portal.name, 2)
 from app_private.group_runs run
 join app_private.run_stops stop on stop.id = run.current_stop_id
@@ -158,8 +183,9 @@ select lives_ok(
 );
 
 set local role postgres;
-update app_private.group_schedule_revisions set effective_ordinary_stop_at = now() - interval '1 minute'
-where group_id = '23000000-0000-0000-0000-000000000003' and state = 'published';
+-- Advance real wall-clock time past the original cutoff without rewriting it.
+select pg_sleep(greatest(0,extract(epoch from((select effective_ordinary_stop_at from app_private.group_schedule_revisions
+ where group_id='23000000-0000-0000-0000-000000000003'and state='published')-clock_timestamp()))+0.02));
 
 set local role service_role;
 select lives_ok(
@@ -187,15 +213,13 @@ set local role postgres;
 update app_private.event_route_settings set finale_available = false
 where event_id = (select id from app_private.events where slug = 'duindorp-halloween-2026');
 
-set local role authenticated;
+set local role postgres;
 select set_config('request.jwt.claims', '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select lives_ok(
-  $$ update timed_state set run_id = (api.run_start(
-    group_id, child_ids[1:1], group_version,
-    'timed-start-' || group_id::text, 'timed-start-hash-' || group_id::text
-  ) ->> 'runId')::uuid where group_id = '23000000-0000-0000-0000-000000000004' $$,
-  'a start attempt with an unavailable finale is retained for safe organization handling'
+  $$ update timed_state set run_id=pg_temp.timed_legacy_run(group_id,clock_timestamp()) where group_id='23000000-0000-0000-0000-000000000004' $$,
+  'an already-begun legacy journey with an unavailable finale is retained for safe organization handling'
 );
+set local role authenticated;
 select is(
   api.group_snapshot('23000000-0000-0000-0000-000000000004') #>> '{run,status}',
   'paused',

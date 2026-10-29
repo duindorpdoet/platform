@@ -57,6 +57,15 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261029115340_start_publication_readiness.sql',
   '20261029115344_released_destination_markers.sql',
   '20261029115723_bounded_live_planboard_reads.sql',
+  '20261029162530_targeted_registration_management.sql',
+  '20261029162606_admin_registration_activation.sql',
+  '20261029163312_registration_management_mail_and_access.sql',
+  '20261029170035_shared_portal_reception_policy.sql',
+  '20261029170341_joint_route_planning_input.sql',
+  '20261029170837_structured_child_accessibility.sql',
+  '20261029171520_shared_physical_arrival_validation.sql',
+  '20261029171645_canonical_joint_route_versions.sql',
+  '20261029193334_persistent_portal_print_material.sql',
 
 ]);
 

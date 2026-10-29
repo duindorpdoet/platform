@@ -3,6 +3,8 @@
 import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
 import { useSnapshotLoader } from "@/lib/realtime/use-snapshot-loader";
 import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
+import { useRouter } from "next/navigation";
+import { groupAccessDenied } from "@/lib/domain/group-access";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./group-experience.css";
 import "../../modern/route.css";
@@ -74,6 +76,7 @@ function explain(error: { message?: string } | null) {
 }
 
 export function GroupExperience({ groupId, userId }: { groupId: string; userId: string }) {
+  const router = useRouter();
   const sync = useArrivalSync();
   const waitingForArrival = hasWaitingArrival();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -99,6 +102,13 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
     const { data, error } = await client.schema("api").rpc("group_snapshot", { _group_id: groupId }).abortSignal(AbortSignal.timeout(8_000));
     if (generation !== sourceGeneration.current) return;
     if (error) {
+      if (groupAccessDenied(error)) {
+        clearPrivateSnapshots(); clearArrivalMemory();
+        setSnapshot(null); setRoster([]); setArrival(null); setOffline(false);
+        setNotice("Jullie groepsindeling of toegang is gewijzigd. De actuele omgeving wordt opgehaald.");
+        router.refresh();
+        return;
+      }
       const cached = readPrivateSnapshot<Snapshot>(userId, groupId);
       if (cached) { setSnapshot(cached); setOffline(true); }
       return;
@@ -115,7 +125,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
         setAttendance((current) => reconcileAttendance(items.map((item) => item.registrationChildId), current));
       }
     }
-  }, [groupId, userId]));
+  }, [groupId, userId, router]));
   useSnapshotRefresh(load);
   usePrivateBroadcast(`group:${groupId}`, invalidate);
 
@@ -208,7 +218,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
     };
   }, [snapshot?.run?.currentStop, snapshot?.run?.version, snapshot?.access.leader, busy, offline, prepareArrival]);
 
-  if (!snapshot) return <div className="panel loading-state"><RefreshCw className="spin" /><p>Jullie groepsinformatie ophalen…</p></div>;
+  if (!snapshot) return <div className="panel loading-state" role="status"><RefreshCw className="spin" /><p>{notice || "Jullie groepsinformatie ophalen…"}</p></div>;
   const run = snapshot.run;
   const stop = run?.currentStop;
   const isFinale = stop?.kind === "finale";

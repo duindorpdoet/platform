@@ -50,7 +50,9 @@ update app_private.start_points set private_address=null where id='20000000-0000
 select is(app_private.start_point_readiness('20000000-0000-0000-0000-000000000001')->>'confirmationReason','START_POINT_ADDRESS_MISSING','a missing real address remains an actionable confirmation error');
 select throws_ok($$select api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',(select version from app_private.start_points where id='20000000-0000-0000-0000-000000000001'))$$,'23514','START_POINT_ADDRESS_MISSING','a map position alone cannot confirm an addressless destination');
 update app_private.portal_private_locations set marker_latitude=91,marker_longitude=4.27 where portal_id='12000000-0000-0000-0000-000000000030';
-select ok(not exists(select 1 from jsonb_array_elements(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000001')->'stops') stop where stop->>'kind'='finale'),'an invalid finale is not invented as a successful estimated destination');
-select matches(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000001')->'warnings'->>0,'eindpoort','invalid finale explains which destination must be repaired');
+select ok((app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000001')->>'requiresJointReview')::boolean,
+ 'an invalid stored finale is preserved for review rather than automatically replaced by a new route');
+select ok(exists(select 1 from jsonb_array_elements_text(app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000001')->'warnings') warning
+ where warning like '%finalepoort%'),'invalid finale explains which destination must be repaired');
 select * from finish();
 rollback;

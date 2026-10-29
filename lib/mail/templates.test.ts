@@ -44,9 +44,9 @@ const completePayload = {
 };
 
 describe("premium transactional mail catalog", () => {
-  it("renders every one of the 44 catalog keys as bounded HTML and matching plaintext", () => {
-    expect(MAIL_MESSAGE_TYPES).toHaveLength(44);
-    expect(new Set(MAIL_MESSAGE_TYPES).size).toBe(44);
+  it("renders every one of the 46 catalog keys as bounded HTML and matching plaintext", () => {
+    expect(MAIL_MESSAGE_TYPES).toHaveLength(46);
+    expect(new Set(MAIL_MESSAGE_TYPES).size).toBe(46);
 
     for (const messageType of MAIL_MESSAGE_TYPES) {
       const rendered = renderTransactionalMail({ messageType, payload: completePayload });

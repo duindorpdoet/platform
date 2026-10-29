@@ -165,3 +165,42 @@ describe("dominant start and completion preferences remain separate from ordinar
     expect(result.groups[0].expectedFinaleArrivalAt).toBe(iso("19:54"));
   });
 });
+
+
+describe("shared finale reception policy", () => {
+  it("respects a server-supplied ten-minute headway even when parallel capacity permits more", () => {
+    const result = proposePlan({ ...base, finaleShowSeconds: 360, finaleTurnoverSeconds: 0, finaleHeadwaySeconds: 600,
+      parties: [family("a"), family("b")], starts: [slot("17:00", "door-a"), slot("17:00", "door-b")] });
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups).toHaveLength(2);
+    expect(Math.abs(Date.parse(result.groups[0].expectedFinaleArrivalAt!) - Date.parse(result.groups[1].expectedFinaleArrivalAt!))).toBeGreaterThanOrEqual(600_000);
+  });
+  it("keeps the portal total-child reception budget across non-overlapping shows", () => {
+    const result = proposePlan({ ...base, parties: [family("a", "21:00", "17:00", 3), family("b", "21:00", "17:10", 3)],
+      finaleHeadwaySeconds: 300, finaleWindows: [{ opensAt: at("19:00"), closesAt: at("22:00"), maxGroups: 20, maxChildren: 20, maxTotalChildren: 5 }] });
+    expect(result.groups.filter(group => group.startId)).toHaveLength(1);
+    expect(result.conflicts).toHaveLength(1);
+  });
+});
+
+
+describe("canonical physical departure aliases", () => {
+  it("uses a separate physical door key while retaining each gathering-point limit", () => {
+    const starts = [
+      { ...slot("17:00", "alias-small"), physicalDepartureKey: "one-real-door", maxChildren: 1 },
+      { ...slot("17:00", "alias-large"), physicalDepartureKey: "one-real-door", maxChildren: 20 },
+      { ...slot("17:10", "alias-large"), physicalDepartureKey: "one-real-door", maxChildren: 20 },
+    ];
+    const result = proposePlan({ ...base, starts, parties: [family("a", "21:00", "17:00", 4), family("b", "21:00", "17:00", 4)] });
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups.map(group => starts.find(start => start.id === group.startId)!.startsAt).sort()).toEqual([at("17:00"), at("17:10")]);
+    expect(result.groups.every(group => starts.find(start => start.id === group.startId)!.startPointId === "alias-large")).toBe(true);
+  });
+  it("matches frozen canonical reservations across another alias", () => {
+    const starts = [{ ...slot("17:00", "new-alias"), physicalDepartureKey: "one-real-door" }, { ...slot("17:10", "new-alias"), physicalDepartureKey: "one-real-door" }];
+    const result = proposePlan({ ...base, starts, parties: [family("new-family")],
+      existingSchedules: [{ id: "frozen", groupId: "existing", startId: "old-hidden-slot", startPointId: "one-real-door", startsAt: at("17:00"), childCount: 2, expectedFinaleArrivalAt: at("20:00") }] });
+    expect(result.conflicts).toEqual([]);
+    expect(result.groups[0].startId).toBe(starts[1].id);
+  });
+});
