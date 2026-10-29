@@ -17,7 +17,7 @@ test("saved start selects survive timestamp spelling and refresh; publication ex
   }
   const event = "duindorp-halloween-2026", gid = "23000000-0000-0000-0000-000000000001";
   let state = await rpc("admin_startregie_snapshot", { _event_slug: event });
-  await rpc("admin_startregie_settings_save", { _event_slug: event, _settings: { ...state.settings, plannerMode: "dynamic", firstStartAt: "2026-10-31T15:00:00Z", globalOrdinaryStopAt: "2026-10-31T19:30:00Z", finalPortalId: "12000000-0000-0000-0000-000000000030", finaleOpensAt: "2026-10-31T18:00:00Z", finaleLastArrivalAt: "2026-10-31T20:30:00Z", finaleClosesAt: "2026-10-31T21:00:00Z", finaleAvailable: false }, _expected_version: state.settings.version, _reason: "Synthetic readiness browser fixture without publication" });
+  await rpc("admin_startregie_settings_save", { _event_slug: event, _settings: { ...state.settings, plannerMode: "dynamic", firstStartAt: "2026-10-31T15:00:00Z", globalOrdinaryStopAt: "2026-10-31T19:30:00Z", finalPortalId: "12000000-0000-0000-0000-000000000030", finaleOpensAt: "2026-10-31T18:00:00Z", finaleLastArrivalAt: "2026-10-31T20:30:00Z", finaleClosesAt: "2026-10-31T21:00:00Z", finaleAvailable: true }, _expected_version: state.settings.version, _reason: "Synthetic readiness browser fixture without publication" });
   const point = await rpc("admin_startregie_start_point_save", { _event_slug: event, _point_id: null, _payload: { name: "Synthetic readiness start", publicLabel: "Synthetic readiness start", pointType: "gathering", privateAddress: "FICTIEF TESTADRES", geocodedLatitude: 52.1, geocodedLongitude: 4.27, active: true, maxGroups: 1, maxChildren: 30 }, _expected_version: null, _reason: "Synthetic start time presentation fixture" });
   await rpc("admin_startregie_confirm_point", { _event_slug: event, _point_id: point.id, _expected_version: point.version });
   state = await rpc("admin_startregie_snapshot", { _event_slug: event });
@@ -35,8 +35,13 @@ test("saved start selects survive timestamp spelling and refresh; publication ex
   await page.getByRole("button", { name: "Vernieuwen", exact: true }).first().click(); await refreshed;
   await expect(selectedTime).toHaveValue("2026-10-31T16:10:00.000Z");
   await expect(card.getByRole("button", { name: "Startafspraken bevestigen en versturen", exact: true })).toBeDisabled();
-  await card.getByRole("button", { name: "Concept opslaan", exact: true }).click();
+  const saved = page.waitForResponse(response => response.url().includes("/rpc/admin_startregie_move_group"));
+  await card.getByRole("button", { name: "Concept opslaan", exact: true }).click(); await saved;
   await expect(card.getByRole("button", { name: "Concept opslaan", exact: true })).toBeDisabled();
+  // A valid appointment exists before availability changes. New saves must
+  // still reject an unavailable finale; publication explains the later change.
+  state = await rpc("admin_startregie_snapshot", { _event_slug: event });
+  await rpc("admin_startregie_settings_save", { _event_slug: event, _settings: { ...state.settings, finaleAvailable: false }, _expected_version: state.settings.version, _reason: "Synthetic finale becomes unavailable after the valid draft was saved" });
   await page.reload(); await expect(selectedTime).toHaveValue("2026-10-31T16:10:00.000Z");
   await card.getByRole("button", { name: "Startafspraken bevestigen en versturen", exact: true }).click();
   const dialog = page.getByRole("dialog");
