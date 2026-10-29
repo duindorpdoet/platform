@@ -256,6 +256,7 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   context,
   browser,
 }, info) => {
+  test.skip(process.env.SKIP_MAIL_TESTS === "true", "Explicit release mail-test exception: real invitation Auth OTP");
   const fixture = await owner(context);
   await page.goto("/mijn-huis");
   await expect(
