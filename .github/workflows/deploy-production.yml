@@ -69,7 +69,7 @@ jobs:
         run: node scripts/deploy/mail-test-policy.mjs
   readonly-baseline:
     name: Read-only production evening baseline
-    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && github.ref == 'refs/heads/production'
+    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && (github.ref == 'refs/heads/production' || github.ref == 'refs/heads/codex/halloween-readiness-20261029')
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -86,6 +86,11 @@ jobs:
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: node scripts/deploy/evening-baseline.mjs
+      - name: Audit saved routes and operational readiness without changing data
+        env:
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node scripts/deploy/evening-readiness-audit.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: evening-production-baseline-${{ github.run_id }}
