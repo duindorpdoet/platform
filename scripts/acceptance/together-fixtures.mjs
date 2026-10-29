@@ -23,7 +23,8 @@ export function parallelSql(query) {
     child.stdout.on("data", (data) => { output += data; });
     child.stderr.on("data", (data) => { error += data; });
     child.on("error", reject);
-    child.on("exit", (code) => code === 0 ? resolve(output.trim()) : reject(new Error(error)));
+    // A successful exit can precede the final stdout/stderr chunks.
+    child.on("close", (code) => code === 0 ? resolve(output.trim()) : reject(new Error(error)));
     child.stdin.end(query);
   });
 }
