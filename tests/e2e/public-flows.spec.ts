@@ -209,11 +209,11 @@ test("world gallery displays all six artworks and supports keyboard navigation",
 test("house registration respects the release mode and starts with only the three required contact fields", async ({ page }) => {
   await page.goto("/huis-aanmelden");
   if (process.env.REGISTRATION_MODE === "closed") {
-    await expect(page.getByRole("heading", { name: "Nieuwe plekken kunnen zich nu niet aanmelden." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "De inschrijvingen zijn gesloten." })).toBeVisible();
     await expect(page.getByLabel("E-mailadres", { exact: true })).toHaveCount(0);
     await assertReadableLayout(page, false);
     await page.goto("/meelopen");
-    await expect(page.getByRole("heading", { name: "Groepsinschrijving opent later." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "De inschrijvingen zijn gesloten." })).toBeVisible();
     await expect(page.getByRole("link", { name: "Start met inschrijven" })).toHaveCount(0);
     return;
   }
