@@ -87,6 +87,16 @@ insert into app_private.run_participants(run_id,registration_child_id,attendance
 create temp table completion_preserved as select md5(to_jsonb(r)::text) run_hash from app_private.group_runs r join completion_fixtures f on f.run=r.id where label='late';
 select is(app_private.schedule_latest_finale_arrival(schedule),'2026-10-31T21:20:00+01'::timestamptz,'live policy uses published target plus thirty minutes minus show') from completion_fixtures where label='late';
 select is(app_private.try_reserve_finale(run,'2026-10-31T21:20:01+01','2026-10-31T21:00:00+01'),null::uuid,'live dispatch refuses one second beyond published group deadline') from completion_fixtures where label='late';
+-- Reproduce a historical snapshot lacking the new policy metadata. Only this
+-- synthetic fixture bypasses the write trigger; ordinary API callers cannot.
+set local session_replication_role=replica;
+update app_private.group_schedule_revisions set input_snapshot=input_snapshot-'maxGroupOverrunSeconds'-'dominantEndAt' where id=(select schedule from completion_fixtures where label='late');
+set local session_replication_role=origin;
+select is(app_private.schedule_latest_finale_arrival(schedule),'2026-10-31T21:20:00+01'::timestamptz,
+ 'historical metadata cannot bypass the same majority-based group ceiling') from completion_fixtures where label='late';
+select is(app_private.try_reserve_finale(run,'2026-10-31T21:20:01+01','2026-10-31T21:00:00+01'),null::uuid,
+ 'live reservation also rejects excess overrun for a historical published snapshot') from completion_fixtures where label='late';
+update app_private.group_schedule_revisions set input_snapshot=input_snapshot where id=(select schedule from completion_fixtures where label='late');
 update completion_fixtures set reservation=app_private.try_reserve_finale(run,'2026-10-31T21:20:00+01','2026-10-31T21:00:00+01') where label='late';
 select ok(reservation is not null,'live reservation at exact boundary succeeds after old strict target') from completion_fixtures where label='late';
 select is(app_private.try_reserve_finale(run,'2026-10-31T21:20:00+01','2026-10-31T21:00:00+01'),reservation,'repeated live reservation returns the same reservation') from completion_fixtures where label='late';

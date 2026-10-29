@@ -73,4 +73,18 @@ describe("completion target and bounded overrun", () => {
     expect(proposePlan({ ...base, finaleWindows: [{ opensAt: at("21:05"), closesAt: at("21:16"), maxGroups: 1, maxChildren: 20, maxTotalChildren: 20 }] }).groups).toEqual([]);
     expect(proposePlan({ ...base, finaleWindows: [] }).conflicts).not.toEqual([]);
   });
+  it("names the actual deadline, physical window or child capacity bottleneck", () => {
+    const late = proposePlan({ ...base, parties: [party("early-target", "18:20", "17:00")] });
+    expect(late.conflicts[0]).toMatchObject({ code: "DESIRED_END_UNREACHABLE" });
+    expect(late.conflicts[0].message).toContain("50 minuten");
+    expect(late.conflicts[0].message).toContain("18:50");
+    const short = proposePlan({ ...base, finaleWindows: [{ opensAt: at("21:05"), closesAt: at("21:16"), maxGroups: 1, maxChildren: 20, maxTotalChildren: 20 }] });
+    expect(short.conflicts[0]).toMatchObject({ code: "FINALE_WINDOW_CONFLICT" });
+    expect(short.conflicts[0].message).toContain("10 minuten plus 2 minuten");
+    const capacity = proposePlan({ ...base, finaleMaxChildren: 2 });
+    expect(capacity.conflicts[0]).toMatchObject({ code: "FINALE_CAPACITY_EXCEEDED" });
+    expect(capacity.conflicts[0].message).toContain("3 kinderen");
+    expect(capacity.conflicts[0].message).toContain("maximaal 2");
+  });
+
 });

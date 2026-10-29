@@ -416,11 +416,33 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
   const groups: PlannedGroup[] = [];
   for (const group of prepared.filter(g => !best.some(c => c.group === g))) {
     const remainingStarts = group.possibleStarts.filter(s => !best.some(c => physicalStart(c.start.startPointId, Date.parse(c.start.startsAt)) === physicalStart(s.startPointId, Date.parse(s.startsAt))));
-    const hasTime = remainingStarts.some(s => Date.parse(s.startsAt) <= group.hardStop && Math.max(finaleOpen!, Date.parse(s.startsAt) + transferMs) <= group.latestArrival);
-    const code = !remainingStarts.length ? "START_CAPACITY_EXCEEDED" : !hasTime ? "DESIRED_END_UNREACHABLE" : "FINALE_CAPACITY_EXCEEDED";
-    conflicts.push({ code, subjectId: group.key, message: code === "START_CAPACITY_EXCEEDED"
-      ? `Geen vrij tienminutenvertrek met voldoende capaciteit voor ${group.key}.`
-      : `Geen haalbare verdeling voor ${group.key}: controleer finaleopening, laatste aankomst ${new Date(finaleLast!).toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" })}, definitieve sluiting en capaciteit. De show moet ook binnen de maximale groepsuitloop klaar zijn; gewone poorten blijven aan hun eigen stopgrens gebonden.` });
+    const eligibleStarts = remainingStarts.filter(s => Date.parse(s.startsAt) <= group.hardStop);
+    const earliestArrival = Math.min(...eligibleStarts.map(s => Math.max(finaleOpen!, Date.parse(s.startsAt) + transferMs)));
+    const time = (value: number) => Number.isFinite(value) ? new Date(value).toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" }) : "geen passend moment";
+    const windowFits = input.finaleWindows?.filter(w => Math.max(earliestArrival, Date.parse(w.opensAt)) <= Math.min(group.latestArrival, Date.parse(w.closesAt) - serviceMs));
+    const childCapacity = Math.min(input.finaleMaxChildren, windowFits ? Math.max(0, ...windowFits.map(w => Math.min(w.maxChildren, w.maxTotalChildren))) : Infinity);
+    const targetReason = group.desiredEnd === null ? "" : ` Gewenst klaar ${time(group.desiredEnd)}; uiterste groepsafronding ${time(group.desiredEnd + input.maxGroupOverrunSeconds * 1_000)}.`;
+    let code: string;
+    let message: string;
+    if (!remainingStarts.length) {
+      code = "START_CAPACITY_EXCEEDED";
+      message = `Geen vrij tienminutenvertrek met voldoende capaciteit voor ${group.key}.`;
+    } else if (group.desiredEnd !== null && Number.isFinite(earliestArrival) && earliestArrival + showMs > group.desiredEnd + input.maxGroupOverrunSeconds * 1_000) {
+      code = "DESIRED_END_UNREACHABLE";
+      message = `Vroegst haalbare afronding ${time(earliestArrival + showMs)} is ${Math.ceil((earliestArrival + showMs - group.desiredEnd) / 60_000)} minuten na de eindwens. Vertrek, overdracht en finaleopening passen niet binnen de groepsgrens.${targetReason}`;
+    } else if (!eligibleStarts.length) {
+      code = "ROUTE_TIME_CONFLICT";
+      message = `Alle vrije vertrekken vallen na de harde gewone stop ${time(group.hardStop)}. Kies een eerder beschikbaar vertrek; finale-uitloop verlengt deze gewone routegrens niet.${targetReason}`;
+    } else if (earliestArrival > group.latestArrival || windowFits?.length === 0) {
+      code = "FINALE_WINDOW_CONFLICT";
+      message = `Show van ${input.finaleShowSeconds / 60} minuten plus ${input.finaleTurnoverSeconds / 60} minuten wisseltijd past niet binnen het toegestane fysieke finalevenster: opening ${time(finaleOpen!)}, laatste aankomst ${time(finaleLast!)} en definitieve sluiting ${time(finaleClose!)}. Controleer ook de afzonderlijke poortopening.${targetReason}`;
+    } else {
+      code = "FINALE_CAPACITY_EXCEEDED";
+      message = group.childCount > childCapacity
+        ? `De groep heeft ${group.childCount} kinderen; de beschikbare finaleopening ontvangt maximaal ${childCapacity} kinderen per groep.${targetReason}`
+        : `Geen vrije finaleplek gevonden tussen ${time(earliestArrival)} en ${time(group.latestArrival)} voor ${group.childCount} kinderen. De limiet blijft ${input.finaleMaxGroups} groepen en ${input.finaleMaxChildren} kinderen tegelijk, binnen de fysieke poortcapaciteit. De onderzochte herverdelingen geven geen passende plek.${targetReason}`;
+    }
+    conflicts.push({ code, subjectId: group.key, message });
   }
   for (const choice of best.sort((a, b) => Date.parse(a.start.startsAt) - Date.parse(b.start.startsAt) || byConstraint(a.group, b.group))) {
     const { group, start, stop, arrival, routeLoss, waiting } = choice;

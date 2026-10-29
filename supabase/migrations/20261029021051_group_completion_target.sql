@@ -34,12 +34,15 @@ end $$;
 revoke all on function app_private.assert_group_schedule_timing(uuid,uuid,timestamptz,timestamptz) from public,anon,authenticated;
 
 -- A published schedule freezes its majority end. Legacy runs keep their existing
--- ordinary cutoff; only schedules explicitly saved under this policy gain it.
+-- ordinary cutoff. Historical snapshots also obey the group overrun ceiling
+-- on future reservations, without rewriting their published times or runs.
 create or replace function app_private.schedule_latest_finale_arrival(_schedule uuid)
 returns timestamptz language sql stable security definer set search_path='' as $$
  select least(settings.finale_last_arrival_at,settings.finale_closes_at-make_interval(secs=>settings.finale_show_seconds+settings.finale_turnover_seconds),
-   case when s.input_snapshot ? 'maxGroupOverrunSeconds' then (s.input_snapshot->>'dominantEndAt')::timestamptz
-     +make_interval(secs=>app_private.group_end_overrun_seconds()-settings.finale_show_seconds) end)
+   (case when s.input_snapshot ? 'dominantEndAt' then (s.input_snapshot->>'dominantEndAt')::timestamptz
+      else app_private.dominant_end_preference(array(select distinct a.registration_id from app_private.group_registrations a
+        where a.group_id=s.group_id and a.superseded_at is null)) end)
+     +make_interval(secs=>app_private.group_end_overrun_seconds()-settings.finale_show_seconds))
  from app_private.group_schedule_revisions s join app_private.walking_groups g on g.id=s.group_id
  join app_private.event_route_settings settings on settings.event_id=g.event_id where s.id=_schedule
 $$;
