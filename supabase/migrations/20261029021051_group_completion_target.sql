@@ -525,8 +525,8 @@ begin
   perform app_private.validate_exact_preferences(new.event_id, preferred_start, desired_end);
   new.preferred_start_at := preferred_start;
   new.desired_end_at := desired_end;
-  -- An explicit ordinary-stop draft is handled by its separate existing trigger.
-  -- Do not derive a hard cutoff from a desired completion.
+  -- Preserve independently supplied ordinary stops. Legacy draft stop fields
+  -- keep their existing interpretation; never derive a hard cutoff from an end wish.
   return new;
 end;
 $$;
@@ -1140,50 +1140,6 @@ begin
  end loop;
  return null;
 end $$;
-
-create or replace function app_private.copy_registration_preferences_from_draft()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  draft jsonb;
-  preference text;
-  requested_stop text;
-  parsed_stop timestamptz;
-  route_settings app_private.event_route_settings;
-  has_exact_preferences boolean;
-begin
-  select payload into draft from app_private.registration_drafts
-  where event_id = new.event_id and household_id = new.household_id;
-  preference := draft ->> 'startPreference';
-  requested_stop := draft ->> 'ordinaryStopAt';
-  has_exact_preferences := nullif(trim(coalesce(draft ->> 'desiredEndAt', '')), '') is not null;
-  if draft ? 'startPreference' and coalesce(preference, '') not in ('early', 'indifferent', 'later') then
-    raise exception 'INVALID_START_PREFERENCE' using errcode = '22023';
-  end if;
-  if preference in ('early', 'indifferent', 'later') then
-    new.start_time_preference := preference::app_private.start_time_preference;
-  end if;
-  if nullif(trim(requested_stop), '') is not null then
-    begin
-      parsed_stop := requested_stop::timestamptz;
-    exception when others then
-      raise exception 'INVALID_STOP_PREFERENCE' using errcode = '22023';
-    end;
-    if has_exact_preferences and parsed_stop=(draft->>'desiredEndAt')::timestamptz then return new;end if;
-    select * into route_settings from app_private.event_route_settings where event_id = new.event_id;
-    if route_settings.global_ordinary_stop_at is null
-       or parsed_stop > route_settings.global_ordinary_stop_at
-       or not (parsed_stop = any(route_settings.allowed_personal_stop_times)) then
-      raise exception 'INVALID_STOP_PREFERENCE' using errcode = '22023';
-    end if;
-    new.requested_ordinary_stop_at := parsed_stop;
-  end if;
-  return new;
-end;
-$$;
 
 create or replace function api.group_snapshot(_group_id uuid) returns jsonb
 language plpgsql stable security definer set search_path='' as $$

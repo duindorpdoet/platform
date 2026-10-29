@@ -90,13 +90,13 @@ where event_id = (select id from app_private.events where slug = 'duindorp-hallo
 insert into app_private.registration_drafts(event_id, household_id, payload)
 values ((select id from app_private.events where slug = 'duindorp-halloween-2026'),
   '21000000-0000-0000-0000-000000000099',
-  '{"startPreference":"indifferent","ordinaryStopAt":"2026-10-31T21:00:00+01:00","preferredStartAt":"2026-10-31T17:00:00+01:00","desiredEndAt":"2026-10-31T21:00:00+01:00"}'::jsonb);
+  '{"startPreference":"indifferent","ordinaryStopAt":"2026-10-31T18:00:00+01:00","preferredStartAt":"2026-10-31T17:00:00+01:00","desiredEndAt":"2026-10-31T21:00:00+01:00"}'::jsonb);
 insert into app_private.registrations(id, event_id, household_id, reference, status)
 values ('22000000-0000-0000-0000-000000000099',
   (select id from app_private.events where slug = 'duindorp-halloween-2026'),
   '21000000-0000-0000-0000-000000000099', 'EXACT-PREF-TEST', 'submitted');
 select is((select requested_ordinary_stop_at from app_private.registrations where id = '22000000-0000-0000-0000-000000000099'),
-  null::timestamptz, 'an exact desired end creates no derived hard ordinary-stop preference');
+  null::timestamptz, 'an exact desired end does not promote a stale legacy draft stop into a hard boundary');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);

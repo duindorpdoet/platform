@@ -2,6 +2,8 @@
 
 De bron is gecontroleerd op `d4b54ff23c0c928e21019c6631ba7b937781e130`. De gewenste groepsafronding was in planner, trigger en bulk-/verplaatscommands een harde deadline. De planner koos eerst een vertrek en reserveerde daarna per groep een finaleplek. Daardoor konden vroeg verwerkte groepen de goede late plekken bezetten en werd een andere gewone route sterk ingekort. Het live planbord behandelde daarnaast een historisch uit de eindwens gekopieerde gewone stop nog als harde gezinsgrens.
 
+Ook het inschrijfformulier en de voorkeureneditor benoemen nu de afronding inclusief laatste poort, zonder een eindwens als gewone stop te presenteren. Een achtergebleven gewoon-stopveld in een oud inschrijfconcept wordt niet opnieuw als harde grens uitgelegd.
+
 De wijziging gebruikt de bestaande stemmen per oorspronkelijke inschrijving, frequentie, totale absolute afwijking en vroegste tie-break. Een minderheidswens wordt geen groepsveto. Los opgegeven gewone stopgrenzen blijven gelden. Nieuwe exacte voorkeuren schrijven geen afgeleide gewone stop meer; historische records worden niet opgeschoond of herschreven.
 
 ## Tijd en serverbeleid
