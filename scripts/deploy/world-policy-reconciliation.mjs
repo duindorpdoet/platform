@@ -20,19 +20,13 @@ export function worldPolicyInitializationQuery(before) {
         from unnest(array['heksenrijk','dodenrijk','circuswereld','besmette-zone','geestenwereld','vampierrijk']) required(slug)
         where not exists(select 1 from app_private.portals p join app_private.worlds w on w.id=p.world_id and w.slug=required.slug
           where p.event_id=e.id and p.approval_status='approved' and p.lifecycle_status='active'
-            and exists(select 1 from app_private.portal_private_locations l where l.portal_id=p.id
-              and nullif(trim(l.street),'') is not null and nullif(trim(l.house_number),'') is not null
-              and (case when l.marker_latitude is not null or l.marker_longitude is not null
-                then l.marker_latitude between -90 and 90 and l.marker_longitude between -180 and 180
-                when l.geocoded_latitude is not null or l.geocoded_longitude is not null
-                then l.geocoded_latitude between -90 and 90 and l.geocoded_longitude between -180 and 180
-                else l.latitude between -90 and 90 and l.longitude between -180 and 180 end))
+            and app_private.portal_location_ready(p.id)
             and exists(select 1 from app_private.portal_windows win where win.portal_id=p.id
               and win.max_concurrent_groups>0 and win.max_children_per_visit>0 and win.opens_at<win.closes_at
-              and win.closes_at-win.opens_at>=make_interval(mins=>win.visit_minutes+win.buffer_minutes)
-              and win.opens_at<(e.local_date+time '21:30') at time zone 'Europe/Amsterdam'
-              and win.closes_at>(e.local_date+time '16:30') at time zone 'Europe/Amsterdam'))),'{}'::text[]) missing
-    from app_private.events e
+              and greatest(win.opens_at,coalesce(settings.first_start_at,(e.local_date+time '16:30') at time zone 'Europe/Amsterdam'))
+                +make_interval(mins=>win.visit_minutes+win.buffer_minutes)
+                <=least(win.closes_at,coalesce(settings.global_ordinary_stop_at,(e.local_date+time '21:30') at time zone 'Europe/Amsterdam'))))),'{}'::text[]) missing
+    from app_private.events e left join app_private.event_route_settings settings on settings.event_id=e.id
   ) select jsonb_build_object(
     'capturedAt',statement_timestamp(),
     'migrationApplied',exists(select 1 from supabase_migrations.schema_migrations where version='${WORLD_POLICY_MIGRATION}'),

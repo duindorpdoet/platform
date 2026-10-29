@@ -24,7 +24,10 @@ export async function dryRunReleaseMigrations(files,appliedVersions,localQuery) 
   for(const file of files) {
     const sql=await readFile(join('supabase/migrations',file),'utf8');
     const alreadyApplied=applied.has(file.split('_')[0]),started=Date.now();
-    if(!alreadyApplied)await localQuery("begin;set local lock_timeout='3s';set local statement_timeout='5min';"+sql+';commit');
+    // Hosted CLI migrations use postgres. The restore connection is the
+    // isolated superuser, but CREATE OR REPLACE retains restored ownership:
+    // creating new private helpers as that superuser would break their callers.
+    if(!alreadyApplied)await localQuery("begin;set local role postgres;set local lock_timeout='3s';set local statement_timeout='5min';"+sql+';commit');
     proof.push({file,sha256:createHash('sha256').update(sql).digest('hex'),execution:alreadyApplied?'already-applied':'dry-run',durationMs:Date.now()-started});
   }
   return proof;

@@ -29,6 +29,8 @@ it('dry-runs only unapplied migrations and retains a proof for every reviewed fi
   const applied=files.slice(0,-1).map(file=>file.split('_')[0]),executed:string[]=[];
   const proof=await dryRunReleaseMigrations([...files],applied,async sql=>{executed.push(sql);});
   expect(executed).toHaveLength(1);
+  expect(executed[0]).toMatch(/^begin;set local role postgres;set local lock_timeout='3s';set local statement_timeout='5min';/);
+  expect(executed[0]).toMatch(/;commit$/);
   expect(proof.map(row=>row.file)).toEqual(files);
   expect(proof.slice(0,-1).every(row=>row.execution==='already-applied')).toBe(true);
   expect(proof.at(-1)?.execution).toBe('dry-run');

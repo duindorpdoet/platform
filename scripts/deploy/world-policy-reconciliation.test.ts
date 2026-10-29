@@ -55,13 +55,15 @@ it('requires the exact pending reviewed migration and refuses another initializa
   expect(reconcileWorldPolicyInitialization(installed,{...installed,policyRows:[...installed.policyRows,{...added,version:3}]},versions).failures).toContain('app_private.world_coverage_policies');
 });
 
-it('keeps every unrelated table fingerprint strict and does not expose private function calls in the read-only baseline',()=>{
+it('keeps every unrelated table fingerprint strict and needs no new migration helper on the source database',()=>{
   const original=[{table:'app_private.walking_groups',rows:18,sha256:'original'}];
   const reconciliation=reconcileWorldPolicyInitialization(before,after,versions);
   expect(compareFingerprints(original,[{...original[0],sha256:'changed'}]).filter(table=>!reconciliation.reconciledTables.includes(table))).toEqual(['app_private.walking_groups']);
   const query=worldPolicyInitializationQuery(before);
   expect(query).not.toContain('app_private.routing_position(');
   expect(query).not.toContain('app_private.refresh_world_coverage(');
+  expect(query).toContain('app_private.portal_location_ready(p.id)');
+  expect(query).not.toContain('app_private.world_coverage_missing_now(');
   expect(()=>worldPolicyInitializationQuery({...before,auditBoundary:'0; delete from app_private.events'})).toThrow('INVALID_COVERAGE_AUDIT_BASELINE');
   const atomic=preservationQuery([{schema:'app_private',name:'audit_events',columns:['id','minimal_change']}],before);
   expect(atomic).toContain("'rows',(select jsonb_agg(fingerprint)");
