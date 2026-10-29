@@ -8,6 +8,9 @@ export const AUDIT_QUERY = `with
  e as materialized(select * from app_private.events where slug='duindorp-halloween-2026'),
  settings as materialized(select s.* from app_private.event_route_settings s join e on e.id=s.event_id),
  groups as materialized(select g.* from app_private.walking_groups g join e on e.id=g.event_id where g.retired_at is null),
+ group_children as materialized(select g.id group_id,case when exists(select 1 from app_private.group_runs r where r.group_id=g.id and r.status in('live','paused'))
+  then(select count(*) from app_private.run_participants rp join app_private.group_runs r on r.id=rp.run_id where r.group_id=g.id and r.status in('live','paused') and rp.attendance='present' and rp.departed_at is null)
+  else(select count(*) from app_private.group_registrations a join app_private.registration_children c on c.registration_id=a.registration_id and c.participation_status='active' where a.group_id=g.id and a.superseded_at is null) end children from groups g),
  votes as materialized(select distinct a.group_id,r.id,r.desired_end_at from app_private.group_registrations a
   join groups g on g.id=a.group_id join app_private.registrations r on r.id=a.registration_id
   where a.superseded_at is null and r.status='submitted' and r.desired_end_at is not null),
@@ -92,6 +95,7 @@ export const AUDIT_QUERY = `with
    'publicationRevision',pub.revision,'publishedStartsAt',pub.starts_at,'startPointCode',point.audit_point_code,'startPortalCode',linked.system_code,'startsAt',slot.starts_at,
    'desiredEndAt',d.desired_end_at,'ordinaryStopAt',s.effective_ordinary_stop_at,'finaleArrivalAt',s.expected_finale_arrival_at,
    'expectedCompletionAt',s.expected_finale_arrival_at+make_interval(secs=>rs.finale_show_seconds),
+   'physicalFinaleEndsAt',s.expected_finale_arrival_at+make_interval(secs=>rs.finale_show_seconds+rs.finale_turnover_seconds),
    'endDeviationMinutes',round(extract(epoch from(s.expected_finale_arrival_at+make_interval(secs=>rs.finale_show_seconds)-d.desired_end_at))/60.0,2),
    'overrunAllowed',d.desired_end_at is null or s.expected_finale_arrival_at+make_interval(secs=>rs.finale_show_seconds)<=d.desired_end_at+interval '30 minutes',
    'routeRevision',lp.version,'routeSource',case when lp.group_id is null then 'not_stored_check_route' else 'stored_live_board' end,
@@ -107,6 +111,7 @@ export const AUDIT_QUERY = `with
    'duplicateProvenPortals',coalesce((select jsonb_agg(jsonb_build_object('portalCode',p.system_code,'stops',a.stops)) from arrivals a join portals p on p.id=a.portal_id where a.group_id=g.id and a.stops>1),'[]'::jsonb),
    'canonicalVisits',(select count(*) from app_private.group_portal_visits c where c.group_id=g.id),
    'runCount',(select count(*) from app_private.group_runs r where r.group_id=g.id),
+   'children',(select children from group_children c where c.group_id=g.id),
    'startMarkerValid',coalesce(point.lat between -90 and 90 and point.lon between -180 and 180,false),
    'startEntrancePresent',nullif(trim(point.safe_approach),'') is not null,
    'invalidDestinationCodes',coalesce((select jsonb_agg(distinct p.system_code) from stored_visits v join portals p on p.id=v.portal_id where v.group_id=g.id and not coalesce(p.lat between -90 and 90 and p.lon between -180 and 180,false)),'[]'::jsonb),
@@ -114,6 +119,11 @@ export const AUDIT_QUERY = `with
    'ordinaryAndersPlanned',exists(select 1 from stored_visits v join portals p on p.id=v.portal_id where v.group_id=g.id and v.kind='ordinary' and p.world_slug='anders'),
    'scheduleWarnings',coalesce((select jsonb_agg(item.value) from jsonb_array_elements_text(coalesce(s.warnings,'[]'::jsonb)) item(value) where item.value~'^[A-Z0-9_]+$'),'[]'::jsonb),
    'finaleConcurrentGroups',(select count(distinct f.group_id) from finale_occupancy f where f.starts_at<=s.expected_finale_arrival_at and f.ends_at>s.expected_finale_arrival_at),
+   'finaleConcurrentChildren',(select sum(c.children) from group_children c where c.group_id in(select f.group_id from finale_occupancy f where f.starts_at<=s.expected_finale_arrival_at and f.ends_at>s.expected_finale_arrival_at)),
+   'ordinaryWindowWarnings',coalesce((select jsonb_agg(distinct p.system_code) from stored_visits v join portals p on p.id=v.portal_id where v.group_id=g.id and v.kind='ordinary'
+    and not exists(select 1 from app_private.portal_windows w where w.portal_id=v.portal_id and v.starts_at>=w.opens_at
+     and v.starts_at+make_interval(secs=>v.duration_seconds+v.buffer_seconds)<=w.closes_at
+     and w.max_children_per_visit>=(select children from group_children c where c.group_id=g.id))),'[]'::jsonb),
    'departureConcurrentGroups',(select count(distinct other.group_id) from schedule_rows other join point_locations op on op.id=other.start_point_id
     where coalesce(op.linked_portal_id,op.id)=coalesce(point.linked_portal_id,point.id) and other.starts_at=slot.starts_at)
    ) order by g.system_code) from groups g left join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id
