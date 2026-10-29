@@ -83,7 +83,9 @@ values ('21000000-0000-0000-0000-000000000099', 'Exact preference test', 'b00000
 insert into app_private.household_members(household_id, user_id, relation_role)
 values ('21000000-0000-0000-0000-000000000099', 'b0000000-0000-0000-0000-000000000001', 'owner');
 update app_private.event_route_settings
-set global_ordinary_stop_at = timestamptz '2026-10-31 20:30+01'
+set global_ordinary_stop_at = timestamptz '2026-10-31 20:30+01',
+  final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at='2026-10-31T19:00:00+01',
+  finale_last_arrival_at='2026-10-31T21:30:00+01',finale_closes_at='2026-10-31T22:00:00+01'
 where event_id = (select id from app_private.events where slug = 'duindorp-halloween-2026');
 insert into app_private.registration_drafts(event_id, household_id, payload)
 values ((select id from app_private.events where slug = 'duindorp-halloween-2026'),
@@ -94,7 +96,7 @@ values ('22000000-0000-0000-0000-000000000099',
   (select id from app_private.events where slug = 'duindorp-halloween-2026'),
   '21000000-0000-0000-0000-000000000099', 'EXACT-PREF-TEST', 'submitted');
 select is((select requested_ordinary_stop_at from app_private.registrations where id = '22000000-0000-0000-0000-000000000099'),
-  timestamptz '2026-10-31 20:30+01', 'a 21:00 exact desired end is capped at the global ordinary-stop boundary');
+  null::timestamptz, 'an exact desired end creates no derived hard ordinary-stop preference');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);

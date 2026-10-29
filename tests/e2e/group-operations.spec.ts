@@ -1,5 +1,6 @@
 import {test,expect,type BrowserContext} from '@playwright/test';
 import {createClient} from '@supabase/supabase-js';
+import {sql} from '../../scripts/acceptance/together-fixtures.mjs';
 import {mkdir} from 'node:fs/promises';
 import {prepareFixtureGuidance,selectOrganizationSection} from './helpers/guidance';
 import {assertReadableLayout} from './helpers/layout';
@@ -15,6 +16,9 @@ test.beforeEach(()=>test.skip(!url||!key,'Requires an isolated real Auth/databas
 test('one organizer resets, groups, confirms composition, distributes existing groups and shares start appointments',async({page,context})=>{
  test.setTimeout(120000);
  const client=await login(context);
+ // This flow deliberately configures a high-capacity finale; its physical
+ // local fixture must provide the same capacity as its route settings.
+ sql("update app_private.portal_windows set max_concurrent_groups=50,max_children_per_visit=50,max_children_total=500 where portal_id='12000000-0000-0000-0000-000000000030'");
  async function rpc(name:string,args:Record<string,unknown>){const r=await client.schema('api').rpc(name,args);expect(r.error).toBeNull();return r.data;}
  let state=await rpc('admin_startregie_snapshot',{_event_slug:event});
  await rpc('admin_startregie_settings_save',{_event_slug:event,_settings:{...state.settings,plannerMode:'dynamic',firstStartAt:'2026-10-31T15:00:00Z',globalOrdinaryStopAt:'2026-10-31T19:30:00Z',finalPortalId:'12000000-0000-0000-0000-000000000030',finaleOpensAt:'2026-10-31T18:00:00Z',finaleLastArrivalAt:'2026-10-31T20:30:00Z',finaleClosesAt:'2026-10-31T21:00:00Z',finaleMaxGroups:50,finaleMaxChildren:500,finaleAvailable:true},_expected_version:state.settings.version,_reason:'Afgeschermde browserproef van de volledige groepsketen'});
@@ -50,8 +54,8 @@ test('one organizer resets, groups, confirms composition, distributes existing g
  await page.getByRole('button',{name:'Groepen automatisch over startpunten verdelen',exact:true}).click();
  await expect(page.getByRole('button',{name:'Conceptslotverdeling opslaan'})).toBeEnabled();
  const proposal=page.getByRole('region',{name:'Bestaande groepen automatisch plannen'});
- await expect(proposal.locator('.proposal-row').first()).toContainText('Dominante startvoorkeur');
- await expect(proposal.locator('.proposal-row').first()).toContainText('gewenst einde');
+ await expect(proposal.locator('.proposal-row').first()).toContainText('Startvoorkeur');
+ await expect(proposal.locator('.proposal-row').first()).toContainText('Gewenst klaar');
  await expect(proposal.locator('.proposal-row').first()).toContainText('vertrek');
  await expect(proposal.locator('.proposal-row').first()).toContainText('Waarom hier?');
  await page.getByRole('button',{name:'Conceptslotverdeling opslaan'}).click();

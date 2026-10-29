@@ -11,7 +11,7 @@ const base: PlanningInput = {
   ],
   targetGroupSize: 6, maxGroupSize: 10,
   globalOrdinaryStopAt: at('20:30'), finaleOpensAt: at('19:00'), finaleLastArrivalAt: at('21:30'), finaleClosesAt: at('22:00'),
-  finaleShowSeconds: 360, finaleTurnoverSeconds: 0, finalePlanningTransferSeconds: 600, finaleMaxGroups: 2, finaleMaxChildren: 20,
+  maxGroupOverrunSeconds: 1800, finaleShowSeconds: 360, finaleTurnoverSeconds: 0, finalePlanningTransferSeconds: 600, finaleMaxGroups: 2, finaleMaxChildren: 20,
   earlyPreferenceLatestAt: at('18:00'), laterPreferenceEarliestAt: at('18:15'), preferenceGreenMinutes: 15, preferenceAmberMinutes: 30,
 };
 const existing: ExistingPlanningSchedule = { id: 'saved-A', startId: 'slot-a', childCount: 4, expectedFinaleArrivalAt: at('20:40'), partyIds: ['saved-family'] };
@@ -109,8 +109,9 @@ test('OPS08: same-start draft with a changed finale time retains both possible f
   const draft = { ...old, id: 'draft-A', expectedFinaleArrivalAt: at('20:50') };
   const result = proposePlan({ ...base, existingSchedules: [old, draft], finaleMaxGroups: 1 });
   assert.deepEqual(result.conflicts, []);
-  // 20:46 would overlap the still-reserved 20:50 draft window, so the next real six-minute gap is 20:56.
-  assert.equal(result.groups[0].expectedFinaleArrivalAt, new Date(at('20:56')).toISOString());
+  // Both alternative reservations stay blocked. Six minutes less ordinary route
+  // scores better than sixteen minutes waiting after ordinary closure.
+  assert.equal(result.groups[0].expectedFinaleArrivalAt, new Date(at('20:34')).toISOString());
 });
 
 test('OPS08: malformed existing reservations block a proposal', () => {

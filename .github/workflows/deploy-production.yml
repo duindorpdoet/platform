@@ -247,6 +247,8 @@ jobs:
         env:
           RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/duindorp-release-backup
         run: node scripts/deploy/redesign-preflight.mjs
+      - name: Inspect actual finale window and anonymized timing alternatives (read only)
+        run: node scripts/deploy/inspect-finale-planning.mjs
       - name: Validate application
         run: pnpm verify
       - name: Diagnose worker result RPC before migration (no delivery)

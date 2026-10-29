@@ -13,7 +13,7 @@ const base: PlanningInput = {
   finaleOpensAt: "2026-10-31T19:00:00+01:00",
   finaleLastArrivalAt: "2026-10-31T21:30:00+01:00",
   finaleClosesAt: "2026-10-31T22:00:00+01:00",
-  finaleShowSeconds: 360,
+  maxGroupOverrunSeconds: 1800, finaleShowSeconds: 360,
   finaleTurnoverSeconds: 0,
   finalePlanningTransferSeconds: 600,
   finaleMaxGroups: 2,

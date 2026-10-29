@@ -62,6 +62,13 @@ export type PlannedGroup = {
   dominantEndAt: string | null;
   effectiveStopAt: string;
   expectedFinaleArrivalAt: string;
+  expectedCompletionAt: string;
+  physicalFinaleEndsAt: string;
+  /** Signed minutes: negative is early, positive is overrun. */
+  endDeviationMinutes: number | null;
+  ordinaryRouteLostMinutes: number;
+  ordinaryStopShortenedMinutes: number;
+  endAssessment: "on_target" | "early" | "overrun" | "no_preference";
   preferenceMatch: PreferenceMatch;
   preferenceDetails: PartyPreferenceDetail[];
   maxPreferenceDeviationMinutes: number | null;
@@ -78,9 +85,12 @@ export type PlanningInput = {
   finaleOpensAt: string;
   finaleLastArrivalAt: string;
   finaleClosesAt: string;
+  /** Supplied by the server policy in the planning snapshot. */
+  maxGroupOverrunSeconds: number;
   finaleShowSeconds: number;
   finaleTurnoverSeconds: number;
   finalePlanningTransferSeconds: number;
+  finaleWindows?: Array<{ opensAt: string; closesAt: string; maxGroups: number; maxChildren: number; maxTotalChildren: number }>;
   finaleMaxGroups: number;
   finaleMaxChildren: number;
   earlyPreferenceLatestAt?: string | null;
@@ -179,7 +189,8 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     { value: finaleClose, label: "sluiting laatste poort" },
   ].filter(({ value }) => value === null).map(({ label }) => label);
   if (missingTimes.length) conflicts.push({ code: "ROUTE_CONFIGURATION_INCOMPLETE", message: `Vul bij Kaders de ontbrekende tijden in en sla ze op: ${missingTimes.join(", ")}.` });
-  if (input.finaleShowSeconds < 60 || input.finaleMaxGroups < 1 || input.finaleMaxChildren < 1) conflicts.push({ code: "INVALID_FINALE_CAPACITY", message: "De eindpoortcapaciteit is niet geldig." });
+  if (!Number.isSafeInteger(input.maxGroupOverrunSeconds) || input.maxGroupOverrunSeconds < 0) conflicts.push({ code: "PLANNING_POLICY_MISSING", message: "Vernieuw de planning om het serverbeleid voor maximale groepsuitloop op te halen." });
+  if (![input.finaleTurnoverSeconds,input.finalePlanningTransferSeconds,input.finaleShowSeconds,input.finaleMaxGroups,input.finaleMaxChildren].every(Number.isSafeInteger) || input.finaleTurnoverSeconds < 0 || input.finalePlanningTransferSeconds < 0 || input.finaleShowSeconds < 60 || input.finaleMaxGroups < 1 || input.finaleMaxChildren < 1) conflicts.push({ code: "INVALID_FINALE_CAPACITY", message: "De eindpoortcapaciteit is niet geldig." });
   const serviceMs = (input.finaleShowSeconds + input.finaleTurnoverSeconds) * 1_000;
   const existingSchedules = new Map<string, ExistingPlanningSchedule>();
   const physicalStart = (pointId: string, startsAt: number) => `${pointId}:${startsAt}`;
@@ -289,136 +300,174 @@ export function proposePlan(input: PlanningInput): { groups: PlannedGroup[]; con
     load.children += reservation.children;
     startLoads.set(reservation.physicalKey, load);
   }
-  const orderedGroups = draftGroups.map(group => ({
-    ...group,
-    dominantStartAt: dominantStartPreference(group.parties),
-    dominantEndAt: dominantEndPreference(group.parties),
-  })).sort((a, b) => {
-    const preferenceAt = (group: typeof a) => millis(group.dominantStartAt)
-      ?? (group.preference === "early" ? millis(input.earlyPreferenceLatestAt) ?? Number.NEGATIVE_INFINITY
-        : group.preference === "later" ? millis(input.laterPreferenceEarliestAt) ?? Number.POSITIVE_INFINITY : Number.POSITIVE_INFINITY);
-    return preferenceAt(a) - preferenceAt(b)
-      || (millis(a.dominantEndAt) ?? Number.POSITIVE_INFINITY) - (millis(b.dominantEndAt) ?? Number.POSITIVE_INFINITY)
-      || a.key.localeCompare(b.key);
-  });
-  const groups: PlannedGroup[] = [];
-  for (const group of orderedGroups) {
-    const preferredStartAt = millis(group.dominantStartAt);
-    const desiredEndAt = millis(group.dominantEndAt);
-    const requestedStops = group.parties.map(party => millis(explicitOrdinaryStopPreference(party))).filter((value): value is number => value !== null);
-    // Desired completion, ordinary-portal stopping and finale occupancy are distinct limits.
-    const effectiveStop = Math.min(globalStop!, ...requestedStops,
-      desiredEndAt === null ? Number.POSITIVE_INFINITY : desiredEndAt - (input.finaleShowSeconds + input.finalePlanningTransferSeconds) * 1_000);
-    const availableStarts = candidateStarts.filter(start => {
-      const load = startLoads.get(physicalStart(start.startPointId, Date.parse(start.startsAt))) ?? { groups: 0, children: 0 };
-      return load.groups === 0 && group.childCount <= start.maxChildren;
-    }).sort((a, b) => {
-      const aTime = Date.parse(a.startsAt);
-      const bTime = Date.parse(b.startsAt);
-      return preferenceScore(group.preference, aTime, input, preferredStartAt) - preferenceScore(group.preference, bTime, input, preferredStartAt)
-        // Equidistant departures prefer the next later slot over a previous one.
-        || (preferredStartAt === null ? 0 : Number(aTime < preferredStartAt) - Number(bTime < preferredStartAt))
-        || aTime - bTime || a.startPointId.localeCompare(b.startPointId) || a.id.localeCompare(b.id);
-    });
-    if (!availableStarts.length) {
-      conflicts.push({ code: "START_CAPACITY_EXCEEDED", subjectId: group.key, message: `Geen vrij tienminutenvertrek met voldoende capaciteit voor ${group.key}.` });
-      continue;
-    }
-    let selected: PlanningStart | null = null;
-    let finaleArrival: number | null = null;
-    let selectedEffectiveStop = effectiveStop;
-    let timeFeasible = false;
-    const finaleFits = new Map<number, boolean>();
-    const fitsFinale = (arrival: number) => {
-      const cached = finaleFits.get(arrival);
-      if (cached !== undefined) return cached;
-      const overlapping = finaleReservations.filter(reservation => arrival < reservation.endsAt && arrival + serviceMs > reservation.startsAt);
-      // Check actual concurrency at each increasing occupancy boundary, not the
-      // union of groups that pass through at different moments during our show.
-      const ticks = new Set([arrival, ...overlapping.filter(reservation => reservation.startsAt > arrival).map(reservation => reservation.startsAt)]);
-      const fits = [...ticks].every(tick => {
-        // Draft and published revisions remain alternatives for one physical group.
-        const occupiedGroups = new Map<string, number>();
-        for (const reservation of overlapping) {
-          if (reservation.startsAt <= tick && reservation.endsAt > tick) {
-            occupiedGroups.set(reservation.groupKey, Math.max(occupiedGroups.get(reservation.groupKey) ?? 0, reservation.children));
-          }
-        }
-        return occupiedGroups.size < input.finaleMaxGroups
-          && [...occupiedGroups.values()].reduce((sum, children) => sum + children, 0) + group.childCount <= input.finaleMaxChildren;
-      });
-      finaleFits.set(arrival, fits);
-      return fits;
-    };
-    const normalArrival = Math.max(finaleOpen!, effectiveStop + input.finalePlanningTransferSeconds * 1_000);
+  const showMs = input.finaleShowSeconds * 1_000;
+  const transferMs = input.finalePlanningTransferSeconds * 1_000;
+  type Reservation = typeof finaleReservations[number];
+  const earliestStart = Math.min(...candidateStarts.map(s => Date.parse(s.startsAt)));
+  const lastStart = Math.max(...candidateStarts.map(s => Date.parse(s.startsAt)));
+  const prepared = draftGroups.map(group => {
+    const dominantStartAt = dominantStartPreference(group.parties);
+    const dominantEndAt = dominantEndPreference(group.parties);
+    const preferredStart = millis(dominantStartAt);
+    const desiredEnd = millis(dominantEndAt);
+    const hardStop = Math.min(globalStop!, ...group.parties.flatMap(party => {
+      const stop = millis(explicitOrdinaryStopPreference(party));
+      return stop === null ? [] : [stop];
+    }));
+    const idealStop = Math.min(hardStop, desiredEnd === null ? hardStop : desiredEnd - showMs - transferMs);
     const latestArrival = Math.min(finaleLast!, finaleClose! - serviceMs,
-      desiredEndAt === null ? Number.POSITIVE_INFINITY : desiredEndAt - input.finaleShowSeconds * 1_000);
-    // These boundaries and their occupancy are shared by every candidate departure.
-    const forwardArrivals = [...new Set([normalArrival, ...finaleReservations.map(reservation => reservation.endsAt)])]
-      .filter(arrival => arrival >= normalArrival && arrival <= latestArrival).sort((a, b) => a - b);
-    const earlierArrivals = [...new Set([Math.min(normalArrival, latestArrival), ...finaleReservations.map(reservation => reservation.startsAt - serviceMs)])]
-      .filter(arrival => arrival <= latestArrival && arrival <= normalArrival).sort((a, b) => b - a);
-    for (const candidate of availableStarts) {
-      const candidateStart = Date.parse(candidate.startsAt);
-      if (candidateStart > effectiveStop) continue;
-      const earliestArrival = Math.max(finaleOpen!, candidateStart + input.finalePlanningTransferSeconds * 1_000);
-      if (earliestArrival > latestArrival) continue;
-      timeFeasible = true;
-      // Occupancy can improve forwards exactly when an existing reservation ends.
-      // Boundary candidates avoid missing a gap when show durations include seconds.
-      let arrival = forwardArrivals.find(fitsFinale);
-      if (arrival === undefined) {
-        // Only shorten the ordinary route if the usual/later finale windows do not fit.
-        // Backwards, capacity improves when our complete show+turnover ends at a reservation.
-        arrival = earlierArrivals.find(value => value >= earliestArrival && fitsFinale(value));
-      }
-      if (arrival !== undefined) {
-        selected = candidate;
-        finaleArrival = arrival;
-        selectedEffectiveStop = Math.min(effectiveStop, arrival - input.finalePlanningTransferSeconds * 1_000);
-        break;
+      desiredEnd === null ? Infinity : desiredEnd + input.maxGroupOverrunSeconds * 1_000 - showMs);
+    const possibleStarts = candidateStarts.filter(start => !startLoads.has(physicalStart(start.startPointId, Date.parse(start.startsAt)))
+      && group.childCount <= start.maxChildren);
+    const preferenceCost = (start: PlanningStart) => {
+      const time = Date.parse(start.startsAt);
+      // Normalize the legacy early/later ordering into minutes relative to this evening.
+      const raw = preferenceScore(group.preference, time, input, preferredStart);
+      const anchor = earliestStart;
+      return preferredStart !== null || group.preference === "indifferent" ? raw / 60_000
+        : group.preference === "early" && !input.earlyPreferenceLatestAt ? (raw - anchor) / 60_000
+        : group.preference === "later" && !input.laterPreferenceEarliestAt ? (lastStart - time) / 60_000
+        : raw / 60_000;
+    };
+    possibleStarts.sort((a, b) => preferenceCost(a) - preferenceCost(b)
+      || (preferredStart === null ? 0 : Number(Date.parse(a.startsAt) < preferredStart) - Number(Date.parse(b.startsAt) < preferredStart))
+      || Date.parse(a.startsAt) - Date.parse(b.startsAt) || a.startPointId.localeCompare(b.startPointId) || a.id.localeCompare(b.id));
+    const idealStart = possibleStarts[0] ? Date.parse(possibleStarts[0].startsAt) : preferredStart ?? idealStop;
+    return { ...group, dominantStartAt, dominantEndAt, preferredStart, desiredEnd, hardStop, idealStop, latestArrival, possibleStarts, preferenceCost,
+      idealRouteMinutes: Math.max(0, (idealStop - idealStart) / 60_000) };
+  });
+  type Prepared = typeof prepared[number];
+  type Choice = { group: Prepared; start: PlanningStart; arrival: number; stop: number; cost: number; routeLoss: number; waiting: number };
+  const fitsFinale = (arrival: number, children: number, reservations: Reservation[]) => {
+    const windows = input.finaleWindows?.filter(w => arrival >= Date.parse(w.opensAt) && arrival + serviceMs <= Date.parse(w.closesAt) && children <= w.maxChildren);
+    if (windows && !windows.length) return false;
+    const overlaps = reservations.filter(r => arrival < r.endsAt && arrival + serviceMs > r.startsAt);
+    const ticks = new Set([arrival, ...overlaps.filter(r => r.startsAt > arrival).map(r => r.startsAt)]);
+    return [...ticks].every(tick => {
+      const occupied = new Map<string, number>();
+      for (const r of overlaps) if (r.startsAt <= tick && r.endsAt > tick) occupied.set(r.groupKey, Math.max(occupied.get(r.groupKey) ?? 0, r.children));
+      const totalChildren = [...occupied.values()].reduce((sum, n) => sum + n, 0) + children;
+      return occupied.size < input.finaleMaxGroups && totalChildren <= input.finaleMaxChildren
+        && (!windows || windows.some(w => occupied.size < w.maxGroups && totalChildren <= w.maxTotalChildren));
+    });
+  };
+  const reservationFor = (c: Choice): Reservation => ({ groupKey: `proposal:${c.group.key}`, startsAt: c.arrival, endsAt: c.arrival + serviceMs, children: c.group.childCount });
+  const choose = (group: Prepared, choices: Choice[]): Choice | null => {
+    const reservations = [...finaleReservations, ...choices.map(reservationFor)];
+    const occupiedStarts = new Set(choices.map(c => physicalStart(c.start.startPointId, Date.parse(c.start.startsAt))));
+    // Costs are piecewise linear except for a convex route-loss penalty. Minima
+    // occur at target, availability and reservation boundaries, including seconds.
+    const arrivals = [...new Set([finaleOpen!, group.latestArrival, group.idealStop + transferMs, group.hardStop + transferMs,
+      ...(group.desiredEnd === null ? [] : [group.desiredEnd - showMs]),
+      ...reservations.flatMap(r => [r.endsAt, r.startsAt - serviceMs]),
+      ...(input.finaleWindows ?? []).flatMap(w => [Date.parse(w.opensAt), Date.parse(w.closesAt) - serviceMs])])]
+      .filter(a => a >= finaleOpen! && a <= group.latestArrival).sort((a, b) => a - b);
+    const fits = new Map<number, boolean>();
+    let best: Choice | null = null;
+    for (const start of group.possibleStarts) {
+      const startAt = Date.parse(start.startsAt);
+      if (occupiedStarts.has(physicalStart(start.startPointId, startAt)) || startAt > group.hardStop) continue;
+      const earliest = Math.max(finaleOpen!, startAt + transferMs);
+      for (const arrival of new Set([...arrivals, earliest])) {
+        if (arrival < earliest || arrival > group.latestArrival) continue;
+        const stop = Math.min(group.hardStop, arrival - transferMs);
+        const routeLoss = Math.max(0, group.idealRouteMinutes - (stop - startAt) / 60_000);
+        const waiting = Math.max(0, (arrival - transferMs - group.hardStop) / 60_000);
+        const rawDeviation = (arrival + showMs - (group.desiredEnd ?? group.idealStop + transferMs + showMs)) / 60_000;
+        const deviation = group.desiredEnd === null ? Math.min(0, rawDeviation) : rawDeviation;
+        const cost = eveningCandidateCost({ startDeviationMinutes: group.preferenceCost(start), routeLostMinutes: routeLoss, endDeviationMinutes: deviation, waitingMinutes: waiting });
+        if (best && cost >= best.cost - 1e-7) continue;
+        let available = fits.get(arrival);
+        if (available === undefined) { available = fitsFinale(arrival, group.childCount, reservations); fits.set(arrival, available); }
+        if (available) best = { group, start, arrival, stop, cost, routeLoss, waiting };
       }
     }
-    if (!selected || finaleArrival === null) {
-      conflicts.push({
-        code: !timeFeasible && desiredEndAt !== null ? "DESIRED_END_UNREACHABLE" : !timeFeasible ? "ROUTE_TIME_CONFLICT" : "FINALE_CAPACITY_EXCEEDED",
-        subjectId: group.key,
-        message: !timeFeasible && desiredEndAt !== null ? `De dominante gewenste eindtijd van ${group.key} is niet haalbaar met een vrij vertrek, de overdracht en de finale.`
-          : !timeFeasible ? `Geen vrij vertrek voor ${group.key} past vóór het stoppen bij gewone poorten.`
-            : `De eindpoort kan ${group.key} niet binnen het ingestelde venster en de gewenste eindtijd ontvangen.`,
-      });
-      continue;
+    return best;
+  };
+  const byStart = (a: Prepared, b: Prepared) => (a.preferredStart ?? Infinity) - (b.preferredStart ?? Infinity)
+    || (a.desiredEnd ?? Infinity) - (b.desiredEnd ?? Infinity) || a.key.localeCompare(b.key);
+  const byConstraint = (a: Prepared, b: Prepared) => a.latestArrival - b.latestArrival
+    || a.possibleStarts.length - b.possibleStarts.length || byStart(a, b);
+  const allocate = (order: Prepared[]) => {
+    const choices: Choice[] = [];
+    for (const group of order) { const choice = choose(group, choices); if (choice) choices.push(choice); }
+    return choices;
+  };
+  const totalCost = (choices: Choice[]) => choices.reduce((sum, c) => sum + c.cost, 0);
+  const better = (a: Choice[], b: Choice[]) => a.length > b.length || a.length === b.length && totalCost(a) < totalCost(b) - 1e-7;
+  // Bounded multi-start allocation: deadline-constrained, start-constrained and
+  // reversed distributions. No input-order dependence or random/time-based cutoff.
+  const constrained = [...prepared].sort(byConstraint);
+  let best = allocate(constrained);
+  for (const order of [[...prepared].sort(byStart), [...constrained].reverse()]) {
+    const attempt = allocate(order); if (better(attempt, best)) best = attempt;
+  }
+  // Reinsert the worst affected group with each nearby competitor. This can free
+  // a valuable late finale slot without moving a protected/existing reservation.
+  const affected = [...prepared].sort((a, b) => (best.find(c => c.group === b)?.cost ?? Infinity) - (best.find(c => c.group === a)?.cost ?? Infinity) || byConstraint(a, b)).slice(0, 8);
+  for (const group of affected) {
+    const neighbours = [...prepared].filter(g => g !== group).sort((a, b) => Math.abs(a.latestArrival - group.latestArrival) - Math.abs(b.latestArrival - group.latestArrival) || byConstraint(a, b)).slice(0, 4);
+    for (const other of neighbours) for (const order of [[group, other], [other, group]]) {
+      const attempt = best.filter(c => c.group !== group && c.group !== other);
+      for (const g of order) { const c = choose(g, attempt); if (c) attempt.push(c); }
+      if (better(attempt, best)) best = attempt;
     }
-    finaleReservations.push({ groupKey: `proposal:${group.key}`, startsAt: finaleArrival, endsAt: finaleArrival + serviceMs, children: group.childCount });
-    startLoads.set(physicalStart(selected.startPointId, Date.parse(selected.startsAt)), { groups: 1, children: group.childCount });
+  }
+  const groups: PlannedGroup[] = [];
+  for (const group of prepared.filter(g => !best.some(c => c.group === g))) {
+    const remainingStarts = group.possibleStarts.filter(s => !best.some(c => physicalStart(c.start.startPointId, Date.parse(c.start.startsAt)) === physicalStart(s.startPointId, Date.parse(s.startsAt))));
+    const hasTime = remainingStarts.some(s => Date.parse(s.startsAt) <= group.hardStop && Math.max(finaleOpen!, Date.parse(s.startsAt) + transferMs) <= group.latestArrival);
+    const code = !remainingStarts.length ? "START_CAPACITY_EXCEEDED" : !hasTime ? "DESIRED_END_UNREACHABLE" : "FINALE_CAPACITY_EXCEEDED";
+    conflicts.push({ code, subjectId: group.key, message: code === "START_CAPACITY_EXCEEDED"
+      ? `Geen vrij tienminutenvertrek met voldoende capaciteit voor ${group.key}.`
+      : `Geen haalbare verdeling voor ${group.key}: controleer finaleopening, laatste aankomst ${new Date(finaleLast!).toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" })}, definitieve sluiting en capaciteit. De show moet ook binnen de maximale groepsuitloop klaar zijn; gewone poorten blijven aan hun eigen stopgrens gebonden.` });
+  }
+  for (const choice of best.sort((a, b) => Date.parse(a.start.startsAt) - Date.parse(b.start.startsAt) || byConstraint(a.group, b.group))) {
+    const { group, start, stop, arrival, routeLoss, waiting } = choice;
     const warnings: string[] = [];
-    if (group.parties.some(party => party.paymentEligible === false)) warnings.push("PAYMENT_NOT_CONFIRMED");
-    const shortenedMinutes = (effectiveStop - selectedEffectiveStop) / 60_000;
-    if (shortenedMinutes > 0) warnings.push("ORDINARY_ROUTE_SHORTENED_FOR_FINALE");
-    const selectedStart = Date.parse(selected.startsAt);
-    const preferenceResult = evaluatePartyPreferences(group.parties, selectedStart, input);
-    const deviationMinutes = preferenceResult.maxPreferenceDeviationMinutes;
+    if (group.parties.some(p => p.paymentEligible === false)) warnings.push("PAYMENT_NOT_CONFIRMED");
+    const shortened = Math.max(0, (group.idealStop - stop) / 60_000);
+    if (shortened > 0) warnings.push("ORDINARY_ROUTE_SHORTENED_FOR_FINALE");
+    if (routeLoss > shortened) warnings.push("ORDINARY_ROUTE_LOST_START");
+    const completion = arrival + showMs;
+    const endDeviationMinutes = group.desiredEnd === null ? null : (completion - group.desiredEnd) / 60_000;
+    if (endDeviationMinutes !== null && endDeviationMinutes > 0) warnings.push("GROUP_END_OVERRUN");
+    if (endDeviationMinutes !== null && endDeviationMinutes < -30) warnings.push("GROUP_END_SIGNIFICANTLY_EARLY");
+    if (waiting > 0) warnings.push("FINALE_CAPACITY_WAIT");
+    const preferenceResult = evaluatePartyPreferences(group.parties, start.startsAt, input);
     if (preferenceResult.preferenceMatch === "large_deviation") warnings.push("HOUSEHOLD_START_PREFERENCE_DEVIATION");
     else if (preferenceResult.preferenceMatch === "small_deviation") warnings.push("HOUSEHOLD_START_PREFERENCE_CHECK");
-    const dominantDeviation = preferredStartAt === null ? null : Math.abs(selectedStart - preferredStartAt) / 60_000;
-    const preferenceReason = dominantDeviation === null
-      ? group.preference === "indifferent" ? "Er is geen vaste startvoorkeur" : "Er is geen exacte starttijd opgegeven; controleer de tijdsvoorkeur"
-      : dominantDeviation === 0 ? "Dit moment ligt exact op de dominante startvoorkeur"
-        : `Het dichtstbijzijnde haalbare vrije vertrek wijkt ${dominantDeviation} minuten af van de dominante startvoorkeur`;
-    const householdReason = deviationMinutes === null ? "" : `; de grootste afwijking voor een gezin is ${deviationMinutes} minuten`;
-    groups.push({
-      key: group.key,
-      partyIds: group.parties.map(party => party.id).sort(),
-      childCount: group.childCount,
-      startId: selected.id,
-      dominantStartAt: group.dominantStartAt,
-      dominantEndAt: group.dominantEndAt,
-      effectiveStopAt: new Date(selectedEffectiveStop).toISOString(),
-      expectedFinaleArrivalAt: new Date(finaleArrival).toISOString(),
-      ...preferenceResult,
-      warnings,
-      explanation: `${preferenceReason}${householdReason}; één vertrek bij ${selected.pointName ?? "het startpunt"} is gereserveerd.${shortenedMinutes > 0 ? ` Stop ${shortenedMinutes} minuten eerder bij gewone poorten om binnen een vrije finaleplek en de eindtijd te blijven.` : ""}`,
-    });
+    const startDeviation = group.preferredStart === null ? null : Math.abs(Date.parse(start.startsAt) - group.preferredStart) / 60_000;
+    const startReason = startDeviation === null ? "Er is geen exacte starttijd opgegeven"
+      : startDeviation === 0 ? "Dit moment ligt exact op de dominante startvoorkeur"
+      : `Dit vertrek wijkt ${startDeviation} minuten af van de dominante startvoorkeur voor een betere totale avond`;
+    const firstFinaleOpening = Math.max(finaleOpen!, Math.min(...(input.finaleWindows ?? [{ opensAt: input.finaleOpensAt }]).map(w => Date.parse(w.opensAt))));
+    const overrunReason = group.desiredEnd !== null && firstFinaleOpening + showMs > group.desiredEnd
+      ? "De finaleopening is te laat om de show op de streeftijd af te ronden. Controleer dit afzonderlijke venster."
+      : group.desiredEnd !== null && Date.parse(start.startsAt) + transferMs + showMs > group.desiredEnd
+        ? "Het beschikbare vertrek, de overdracht en de show passen samen pas na de streeftijd."
+        : "Zo blijft meer tijd over voor gewone poorten; eerdere vrije finaleplekken geven in de onderzochte verdelingen meer routeverlies of startafwijking.";
+    const endReason = endDeviationMinutes === null ? "" : endDeviationMinutes > 0
+      ? ` ${Math.ceil(endDeviationMinutes)} minuten uitloop. ${overrunReason}`
+      : endDeviationMinutes === 0 ? " De finale is op de gewenste eindtijd afgerond." : ` De finale is ${Math.ceil(-endDeviationMinutes)} minuten vóór de gewenste eindtijd afgerond.`;
+    groups.push({ key: group.key, partyIds: group.parties.map(p => p.id).sort(), childCount: group.childCount, startId: start.id,
+      dominantStartAt: group.dominantStartAt, dominantEndAt: group.dominantEndAt, effectiveStopAt: new Date(stop).toISOString(),
+      expectedFinaleArrivalAt: new Date(arrival).toISOString(), expectedCompletionAt: new Date(completion).toISOString(), physicalFinaleEndsAt: new Date(arrival + serviceMs).toISOString(),
+      endDeviationMinutes, ordinaryRouteLostMinutes: routeLoss, ordinaryStopShortenedMinutes: shortened,
+      endAssessment: endDeviationMinutes === null ? "no_preference" : endDeviationMinutes > 0 ? "overrun" : endDeviationMinutes < 0 ? "early" : "on_target",
+      ...preferenceResult, warnings,
+      explanation: `${startReason}; één vertrek bij ${start.pointName ?? "het startpunt"} is gereserveerd.${endReason}${shortened > 0 ? ` Stop ${Math.ceil(shortened)} minuten eerder bij gewone poorten.` : ""}${routeLoss > 0 ? ` Er gaat ${Math.ceil(routeLoss)} minuten bruikbare routetijd verloren door de beschikbare vertrekken, finaleplekken en harde tijdgrenzen. Een betere verdeling is binnen de begrensde zoekstappen niet gevonden.` : ""}${waiting > 0 ? ` Na de gewone sluiting is ${Math.ceil(waiting)} minuten wachttijd nodig voor een vrije finaleplek; dit is geen bezoektijd.` : ""}` });
   }
   return { groups, conflicts };
+}
+
+/** Lower is better. Penalize early completion, overrun and lost useful route time
+ * separately; waiting never improves a score merely by displaying a later end.
+ * The convex loss term discourages sacrificing one group's entire evening.
+ */
+export function eveningCandidateCost(candidate: { startDeviationMinutes: number; routeLostMinutes: number; endDeviationMinutes: number; waitingMinutes?: number }): number {
+  const early = Math.max(0, -candidate.endDeviationMinutes);
+  const late = Math.max(0, candidate.endDeviationMinutes);
+  return candidate.startDeviationMinutes * 0.5 + early + late * 2 + (late > 0 ? 5 : 0)
+    + candidate.routeLostMinutes * 2 + candidate.routeLostMinutes ** 2 / 30 + (candidate.waitingMinutes ?? 0) * 1.5;
 }

@@ -7,7 +7,7 @@ const family = (id: string, end = "21:00", start = "17:00", size = 2): PlanningP
 const base: PlanningInput = {
   parties: [], starts: [slot("17:00"), slot("17:10"), slot("17:20")], targetGroupSize: 50, maxGroupSize: 50,
   globalOrdinaryStopAt: at("20:30"), finaleOpensAt: at("19:00"), finaleLastArrivalAt: at("21:30"), finaleClosesAt: at("22:00"),
-  finaleShowSeconds: 360, finaleTurnoverSeconds: 120, finalePlanningTransferSeconds: 600, finaleMaxGroups: 20, finaleMaxChildren: 200,
+  maxGroupOverrunSeconds: 1800, finaleShowSeconds: 360, finaleTurnoverSeconds: 120, finalePlanningTransferSeconds: 600, finaleMaxGroups: 20, finaleMaxChildren: 200,
 };
 function departures(input: PlanningInput) {
   const result = proposePlan(input);
@@ -115,12 +115,12 @@ describe("dominant start and completion preferences remain separate from ordinar
     expect(result.groups[0]).toMatchObject({ dominantEndAt: iso("21:00"), effectiveStopAt: iso("18:00"), expectedFinaleArrivalAt: iso("19:00") });
   });
   it("reports an impossible desired completion instead of overruling opening or finale duration", () => {
-    const result = proposePlan({ ...base, parties: [family("too-early", "18:50")] });
+    const result = proposePlan({ ...base, parties: [family("too-early", "18:30")] });
     expect(result.groups).toEqual([]);
     expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "DESIRED_END_UNREACHABLE" }));
   });
   it("shortens ordinary walking only when no usual or later finale gap fits the shared end deadline", () => {
-    const input = { ...base, parties: [family("a", "20:00"), family("b", "20:00")], finaleMaxGroups: 1 };
+    const input = { ...base, maxGroupOverrunSeconds: 0, parties: [family("a", "20:00"), family("b", "20:00")], finaleMaxGroups: 1 };
     const result = proposePlan(input);
     expect(result.conflicts).toEqual([]);
     expect(result.groups[0]).toMatchObject({ expectedFinaleArrivalAt: iso("19:54"), effectiveStopAt: iso("19:44") });
@@ -136,12 +136,12 @@ describe("dominant start and completion preferences remain separate from ordinar
     expect(result.groups[1].warnings).not.toContain("ORDINARY_ROUTE_SHORTENED_FOR_FINALE");
   });
   it("respects finale capacity and desired completion even when start capacity remains", () => {
-    const result = proposePlan({ ...base, parties: [family("a", "20:00")], finaleMaxGroups: 1, existingSchedules: [{ id: "other-published", startId: "other-slot", startPointId: "poort-2", startsAt: at("17:00"), childCount: 2, expectedFinaleArrivalAt: at("19:00"), finaleEndsAt: at("20:10") }] });
+    const result = proposePlan({ ...base, maxGroupOverrunSeconds: 0, parties: [family("a", "20:00")], finaleMaxGroups: 1, existingSchedules: [{ id: "other-published", startId: "other-slot", startPointId: "poort-2", startsAt: at("17:00"), childCount: 2, expectedFinaleArrivalAt: at("19:00"), finaleEndsAt: at("20:10") }] });
     expect(result.groups).toEqual([]);
     expect(result.conflicts).toContainEqual(expect.objectContaining({ code: "FINALE_CAPACITY_EXCEEDED" }));
   });
   it("uses actual concurrent capacity when two existing groups succeed each other during a show", () => {
-    const result = proposePlan({ ...base, parties: [family("new", "19:09")], finaleMaxGroups: 2, finaleTurnoverSeconds: 0,
+    const result = proposePlan({ ...base, maxGroupOverrunSeconds: 0, parties: [family("new", "19:09")], finaleMaxGroups: 2, finaleTurnoverSeconds: 0,
       existingSchedules: [
         { id: "existing-a", groupId: "a", startId: "other-a", startPointId: "poort-2", startsAt: at("17:00"), childCount: 2, expectedFinaleArrivalAt: at("19:00") },
         { id: "existing-b", groupId: "b", startId: "other-b", startPointId: "poort-2", startsAt: at("17:10"), childCount: 2, expectedFinaleArrivalAt: at("19:06") },
@@ -151,7 +151,7 @@ describe("dominant start and completion preferences remain separate from ordinar
     expect(result.groups[0].warnings).not.toContain("ORDINARY_ROUTE_SHORTENED_FOR_FINALE");
   });
   it("rejects three genuinely concurrent finale groups when no earlier or later gap fits", () => {
-    const result = proposePlan({ ...base, parties: [family("new", "19:09")], finaleMaxGroups: 2, finaleTurnoverSeconds: 0,
+    const result = proposePlan({ ...base, maxGroupOverrunSeconds: 0, parties: [family("new", "19:09")], finaleMaxGroups: 2, finaleTurnoverSeconds: 0,
       existingSchedules: [
         { id: "existing-a", groupId: "a", startId: "other-a", startPointId: "poort-2", startsAt: at("17:00"), childCount: 2, expectedFinaleArrivalAt: at("19:00") },
         { id: "existing-b", groupId: "b", startId: "other-b", startPointId: "poort-2", startsAt: at("17:10"), childCount: 2, expectedFinaleArrivalAt: at("19:03") },
