@@ -19,7 +19,9 @@ import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
 import { useDialogFocus } from "@/lib/ui/use-dialog-focus";
 import { createClient } from "@/lib/supabase/client";
 import { amsterdamDateTimeInput, amsterdamInputToIso } from "@/lib/time/amsterdam";
-import { StartOpsWorkspace, type StartOpsSnapshot } from "@/components/admin/start-ops-workspace";
+import { StartOpsWorkspace, type PublicationReviewControl, type RoutePreview, type StartOpsSnapshot } from "@/components/admin/start-ops-workspace";
+import { canonicalTimestamp, checkedRouteVisitLabel, sameTimestamp, timestampChoices } from "@/lib/domain/start-assignment";
+import { readinessFromError, type PublicationReadiness, type PublicationReason } from "@/lib/domain/start-publication-readiness";
 import "../../modern/start-ops.css";
 
 type RouteSettings = {
@@ -109,6 +111,7 @@ type Stats = {
   capacityConflicts: number; missingMarkers: number; unavailableLinkedPortals: number; publicationStatus: string;
 };
 type Snapshot = {
+  publicationReadiness?: PublicationReadiness;
   eventId: string; realtimeTopic: string | null; settings: RouteSettings; startPoints: StartPoint[]; portals: Portal[];
   groups: Group[]; unassigned: Unassigned[]; ops?: StartOpsSnapshot; finaleFlow: Array<{ window: string; groups: number; children: number }>;
   warnings: Warning[]; stats: Stats; planningVersions: Array<{ id: string; version: number; state: string; publishedAt: string; reason: string }>;
@@ -189,7 +192,8 @@ function pointDraft(point: StartPoint): PointDraft {
   };
 }
 
-function readableError(message: string) {
+function readableError(message: string, details?: string | null) {
+  const readiness = readinessFromError(details); if (readiness) return readiness.reasons.map(reason => reason.message).join(" ");
   const location = locationError(message); if (location) return location;
   const mappings: Array<[string, string]> = [
     ["START_DEPARTURE_OCCUPIED", "Bij deze startpoort vertrekt op dit tijdstip al een groep. Kies het volgende passende tienminutenslot."],
@@ -211,19 +215,17 @@ function readableError(message: string) {
   return mappings.find(([code]) => message.includes(code))?.[1] ?? message;
 }
 
-function GroupCard({ group, points, times, visitCycleSeconds, compact = false, onMove, greenMinutes = 15, amberMinutes = 30 }: {
-  group: Group; points: StartPoint[]; times: string[]; visitCycleSeconds: number; compact?: boolean; greenMinutes?: number; amberMinutes?: number; onMove: (group: Group, target: MoveTarget) => void;
+function GroupCard({ group, points, times, route, routeRevision, compact = false, onMove, greenMinutes = 15, amberMinutes = 30 }: {
+  group: Group; points: StartPoint[]; times: string[]; route?: RoutePreview; routeRevision?: number; compact?: boolean; greenMinutes?: number; amberMinutes?: number; onMove: (group: Group, target: MoveTarget) => void;
 }) {
   const location = groupLocation(group, points);
-  const [target, setTarget] = useState(location ? `${location.point.id}|${location.slot.startsAt}` : "");
+  const target = location ? `${location.point.id}|${canonicalTimestamp(location.slot.startsAt)}` : "";
   const deviation = location ? groupDeviation(group, location.slot.startsAt) : null;
   const match: PreferenceMatch = deviation === null ? "neutral" : deviation <= greenMinutes ? "good" : deviation <= amberMinutes ? "small_deviation" : "large_deviation";
   const Icon = matchIcons[match];
   const preferred = dominantStartPreference(group.registrations);
   const desiredEnd = dominantEndPreference(group.registrations);
-  const estimatedStops = group.schedule && location
-    ? Math.max(0, Math.floor((Date.parse(group.schedule.effectiveStopAt) - Date.parse(location.slot.startsAt)) / (Math.max(60, visitCycleSeconds) * 1_000)))
-    : null;
+  const visits = checkedRouteVisitLabel(route, routeRevision, location ? { groupId: group.id, pointId: location.point.id, startsAt: location.slot.startsAt } : null);
   const warnings = [...new Set(group.schedule?.warnings ?? [])];
   return <article
     className={`start-group-card match-${match}${compact ? " compact" : ""}`}
@@ -236,7 +238,8 @@ function GroupCard({ group, points, times, visitCycleSeconds, compact = false, o
       <span><UsersRound />{group.registrations.length} inschrijving(en) · {group.childCount} kinderen</span>
       <span><UsersRound />{group.registrations.length > 1 ? `Samenloop/routegroep met ${group.registrations.length} inschrijvingen` : "Zelfstandige inschrijving"}</span>
       <span><Clock3 />Dominante startvoorkeur {timeLabel(preferred)}{location ? ` · gepland ${timeLabel(location.slot.startsAt)}` : " · nog niet gepland"}</span>
-      <span><CalendarClock />{deviation === null ? "Geen vaste startvoorkeur" : deviation === 0 ? "Exact op voorkeur" : `${deviation} minuten verschil`} · einde gewenst {timeLabel(desiredEnd)}{estimatedStops === null ? "" : ` · circa ${estimatedStops} stops`}</span>
+      <span><CalendarClock />{deviation === null ? "Geen vaste startvoorkeur" : deviation === 0 ? "Exact op voorkeur" : `${deviation} minuten verschil`} · einde gewenst {timeLabel(desiredEnd)}</span>
+      <span><Eye />{visits}</span>
       {group.schedule?.expectedCompletionAt && <span><Clock3 />Verwacht klaar {timeLabel(group.schedule.expectedCompletionAt)} · {group.schedule.endDeviationMinutes == null ? "geen eindvoorkeur" : group.schedule.endDeviationMinutes > 0 ? `${Math.ceil(group.schedule.endDeviationMinutes)} minuten uitloop` : `${Math.ceil(-group.schedule.endDeviationMinutes)} minuten eerder`}</span>}
       {group.schedule && <span><Clock3 />Gewone poorten tot {timeLabel(group.schedule.effectiveStopAt)} · finale circa {timeLabel(group.schedule.expectedFinaleArrivalAt)}</span>}
       <span><MapPin />{location?.point.publicLabel ?? "Nog geen startpunt"}</span>
@@ -244,10 +247,9 @@ function GroupCard({ group, points, times, visitCycleSeconds, compact = false, o
     {group.registrations.some((registration) => !registration.paymentEligible) && <p className="group-inline-warning"><ShieldAlert />Betaling nog niet bevestigd; deelname en planning blijven mogelijk.</p>}
     {warnings.map((warning) => <p className="group-inline-warning" key={warning}><AlertTriangle />{warning.replaceAll("_", " ").toLowerCase()}</p>)}
     <label className="start-move-control"><span>Verplaats naar…</span><select value={target} onChange={(event) => {
-      setTarget(event.target.value);
       const [pointId, startsAt] = event.target.value.split("|");
       if (pointId && startsAt) onMove(group, { pointId, startsAt });
-    }}><option value="">Kies startpunt en tijd</option>{points.filter((point) => point.active).flatMap((point) => times.map((startsAt) => <option key={`${point.id}-${startsAt}`} value={`${point.id}|${startsAt}`}>{point.publicLabel} · {timeLabel(startsAt)}</option>))}</select></label>
+    }}><option value="">Kies startpunt en tijd</option>{points.filter((point) => point.active || point.id === location?.point.id).flatMap((point) => timestampChoices([...times, ...(point.id === location?.point.id ? [location.slot.startsAt] : [])]).map((startsAt) => <option key={`${point.id}-${startsAt}`} value={`${point.id}|${startsAt}`}>{point.publicLabel} · {timeLabel(startsAt)}</option>))}</select></label>
   </article>;
 }
 
@@ -284,6 +286,8 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
 
   const refreshSerial = useRef(0);
   const lastServerTime = useRef(0);
+  const lastSettings = useRef<RouteSettings | null>(null);
+  const publicationReviewRef = useRef<PublicationReviewControl | null>(null);
   const load = useCallback(async () => {
     const serial = ++refreshSerial.current;
     try {
@@ -295,10 +299,12 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     const serverTime = Date.parse(next.ops?.now ?? "");
     if (Number.isFinite(serverTime) && serverTime < lastServerTime.current) return;
     if (Number.isFinite(serverTime)) lastServerTime.current = serverTime;
+    const previousSettings = lastSettings.current;
+    lastSettings.current = next.settings;
     setSnapshot(next);
     setNotice(current => current.startsWith("Startregie ophalen mislukt:") || current.startsWith("Startregie vernieuwen mislukt.") ? "" : current);
     setScheduleIds(current => current.filter(id => next.groups.some(group => group.schedule?.id === id && ["draft", "confirmed", "published"].includes(group.schedule.state))));
-    setSettingsDraft(current => current ?? next.settings);
+    setSettingsDraft(current => !current || JSON.stringify(current) === JSON.stringify(previousSettings) ? next.settings : current);
     } catch { if (serial === refreshSerial.current) setNotice("Startregie vernieuwen mislukt. Controleer de verbinding en probeer opnieuw."); }
   }, [eventSlug]);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
@@ -326,10 +332,10 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     })),
   ] : [], [snapshot]);
 
-  const displayedTimes = [...new Map([...times, ...(snapshot?.groups.flatMap(group => {
+  const displayedTimes = timestampChoices([...times, ...(snapshot?.groups.flatMap(group => {
     const location = groupLocation(group, snapshot.startPoints);
     return location ? [location.slot.startsAt] : [];
-  }) ?? [])].map(value => [Date.parse(value), value])).values()].sort((a, b) => Date.parse(a) - Date.parse(b));
+  }) ?? [])]);
   const visibleTimes = displayedTimes.filter((value) => !filters.time || Date.parse(value) === Date.parse(filters.time));
   const visiblePoints = activePoints.filter((point) => !filters.point || point.id === filters.point);
   const visibleGroups = (snapshot?.groups ?? []).filter((group) => {
@@ -338,8 +344,23 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       && (!filters.status || group.schedule?.state === filters.status)
       && (!filters.warning || Boolean(group.schedule?.warnings.length) || group.registrations.some((registration) => !registration.paymentEligible))
       && (!filters.point || location?.point.id === filters.point)
-      && (!filters.time || location?.slot.startsAt === filters.time);
+      && (!filters.time || sameTimestamp(location?.slot.startsAt, filters.time));
   });
+
+  const settingsDirty = !!snapshot && !!settingsDraft && JSON.stringify(settingsDraft) !== JSON.stringify(snapshot.settings);
+  function openReadinessAction(reason: PublicationReason) {
+    if (reason.action === "settings") {
+      setTab("settings");
+      window.setTimeout(() => {
+        const target = document.querySelector<HTMLElement>(`[data-setting-field="${reason.field ?? "finaleAvailable"}"]`);
+        target?.scrollIntoView({ block: "center" });
+        target?.querySelector<HTMLElement>("input,select,button")?.focus();
+      }, 0);
+    } else if (reason.action === "points") setTab("points");
+    else if (reason.action === "portals" && onOpenPortals) onOpenPortals();
+    else if (reason.action === "portals") { setTab("map"); if (snapshot?.settings.finalPortalId) setMapSelection({ kind: "portal", id: snapshot.settings.finalPortalId }); }
+    else { setTab("planning"); setNotice(reason.message); }
+  }
 
   async function saveSettings() {
     if (!snapshot || !settingsDraft) return;
@@ -349,9 +370,10 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       _event_slug: eventSlug, _settings: { ...settingsDraft, startIntervalMinutes: 10 }, _expected_version: settingsDraft.version,
       _reason: "Startregie-kaders bijgewerkt via de beheeromgeving",
     });
-    setBusy(false);
-    setNotice(error ? `Kaders opslaan geweigerd: ${readableError(error.message)}` : "De planningskaders zijn versieerbaar opgeslagen.");
+    const readiness = readinessFromError(error?.details);
+    setNotice(error ? `Kaders opslaan geweigerd: ${readiness?.reasons.map(reason => reason.message).join(" ") || readableError(error.message, error.details)}` : "De planningskaders zijn opgeslagen. De serverwaarden en publicatiegereedheid zijn opnieuw opgehaald.");
     if (!error) { setSettingsDraft(null); await load(); }
+    setBusy(false);
   }
 
   async function calculate(mode: "new" | "existing" = "new") {
@@ -429,7 +451,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     if (proposalMode === "existing") {
       try {
         const {data,error} = await client.schema("api").rpc("admin_group_operations_apply", {_event_slug:eventSlug,_action:"distribute",_input_hash:proposalCommand.inputHash,_payload:{groups:proposal.groups},_idempotency_key:key});
-        if (error) {setNotice(`Slotverdeling geweigerd: ${readableError(error.message)}`);return;}
+        if (error) {setNotice(`Slotverdeling geweigerd: ${readableError(error.message, error.details)}`);return;}
         setScheduleIds(data.scheduleIds);setProposal(null);setNotice(`Concept opgeslagen met ${proposal.conflicts.length} aandachtspunt(en). Er is niemand gemaild.`);await load();
       } finally {setBusy(false);}
       return;
@@ -439,26 +461,14 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       _idempotency_key: key, _request_hash: await digest({ proposal, key }),
     });
     setBusy(false);
-    if (error) return setNotice(`Concept opslaan geweigerd: ${readableError(error.message)}`);
+    if (error) return setNotice(`Concept opslaan geweigerd: ${readableError(error.message, error.details)}`);
     setScheduleIds((data as { scheduleIds: string[] }).scheduleIds);
     setNotice("Het voorstel is als concept opgeslagen. Deelnemers zien nog geen wijziging.");
     await load();
   }
 
   async function publish() {
-    if (!scheduleIds.length || !snapshot) return;
-    if (!window.confirm(`Bevestig ${scheduleIds.length} geselecteerde startindeling(en)? De startafspraken worden actief gedeeld en de persoonlijke tijdmails worden klaargezet.`)) return;
-    const client = createClient(); if (!client) return;
-    setBusy(true);
-    const { data, error } = await client.schema("api").rpc("admin_startregie_confirm_and_send", {
-      _idempotency_key: crypto.randomUUID(),
-      _event_slug: eventSlug, _expected_settings_version: snapshot.settings.eventSettingsVersion,
-      _expected_revisions: snapshot.groups.filter(group => group.schedule && scheduleIds.includes(group.schedule.id)).map(group => ({ id: group.schedule!.id, revision: group.schedule!.revision })),
-    });
-    setBusy(false);
-    const result = data as { planningVersion?: number } | null;
-    setNotice(error ? `Publicatie geblokkeerd: ${readableError(error.message)}` : `Startindeling bevestigd${result?.planningVersion ? ` als versie ${result.planningVersion}` : ""}. De actuele afspraak is gedeeld en de tijdmails staan in de wachtrij.`);
-    if (!error) { setScheduleIds([]); setProposal(null); await load(); }
+    publicationReviewRef.current?.reviewSelected();
   }
 
   async function moveGroup(group: Group, target: MoveTarget, isUndo = false) {
@@ -477,7 +487,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       _reason: isUndo ? "Vorige startplaatsing hersteld via Ongedaan maken" : "Routegroep handmatig verplaatst op het Startregie-planbord",
     });
     setBusy(false);
-    if (error) { setNotice(`Verplaatsen geblokkeerd: ${readableError(error.message)}`); await load(); return; }
+    if (error) { setNotice(`Verplaatsen geblokkeerd: ${readableError(error.message, error.details)}`); await load(); return; }
     const result = data as { id: string };
     setScheduleIds((currentIds) => [...new Set([...currentIds, result.id])]);
     if (!isUndo && current) setUndoMove({ groupId: group.id, pointId: current.point.id, startsAt: current.slot.startsAt, groupVersion: group.version + 1 });
@@ -520,7 +530,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       _expected_version: pointEditor.version,
       _reason: pointEditor.id ? "Startpuntgegevens bijgewerkt via Startregie" : "Nieuw startpunt toegevoegd via Startregie",
     });
-    if (error) setPointError(`Startpunt opslaan geweigerd: ${readableError(error.message)}`);
+    if (error) setPointError(`Startpunt opslaan geweigerd: ${readableError(error.message, error.details)}`);
     else if (!data?.id || !Number.isInteger(data.version)) setPointError("De server heeft het startpunt niet teruggegeven. Vernieuw en controleer je invoer.");
     else { setNotice("Startpunt opgeslagen. Je kunt het direct bevestigen."); setPointEditor(null); await load(); }
     } catch { setPointError("Startpunt niet opgeslagen. Controleer de verbinding en probeer opnieuw. Je invoer is bewaard."); }
@@ -535,7 +545,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
         _event_slug: eventSlug, _point_id: point.id, _expected_version: point.version,
       }).abortSignal(AbortSignal.timeout(20_000));
       if (error) {
-        setNotice(`${point.publicLabel} — bevestigen niet gelukt: ${readableError(error.message)}${error.message.includes("LINKED_START_PORTAL") && error.details ? ` (${error.details})` : ""}`);
+        setNotice(`${point.publicLabel} — bevestigen niet gelukt: ${readableError(error.message, error.details)}${error.message.includes("LINKED_START_PORTAL") && error.details ? ` (${error.details})` : ""}`);
       } else if (data?.id === point.id && data?.confirmed === true) {
         setNotice(`${point.publicLabel} — Locatie bevestigd.`);
       } else { setNotice("De server heeft de startpuntbevestiging niet teruggegeven. Vernieuw en probeer opnieuw."); }
@@ -550,7 +560,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     const { error } = await client.schema("api").rpc("admin_startregie_start_point_archive", {
       _point_id: point.id, _expected_version: point.version, _reason: "Startpunt gearchiveerd vanuit Startregie",
     });
-    setNotice(error ? `Archiveren geblokkeerd: ${readableError(error.message)}` : "Startpunt gearchiveerd.");
+    setNotice(error ? `Archiveren geblokkeerd: ${readableError(error.message, error.details)}` : "Startpunt gearchiveerd.");
     if (!error) await load();
   }
 
@@ -565,7 +575,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
       }).abortSignal(AbortSignal.timeout(20_000));
       if (error) {
         if (error.message.includes("STALE_VERSION")) await load();
-        throw new Error(`${resource.name} — locatie opslaan geweigerd: ${readableError(error.message)}`);
+        throw new Error(`${resource.name} — locatie opslaan geweigerd: ${readableError(error.message, error.details)}`);
       }
       if (data?.id !== resource.id || !Number.isInteger(data.version) || !coordinate(data.longitude, data.latitude)) {
         throw new Error("De server heeft de opgeslagen positie niet teruggegeven. Vernieuw en controleer de locatie.");
@@ -604,8 +614,8 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     {tab === "planning" && <section className="panel" aria-label="Bestaande groepen automatisch plannen"><h3>Groepen automatisch over startpunten verdelen</h3><p>Bestaande samenstellingen blijven intact. Bevestigde en gepubliceerde startafspraken blijven behouden.</p><button className="btn" type="button" disabled={busy} onClick={() => void calculate("existing")}>Groepen automatisch over startpunten verdelen</button>
       {proposalMode === "existing" && proposal && <><p>{proposal.groups.length} groepen toegewezen · {proposal.conflicts.length} aandachtspunten</p>{proposal.groups.map(group => <ProposalAssignment key={group.key} group={group} points={snapshot.startPoints} label={snapshot.groups.find(item => item.id === group.key)?.systemCode} />)}{proposal.conflicts.map((c,i)=><p className="form-warning" key={i}>{c.subjectId}: {c.message}</p>)}<button className="btn outline" type="button" disabled={busy||!proposal.groups.length||proposal.conflicts.length>0} onClick={()=>void saveProposal()}>Conceptslotverdeling opslaan</button></>}
     </section>}
-    {tab === "planning" && <StartOpsWorkspace snapshot={snapshot} eventSlug={eventSlug} busy={busy} setBusy={setBusy} onReload={load} onNotice={setNotice} onMove={async (group,target)=>{const current=snapshot.groups.find(item=>item.id===group.id);if(current)await moveGroup(current,target);}} onOpenPoints={() => setTab("points")} selectedIds={scheduleIds} onSelectedIds={setScheduleIds} />}
-    {tab === "planning" && <details className="start-ops-advanced"><summary><Settings2 /> Automatisch voorstel en uitgebreid planbord</summary><PlanningPanel snapshot={snapshot} activePoints={activePoints} times={times} visibleTimes={visibleTimes}
+    {tab === "planning" && <StartOpsWorkspace publicationReviewRef={publicationReviewRef} snapshot={snapshot} eventSlug={eventSlug} busy={busy} setBusy={setBusy} onReload={load} onNotice={setNotice} onMove={async (group,target)=>{const current=snapshot.groups.find(item=>item.id===group.id);if(current)await moveGroup(current,target);}} onOpenPoints={() => setTab("points")} onReadinessAction={openReadinessAction} settingsDirty={settingsDirty} selectedIds={scheduleIds} onSelectedIds={setScheduleIds} />}
+    {tab === "planning" && <details className="start-ops-advanced"><summary><Settings2 /> Automatisch voorstel en uitgebreid planbord</summary><PlanningPanel snapshot={snapshot} activePoints={activePoints} times={times} displayedTimes={displayedTimes} visibleTimes={visibleTimes}
       visiblePoints={visiblePoints} visibleGroups={visibleGroups} filters={filters} setFilters={setFilters}
       filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} busy={busy} proposal={proposal}
       scheduleIds={scheduleIds} publicationStep={publicationStep} calculate={calculate} saveProposal={saveProposal}
@@ -665,9 +675,9 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
 
 type FilterState = { time: string; point: string; preference: string; status: string; warning: boolean };
 
-function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoints, visibleGroups, filters, setFilters,
+function PlanningPanel({ snapshot, activePoints, times, displayedTimes, visibleTimes, visiblePoints, visibleGroups, filters, setFilters,
   filtersOpen, setFiltersOpen, busy, proposal, scheduleIds, publicationStep, calculate, saveProposal, publish, moveGroup }:
-  { snapshot: Snapshot; activePoints: StartPoint[]; times: string[]; visibleTimes: string[]; visiblePoints: StartPoint[];
+  { snapshot: Snapshot; activePoints: StartPoint[]; times: string[]; displayedTimes: string[]; visibleTimes: string[]; visiblePoints: StartPoint[];
     visibleGroups: Group[]; filters: FilterState; setFilters: (value: FilterState) => void; filtersOpen: boolean;
     setFiltersOpen: (value: boolean) => void; busy: boolean; proposal: ReturnType<typeof proposePlan> | null;
     scheduleIds: string[]; publicationStep: number; calculate: () => void; saveProposal: () => Promise<void>; publish: () => Promise<void>;
@@ -678,7 +688,7 @@ function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoi
       <div className="actions"><button type="button" className="btn outline" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}><Filter />Filters</button><button type="button" className="btn" disabled={busy || snapshot.unassigned.length === 0} onClick={() => void calculate()}><Sparkles />Maak planningsvoorstel</button></div>
     </div>
     {filtersOpen && <div className="planning-filters">
-      <label className="field"><span>Tijd</span><select value={filters.time} onChange={(event) => setFilters({ ...filters, time: event.target.value })}><option value="">Alle tijden</option>{times.map((value) => <option key={value} value={value}>{timeLabel(value)}</option>)}</select></label>
+      <label className="field"><span>Tijd</span><select value={filters.time} onChange={(event) => setFilters({ ...filters, time: event.target.value })}><option value="">Alle tijden</option>{displayedTimes.map((value) => <option key={value} value={value}>{timeLabel(value)}</option>)}</select></label>
       <label className="field"><span>Startpunt</span><select value={filters.point} onChange={(event) => setFilters({ ...filters, point: event.target.value })}><option value="">Alle startpunten</option>{activePoints.map((point) => <option key={point.id} value={point.id}>{point.publicLabel}</option>)}</select></label>
       <label className="field"><span>Voorkeur</span><select value={filters.preference} onChange={(event) => setFilters({ ...filters, preference: event.target.value })}><option value="">Alle voorkeuren</option>{Object.entries(matchLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label className="field"><span>Status</span><select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}><option value="">Alle indelingen</option><option value="draft">Concept</option><option value="confirmed">Start bevestigd</option><option value="published">Starttijd gepubliceerd</option></select></label>
@@ -689,7 +699,7 @@ function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoi
     <div className="planning-workspace">
       <aside className="unassigned-route-groups">
         <header><span><strong>Nog niet ingedeeld</strong><small>{snapshot.groups.filter((group) => !group.schedule).length} routegroepen</small></span><UsersRound /></header>
-        <div>{snapshot.groups.filter((group) => !group.schedule).map((group) => <GroupCard key={group.id} group={group} points={activePoints} times={times} visitCycleSeconds={snapshot.settings.ordinaryVisitSeconds + snapshot.settings.bufferSeconds} greenMinutes={snapshot.settings.preferenceGreenMinutes} amberMinutes={snapshot.settings.preferenceAmberMinutes} compact onMove={(item, target) => void moveGroup(item, target)} />)}
+        <div>{snapshot.groups.filter((group) => !group.schedule).map((group) => <GroupCard key={group.id} group={group} points={snapshot.startPoints} times={times} route={snapshot.ops?.routes[group.id]} routeRevision={snapshot.ops?.routeRevision} greenMinutes={snapshot.settings.preferenceGreenMinutes} amberMinutes={snapshot.settings.preferenceAmberMinutes} compact onMove={(item, target) => void moveGroup(item, target)} />)}
           {snapshot.groups.every((group) => group.schedule) && <div className="planning-empty"><CheckCircle2 /><p>Alle bestaande routegroepen hebben een startafspraak.</p></div>}
         </div>
       </aside>
@@ -710,7 +720,7 @@ function PlanningPanel({ snapshot, activePoints, times, visibleTimes, visiblePoi
                 onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; }}
                 onDrop={(event) => { event.preventDefault(); const group = snapshot.groups.find((item) => item.id === event.dataTransfer.getData("text/group-id")); if (group) void moveGroup(group, { pointId: point.id, startsAt }); }}>
                 <div className="planning-cell-load"><span>{groups.length}/1 vertrek</span><span>{children}/{point.maxChildren} kinderen</span></div>
-                {groups.map((group) => <GroupCard key={group.id} group={group} points={activePoints} times={times} visitCycleSeconds={snapshot.settings.ordinaryVisitSeconds + snapshot.settings.bufferSeconds} greenMinutes={snapshot.settings.preferenceGreenMinutes} amberMinutes={snapshot.settings.preferenceAmberMinutes} compact onMove={(item, target) => void moveGroup(item, target)} />)}
+                {groups.map((group) => <GroupCard key={group.id} group={group} points={snapshot.startPoints} times={times} route={snapshot.ops?.routes[group.id]} routeRevision={snapshot.ops?.routeRevision} greenMinutes={snapshot.settings.preferenceGreenMinutes} amberMinutes={snapshot.settings.preferenceAmberMinutes} compact onMove={(item, target) => void moveGroup(item, target)} />)}
                 {!groups.length && <span className="planning-drop-hint">Sleep hierheen</span>}
               </div>;
             }),
@@ -735,14 +745,16 @@ function SettingsPanel({ snapshot, settingsDraft, setSettingsDraft, busy, saveSe
   const [timeValidity,setTimeValidity]=useState<Record<string,boolean>>({});
   return <section className="start-regie-tab start-settings-tab" role="tabpanel">
     <div><p className="kicker">Planningskaders</p><h3>Evenement, route en eindpoort</h3><p>Deze grenzen sturen het bord, de voorkeursbeoordeling en de servervalidatie. Technische routegegevens blijven verborgen.</p></div>
+    {JSON.stringify(settingsDraft) !== JSON.stringify(snapshot.settings) && <p className="form-warning" role="status">Er zijn niet-opgeslagen Kaders. Startpublicatie gebruikt alleen de opgeslagen serverwaarden. <button className="text-link" type="button" onClick={() => setSettingsDraft(snapshot.settings)}>Opgeslagen kaders terugzetten</button></p>}
+    {snapshot.publicationReadiness && <div className={snapshot.publicationReadiness.ready ? "form-notice" : "form-warning"} role="status"><strong>Opgeslagen serverwaarden: {snapshot.publicationReadiness.ready ? "finalekaders gereed" : "nog niet gereed voor startpublicatie"}</strong>{snapshot.publicationReadiness.reasons.map(reason => <p key={reason.code}>{reason.message}</p>)}</div>}
     <div className="settings-section-grid">
-      <section><h4>Startvenster</h4><div className="settings-grid"><AmsterdamDateTime key={`firstStartAt:${settingsDraft.version}`} label="Eerste mogelijke start" value={settingsDraft.firstStartAt} onChange={value=>setSettingsDraft({...settingsDraft,firstStartAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,firstStartAt:valid}))}/><label className="field"><span>Vertrekinterval per startpoort</span><input value="10 minuten" readOnly /><small>Maximaal één groep per vertrekslot. Verzamelcapaciteit blijft apart gelden.</small></label><AmsterdamDateTime key={`earlyPreferenceLatestAt:${settingsDraft.version}`} label="Vroeg geldt tot" value={settingsDraft.earlyPreferenceLatestAt} onChange={value=>setSettingsDraft({...settingsDraft,earlyPreferenceLatestAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,earlyPreferenceLatestAt:valid}))}/><AmsterdamDateTime key={`laterPreferenceEarliestAt:${settingsDraft.version}`} label="Later geldt vanaf" value={settingsDraft.laterPreferenceEarliestAt} onChange={value=>setSettingsDraft({...settingsDraft,laterPreferenceEarliestAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,laterPreferenceEarliestAt:valid}))}/></div></section>
-      <section><h4>Voorkeursbeoordeling</h4><div className="settings-grid"><label className="field"><span>Groen tot en met</span><input type="number" min={0} max={120} value={settingsDraft.preferenceGreenMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, preferenceGreenMinutes: Number(event.target.value) })} /><small>minuten afwijking</small></label><label className="field"><span>Amber tot en met</span><input type="number" min={1} max={180} value={settingsDraft.preferenceAmberMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, preferenceAmberMinutes: Number(event.target.value) })} /><small>daarboven wordt rood</small></label><AmsterdamDateTime key={`globalOrdinaryStopAt:${settingsDraft.version}`} label="Geen gewone poorten meer vanaf" value={settingsDraft.globalOrdinaryStopAt} onChange={value=>setSettingsDraft({...settingsDraft,globalOrdinaryStopAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,globalOrdinaryStopAt:valid}))}/><label className="field"><span>Plannerstand</span><select value={settingsDraft.plannerMode} onChange={(event) => setSettingsDraft({ ...settingsDraft, plannerMode: event.target.value as RouteSettings["plannerMode"] })}><option value="disabled">Uit</option><option value="shadow">Alleen voorstellen</option><option value="dynamic">Dynamisch plannen</option></select></label></div></section>
+      <section data-setting-field="firstStartAt"><h4>Startvenster</h4><div className="settings-grid"><AmsterdamDateTime key={`firstStartAt:${settingsDraft.version}`} label="Eerste mogelijke start" value={settingsDraft.firstStartAt} onChange={value=>setSettingsDraft({...settingsDraft,firstStartAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,firstStartAt:valid}))}/><label className="field"><span>Vertrekinterval per startpoort</span><input value="10 minuten" readOnly /><small>Maximaal één groep per vertrekslot. Verzamelcapaciteit blijft apart gelden.</small></label><AmsterdamDateTime key={`earlyPreferenceLatestAt:${settingsDraft.version}`} label="Vroeg geldt tot" value={settingsDraft.earlyPreferenceLatestAt} onChange={value=>setSettingsDraft({...settingsDraft,earlyPreferenceLatestAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,earlyPreferenceLatestAt:valid}))}/><AmsterdamDateTime key={`laterPreferenceEarliestAt:${settingsDraft.version}`} label="Later geldt vanaf" value={settingsDraft.laterPreferenceEarliestAt} onChange={value=>setSettingsDraft({...settingsDraft,laterPreferenceEarliestAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,laterPreferenceEarliestAt:valid}))}/></div></section>
+      <section><h4>Voorkeursbeoordeling</h4><div className="settings-grid"><label className="field"><span>Groen tot en met</span><input type="number" min={0} max={120} value={settingsDraft.preferenceGreenMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, preferenceGreenMinutes: Number(event.target.value) })} /><small>minuten afwijking</small></label><label className="field"><span>Amber tot en met</span><input type="number" min={1} max={180} value={settingsDraft.preferenceAmberMinutes} onChange={(event) => setSettingsDraft({ ...settingsDraft, preferenceAmberMinutes: Number(event.target.value) })} /><small>daarboven wordt rood</small></label><AmsterdamDateTime key={`globalOrdinaryStopAt:${settingsDraft.version}`} label="Geen gewone poorten meer vanaf" value={settingsDraft.globalOrdinaryStopAt} onChange={value=>setSettingsDraft({...settingsDraft,globalOrdinaryStopAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,globalOrdinaryStopAt:valid}))}/><label className="field" data-setting-field="plannerMode"><span>Plannerstand</span><select value={settingsDraft.plannerMode} onChange={(event) => setSettingsDraft({ ...settingsDraft, plannerMode: event.target.value as RouteSettings["plannerMode"] })}><option value="disabled">Uit</option><option value="shadow">Alleen voorstellen</option><option value="dynamic">Dynamisch plannen</option></select></label></div></section>
       <section><h4>Routebelasting</h4><div className="settings-grid"><label className="field"><span>Gemiddeld poortbezoek</span><input type="number" min={60} value={settingsDraft.ordinaryVisitSeconds} onChange={(event) => setSettingsDraft({ ...settingsDraft, ordinaryVisitSeconds: Number(event.target.value) })} /><small>seconden</small></label><label className="field"><span>Veiligheidsbuffer</span><input type="number" min={0} value={settingsDraft.bufferSeconds} onChange={(event) => setSettingsDraft({ ...settingsDraft, bufferSeconds: Number(event.target.value) })} /><small>seconden per stap</small></label></div></section>
-      <section><h4>Laatste poort</h4>{finaleWindowAdvice(settingsDraft, [...snapshot.groups.map(g => dominantEndPreference(g.registrations)), ...snapshot.unassigned.map(r => r.desiredEndAt)]) && <p className="form-warning">{finaleWindowAdvice(settingsDraft, [...snapshot.groups.map(g => dominantEndPreference(g.registrations)), ...snapshot.unassigned.map(r => r.desiredEndAt)])}</p>}<p>Gewenst einde is de afronding van de show. Maximaal {settingsDraft.maxGroupOverrunSeconds / 60} minuten groepsuitloop als dit een betere avond oplevert. Gewone poorten houden hun eigen sluiting. Configureer laatste aankomst en definitieve sluiting apart; show én wisseltijd moeten binnen de fysieke poortopening passen.</p><div className="settings-grid"><label className="field"><span>Aangewezen laatste poort</span><select value={settingsDraft.finalPortalId ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finalPortalId: event.target.value || null })}><option value="">Kies een actieve poort</option>{snapshot.portals.filter((portal) => portal.lifecycleStatus === "active").map((portal) => <option key={portal.id} value={portal.id}>{portal.systemCode} · {portal.name}</option>)}</select></label><label className="check-row"><input type="checkbox" checked={settingsDraft.finaleAvailable} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleAvailable: event.target.checked })} /><span>Laatste poort veilig beschikbaar</span></label><AmsterdamDateTime key={`finaleOpensAt:${settingsDraft.version}`} label="Opening" value={settingsDraft.finaleOpensAt} onChange={value=>setSettingsDraft({...settingsDraft,finaleOpensAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,finaleOpensAt:valid}))}/><AmsterdamDateTime key={`finaleLastArrivalAt:${settingsDraft.version}`} label="Laatste aankomst" value={settingsDraft.finaleLastArrivalAt} onChange={value=>setSettingsDraft({...settingsDraft,finaleLastArrivalAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,finaleLastArrivalAt:valid}))}/><AmsterdamDateTime key={`finaleClosesAt:${settingsDraft.version}`} label="Definitieve sluiting (inclusief wisseltijd)" value={settingsDraft.finaleClosesAt} onChange={value=>setSettingsDraft({...settingsDraft,finaleClosesAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,finaleClosesAt:valid}))}/><label className="field"><span>Groepen tegelijk</span><input type="number" min={1} value={settingsDraft.finaleMaxGroups} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleMaxGroups: Number(event.target.value) })} /></label><label className="field"><span>Kinderen tegelijk</span><input type="number" min={1} value={settingsDraft.finaleMaxChildren} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleMaxChildren: Number(event.target.value) })} /></label></div></section>
+      <section data-setting-field="finaleTimes"><h4>Laatste poort</h4>{finaleWindowAdvice(settingsDraft, [...snapshot.groups.map(g => dominantEndPreference(g.registrations)), ...snapshot.unassigned.map(r => r.desiredEndAt)]) && <p className="form-warning">{finaleWindowAdvice(settingsDraft, [...snapshot.groups.map(g => dominantEndPreference(g.registrations)), ...snapshot.unassigned.map(r => r.desiredEndAt)])}</p>}<p>Gewenst einde is de afronding van de show. Maximaal {settingsDraft.maxGroupOverrunSeconds / 60} minuten groepsuitloop als dit een betere avond oplevert. Gewone poorten houden hun eigen sluiting. Configureer laatste aankomst en definitieve sluiting apart; show én wisseltijd moeten binnen de fysieke poortopening passen.</p><div className="settings-grid"><label className="field" data-setting-field="finalPortalId"><span>Aangewezen laatste poort</span><select value={settingsDraft.finalPortalId ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finalPortalId: event.target.value || null })}><option value="">Kies een actieve poort</option>{snapshot.portals.filter((portal) => portal.lifecycleStatus === "active").map((portal) => <option key={portal.id} value={portal.id}>{portal.systemCode} · {portal.name}</option>)}</select></label><label className="check-row" data-setting-field="finaleAvailable"><input type="checkbox" checked={settingsDraft.finaleAvailable} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleAvailable: event.target.checked })} /><span>Laatste poort veilig beschikbaar</span></label><AmsterdamDateTime key={`finaleOpensAt:${settingsDraft.version}`} label="Opening" value={settingsDraft.finaleOpensAt} onChange={value=>setSettingsDraft({...settingsDraft,finaleOpensAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,finaleOpensAt:valid}))}/><AmsterdamDateTime key={`finaleLastArrivalAt:${settingsDraft.version}`} label="Laatste aankomst" value={settingsDraft.finaleLastArrivalAt} onChange={value=>setSettingsDraft({...settingsDraft,finaleLastArrivalAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,finaleLastArrivalAt:valid}))}/><AmsterdamDateTime key={`finaleClosesAt:${settingsDraft.version}`} label="Definitieve sluiting (inclusief wisseltijd)" value={settingsDraft.finaleClosesAt} onChange={value=>setSettingsDraft({...settingsDraft,finaleClosesAt:value})} onValidity={valid=>setTimeValidity(current=>({...current,finaleClosesAt:valid}))}/><label className="field"><span>Groepen tegelijk</span><input type="number" min={1} value={settingsDraft.finaleMaxGroups} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleMaxGroups: Number(event.target.value) })} /></label><label className="field"><span>Kinderen tegelijk</span><input type="number" min={1} value={settingsDraft.finaleMaxChildren} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleMaxChildren: Number(event.target.value) })} /></label></div></section>
       <section className="wide"><h4>Veiligheid en uitwijk</h4><div className="settings-grid"><label className="field"><span>Aanloopinstructie <small>(optioneel)</small></span><textarea value={settingsDraft.finaleSafeApproach ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleSafeApproach: event.target.value })} /></label><label className="field"><span>Wachtruimte</span><textarea value={settingsDraft.finaleWaitingArea ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleWaitingArea: event.target.value })} /></label><label className="field"><span>Afvoerroute</span><textarea value={settingsDraft.finaleExitRoute ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleExitRoute: event.target.value })} /></label><label className="field"><span>Toegankelijke ingang</span><textarea value={settingsDraft.finaleAccessibleEntrance ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, finaleAccessibleEntrance: event.target.value })} /></label><label className="field"><span>Alternatieve verzamelplek</span><input value={settingsDraft.emergencyDestinationName ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, emergencyDestinationName: event.target.value })} /></label><label className="field"><span>Noodinstructie</span><textarea value={settingsDraft.emergencyInstructions ?? ""} onChange={(event) => setSettingsDraft({ ...settingsDraft, emergencyInstructions: event.target.value })} /></label></div></section>
     </div>
-    <div className="settings-save-bar"><span>Huidige versie {snapshot.settings.version} · wijzigingen worden op gelijktijdigheid gecontroleerd.</span><button className="btn" type="button" disabled={busy || Object.values(timeValidity).includes(false) || settingsDraft.version !== snapshot.settings.version || settingsDraft.preferenceGreenMinutes >= settingsDraft.preferenceAmberMinutes} onClick={() => void saveSettings()}><Save />Kaders opslaan</button></div>
+    <div className="settings-save-bar"><span>Opgeslagen serverversie {snapshot.settings.version} · wijzigingen worden op gelijktijdigheid gecontroleerd.</span><button className="btn" type="button" disabled={busy || Object.values(timeValidity).includes(false) || settingsDraft.version !== snapshot.settings.version || settingsDraft.preferenceGreenMinutes >= settingsDraft.preferenceAmberMinutes} onClick={() => void saveSettings()}><Save />Kaders opslaan</button></div>
   </section>;
 }
 

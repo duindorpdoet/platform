@@ -57,6 +57,7 @@ export type Election = {
 export type BookSnapshot = {
   worldCollection?: Array<{slug:string;name:string;origin:"themed"|"compensation";earnedAt:string;stopId:string;policyVersion:number}>;
   missingWorlds?: string[];
+  worldCoverage?: { status: "provisional" | "active"; policyVersion: number | null; missingWorlds: string[] };
   reading?: { readChapters: number[]; stories: import("./story-content").StoryChapterContent[] };
   childId?: string;
   farewell?: { endedAt: string; reason: 'early' | 'completed' } | null;

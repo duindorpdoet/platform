@@ -43,6 +43,7 @@ export function locationError(message: string) {
     LINKED_PORTAL_NOT_AVAILABLE: "De gekoppelde poort is niet beschikbaar. Controleer de gekoppelde poort.",
     INVALID_COORDINATE: "Vul een geldige breedtegraad en lengtegraad in.",
     ADDRESS_LOCATION_MISSING: "Geen opgeslagen adrespositie. Plaats en bewaar een marker.",
+    RESOLVE_ACTIVE_VISITS_FIRST: "Er is al een groep naar deze ingang onderweg of bij deze poort. Handel dit bezoek eerst af in de livecockpit voordat je de pin verplaatst.",
     LOCATION_WRITE_NOT_CONFIRMED: "De server heeft de locatie niet bevestigd. Vernieuw en probeer opnieuw.",
   };
   return Object.entries(errors).find(([code]) => message.includes(code))?.[1] ?? null;

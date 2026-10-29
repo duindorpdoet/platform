@@ -1,4 +1,5 @@
 begin;
+\ir helpers/ready_live_planboard.inc
 create extension if not exists pgtap with schema extensions;
 select no_plan();
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
@@ -10,7 +11,7 @@ update app_private.registrations set requested_ordinary_stop_at=null,preferred_s
 update board set point=(api.admin_portal_start_point_set(pid,true,(select version from app_private.portals where id=pid))->>'startPointId')::uuid;
 select api.admin_startregie_confirm_point('duindorp-halloween-2026',point,(select version from app_private.start_points where id=point)) from board;
 update board set schedule=(api.admin_startregie_move_group(gid,point,'2026-10-31T17:00Z',(select version from app_private.walking_groups where id=gid),'neutral','Live planbord synthetische keten voorbereiden')->>'id')::uuid;
-update board set snapshot=api.admin_live_planboard_snapshot('duindorp-halloween-2026');
+update board set snapshot=pg_temp.ready_live_planboard('duindorp-halloween-2026');
 select ok(jsonb_array_length((select snapshot->'visits' from board))>1,'snapshot materializes a full durable expected route, not only one destination');
 select is((select snapshot->>'inputHash' from board),api.admin_live_planboard_snapshot('duindorp-halloween-2026')->>'inputHash','read refresh keeps stable visit identities and versions');
 select ok(not exists(select 1 from jsonb_array_elements((select snapshot->'visits' from board)) v where v->>'status'<>'planned'),'passing a planned clock never creates arrival or completion');

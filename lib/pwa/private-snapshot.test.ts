@@ -31,6 +31,12 @@ describe("private offline group snapshots", () => {
     expect(readPrivateSnapshot("user-a", "group-2")).toBeNull();
   });
 
+  it("drops cached pre-marker-fix destinations rather than showing an old address pin", () => {
+    localStorage.setItem("duindorp-private-group:ops2:user-a:group-1", JSON.stringify({ userId: "user-a", expiresAt: Date.now() + 60_000, snapshot: { coordinate: [4.26, 52.09] } }));
+    expect(readPrivateSnapshot("user-a", "group-1")).toBeNull();
+    expect(localStorage.length).toBe(0);
+  });
+
   it("expires stale private data and removes it from storage", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-31T18:00:00Z"));

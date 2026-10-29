@@ -7,6 +7,8 @@ insert into awards(eid) select id from app_private.events where slug='duindorp-h
 -- Two worlds are absent for the complete evening; retained active houses use a represented type.
 update app_private.portals p set world_id=(select id from app_private.worlds w where w.event_id=p.event_id and w.slug='circuswereld') where p.world_id in(select id from app_private.worlds where slug in ('heksenrijk','vampierrijk'));
 update app_private.portals p set world_id=(select id from app_private.worlds w where w.event_id=p.event_id and w.slug='anders') where p.id='12000000-0000-0000-0000-000000000001';
+-- Compensation is based on the closed HOUSE channel, never on participant registration.
+update app_private.events set settings=settings||'{"portalRegistrationOpen":false}'::jsonb where id=(select eid from awards);
 select ok((select missing_worlds @> array['heksenrijk','vampierrijk'] and cardinality(missing_worlds)=2 from app_private.world_coverage_policies where event_id=(select eid from awards) order by version desc limit 1),'coverage records exactly the two absent canonical worlds');
 select set_config('request.jwt.claims','{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 update awards set run_id=(api.run_start('23000000-0000-0000-0000-000000000002',array(select rc.id from app_private.registration_children rc join app_private.group_registrations a on a.registration_id=rc.registration_id where a.group_id='23000000-0000-0000-0000-000000000002' and a.superseded_at is null),1,'world-start-01','world-start-01')->>'runId')::uuid;
@@ -35,6 +37,7 @@ update app_private.portals p set world_id=(select id from app_private.worlds w w
 select is((select count(*) from app_private.child_world_awards where child_id=any((select child_ids from awards)::uuid[])),(select 2*cardinality(child_ids)::bigint from awards),'late theme addition retains every earned collection record');
 update app_private.portals set operation_status='paused' where id='12000000-0000-0000-0000-000000000004';
 select app_private.refresh_world_coverage((select eid from awards));
-select ok(not (select missing_worlds @> array['vampierrijk'] from app_private.world_coverage_policies where event_id=(select eid from awards) order by version desc limit 1),'temporary pause does not make a represented world absent');
+select ok(not (select missing_worlds @> array['vampierrijk'] from app_private.world_coverage_policies where event_id=(select eid from awards) and policy_status='pending'),'temporary pause does not change the proposed coverage revision');
+select ok(app_private.world_coverage_missing((select eid from awards)) @> array['vampierrijk'],'the original closed policy remains active until explicit review');
 select * from finish();
 rollback;

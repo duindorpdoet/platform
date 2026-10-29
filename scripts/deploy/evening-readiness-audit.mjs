@@ -1,5 +1,7 @@
-// Restricted release audit: direct SELECTs only. Never calls snapshot RPCs, seeds
-// routes, publishes starts or exposes names, addresses, contact or participant IDs.
+// Restricted release audit. Direct table reads remain available to the read-only
+// management role; authorized pure previews run only in a bounded READ ONLY
+// transaction through the existing protected production deployment connection.
+// No snapshot writers, route seeds, publications, messages or participant details.
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -125,7 +127,7 @@ export const AUDIT_QUERY = `with
      and v.starts_at+make_interval(secs=>v.duration_seconds+v.buffer_seconds)<=w.closes_at
      and w.max_children_per_visit>=(select children from group_children c where c.group_id=g.id))),'[]'::jsonb),
    'departureConcurrentGroups',(select count(distinct other.group_id) from schedule_rows other join point_locations op on op.id=other.start_point_id
-    where coalesce(op.linked_portal_id,op.id)=coalesce(point.linked_portal_id,point.id) and other.starts_at=slot.starts_at)
+    where coalesce(op.linked_portal_id,op.id)=coalesce(point.linked_portal_id,point.id) and floor(extract(epoch from other.starts_at)/600)=floor(extract(epoch from slot.starts_at)/600))
    ) order by g.system_code) from groups g left join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id
    left join publications pub on pub.group_id=g.id
    left join app_private.start_slots slot on slot.id=coalesce(s.start_slot_id,g.start_slot_id) left join point_locations point on point.id=coalesce(slot.start_point_id,(pub.slot_snapshot->>'start_point_id')::uuid)
@@ -151,22 +153,120 @@ export const AUDIT_QUERY = `with
  ) audit from e)
 select audit from report`;
 
+// Supabase postgres-meta retains the last non-empty statement result, including
+// when COMMIT follows the SELECT (src/lib/db.ts). The same official @supabase/pg
+// 8.21.1 driver was verified locally: READ ONLY rejected UPDATE and the SELECT
+// result survived COMMIT; every SET LOCAL value disappeared after that commit.
+// https://github.com/supabase/postgres-meta/blob/master/src/lib/db.ts
+export const PREVIEW_AUDIT_QUERY = `begin read only;
+set local statement_timeout='15000ms';
+set local lock_timeout='500ms';
+do $scope$
+declare eid uuid; actor uuid;
+begin
+ if current_setting('transaction_read_only')<>'on' then raise exception 'AUDIT_READ_ONLY_REQUIRED'; end if;
+ select id into eid from app_private.events where slug='duindorp-halloween-2026';
+ select c.user_id into actor from app_private.event_capabilities c join auth.users u on u.id=c.user_id
+ where c.event_id=eid and c.capability='groups_manage' and c.revoked_at is null
+  and u.email_confirmed_at is not null and u.deleted_at is null and (u.banned_until is null or u.banned_until<=statement_timestamp())
+ order by c.user_id limit 1;
+ if actor is null then raise exception 'AUDIT_EXISTING_AUTHORIZED_ADMIN_REQUIRED'; end if;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',actor,'role','authenticated')::text,true);
+ if not app_private.has_capability(eid,'groups_manage',auth.uid()) then raise exception 'AUDIT_EXISTING_AUTHORIZED_ADMIN_REQUIRED'; end if;
+ if (select count(*) from app_private.walking_groups where event_id=eid and retired_at is null)>200 then raise exception 'AUDIT_PREVIEW_SIZE_LIMIT'; end if;
+ if not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='app_private' and p.proname='start_ops_route_preview' and p.provolatile='s'
+   and pg_get_function_identity_arguments(p.oid)='_group_id uuid') then raise exception 'AUDIT_STABLE_PREVIEW_REQUIRED'; end if;
+end $scope$;
+${AUDIT_QUERY.replace('select audit from report', `,
+ preview_sources as materialized(select g.id,g.system_code,g.current_schedule_revision_id,g.current_plan_version_id,g.route_mode,
+  selected.revision source_schedule_revision,selected.id source_schedule_id,
+  case when g.route_mode='legacy' and selected.id is null then
+   (select jsonb_build_object('revision',plan.revision,'stops',coalesce((select jsonb_agg(jsonb_build_object('portalId',stop.portal_id,
+    'kind',case when stop.position=(select max(last.position) from app_private.route_plan_stops last where last.plan_version_id=plan.id) then 'finale' else 'ordinary' end,
+    'sequence',stop.position) order by stop.position) from app_private.route_plan_stops stop where stop.plan_version_id=plan.id),'[]'::jsonb),
+    'warnings','[]'::jsonb,'hasConfirmedStart',plan.state='published') from app_private.route_plan_versions plan where plan.id=g.current_plan_version_id)
+  else app_private.start_ops_route_preview(g.id) end route,
+  case when g.route_mode='legacy' and selected.id is null then 'stored_legacy_plan' else 'current_ops_preview' end source
+  from groups g left join lateral(select * from app_private.group_runs run where run.group_id=g.id order by case when run.status in ('live','paused') then 0 else 1 end,run.created_at desc,run.id desc limit 1) run on true
+  left join app_private.group_schedule_revisions selected on selected.id=coalesce(run.schedule_revision_id,g.current_schedule_revision_id)),
+ checked_stops as materialized(select source.id group_id,source.system_code,(stop->>'portalId')::uuid portal_id,stop->>'kind' kind,(stop->>'sequence')::integer sequence
+  from preview_sources source cross join lateral jsonb_array_elements(coalesce(source.route->'stops','[]'::jsonb)) stop),
+ preview_checks as materialized(select jsonb_build_object('code',source.system_code,'source',source.source,
+  'sourceScheduleRevision',source.source_schedule_revision,'routeRevision',source.route->'revision',
+  'hasConfirmedStart',coalesce((source.route->>'hasConfirmedStart')::boolean,false),
+  'startMarkerValid',coalesce(
+    (coalesce(source.route->'start',app_private.published_start_projection(source.id,(select starts_at from publications where group_id=source.id)))#>>'{coordinate,0}')::numeric between -180 and 180
+    and (coalesce(source.route->'start',app_private.published_start_projection(source.id,(select starts_at from publications where group_id=source.id)))#>>'{coordinate,1}')::numeric between -90 and 90,false),
+  'startEntrancePresent',nullif(trim(coalesce(source.route#>>'{start,arrivalInstructions}',
+    app_private.published_start_projection(source.id,(select starts_at from publications where group_id=source.id))->>'arrivalInstructions','')),'') is not null,
+  'ordinaryHouses',(select count(distinct coalesce(p.application_id,p.id)) from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id and stop.kind='ordinary'),
+  'finales',(select count(distinct coalesce(p.application_id,p.id)) from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id and stop.kind='finale'),
+  'totalPhysicalVisits',(select count(distinct coalesce(p.application_id,p.id)) from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id and stop.kind in('ordinary','finale')),
+  'duplicatePhysicalLocations',coalesce((select jsonb_agg(jsonb_build_object('portalCodes',codes,'visits',n)) from(
+   select array_agg(distinct p.system_code order by p.system_code) codes,count(*) n from checked_stops stop join portals p on p.id=stop.portal_id
+   where stop.group_id=source.id and stop.kind in('ordinary','finale') group by coalesce(p.application_id,p.id) having count(*)>1) duplicates),'[]'::jsonb),
+  'ordinaryAndersReachable',exists(select 1 from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id and stop.kind='ordinary' and p.world_slug='anders'),
+  'finaleUsedAsOrdinary',exists(select 1 from checked_stops stop cross join settings s where stop.group_id=source.id and stop.kind='ordinary' and stop.portal_id=s.final_portal_id),
+  'invalidDestinationCodes',coalesce((select jsonb_agg(distinct p.system_code) from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id
+   and not coalesce(p.lat between -90 and 90 and p.lon between -180 and 180,false)),'[]'::jsonb),
+  'missingEntranceInstructionCodes',coalesce((select jsonb_agg(distinct p.system_code) from checked_stops stop join portals p on p.id=stop.portal_id where stop.group_id=source.id and not p.entrance_present),'[]'::jsonb),
+  'warningCodes',coalesce((select jsonb_agg(distinct case
+   when warning ilike '%Anders%' then 'ORDINARY_ANDERS_UNREACHABLE'
+   when warning ilike '%hemelsbreed%' then 'STRAIGHT_LINE_ESTIMATE'
+   when warning ilike '%finalevenster%' then 'FINALE_WINDOW_REVIEW'
+   when warning ilike '%eindpoort%' then 'FINALE_POSITION_REVIEW'
+   when warning ilike '%gekoppelde eerste%' then 'LINKED_FIRST_VISIT_REVIEW'
+   when warning ilike '%Niet ieder beschikbaar huis%' then 'NOT_ALL_HOUSES_FIT'
+   when warning ilike '%Kies en bevestig%' then 'START_NOT_CONFIRMED'
+   else 'ROUTE_REVIEW_REQUIRED' end) from jsonb_array_elements_text(coalesce(source.route->'warnings','[]'::jsonb)) warning),'[]'::jsonb),
+  'storedBoardSourceMatches',case when lp.group_id is null then null else lp.schedule_id is not distinct from source.source_schedule_id end,
+  'storedBoardPortalOrderMatches',case when lp.group_id is null then null else
+   (select coalesce(jsonb_agg(stop.portal_id order by stop.sequence),'[]'::jsonb) from checked_stops stop where stop.group_id=source.id and stop.kind<>'start')=
+   (select coalesce(jsonb_agg(visit.portal_id order by visit.sequence),'[]'::jsonb) from app_private.live_route_visits visit where visit.group_id=source.id and visit.retired_at is null and visit.kind<>'start') end) item
+ from preview_sources source left join app_private.live_route_plans lp on lp.group_id=source.id)
+select audit||jsonb_build_object('routeProjection',jsonb_build_object('readable',true,'databaseReadOnly',current_setting('transaction_read_only')='on',
+ 'authorizedExistingAdmin',true,'source','same stable route projector as Startregie','inputHash',app_private.start_planning_input_hash(e.id),
+ 'routeRevision',app_private.start_ops_route_revision(e.id),'groups',(select coalesce(jsonb_agg(item order by item->>'code'),'[]'::jsonb) from preview_checks))) audit from report cross join e`)};
+commit;`;
+
+export function ownerPreviewAllowed(env) {
+  return env.GITHUB_REPOSITORY === 'duindorpdoet/platform' && env.GITHUB_REF === 'refs/heads/production'
+    && (!env.APP_ENVIRONMENT || env.APP_ENVIRONMENT === 'production');
+}
+
 export const SNAPSHOT_STATS_QUERY = `select calls,round(mean_exec_time::numeric,2) mean_ms,round(max_exec_time::numeric,2) max_ms,rows,
  case when query ilike '%admin_live_planboard_snapshot%' then 'admin_live_planboard_snapshot' else 'other' end rpc
  from extensions.pg_stat_statements where query ilike '%admin_live_planboard_snapshot%' and query not ilike '%pg_stat_statements%' order by calls desc limit 10`;
 
-export async function runAudit(env = process.env) {
+export async function runAudit(env = process.env, request = fetch) {
   if (!/^[a-z0-9]{15,30}$/.test(env.SUPABASE_PROJECT_REF ?? "") || !env.SUPABASE_ACCESS_TOKEN) throw new Error("READ_ONLY_AUDIT_CONFIGURATION_REQUIRED");
-  async function query(sql) {
-    const response = await fetch(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}/database/query`, {
+  async function query(sql, ownerReadOnly = false) {
+    if (ownerReadOnly && (sql !== PREVIEW_AUDIT_QUERY || !ownerPreviewAllowed(env))) throw new Error("OWNER_READ_ONLY_AUDIT_BOUNDARY");
+    const response = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}/database/query`, {
       method: "POST", headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ read_only: true, query: sql }), signal: AbortSignal.timeout(60_000),
+      body: JSON.stringify({ read_only: !ownerReadOnly, query: sql }), signal: AbortSignal.timeout(60_000),
     });
-    if (!response.ok) throw new Error(`READ_ONLY_AUDIT_${response.status}`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      const code = /^[0-9A-Z]{5}$/.test(body?.code ?? "") ? body.code : typeof body?.message === "string" ? body.message.match(/ERROR:\s*([0-9A-Z]{5}):/)?.[1] : null;
+      throw new Error(`${ownerReadOnly ? "OWNER_READ_ONLY_AUDIT" : "READ_ONLY_AUDIT"}_HTTP_${response.status}_SQLSTATE_${code ?? "UNKNOWN"}`);
+    }
     return response.json();
   }
-  const [{ audit }] = await query(AUDIT_QUERY);
+  let [{ audit }] = await query(AUDIT_QUERY);
   if (!audit || !Array.isArray(audit.groups)) throw new Error("READ_ONLY_AUDIT_EVENT_MISSING");
+  if (ownerPreviewAllowed(env)) {
+    try {
+      const [projected] = await query(PREVIEW_AUDIT_QUERY, true);
+      if (!projected?.audit?.routeProjection?.databaseReadOnly || !projected.audit.routeProjection.authorizedExistingAdmin) throw new Error("OWNER_READ_ONLY_AUDIT_PROOF_MISSING");
+      audit = projected.audit;
+      const checks = new Map(audit.routeProjection.groups.map(group => [group.code, group]));
+      audit.groups = audit.groups.map(group => ({ ...group, routeCheck: checks.get(group.code) ?? null }));
+    } catch (error) {
+      audit.routeProjection = { readable: false, reasonCode: /^OWNER_READ_ONLY_AUDIT_[A-Z0-9_]+$/.test(error?.message ?? "") ? error.message : "BOUNDED_PREVIEW_INSPECTION_UNAVAILABLE" };
+    }
+  } else audit.routeProjection = { readable: false, reasonCode: "PROTECTED_PRODUCTION_ENVIRONMENT_REQUIRED" };
   let statementStats;
   try { statementStats = { readable: true, statements: await query(SNAPSHOT_STATS_QUERY) }; }
   catch { statementStats = { readable: false, reason: "Statement statistics unavailable to the read-only management role" }; }

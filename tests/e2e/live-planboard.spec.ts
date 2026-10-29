@@ -13,7 +13,13 @@ async function login(context:BrowserContext,email='admin@example.invalid') {
  await context.addCookies(Array.from({length:Math.ceil(value.length/3180)},(_,i)=>({name:value.length<=3180?name:`${name}.${i}`,value:value.slice(i*3180,(i+1)*3180),url:'https://127.0.0.1:3443',sameSite:'Lax' as const})));return client;
 }
 async function rpc(client:SupabaseClient,name:string,args:Record<string,unknown>){const r=await client.schema('api').rpc(name,args);expect(r.error,JSON.stringify(r.error)).toBeNull();return r.data;}
-async function snapshot(client:SupabaseClient):Promise<BoardSnapshot>{return rpc(client,'admin_live_planboard_snapshot',{_event_slug:event});}
+async function snapshot(client:SupabaseClient):Promise<BoardSnapshot>{
+ for(let attempt=0;attempt<100;attempt++){
+  const result=await rpc(client,'admin_live_planboard_snapshot',{_event_slug:event}) as BoardSnapshot;
+  if((result.initializationPending??0)===0)return result;
+ }
+ throw new Error('Synthetic live planboard initialization did not finish within 100 bounded reads');
+}
 test.describe.configure({mode:'serial'});
 test.skip(!url||!key,'Requires isolated real Auth and database');
 test.beforeAll(()=>{
@@ -39,6 +45,24 @@ test('real planboard route, keyboard move, equal shift, undo/redo and responsive
  await page.getByRole('button',{name:'Opnieuw',exact:true}).click();await page.getByRole('dialog').getByRole('textbox').fill('Dezelfde gecontroleerde conceptverplaatsing opnieuw toepassen');await page.getByRole('dialog').getByRole('button',{name:'Route-intentie opslaan',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
  await mkdir('docs/ops/screenshots/live-planboard',{recursive:true});
  for(const width of [1440,390]){await page.setViewportSize({width,height:900});await page.getByRole('button',{name:'Hele avond passend',exact:true}).click();await expect(page.locator('.planboard-scroll')).toBeVisible();await page.screenshot({path:`docs/ops/screenshots/live-planboard/board-${width}.png`});}
+});
+test('timeout keeps the last snapshot visible and prevents writes until a successful retry',async({page,context})=>{
+ const client=await login(context);const before=await snapshot(client);const visit=before.visits.find(v=>v.groupId===gid&&v.editable)!;
+ await page.goto('/admin');await selectOrganizationSection(page,'Poorten');await page.getByRole('tab',{name:'Live planbord',exact:true}).click();
+ const block=page.locator(`[data-visit-id="${visit.id}"]`);await expect(block).toBeVisible();
+ const visibleBefore=await page.locator('[data-visit-id]').count();let fail=true;const writes:string[]=[];
+ page.on('request',request=>{if(/\/rpc\/admin_live_planboard_(preview|apply|publish)$/.test(request.url()))writes.push(request.url());});
+ await page.route('**/rest/v1/rpc/admin_live_planboard_snapshot',route=>fail?route.fulfill({status:504,json:{code:'PGRST000',message:'TimeoutError: signal timed out'}}):route.continue());
+ await page.getByRole('region',{name:'Live planbord',exact:true}).getByRole('button',{name:'Vernieuwen',exact:true}).click();
+ await expect(page.getByRole('alert').filter({hasText:'duurde te lang'})).toBeVisible();
+ await expect(page.getByText(/Mogelijk verouderd · Laatst succesvol opgehaald/)).toBeVisible();
+ await expect(page.locator('[data-visit-id]')).toHaveCount(visibleBefore);
+ await block.focus();await page.keyboard.press('ArrowRight');
+ await expect(page.getByRole('dialog')).toHaveCount(0);expect(writes).toEqual([]);
+ fail=false;await page.getByRole('region',{name:'Live planbord',exact:true}).getByRole('button',{name:'Vernieuwen',exact:true}).click();
+ await expect(page.getByRole('alert').filter({hasText:'duurde te lang'})).toHaveCount(0);
+ await expect(page.getByText(/Mogelijk verouderd · Laatst succesvol opgehaald/)).toHaveCount(0);
+ expect((await snapshot(client)).inputHash).toBe(before.inputHash);
 });
 test('pointer cancel retains the dragged node and creates no server mutation',async({page,context})=>{
  const client=await login(context);const before=await snapshot(client);const visit=before.visits.find(v=>v.groupId===gid&&v.sequence===2)!;

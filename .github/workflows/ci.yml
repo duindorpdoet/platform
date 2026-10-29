@@ -93,6 +93,11 @@ jobs:
         run: pnpm exec supabase db reset
       - name: Run pgTAP contracts
         run: pnpm exec supabase test db
+      - name: Measure bounded planboard reads on synthetic event sizes
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" BOARD_BENCH_REQUIRE_FAST=true node scripts/acceptance/live-planboard-performance.mjs
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" BOARD_BENCH_GROUPS=50 BOARD_BENCH_PORTALS=30 BOARD_BENCH_REQUIRE_FAST=true node scripts/acceptance/live-planboard-performance.mjs
       - name: Verify exact backup fingerprints across PostgreSQL render settings
         env:
           BACKUP_FINGERPRINT_DB_CONTAINER: supabase_db_duindorphalloween
@@ -179,6 +184,24 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm exec playwright test tests/e2e/group-operations.spec.ts --project=desktop-chromium --workers=1
           pnpm exec supabase db reset
           NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm exec playwright test tests/e2e/finale-target.spec.ts --project=desktop-chromium --workers=1
+          pnpm exec supabase db reset
+      - name: Verify saved start readiness, released entrances and world compensation
+        env:
+          APP_ENVIRONMENT: test
+          REGISTRATION_MODE: staging_test
+          APP_URL: http://127.0.0.1:3100
+          ALLOWED_ORIGINS: http://127.0.0.1:3100
+          ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" node scripts/acceptance/world-policy-preservation.mjs
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" node scripts/acceptance/live-planboard-read-concurrency.mjs
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" node scripts/acceptance/world-compensation-concurrency.mjs
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm exec playwright test tests/e2e/start-readiness-time.spec.ts --project=desktop-chromium --workers=1
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" pnpm exec playwright test tests/e2e/released-destination.spec.ts --project=desktop-chromium --workers=1
           pnpm exec supabase db reset
       - name: Run offline, reconnect and private-payload browser acceptance
         env:

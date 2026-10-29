@@ -2,11 +2,18 @@ export type BoardVisit = {id:string;groupId:string;portalId:string;sequence:numb
 export type BoardPortal = {id:string;name:string;code:string;world:string;worldSlug:string;operationStatus:string;lifecycleStatus?:string;approvalStatus?:string;finale:boolean;windows:Array<{opensAt:string;closesAt:string;maxGroups:number;maxChildren:number;durationSeconds:number;bufferSeconds:number}>};
 export type BoardGroup = {id:string;code:string;name:string;version:number;runId:string|null;publishedStartsAt:string|null;draftStartsAt:string|null;scheduleId:string;scheduleRevision:number;settingsVersion:number;confirmed:boolean;recipients:number;activeChildren?:number|null;households:Array<{reference:string;preferredStartAt:string|null;ordinaryStopAt:string|null;desiredEndAt:string|null;childCount:number}>};
 export type BoardWarning = {code:string;severity:"block"|"warning";message:string;visitIds:string[];groupIds:string[]};
-export type BoardSnapshot = {eventId:string;eventDate:string;generatedAt:string;inputHash:string;realtimeTopic:string;visits:BoardVisit[];portals:BoardPortal[];groups:BoardGroup[];warnings:BoardWarning[]};
+export type BoardSnapshot = {eventId:string;eventDate:string;generatedAt:string;inputHash:string;realtimeTopic:string;initializationPending?:number;visits:BoardVisit[];portals:BoardPortal[];groups:BoardGroup[];warnings:BoardWarning[]};
 export type BoardCommand = {action:"move";visitId:string;portalId:string;startsAt:string;durationSeconds:number;shiftFollowing:boolean}|{action:"undo"|"redo";restoreKey:string};
 export type BoardChange = {id:string;groupId:string;portalId:string;startsAt:string;durationSeconds:number;bufferSeconds:number;source:string};
 export type BoardPreview = {inputHash:string;groupCode:string;before:BoardChange[];changes:BoardChange[];warnings:BoardWarning[];requiresConfirmation:boolean;publishedStartsAt:string|null;changesStart:boolean;communication:string;recipients:number};
 export const boardStatus = {planned:"Gepland",underway:"Onderweg",present:"Aanwezig",completed:"Afgerond",skipped:"Overgeslagen"};
+export function planboardErrorText(error:unknown):string {
+ const message=typeof error==="string"?error:error&&typeof error==="object"&&"message" in error?String(error.message):"";
+ if(/STALE_/.test(message))return "De planning is intussen gewijzigd. Controleer de actuele impact opnieuw; de oude opdracht is niet toegepast.";
+ if(/LIVE_PLANBOARD_INITIALIZING/.test(message))return "De routevoorstellen worden nog voorbereid. Wacht tot alle groepen zijn opgehaald en controleer de impact opnieuw.";
+ if(/timeout|timed out|abort/i.test(message)||error instanceof Error&&/TimeoutError|AbortError/.test(error.name))return "Het ophalen van de planning duurde te lang of werd onderbroken. Probeer opnieuw.";
+ return message||"De actuele planning kon niet worden opgehaald. Probeer opnieuw.";
+}
 export function snappedStart(value:number) {return Math.round(value/600_000)*600_000;}
 export function shiftedVisits(visits:BoardVisit[],selected:BoardVisit,portalId:string,startsAt:string,following:boolean,durationSeconds=selected.durationSeconds):BoardVisit[] {
  const delta=Date.parse(startsAt)-Date.parse(selected.startsAt);

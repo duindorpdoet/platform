@@ -154,3 +154,13 @@
 .modern-ui .gate-arrival-confirm{width:100%;min-height:49px;font-size:13px!important;white-space:normal;line-height:1.5;justify-content:center;gap:10px}
 .modern-ui .gate-arrival-separate{font-size:12px;line-height:1.5;color:#8ea5c5;padding:8px;background:none;border:0;text-decoration:underline;text-underline-offset:4px;min-height:36px}
 @media(max-width:600px){.modern-ui .gate-arrival-dialog{padding:24px 20px;gap:13px;border-radius:16px}.modern-ui .gate-arrival-dialog [data-slot="dialog-title"]{font-size:23px}.modern-ui .gate-arrival-dialog [data-slot="dialog-description"]{font-size:12px}.modern-ui .gate-arrival-children label{padding:12px}.modern-ui .gate-arrival-confirm{font-size:12px!important}}
+
+/* Keep the exact entrance and its instructions beside the address on mobile. */
+.modern-ui .route-workspace .released-destination{display:grid;gap:11px;min-width:0}
+.modern-ui .route-workspace .released-destination-address{display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.6;overflow-wrap:anywhere;margin:0}
+.modern-ui .route-workspace .released-destination-address svg{flex-shrink:0;margin-top:3px}
+.modern-ui .route-workspace .released-destination-entrance{padding:12px;border:1px solid #f5ae6940;border-radius:9px;background:#f5ae6909;font-size:13px;line-height:1.6}
+.modern-ui .route-workspace .released-destination-entrance p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.modern-ui .route-workspace .released-destination-pin-note{font-size:11px;line-height:1.6;color:#a5b5ca;margin:0}
+.modern-ui .route-workspace .released-destination-navigation{width:100%;min-height:44px;font-size:12px;white-space:normal;text-align:center}
+@media(max-width:700px){.modern-ui .route-workspace .route-map-card{order:4}.modern-ui .route-workspace .scan-panel{order:5}.modern-ui .route-workspace .participant-panel{order:6}.modern-ui .route-workspace .group-start-destination{order:0}.modern-ui .route-workspace .released-destination-entrance{font-size:13px}}

@@ -69,7 +69,7 @@ jobs:
         run: node scripts/deploy/mail-test-policy.mjs
   readonly-baseline:
     name: Read-only production evening baseline
-    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && (github.ref == 'refs/heads/production' || github.ref == 'refs/heads/codex/halloween-readiness-20261029')
+    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && github.ref == 'refs/heads/production'
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -124,6 +124,15 @@ jobs:
           node-version: 24
       - name: Require exact successful staging revision
         run: node scripts/deploy/require-staging-success.mjs
+      - name: Audit saved routes before migration (read only)
+        run: node scripts/deploy/evening-readiness-audit.mjs
+      - name: Retain coded readiness checkpoint before migration
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: readiness-before-production-${{ github.sha }}
+          path: ${{ runner.temp }}/duindorp-evening-baseline/audit.json
+          retention-days: 14
+          if-no-files-found: error
       - name: Verify the canonical live portal hotfix with production credentials
         run: node scripts/deploy/repair-portal-hotfix-history.mjs
       - name: Snapshot, encrypt, restore and dry-run exact migrations
@@ -307,6 +316,15 @@ jobs:
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed production release
         run: node scripts/deploy/verify-deployment.mjs production "${APP_URL}"
+      - name: Audit saved routes after deployment (read only)
+        run: node scripts/deploy/evening-readiness-audit.mjs
+      - name: Retain coded readiness report after deployment
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: readiness-after-production-${{ github.sha }}
+          path: ${{ runner.temp }}/duindorp-evening-baseline/audit.json
+          retention-days: 14
+          if-no-files-found: error
       - name: Verify text status RPC through the real service role route
         run: node scripts/deploy/diagnose-mail-worker.mjs --require-v2
       - name: Activate Resend default for the authorized exact release

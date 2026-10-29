@@ -116,6 +116,7 @@ export type PortalRoom = {
     code: string;
     name: string;
     description: string;
+    publicEntranceInstructions?: string | null;
     world: string;
     worldSlug: string;
     state: keyof typeof portalStates;

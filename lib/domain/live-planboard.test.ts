@@ -1,7 +1,12 @@
 import {describe,it,expect} from "vitest";
-import {snappedStart,shiftedVisits,visitLanes,keepVisibleDuringDrag,localBoardWarnings,warningForGroup,type BoardVisit,type BoardPortal} from "./live-planboard";
+import {snappedStart,shiftedVisits,visitLanes,keepVisibleDuringDrag,localBoardWarnings,warningForGroup,planboardErrorText,type BoardVisit,type BoardPortal} from "./live-planboard";
 const visit=(id:string,groupId="a",minute=0):BoardVisit=>({id,groupId,portalId:"p",sequence:Number(id)||1,kind:"ordinary",source:"expected",version:1,startsAt:new Date(Date.UTC(2026,9,31,17,minute)).toISOString(),plannedStartsAt:"",endsAt:new Date(Date.UTC(2026,9,31,17,minute+5)).toISOString(),durationSeconds:300,bufferSeconds:120,status:"planned",editable:true,confirmed:false,actualArrivalAt:null,actualDepartureAt:null});
 describe("live planboard interactions",()=>{
+ it("translates transport timeout and abort variants without hiding a stale revision",()=>{
+  for(const failure of ["TimeoutError: signal timed out",new DOMException("signal timed out","TimeoutError"),{message:"AbortError: operation was aborted"}])expect(planboardErrorText(failure)).toContain("Probeer opnieuw");
+  expect(planboardErrorText({message:"STALE_VERSION"})).toContain("oude opdracht is niet toegepast");
+  expect(planboardErrorText({message:"LIVE_PLANBOARD_INITIALIZING"})).toContain("nog voorbereid");
+ });
  it("snaps 18:13 to 18:10 without turning a five minute visit into ten minutes",()=>{expect(new Date(snappedStart(Date.UTC(2026,9,31,17,13))).getUTCMinutes()).toBe(10);});
  it("shifts only later planned stops of the selected group by one equal delta",()=>{const all=[{...visit("1"),status:"completed" as const,editable:false,source:"actual" as const},visit("2","a",10),visit("3","a",25),visit("4","b",30)];const after=shiftedVisits(all,all[1],"q",new Date(Date.UTC(2026,9,31,17,20)).toISOString(),true);expect(after[0]).toBe(all[0]);expect(after[3]).toBe(all[3]);expect(after[1].portalId).toBe("q");expect(after[2].portalId).toBe("p");expect(Date.parse(after[2].startsAt)-Date.parse(after[1].startsAt)).toBe(15*60000);expect(after[1].durationSeconds).toBe(300);});
  it("does not cap a delayed visit back into the standard evening",()=>{const v=visit("1");const after=shiftedVisits([v],v,"p","2026-10-31T22:00:00Z",true);expect(after[0].startsAt).toBe("2026-10-31T22:00:00.000Z");});

@@ -1,4 +1,5 @@
 begin;
+\ir helpers/ready_live_planboard.inc
 create extension if not exists pgtap with schema extensions;
 select no_plan();
 create temp table journey(eid uuid,event_version integer,schedule_id uuid,run_id uuid,stop_id uuid,run_version integer,
@@ -37,7 +38,7 @@ update journey j set stop_id=r.current_stop_id,run_version=r.version from app_pr
 
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 create temp table intent(snapshot jsonb,visit_id uuid,target uuid,command jsonb,preview jsonb,result jsonb,before_hash text,mails bigint);
-insert into intent(snapshot,mails) select api.admin_live_planboard_snapshot('duindorp-halloween-2026'),(select count(*) from app_private.email_outbox);
+insert into intent(snapshot,mails) select pg_temp.ready_live_planboard('duindorp-halloween-2026'),(select count(*) from app_private.email_outbox);
 update intent set visit_id=(select id from app_private.live_route_visits where group_id='23000000-0000-0000-0000-000000000002' and run_stop_id is null and kind='ordinary' order by sequence limit 1),target=(select p.id from app_private.portals p where p.id<>'12000000-0000-0000-0000-000000000030' and not exists(select 1 from app_private.live_route_visits v where v.group_id='23000000-0000-0000-0000-000000000002' and v.portal_id=p.id) and p.lifecycle_status='active' and app_private.portal_location_ready(p.id) order by p.id limit 1),before_hash=(select md5(to_jsonb(s)::text) from app_private.run_stops s where s.id=(select stop_id from journey));
 update intent set command=jsonb_build_object('action','move','visitId',visit_id,'portalId',target,'startsAt',date_trunc('hour',clock_timestamp())+(ceil(extract(minute from clock_timestamp())/10)+2)*interval '10 minutes','shiftFollowing',true);
 update intent set preview=api.admin_live_planboard_preview('duindorp-halloween-2026',command,snapshot->>'inputHash');

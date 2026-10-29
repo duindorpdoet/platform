@@ -967,7 +967,7 @@ function Worlds({ snapshot }: { snapshot: BookSnapshot }) {
   return (
     <section className="pb-worlds">
       <p><a className="text-link" href="/poortenboek/ouder">Naar de ouderomgeving of een ander kindboek kiezen</a></p>
-      <section className="pb-panel" aria-label="Jouw zes wereldzegels"><h3>Jouw zes wereldzegels · {snapshot.worldCollection?.length ?? 0} van 6</h3><p>Ontbrekende werelden kun je bij een echte aankomst bij een snoeppoort van het type Anders ontdekken. Bonuszegels zijn extra werelden bij hetzelfde huis.</p><ul>{(snapshot.worldCollection ?? []).map(award=><li key={award.slug}>{award.name} · {award.origin === "compensation" ? "Bonuswereld ontdekt bij een snoeppoort" : "Ontdekt bij een themapoort"}</li>)}</ul></section>
+      <section className="pb-panel" aria-label="Jouw zes wereldzegels"><h3>Jouw zes wereldzegels · {snapshot.worldCollection?.length ?? 0} van 6</h3><p>{snapshot.worldCoverage?.status === "provisional" ? "Het huizenaanbod is nog voorlopig. Zodra de huisinschrijving gesloten is, staat vast welke ontbrekende werelden je bij Anders kunt ontdekken." : "Ontbrekende werelden kun je bij een echte aankomst bij een gewoon huis van het type Anders ontdekken. De overige bonuswerelden worden bij je laatste geschikte bezoek of eigen afsluiting aangevuld op jouw echte aankomst."} Bonuszegels zijn extra werelden bij hetzelfde huis en tellen niet als extra huisbezoeken.</p><ul>{(snapshot.worldCollection ?? []).map(award=><li key={award.slug}>{award.name} · {award.origin === "compensation" ? "Bonuswereld ontdekt bij een snoeppoort" : "Ontdekt bij een themapoort"}</li>)}</ul></section>
       <div className="pb-section-heading">
         <div>
           <p className="pb-eyebrow">Hoofdstukken achter gesloten deuren</p>

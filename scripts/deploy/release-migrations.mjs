@@ -53,6 +53,10 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261028165711_person_and_group_name_boundaries.sql',
   '20261028223212_include_manual_active_portals.sql',
   '20261029021051_group_completion_target.sql',
+  '20261029115329_closure_based_world_compensation.sql',
+  '20261029115340_start_publication_readiness.sql',
+  '20261029115344_released_destination_markers.sql',
+  '20261029115723_bounded_live_planboard_reads.sql',
 
 ]);
 
