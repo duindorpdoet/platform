@@ -1,15 +1,32 @@
 import { test, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
-import { createTogetherFixtures, sql } from "../../scripts/acceptance/together-fixtures.mjs";
+import { randomUUID } from "node:crypto";
+import { createTogetherFixtures, requireLocalTogetherDatabase, sql } from "../../scripts/acceptance/together-fixtures.mjs";
 import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/guidance";
 import { assertReadableLayout } from "./helpers/layout";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 test("a synthetic late group sees and saves a complete, honestly explained overrun proposal", async ({ page, context }) => {
   test.skip(!url || !key, "Requires isolated local Auth and database fixtures");
   test.setTimeout(90_000);
+  requireLocalTogetherDatabase();
   const client = createClient(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
   const login = await client.auth.signInWithPassword({ email: "admin@example.invalid", password: "local-test-only" });
   expect(login.error).toBeNull(); await prepareFixtureGuidance(client);
+  // Retain every seed family and immutable publication, but retire unrelated
+  // appointments through the same reviewed reset used by the organization UI.
+  // Its 23 seeded children otherwise already exceed this scenario's hard 20.
+  // Repeating this setup also retires this test's own prior saved bookings.
+  const preserved = () => sql(`select jsonb_build_array(
+    (select md5(jsonb_agg(to_jsonb(c) order by c.id)::text) from app_private.registration_children c),
+    (select md5(jsonb_agg(to_jsonb(p) order by p.id)::text) from app_private.payment_requests p),
+    (select md5(jsonb_agg(to_jsonb(p) order by p.publication_order)::text) from app_private.group_start_publications p))`);
+  const beforeReset = preserved();
+  const impact = await client.schema("api").rpc("admin_group_operations_preview", { _event_slug: "duindorp-halloween-2026" });
+  expect(impact.error).toBeNull();
+  const reset = await client.schema("api").rpc("admin_group_operations_apply", { _event_slug: "duindorp-halloween-2026", _action: "reset",
+    _input_hash: impact.data.inputHash, _payload: { confirmation: "ALLE GROEPEN TERUGZETTEN" }, _idempotency_key: randomUUID() });
+  expect(reset.error).toBeNull(); expect(preserved()).toBe(beforeReset);
+  sql(`update app_private.start_points set active=false where id='20000000-0000-0000-0000-000000000001' or name like 'Synthetic start %'`);
   const name = `sb-${new URL(url!).hostname.split(".")[0]}-auth-token`, value = `base64-${Buffer.from(JSON.stringify(login.data.session)).toString("base64url")}`;
   await context.addCookies(Array.from({ length: Math.ceil(value.length / 3180) }, (_, i) => ({ name: value.length <= 3180 ? name : `${name}.${i}`, value: value.slice(i * 3180, (i + 1) * 3180), url: "http://127.0.0.1:3100", sameSite: "Lax" as const })));
   const registrations = createTogetherFixtures(6, 1, 1).map(p => p.members[0].id);
@@ -41,7 +58,8 @@ test("a synthetic late group sees and saves a complete, honestly explained overr
   await page.goto("/admin"); await selectOrganizationSection(page, "Startregie");
   await page.getByRole("button", { name: "Groepen automatisch over startpunten verdelen", exact: true }).click();
   const proposal = page.getByRole("region", { name: "Bestaande groepen automatisch plannen" }).locator(".proposal-row");
-  await expect(proposal).toHaveCount(1);
+  try { await expect(proposal).toHaveCount(1); }
+  catch (error) { console.error("Synthetic finale planning notice:", await page.getByRole("status").allTextContents()); throw error; }
   for (const text of ["Startvoorkeur 18:30", "startmatch", "Gewenst klaar 21:00", "verwacht klaar 21:04", "4 minuten uitloop", "gewone poorten tot 20:30", "finale-aankomst 20:54", "fysieke bezetting tot 21:06", "geen bezoektijd"]) await expect(proposal).toContainText(text);
   for (const width of [1440, 390]) { await page.setViewportSize({ width, height: 1000 }); await assertReadableLayout(page); await proposal.scrollIntoViewIfNeeded(); await page.screenshot({ path: test.info().outputPath(`proposal-${width}.png`) }); }
   await page.getByRole("button", { name: "Conceptslotverdeling opslaan", exact: true }).click();
