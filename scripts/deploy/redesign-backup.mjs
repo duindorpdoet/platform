@@ -10,6 +10,7 @@ import { REVIEWED_RELEASE_MIGRATIONS,reviewedRepositoryMigrations,assertReviewed
 import { installedStagingHistory } from './staging-installed-history.mjs';
 import { backupKey, sealBackup } from './redesign-preflight.mjs';
 import { reconcileWorldPolicyInitialization,worldPolicyInitializationQuery } from './world-policy-reconciliation.mjs';
+import { jointRoutePolicyReleaseQuery,reconcileJointRoutePolicyRelease } from './joint-route-policy-reconciliation.mjs';
 
 const quote=value=>'"'+value.replaceAll('"','""')+'"';
 const literal=value=>"'"+value.replaceAll("'","''")+"'";
@@ -52,10 +53,12 @@ export function preservationQuery(catalog,coverageBefore) {
   const session="set local timezone='UTC';set local datestyle='ISO';set local extra_float_digits=3;";
   const fingerprints=fingerprintQuery(catalog);
   const coverage=worldPolicyInitializationQuery(coverageBefore);
+  const routePolicy=jointRoutePolicyReleaseQuery(catalog);
   if(!fingerprints.startsWith(session)||!coverage.startsWith(session))throw new Error('PRESERVATION_QUERY_SESSION_REQUIRED');
-  return session+`with coverage as (${coverage.slice(session.length)}) select jsonb_build_object(
+  return session+`with coverage as (${coverage.slice(session.length)}),route_policy as (${routePolicy}) select jsonb_build_object(
     'rows',(select jsonb_agg(fingerprint) from (${fingerprints.slice(session.length)}) fingerprints),
-    'worldPolicyInitialization',(select coverage_initialization from coverage)) as preservation`;
+    'worldPolicyInitialization',(select coverage_initialization from coverage),
+    'jointRoutePolicyRelease',(select joint_route_policy_release from route_policy)) as preservation`;
 }
 // Management's read_only role cannot execute the existing private location
 // helper. Use the deployment owner for this fixed inspection only, while
@@ -199,7 +202,7 @@ async function main() {
     const knownVersions=new Set([...repositoryMigrations,...installedStagingHistory()].map(name=>name.split('_')[0]));
     if(appliedMigrations.some(version=>!knownVersions.has(version))||repositoryMigrations.filter(name=>!reviewedSet.has(name)).some(name=>!appliedMigrations.includes(name.split('_')[0])))throw new Error('LIVE_MIGRATION_HISTORY_DRIFT');
     const preservationBefore=JSON.parse(await sourceQuery(preservationQuery(catalog),snapshot));
-    const before=preservationBefore.rows,coverageBefore=preservationBefore.worldPolicyInitialization;
+    const before=preservationBefore.rows,coverageBefore=preservationBefore.worldPolicyInitialization,routePolicyBefore=preservationBefore.jointRoutePolicyRelease;
     const roles=JSON.parse(await sourceQuery("select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper,'eventTriggerOwner',exists(select 1 from pg_event_trigger where evtowner=pg_roles.oid))) from pg_roles where rolname not like 'pg_%'",snapshot));
     const memberships=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(jsonb_build_object('role',r.rolname,'member',m.rolname,'adminOption',a.admin_option,'inheritOption',a.inherit_option,'setOption',a.set_option)),'[]') from pg_auth_members a join pg_roles r on r.oid=a.roleid join pg_roles m on m.oid=a.member",snapshot));
     const objects=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]') from storage.objects o",snapshot));
@@ -260,9 +263,11 @@ async function main() {
     const migratedPreservation=JSON.parse(await localQuery('begin;'+preservationQuery(catalog,coverageBefore)+';commit'));
     const migrated=migratedPreservation.rows,coverageAfter=migratedPreservation.worldPolicyInitialization;
     const coverageReconciliation=reconcileWorldPolicyInitialization(coverageBefore,coverageAfter,reviewedMigrations.map(file=>file.split('_')[0]));
-    const reconciledTables=new Set(coverageReconciliation.reconciledTables);
-    const migrationDifferences=[...new Set([...compareFingerprints(before,migrated).filter(table=>!reconciledTables.has(table)),...coverageReconciliation.failures])];
+    const jointRoutePolicyReconciliation=reconcileJointRoutePolicyRelease(routePolicyBefore,migratedPreservation.jointRoutePolicyRelease,reviewedMigrations.map(file=>file.split('_')[0]));
+    const reconciledTables=new Set([...coverageReconciliation.reconciledTables,...jointRoutePolicyReconciliation.reconciledTables]);
+    const migrationDifferences=[...new Set([...compareFingerprints(before,migrated).filter(table=>!reconciledTables.has(table)),...coverageReconciliation.failures,...jointRoutePolicyReconciliation.failures])];
     await save('world-policy-initialization.aes',{before:coverageBefore,after:coverageAfter,reconciliation:coverageReconciliation});
+    await save('joint-route-policy-release.aes',{before:routePolicyBefore,after:migratedPreservation.jointRoutePolicyRelease,reconciliation:jointRoutePolicyReconciliation});
     if(migrationDifferences.length)throw new Error('MIGRATION_DATA_MISMATCH: '+migrationDifferences.join(', '));
     // Preview historical exceptions only on the restored copy. Installing the
     // migrations and producing this report never starts an automatic backfill.
@@ -274,7 +279,7 @@ async function main() {
     const legacyPrint=JSON.parse(await localQuery("select jsonb_build_object('activeCredentials',count(*),'hashOnly',count(*) filter(where not exists(select 1 from app_private.portal_print_material m where m.credential_id=c.id))) from app_private.portal_credentials c where c.revoked_at is null and c.valid_from<=now() and (c.valid_until is null or c.valid_until>now())"));
     const files=[];
     for(const name of (await readdir(directory)).filter(name=>name.endsWith('.aes')).sort())files.push({name,...await fileDigest(join(directory,name))});
-    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,vaultVerified:true,vaultSecrets:vaultBefore.length,tables:catalog.length,objects:objects.length,migrations,coverageReconciliation,backfill,legacyPrint,files,
+    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,vaultVerified:true,vaultSecrets:vaultBefore.length,tables:catalog.length,objects:objects.length,migrations,coverageReconciliation,jointRoutePolicyReconciliation,backfill,legacyPrint,files,
       limits:['Provider runtime secrets remain in the existing secret store.','No live database configuration, migration, credential, or row was changed by this job.','Isolated SQL restore is not an Auth/mail/browser acceptance result.']};
     proof.signature=createHmac('sha256',key).update(JSON.stringify(proof)).digest('hex');
     await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});
