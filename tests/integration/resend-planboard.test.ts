@@ -43,7 +43,16 @@ const actor="select set_config('request.jwt.claims','{\"sub\":\"f0000000-0000-00
 const runWorker=()=>worker(new Request("https://staging.example.invalid/api/jobs/mail",{method:"POST",headers:{authorization:"Bearer local-cron"},body:"{}"}));
 describe.skipIf(!container)("real planboard -> one worker -> signed Edge gateway -> Resend -> signed durable webhook",()=>{
  beforeAll(()=>{
-  const original=readFileSync("supabase/tests/085_planboard_publication.sql","utf8");
+  // Docker receives SQL on stdin, so psql cannot resolve host-relative \ir.
+  // Inline only this reviewed fixture helper; never follow arbitrary paths.
+  const source=readFileSync("supabase/tests/085_planboard_publication.sql","utf8");
+  const helpers=new Map([["helpers/ready_live_planboard.inc",readFileSync("supabase/tests/helpers/ready_live_planboard.inc","utf8")]]);
+  const original=source.replace(/^\\ir[ \t]+([^\r\n]+)$/gm,(_match,path:string)=>{
+   const helper=helpers.get(path.trim());
+   if(helper===undefined)throw new Error("UNREVIEWED_LOCAL_MAIL_FIXTURE_INCLUDE");
+   return helper;
+  });
+  if(/^\\(?:i|ir)\b/m.test(original))throw new Error("UNRESOLVED_LOCAL_MAIL_FIXTURE_INCLUDE");
   let setup=original.slice(0,original.indexOf("update board set vid="));
   setup=setup.replace("begin;","").replace("select no_plan();","").replace("create extension if not exists pgtap with schema extensions;","").replace("create temp table board(","create table app_private.resend_test_board(").replaceAll(/\bboard\b/g,"app_private.resend_test_board").replace("create temp table board_recipients","create table app_private.resend_test_recipients").replaceAll("board_recipients","app_private.resend_test_recipients");
   // Standalone local fixture; no user or remote database can be selected.
