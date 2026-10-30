@@ -1,6 +1,7 @@
 import type { JointRouteProposal } from "./joint-route-planner";
 
 export type JointRouteAlternatives = { general: JointRouteProposal; organizerCoverage: JointRouteProposal | null;
+  portalSpread?: JointRouteProposal;
   search?: { strategies: number; candidateEvaluations: number; maxCandidateEvaluations: number } };
 export type JointRouteProposalResponse = JointRouteProposal & { alternatives?: JointRouteAlternatives };
 

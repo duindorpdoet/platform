@@ -81,7 +81,8 @@ test("a joint proposal is read-only until reviewed draft apply, and true timebar
   const response = page.waitForResponse(response => response.url().endsWith("/api/admin/routes/proposal") && response.request().method() === "POST");
   await page.getByRole("button", { name: "Routes opnieuw berekenen met bevestigde starts", exact: true }).click(); const computed = await response; expect(computed.status()).toBe(200); const proposal = (await computed.json()).data as JointRouteProposalResponse;
   expect(proposal.valid, JSON.stringify(proposal.conflicts)).toBe(true); expect(proposal.groups).toHaveLength(4); expect(proposal.metrics.after.zeroVisitGroups).toBe(0);
-  for (const variant of [proposal.alternatives!.general, proposal.alternatives!.organizerCoverage].filter((item): item is JointRouteProposal => item !== null)) {
+  expect(proposal.optimization.mode).toBe("portal-spread");
+  for (const variant of [proposal.alternatives!.general, proposal.alternatives!.organizerCoverage, proposal.alternatives!.portalSpread].filter((item): item is JointRouteProposal => item != null)) {
     expect(variant.groups.some(group => group.visits.some(visit => visit.kind === "ordinary" && visit.portalId === unserved!.id))).toBe(true);
     expect(variant.metrics.after.unvisitedPortals).not.toContain(unserved!.id);
   }
@@ -89,6 +90,17 @@ test("a joint proposal is read-only until reviewed draft apply, and true timebar
   const dialog = page.getByRole("dialog", { name: "Gezamenlijk routevoorstel controleren", exact: true }); await expect(dialog).toContainText("Einde gewone poorten"); await expect(dialog).toContainText("Vrije tijd vóór P-38"); await expect(dialog).toContainText("Ontvangstwachten bij gewone huizen"); await expect(dialog).toContainText("Langste afzonderlijke wachttijd"); await expect(dialog).toContainText("Gewone poorten zonder bezoek");
   await expect(dialog).toContainText("voor die laatste wandeling geldt geen vaste tijd- of afstandsgrens");
   await expect(dialog).toContainText("Gewone poorten met echt bezoek");
+  await expect(dialog.getByRole("button", { name: "Spreidingsvariant beoordelen", exact: true })).toHaveAttribute("aria-pressed", "true");
+  const portalRow = dialog.getByLabel("Groepsbezoeken per actieve poort en variant").getByRole("row").filter({ has: page.getByRole("rowheader", { name: unserved!.code, exact: true }) });
+  const shownVariants = [proposal.alternatives!.portalSpread, proposal.alternatives!.general, proposal.alternatives!.organizerCoverage].filter((item): item is JointRouteProposal => item != null);
+  await expect(portalRow.getByRole("cell")).toHaveText([
+    String(proposal.metrics.before.byPortal.find(portal => portal.portalId === unserved!.id)?.visits ?? 0),
+    ...shownVariants.map(variant => String(variant.metrics.after.byPortal.find(portal => portal.portalId === unserved!.id)?.visits ?? 0)),
+  ]);
+  await dialog.getByRole("button", { name: "Algemene variant beoordelen", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: "Algemene variant beoordelen", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await dialog.getByRole("button", { name: "Spreidingsvariant beoordelen", exact: true }).click();
+  expect(invariants()).toEqual(saved);
   const finaleChanges = proposal.groups.filter(group => group.finaleChange);
   if (finaleChanges.length) {
     const changes = dialog.getByRole("region", { name: "Voorgestelde tijdswijzigingen bij P-38", exact: true });

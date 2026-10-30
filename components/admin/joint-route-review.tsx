@@ -31,6 +31,11 @@ export function JointRouteReview({ eventSlug, snapshot, disabled, onChanged }: {
   const portalCode = (id: string) => snapshot.portals.find(portal => portal.id === id)?.code ?? "Onbekende poort";
   const findings = proposal ? jointRouteReviewDiagnostics(proposal) : { blocks: [], advice: [] };
   const finaleChanges = proposal?.groups.filter(plan => plan.finaleChange) ?? [];
+  const variants = alternatives ? [
+    ...(alternatives.portalSpread ? [{ label: "Spreidingsvariant", proposal: alternatives.portalSpread }] : []),
+    { label: "Algemene variant", proposal: alternatives.general },
+    ...(alternatives.organizerCoverage ? [{ label: "Doelvariant", proposal: alternatives.organizerCoverage }] : []),
+  ] : [];
   async function calculate() {
     if (pending.current || disabled) return;
     pending.current = true; setBusy(true); setError(""); setNotice(""); setProposal(null); setAlternatives(null); setReason(""); setConfirmed(false);
@@ -40,7 +45,7 @@ export function JointRouteReview({ eventSlug, snapshot, disabled, onChanged }: {
       if (!response.ok || !body.data) { setError(body.error?.message ?? "Het gezamenlijke voorstel kon niet worden berekend. Er is niets opgeslagen."); return; }
       const { alternatives: choices, ...base } = body.data;
       setAlternatives(choices ?? { general: base, organizerCoverage: null });
-      setProposal(choices?.general ?? base); command.current = null;
+      setProposal(choices?.portalSpread ?? choices?.general ?? base); command.current = null;
     } catch { setError("Het berekenen is onderbroken. Er is niets opgeslagen. Probeer het opnieuw."); }
     finally { pending.current = false; setBusy(false); }
   }
@@ -71,6 +76,10 @@ export function JointRouteReview({ eventSlug, snapshot, disabled, onChanged }: {
     { label: "Vrije tijd vóór P-38", value: metrics => minutes(metrics.unallocatedBeforeFinaleSeconds) },
     { label: "Langste afzonderlijke wachttijd", value: metrics => minutes(metrics.longestWaitSeconds) },
     { label: "Gewone poorten met echt bezoek", value: metrics => `${metrics.byPortal.filter(portal => portal.visits > 0).length} / ${metrics.byPortal.length}` },
+    { label: "Bezoeken per gewone poort · minimum / gemiddeld / maximum", value: metrics => {
+      const counts = metrics.byPortal.map(portal => portal.visits);
+      return counts.length ? `${Math.min(...counts)} / ${number(counts.reduce((sum, count) => sum + count, 0) / counts.length)} / ${Math.max(...counts)}` : "0 / 0 / 0";
+    } },
     { label: "Gewone poorten zonder bezoek", value: metrics => metrics.unvisitedPortals.map(portalCode).join(", ") || "geen" },
     { label: "Totale absolute eindafwijking", value: metrics => minutes(metrics.absoluteEndDeviationSeconds) },
     { label: "Totale groepsuitloop", value: metrics => minutes(metrics.overrunSeconds) },
@@ -79,7 +88,7 @@ export function JointRouteReview({ eventSlug, snapshot, disabled, onChanged }: {
   return <section className="joint-route-review" aria-label="Gezamenlijk routevoorstel">
     <JointRoutePolicySettingsForm eventSlug={eventSlug} disabled={disabled || busy} onSaved={async () => { setProposal(null); setAlternatives(null); setConfirmed(false); command.current = null; await onChanged(); }}/>
     <button className="btn outline" type="button" disabled={disabled || busy} onClick={() => void calculate()}><RefreshCw size={16}/>{busy && !proposal ? "Gezamenlijke routes berekenen…" : "Routes opnieuw berekenen met bevestigde starts"}</button>
-    <p>Bereken een apart voorstel dat zo veel mogelijk geschikte actieve gewone poorten daadwerkelijk bezoekt en daarna zo veel mogelijk unieke huisbezoeken per groep plant. Bevestigde starts en begonnen routes blijven beschermd. Een beter tijdslot bij dezelfde finalepoort P-38 verschijnt als afzonderlijk te beoordelen wijziging.</p>
+    <p>Vergelijk een spreidingsvariant met meer groepen bij de minst bezochte poorten, een algemene variant met de meeste huisbezoeken en een variant voor de organisatiedoelen. Alle geschikte actieve gewone poorten tellen mee. Bevestigde starts en begonnen routes blijven beschermd. Een beter tijdslot bij dezelfde finalepoort P-38 verschijnt als afzonderlijk te beoordelen wijziging.</p>
     {notice && <p className="form-notice" role="status">{notice}</p>}{error && !proposal && <p className="form-warning" role="alert">{error}</p>}
     {proposal && <AdminDialog labelledBy="joint-route-proposal-title" close={() => { if (!busy) setProposal(null); }}>
       <section className="joint-route-proposal">
@@ -90,12 +99,13 @@ export function JointRouteReview({ eventSlug, snapshot, disabled, onChanged }: {
         {proposal.walkingPolicy && <p>Voor gewone etappes geldt maximaal {minutes(proposal.walkingPolicy.maxOrdinaryLegSeconds)} lopen. Het afzonderlijke totale loopbudget is {minutes(proposal.walkingPolicy.maxTotalSeconds)} per groep, inclusief de finale-etappe. Dit budget wordt apart getoetst.</p>}
         {proposal.completionPolicy && <p>De finaleshow mag maximaal {proposal.completionPolicy.maxEarlyFinishSeconds === null ? "onbeperkt" : minutes(proposal.completionPolicy.maxEarlyFinishSeconds)} eerder en maximaal {minutes(proposal.completionPolicy.maxOverrunSeconds)} later eindigen dan gewenst. De echte opening en sluiting van P-38 kunnen dit venster verder beperken. Een ontbrekende gewenste eindtijd krijgt geen ondergrens.</p>}
         {stale && <p className="form-warning" role="alert">Het bord of de brongegevens zijn gewijzigd sinds deze berekening. Bereken opnieuw vóór opslaan.</p>}
-        {alternatives?.organizerCoverage && <section aria-label="Algemene variant en organisatiedoelen"><h3>Algemene variant en organisatiedoelen vergelijken</h3>
-          <p>Beide varianten zoeken eerst echte bezoeken bij zo veel mogelijk geschikte actieve gewone poorten. Daarna zoekt de algemene variant de meeste unieke huisbezoeken en geeft de doelvariant in de gekozen volgorde voorrang aan de fysieke organisatiedoelen. Alle gevonden zoekvarianten worden voor beide doelen vergeleken. Beoordeel het verschil in bezoeken, lopen, wachten en eindafwijking voordat je een variant kiest.</p>
-          <div className="joint-route-table-scroll" tabIndex={0}><table><caption>Afweging tussen de twee voorstellen</caption><thead><tr><th>Meting</th><th>Algemene variant</th><th>Doelvariant</th></tr></thead><tbody>{metricRows.filter(row => row.label !== "Administratieve starts · geen fysieke bezoeken").map(row => <tr key={row.label}><th scope="row">{row.label}</th><td>{row.value(alternatives.general.metrics.after)}</td><td>{row.value(alternatives.organizerCoverage!.metrics.after)}</td></tr>)}</tbody></table></div>
-          {alternatives.organizerCoverage.metrics.after.totalOrdinaryVisits < alternatives.general.metrics.after.totalOrdinaryVisits && <p className="form-warning">De doelvariant bevat {alternatives.general.metrics.after.totalOrdinaryVisits - alternatives.organizerCoverage.metrics.after.totalOrdinaryVisits} minder gewone bezoeken. Dat verlies vraagt een expliciete afweging.</p>}
-          <div className="actions"><button type="button" className="btn outline" disabled={busy} aria-pressed={proposal.optimization?.mode !== "organizer-coverage"} onClick={() => selectVariant(alternatives.general)}>Algemene variant beoordelen</button><button type="button" className="btn outline" disabled={busy} aria-pressed={proposal.optimization?.mode === "organizer-coverage"} onClick={() => selectVariant(alternatives.organizerCoverage!)}>Doelvariant beoordelen</button></div>
-          <p>Geselecteerd: <strong>{proposal.optimization?.mode === "organizer-coverage" ? "doelvariant" : "algemene variant"}</strong>.</p>
+        {alternatives && variants.length > 1 && <section aria-label="Routevarianten vergelijken"><h3>Spreiding, meeste bezoeken en organisatiedoelen vergelijken</h3>
+          <p>Alle varianten zoeken echte bezoeken bij zo veel mogelijk geschikte actieve gewone poorten. De spreidingsvariant verhoogt daarna eerst het bezoekaantal van de minst bezochte poort, beoordeelt vervolgens de fysieke organisatiedoelen en zoekt zo veel mogelijk huisbezoeken. De algemene variant zoekt het hoogste totale aantal bezoeken. De doelvariant geeft de organisatiedoelen voorrang. Alle gevonden zoekvarianten worden voor deze doelen vergeleken; minder bezoeken of extra lopen en wachten blijven zichtbaar.</p>
+          <div className="joint-route-table-scroll" tabIndex={0}><table><caption>Afweging tussen de routevoorstellen</caption><thead><tr><th>Meting</th>{variants.map(variant => <th key={variant.label}>{variant.label}</th>)}</tr></thead><tbody>{metricRows.filter(row => row.label !== "Administratieve starts · geen fysieke bezoeken").map(row => <tr key={row.label}><th scope="row">{row.label}</th>{variants.map(variant => <td key={variant.label}>{row.value(variant.proposal.metrics.after)}</td>)}</tr>)}</tbody></table></div>
+          {variants.filter(variant => variant.proposal.metrics.after.totalOrdinaryVisits < alternatives.general.metrics.after.totalOrdinaryVisits).map(variant => <p key={variant.label} className="form-warning">De {variant.label.toLocaleLowerCase("nl-NL")} bevat {alternatives.general.metrics.after.totalOrdinaryVisits - variant.proposal.metrics.after.totalOrdinaryVisits} minder gewone bezoeken dan de algemene variant. Dat verlies vraagt een expliciete afweging.</p>)}
+          <details open><summary>Groepsbezoeken bij alle actieve gewone poorten</summary><div className="joint-route-table-scroll" tabIndex={0} aria-label="Groepsbezoeken per actieve poort en variant"><table><thead><tr><th scope="col">Poort</th><th scope="col">Huidige intenties</th>{variants.map(variant => <th scope="col" key={variant.label}>{variant.label}</th>)}</tr></thead><tbody>{alternatives.general.metrics.after.byPortal.map(portal => <tr key={portal.portalId}><th scope="row">{portalCode(portal.portalId)}</th><td>{alternatives.general.metrics.before.byPortal.find(before => before.portalId === portal.portalId)?.visits ?? 0}</td>{variants.map(variant => <td key={variant.label}>{variant.proposal.metrics.after.byPortal.find(after => after.portalId === portal.portalId)?.visits ?? 0}</td>)}</tr>)}</tbody></table></div></details>
+          <div className="actions">{variants.map(variant => <button key={variant.label} type="button" className="btn outline" disabled={busy} aria-pressed={proposal.optimization?.mode === variant.proposal.optimization.mode} onClick={() => selectVariant(variant.proposal)}>{variant.label} beoordelen</button>)}</div>
+          <p>Geselecteerd: <strong>{variants.find(variant => variant.proposal.optimization.mode === proposal.optimization?.mode)?.label.toLocaleLowerCase("nl-NL") ?? "algemene variant"}</strong>.</p>
         </section>}
         {(proposal.metrics.after.organizerCoverage?.length ?? 0) > 0 && <section aria-label="Dekking van organisatiedoelen"><h3>Ontvangst van groepen bij de doelpoorten</h3><ul>{proposal.metrics.after.organizerCoverage.map(target => {
           const before = proposal.metrics.before.organizerCoverage?.find(item => item.portalId === target.portalId);

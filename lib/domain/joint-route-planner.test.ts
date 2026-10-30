@@ -554,7 +554,7 @@ describe("65-minute walking, actual show completion and explicit physical covera
     expect(expanded.metrics.after.totalOrdinaryVisits).toBe(4);
     expect(expanded.groups[0].visits.some(visit => visit.portalId === added.id)).toBe(true);
   });
-  it("reserves full-candidate search work when the established portfolio exhausts its allowance", () => {
+  it.each(["general", "portal-spread"] as const)("reserves full-candidate work under established-portfolio pressure in %s mode", mode => {
     const input = fixture(16, 101), added = input.portals.splice(100, 1)[0];
     const closes = "2026-11-01T06:00:00.000Z", ordinaryStopAt = "2026-11-01T05:00:00.000Z";
     input.groups.forEach(group => { group.desiredEndAt = null; group.ordinaryStopAt = ordinaryStopAt; group.finale.latestArrivalAt = closes; });
@@ -571,7 +571,7 @@ describe("65-minute walking, actual show completion and explicit physical covera
       { portalId: "finale", kind: "finale", sequence: ordinary.length + 1, startsAt: priorFinale, visitSeconds: 360, bufferSeconds: 0, walkSeconds: 0, walkMeters: 0 }] }];
     input.groups[0].excludedPortalIds = ordinary.map(visit => visit.portalId);
     input.portals.push(added);
-    const result = proposeJointRoutes(input);
+    const result = proposeJointRoutes(input, { mode });
     expect(result.valid, JSON.stringify(result.conflicts.filter(diagnostic => diagnostic.severity === "block"))).toBe(true);
     const historyGroup = result.groups.find(plan => plan.groupId === input.groups[0].id)!;
     expect(historyGroup.visits.filter(visit => visit.kind === "ordinary").map(visit => visit.portalId)).toEqual([added.id]);
@@ -682,5 +682,64 @@ describe("all active physical houses", () => {
     expect(input.fixedVisits).toEqual(protectedVisits);
     const onlyHistory = structuredClone(input); onlyHistory.fixedVisits = [];
     expect(proposeJointRoutes(onlyHistory).metrics.after.unvisitedPortals).toEqual(["house-0"]);
+  });
+  it("offers a genuine visit-count tradeoff for a higher minimum house count, without capping that minimum", () => {
+    const input = fixture(4, 4), added = input.portals.splice(3, 1)[0];
+    input.groups.forEach((group, index) => {
+      group.startsAt = new Date(Date.parse(time("17:00")) + index * 900_000).toISOString();
+      group.ordinaryStopAt = new Date(Date.parse(group.startsAt) + 720_000).toISOString();
+      group.desiredEndAt = null; group.fixedFirstPortalId = "house-0";
+    });
+    input.portals.filter(portal => !portal.finale).forEach(portal => { portal.windows[0].visitSeconds = 180; });
+    input.before = proposeJointRoutes(input).groups;
+    activate(input, added); added.windows[0].visitSeconds = 420;
+    // A concrete feasible maximum-count reference: three short houses in three
+    // groups; the fourth keeps its fixed first and visits the longer new house.
+    const reference = structuredClone(input.before), first = reference[0].visits[0], previousFinale = reference[0].visits.at(-1)!;
+    const addedAt = new Date(Date.parse(first.startsAt) + first.visitSeconds * 1000).toISOString();
+    const finaleAt = new Date(Date.parse(addedAt) + added.windows[0].visitSeconds * 1000).toISOString();
+    reference[0].visits = [first, { portalId: added.id, kind: "ordinary", sequence: 2, startsAt: addedAt,
+      visitSeconds: 420, bufferSeconds: 0, walkSeconds: 0, walkMeters: 0 }, { ...previousFinale, sequence: 3, startsAt: finaleAt }];
+    Object.assign(reference[0], { finaleArrivalAt: finaleAt,
+      expectedCompletionAt: new Date(Date.parse(finaleAt) + previousFinale.visitSeconds * 1000).toISOString(),
+      finaleChange: { portalId: "finale", previousReservedAt: input.groups[0].finale.reservedAt, proposedReservedAt: finaleAt } });
+    expect(validateJointRoutes(input, reference)).toEqual([]);
+    const general = { groups: reference, metrics: { after: measureJointRoutes(input, reference) } }, spread = proposeJointRoutes(input, { mode: "portal-spread" });
+    expect(spread.valid, JSON.stringify(spread.conflicts)).toBe(true);
+    expect(general.metrics.after.totalOrdinaryVisits).toBe(11);
+    expect(Math.min(...general.metrics.after.byPortal.map(portal => portal.visits))).toBe(1);
+    expect(spread.metrics.after.totalOrdinaryVisits).toBe(10);
+    expect(Math.min(...spread.metrics.after.byPortal.map(portal => portal.visits))).toBe(2);
+    expect(spread.groups.every(plan => plan.visits[0].portalId === "house-0")).toBe(true);
+    expect(spread.optimization.mode).toBe("portal-spread");
+    expect(compareJointRouteProposals(input, spread, general, "portal-spread")).toBeGreaterThan(0);
+    expect(compareJointRouteProposals(input, general, spread, "general")).toBeGreaterThan(0);
+    const relabeled = structuredClone(input); relabeled.needsAnders = true;
+    relabeled.groups.reverse(); relabeled.portals.reverse(); relabeled.legs.reverse();
+    relabeled.portals.forEach(portal => { portal.worldSlug = "arbitrary-preference"; });
+    expect(proposeJointRoutes(relabeled, { mode: "portal-spread" })).toEqual(spread);
+    input.groups.forEach(group => { group.ordinaryStopAt = new Date(Date.parse(group.startsAt) + 3600_000).toISOString(); });
+    const expanded = proposeJointRoutes(input, { mode: "portal-spread" });
+    expect(expanded.valid).toBe(true);
+    expect(expanded.metrics.after.totalOrdinaryVisits).toBe(16);
+    expect(expanded.metrics.after.byPortal.every(portal => portal.visits === 4)).toBe(true);
+  });
+  it("keeps actual65-minute walking and show-completion boundaries in the spread mode", () => {
+    const input = policy65(1, 3); input.groups[0].fixedFirstPortalId = "house-0";
+    for (const leg of input.legs) leg.seconds = leg.from === leg.to ? 0 : leg.to === "portal:finale" ? 1200 : 900;
+    const spread = proposeJointRoutes(input, { mode: "portal-spread" });
+    expect(spread.valid, JSON.stringify(spread.conflicts)).toBe(true);
+    expect(spread.metrics.after.totalOrdinaryVisits).toBe(3);
+    expect(spread.metrics.after.walkingSeconds).toBe(3900);
+    expect(spread.groups[0].visits.at(-1)?.walkSeconds).toBe(1200);
+    expect(spread.groups[0].expectedCompletionAt).toBe(time("20:30"));
+    expect(validateJointRoutes(input, spread.groups)).toEqual([]);
+    input.legs.filter(leg => leg.to === "portal:finale").forEach(leg => { leg.seconds = 1201; });
+    const overBudget = structuredClone(spread.groups); overBudget[0].visits.at(-1)!.walkSeconds = 1201;
+    expect(validateJointRoutes(input, overBudget).some(diagnostic => diagnostic.code === "WALKING_BUDGET")).toBe(true);
+    const adjusted = proposeJointRoutes(input, { mode: "portal-spread" });
+    expect(adjusted.valid, JSON.stringify(adjusted.conflicts)).toBe(true);
+    expect(adjusted.metrics.after.totalOrdinaryVisits).toBe(2);
+    expect(adjusted.metrics.after.walkingSeconds).toBeLessThanOrEqual(3900);
   });
 });

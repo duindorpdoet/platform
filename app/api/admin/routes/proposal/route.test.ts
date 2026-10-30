@@ -54,15 +54,20 @@ describe("explicit authenticated joint route proposal", () => {
     const response = await POST(request());
     expect(response.status).toBe(200);
     const proposal = (await response.json()).data;
-    const { general, organizerCoverage } = proposal.alternatives;
+    const { general, organizerCoverage, portalSpread } = proposal.alternatives;
     expect(general.valid).toBe(true); expect(organizerCoverage.valid).toBe(true);
     expect(general.sourceHash).toBe(organizerCoverage.sourceHash);
     expect(general.boardHash).toBe(organizerCoverage.boardHash);
     expect(general.optimization.mode).toBe("general");
     expect(organizerCoverage.optimization.mode).toBe("organizer-coverage");
+    expect(portalSpread.optimization.mode).toBe("portal-spread");
+    expect(proposal.optimization.mode).toBe("portal-spread");
+    expect(proposal.proposalHash).toBe(portalSpread.proposalHash);
+    expect(portalSpread.sourceHash).toBe(general.sourceHash);
+    expect(portalSpread.metrics.after.organizerCoverage[0].groups).toBe(1);
     expect(general.walkingPolicy.maxTotalSeconds).toBe(3900);
     expect(organizerCoverage.metrics.after.organizerCoverage[0].groups).toBe(1);
-    for (const variant of [general, organizerCoverage]) {
+    for (const variant of [general, organizerCoverage, portalSpread]) {
       expect(Date.parse(variant.groups[0].expectedCompletionAt)).toBeGreaterThanOrEqual(Date.parse("2026-10-31T20:30:00Z"));
     }
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("admin_joint_route_planning_input", { _event_slug: "duindorp-halloween-2026" });

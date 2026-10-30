@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const current = input.data as JointRouteInput;
     const alternatives = proposeJointRouteAlternatives(current);
     // Alternatives share one current source and remain separate reviewable proposals.
-    return apiSuccess({ ...alternatives.general, alternatives });
+    return apiSuccess({ ...(alternatives.portalSpread ?? alternatives.general), alternatives });
   } catch (error) {
     if (error instanceof RangeError) return apiFailure(new ApiError(413, "BODY_TOO_LARGE", "Het verzoek is te groot."), requestId);
     if (error instanceof Error && error.message === "INVALID_JOINT_PLANNING_INPUT") return apiFailure(new ApiError(409, "ROUTE_INPUT_UNAVAILABLE", "De routegegevens passen niet binnen de begrensde gezamenlijke planner. Controleer de startafspraken."), requestId);

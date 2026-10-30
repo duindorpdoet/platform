@@ -46,7 +46,7 @@ describe("one shared comparison of physical route alternatives", () => {
         && current.organizerCoveragePortalIds[0] === "b" ? [["a", "b", "new"], ["a", "b"]]
         : [["a", "b"], ["a", "b"]]));
     const choices = proposeJointRouteAlternatives(input, engine);
-    for (const proposal of [choices.general, choices.organizerCoverage!]) {
+    for (const proposal of [choices.general, choices.organizerCoverage!, choices.portalSpread!]) {
       expect(proposal.metrics.after.totalOrdinaryVisits).toBe(5);
       expect(proposal.metrics.after.unvisitedPortals).toEqual([]);
       expect(proposal.metrics.after.organizerCoverage.map(item => item.portalId)).toEqual(["a", "b"]);
@@ -55,10 +55,28 @@ describe("one shared comparison of physical route alternatives", () => {
     }
     expect(choices.general.optimization.mode).toBe("general");
     expect(choices.organizerCoverage!.optimization.mode).toBe("organizer-coverage");
-    expect(engine).toHaveBeenCalledTimes(4);
-    expect(choices.search).toEqual({ strategies: 4, candidateEvaluations: 44,
+    expect(choices.portalSpread!.optimization.mode).toBe("portal-spread");
+    expect(engine).toHaveBeenCalledTimes(5);
+    expect(choices.search).toEqual({ strategies: 5, candidateEvaluations: 55,
       maxCandidateEvaluations: JOINT_ROUTE_COMPARISON_LIMITS.candidateEvaluations });
     expect(input).toEqual(unchanged);
+  });
+
+  it("offers stronger physical house spread as an explicit visit-count tradeoff", () => {
+    const input = fixture();
+    input.groups.push({ ...structuredClone(input.groups[0]), id: "three", code: "three", startNodeId: "start:three" });
+    input.legs.push(...input.portals.map(portal => ({ from: "start:three", to: portal.nodeId, seconds: 60, meters: 60 })));
+    const engine = vi.fn<typeof proposeJointRoutes>((current, options) => result(current,
+      options?.mode === "portal-spread" ? [["a", "b"], ["a", "new"], ["b", "new"]]
+        : [["a", "b", "new"], ["a", "b"], ["a", "b"]]));
+    const choices = proposeJointRouteAlternatives(input, engine);
+    expect(choices.general.metrics.after.totalOrdinaryVisits).toBe(7);
+    expect(choices.organizerCoverage!.metrics.after.totalOrdinaryVisits).toBe(7);
+    expect(choices.portalSpread!.metrics.after.totalOrdinaryVisits).toBe(6);
+    expect(choices.portalSpread!.metrics.after.byPortal.map(portal => portal.visits)).toEqual([2, 2, 2]);
+    expect(choices.portalSpread!.metrics.after.organizerCoverage.map(target => target.portalId)).toEqual(["a", "b"]);
+    expect(engine.mock.calls.at(-1)?.[0].organizerCoveragePortalIds).toEqual(["a"]);
+    expect(validateJointRoutes(input, choices.portalSpread!.groups)).toEqual([]);
   });
 
   it("prefers real full physical coverage over more visits at old houses and ignores invented coverage metadata", () => {
@@ -79,7 +97,7 @@ describe("one shared comparison of physical route alternatives", () => {
     const input = fixture(); input.organizerCoveragePortalIds = goals;
     const engine = vi.fn<typeof proposeJointRoutes>(current => result(current, [["a", "new"], ["b"]]));
     const choices = proposeJointRouteAlternatives(input, engine);
-    expect(engine).toHaveBeenCalledTimes(goals.length ? 2 : 1);
+    expect(engine).toHaveBeenCalledTimes(goals.length ? 3 : 2);
     expect(choices.search!.strategies).toBeLessThanOrEqual(JOINT_ROUTE_COMPARISON_LIMITS.strategies);
     expect(choices.search!.candidateEvaluations).toBeLessThanOrEqual(JOINT_ROUTE_COMPARISON_LIMITS.candidateEvaluations);
     expect(choices.organizerCoverage === null).toBe(goals.length === 0);
