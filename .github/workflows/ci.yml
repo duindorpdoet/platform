@@ -90,7 +90,11 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Start local Supabase
-        run: pnpm exec supabase start >/tmp/duindorp-supabase-start.log 2>&1
+        run: |
+          if ! pnpm exec supabase start >/tmp/duindorp-supabase-start.log 2>&1; then
+            tail -n 200 /tmp/duindorp-supabase-start.log
+            exit 1
+          fi
       - name: Rebuild database from migrations
         run: pnpm exec supabase db reset
       - name: Run pgTAP contracts

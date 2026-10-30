@@ -15,9 +15,10 @@ describe("the signed restore proof covers the entire reviewed release",()=>{
     expect(migration).not.toMatch(/\b(?:insert|update|delete|truncate|alter\s+table)\b/i);
   });
   it("ends with the reviewed P12 policy and bounded Startregie reads",()=>{
-    expect(REVIEWED_RELEASE_MIGRATIONS.slice(-2)).toEqual([
+    expect(REVIEWED_RELEASE_MIGRATIONS.slice(-3)).toEqual([
       "20261030182243_p12_hard_close_and_75_minute_routes.sql",
       "20261030231652_bound_startregie_snapshot_reads.sql",
+      "20261030233039_materialize_route_source_contexts.sql",
     ]);
   });
   it("rejects an incomplete, duplicated, reordered or unreviewed migration proof",()=>{

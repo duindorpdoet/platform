@@ -50,6 +50,35 @@ select is(snapshot->'publicationReadiness',app_private.start_publication_readine
  'the snapshot retains the complete stored publication readiness')
  from bounded_snapshot_fixture;
 
+-- The seeded groups have no confirmed publication, so ops.routes can be empty.
+-- Exercise the new projection directly on two real legacy routes. Both readers
+-- run in ONE SQL statement, including generatedAt and the complete JSON payload.
+create temp table bounded_preview_fixture as
+ with context as materialized (
+  select fixture.event_id, app_private.joint_route_source_hash(fixture.event_id) source_hash,
+   app_private.start_publication_readiness(fixture.event_id) readiness
+  from bounded_snapshot_fixture fixture
+ ), candidates as materialized (
+  select g.id,g.event_id from app_private.walking_groups g
+  join bounded_snapshot_fixture fixture on fixture.event_id=g.event_id
+  where g.current_plan_version_id is not null and g.route_mode='legacy'
+   and not app_private.admin_registration_group_started(g.id)
+  order by g.id limit 2
+ )
+ select g.id group_id,
+  app_private.start_ops_route_preview_with_context(g.id,context.source_hash,
+   ('x'||substr(context.source_hash,1,7))::bit(28)::integer,context.readiness) bounded,
+  app_private.start_ops_route_preview(g.id) original
+ from candidates g join context on context.event_id=g.event_id;
+select is(count(*),2::bigint,'two seeded routes exercise the context-aware route projection')
+ from bounded_preview_fixture;
+select ok(coalesce(bool_and(bounded=original),false),
+ 'the direct context-aware projection matches the complete original JSON in the same statement')
+ from bounded_preview_fixture;
+select ok(coalesce(bool_and(jsonb_array_length(bounded->'stops')>0),false),
+ 'the projection comparison includes real stored stops, start context and route totals')
+ from bounded_preview_fixture;
+
 -- A second statement after a write MUST compute a new source context even in
 -- the same transaction: a transaction-local GUC cache would fail this check.
 update app_private.event_route_settings set route_buffer_seconds=route_buffer_seconds+1

@@ -136,7 +136,7 @@ begin
  definition:=replace(definition,anchor,'declare hotfix_shared_source_hash text; hotfix_start_reservations jsonb; candidate record;');
  anchor:='select * into settings from app_private.event_route_settings where event_id=_event_id;';
  if cardinality(string_to_array(definition,anchor))<>2 then raise exception 'STARTREGIE_CAPACITY_SETTINGS_LOOKUP_CHANGED';end if;
- definition:=replace(definition,anchor,anchor||E'\n  hotfix_shared_source_hash:=app_private.joint_route_source_hash(_event_id);\n  select coalesce(jsonb_agg(to_jsonb(reservation)),\'[]\'::jsonb) into hotfix_start_reservations from app_private.start_schedule_reservations(_event_id) reservation;');
+ definition:=replace(definition,anchor,anchor||E'\n  hotfix_shared_source_hash:=app_private.joint_route_source_hash(_event_id);\n  select coalesce(jsonb_agg(to_jsonb(cached_departure)),\'[]\'::jsonb) into hotfix_start_reservations from app_private.start_schedule_reservations(_event_id) cached_departure;');
  anchor:='app_private.assert_group_schedule_timing(candidate.group_id,candidate.start_slot_id,candidate.effective_ordinary_stop_at,candidate.expected_finale_arrival_at)';
  if cardinality(string_to_array(definition,anchor))<>2 then raise exception 'STARTREGIE_CAPACITY_TIMING_CALL_CHANGED';end if;
  definition:=replace(definition,anchor,'app_private.assert_group_schedule_timing_with_source(candidate.group_id,candidate.start_slot_id,candidate.effective_ordinary_stop_at,candidate.expected_finale_arrival_at,hotfix_shared_source_hash)');
