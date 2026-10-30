@@ -6,7 +6,13 @@ select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-00000000
 create temp table board(eid uuid,gid uuid,pid uuid,point uuid,schedule uuid,snapshot jsonb,vid uuid,command jsonb,preview jsonb,result jsonb,mail_count bigint);
 insert into board(eid,gid,pid) select id,'23000000-0000-0000-0000-000000000002','12000000-0000-0000-0000-000000000001' from app_private.events where slug='duindorp-halloween-2026';
 update app_private.event_route_settings set first_start_at='2026-10-31T15:00Z',global_ordinary_stop_at='2026-10-31T19:30Z',final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at='2026-10-31T18:00Z',finale_last_arrival_at='2026-10-31T20:30Z',finale_closes_at='2026-10-31T21:00Z',finale_max_concurrent_groups=20,finale_max_concurrent_children=200,finale_available=true,planner_mode='dynamic' where event_id=(select eid from board);
-update app_private.walking_groups set desired_ordinary_visits=3 where id=(select gid from board);
+-- Keep the publication/undo fixture physically short enough for its ten-minute
+-- move. The v2 planner may visit every suitable house; an old desired count is
+-- not a route cap and must not provide this test's timing slack.
+update app_private.portals set operation_status='paused'
+ where event_id=(select eid from board) and id not in(
+ '12000000-0000-0000-0000-000000000001','12000000-0000-0000-0000-000000000002',
+ '12000000-0000-0000-0000-000000000003','12000000-0000-0000-0000-000000000030');
 update app_private.registrations set requested_ordinary_stop_at=null,preferred_start_at=null where id in(select registration_id from app_private.group_registrations where group_id=(select gid from board));
 update board set point=(api.admin_portal_start_point_set(pid,true,(select version from app_private.portals where id=pid))->>'startPointId')::uuid;
 select api.admin_startregie_confirm_point('duindorp-halloween-2026',point,(select version from app_private.start_points where id=point)) from board;

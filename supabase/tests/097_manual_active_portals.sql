@@ -26,8 +26,11 @@ select new.id,w.opens_at,w.closes_at,w.visit_minutes,w.buffer_minutes,w.max_conc
 from app_private.portal_windows w cross join (values
  ('12000000-0000-0000-0000-000000000038'::uuid),('12000000-0000-0000-0000-000000000044'::uuid)) new(id)
 where w.portal_id='12000000-0000-0000-0000-000000000001';
-update app_private.event_route_settings set final_portal_id='12000000-0000-0000-0000-000000000044'
+update app_private.event_route_settings set final_portal_id='12000000-0000-0000-0000-000000000038'
  where event_id=(select id from app_private.events where slug='duindorp-halloween-2026');
+select throws_ok($$update app_private.event_route_settings set final_portal_id='12000000-0000-0000-0000-000000000044'
+ where event_id=(select id from app_private.events where slug='duindorp-halloween-2026')$$,
+ '23514','P38_ONLY_FINAL_PORTAL','another manual house cannot replace the event P-38 finale');
 create temp table visibility_before as select
  (select jsonb_agg(to_jsonb(p) order by id) from app_private.portals p) portals,
  (select jsonb_agg(to_jsonb(w) order by id) from app_private.portal_windows w) windows,
@@ -47,7 +50,8 @@ select is(pg_temp.listed('P-38')->>'phone','0612345678','manual contact phone is
 select is(pg_temp.listed('P-44')->>'email','manual-44@example.invalid','manual contact email is projected');
 select is(pg_temp.listed('P-38')->>'operationStatus','open','open operational status is preserved');
 select is(pg_temp.listed('P-44')->>'operationStatus','scheduled','preparation is not silently changed to open');
-select is(pg_temp.listed('P-44')->>'isFinal','true','a manual final portal retains its identity');
+select is(pg_temp.listed('P-38')->>'isFinal','true','the manual P-38 remains the actual finale');
+select is(pg_temp.listed('P-44')->>'isFinal','false','a preparing manual ordinary house is not presented as a second finale');
 select is((pg_temp.listed('P-38')->>'activeReservations')::bigint,(select count(*) from app_private.portal_reservations where portal_id='12000000-0000-0000-0000-000000000038' and status in ('held','active')),'reservation counts remain authoritative');
 select is((pg_temp.listed('P-38')->>'expectedChildren')::bigint,(select coalesce(sum(child_count),0) from app_private.portal_reservations where portal_id='12000000-0000-0000-0000-000000000038' and status in ('held','active')),'expected children retain reservation totals');
 select is((select data-'activePortals' from visibility_snapshot),(select other_sections from visibility_before),'registration, concepts, capabilities and other sections are preserved');

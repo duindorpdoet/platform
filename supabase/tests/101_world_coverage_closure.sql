@@ -72,8 +72,8 @@ update coverage c set route_revision_before=app_private.start_ops_route_revision
  event_settings_before=(select settings_version from app_private.events e where e.id=c.eid);
 select lives_ok($$select api.admin_accept_world_coverage_revision('duindorp-halloween-2026',version,fingerprint,'Late goedgekeurde themapoort gecontroleerd') from coverage$$,'authorized review activates the exact visible candidate');
 select ok(not(app_private.world_coverage_missing((select eid from coverage)) @> array['vampierrijk']),'reviewed policy now reflects the late themed house');
-select isnt(app_private.start_ops_route_revision((select eid from coverage)),(select route_revision_before from coverage),'accepting coverage invalidates route revision even after portal change was already observed');
-select isnt(app_private.live_planboard_hash((select eid from coverage)),(select board_hash_before from coverage),'accepted coverage invalidates stale planboard commands through the shared route revision');
+select is(app_private.start_ops_route_revision((select eid from coverage)),(select route_revision_before from coverage),'accepting collection coverage preserves theme-independent route choices and revision');
+select is(app_private.live_planboard_hash((select eid from coverage)),(select board_hash_before from coverage),'collection coverage review does not stale an otherwise unchanged physical planboard');
 select is((select settings_version from app_private.events where id=(select eid from coverage)),(select event_settings_before from coverage),'coverage review preserves unrelated event settings and start confirmations');
 update coverage set route_revision_after=app_private.start_ops_route_revision(eid),board_hash_after=app_private.live_planboard_hash(eid);
 select lives_ok($$select api.admin_accept_world_coverage_revision('duindorp-halloween-2026',version,fingerprint,'Late goedgekeurde themapoort gecontroleerd') from coverage$$,'identical acceptance retry is idempotent');

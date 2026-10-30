@@ -256,13 +256,13 @@ describe("accessibility and honest useful evenings", () => {
     }
     for (const portal of input.portals.filter(portal => !portal.finale)) { portal.windows[0].maxGroups = 2; portal.windows[0].bufferSeconds = 60; }
     for (const leg of input.legs) { leg.seconds = leg.from === leg.to ? 0 : 60; leg.meters = leg.seconds; }
-    const started = performance.now(), result = proposeJointRoutes(input), elapsed = performance.now() - started;
+    const result = proposeJointRoutes(input);
     expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
     expect(result.metrics.after.zeroVisitGroups).toBe(0);
     expect(result.metrics.after.byPortal.every(portal => portal.visits > 0)).toBe(true);
+    // Bound deterministic work, independent of parallel CI load or CPU speed.
     expect(result.work.candidateEvaluations).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.candidateEvaluations);
     expect(result.work.pairReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.pairReplans);
-    expect(elapsed).toBeLessThan(5000);
   });
 });
 
