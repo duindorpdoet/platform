@@ -15,6 +15,8 @@ import { existingStartReservations, fixedGroupPlanningParties } from "@/lib/doma
 import { proposePlan, type PlannedGroup, type PlanningInput, type PreferenceMatch } from "@/lib/domain/route-planner";
 import { AmsterdamDateTime } from "@/components/forms/amsterdam-date-time";
 import { useSnapshotRefresh } from "@/lib/realtime/use-snapshot-refresh";
+import { useSnapshotLoader } from "@/lib/realtime/use-snapshot-loader";
+import { startReadError } from "@/lib/domain/start-read-error";
 import { usePrivateBroadcast } from "@/lib/realtime/use-private-broadcast";
 import { useDialogFocus } from "@/lib/ui/use-dialog-focus";
 import { createClient } from "@/lib/supabase/client";
@@ -279,6 +281,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
   const [proposal, setProposal] = useState<ReturnType<typeof proposePlan> | null>(null);
   const [scheduleIds, setScheduleIds] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   useDialogFocus(Boolean(pointEditor),".start-point-editor",()=>setPointEditor(null),busy);
   const [undoMove, setUndoMove] = useState<UndoMove | null>(null);
@@ -286,16 +289,17 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
   const [filters, setFilters] = useState({ time: "", point: "", preference: "", status: "", warning: false });
 
   const refreshSerial = useRef(0);
+  const discardSnapshotResponses = useCallback(() => { refreshSerial.current += 1; }, []);
   const lastServerTime = useRef(0);
   const lastSettings = useRef<RouteSettings | null>(null);
   const publicationReviewRef = useRef<PublicationReviewControl | null>(null);
-  const load = useCallback(async () => {
+  const { load, invalidate } = useSnapshotLoader(useCallback(async () => {
     const serial = ++refreshSerial.current;
     try {
-    const client = createClient(); if (!client) return;
+    const client = createClient(); if (!client) { setLoadError(startReadError("Geen serververbinding")); return; }
     const { data, error } = await client.schema("api").rpc("admin_startregie_snapshot", { _event_slug: eventSlug }).abortSignal(AbortSignal.timeout(20_000));
     if (serial !== refreshSerial.current) return;
-    if (error || !data) { setNotice(`Startregie ophalen mislukt: ${readableError(error?.message ?? "Geen serverantwoord")}`); return; }
+    if (error || !data) { setLoadError(startReadError(error ?? "Geen serverantwoord")); return; }
     const next = data as Snapshot;
     const serverTime = Date.parse(next.ops?.now ?? "");
     if (Number.isFinite(serverTime) && serverTime < lastServerTime.current) return;
@@ -303,13 +307,13 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     const previousSettings = lastSettings.current;
     lastSettings.current = next.settings;
     setSnapshot(next);
-    setNotice(current => current.startsWith("Startregie ophalen mislukt:") || current.startsWith("Startregie vernieuwen mislukt.") ? "" : current);
+    setLoadError("");
     setScheduleIds(current => current.filter(id => next.groups.some(group => group.schedule?.id === id && ["draft", "confirmed", "published"].includes(group.schedule.state))));
     setSettingsDraft(current => !current || JSON.stringify(current) === JSON.stringify(previousSettings) ? next.settings : current);
-    } catch { if (serial === refreshSerial.current) setNotice("Startregie vernieuwen mislukt. Controleer de verbinding en probeer opnieuw."); }
-  }, [eventSlug]);
-  useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
-  const realtimeConnected = usePrivateBroadcast(snapshot?.realtimeTopic, () => void load());
+    } catch (error) { if (serial === refreshSerial.current) setLoadError(startReadError(error)); }
+  }, [eventSlug]));
+  useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => { window.clearTimeout(timer); discardSnapshotResponses(); }; }, [load, discardSnapshotResponses]);
+  const realtimeConnected = usePrivateBroadcast(snapshot?.realtimeTopic, invalidate);
   useSnapshotRefresh(load);
 
   const times = useMemo(() => snapshot ? planningStartTimes(snapshot.settings) : [], [snapshot]);
@@ -587,10 +591,11 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     } finally { setBusy(false); }
   }
 
-  if (!snapshot || !settingsDraft) return <section className="panel loading-state">{notice ? <div><p role="alert">{notice}</p><button className="btn outline" type="button" onClick={() => void load()}>Opnieuw proberen</button></div> : <><RefreshCw className="spin" />Startregie ophalen…</>}</section>;
+  if (!snapshot || !settingsDraft) return <section className="panel loading-state">{loadError || notice ? <div><p role="alert">{loadError || notice}</p><button className="btn outline" type="button" onClick={() => void load()}>Opnieuw proberen</button></div> : <><RefreshCw className="spin" />Startregie ophalen…</>}</section>;
 
   const publicationStep = scheduleIds.length ? 3 : proposal?.groups.length ? 2 : snapshot.stats.plannedGroups ? 1 : 0;
   return <div className="start-regie">
+    {loadError && <div className="form-warning" role="alert">{loadError} De laatst geladen gegevens blijven zichtbaar en kunnen verouderd zijn. <button className="text-link" type="button" onClick={() => void load()}>Opnieuw ophalen</button></div>}
     {tab !== "planning" && <header className="start-regie-heading">
       <div><p className="kicker">Startregie</p><h1>{tab === "points" ? "Veilige startpunten" : tab === "map" ? "Startpunten op de kaart" : "Planningskaders"}</h1><p>Indelen, controleren en tijdig informeren.</p></div>
       <div className="start-regie-live" data-connected={realtimeConnected}><Radio />{realtimeConnected ? "Live gesynchroniseerd" : "Elke 15 seconden vernieuwd"}<button type="button" className="btn outline" onClick={() => void load()}><RefreshCw />Vernieuwen</button></div>

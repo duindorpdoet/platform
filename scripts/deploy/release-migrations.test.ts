@@ -14,8 +14,11 @@ describe("the signed restore proof covers the entire reviewed release",()=>{
     expect(migration).toContain("app_private.joint_route_source_hash_before_v3(_event)");
     expect(migration).not.toMatch(/\b(?:insert|update|delete|truncate|alter\s+table)\b/i);
   });
-  it("includes the exact reviewed P12 closing and walking-budget migration",()=>{
-    expect(REVIEWED_RELEASE_MIGRATIONS.at(-1)).toBe("20261030182243_p12_hard_close_and_75_minute_routes.sql");
+  it("ends with the reviewed P12 policy and bounded Startregie reads",()=>{
+    expect(REVIEWED_RELEASE_MIGRATIONS.slice(-2)).toEqual([
+      "20261030182243_p12_hard_close_and_75_minute_routes.sql",
+      "20261030231652_bound_startregie_snapshot_reads.sql",
+    ]);
   });
   it("rejects an incomplete, duplicated, reordered or unreviewed migration proof",()=>{
     for (const proof of [REVIEWED_RELEASE_MIGRATIONS.slice(1),[...REVIEWED_RELEASE_MIGRATIONS,REVIEWED_RELEASE_MIGRATIONS[0]],

@@ -57,5 +57,20 @@ test("saved start selects survive timestamp spelling and refresh; publication ex
   await expect(page.getByText("Opgeslagen serverwaarden: finalekaders gereed", { exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Indeling", exact: true }).click();
   await expect(selectedTime).toHaveValue("2026-10-31T16:10:00.000Z");
+  // A failed read-only publication check must never retain permission from a
+  // previous ready response, or claim that a location save failed.
+  await page.route("**/rest/v1/rpc/admin_startregie_publication_readiness", route => route.fulfill({
+    status: 500, contentType: "application/json", body: JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout", details: null, hint: null }),
+  }));
+  await card.getByRole("button", { name: "Startafspraken bevestigen en versturen", exact: true }).click();
+  const failedCheck = page.getByRole("dialog");
+  await expect(failedCheck).toContainText("De database heeft de controle afgebroken");
+  await expect(failedCheck).toContainText("57014");
+  await expect(failedCheck).not.toContainText("Opslag niet bevestigd");
+  await expect(failedCheck.getByRole("button", { name: "Startafspraken bevestigen en versturen", exact: true })).toBeDisabled();
+  await failedCheck.getByRole("button", { name: "Opnieuw controleren", exact: true }).click();
+  await expect(failedCheck.getByRole("button", { name: "Startafspraken bevestigen en versturen", exact: true })).toBeDisabled();
+  await failedCheck.getByRole("button", { name: "Terug", exact: true }).click();
+  await page.unroute("**/rest/v1/rpc/admin_startregie_publication_readiness");
   expect(publicationWrites).toEqual([]);
 });

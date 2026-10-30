@@ -10,6 +10,8 @@ import { planningStartTimes } from "@/lib/domain/start-slots";
 import type { ExistingPlanningSchedule } from "@/lib/domain/route-planner";
 import { assignmentDraft, canonicalTimestamp, checkedRouteVisitLabel, reconcileAssignment, sameTimestamp, timestampChoices } from "@/lib/domain/start-assignment";
 import { mergeReadiness, readinessFromError, type PublicationReadiness, type PublicationReason } from "@/lib/domain/start-publication-readiness";
+import { startReadError } from "@/lib/domain/start-read-error";
+import { createSerialRead } from "@/lib/realtime/serial-read";
 
 type OpsGroup = { groupId: string; scheduleId: string | null; revision: number; state: string; startPointId: string | null; startPointName: string | null; startsAt: string | null; timePublishedAt: string | null; confirmedAt: string | null; appointmentProtected?: boolean; addressReleaseAt: string | null; publishedStartsAt?: string | null; publishedRevision?: number | null; publishedAddressReleaseAt?: string | null; addressReleased: boolean; routeRevision: number };
 type RouteStop = { portalId: string; code: string; name: string; address: string; coordinate: [number, number] | null; world: string; kind: string; sequence: number; walkMeters: number; walkMinutes: number; plannedArrivalAt: string; visitSeconds?: number; bufferSeconds?: number; expectedCompletionAt?: string | null; physicalEndsAt?: string | null; status: string };
@@ -43,6 +45,8 @@ export function StartOpsWorkspace({ snapshot, eventSlug, busy, setBusy, onReload
   const [publicationReadiness, setPublicationReadiness] = useState<PublicationReadiness | null>(null);
   const [checkingReadiness, setCheckingReadiness] = useState(false);
   const preflightSerial = useRef(0);
+  const preflightReads = useRef(createSerialRead());
+  useEffect(() => () => { ++preflightSerial.current; }, [eventSlug]);
   const busyRef = useRef(busy);
   useEffect(() => { busyRef.current = busy; }, [busy]);
   const [mapMode, setMapMode] = useState(false);
@@ -93,19 +97,32 @@ export function StartOpsWorkspace({ snapshot, eventSlug, busy, setBusy, onReload
   async function checkPublication(selection: OpsGroup[]) {
     const serial = ++preflightSerial.current;
     const client = createClient();
-    if (!client) { setDialogError("De opgeslagen kaders konden niet worden gecontroleerd. Vernieuw en probeer opnieuw."); return false; }
+    setPublicationReadiness(null);
+    if (!client) { setDialogError(startReadError("Geen serververbinding", "Startafspraken controleren")); return false; }
     setCheckingReadiness(true);
     try {
-      const { data, error } = await client.schema("api").rpc("admin_startregie_publication_readiness", {
+      const args = {
         _event_slug: eventSlug, _expected_revisions: selection.map(group => ({ id: group.scheduleId, revision: group.revision })),
         _expected_settings_version: snapshot.settings.eventSettingsVersion,
-      }).abortSignal(AbortSignal.timeout(20_000));
+      };
+      const readiness = await preflightReads.current.run(JSON.stringify(args), async () => {
+        const { data, error } = await client.schema("api").rpc("admin_startregie_publication_readiness", args).abortSignal(AbortSignal.timeout(20_000));
+        if (error) throw error;
+        if (!data) throw new Error("Geen serverantwoord");
+        return data as PublicationReadiness;
+      });
       if (serial !== preflightSerial.current) return false;
-      if (error || !data) { setDialogError("De opgeslagen kaders en revisies konden niet worden gecontroleerd. Vernieuw en probeer opnieuw."); return false; }
-      const readiness = data as PublicationReadiness;
+      setDialogError("");
       setPublicationReadiness(readiness);
       return readiness.ready;
-    } catch { if (serial === preflightSerial.current) setDialogError("De controle is niet bevestigd. Controleer de verbinding en probeer opnieuw."); return false; }
+    } catch (error) {
+      if (serial === preflightSerial.current) {
+        const details = error && typeof error === "object" && "details" in error && typeof error.details === "string" ? error.details : null;
+        setPublicationReadiness(readinessFromError(details));
+        setDialogError(startReadError(error, "Startafspraken controleren"));
+      }
+      return false;
+    }
     finally { if (serial === preflightSerial.current) setCheckingReadiness(false); }
   }
   function openPublication(selection: OpsGroup[]) {

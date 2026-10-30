@@ -77,6 +77,8 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Function-only objective salt; isolated full-row/ACL restore proof retained.
   '20261030153823_all_active_route_objective_hash.sql',
   '20261030182243_p12_hard_close_and_75_minute_routes.sql',
+  // Function-only bounded Startregie reads; normal isolated restore gate remains required.
+  '20261030231652_bound_startregie_snapshot_reads.sql',
 
 ]);
 
