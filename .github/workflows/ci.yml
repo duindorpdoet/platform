@@ -71,7 +71,9 @@ jobs:
     name: Database migrations, contracts and lint
     needs: release-policy
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # The complete authenticated browser suite exceeded 60 minutes on a shared
+    # hosted runner; preserve every check and allow bounded cleanup time.
+    timeout-minutes: 90
     env:
       SKIP_MAIL_TESTS: ${{ needs.release-policy.outputs.skip_mail_tests }}
     steps:

@@ -76,7 +76,7 @@ export const JOINT_ROUTE_SEARCH_LIMITS = {
   portfolios: 2, variants: 64, variantsPerStrategy: 8,
   constructionEvaluationsPerPortfolio: 120_000, historicalConstructionEvaluations: 80_000,
   pairReplans: 48, pairReplansPerPortfolio: 24,
-  routeRepairs: 9600, repairsPerPortfolio: 4800, repairsPerSeed: 2400, repairsPerGroupPass: 48,
+  routeRepairs: 9600, repairsPerPortfolio: 4800, repairPhasesPerPortfolio: 3, repairsPerSeed: 2400, repairsPerGroupPass: 48, coverageRepairsPerPortfolio: 1600,
   jointFinaleReplans: 96, jointFinaleReplansPerPortfolio: 48,
   historicalCandidateEvaluations: 100_000, candidateEvaluations: 200_000,
 } as const;
@@ -201,8 +201,11 @@ export function measureJointRoutes(input: JointRouteInput, plans: JointRouteGrou
   }).sort((a, b) => compareId(a.groupId, b.groupId));
   const physicalPortals = [...new Map([...input.portals].sort((a, b) => compareId(b.id, a.id)).map(portal => [physicalId(portal.id), portal])).values()];
   const byPortal = physicalPortals.filter(portal => !portal.finale).map(portal => {
-    const visits = plans.flatMap(plan => [...plan.visits].filter(visit => visit.kind === "ordinary" && physicalId(visit.portalId) === physicalId(portal.id))
-      .sort((a, b) => at(a.startsAt) - at(b.startsAt)).slice(0, 1)).sort((a, b) => at(a.startsAt) - at(b.startsAt));
+    const received = [...plans.flatMap(plan => plan.visits.filter(visit => visit.kind === "ordinary").map(visit => ({ ...visit, groupId: plan.groupId }))),
+      ...input.fixedVisits.filter(visit => visit.kind === "ordinary")]
+      .filter(visit => (("physicalId" in visit ? visit.physicalId : undefined) ?? physicalId(visit.portalId)) === physicalId(portal.id));
+    const visits = [...new Map(received.sort((a, b) => at(b.startsAt) - at(a.startsAt)).map(visit => [visit.groupId, visit])).values()]
+      .sort((a, b) => at(a.startsAt) - at(b.startsAt));
     // A real final journey has no leg limit. The separate total walking budget
     // and the actual final window/group deadline still apply.
     const possible = input.groups.filter(group => !group.excludedPortalIds.some(id => physicalId(id) === physicalId(portal.id))
@@ -280,6 +283,27 @@ export function jointRouteProposalDigestText(sourceHash: string, boardHash: stri
       visit.portalId, visit.kind, visit.startsAt, String(visit.visitSeconds), String(visit.bufferSeconds),
     ]),
   ])].join("\n");
+}
+
+function jointRouteScore(input: JointRouteInput, plans: JointRouteGroupPlan[], mode: "general" | "organizer-coverage") {
+  const metrics = measureJointRoutes(input, plans);
+  const organizerCoverage = mode === "organizer-coverage" ? metrics.organizerCoverage.map(target => target.groups) : [];
+  return [-validateJointRoutes(input, plans).length, -metrics.zeroVisitGroups, -metrics.unvisitedPortals.length,
+    ...organizerCoverage, metrics.totalOrdinaryVisits,
+    ...metrics.byGroup.map(group => group.ordinaryVisits).sort((a, b) => a - b),
+    -metrics.receptionWaitingSeconds, -metrics.unallocatedBeforeFinaleSeconds, -metrics.walkingSeconds,
+    -metrics.byPortal.reduce((sum, portal) => sum + portal.visitsPerOpenHour ** 2, 0), -metrics.absoluteEndDeviationSeconds];
+}
+function compareJointRouteScores(input: JointRouteInput, left: JointRouteGroupPlan[], right: JointRouteGroupPlan[], a: number[], b: number[]) {
+  for (let index = 0; index < a.length; index++) if (a[index] !== b[index]) return a[index] > b[index] ? 1 : -1;
+  const tie = compareId(jointRouteProposalDigestText(input.sourceHash, input.boardHash, left), jointRouteProposalDigestText(input.sourceHash, input.boardHash, right));
+  return tie ? -tie : 0;
+}
+
+/** Compare actual routes under one canonical input; client metrics never rank candidates. */
+export function compareJointRouteProposals(input: JointRouteInput, left: Pick<JointRouteProposal, "groups">,
+  right: Pick<JointRouteProposal, "groups">, mode: "general" | "organizer-coverage" = "general") {
+  return compareJointRouteScores(input, left.groups, right.groups, jointRouteScore(input, left.groups, mode), jointRouteScore(input, right.groups, mode));
 }
 
 /** Independently checks the finished plan, including every shared capacity boundary. */
@@ -370,7 +394,7 @@ export function validateJointRoutes(input: JointRouteInput, plans: JointRouteGro
 /**
  * Deterministic shared-calendar constructions, pair removal/reinsertion and
  * bounded route insertion/reordering. Labels/preferences never enter the search.
- * A zero-visit group is protected before maximizing total real unique visits;
+ * Usable groups and active physical coverage precede total real unique visits;
  * equal counts are only a tie-break, never a cap on another group's route.
  */
 export function proposeJointRoutes(input: JointRouteInput, options: { mode?: "general" | "organizer-coverage" } = {}): JointRouteProposal {
@@ -395,6 +419,21 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: "ge
   const strategies = [...new Map([[], targetIds.slice(0, 1), targetIds.slice(-1), targetIds].map(ids => [ids.join("|"), ids])).values()];
   const targetRank = (id: string) => { const rank = targetIds.indexOf(physicalId(id)); return rank < 0 ? Infinity : rank; };
   const repairPortals = [...portals].sort((a, b) => targetRank(a.id) - targetRank(b.id) || compareId(a.id, b.id));
+  const ordinaryPhysicalIds = new Set(portals.filter(portal => !portal.finale).map(portal => physicalId(portal.id)));
+  const fixedRecipients = new Map<string, Set<string>>();
+  for (const visit of input.fixedVisits.filter(visit => visit.kind === "ordinary")) {
+    const id = visit.physicalId ?? physicalId(visit.portalId);
+    if (ordinaryPhysicalIds.has(id)) fixedRecipients.set(id, new Set([...(fixedRecipients.get(id) ?? []), visit.groupId]));
+  }
+  function portalCounts(plans: JointRouteGroupPlan[]) {
+    const recipients = new Map([...fixedRecipients].map(([id, groupIds]) => [id, new Set(groupIds)]));
+    for (const plan of plans) for (const visit of plan.visits.filter(visit => visit.kind === "ordinary")) {
+      const id = physicalId(visit.portalId);
+      if (ordinaryPhysicalIds.has(id)) recipients.set(id, new Set([...(recipients.get(id) ?? []), plan.groupId]));
+    }
+    return new Map([...recipients].map(([id, groupIds]) => [id, groupIds.size]));
+  }
+  const portalOpenHours = new Map(measureJointRoutes(input, []).byPortal.map(portal => [physicalId(portal.portalId), portal.usableOpenSeconds / 3600]));
   const coverageVector = (visits: JointRouteVisit[]) => targetIds.map(id => Number(visits.some(visit => visit.kind === "ordinary" && physicalId(visit.portalId) === id)));
   const legs = new Map(input.legs.map(leg => [`${leg.from}|${leg.to}`, leg]));
   const work = { candidateEvaluations: 0, variants: 0, pairReplans: 0, routeRepairs: 0, jointFinaleReplans: 0, exhausted: false };
@@ -548,19 +587,11 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: "ge
   const scoreCache = new WeakMap<JointRouteGroupPlan[], Partial<Record<"general" | "organizer-coverage", number[]>>>();
   const score = (plans: JointRouteGroupPlan[], asMode: "general" | "organizer-coverage" = mode) => {
     const cached = scoreCache.get(plans)?.[asMode]; if (cached) return cached;
-    const metrics = measureJointRoutes(input, plans);
-    const coverage = asMode === "organizer-coverage" ? metrics.organizerCoverage.map(target => target.groups) : [];
-    const value = [-validateJointRoutes(input, plans).length, -metrics.zeroVisitGroups, ...coverage, metrics.totalOrdinaryVisits,
-      ...metrics.byGroup.map(group => group.ordinaryVisits).sort((a, b) => a - b),
-      -metrics.receptionWaitingSeconds, -metrics.unallocatedBeforeFinaleSeconds, -metrics.walkingSeconds,
-      -metrics.unvisitedPortals.length, -metrics.byPortal.reduce((sum, portal) => sum + portal.visitsPerOpenHour ** 2, 0),
-      -metrics.absoluteEndDeviationSeconds];
+    const value = jointRouteScore(input, plans, asMode);
     scoreCache.set(plans, { ...scoreCache.get(plans), [asMode]: value }); return value;
   };
   function better(next: JointRouteGroupPlan[], prior: JointRouteGroupPlan[], asMode: "general" | "organizer-coverage" = mode) {
-    const a = score(next, asMode), b = score(prior, asMode);
-    for (let index = 0; index < a.length; index++) if (a[index] !== b[index]) return a[index] > b[index];
-    return jointRouteProposalDigestText(input.sourceHash, input.boardHash, next) < jointRouteProposalDigestText(input.sourceHash, input.boardHash, prior);
+    return compareJointRouteScores(input, next, prior, score(next, asMode), score(prior, asMode)) > 0;
   }
   let searchTruncated = false;
   function search(constructionIds: Set<string> | null) {
@@ -656,14 +687,19 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: "ge
       }
       return bestSchedule;
     }
-    let repairs = 0;
+    let repairs = 0, coverageRepairs = 0;
     let repairTruncated = false;
     let repairedBest = best;
     // Finish the established repair path before introducing new houses. Compare
     // its actual result first, then improve that result with all active houses;
     // a newly available insertion must not erase a stronger existing route.
-    const repairSets = constructionIds ? [repairPortals.filter(portal => constructionIds.has(physicalId(portal.id))), repairPortals] : [repairPortals];
-    for (const [phase, availableRepairPortals] of repairSets.entries()) {
+    const repairSets = constructionIds
+      ? [{ portals: repairPortals.filter(portal => constructionIds.has(physicalId(portal.id))), spread: false }, { portals: repairPortals, spread: false }]
+      : [{ portals: repairPortals, spread: false }];
+    // Retain the strongest completed insertion path before exploring equal-size
+    // substitutions; later extra visits may depend on its existing order.
+    repairSets.push({ portals: repairPortals, spread: true });
+    for (const [phase, { portals: availableRepairPortals, spread }] of repairSets.slice(0, JOINT_ROUTE_SEARCH_LIMITS.repairPhasesPerPortfolio).entries()) {
       const repairSeeds = phase ? [repairedBest] : mode === "organizer-coverage" && mostVisits !== best ? [best, mostVisits] : [best];
       for (const seed of repairSeeds) {
         best = seed;
@@ -676,11 +712,14 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: "ge
             let plan = best.find(plan => plan.groupId === group.id)!;
             let groupRepairs = 0;
             const others = () => best.filter(plan => plan.groupId !== group.id);
+            const otherCounts = portalCounts(others()), otherCoverage = new Set(otherCounts.keys());
             const order = () => plan.visits.filter(visit => visit.kind === "ordinary").map(visit => visit.portalId);
             const fixed = () => group.fixedFirstPortalId && physicalId(order()[0] ?? "") === physicalId(group.fixedFirstPortalId) ? 1 : 0;
-            const attempt = (ids: string[], allowJointFinales = false) => {
-              if (repairs >= seedLimit || groupRepairs >= JOINT_ROUTE_SEARCH_LIMITS.repairsPerGroupPass || work.exhausted) return;
+            const attempt = (ids: string[], allowJointFinales = false, forCoverage = false) => {
+              if (repairs >= seedLimit || groupRepairs >= JOINT_ROUTE_SEARCH_LIMITS.repairsPerGroupPass
+                || forCoverage && coverageRepairs >= JOINT_ROUTE_SEARCH_LIMITS.coverageRepairsPerPortfolio || work.exhausted) return;
               repairs++; groupRepairs++;
+              if (forCoverage) coverageRepairs++;
               const replacement = orderedRoute(group, ids, others());
               if (!replacement && allowJointFinales && work.jointFinaleReplans - initialFinaleReplans < JOINT_ROUTE_SEARCH_LIMITS.jointFinaleReplansPerPortfolio) {
                 const tentative = orderedRoute(group, ids, others(), true);
@@ -697,9 +736,16 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: "ge
               const routeScore = (item: JointRouteGroupPlan) => {
                 const ordinary = item.visits.filter(visit => visit.kind === "ordinary"), last = ordinary.at(-1);
                 const exit = item.visits.at(-1)?.walkSeconds ?? 0;
-                return [...(mode === "organizer-coverage" ? coverageVector(item.visits) : []), ordinary.length, -ordinary.reduce((sum, visit) => sum + (visit.waitSeconds ?? 0), 0),
+                const visited = new Set(ordinary.map(visit => physicalId(visit.portalId)));
+                const load = [...ordinaryPhysicalIds].reduce((sum, id) => {
+                  const hours = portalOpenHours.get(id) ?? 0, count = (otherCounts.get(id) ?? 0) + Number(visited.has(id));
+                  return sum + (hours ? (count / hours) ** 2 : 0);
+                }, 0);
+                return [new Set([...otherCoverage, ...ordinary.map(visit => physicalId(visit.portalId))]).size,
+                  ...(mode === "organizer-coverage" ? coverageVector(item.visits) : []), ordinary.length, -ordinary.reduce((sum, visit) => sum + (visit.waitSeconds ?? 0), 0),
                   -(at(item.finaleArrivalAt!) - (last ? at(last.startsAt) + last.visitSeconds : at(group.startsAt)) - exit),
                   -item.visits.reduce((sum, visit) => sum + visit.walkSeconds, 0),
+                  -load,
                   -(group.desiredEndAt ? Math.abs(at(item.expectedCompletionAt!) - at(group.desiredEndAt)) : 0)];
               };
               const a = routeScore(replacement), b = routeScore(plan), firstDifference = a.findIndex((value, index) => value !== b[index]);
@@ -707,6 +753,24 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: "ge
                 plan = replacement; best = [...others(), replacement].sort((a, b) => compareId(a.groupId, b.groupId)); changed = true;
               }
             };
+            // Give an unserved active physical house a real opportunity before
+            // visit-count improvements consume this group's repair allowance.
+            // A replacement may displace only a house still served elsewhere.
+            const unserved = availableRepairPortals.filter(portal => !portal.finale && !otherCoverage.has(physicalId(portal.id))
+              && !order().some(id => physicalId(id) === physicalId(portal.id)))
+              .sort((a, b) => Math.min(...a.windows.map(window => at(window.arrivalClosesAt)))
+                - Math.min(...b.windows.map(window => at(window.arrivalClosesAt))) || compareId(a.id, b.id));
+            for (const portal of unserved) {
+              const covered = () => otherCoverage.has(physicalId(portal.id)) || order().some(id => physicalId(id) === physicalId(portal.id));
+              for (let index = fixed(); index <= order().length && !covered(); index++) {
+                const ids = order(); ids.splice(index, 0, portal.id); attempt(ids, true, true);
+              }
+              for (let index = fixed(); index < order().length && !covered(); index++) {
+                const ids = order();
+                if (!otherCoverage.has(physicalId(ids[index]))) continue;
+                ids[index] = portal.id; attempt(ids, true, true);
+              }
+            }
             // Reserve repair opportunities for the explicit goals before unrelated
             // permutations exhaust this group's deterministic budget.
             for (const portal of availableRepairPortals.filter(portal => Number.isFinite(targetRank(portal.id)))) {
@@ -720,11 +784,22 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: "ge
                 }
               }
             }
-            for (const portal of availableRepairPortals) {
+            const ordinaryCandidates = spread ? [...availableRepairPortals].sort((a, b) => (otherCounts.get(physicalId(a.id)) ?? 0)
+              - (otherCounts.get(physicalId(b.id)) ?? 0) || compareId(a.id, b.id)) : availableRepairPortals;
+            for (const portal of ordinaryCandidates) {
               if (portal.finale || order().some(id => physicalId(id) === physicalId(portal.id))) continue;
               if (Number.isFinite(targetRank(portal.id))) continue;
               for (let index = fixed(); index <= order().length && !order().some(id => physicalId(id) === physicalId(portal.id)); index++) {
                 const ids = order(); ids.splice(index, 0, portal.id); attempt(ids);
+              }
+              // Keep examining an underused house after its first real visit.
+              // Same-count substitutions retain physical coverage and are
+              // accepted only by the shared targets/waste/walking/load order.
+              for (let index = fixed(); spread && index < order().length && !order().some(id => physicalId(id) === physicalId(portal.id)); index++) {
+                const ids = order(), displaced = physicalId(ids[index]);
+                if ((otherCounts.get(displaced) ?? 0) + 1 <= (otherCounts.get(physicalId(portal.id)) ?? 0) + 1
+                  || !otherCoverage.has(displaced)) continue;
+                ids[index] = portal.id; attempt(ids, true);
               }
             }
             const ids = order();

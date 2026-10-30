@@ -74,6 +74,8 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // V3 exact settings/metadata reconciliation and isolated restore evidence:
   // docs/reports/2026-10-30-joint-route-65-coverage/local-validation.json.
   '20261030131348_joint_route_policy_v3.sql',
+  // Function-only objective salt; isolated full-row/ACL restore proof retained.
+  '20261030153823_all_active_route_objective_hash.sql',
 
 ]);
 

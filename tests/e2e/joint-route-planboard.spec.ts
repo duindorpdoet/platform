@@ -58,6 +58,10 @@ async function openBoard(page: Page) { await page.goto("/admin"); await selectOr
 // This fixture contains only local synthetic seed identities, never production participants.
 test("a joint proposal is read-only until reviewed draft apply, and true timebars stay six minutes at every zoom", async ({ page, context, baseURL }) => {
   test.setTimeout(120_000); setup(); const client = await login(context, baseURL!), before = await snapshot(client), saved = invariants();
+  const planning = await rpc<JointRouteInput>(client, "admin_joint_route_planning_input", { _event_slug: event });
+  const unserved = planning.portals.find(portal => !portal.finale && portal.windows.length > 0
+    && !before.visits.some(visit => visit.kind === "ordinary" && visit.portalId === portal.id));
+  expect(unserved, "The synthetic calendar includes a suitable active house omitted from the stored route").toBeTruthy();
   await openBoard(page);
   const finale = before.visits.find(visit => visit.portalId === finalPortal && visit.kind === "finale")!; expect(finale).toBeTruthy(); expect(finale.durationSeconds).toBe(360);
   const service = page.locator(`[data-service-bar="${finale.id}"]`), buffer = page.locator(`[data-buffer-bar="${finale.id}"]`);
@@ -75,11 +79,16 @@ test("a joint proposal is read-only until reviewed draft apply, and true timebar
   const touch = list.getByRole("button", { name: new RegExp(before.groups.find(group => group.id === finale.groupId)!.code) }).first(); expect((await touch.boundingBox())!.height).toBeGreaterThanOrEqual(44); await touch.click();
   const detail = page.getByRole("dialog", { name: /Bezoek/ }); await expect(detail).toContainText("Einde fysieke bezetting, inclusief wisseltijd"); await expect(detail).toContainText("minimale aankomstafstand"); await detail.getByRole("button", { name: "Sluiten", exact: true }).click();
   const response = page.waitForResponse(response => response.url().endsWith("/api/admin/routes/proposal") && response.request().method() === "POST");
-  await page.getByRole("button", { name: "Routes opnieuw berekenen met bevestigde starts", exact: true }).click(); const computed = await response; expect(computed.status()).toBe(200); const proposal = (await computed.json()).data as JointRouteProposal;
+  await page.getByRole("button", { name: "Routes opnieuw berekenen met bevestigde starts", exact: true }).click(); const computed = await response; expect(computed.status()).toBe(200); const proposal = (await computed.json()).data as JointRouteProposalResponse;
   expect(proposal.valid, JSON.stringify(proposal.conflicts)).toBe(true); expect(proposal.groups).toHaveLength(4); expect(proposal.metrics.after.zeroVisitGroups).toBe(0);
+  for (const variant of [proposal.alternatives!.general, proposal.alternatives!.organizerCoverage].filter((item): item is JointRouteProposal => item !== null)) {
+    expect(variant.groups.some(group => group.visits.some(visit => visit.kind === "ordinary" && visit.portalId === unserved!.id))).toBe(true);
+    expect(variant.metrics.after.unvisitedPortals).not.toContain(unserved!.id);
+  }
   expect(invariants()).toEqual(saved); expect((await snapshot(client)).inputHash).toBe(before.inputHash);
   const dialog = page.getByRole("dialog", { name: "Gezamenlijk routevoorstel controleren", exact: true }); await expect(dialog).toContainText("Einde gewone poorten"); await expect(dialog).toContainText("Vrije tijd vóór P-38"); await expect(dialog).toContainText("Ontvangstwachten bij gewone huizen"); await expect(dialog).toContainText("Langste afzonderlijke wachttijd"); await expect(dialog).toContainText("Gewone poorten zonder bezoek");
   await expect(dialog).toContainText("voor die laatste wandeling geldt geen vaste tijd- of afstandsgrens");
+  await expect(dialog).toContainText("Gewone poorten met echt bezoek");
   const finaleChanges = proposal.groups.filter(group => group.finaleChange);
   if (finaleChanges.length) {
     const changes = dialog.getByRole("region", { name: "Voorgestelde tijdswijzigingen bij P-38", exact: true });

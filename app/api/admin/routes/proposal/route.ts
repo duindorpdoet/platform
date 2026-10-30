@@ -2,7 +2,8 @@ import { z } from "zod";
 import { ApiError, apiFailure, apiSuccess, assertTrustedOrigin, correlationId } from "@/lib/http/api";
 import { boundedBody } from "@/lib/http/bounded-body";
 import { createClient } from "@/lib/supabase/server";
-import { proposeJointRoutes, type JointRouteInput } from "@/lib/domain/joint-route-planner";
+import type { JointRouteInput } from "@/lib/domain/joint-route-planner";
+import { proposeJointRouteAlternatives } from "@/lib/domain/joint-route-alternatives";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,11 +25,9 @@ export async function POST(request: Request) {
     }
     if (!input.data) throw new ApiError(409, "ROUTE_INPUT_UNAVAILABLE", "Er zijn nog geen controleerbare start- en routegegevens.");
     const current = input.data as JointRouteInput;
-    const general = proposeJointRoutes(current);
-    const organizerCoverage = current.organizerCoveragePortalIds?.length
-      ? proposeJointRoutes(current, { mode: "organizer-coverage" }) : null;
+    const alternatives = proposeJointRouteAlternatives(current);
     // Alternatives share one current source and remain separate reviewable proposals.
-    return apiSuccess({ ...general, alternatives: { general, organizerCoverage } });
+    return apiSuccess({ ...alternatives.general, alternatives });
   } catch (error) {
     if (error instanceof RangeError) return apiFailure(new ApiError(413, "BODY_TOO_LARGE", "Het verzoek is te groot."), requestId);
     if (error instanceof Error && error.message === "INVALID_JOINT_PLANNING_INPUT") return apiFailure(new ApiError(409, "ROUTE_INPUT_UNAVAILABLE", "De routegegevens passen niet binnen de begrensde gezamenlijke planner. Controleer de startafspraken."), requestId);

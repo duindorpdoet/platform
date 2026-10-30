@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { JOINT_ROUTE_SEARCH_LIMITS, jointRouteProposalDigestText, measureJointRoutes, proposeJointRoutes, validateJointRoutes, type JointRouteInput, type JointRoutePortal } from "./joint-route-planner";
+import { compareJointRouteProposals, JOINT_ROUTE_SEARCH_LIMITS, jointRouteProposalDigestText, measureJointRoutes, proposeJointRoutes, validateJointRoutes, type JointRouteInput, type JointRoutePortal } from "./joint-route-planner";
 
 const time = (clock: string) => `2026-10-31T${clock.length === 5 ? `${clock}:00` : clock}.000Z`;
 function fixture(groupCount = 1, houseCount = 1): JointRouteInput {
@@ -437,7 +437,7 @@ describe("65-minute walking, actual show completion and explicit physical covera
     relabeled.portals.forEach(portal => { portal.worldSlug = "geen-routevoorkeur"; });
     expect(proposeJointRoutes(relabeled, { mode: "organizer-coverage" })).toEqual(result);
   });
-  it("compares an explicit coverage tradeoff without silently reducing the general maximum", () => {
+  it("keeps active physical coverage ahead of optional organization targets", () => {
     const input = policy65(1, 3); input.groups[0].ordinaryStopAt = time("17:25");
     input.organizerCoveragePortalIds = ["house-0", "house-1"];
     for (const leg of input.legs) if (leg.to === "portal:house-0" && leg.from !== leg.to
@@ -446,8 +446,8 @@ describe("65-minute walking, actual show completion and explicit physical covera
     expect(general.valid).toBe(true); expect(coverage.valid).toBe(true);
     expect(general.metrics.after.totalOrdinaryVisits).toBe(2);
     expect(general.metrics.after.organizerCoverage.map(target => target.groups)).toEqual([0, 1]);
-    expect(coverage.metrics.after.totalOrdinaryVisits).toBe(1);
-    expect(coverage.metrics.after.organizerCoverage.map(target => target.groups)).toEqual([1, 0]);
+    expect(coverage.metrics.after.totalOrdinaryVisits).toBe(2);
+    expect(coverage.metrics.after.organizerCoverage.map(target => target.groups)).toEqual([0, 1]);
     expect(general.optimization.mode).toBe("general"); expect(coverage.optimization.mode).toBe("organizer-coverage");
     const omitted = general.groups[0].diagnostics.find(item => item.code === "OMITTED_PORTAL" && item.portalId === "house-0")!;
     expect(omitted.candidate?.totalWalkingSeconds).not.toBeNull();
@@ -480,9 +480,9 @@ describe("65-minute walking, actual show completion and explicit physical covera
     expect(diagnostic.message).toContain("300 seconden werkelijke totale looptijd");
     expect(diagnostic.message).toContain("360 seconden tijdtekort");
   });
-  it("inserts a target through another house and moves both neighboring finale slots on the shared calendar", () => {
+  it.each([true, false])("inserts an unserved house and moves neighboring finale slots, explicit target %s", targeted => {
     const input = policy65(2, 3); input.maxTotalWalkingSeconds = 1000;
-    input.organizerCoveragePortalIds = ["house-2"];
+    input.organizerCoveragePortalIds = targeted ? ["house-2"] : [];
     input.groups.forEach(group => { group.fixedFirstPortalId = "house-0"; group.desiredEndAt = time("18:00"); group.ordinaryStopAt = time("17:50"); });
     input.groups[0].finale.latestArrivalAt = time("17:30"); input.groups[1].finale.latestArrivalAt = time("18:00");
     input.groups[1].excludedPortalIds = ["house-2"];
@@ -492,7 +492,7 @@ describe("65-minute walking, actual show completion and explicit physical covera
       if (leg.from === "portal:house-2" && leg.to === "portal:finale") leg.seconds = 1900;
       if (leg.from === "portal:house-1" && leg.to === "portal:finale") leg.seconds = 120;
     }
-    const result = proposeJointRoutes(input, { mode: "organizer-coverage" });
+    const result = proposeJointRoutes(input, { mode: targeted ? "organizer-coverage" : "general" });
     expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
     expect(result.metrics.after.totalOrdinaryVisits).toBe(5);
     expect(result.groups[0].visits.map(visit => visit.portalId)).toEqual(["house-0", "house-2", "house-1", "finale"]);
@@ -584,4 +584,103 @@ describe("65-minute walking, actual show completion and explicit physical covera
     expect(result.work.routeRepairs).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.routeRepairs);
     expect(result.work.jointFinaleReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.jointFinaleReplans);
   }, 20_000);
+});
+
+describe("all active physical houses", () => {
+  function activate(input: JointRouteInput, portal: JointRoutePortal) {
+    const previous = portal.nodeId;
+    Object.assign(portal, { id: "added-house", code: "P-new", nodeId: "portal:added-house" });
+    input.legs = input.legs.map(leg => ({ ...leg, from: leg.from === previous ? portal.nodeId : leg.from, to: leg.to === previous ? portal.nodeId : leg.to }));
+    input.portals.push(portal);
+  }
+  it("ranks wider physical coverage above more repeated visits and ignores claimed client metrics", () => {
+    const input = fixture(2, 4), added = input.portals.splice(3, 1)[0];
+    const shifted = (seconds: number) => new Date(Date.parse(time("17:00")) + seconds * 1000).toISOString();
+    input.portals.filter(portal => !portal.finale).forEach((portal, index) => Object.assign(portal.windows[0], {
+      opensAt: shifted(index * 360), arrivalClosesAt: shifted((index + 1) * 360 + 2), closesAt: shifted((index + 1) * 360 + 2), headwaySeconds: 0,
+    }));
+    input.legs.filter(leg => leg.from.startsWith("start:") && leg.to === "portal:house-0").forEach(leg => { leg.seconds = 2; });
+    const repeated = proposeJointRoutes(input);
+    expect(repeated.metrics.after.totalOrdinaryVisits).toBe(6);
+    input.before = repeated.groups;
+    activate(input, added);
+    Object.assign(added.windows[0], { visitSeconds: 1200, arrivalClosesAt: shifted(1200), closesAt: shifted(1200) });
+    const covered = proposeJointRoutes(input);
+    expect(covered.valid, JSON.stringify(covered.conflicts)).toBe(true);
+    expect(covered.metrics.after.unvisitedPortals).toEqual([]);
+    expect(covered.metrics.after.totalOrdinaryVisits).toBe(4);
+    expect(validateJointRoutes(input, repeated.groups)).toEqual([]);
+    const misleading = structuredClone(repeated); misleading.metrics.after.totalOrdinaryVisits = 1000; misleading.metrics.after.unvisitedPortals = [];
+    expect(compareJointRouteProposals(input, covered, misleading)).toBeGreaterThan(0);
+    expect(compareJointRouteProposals(input, misleading, covered)).toBeLessThan(0);
+    expect(compareJointRouteProposals(input, covered, structuredClone(covered))).toBe(0);
+    const invalid = structuredClone(covered); invalid.groups[0].visits[0].startsAt = time("16:00");
+    expect(compareJointRouteProposals(input, covered, invalid)).toBeGreaterThan(0);
+  });
+  it.each(["general", "organizer-coverage"] as const)("replaces a redundantly served house to cover a new active house in %s mode", mode => {
+    const input = fixture(2, 4), added = input.portals.splice(3, 1)[0];
+    const shifted = (seconds: number) => new Date(Date.parse(time("17:00")) + seconds * 1000).toISOString();
+    input.groups.forEach(group => { group.fixedFirstPortalId = "house-0"; });
+    const boundaries = [[0, 362], [362, 812], [722, 1142]];
+    input.portals.filter(portal => !portal.finale).forEach((portal, index) => Object.assign(portal.windows[0], {
+      opensAt: shifted(boundaries[index][0]), arrivalClosesAt: shifted(boundaries[index][1]), closesAt: shifted(boundaries[index][1]), headwaySeconds: 0,
+    }));
+    input.legs.filter(leg => leg.from.startsWith("start:") && leg.to === "portal:house-0").forEach(leg => { leg.seconds = 2; });
+    const established = proposeJointRoutes(input, { mode });
+    expect(established.metrics.after.totalOrdinaryVisits).toBe(6);
+    input.before = established.groups;
+    activate(input, added);
+    Object.assign(added.windows[0], { opensAt: shifted(422), arrivalClosesAt: shifted(782), closesAt: shifted(782), headwaySeconds: 0 });
+    input.legs.filter(leg => leg.to === added.nodeId && leg.from !== added.nodeId).forEach(leg => { leg.seconds = 60; });
+    const result = proposeJointRoutes(input, { mode });
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.metrics.after.totalOrdinaryVisits).toBe(6);
+    expect(result.metrics.after.unvisitedPortals).toEqual([]);
+    expect(result.metrics.after.byPortal.find(portal => portal.portalId === added.id)?.visits).toBe(1);
+    expect(result.groups.every(plan => plan.visits[0].portalId === "house-0")).toBe(true);
+    expect(validateJointRoutes(input, result.groups)).toEqual([]);
+    expect(compareJointRouteProposals(input, result, established, mode)).toBeGreaterThan(0);
+  });
+  it("continues adding genuine visits to a newly active house across multiple groups", () => {
+    const input = fixture(3, 4), added = input.portals.splice(3, 1)[0];
+    input.groups.forEach(group => { group.fixedFirstPortalId = "house-0"; });
+    input.before = proposeJointRoutes(input).groups;
+    activate(input, added);
+    const result = proposeJointRoutes(input);
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.metrics.after.totalOrdinaryVisits).toBe(12);
+    expect(result.metrics.after.byPortal.every(portal => portal.visits === 3)).toBe(true);
+    expect(result.groups.every(plan => plan.visits[0].portalId === "house-0" && new Set(plan.visits.map(visit => visit.portalId)).size === 5)).toBe(true);
+    const relabeled = structuredClone(input); relabeled.needsAnders = true;
+    relabeled.groups.reverse(); relabeled.portals.reverse(); relabeled.legs.reverse();
+    relabeled.portals.forEach(portal => { portal.worldSlug = "arbitrary-label"; });
+    expect(proposeJointRoutes(relabeled)).toEqual(result);
+  });
+  it("reports a genuinely unavailable active house without inventing a visit", () => {
+    const input = fixture(2, 3), blocked = input.portals[2];
+    blocked.windows[0].opensAt = time("22:30"); blocked.windows[0].arrivalClosesAt = time("23:30"); blocked.windows[0].closesAt = time("23:30");
+    const result = proposeJointRoutes(input);
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.metrics.after.unvisitedPortals).toEqual([blocked.id]);
+    expect(result.groups.every(plan => !plan.visits.some(visit => visit.portalId === blocked.id))).toBe(true);
+    expect(result.groups.every(plan => plan.diagnostics.some(diagnostic => diagnostic.code === "OMITTED_PORTAL" && diagnostic.portalId === blocked.id))).toBe(true);
+  });
+  it("counts protected ordinary physical visits once without treating history, aliases or finale as new coverage", () => {
+    const input = fixture(1, 2);
+    input.groups[0].excludedPortalIds = ["house-0"];
+    input.fixedVisits = [
+      { groupId: "begun-group", children: 10, portalId: "old-alias", physicalId: "house-0", kind: "ordinary", sequence: 1, startsAt: time("16:00"), visitSeconds: 360, bufferSeconds: 0, walkSeconds: 0, walkMeters: 0 },
+      { groupId: "begun-group", children: 10, portalId: "house-0", kind: "ordinary", sequence: 2, startsAt: time("16:10"), visitSeconds: 360, bufferSeconds: 0, walkSeconds: 0, walkMeters: 0 },
+      { groupId: "begun-group", children: 10, portalId: "finale-alias", physicalId: "finale", kind: "ordinary", sequence: 3, startsAt: time("16:20"), visitSeconds: 360, bufferSeconds: 0, walkSeconds: 0, walkMeters: 0 },
+    ];
+    const protectedVisits = structuredClone(input.fixedVisits), result = proposeJointRoutes(input);
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.metrics.after.unvisitedPortals).toEqual([]);
+    expect(result.metrics.after.totalOrdinaryVisits).toBe(1);
+    expect(result.metrics.after.byPortal.find(portal => portal.portalId === "house-0")?.visits).toBe(1);
+    expect(result.metrics.after.byPortal).toHaveLength(2);
+    expect(input.fixedVisits).toEqual(protectedVisits);
+    const onlyHistory = structuredClone(input); onlyHistory.fixedVisits = [];
+    expect(proposeJointRoutes(onlyHistory).metrics.after.unvisitedPortals).toEqual(["house-0"]);
+  });
 });

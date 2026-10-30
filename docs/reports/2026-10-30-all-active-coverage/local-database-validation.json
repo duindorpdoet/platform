@@ -1,0 +1,38 @@
+{
+  "scope": "Isolated local synthetic PostgreSQL only; no production data or backup is represented.",
+  "capturedAt": "2026-10-30T15:40:21.646Z",
+  "migration": "20261030153823_all_active_route_objective_hash.sql",
+  "migrationSHA256": "8ac5d9614c0be022842b2b627c2cbebade23bdf868df888e02893d8e5ec3b7fc",
+  "preservation": {
+    "originalTables": 203,
+    "unchangedOriginalTables": 203,
+    "restoredOriginalTables": 203,
+    "restoredMigrationReplayed": true,
+    "ownerUnchanged": true,
+    "aclUnchanged": true,
+    "authoritativeSourceFunctionUnchanged": true,
+    "settingsUnchanged": true,
+    "walkingBudgetSeconds": 3900,
+    "earlyFinishToleranceSeconds": 1800,
+    "routePolicySettingsVersion": 1,
+    "policyLedgerAppends": 0,
+    "reconciliationWaiversAdded": 0
+  },
+  "validation": {
+    "fullPgTapFiles": 117,
+    "fullPgTapAssertions": 3231,
+    "fullPgTapResult": "PASS",
+    "elapsedSeconds": 67,
+    "newObjectiveRegressionAssertions": 16,
+    "releaseMigrationGuardTests": 4,
+    "independentAllActivePlannerTests": 6,
+    "independentCanonicalAlternativeTests": 5,
+    "oldV3ProposalRejected": "JOINT_ROUTE_PROPOSAL_STALE / SQLSTATE40001",
+    "freshProposalAccepted": true,
+    "storedAppointmentsAndMailUnchanged": true,
+    "begunV3PolicySnapshotPreserved": true
+  },
+  "sourceObjective": "all-active-coverage-v1",
+  "hardPolicyVersion": "joint-reception-v3",
+  "productionWrites": 0
+}
