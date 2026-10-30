@@ -457,6 +457,7 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   browserName,
 }, info) => {
   const fixture = await owner(context);
+  try {
   await page.addLocatorHandler(page.getByRole("button", { name: "Installatievenster sluiten" }), async close => close.click());
   await page.goto("/mijn-huis");
   await viewportShellScrolls(page, browserName !== "webkit");
@@ -562,6 +563,22 @@ test("status dialogs, shared checklist, privacy, offline and all viewport contro
   await expect(page.getByText("De Lantaarnpoort", { exact: true })).toHaveCount(
     0,
   );
+  } finally {
+    // A real timed pause would enqueue reminders during another fixture's
+    // rehearsal. Close only this synthetic house through its normal owner RPC;
+    // the rehearsal still compares every domain table and complete push row.
+    const snapshot = await fixture.client.schema("api").rpc("portal_room_snapshot", {
+      _event_slug: eventSlug, _portal_id: fixture.id,
+    });
+    expect(snapshot.error).toBeNull();
+    const cleanup = await fixture.client.schema("api").rpc("portal_room_update", {
+      _portal_id: fixture.id, _operation: "status",
+      _payload: { state: "closed", version: snapshot.data.portal.version, reason: "Lokale proefpauze afronden" },
+      _key: randomUUID(),
+    });
+    expect(cleanup.error).toBeNull();
+    expect(sql(`select pause_until is null and operation_status='closed' from app_private.portals where id='${fixture.id}'`)).toBe("t");
+  }
 });
 
 test.describe('late snapshot after disconnect',()=>{

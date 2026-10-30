@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import {sql,requireLocalTogetherDatabase,createTogetherFixtures} from '../../scripts/acceptance/together-fixtures.mjs';
 import {prepareFixtureGuidance,selectOrganizationSection} from './helpers/guidance';
 import type {BoardSnapshot} from '../../lib/domain/live-planboard';
+import {localBoardWarnings,shiftedVisits,snappedStart} from '../../lib/domain/live-planboard';
 import {prepareOtherRouteAppointments,reviewCanonicalFixtureRoutes} from './helpers/canonical-routes';
 const event='duindorp-halloween-2026',gid='23000000-0000-0000-0000-000000000002';
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL!,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
@@ -110,9 +111,21 @@ test('resolving a conflict during dragging keeps the active node under the confl
  await rpc(client,'portal_set_operational_state',{_portal_id:targetId,_state:'open',_expected_version:Number(sql(`select version from app_private.portals where id='${targetId}'`)),_reason:'Afzonderlijke synthetische ontvangstpoort voor de gecontroleerde sleepannulering'});
  const before=await snapshot(client);const visit=before.visits.find(v=>v.groupId===gid&&v.sequence===2)!;const ownPortals=new Set(before.visits.filter(v=>v.groupId===gid).map(v=>v.portalId));const target=before.portals.find(p=>p.id===targetId)!;
  expect(ownPortals.has(target.id)).toBe(false);expect(target.operationStatus).toBe('open');expect(target.finale).toBe(false);
+ const targetStartsAt=new Date(snappedStart(Date.parse(visit.startsAt))).toISOString();
+ expect(localBoardWarnings(shiftedVisits(before.visits,visit,target.id,targetStartsAt,false),before.portals,before.groups).filter(w=>w.visitIds.includes(visit.id))).toEqual([]);
  await page.goto('/admin');await selectOrganizationSection(page,'Poorten');await page.getByRole('tab',{name:'Live planbord',exact:true}).click();await page.getByRole('button',{name:'Schermvullend',exact:true}).click();await page.getByRole('combobox',{name:'Groep',exact:true}).selectOption(gid);await page.getByRole('checkbox',{name:'Alleen gekozen groep',exact:true}).check();await page.getByRole('checkbox',{name:'Alleen conflicten',exact:true}).check();
- const block=page.locator(`[data-visit-id="${visit.id}"]`);await block.scrollIntoViewIfNeeded();await expect(block).toHaveClass(/has-warning/);const start=(await block.boundingBox())!;const row=page.locator(`[data-portal-row="${target.id}"] .planboard-track`);const finish=(await row.boundingBox())!;
- await page.mouse.move(start.x+10,start.y+10);await page.mouse.down();await page.mouse.move(start.x+10,finish.y+40,{steps:10});await expect(block).toHaveCount(1);await expect(block).not.toHaveClass(/has-warning/);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.getByRole('dialog')).toHaveCount(0);expect((await snapshot(client)).inputHash).toBe(before.inputHash);
+ // Keep both rows inside the real viewport before measuring pointer positions.
+ // An offscreen target coordinate can hit another house and create a real conflict.
+ await page.locator('.planboard-scroll').evaluate(node=>node.scrollIntoView({block:'start'}));
+ const block=page.locator(`[data-visit-id="${visit.id}"]`),row=page.locator(`[data-portal-row="${target.id}"] .planboard-track`);
+ await expect(block).toBeInViewport();await expect(row).toBeInViewport();await expect(block).toHaveClass(/has-warning/);
+ const start=(await block.boundingBox())!,finish=(await row.boundingBox())!;
+ const sourcePoint={x:start.x+10,y:start.y+10},targetPoint={x:start.x+10,y:finish.y+40};
+ expect(await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.closest('[data-visit-id]')?.getAttribute('data-visit-id'),sourcePoint)).toBe(visit.id);
+ expect(await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.closest('[data-portal-row]')?.getAttribute('data-portal-row'),targetPoint)).toBe(target.id);
+ await page.mouse.move(sourcePoint.x,sourcePoint.y);await page.mouse.down();await page.mouse.move(targetPoint.x,targetPoint.y,{steps:10});
+ await expect(page.getByRole('status').filter({hasText:`→ ${target.code} ·`})).toBeVisible();await expect(block).toHaveCount(1);
+ await expect(block).not.toHaveClass(/has-warning/);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.getByRole('dialog')).toHaveCount(0);expect((await snapshot(client)).inputHash).toBe(before.inputHash);
 });
 test('real mobile touch opens details and touch cancellation leaves the server unchanged',async({browser})=>{
  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,ignoreHTTPSErrors:true});const client=await login(context);const page=await context.newPage();
