@@ -323,7 +323,11 @@ test("owner invitation, real Auth OTP, viewer chat, promotion, realtime and revo
   await expect(guide).toBeVisible();
   for(let step=0;step<13;step++){
     await expect(guide.getByRole('progressbar')).toHaveAttribute('aria-valuenow',String(step+1));
-    await expect(guest).toHaveURL(/\/mijn-huis$/);
+    const qrStep=step===4||step===5;
+    if(qrStep)await expect(guide.locator('.guidance-step-count span')).toHaveText(step===4?'QR-poster':'Scannen');
+    // The real QR view keeps its printable-poster shortcut in the URL.
+    // Every other tour step stays at the exact query-free house entrance.
+    await expect(guest).toHaveURL(`${origin}/mijn-huis${qrStep?'?qr=1':''}`);
     if(step!==3)await expect(guide.locator('.guidance-screen-indicator .is-ready')).toHaveCount(1);
     await guide.getByRole('button',{name:'Verder',exact:true}).click();
   }
