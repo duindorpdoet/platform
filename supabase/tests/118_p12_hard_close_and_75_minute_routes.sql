@@ -39,7 +39,22 @@ with started as(insert into app_private.group_runs(group_id,schedule_revision_id
  select(old_input#>>'{groups,3,id}')::uuid,(app_private.route_group_start_context((old_input#>>'{groups,3,id}')::uuid)->>'scheduleId')::uuid,accepted,'live','2026-10-31T16:30:00Z'from p12_test returning id)
  update p12_test set run_id=started.id from started;
 update p12_test set checkpoint=pg_temp.p12_preserved();
-\ir ../migrations/20261030182243_p12_hard_close_and_75_minute_routes.sql
+-- The CLI test container mounts tests, not the repository migrations folder.
+-- Replay the exact installed migration from its trusted ledger instead of
+-- copying policy SQL into this fixture or relying on a host filesystem path.
+do $replay_installed_migration$
+declare installed_statements text[]; migration_statement text;
+begin
+ if(select count(*)from supabase_migrations.schema_migrations where version='20261030182243')<>1 then
+  raise exception 'P12_MIGRATION_REPLAY_REQUIRES_EXACT_INSTALLED_VERSION';
+ end if;
+ select statements into installed_statements from supabase_migrations.schema_migrations where version='20261030182243';
+ if coalesce(cardinality(installed_statements),0)=0 or exists(
+  select 1 from unnest(installed_statements)statement where nullif(btrim(statement),'')is null) then
+  raise exception 'P12_MIGRATION_REPLAY_REQUIRES_NONEMPTY_STATEMENTS';
+ end if;
+ foreach migration_statement in array installed_statements loop execute migration_statement;end loop;
+end $replay_installed_migration$;
 update p12_test set input=api.admin_joint_route_planning_input('duindorp-halloween-2026');
 select is(pg_temp.p12_preserved(),checkpoint,'migration preserves starts, schedules, history, participants, accepted routes, mail, ledger and other houses')from p12_test;
 select is(input->>'policyVersion','joint-reception-v3','hard policy contract remains v3')from p12_test;
