@@ -352,3 +352,176 @@ describe("organization route policy of 30 October", () => {
     expect(validateJointRoutes(input, longerShow.groups).some(diagnostic => diagnostic.code === "OPENING_WINDOW")).toBe(true);
   });
 });
+
+function policy65(groupCount = 1, houseCount = 1): JointRouteInput {
+  return { ...fixture(groupCount, houseCount), policyVersion: "joint-reception-v3", maxTotalWalkingSeconds: 3900,
+    maxEarlyFinishSeconds: 1800, routePolicySettingsVersion: 1, organizerCoveragePortalIds: [] };
+}
+
+describe("65-minute walking, actual show completion and explicit physical coverage", () => {
+  it("accepts exactly 3900 real walking seconds including a long final leg, and rejects 3901", () => {
+    const input = policy65();
+    input.legs.find(leg => leg.from === input.groups[0].startNodeId && leg.to === "portal:house-0")!.seconds = 900;
+    input.legs.find(leg => leg.from === "portal:house-0" && leg.to === "portal:finale")!.seconds = 3000;
+    const exact = proposeJointRoutes(input);
+    expect(exact.valid, JSON.stringify(exact.conflicts)).toBe(true);
+    expect(exact.metrics.after.byGroup[0].walkingSeconds).toBe(3900);
+    expect(exact.groups[0].visits.at(-1)!.walkSeconds).toBe(3000);
+    expect(validateJointRoutes(input, exact.groups)).toEqual([]);
+    input.legs.find(leg => leg.from === "portal:house-0" && leg.to === "portal:finale")!.seconds = 3001;
+    exact.groups[0].visits.at(-1)!.walkSeconds = 3001;
+    expect(validateJointRoutes(input, exact.groups).map(item => item.code)).toContain("WALKING_BUDGET");
+    expect(proposeJointRoutes(input).valid).toBe(false);
+  });
+  it("builds the hard early bound on the end of the real show, with turnover kept separate", () => {
+    const input = policy65(); input.portals.at(-1)!.windows[0].bufferSeconds = 120;
+    const result = proposeJointRoutes(input), plan = result.groups[0];
+    expect(result.valid).toBe(true);
+    expect(plan.earliestCompletionAt).toBe(time("20:30"));
+    expect(plan.latestCompletionAt).toBe(time("21:30"));
+    expect(plan.finaleArrivalAt).toBe(time("20:24"));
+    expect(plan.expectedCompletionAt).toBe(time("20:30"));
+    expect(plan.finaleChange?.proposedReservedAt).toBe(time("20:24"));
+    expect(result.metrics.after.unallocatedBeforeFinaleSeconds).toBeGreaterThan(3600);
+    expect(plan.diagnostics.filter(item => item.code === "UNALLOCATED_BEFORE_FINALE")).toHaveLength(1);
+    const earlier = structuredClone(result.groups); earlier[0].visits.at(-1)!.startsAt = time("20:23:59");
+    earlier[0].finaleArrivalAt = time("20:23:59"); earlier[0].expectedCompletionAt = time("20:29:59");
+    earlier[0].finaleChange!.proposedReservedAt = time("20:23:59");
+    expect(validateJointRoutes(input, earlier).map(item => item.code)).toContain("GROUP_COMPLETION_TOO_EARLY");
+  });
+  it("accepts the exact late show end and rejects one second beyond it", () => {
+    const input = policy65(); input.portals.at(-1)!.windows[0].opensAt = time("21:24");
+    const result = proposeJointRoutes(input), plan = result.groups[0];
+    expect(result.valid).toBe(true); expect(plan.expectedCompletionAt).toBe(time("21:30"));
+    plan.visits.at(-1)!.startsAt = time("21:24:01"); plan.finaleArrivalAt = time("21:24:01");
+    plan.expectedCompletionAt = time("21:30:01"); plan.finaleChange!.proposedReservedAt = time("21:24:01");
+    expect(validateJointRoutes(input, result.groups).map(item => item.code)).toContain("GROUP_COMPLETION_LIMIT");
+  });
+  it("does not invent a desired end or early lower bound and rejects incomplete v3 policy", () => {
+    const input = policy65(); input.groups[0].desiredEndAt = null;
+    input.groups[0].earliestCompletionAt = time("21:00");
+    const result = proposeJointRoutes(input);
+    expect(result.valid).toBe(true); expect(result.groups[0].earliestCompletionAt).toBeNull();
+    expect(result.groups[0].expectedCompletionAt).toBe(time("17:12"));
+    delete input.maxEarlyFinishSeconds;
+    expect(proposeJointRoutes(input).conflicts.map(item => item.code)).toContain("INVALID_ROUTE_POLICY_CONFIG");
+  });
+  it("diagnoses an empty intersection with the physical finale window during construction", () => {
+    const input = policy65(); input.portals.at(-1)!.windows[0].closesAt = time("20:29:59");
+    const result = proposeJointRoutes(input);
+    expect(result.valid).toBe(false);
+    expect(result.conflicts.some(item => item.code === "COMPLETION_WINDOW_UNAVAILABLE")).toBe(true);
+    expect(result.metrics.after.byPortal[0].usableOpenSeconds).toBe(0);
+  });
+  it("allocates every finale inside the end window on one shared calendar", () => {
+    const input = policy65(3); input.portals.at(-1)!.windows[0].maxGroups = 2;
+    const result = proposeJointRoutes(input);
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    const finals = result.groups.map(plan => Date.parse(plan.finaleArrivalAt!)).sort((a, b) => a - b);
+    expect(finals[0]).toBe(Date.parse(time("20:24")));
+    expect(finals.slice(1).every((value, index) => value - finals[index] >= 300_000)).toBe(true);
+    expect(result.groups.every(plan => Date.parse(plan.expectedCompletionAt!) >= Date.parse(time("20:30")))).toBe(true);
+    expect(validateJointRoutes(input, result.groups)).toEqual([]);
+  });
+  it("visits a short-window organization target in another order while preserving the linked first", () => {
+    const input = policy65(2, 3); input.organizerCoveragePortalIds = ["house-2", "house-1"];
+    input.groups.forEach(group => { group.fixedFirstPortalId = "house-0"; });
+    input.portals[2].windows[0].arrivalClosesAt = time("17:13"); input.portals[2].windows[0].closesAt = time("17:19");
+    const result = proposeJointRoutes(input, { mode: "organizer-coverage" });
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.groups.every(plan => plan.visits[0].portalId === "house-0")).toBe(true);
+    expect(result.metrics.after.totalOrdinaryVisits).toBe(6);
+    expect(result.metrics.after.organizerCoverage.map(target => target.groups)).toEqual([2, 2]);
+    expect(result.groups.every(plan => plan.visits.findIndex(visit => visit.portalId === "house-2") < plan.visits.findIndex(visit => visit.portalId === "house-1"))).toBe(true);
+    const relabeled = structuredClone(input); relabeled.needsAnders = true;
+    relabeled.portals.forEach(portal => { portal.worldSlug = "geen-routevoorkeur"; });
+    expect(proposeJointRoutes(relabeled, { mode: "organizer-coverage" })).toEqual(result);
+  });
+  it("compares an explicit coverage tradeoff without silently reducing the general maximum", () => {
+    const input = policy65(1, 3); input.groups[0].ordinaryStopAt = time("17:25");
+    input.organizerCoveragePortalIds = ["house-0", "house-1"];
+    for (const leg of input.legs) if (leg.to === "portal:house-0" && leg.from !== leg.to
+      || leg.from === "portal:house-0" && leg.to !== "portal:finale" && leg.from !== leg.to) leg.seconds = 900;
+    const general = proposeJointRoutes(input), coverage = proposeJointRoutes(input, { mode: "organizer-coverage" });
+    expect(general.valid).toBe(true); expect(coverage.valid).toBe(true);
+    expect(general.metrics.after.totalOrdinaryVisits).toBe(2);
+    expect(general.metrics.after.organizerCoverage.map(target => target.groups)).toEqual([0, 1]);
+    expect(coverage.metrics.after.totalOrdinaryVisits).toBe(1);
+    expect(coverage.metrics.after.organizerCoverage.map(target => target.groups)).toEqual([1, 0]);
+    expect(general.optimization.mode).toBe("general"); expect(coverage.optimization.mode).toBe("organizer-coverage");
+    const omitted = general.groups[0].diagnostics.find(item => item.code === "OMITTED_PORTAL" && item.portalId === "house-0")!;
+    expect(omitted.candidate?.totalWalkingSeconds).not.toBeNull();
+    expect(omitted.candidate?.budgetSeconds).toBe(3900);
+    expect(omitted.message).toContain(`${omitted.candidate!.totalWalkingSeconds} seconden`);
+    expect(omitted.message).toContain(`${Math.ceil(omitted.candidate!.shortfallSeconds!)} seconden tijdtekort`);
+  });
+  it("treats an organization target absent from current suitable houses as missed coverage", () => {
+    const input = policy65(); input.organizerCoveragePortalIds = ["temporarily-closed-physical-house"];
+    const result = proposeJointRoutes(input, { mode: "organizer-coverage" });
+    expect(result.valid).toBe(true);
+    expect(result.metrics.after.organizerCoverage[0]).toMatchObject({ groups: 0, eligibleGroups: 0, missingGroupIds: ["group-0"] });
+    expect(result.conflicts.filter(item => item.code === "ORGANIZER_TARGET_UNAVAILABLE")).toHaveLength(1);
+  });
+  it("does not combine a time-fitting over-budget insertion with a different short-walk insertion", () => {
+    const input = policy65(1, 3); input.maxTotalWalkingSeconds = 1000;
+    input.groups[0].fixedFirstPortalId = "house-0"; input.groups[0].ordinaryStopAt = time("17:15");
+    input.organizerCoveragePortalIds = ["house-2"]; input.portals[2].windows[0].visitSeconds = 60;
+    for (const leg of input.legs) {
+      if (leg.from === "portal:house-0" && leg.to === "portal:house-2") leg.seconds = 300;
+      if (leg.from === "portal:house-1" && leg.to === "portal:house-2") leg.seconds = 100;
+      if (leg.from === "portal:house-2" && leg.to === "portal:finale") leg.seconds = 1900;
+    }
+    const result = proposeJointRoutes(input, { mode: "organizer-coverage" });
+    expect(result.valid).toBe(true); expect(result.metrics.after.totalOrdinaryVisits).toBe(2);
+    expect(result.metrics.after.organizerCoverage[0].groups).toBe(0);
+    const diagnostic = result.groups[0].diagnostics.find(item => item.code === "OMITTED_PORTAL" && item.portalId === "house-2")!;
+    expect(diagnostic.candidate).toMatchObject({ insertionIndex: 1, totalWalkingSeconds: 300, budgetSeconds: 1000,
+      arrivalAt: time("17:11"), nextArrivalAt: time("17:06"), shortfallSeconds: 360, receptionAvailable: true });
+    expect(diagnostic.message).toContain("300 seconden werkelijke totale looptijd");
+    expect(diagnostic.message).toContain("360 seconden tijdtekort");
+  });
+  it("inserts a target through another house and moves both neighboring finale slots on the shared calendar", () => {
+    const input = policy65(2, 3); input.maxTotalWalkingSeconds = 1000;
+    input.organizerCoveragePortalIds = ["house-2"];
+    input.groups.forEach(group => { group.fixedFirstPortalId = "house-0"; group.desiredEndAt = time("18:00"); group.ordinaryStopAt = time("17:50"); });
+    input.groups[0].finale.latestArrivalAt = time("17:30"); input.groups[1].finale.latestArrivalAt = time("18:00");
+    input.groups[1].excludedPortalIds = ["house-2"];
+    Object.assign(input.portals.at(-1)!.windows[0], { opensAt: time("17:24"), arrivalClosesAt: time("18:00"), closesAt: time("18:10") });
+    for (const leg of input.legs) {
+      if (leg.from === "portal:house-0" && leg.to === "portal:house-2") leg.seconds = 300;
+      if (leg.from === "portal:house-2" && leg.to === "portal:finale") leg.seconds = 1900;
+      if (leg.from === "portal:house-1" && leg.to === "portal:finale") leg.seconds = 120;
+    }
+    const result = proposeJointRoutes(input, { mode: "organizer-coverage" });
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.metrics.after.totalOrdinaryVisits).toBe(5);
+    expect(result.groups[0].visits.map(visit => visit.portalId)).toEqual(["house-0", "house-2", "house-1", "finale"]);
+    expect(result.groups.map(plan => plan.finaleArrivalAt)).toEqual([time("17:25"), time("17:31")]);
+    expect(result.work.jointFinaleReplans).toBeGreaterThan(0);
+    expect(result.work.jointFinaleReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.jointFinaleReplans);
+    expect(result.groups.every(plan => plan.finaleChange?.proposedReservedAt === plan.finaleArrivalAt)).toBe(true);
+    expect(validateJointRoutes(input, result.groups)).toEqual([]);
+  });
+  it("keeps the coverage portfolio and both repair seeds within deterministic operation budgets", () => {
+    const input = policy65(18, 20); input.organizerCoveragePortalIds = ["house-0", "house-1"];
+    input.groups.forEach((group, index) => {
+      group.startsAt = new Date(Date.parse(time("17:30")) + index % 3 * 600_000).toISOString();
+      group.desiredEndAt = new Date(Date.parse(time("20:00")) + index % 3 * 1800_000).toISOString();
+    });
+    input.portals.forEach(portal => { portal.windows[0].maxGroups = 2; });
+    input.portals.filter(portal => !portal.finale).forEach(portal => { portal.windows[0].bufferSeconds = 60; });
+    input.legs.forEach(leg => { leg.seconds = leg.from === leg.to ? 0 : 60; leg.meters = leg.seconds; });
+    const result = proposeJointRoutes(input, { mode: "organizer-coverage" });
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.metrics.after.zeroVisitGroups).toBe(0);
+    expect(result.work.variants).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.variants);
+    expect(result.work.candidateEvaluations).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.candidateEvaluations);
+    expect(result.work.pairReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.pairReplans);
+    expect(result.work.routeRepairs).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.routeRepairs);
+    expect(result.work.jointFinaleReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.jointFinaleReplans);
+    const small = policy65(3, 4); small.organizerCoveragePortalIds = ["house-0", "house-2"];
+    const original = proposeJointRoutes(small, { mode: "organizer-coverage" });
+    small.groups.reverse(); small.portals.reverse(); small.legs.reverse();
+    expect(proposeJointRoutes(small, { mode: "organizer-coverage" })).toEqual(original);
+  }, 20_000);
+});

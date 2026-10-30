@@ -71,6 +71,9 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Local dump/restore and unchanged-row proof: docs/reports/2026-10-30-joint-route-policy/local-validation.json.
   // Deployment still requires its own environment-specific backup/restore proof.
   '20261030065514_joint_route_policy_v2.sql',
+  // V3 exact settings/metadata reconciliation and isolated restore evidence:
+  // docs/reports/2026-10-30-joint-route-65-coverage/local-validation.json.
+  '20261030131348_joint_route_policy_v3.sql',
 
 ]);
 

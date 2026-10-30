@@ -6,6 +6,8 @@ import { prepareFixtureGuidance, selectOrganizationSection } from "./helpers/gui
 import { assertReadableLayout } from "./helpers/layout";
 import type { BoardSnapshot } from "../../lib/domain/live-planboard";
 import type { JointRouteInput, JointRouteProposal } from "../../lib/domain/joint-route-planner";
+import type { JointRoutePolicySettings, JointRouteProposalResponse } from "../../lib/domain/joint-route-policy";
+import { jointRouteReviewMessage } from "../../lib/domain/joint-route-review";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const event = "duindorp-halloween-2026", firstPortal = "12000000-0000-0000-0000-000000000001", finalPortal = "12000000-0000-0000-0000-000000000030";
@@ -86,7 +88,7 @@ test("a joint proposal is read-only until reviewed draft apply, and true timebar
   }
   for (const diagnostic of proposal.conflicts) {
     const label = `${diagnostic.severity === "block" ? "Blokkade" : "Advies"}${diagnostic.groupId ? ` · ${before.groups.find(group => group.id === diagnostic.groupId)!.code}` : ""}${diagnostic.portalId ? ` · ${before.portals.find(portal => portal.id === diagnostic.portalId)!.code}` : ""}`;
-    await expect(dialog.locator("p").filter({ has: page.getByText(label, { exact: true }), hasText: diagnostic.message })).toHaveCount(1);
+    await expect(dialog.locator("p").filter({ has: page.getByText(label, { exact: true }), hasText: jointRouteReviewMessage(diagnostic.message) })).toHaveCount(1);
   }
   const save = dialog.getByRole("button", { name: "Beoordeeld routeconcept opslaan", exact: true }); await expect(save).toBeDisabled(); await dialog.getByRole("textbox").fill("Synthetisch beoordeeld gezamenlijk routeconcept met behoud van starts"); await dialog.getByRole("checkbox").check(); await expect(save).toBeEnabled(); await save.click(); await expect(dialog).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: /Routeconcept .*opgeslagen/ })).toBeVisible(); expect(invariants()).toEqual(saved);
@@ -96,6 +98,66 @@ test("a joint proposal is read-only until reviewed draft apply, and true timebar
   expect(routeRows(input.before)).toEqual(routeRows(proposal.groups));
   expect(accepted.visits.filter(visit => visit.kind !== "start").map(visit => ({ group: visit.groupId, portal: visit.portalId, kind: visit.kind, sequence: visit.sequence, at: Date.parse(visit.startsAt), seconds: visit.durationSeconds, buffer: visit.bufferSeconds })).sort((a,b)=>a.group.localeCompare(b.group)||a.sequence-b.sequence)).toEqual(routeRows(proposal.groups));
   await assertReadableLayout(page);
+});
+
+test("route policy saves preserve starts and typed input, invalidate old proposals and expose both reviewable variants", async ({ page, context, baseURL }) => {
+  test.setTimeout(120_000);
+  const admin = await login(context, baseURL!), saved = invariants(); await openBoard(page);
+  const routeEvidence = () => sql(`select jsonb_build_object(
+    'visits',(select md5(coalesce(jsonb_agg(to_jsonb(v)order by v.id)::text,''))from app_private.live_route_visits v),
+    'versions',(select md5(coalesce(jsonb_agg(to_jsonb(v)order by v.id)::text,''))from app_private.joint_route_plan_versions v),
+    'reservations',(select md5(coalesce(jsonb_agg(to_jsonb(v)order by v.id)::text,''))from app_private.portal_reservations v),
+    'approvals',(select md5(coalesce(jsonb_agg(to_jsonb(v)order by v.accepted_version_id,v.group_id)::text,''))from app_private.joint_route_finale_approvals v))`);
+  const routesBefore = routeEvidence();
+  const oldResponse = page.waitForResponse(response => response.url().endsWith("/api/admin/routes/proposal") && response.request().method() === "POST");
+  await page.getByRole("button", { name: "Routes opnieuw berekenen met bevestigde starts", exact: true }).click();
+  const old = (await (await oldResponse).json()).data as JointRouteProposal;
+  await page.getByRole("dialog", { name: "Gezamenlijk routevoorstel controleren", exact: true }).getByRole("button", { name: "Annuleren", exact: true }).click();
+  const policy = await rpc<JointRoutePolicySettings>(admin, "admin_joint_route_policy_get", { _event_slug: event });
+  await page.getByRole("button", { name: "Routebeleid instellen", exact: true }).click();
+  const form = page.getByRole("dialog", { name: "Routebeleid instellen", exact: true });
+  const walking = form.getByRole("spinbutton", { name: "Totaal loopbudget per groep (minuten)", exact: true });
+  const early = form.getByRole("spinbutton", { name: "Maximaal eerder klaar (minuten)", exact: true });
+  await expect(walking).toHaveValue(String(policy.maxTotalWalkingSeconds / 60));
+  await walking.fill("66"); await early.fill("25");
+  const target = policy.portals.find(portal => portal.id === firstPortal)!;
+  await form.getByRole("checkbox", { name: `${target.code} · ${target.name}`, exact: true }).check();
+  await form.getByRole("textbox", { name: "Reden voor deze beleidswijziging", exact: true }).fill("Synthetisch routebeleid met echte actuele versie en behouden afspraken");
+  await rpc(admin, "admin_joint_route_policy_save", { _event_slug: event, _expected_version: policy.version,
+    _max_total_walking_seconds: 4020, _max_early_finish_seconds: 1800, _organizer_coverage_portal_ids: policy.organizerCoveragePortalIds,
+    _reason: "Synthetische gelijktijdige wijziging om versiecontrole te testen", _idempotency_key: crypto.randomUUID() });
+  await form.getByRole("button", { name: "Routebeleid opslaan", exact: true }).click();
+  await expect(form.getByRole("alert")).toContainText("invoer blijft behouden");
+  await expect(walking).toHaveValue("66"); await expect(early).toHaveValue("25");
+  await form.getByRole("button", { name: "Actuele versie ophalen; mijn invoer behouden", exact: true }).click();
+  await expect(form.getByRole("alert")).toHaveCount(0); await expect(walking).toHaveValue("66"); await expect(early).toHaveValue("25");
+  const keys: string[] = []; let interrupt = true;
+  await page.route("**/api/admin/routes/policy", async route => {
+    if (route.request().postDataJSON()?.action !== "save") { await route.continue(); return; }
+    keys.push(route.request().headers()["idempotency-key"]);
+    if (interrupt) { interrupt = false; await route.fulfill({ status: 503, json: { error: { message: "Synthetische onderbreking; invoer blijft behouden" } } }); }
+    else await route.continue();
+  });
+  await form.getByRole("button", { name: "Routebeleid opslaan", exact: true }).click(); await expect(form.getByRole("alert")).toContainText("Synthetische onderbreking");
+  await expect(walking).toHaveValue("66"); await expect(early).toHaveValue("25");
+  await form.getByRole("button", { name: "Routebeleid opslaan", exact: true }).click(); await expect(form).toHaveCount(0);
+  expect(keys).toHaveLength(2); expect(keys[0]).toBe(keys[1]); expect(invariants()).toEqual(saved); expect(routeEvidence()).toBe(routesBefore);
+  const changed = await rpc<JointRoutePolicySettings>(admin, "admin_joint_route_policy_get", { _event_slug: event });
+  expect(changed.maxTotalWalkingSeconds).toBe(3960); expect(changed.maxEarlyFinishSeconds).toBe(1500);
+  expect(changed.organizerCoveragePortalIds).toContain(firstPortal); expect(changed.sourceHash).not.toBe(old.sourceHash);
+  const rejected = await admin.schema("api").rpc("admin_joint_route_plan_apply", { _event_slug: event, _proposal: old, _confirmed: true,
+    _reason: "Dit oude voorstel moet na een beleidswijziging worden geweigerd", _idempotency_key: crypto.randomUUID() });
+  expect(rejected.error?.message).toMatch(/STALE|SOURCE_CHANGED|INPUT_CHANGED/);
+  const computed = page.waitForResponse(response => response.url().endsWith("/api/admin/routes/proposal") && response.request().method() === "POST");
+  await page.getByRole("button", { name: "Routes opnieuw berekenen met bevestigde starts", exact: true }).click();
+  const result = (await (await computed).json()).data as JointRouteProposalResponse;
+  expect(result.alternatives?.general.valid).toBe(true); expect(result.alternatives?.organizerCoverage?.valid).toBe(true);
+  const review = page.getByRole("dialog", { name: "Gezamenlijk routevoorstel controleren", exact: true });
+  await expect(review).toContainText("Vroegste afronding"); await expect(review).toContainText("Laatste afronding");
+  await expect(review).toContainText("Lopen en budget"); await review.getByRole("button", { name: "Doelvariant beoordelen", exact: true }).click();
+  await expect(review.getByRole("button", { name: "Doelvariant beoordelen", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(review.getByRole("button", { name: "Beoordeeld routeconcept opslaan", exact: true })).toBeDisabled();
+  expect(invariants()).toEqual(saved); expect(routeEvidence()).toBe(routesBefore); await assertReadableLayout(page);
 });
 
 test("actual owner policy controls preserve input on retry and a policy change invalidates a frozen route proposal", async ({ page, context, browser, baseURL }) => {

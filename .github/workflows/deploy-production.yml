@@ -260,16 +260,18 @@ jobs:
           artifact-ids: ${{ needs.backup-restore.outputs.artifact }}
           path: ${{ runner.temp }}/duindorp-release-backup
           merge-multiple: true
-      - name: Protect redesign migrations with private preflight and restore gate
-        env:
-          RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/duindorp-release-backup
-        run: node scripts/deploy/redesign-preflight.mjs
       - name: Inspect actual finale window and anonymized timing alternatives (read only)
         run: node scripts/deploy/inspect-finale-planning.mjs
       - name: Validate application
         run: pnpm verify
       - name: Diagnose worker result RPC before migration (no delivery)
         run: node scripts/deploy/diagnose-mail-worker.mjs
+      # Capture the strict preservation baseline after read-only application
+      # checks, immediately before migration, to limit concurrent-user drift.
+      - name: Protect redesign migrations with private preflight and restore gate
+        env:
+          RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/duindorp-release-backup
+        run: node scripts/deploy/redesign-preflight.mjs
       - name: Link and migrate production database
         env:
           PGOPTIONS: '-c lock_timeout=5000 -c statement_timeout=300000'

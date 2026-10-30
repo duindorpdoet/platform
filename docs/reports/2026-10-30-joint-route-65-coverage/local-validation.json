@@ -1,0 +1,130 @@
+{
+  "artifactType": "local-route-policy-v3-validation",
+  "productionWrites": 0,
+  "productionBackupClaimed": false,
+  "applicableFreshProductionProposal": false,
+  "explanation": "Uitsluitend eigen geïsoleerde lokale testdatabases. De routecontrole gebruikt een geanonimiseerde fixture met de werkelijke actuele fysieke loopmatrix en ontvangstregels. Dit bewijs vervangt geen omgevingsspecifieke productiebackup, releasecontrole of verse v3-productie-invoer. De migratie en routeproeven zijn lokaal uitgevoerd, niet op productie.",
+  "migration": {
+    "file": "20261030131348_joint_route_policy_v3.sql",
+    "sha256": "f4ba84979a5a995bb971b6d0cd87a4df1b58562b695703b23dbb746bedea6d8e"
+  },
+  "preservation": {
+    "capturedAt": "2026-10-30T13:31:29.859Z",
+    "databaseType": "task-owned isolated synthetic PostgreSQL",
+    "tables": 203,
+    "policy": {
+      "failures": [],
+      "reconciledTables": [
+        "app_private.joint_route_policy_releases"
+      ],
+      "addedPolicyReleases": 1
+    },
+    "settings": {
+      "failures": [],
+      "reconciledTables": [
+        "app_private.event_route_settings"
+      ],
+      "initializedSettingsRows": 1
+    },
+    "changedTableFingerprints": [
+      "app_private.joint_route_policy_releases"
+    ],
+    "preservedTableFingerprints": 202,
+    "negativeOriginalFieldRejected": true,
+    "backupFormat": "PostgreSQL custom archive, original owner restored by local supabase_admin, task-owned postgres database",
+    "backupSHA256": "d926f92eedf8f6f435af6c87e6005d41fcfc474bdd1e5080f17d74aa236eec86",
+    "restoredTableFingerprintsVerified": 203,
+    "restoredGateReplayed": true,
+    "restoredPolicy": {
+      "failures": [],
+      "reconciledTables": [
+        "app_private.joint_route_policy_releases"
+      ],
+      "addedPolicyReleases": 1
+    },
+    "restoredSettings": {
+      "failures": [],
+      "reconciledTables": [
+        "app_private.event_route_settings"
+      ],
+      "initializedSettingsRows": 1
+    }
+  },
+  "routeValidation": {
+    "sourceHash": "18337ba93a892f18a065c8b571960f0697f1f205df9aa364c494f097d52a5957",
+    "boardHash": "e8ad2bc3613b005a311250517cc07efa",
+    "frozenInputSHA256": "a774327d352802fe460a10fad43563ef8d36e122b9afe09a2c01b09305759f23",
+    "variants": [
+      {
+        "variant": "general",
+        "scope": "local anonymous fixture with actual production physical matrix; not an applicable fresh v3 production proposal",
+        "serverAccepted": true,
+        "setupRolledBack": true,
+        "groups": 18,
+        "ordinaryVisits": 272,
+        "inputSHA256": "a774327d352802fe460a10fad43563ef8d36e122b9afe09a2c01b09305759f23",
+        "proposalSHA256": "e101496d2165cb892443c6fa5d1f8635323e41e17b78134854b7e932e61b08d1",
+        "migrationSHA256": "f4ba84979a5a995bb971b6d0cd87a4df1b58562b695703b23dbb746bedea6d8e",
+        "productionWrites": 0
+      },
+      {
+        "variant": "p02",
+        "scope": "local anonymous fixture with actual production physical matrix; not an applicable fresh v3 production proposal",
+        "serverAccepted": true,
+        "setupRolledBack": true,
+        "groups": 18,
+        "ordinaryVisits": 265,
+        "inputSHA256": "a774327d352802fe460a10fad43563ef8d36e122b9afe09a2c01b09305759f23",
+        "proposalSHA256": "f0db8c4e7cc88852dc1f38230dcc05038731b6cb5f101ec335f4efdc3c179629",
+        "migrationSHA256": "f4ba84979a5a995bb971b6d0cd87a4df1b58562b695703b23dbb746bedea6d8e",
+        "productionWrites": 0
+      },
+      {
+        "variant": "p12",
+        "scope": "local anonymous fixture with actual production physical matrix; not an applicable fresh v3 production proposal",
+        "serverAccepted": true,
+        "setupRolledBack": true,
+        "groups": 18,
+        "ordinaryVisits": 272,
+        "inputSHA256": "a774327d352802fe460a10fad43563ef8d36e122b9afe09a2c01b09305759f23",
+        "proposalSHA256": "16f2fa698fdd8191190b604208dd28cc9e8f8ed9dbb623a6aa50effa913e7090",
+        "migrationSHA256": "f4ba84979a5a995bb971b6d0cd87a4df1b58562b695703b23dbb746bedea6d8e",
+        "productionWrites": 0
+      },
+      {
+        "variant": "p02-p12",
+        "scope": "local anonymous fixture with actual production physical matrix; not an applicable fresh v3 production proposal",
+        "serverAccepted": true,
+        "setupRolledBack": true,
+        "groups": 18,
+        "ordinaryVisits": 264,
+        "inputSHA256": "a774327d352802fe460a10fad43563ef8d36e122b9afe09a2c01b09305759f23",
+        "proposalSHA256": "eaccd99fa912462fac50244353195784826fbfc5ba0f82f2e0efbbbc3bbe44dd",
+        "migrationSHA256": "f4ba84979a5a995bb971b6d0cd87a4df1b58562b695703b23dbb746bedea6d8e",
+        "productionWrites": 0
+      }
+    ]
+  },
+  "regressionChecks": {
+    "databaseFiles": 116,
+    "databaseAssertions": 3215,
+    "databasePassed": true,
+    "targetedDeploymentTestFiles": 5,
+    "targetedDeploymentTests": 31,
+    "targetedDeploymentPassed": true,
+    "typecheckPassed": true,
+    "reportDesktopMobileRenderPassed": true
+  },
+  "applicationValidation": {
+    "unitTestsPassed": 807,
+    "unitTestsSkipped": 1,
+    "lintPassed": true,
+    "typecheckPassed": true,
+    "productionBuildPassed": true,
+    "clientArtifactPrivacyScanPassed": true,
+    "jointPlanboardDesktopBrowserTestsPassed": 3,
+    "jointPlanboardMobileBrowserTestsPassed": 3,
+    "productionWrites": 0,
+    "outboundDelivery": 0
+  }
+}

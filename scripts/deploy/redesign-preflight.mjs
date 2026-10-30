@@ -79,6 +79,7 @@ async function main() {
   if(proof.revision!==revision||proof.environment!==environment||proof.restoreVerified!==true||proof.storageVerified!==true||proof.vaultVerified!==true||proof.migrationDryRunVerified!==true||proof.migrations?.length!==REVIEWED_RELEASE_MIGRATIONS.length)throw new Error('BACKUP_AND_ISOLATED_RESTORE_NOT_PROVEN');
   assertReviewedReleaseMigrations(proof.migrations.map(migration=>migration.file));
   if(!proof.jointRoutePolicyReconciliation||proof.jointRoutePolicyReconciliation.failures?.length!==0)throw new Error('JOINT_ROUTE_POLICY_RESTORE_NOT_PROVEN');
+  if(!proof.jointRouteSettingsReconciliation||proof.jointRouteSettingsReconciliation.failures?.length!==0)throw new Error('JOINT_ROUTE_SETTINGS_RESTORE_NOT_PROVEN');
   const {verifyBackupFile,preservationManagementRequest}=await import('./redesign-backup.mjs');
   for(const migration of proof.migrations) {
     const wasApplied=proof.appliedMigrations.includes(migration.file.split('_')[0]);
@@ -103,7 +104,7 @@ async function main() {
     management('/database/query',{read_only:true,query:releaseMetadataQuery()}),
   ]);
   const baseline=join(directory,'migration-baseline.aes');
-  await writeFile(baseline,sealBackup(Buffer.from(JSON.stringify({catalog,rows:current[0].preservation.rows,...metadata[0].metadata,worldPolicyInitialization:current[0].preservation.worldPolicyInitialization,jointRoutePolicyRelease:current[0].preservation.jointRoutePolicyRelease,expectedMigrationVersions:proof.migrations.map(migration=>migration.file.split('_')[0])})),key,context+':migration-baseline'),{flag:'wx',mode:0o600});
+  await writeFile(baseline,sealBackup(Buffer.from(JSON.stringify({catalog,rows:current[0].preservation.rows,...metadata[0].metadata,worldPolicyInitialization:current[0].preservation.worldPolicyInitialization,jointRoutePolicyRelease:current[0].preservation.jointRoutePolicyRelease,jointRouteSettingsInitialization:current[0].preservation.jointRouteSettingsInitialization,expectedMigrationVersions:proof.migrations.map(migration=>migration.file.split('_')[0])})),key,context+':migration-baseline'),{flag:'wx',mode:0o600});
   await writeFile(process.env.GITHUB_ENV,`RELEASE_PRIVATE_BASELINE_FILE=${baseline}\n`,{flag:'a'});
   console.log(JSON.stringify({environment,revision,backupRetainedPrivately:true,restoreVerified:true,migrationDryRunVerified:true,tables:proof.tables,objects:proof.objects}));
 }

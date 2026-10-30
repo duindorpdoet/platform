@@ -45,6 +45,28 @@ describe("explicit authenticated joint route proposal", () => {
     expect(denied.status).toBe(403);
     expect(await denied.text()).not.toContain("private database detail");
   });
+  it("compares general and physical organizer goals against one authoritative current policy", async () => {
+    const current = input();
+    current.policyVersion = "joint-reception-v3"; current.maxTotalWalkingSeconds = 3900;
+    current.maxEarlyFinishSeconds = 1800; current.routePolicySettingsVersion = 1;
+    current.organizerCoveragePortalIds = ["house"];
+    mocks.rpc.mockResolvedValueOnce({ data: current, error: null });
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    const proposal = (await response.json()).data;
+    const { general, organizerCoverage } = proposal.alternatives;
+    expect(general.valid).toBe(true); expect(organizerCoverage.valid).toBe(true);
+    expect(general.sourceHash).toBe(organizerCoverage.sourceHash);
+    expect(general.boardHash).toBe(organizerCoverage.boardHash);
+    expect(general.optimization.mode).toBe("general");
+    expect(organizerCoverage.optimization.mode).toBe("organizer-coverage");
+    expect(general.walkingPolicy.maxTotalSeconds).toBe(3900);
+    expect(organizerCoverage.metrics.after.organizerCoverage[0].groups).toBe(1);
+    for (const variant of [general, organizerCoverage]) {
+      expect(Date.parse(variant.groups[0].expectedCompletionAt)).toBeGreaterThanOrEqual(Date.parse("2026-10-31T20:30:00Z"));
+    }
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("admin_joint_route_planning_input", { _event_slug: "duindorp-halloween-2026" });
+  });
   it("rejects untrusted origins, oversize input and caller-supplied planning data before database access", async () => {
     const untrusted = request(); untrusted.headers.set("origin", "https://attacker.invalid");
     expect((await POST(untrusted)).status).toBe(403);

@@ -23,7 +23,12 @@ export async function POST(request: Request) {
       throw new ApiError(409, "ROUTE_INPUT_UNAVAILABLE", "De actuele routegegevens konden niet samen worden gecontroleerd. Vernieuw het planbord en probeer opnieuw.");
     }
     if (!input.data) throw new ApiError(409, "ROUTE_INPUT_UNAVAILABLE", "Er zijn nog geen controleerbare start- en routegegevens.");
-    return apiSuccess(proposeJointRoutes(input.data as JointRouteInput));
+    const current = input.data as JointRouteInput;
+    const general = proposeJointRoutes(current);
+    const organizerCoverage = current.organizerCoveragePortalIds?.length
+      ? proposeJointRoutes(current, { mode: "organizer-coverage" }) : null;
+    // Alternatives share one current source and remain separate reviewable proposals.
+    return apiSuccess({ ...general, alternatives: { general, organizerCoverage } });
   } catch (error) {
     if (error instanceof RangeError) return apiFailure(new ApiError(413, "BODY_TOO_LARGE", "Het verzoek is te groot."), requestId);
     if (error instanceof Error && error.message === "INVALID_JOINT_PLANNING_INPUT") return apiFailure(new ApiError(409, "ROUTE_INPUT_UNAVAILABLE", "De routegegevens passen niet binnen de begrensde gezamenlijke planner. Controleer de startafspraken."), requestId);

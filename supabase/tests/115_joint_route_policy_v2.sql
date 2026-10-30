@@ -38,7 +38,7 @@ begin
  update route_policy_test t set proposal=pg_temp.joint_rehash(jsonb_set(proposed,'{groups,0}',plan));
 end $$;
 
-select is((select input->>'policyVersion' from route_policy_test),'joint-reception-v2','server projects the explicit 30 October route policy');
+select is((select input->>'policyVersion' from route_policy_test),'joint-reception-v3','server projects the current explicit route policy');
 select is((select input->'needsAnders' from route_policy_test),'false'::jsonb,'world coverage does not request an Anders visit');
 select ok(not has_table_privilege('authenticated','app_private.joint_route_finale_approvals','insert'),'a browser cannot manufacture finale approval evidence');
 select ok(not has_function_privilege('authenticated','app_private.validate_joint_route_proposal(jsonb,jsonb)','execute'),'browser cannot supply trusted validator inputs');
@@ -143,10 +143,13 @@ update route_policy_test set checkpoint=jsonb_build_object(
  'publications',(select jsonb_agg(to_jsonb(p) order by p.id) from app_private.group_start_publications p),
  'outbox',(select jsonb_agg(to_jsonb(o) order by o.id) from app_private.email_outbox o),
  'starts',(select jsonb_agg(jsonb_build_array(g.id,s.start_slot_id,s.state,s.effective_ordinary_stop_at,slot.starts_at,slot.start_point_id) order by g.id) from app_private.walking_groups g join app_private.group_schedule_revisions s on s.id=(app_private.route_group_start_context(g.id)->>'scheduleId')::uuid join app_private.start_slots slot on slot.id=s.start_slot_id));
+-- Client metrics cannot override the immutable server policy snapshot.
+update route_policy_test set proposal=jsonb_set(proposal,'{metrics}','{"routePolicy":{"maxTotalWalkingSeconds":1}}');
 select lives_ok($$update route_policy_test set result=api.admin_joint_route_plan_apply('duindorp-halloween-2026',proposal,true,'Een gezamenlijk beter P-38 tijdslot expliciet beoordelen',key)$$,'an approved real finale change atomically stores the schedule and physical calendar');
 select is((select expected_finale_arrival_at from app_private.group_schedule_revisions where id=(app_private.route_group_start_context('23000000-0000-0000-0000-000000000001')->>'scheduleId')::uuid),'2026-10-31T17:30:00Z'::timestamptz,'the reserved schedule now has precisely the approved P-38 time');
 select is((select starts_at from app_private.live_route_visits where group_id='23000000-0000-0000-0000-000000000001' and kind='finale' and retired_at is null),'2026-10-31T17:30:00Z'::timestamptz,'the planboard and approved reservation have the same finale arrival');
 select is((select count(*)::integer from app_private.joint_route_finale_approvals),1,'one immutable server approval records the exact changed appointment');
+select is((select(metrics#>>'{routePolicy,maxTotalWalkingSeconds}')::integer from app_private.joint_route_plan_versions),3900,'acceptance stores trusted walking policy rather than browser metrics');
 select ok((select bool_and(app_private.canonical_route_group_current((g->>'groupId')::uuid)) from route_policy_test,jsonb_array_elements(proposal->'groups')g),'new semantic hashes keep every accepted route current immediately after the atomic change');
 select is((select jsonb_agg(to_jsonb(p) order by p.id) from app_private.group_start_publications p),(select checkpoint->'publications' from route_policy_test),'finale approval never republishes or edits confirmed start publications');
 select is((select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'null'::jsonb) from app_private.email_outbox o),(select checkpoint->'outbox' from route_policy_test),'finale approval never sends or queues participant mail');

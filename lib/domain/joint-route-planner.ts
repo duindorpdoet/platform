@@ -16,6 +16,7 @@ export type JointRoutePortal = {
 export type JointRouteGroup = {
   id: string; code: string; childCount: number; startNodeId: string; startsAt: string;
   startConfirmed: boolean; ordinaryStopAt: string; desiredEndAt: string | null;
+  earliestCompletionAt?: string | null; latestCompletionAt?: string | null;
   maxOrdinaryVisits: number | null; requiresStepFree: boolean; accessibilityNeedsReview: boolean;
   fixedFirstPortalId: string | null; excludedPortalIds: string[];
   finale: { portalId: string; reservedAt: string | null; reservationValid: boolean; latestArrivalAt: string };
@@ -28,15 +29,19 @@ export type JointRouteVisit = {
 };
 export type JointRouteDiagnostic = {
   code: string; severity: "block" | "warning"; message: string; groupId?: string; portalId?: string;
+  candidate?: { insertionIndex: number; totalWalkingSeconds: number | null; budgetSeconds: number;
+    arrivalAt: string | null; nextArrivalAt: string | null; shortfallSeconds: number | null; receptionAvailable: boolean };
 };
 export type JointRouteGroupPlan = {
   groupId: string; startsAt: string; desiredEndAt?: string | null; finaleArrivalAt: string | null;
   expectedCompletionAt: string | null; visits: JointRouteVisit[]; diagnostics: JointRouteDiagnostic[];
+  earliestCompletionAt?: string | null; latestCompletionAt?: string | null;
   finaleChange?: { portalId: string; previousReservedAt: string | null; proposedReservedAt: string };
 };
 export type JointRouteInput = {
   eventId: string; sourceHash: string; boardHash: string; policyVersion: string;
   maxGroupOverrunSeconds: number; maxLegWalkingSeconds: number; maxTotalWalkingSeconds: number;
+  maxEarlyFinishSeconds?: number; organizerCoveragePortalIds?: string[]; routePolicySettingsVersion?: number;
   needsAnders: boolean; groups: JointRouteGroup[]; portals: JointRoutePortal[];
   legs: Array<{ from: string; to: string; seconds: number; meters: number }>;
   fixedVisits: Array<JointRouteVisit & { groupId: string; children: number; physicalId?: string }>;
@@ -48,6 +53,8 @@ export type JointRouteMetrics = {
   maxOrdinaryVisits: number; zeroVisitGroups: number; walkingSeconds: number; waitingSeconds: number;
   absoluteEndDeviationSeconds: number; overrunSeconds: number; administrativeStarts: number;
   receptionWaitingSeconds: number; unallocatedBeforeFinaleSeconds: number; longestWaitSeconds: number; unvisitedPortals: string[];
+  organizerCoverage: Array<{ portalId: string; groups: number; totalGroups: number; eligibleGroups: number;
+    coveredGroupIds: string[]; missingGroupIds: string[] }>;
   byGroup: Array<{ groupId: string; ordinaryVisits: number; walkingSeconds: number; waitingSeconds: number;
     receptionWaitingSeconds: number; longestWaitSeconds: number;
     endDeviationSeconds: number | null; finaleArrivalAt: string | null; unallocatedBeforeFinaleSeconds: number }>;
@@ -59,11 +66,13 @@ export type JointRouteProposal = {
   sourceHash: string; boardHash: string; proposalHash: string; policyVersion: string; valid: boolean;
   groups: JointRouteGroupPlan[]; conflicts: JointRouteDiagnostic[];
   metrics: { before: JointRouteMetrics; after: JointRouteMetrics };
-  work: { candidateEvaluations: number; variants: number; pairReplans: number; routeRepairs: number; exhausted: boolean };
+  work: { candidateEvaluations: number; variants: number; pairReplans: number; routeRepairs: number; jointFinaleReplans: number; exhausted: boolean };
   walkingPolicy: { maxOrdinaryLegSeconds: number; maxTotalSeconds: number; finaleLegLimitSeconds: null };
+  completionPolicy: { maxEarlyFinishSeconds: number | null; maxOverrunSeconds: number };
+  optimization: { mode: "general" | "organizer-coverage"; organizerCoveragePortalIds: string[] };
 };
 
-export const JOINT_ROUTE_SEARCH_LIMITS = { variants: 8, pairReplans: 24, routeRepairs: 2400, repairsPerGroupPass: 48, candidateEvaluations: 200_000 } as const;
+export const JOINT_ROUTE_SEARCH_LIMITS = { variants: 32, variantsPerStrategy: 8, constructionEvaluations: 120_000, pairReplans: 24, routeRepairs: 4800, repairsPerSeed: 2400, repairsPerGroupPass: 48, jointFinaleReplans: 48, candidateEvaluations: 200_000 } as const;
 // PostgreSQL keeps microseconds; Date.parse alone discards the final three
 // digits and can move a fixed appointment or put an arrival before opening.
 const at = (value: string) => {
@@ -77,6 +86,23 @@ const iso = (value: number) => {
   return remainder ? `${formatted.slice(0, -1)}${String(remainder).padStart(3, "0")}Z` : formatted;
 };
 const compareId = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
+function completionBounds(input: JointRouteInput, group: JointRouteGroup) {
+  // Old inputs have no early-finish policy. A v3 input must declare it below;
+  // absent desired end times never acquire an invented lower boundary.
+  const earliest = group.desiredEndAt && input.maxEarlyFinishSeconds != null
+    ? Math.max(at(group.desiredEndAt) - input.maxEarlyFinishSeconds,
+      group.earliestCompletionAt ? at(group.earliestCompletionAt) : -Infinity) : -Infinity;
+  const latest = Math.min(group.desiredEndAt ? at(group.desiredEndAt) + input.maxGroupOverrunSeconds : Infinity,
+    group.latestCompletionAt ? at(group.latestCompletionAt) : Infinity);
+  return { earliest, latest };
+}
+function invalidPolicy(input: JointRouteInput) {
+  return input.policyVersion === "joint-reception-v3" && (!Number.isInteger(input.maxEarlyFinishSeconds)
+    || input.maxEarlyFinishSeconds! < 0 || !Number.isInteger(input.routePolicySettingsVersion) || input.routePolicySettingsVersion! < 1
+    || !Number.isInteger(input.maxTotalWalkingSeconds) || input.maxTotalWalkingSeconds < 0
+    || !Array.isArray(input.organizerCoveragePortalIds) || input.organizerCoveragePortalIds.some(id => typeof id !== "string" || !id)
+    || new Set(input.organizerCoveragePortalIds).size !== input.organizerCoveragePortalIds.length);
+}
 type Occupancy = { groupId: string; portalId: string; start: number; end: number; children: number };
 type Candidate = { portal: JointRoutePortal; window: JointRouteWindow; start: number; walk: { seconds: number; meters: number }; wait: number; cost: number };
 type State = { group: JointRouteGroup; node: string; cursor: number; walking: number; visits: JointRouteVisit[]; chosen: Set<string>; done: boolean };
@@ -180,9 +206,13 @@ export function measureJointRoutes(input: JointRouteInput, plans: JointRouteGrou
         || incoming.seconds > input.maxLegWalkingSeconds
         || incoming.seconds + outgoing.seconds > input.maxTotalWalkingSeconds) return [];
       const finalPortal = portalById.get(group.finale.portalId);
-      const finalEnds = finalPortal?.windows.filter(finalWindow => group.childCount <= finalWindow.maxChildren).map(finalWindow => Math.min(
+      const bounds = completionBounds(input, group);
+      const finalEnds = finalPortal?.windows.filter(finalWindow => group.childCount <= finalWindow.maxChildren
+        && Math.max(at(finalWindow.opensAt), bounds.earliest - finalWindow.visitSeconds) <= Math.min(at(finalWindow.arrivalClosesAt),
+          at(finalWindow.closesAt) - finalWindow.visitSeconds - finalWindow.bufferSeconds, bounds.latest - finalWindow.visitSeconds, at(group.finale.latestArrivalAt)))
+        .map(finalWindow => Math.min(
         at(finalWindow.arrivalClosesAt), at(finalWindow.closesAt) - finalWindow.visitSeconds - finalWindow.bufferSeconds,
-        at(group.finale.latestArrivalAt), group.desiredEndAt ? at(group.desiredEndAt) + input.maxGroupOverrunSeconds - finalWindow.visitSeconds : Infinity));
+        at(group.finale.latestArrivalAt), bounds.latest - finalWindow.visitSeconds));
       const latestFinal = Math.max(-Infinity, ...(finalEnds ?? []));
       const start = Math.max(at(window.opensAt), at(group.startsAt) + incoming.seconds);
       const end = Math.min(at(window.arrivalClosesAt), at(window.closesAt) - window.visitSeconds - window.bufferSeconds,
@@ -222,6 +252,15 @@ export function measureJointRoutes(input: JointRouteInput, plans: JointRouteGrou
     unallocatedBeforeFinaleSeconds: byGroup.reduce((sum, group) => sum + group.unallocatedBeforeFinaleSeconds, 0),
     longestWaitSeconds: Math.max(0, ...byGroup.map(group => group.longestWaitSeconds)),
     unvisitedPortals: byPortal.filter(portal => !portal.visits).map(portal => portal.portalId),
+    organizerCoverage: [...new Set(input.organizerCoveragePortalIds ?? [])].map(portalId => {
+      const portal = portalById.get(portalId), target = physicalId(portalId);
+      const coveredGroupIds = plans.filter(plan => plan.visits.some(visit => visit.kind === "ordinary" && physicalId(visit.portalId) === target))
+        .map(plan => plan.groupId).sort(compareId);
+      return { portalId, groups: coveredGroupIds.length, totalGroups: input.groups.length,
+        eligibleGroups: portal ? input.groups.filter(group => !group.excludedPortalIds.some(id => physicalId(id) === target)
+          && (!(group.requiresStepFree || group.accessibilityNeedsReview) || portal.accessibilityStatus === "step_free")).length : 0,
+        coveredGroupIds, missingGroupIds: input.groups.filter(group => !coveredGroupIds.includes(group.id)).map(group => group.id).sort(compareId) };
+    }),
     absoluteEndDeviationSeconds: byGroup.reduce((sum, group) => sum + Math.abs(group.endDeviationSeconds ?? 0), 0),
     overrunSeconds: byGroup.reduce((sum, group) => sum + Math.max(0, group.endDeviationSeconds ?? 0), 0),
     administrativeStarts: plans.reduce((sum, plan) => sum + plan.visits.filter(visit => visit.kind === "start").length, 0), byGroup, byPortal };
@@ -239,6 +278,7 @@ export function jointRouteProposalDigestText(sourceHash: string, boardHash: stri
 /** Independently checks the finished plan, including every shared capacity boundary. */
 export function validateJointRoutes(input: JointRouteInput, plans: JointRouteGroupPlan[]): JointRouteDiagnostic[] {
   const conflicts: JointRouteDiagnostic[] = [];
+  if (invalidPolicy(input)) conflicts.push({ code: "INVALID_ROUTE_POLICY_CONFIG", severity: "block", message: "Het v3-routebeleid mist een geldige vroegtetolerantie, beleidsversie of expliciete organisatiedoelen. Haal de actuele invoer opnieuw op." });
   const portals = new Map(input.portals.map(portal => [portal.id, portal]));
   const canonicalFinale = input.portals.find(portal => portal.code === "P-38");
   const legs = new Map(input.legs.map(leg => [`${leg.from}|${leg.to}`, leg]));
@@ -300,7 +340,9 @@ export function validateJointRoutes(input: JointRouteInput, plans: JointRouteGro
           if (!change || change.portalId !== group.finale.portalId || !previousMatches || at(change.proposedReservedAt) !== start)
             problem("FINALE_CHANGE_REVIEW_REQUIRED", "Een ander tijdslot bij P-38 moet met de oude en voorgestelde afspraak expliciet worden beoordeeld.", portal.id);
         } else if (plan.finaleChange) problem("FINALE_CHANGE_MISMATCH", "De gemarkeerde finale-tijdswijziging moet overeenkomen met een werkelijk gewijzigd tijdstip bij P-38.", portal.id);
-        if (start > at(group.finale.latestArrivalAt) || group.desiredEndAt && start + visit.visitSeconds > at(group.desiredEndAt) + input.maxGroupOverrunSeconds) problem("GROUP_COMPLETION_LIMIT", "De show moet binnen de uiterste groepsafronding en het finalevenster eindigen.", portal.id);
+        const bounds = completionBounds(input, group), completion = start + visit.visitSeconds;
+        if (completion < bounds.earliest) problem("GROUP_COMPLETION_TOO_EARLY", `De werkelijke finaleshow eindigt op ${iso(completion)}, vóór de vroegste toegestane afronding ${iso(bounds.earliest)}.`, portal.id);
+        if (start > at(group.finale.latestArrivalAt) || completion > bounds.latest) problem("GROUP_COMPLETION_LIMIT", "De show moet binnen de uiterste groepsafronding en het finalevenster eindigen.", portal.id);
         if (!plan.finaleArrivalAt || at(plan.finaleArrivalAt) !== start || !plan.expectedCompletionAt || at(plan.expectedCompletionAt) !== start + visit.visitSeconds) problem("FINALE_TIMING_MISMATCH", "Finale-afspraak en getoonde afronding moeten dezelfde werkelijke tijden gebruiken.", portal.id);
       }
       cursor = start + visit.visitSeconds; node = portal.nodeId;
@@ -324,7 +366,7 @@ export function validateJointRoutes(input: JointRouteInput, plans: JointRouteGro
  * A zero-visit group is protected before maximizing total real unique visits;
  * equal counts are only a tie-break, never a cap on another group's route.
  */
-export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
+export function proposeJointRoutes(input: JointRouteInput, options: { mode?: "general" | "organizer-coverage" } = {}): JointRouteProposal {
   if (input.groups.length > 60 || input.portals.length > 120 || input.legs.length > 32_400
     || !input.sourceHash || !input.boardHash || new Set(input.groups.map(group => group.id)).size !== input.groups.length
     || input.groups.some(group => !Number.isFinite(at(group.startsAt)) || !Number.isFinite(at(group.ordinaryStopAt)))
@@ -334,8 +376,14 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
     windows: [...portal.windows].sort((a, b) => at(a.opensAt) - at(b.opensAt) || at(a.closesAt) - at(b.closesAt)) }));
   const portalById = new Map(portals.map(portal => [portal.id, portal]));
   const physicalId = (id: string) => portalById.get(id)?.physicalId ?? id;
+  const mode = options.mode ?? "general";
+  const targetIds = [...new Set((input.organizerCoveragePortalIds ?? []).map(physicalId))];
+  const strategies = [...new Map([[], targetIds.slice(0, 1), targetIds.slice(-1), targetIds].map(ids => [ids.join("|"), ids])).values()];
+  const targetRank = (id: string) => { const rank = targetIds.indexOf(physicalId(id)); return rank < 0 ? Infinity : rank; };
+  const repairPortals = [...portals].sort((a, b) => targetRank(a.id) - targetRank(b.id) || compareId(a.id, b.id));
+  const coverageVector = (visits: JointRouteVisit[]) => targetIds.map(id => Number(visits.some(visit => visit.kind === "ordinary" && physicalId(visit.portalId) === id)));
   const legs = new Map(input.legs.map(leg => [`${leg.from}|${leg.to}`, leg]));
-  const work = { candidateEvaluations: 0, variants: 0, pairReplans: 0, routeRepairs: 0, exhausted: false };
+  const work = { candidateEvaluations: 0, variants: 0, pairReplans: 0, routeRepairs: 0, jointFinaleReplans: 0, exhausted: false };
   const base = input.fixedVisits.filter(physical).map(visit => occupancy(visit, visit.groupId, visit.children, visit.physicalId ?? physicalId(visit.portalId)));
   function budget() {
     if (work.candidateEvaluations >= JOINT_ROUTE_SEARCH_LIMITS.candidateEvaluations) { work.exhausted = true; return false; }
@@ -343,7 +391,18 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
   }
   const finalLimit = (group: JointRouteGroup, window: JointRouteWindow) => Math.min(at(group.finale.latestArrivalAt),
     at(window.arrivalClosesAt), at(window.closesAt) - window.visitSeconds - window.bufferSeconds,
-    group.desiredEndAt ? at(group.desiredEndAt) + input.maxGroupOverrunSeconds - window.visitSeconds : Infinity);
+    completionBounds(input, group).latest - window.visitSeconds);
+  const finalMinimum = (group: JointRouteGroup, window: JointRouteWindow) => Math.max(at(group.startsAt), at(window.opensAt),
+    completionBounds(input, group).earliest - window.visitSeconds);
+  function finalReception(calendar: Occupancy[], portal: JointRoutePortal, group: JointRouteGroup, reachable: number, latest = Infinity) {
+    let best: ReturnType<typeof earliest> = null;
+    for (const window of portal.windows) {
+      const received = earliest(calendar, { ...portal, windows: [window] }, group,
+        Math.max(reachable, finalMinimum(group, window)), Math.min(latest, finalLimit(group, window)));
+      if (received && (!best || received.start < best.start)) best = received;
+    }
+    return best;
+  }
   function finalVisit(group: JointRouteGroup, start: number, window: JointRouteWindow): JointRouteVisit {
     return { portalId: group.finale.portalId, kind: "finale", sequence: 1,
       startsAt: group.finale.reservedAt && start === at(group.finale.reservedAt) ? group.finale.reservedAt : iso(start),
@@ -356,19 +415,20 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
       const end = finalLimit(group, window), service = window.visitSeconds + window.bufferSeconds;
       const others = calendar.filter(visit => visit.portalId === physicalId(portal.id) && visit.groupId !== group.id);
       const ticks = [end, ...others.flatMap(visit => [visit.start - window.headwaySeconds, visit.start - service, visit.end - service])]
-        .filter(tick => tick <= end && tick >= Math.max(at(group.startsAt), at(window.opensAt))).sort((a, b) => b - a);
+        .filter(tick => tick <= end && tick >= finalMinimum(group, window)).sort((a, b) => b - a);
       for (const tick of ticks) if (fits(calendar, portal, group, tick, window)) return finalVisit(group, tick, window);
     }
     return null;
   }
-  function build(subset: JointRouteGroup[], variant: number, reserved: Occupancy[]) {
+  function build(subset: JointRouteGroup[], variant: number, reserved: Occupancy[], constructionTargets: string[]) {
     const calendar = [...reserved], anchors = new Map<string, JointRouteVisit>();
     const anchorOrder = [...subset].sort((a, b) => (variant % 2 ? -1 : 1) * (at(a.finale.latestArrivalAt) - at(b.finale.latestArrivalAt)) || compareId(a.id, b.id));
     for (const group of anchorOrder) {
       const portal = portalById.get(group.finale.portalId), saved = group.finale.reservedAt ? at(group.finale.reservedAt) : NaN;
       const window = portal && matchingWindow(portal, saved, Math.min(...portal.windows.map(window => window.visitSeconds)), Math.min(...portal.windows.map(window => window.bufferSeconds)), group.childCount);
       // Keeping old times is one search variant, never the only endpoint anchor.
-      const keep = variant < 2 && portal?.finale && window && saved <= finalLimit(group, window) && fits(calendar, portal, group, saved, window);
+      const keep = variant < 2 && portal?.finale && window && saved >= finalMinimum(group, window)
+        && saved <= finalLimit(group, window) && fits(calendar, portal, group, saved, window);
       const anchor = keep ? finalVisit(group, saved, window) : latestFinal(calendar, group);
       if (anchor) { anchors.set(group.id, anchor); calendar.push(occupancy(anchor, group.id, group.childCount, physicalId(anchor.portalId))); }
     }
@@ -389,9 +449,21 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
       const slack = Math.max(0, Math.min(at(feasible.window.arrivalClosesAt), at(feasible.window.closesAt) - feasible.window.visitSeconds - feasible.window.bufferSeconds, limit - feasible.window.visitSeconds) - feasible.start);
       // Seconds lost dominate small load changes. Some variants inspect short
       // openings early; others favor the next completion or route preservation.
-      const cost = walk.seconds + wait * (variant % 4 === 1 ? 3 : 1.5)
+      let cost = walk.seconds + wait * (variant % 4 === 1 ? 3 : 1.5)
         + (variant % 4 >= 2 ? Math.min(900, slack) * 0.35 : 0)
         + unique * 8 + (prior ? 0 : 1) + (variant % 4 === 3 ? exit.seconds * 0.15 : 0);
+      if (constructionTargets.length) {
+        // These are named physical organization goals, never world or family
+        // preferences. Their possible visit tradeoff is exposed as a variant.
+        const rank = constructionTargets.indexOf(physicalId(portal.id));
+        if (rank >= 0) cost -= (constructionTargets.length - rank) * 1_000_000;
+        else {
+          const nextId = constructionTargets.find(id => !state.chosen.has(id));
+          const nextTarget = nextId && portals.find(portal => physicalId(portal.id) === nextId);
+          const toward = nextTarget && legs.get(`${portal.nodeId}|${nextTarget.nodeId}`);
+          if (toward && toward.seconds <= input.maxLegWalkingSeconds) cost += toward.seconds * 0.5;
+        }
+      }
       return { portal, ...feasible, walk, wait, cost };
     }
     function append(state: State, best: Candidate) {
@@ -430,11 +502,14 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
   function makePlan(group: JointRouteGroup, visits: JointRouteVisit[]): JointRouteGroupPlan {
     const finale = visits.at(-1)?.kind === "finale" ? visits.at(-1)! : null;
     const changed = finale && (!group.finale.reservedAt || at(finale.startsAt) !== at(group.finale.reservedAt));
+    const bounds = completionBounds(input, group);
     return { groupId: group.id, startsAt: group.startsAt, desiredEndAt: group.desiredEndAt, visits, diagnostics: [],
+      earliestCompletionAt: Number.isFinite(bounds.earliest) ? iso(bounds.earliest) : null,
+      latestCompletionAt: Number.isFinite(bounds.latest) ? iso(bounds.latest) : null,
       finaleArrivalAt: finale?.startsAt ?? null, expectedCompletionAt: finale ? iso(at(finale.startsAt) + finale.visitSeconds) : null,
       ...(changed ? { finaleChange: { portalId: group.finale.portalId, previousReservedAt: group.finale.reservedAt, proposedReservedAt: finale.startsAt } } : {}) };
   }
-  const calendarOf = (plans: JointRouteGroupPlan[]) => [...base, ...plans.flatMap(plan => plan.visits.filter(physical)
+  const calendarOf = (plans: JointRouteGroupPlan[], includeFinales = true) => [...base, ...plans.flatMap(plan => plan.visits.filter(visit => physical(visit) && (includeFinales || visit.kind !== "finale"))
     .map(visit => occupancy(visit, plan.groupId, groups.find(group => group.id === plan.groupId)!.childCount, physicalId(visit.portalId))))];
   function compactFinales(plans: JointRouteGroupPlan[]) {
     let result = plans;
@@ -447,7 +522,7 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
         if (!exit) continue;
         const reachable = (last ? at(last.startsAt) + last.visitSeconds : at(group.startsAt)) + exit.seconds;
         const calendar = calendarOf(result).filter(visit => visit.groupId !== group.id);
-        const next = earliest(calendar, portal, group, reachable, at(previous.startsAt));
+        const next = finalReception(calendar, portal, group, reachable, at(previous.startsAt));
         if (!next || next.start > finalLimit(group, next.window)) continue;
         const finale = { ...finalVisit(group, next.start, next.window), sequence: ordinary.length + 1, walkSeconds: exit.seconds, walkMeters: exit.meters };
         result = result.map(item => item.groupId === group.id ? makePlan(group, [...ordinary, finale]) : item);
@@ -455,27 +530,34 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
     }
     return result;
   }
-  const scoreCache = new WeakMap<JointRouteGroupPlan[], number[]>();
-  const score = (plans: JointRouteGroupPlan[]) => {
-    const cached = scoreCache.get(plans); if (cached) return cached;
+  const scoreCache = new WeakMap<JointRouteGroupPlan[], Partial<Record<"general" | "organizer-coverage", number[]>>>();
+  const score = (plans: JointRouteGroupPlan[], asMode: "general" | "organizer-coverage" = mode) => {
+    const cached = scoreCache.get(plans)?.[asMode]; if (cached) return cached;
     const metrics = measureJointRoutes(input, plans);
-    const value = [-validateJointRoutes(input, plans).length, -metrics.zeroVisitGroups, metrics.totalOrdinaryVisits,
+    const coverage = asMode === "organizer-coverage" ? metrics.organizerCoverage.map(target => target.groups) : [];
+    const value = [-validateJointRoutes(input, plans).length, -metrics.zeroVisitGroups, ...coverage, metrics.totalOrdinaryVisits,
       ...metrics.byGroup.map(group => group.ordinaryVisits).sort((a, b) => a - b),
       -metrics.receptionWaitingSeconds, -metrics.unallocatedBeforeFinaleSeconds, -metrics.walkingSeconds,
       -metrics.unvisitedPortals.length, -metrics.byPortal.reduce((sum, portal) => sum + portal.visitsPerOpenHour ** 2, 0),
       -metrics.absoluteEndDeviationSeconds];
-    scoreCache.set(plans, value); return value;
+    scoreCache.set(plans, { ...scoreCache.get(plans), [asMode]: value }); return value;
   };
-  function better(next: JointRouteGroupPlan[], prior: JointRouteGroupPlan[]) {
-    const a = score(next), b = score(prior);
+  function better(next: JointRouteGroupPlan[], prior: JointRouteGroupPlan[], asMode: "general" | "organizer-coverage" = mode) {
+    const a = score(next, asMode), b = score(prior, asMode);
     for (let index = 0; index < a.length; index++) if (a[index] !== b[index]) return a[index] > b[index];
     return jointRouteProposalDigestText(input.sourceHash, input.boardHash, next) < jointRouteProposalDigestText(input.sourceHash, input.boardHash, prior);
   }
   let best: JointRouteGroupPlan[] = [];
-  for (let variant = 0; variant < JOINT_ROUTE_SEARCH_LIMITS.variants; variant++) {
-    const plans = compactFinales(build(groups, variant, base)); work.variants++;
-    if (!best.length || better(plans, best)) best = plans;
-    if (work.exhausted) break;
+  let mostVisits: JointRouteGroupPlan[] = [];
+  let constructionTruncated = false;
+  for (let variant = 0; variant < JOINT_ROUTE_SEARCH_LIMITS.variantsPerStrategy; variant++) {
+    for (const strategy of strategies) {
+      const plans = compactFinales(build(groups, variant, base, strategy)); work.variants++;
+      if (!best.length || better(plans, best)) best = plans;
+      if (!mostVisits.length || better(plans, mostVisits, "general")) mostVisits = plans;
+      if (work.exhausted || work.candidateEvaluations >= JOINT_ROUTE_SEARCH_LIMITS.constructionEvaluations) break;
+    }
+    if (work.exhausted || work.candidateEvaluations >= JOINT_ROUTE_SEARCH_LIMITS.constructionEvaluations) { constructionTruncated = true; break; }
   }
   const pairOrder = [...groups].sort((a, b) => {
     const visits = (id: string) => best.find(plan => plan.groupId === id)?.visits.filter(visit => visit.kind === "ordinary").length ?? 0;
@@ -485,17 +567,18 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
     for (let second = pairOrder.length - 1; second > first && work.pairReplans < JOINT_ROUTE_SEARCH_LIMITS.pairReplans && !work.exhausted; second--) {
       const pair = [pairOrder[first], pairOrder[second]], ids = new Set(pair.map(group => group.id));
       const others = best.filter(plan => !ids.has(plan.groupId));
-      const replacement = build(pair, 2 + work.pairReplans % (JOINT_ROUTE_SEARCH_LIMITS.variants - 2), calendarOf(others));
+      const replacement = build(pair, 2 + work.pairReplans % (JOINT_ROUTE_SEARCH_LIMITS.variantsPerStrategy - 2), calendarOf(others), strategies[work.pairReplans % strategies.length]);
       const candidate = compactFinales([...others, ...replacement].sort((a, b) => compareId(a.groupId, b.groupId))); work.pairReplans++;
       if (better(candidate, best)) best = candidate;
+      if (better(candidate, mostVisits, "general")) mostVisits = candidate;
     }
   }
 
   // Reschedule a concrete order against other groups, using real travel and
   // every reception window. Used for inserting houses and for swaps/2-opt.
-  function orderedRoute(group: JointRouteGroup, order: string[], others: JointRouteGroupPlan[]) {
+  function orderedRoute(group: JointRouteGroup, order: string[], others: JointRouteGroupPlan[], deferSharedFinales = false) {
     if (!budget()) return null;
-    const calendar = calendarOf(others), visits: JointRouteVisit[] = [];
+    const calendar = calendarOf(others, !deferSharedFinales), visits: JointRouteVisit[] = [];
     let node = group.startNodeId, cursor = at(group.startsAt), walking = 0;
     const seen = new Set(group.excludedPortalIds.map(physicalId));
     for (const id of order) {
@@ -512,61 +595,133 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
     }
     const portal = portalById.get(group.finale.portalId), exit = portal && legs.get(`${node}|${portal.nodeId}`);
     if (!portal?.finale || !exit || walking + exit.seconds > input.maxTotalWalkingSeconds) return null;
-    const received = earliest(calendar, portal, group, cursor + exit.seconds, at(group.finale.latestArrivalAt));
+    const received = finalReception(calendar, portal, group, cursor + exit.seconds);
     if (!received || received.start > finalLimit(group, received.window)) return null;
     visits.push({ ...finalVisit(group, received.start, received.window), sequence: visits.length + 1, walkSeconds: exit.seconds, walkMeters: exit.meters });
     return makePlan(group, visits);
   }
-  let repairs = 0;
-  // Several passes allow a successful reorder to open an insertion that was
-  // unavailable on the first pass. Counts are never equalized or truncated.
-  for (let pass = 0; pass < 3 && !work.exhausted; pass++) {
-    let changed = false;
-    for (const group of [...groups].sort((a, b) => at(a.finale.latestArrivalAt) - at(b.finale.latestArrivalAt) || compareId(a.id, b.id))) {
-      let plan = best.find(plan => plan.groupId === group.id)!;
-      let groupRepairs = 0;
-      const others = best.filter(plan => plan.groupId !== group.id);
-      const order = () => plan.visits.filter(visit => visit.kind === "ordinary").map(visit => visit.portalId);
-      const fixed = () => group.fixedFirstPortalId && physicalId(order()[0] ?? "") === physicalId(group.fixedFirstPortalId) ? 1 : 0;
-      const attempt = (ids: string[]) => {
-        if (repairs >= JOINT_ROUTE_SEARCH_LIMITS.routeRepairs || groupRepairs >= JOINT_ROUTE_SEARCH_LIMITS.repairsPerGroupPass || work.exhausted) return;
-        repairs++; groupRepairs++;
-        const replacement = orderedRoute(group, ids, others);
-        if (!replacement) return;
-        // The simulator checked every hard boundary against the unchanged other
-        // groups. Compare the changed route directly, avoiding a full evening
-        // measurement for each local permutation.
-        const routeScore = (item: JointRouteGroupPlan) => {
-          const ordinary = item.visits.filter(visit => visit.kind === "ordinary"), last = ordinary.at(-1);
-          const exit = item.visits.at(-1)?.walkSeconds ?? 0;
-          return [ordinary.length, -ordinary.reduce((sum, visit) => sum + (visit.waitSeconds ?? 0), 0),
-            -(at(item.finaleArrivalAt!) - (last ? at(last.startsAt) + last.visitSeconds : at(group.startsAt)) - exit),
-            -item.visits.reduce((sum, visit) => sum + visit.walkSeconds, 0)];
-        };
-        const a = routeScore(replacement), b = routeScore(plan), firstDifference = a.findIndex((value, index) => value !== b[index]);
-        if (firstDifference >= 0 && a[firstDifference] > b[firstDifference]) {
-          plan = replacement; best = [...others, replacement].sort((a, b) => compareId(a.groupId, b.groupId)); changed = true;
-        }
-      };
-      for (const portal of portals) {
-        if (portal.finale || order().some(id => physicalId(id) === physicalId(portal.id))) continue;
-        for (let index = fixed(); index <= order().length; index++) { const ids = order(); ids.splice(index, 0, portal.id); attempt(ids); }
+  function redistributeFinales(plans: JointRouteGroupPlan[]) {
+    if (work.jointFinaleReplans >= JOINT_ROUTE_SEARCH_LIMITS.jointFinaleReplans || work.exhausted) return null;
+    work.jointFinaleReplans++;
+    const arrivals = plans.map(plan => {
+      const group = groups.find(group => group.id === plan.groupId)!, portal = portalById.get(group.finale.portalId)!;
+      const ordinary = plan.visits.filter(visit => visit.kind === "ordinary"), last = ordinary.at(-1);
+      const exit = legs.get(`${last ? portalById.get(last.portalId)!.nodeId : group.startNodeId}|${portal.nodeId}`);
+      return { group, portal, ordinary, exit, reachable: (last ? at(last.startsAt) + last.visitSeconds : at(group.startsAt)) + (exit?.seconds ?? Infinity),
+        latest: Math.max(-Infinity, ...portal.windows.map(window => finalLimit(group, window))) };
+    });
+    let bestSchedule: JointRouteGroupPlan[] | null = null;
+    // Both orders use one shared physical calendar. A small later finale can
+    // require a neighbor's slot to move too; its old time is never an anchor.
+    for (const ordering of [
+      [...arrivals].sort((a, b) => a.latest - a.reachable - (b.latest - b.reachable) || compareId(a.group.id, b.group.id)),
+      [...arrivals].sort((a, b) => b.reachable - a.reachable || compareId(a.group.id, b.group.id)),
+    ]) {
+      const calendar = calendarOf(plans, false), result: JointRouteGroupPlan[] = [];
+      for (const item of ordering) {
+        if (!budget() || !item.exit) break;
+        const received = finalReception(calendar, item.portal, item.group, item.reachable);
+        if (!received) break;
+        const finale = { ...finalVisit(item.group, received.start, received.window), sequence: item.ordinary.length + 1,
+          walkSeconds: item.exit.seconds, walkMeters: item.exit.meters };
+        calendar.push(occupancy(finale, item.group.id, item.group.childCount, physicalId(finale.portalId)));
+        result.push(makePlan(item.group, [...item.ordinary, finale]));
       }
-      const ids = order();
-      for (let first = fixed(); first < ids.length - 1; first++) {
-        for (let second = first + 1; second < ids.length; second++) {
-          const reordered = [...ids]; [reordered[first], reordered[second]] = [reordered[second], reordered[first]]; attempt(reordered);
-        }
-      }
+      if (result.length === plans.length && (!bestSchedule || better(result, bestSchedule))) bestSchedule = result.sort((a, b) => compareId(a.groupId, b.groupId));
     }
-    if (!changed || repairs >= JOINT_ROUTE_SEARCH_LIMITS.routeRepairs) break;
+    return bestSchedule;
   }
+  let repairs = 0;
+  let repairTruncated = false;
+  let repairedBest = best;
+  const repairSeeds = mode === "organizer-coverage" && mostVisits !== best ? [best, mostVisits] : [best];
+  for (const seed of repairSeeds) {
+    best = seed;
+    const seedLimit = Math.min(JOINT_ROUTE_SEARCH_LIMITS.routeRepairs, repairs + JOINT_ROUTE_SEARCH_LIMITS.repairsPerSeed);
+    // Several passes allow a successful reorder to open an insertion that was
+    // unavailable on the first pass. Counts are never equalized or truncated.
+    for (let pass = 0; pass < 3 && !work.exhausted; pass++) {
+      let changed = false;
+      for (const group of [...groups].sort((a, b) => at(a.finale.latestArrivalAt) - at(b.finale.latestArrivalAt) || compareId(a.id, b.id))) {
+        let plan = best.find(plan => plan.groupId === group.id)!;
+        let groupRepairs = 0;
+        const others = () => best.filter(plan => plan.groupId !== group.id);
+        const order = () => plan.visits.filter(visit => visit.kind === "ordinary").map(visit => visit.portalId);
+        const fixed = () => group.fixedFirstPortalId && physicalId(order()[0] ?? "") === physicalId(group.fixedFirstPortalId) ? 1 : 0;
+        const attempt = (ids: string[], allowJointFinales = false) => {
+          if (repairs >= seedLimit || groupRepairs >= JOINT_ROUTE_SEARCH_LIMITS.repairsPerGroupPass || work.exhausted) return;
+          repairs++; groupRepairs++;
+          const replacement = orderedRoute(group, ids, others());
+          if (!replacement && allowJointFinales && work.jointFinaleReplans < JOINT_ROUTE_SEARCH_LIMITS.jointFinaleReplans) {
+            const tentative = orderedRoute(group, ids, others(), true);
+            const shared = tentative && redistributeFinales([...others(), tentative]);
+            if (shared && better(shared, best)) {
+              best = shared; plan = best.find(plan => plan.groupId === group.id)!; changed = true;
+            }
+            return;
+          }
+          if (!replacement) return;
+          // The simulator checked every hard boundary against the unchanged other
+          // groups. Compare the changed route directly, avoiding a full evening
+          // measurement for each local permutation.
+          const routeScore = (item: JointRouteGroupPlan) => {
+            const ordinary = item.visits.filter(visit => visit.kind === "ordinary"), last = ordinary.at(-1);
+            const exit = item.visits.at(-1)?.walkSeconds ?? 0;
+            return [...(mode === "organizer-coverage" ? coverageVector(item.visits) : []), ordinary.length, -ordinary.reduce((sum, visit) => sum + (visit.waitSeconds ?? 0), 0),
+              -(at(item.finaleArrivalAt!) - (last ? at(last.startsAt) + last.visitSeconds : at(group.startsAt)) - exit),
+              -item.visits.reduce((sum, visit) => sum + visit.walkSeconds, 0),
+              -(group.desiredEndAt ? Math.abs(at(item.expectedCompletionAt!) - at(group.desiredEndAt)) : 0)];
+          };
+          const a = routeScore(replacement), b = routeScore(plan), firstDifference = a.findIndex((value, index) => value !== b[index]);
+          if (firstDifference >= 0 && a[firstDifference] > b[firstDifference]) {
+            plan = replacement; best = [...others(), replacement].sort((a, b) => compareId(a.groupId, b.groupId)); changed = true;
+          }
+        };
+        // Reserve repair opportunities for the explicit goals before unrelated
+        // permutations exhaust this group's deterministic budget.
+        for (const portal of repairPortals.filter(portal => Number.isFinite(targetRank(portal.id)))) {
+          if (order().some(id => physicalId(id) === physicalId(portal.id))) continue;
+          for (let index = fixed(); index <= order().length && !order().some(id => physicalId(id) === physicalId(portal.id)); index++) {
+            const ids = order(); ids.splice(index, 0, portal.id); attempt(ids, true);
+          }
+          if (mode === "organizer-coverage" && !order().some(id => physicalId(id) === physicalId(portal.id))) {
+            for (let index = fixed(); index < order().length && !order().some(id => physicalId(id) === physicalId(portal.id)); index++) {
+              const ids = order(); ids[index] = portal.id; attempt(ids, true);
+            }
+          }
+        }
+        for (const portal of repairPortals) {
+          if (portal.finale || order().some(id => physicalId(id) === physicalId(portal.id))) continue;
+          if (Number.isFinite(targetRank(portal.id))) continue;
+          for (let index = fixed(); index <= order().length && !order().some(id => physicalId(id) === physicalId(portal.id)); index++) {
+            const ids = order(); ids.splice(index, 0, portal.id); attempt(ids);
+          }
+        }
+        const ids = order();
+        for (let first = fixed(); first < ids.length - 1; first++) {
+          for (let second = first + 1; second < ids.length; second++) {
+            const reordered = [...ids]; [reordered[first], reordered[second]] = [reordered[second], reordered[first]]; attempt(reordered);
+          }
+        }
+      }
+      if (!changed || repairs >= seedLimit) break;
+    }
+    if (repairs >= seedLimit) repairTruncated = true;
+    if (better(best, repairedBest)) repairedBest = best;
+  }
+  best = repairedBest;
   work.routeRepairs = repairs;
-  if (repairs >= JOINT_ROUTE_SEARCH_LIMITS.routeRepairs) work.exhausted = true;
+  if (repairTruncated || constructionTruncated) work.exhausted = true;
   best = compactFinales(best).sort((a, b) => compareId(a.groupId, b.groupId));
   for (const plan of best) {
     const group = groups.find(group => group.id === plan.groupId)!, ordinary = plan.visits.filter(visit => visit.kind === "ordinary");
     const warning = (code: string, message: string, portalId?: string) => plan.diagnostics.push({ code, severity: "warning", groupId: group.id, portalId, message });
+    const finalPortal = portalById.get(group.finale.portalId);
+    if (finalPortal && !finalPortal.windows.some(window => group.childCount <= window.maxChildren && finalMinimum(group, window) <= finalLimit(group, window))) {
+      const bounds = completionBounds(input, group);
+      plan.diagnostics.push({ code: "COMPLETION_WINDOW_UNAVAILABLE", severity: "block", groupId: group.id, portalId: group.finale.portalId,
+        message: `Het toegestane einde van de werkelijke show ${Number.isFinite(bounds.earliest) ? `vanaf ${iso(bounds.earliest)}` : "zonder vroegtegrens"}${Number.isFinite(bounds.latest) ? ` tot ${iso(bounds.latest)}` : ""} heeft geen doorsnede met de effectieve opening, laatste aankomst, showduur en fysieke sluiting van P-38.` });
+    }
     if (!ordinary.length && portals.filter(portal => !portal.finale).every(portal => group.excludedPortalIds.some(id => physicalId(id) === physicalId(portal.id))))
       warning("ALL_HOUSES_ALREADY_VISITED", "Alle beschikbare fysieke huizen staan al in de bezoekhistorie. De groep krijgt een passende afronding bij P-38; er zijn geen dubbele of fictieve bezoeken toegevoegd.");
     if (group.accessibilityNeedsReview) warning("ACCESSIBILITY_NEEDS_REVIEW", "Controleer de expliciete toegankelijkheidsbehoefte. Dit voorstel gebruikt voorlopig alleen bevestigd drempelvrije huizen en wijzigt geen kindgegevens.");
@@ -588,7 +743,7 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
     if (plan.finaleChange) warning("FINALE_TIME_CHANGE", `Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: ${group.finale.reservedAt ?? "geen reservering"} → ${plan.finaleArrivalAt}.`, group.finale.portalId);
     const measured = measureJointRoutes(input, [plan]).byGroup[0];
     if (measured.receptionWaitingSeconds > 300) warning("RECEPTION_WAIT", `${Math.ceil(measured.receptionWaitingSeconds / 60)} minuten ontvangstwachttijd door echte opening, aankomstafstand of bezetting; apart geteld van vrije tijd vóór P-38.`);
-    if (measured.unallocatedBeforeFinaleSeconds > 600) warning("UNALLOCATED_BEFORE_FINALE", `${Math.ceil(measured.unallocatedBeforeFinaleSeconds / 60)} minuten vrije tijd vóór P-38. Geen betere gezamenlijke combinatie gevonden binnen de begrensde zoekruimte; geen bewijs van onmogelijkheid.`);
+    if (measured.unallocatedBeforeFinaleSeconds > 600) warning("UNALLOCATED_BEFORE_FINALE", `${Math.ceil(measured.unallocatedBeforeFinaleSeconds / 60)} minuten vrije tijd vóór P-38.${input.maxEarlyFinishSeconds != null ? " Het geldige afrondvenster wordt hiermee bereikt; een later tijdstip is geen extra huisbezoek." : ""} Geen betere gezamenlijke combinatie gevonden binnen de begrensde zoekruimte; geen bewijs van onmogelijkheid.`);
     if (group.desiredEndAt && plan.expectedCompletionAt && at(plan.expectedCompletionAt) < at(group.desiredEndAt) - 600)
       warning("EVENING_DURATION_TRADEOFF", `De ${ordinary.length} echte bezoeken en de show ronden ${Math.ceil((at(group.desiredEndAt) - at(plan.expectedCompletionAt)) / 60)} minuten vóór de gewenste eindtijd af. Een langere avond vraagt vrije tijd; er zijn geen extra bezoeken, rondjes of langere shows verzonnen.`);
     const priorCount = input.before.find(before => before.groupId === group.id)?.visits.filter(visit => visit.kind === "ordinary").length ?? 0;
@@ -597,45 +752,55 @@ export function proposeJointRoutes(input: JointRouteInput): JointRouteProposal {
       const history = group.excludedPortalIds.some(id => physicalId(id) === physicalId(portal.id));
       const inaccessible = (group.requiresStepFree || group.accessibilityNeedsReview) && portal.accessibilityStatus !== "step_free";
       const visits = ordinary.map(visit => visit.portalId), startIndex = group.fixedFirstPortalId && visits[0] === group.fixedFirstPortalId ? 1 : 0;
-      const walkingOptions = Array.from({ length: visits.length + 1 - startIndex }, (_, offset) => {
-        const ids = [...visits]; ids.splice(offset + startIndex, 0, portal.id);
-        let node = group.startNodeId, seconds = 0;
-        for (const id of [...ids, group.finale.portalId]) { const to = portalById.get(id)!.nodeId, leg = legs.get(`${node}|${to}`); if (!leg || id !== group.finale.portalId && leg.seconds > input.maxLegWalkingSeconds) return Infinity; seconds += leg.seconds; node = to; }
-        return seconds;
-      });
-      const minimumWalking = Math.min(...walkingOptions);
       const otherCalendar = calendarOf(best).filter(visit => visit.groupId !== group.id);
       const ordered = plan.visits.filter(physical).sort((a, b) => a.sequence - b.sequence);
-      const insertionLimits = Array.from({ length: ordinary.length + 1 - startIndex }, (_, offset) => {
+      // Walking, reception and timing are measured on the same concrete
+      // insertion. Combining separate minima can describe no actual route.
+      const insertionCandidates = Array.from({ length: ordinary.length + 1 - startIndex }, (_, offset) => {
         const index = offset + startIndex, previous = ordered[index - 1], next = ordered[index];
-        if (!next) return null;
         const node = previous ? portalById.get(previous.portalId)!.nodeId : group.startNodeId;
-        const incoming = legs.get(`${node}|${portal.nodeId}`), outgoing = legs.get(`${portal.nodeId}|${portalById.get(next.portalId)!.nodeId}`);
-        if (!incoming || !outgoing || incoming.seconds > input.maxLegWalkingSeconds || next.kind !== "finale" && outgoing.seconds > input.maxLegWalkingSeconds) return null;
+        const incoming = legs.get(`${node}|${portal.nodeId}`), outgoing = next && legs.get(`${portal.nodeId}|${portalById.get(next.portalId)!.nodeId}`);
+        const ids = [...visits]; ids.splice(index, 0, portal.id);
+        let walkingNode = group.startNodeId, seconds = 0, validLegs = true;
+        for (const id of [...ids, group.finale.portalId]) {
+          const to = portalById.get(id)!.nodeId, leg = legs.get(`${walkingNode}|${to}`);
+          if (!leg || id !== group.finale.portalId && leg.seconds > input.maxLegWalkingSeconds) { validLegs = false; break; }
+          seconds += leg.seconds; walkingNode = to;
+        }
+        if (!next || !incoming || !outgoing || !validLegs) return { insertionIndex: index, totalWalkingSeconds: null, budgetSeconds: input.maxTotalWalkingSeconds,
+          arrivalAt: null, nextArrivalAt: next?.startsAt ?? null, shortfallSeconds: null, receptionAvailable: false };
         const reachable = (previous ? at(previous.startsAt) + previous.visitSeconds : at(group.startsAt)) + incoming.seconds;
         const received = earliest(otherCalendar, portal, group, reachable, at(group.ordinaryStopAt));
         const latestEnd = Math.min(at(group.ordinaryStopAt), at(next.startsAt) - outgoing.seconds);
-        if (!received) return { shortage: Infinity, message: `Geen vrij ontvangstmoment vanaf ${iso(reachable)} tot de gewone stop ${group.ordinaryStopAt}, binnen opening, aankomstafstand en bezetting.` };
-        const shortage = received.start + received.window.visitSeconds - latestEnd;
-        return { shortage, message: shortage > 0
-          ? `Vóór ${portalById.get(next.portalId)!.code} is het vroegste vrije ontvangsttijdstip ${iso(received.start)}; bezoek plus ${outgoing.seconds} seconden werkelijk lopen mist de volgende aankomst ${next.startsAt} met ${Math.ceil(shortage)} seconden.`
-          : `Een invoeging vóór ${portalById.get(next.portalId)!.code} heeft een vrij ontvangstmoment op ${iso(received.start)}; controleer het aparte totale loopbudget en de begrensde herverdeling.` };
-      }).filter((value): value is { shortage: number; message: string } => value !== null).sort((a, b) => a.shortage - b.shortage);
+        return { insertionIndex: index, totalWalkingSeconds: seconds, budgetSeconds: input.maxTotalWalkingSeconds,
+          arrivalAt: received ? iso(received.start) : null, nextArrivalAt: next.startsAt,
+          shortfallSeconds: received ? Math.max(0, received.start + received.window.visitSeconds - latestEnd) : null,
+          receptionAvailable: received !== null };
+      }).sort((a, b) => Number(a.totalWalkingSeconds === null) - Number(b.totalWalkingSeconds === null)
+        || Number((a.totalWalkingSeconds ?? Infinity) > input.maxTotalWalkingSeconds) - Number((b.totalWalkingSeconds ?? Infinity) > input.maxTotalWalkingSeconds)
+        || Number(!a.receptionAvailable) - Number(!b.receptionAvailable)
+        || (a.shortfallSeconds ?? Infinity) - (b.shortfallSeconds ?? Infinity)
+        || (a.totalWalkingSeconds ?? Infinity) - (b.totalWalkingSeconds ?? Infinity) || a.insertionIndex - b.insertionIndex);
+      const candidate = insertionCandidates[0];
       const reason = history ? "Reeds fysiek bezocht door de groep of een meeverhuisd kind; geen dubbel bezoek."
         : inaccessible ? "De vereiste drempelvrije ontvangst is niet bevestigd."
-        : !Number.isFinite(minimumWalking) ? `Geen invoegpositie in de gevonden huisvolgorde met opgeslagen looptrajecten en gewone etappes van maximaal ${input.maxLegWalkingSeconds} seconden. De finale-etappe heeft geen vaste limiet.`
-        : minimumWalking > input.maxTotalWalkingSeconds ? `Invoegen in de gevonden huisvolgorde vergt minstens ${minimumWalking} seconden lopen; het aparte totale loopbudget is ${input.maxTotalWalkingSeconds} seconden, inclusief de werkelijke wandeling naar P-38.`
-        : `${insertionLimits[0]?.message ?? "Geen invoegpositie met passende echte gewone etappes gevonden."} Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen.`;
+        : !candidate || candidate.totalWalkingSeconds === null ? `Geen invoegpositie in de gevonden huisvolgorde met opgeslagen looptrajecten en gewone etappes van maximaal ${input.maxLegWalkingSeconds} seconden. De finale-etappe heeft geen vaste limiet.`
+        : `Invoegpositie ${candidate.insertionIndex + 1}: ${candidate.totalWalkingSeconds} seconden werkelijke totale looptijd tegenover ${candidate.budgetSeconds} seconden budget; ${candidate.totalWalkingSeconds > candidate.budgetSeconds ? `${candidate.totalWalkingSeconds - candidate.budgetSeconds} seconden te veel lopen; ` : ""}${!candidate.receptionAvailable ? "geen vrij ontvangstmoment binnen de opening, aankomstafstand, bezetting en gewone stopgrens" : `vroegste vrije ontvangst ${candidate.arrivalAt}, volgende aankomst ${candidate.nextArrivalAt}, ${Math.ceil(candidate.shortfallSeconds ?? 0)} seconden tijdtekort`}. Deze waarden horen bij dezelfde invoeging in de gevonden route. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen.`;
       warning("OMITTED_PORTAL", reason, portal.id);
+      if (!history && !inaccessible && candidate) plan.diagnostics.at(-1)!.candidate = candidate;
     }
   }
   const conflicts = [...new Map([...(input.diagnostics ?? []), ...best.flatMap(plan => plan.diagnostics), ...validateJointRoutes(input, best)]
     .map(diagnostic => [`${diagnostic.code}|${diagnostic.groupId ?? ""}|${diagnostic.portalId ?? ""}`, diagnostic])).values()];
+  for (const id of input.organizerCoveragePortalIds ?? []) if (!portalById.has(id)) conflicts.push({ code: "ORGANIZER_TARGET_UNAVAILABLE", severity: "warning", portalId: id,
+    message: "Dit expliciete fysieke organisatiedoel ontbreekt uit de actuele geschikte huizen. De dekking is nul; controleer de actieve status, ingang en ontvangstvensters. Het doel vervangt geen harde ontvangstregel." });
   if (work.exhausted) conflicts.push({ code: "BOUNDED_SEARCH_LIMIT", severity: "warning", message: "Het deterministische zoekbudget is gebruikt. Dit is het beste gevonden gecontroleerde voorstel; een wereldwijd optimum is niet bewezen." });
   const before = measureJointRoutes(input, input.before), after = measureJointRoutes(input, best);
   after.administrativeStarts = before.administrativeStarts;
   return { sourceHash: input.sourceHash, boardHash: input.boardHash, policyVersion: input.policyVersion,
     proposalHash: createHash("sha256").update(jointRouteProposalDigestText(input.sourceHash, input.boardHash, best)).digest("hex"),
     valid: !conflicts.some(conflict => conflict.severity === "block"), groups: best, conflicts, metrics: { before, after }, work,
-    walkingPolicy: { maxOrdinaryLegSeconds: input.maxLegWalkingSeconds, maxTotalSeconds: input.maxTotalWalkingSeconds, finaleLegLimitSeconds: null } };
+    walkingPolicy: { maxOrdinaryLegSeconds: input.maxLegWalkingSeconds, maxTotalSeconds: input.maxTotalWalkingSeconds, finaleLegLimitSeconds: null },
+    completionPolicy: { maxEarlyFinishSeconds: input.maxEarlyFinishSeconds ?? null, maxOverrunSeconds: input.maxGroupOverrunSeconds },
+    optimization: { mode, organizerCoveragePortalIds: [...(input.organizerCoveragePortalIds ?? [])] } };
 }
