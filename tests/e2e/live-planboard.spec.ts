@@ -25,8 +25,12 @@ test.describe.configure({mode:'serial'});
 test.skip(!url||!key,'Requires isolated real Auth and database');
 test.beforeAll(()=>{
  requireLocalTogetherDatabase();
+ // This scenario needs real room for a later ten-minute move. Limit the
+ // synthetic receiving houses, rather than capping the maximizing planner.
  sql(`update app_private.event_route_settings set first_start_at='2026-10-31T15:00Z',global_ordinary_stop_at='2026-10-31T19:30Z',final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at='2026-10-31T18:00Z',finale_last_arrival_at='2026-10-31T20:30Z',finale_closes_at='2026-10-31T21:00Z',finale_max_concurrent_groups=20,finale_max_concurrent_children=200,finale_available=true,planner_mode='dynamic';
- update app_private.walking_groups set desired_ordinary_visits=3 where id='${gid}';update app_private.registrations set requested_ordinary_stop_at=null,preferred_start_at=null where id in(select registration_id from app_private.group_registrations where group_id='${gid}');`);
+ update app_private.portals set operation_status='paused' where event_id=(select id from app_private.events where slug='${event}')
+  and id not in('12000000-0000-0000-0000-000000000001','12000000-0000-0000-0000-000000000002','12000000-0000-0000-0000-000000000003','12000000-0000-0000-0000-000000000030');
+ update app_private.registrations set requested_ordinary_stop_at=null,preferred_start_at=null where id in(select registration_id from app_private.group_registrations where group_id='${gid}');`);
 });
 test('real planboard route, keyboard move, equal shift, undo/redo and responsive timeline',async({page,context})=>{
  const client=await login(context);
@@ -100,7 +104,12 @@ test('wrong house intake and real parent books coexist and only house participat
  expect(sql("select md5(jsonb_agg(to_jsonb(rc) order by rc.id)::text) from app_private.registration_children rc")).toBe(familyBefore);
 });
 test('resolving a conflict during dragging keeps the active node under the conflicts filter',async({page,context})=>{
- const client=await login(context);const before=await snapshot(client);const visit=before.visits.find(v=>v.groupId===gid&&v.sequence===2)!;const ownPortals=new Set(before.visits.filter(v=>v.groupId===gid).map(v=>v.portalId));const target=before.portals.find(p=>!ownPortals.has(p.id)&&!p.finale&&p.operationStatus==='open')!;
+ const client=await login(context),targetId='12000000-0000-0000-0000-000000000004';
+ // Make a separate real receiving house available after the shift scenario.
+ // The existing paused visit remains the conflict that dragging can resolve.
+ await rpc(client,'portal_set_operational_state',{_portal_id:targetId,_state:'open',_expected_version:Number(sql(`select version from app_private.portals where id='${targetId}'`)),_reason:'Afzonderlijke synthetische ontvangstpoort voor de gecontroleerde sleepannulering'});
+ const before=await snapshot(client);const visit=before.visits.find(v=>v.groupId===gid&&v.sequence===2)!;const ownPortals=new Set(before.visits.filter(v=>v.groupId===gid).map(v=>v.portalId));const target=before.portals.find(p=>p.id===targetId)!;
+ expect(ownPortals.has(target.id)).toBe(false);expect(target.operationStatus).toBe('open');expect(target.finale).toBe(false);
  await page.goto('/admin');await selectOrganizationSection(page,'Poorten');await page.getByRole('tab',{name:'Live planbord',exact:true}).click();await page.getByRole('button',{name:'Schermvullend',exact:true}).click();await page.getByRole('combobox',{name:'Groep',exact:true}).selectOption(gid);await page.getByRole('checkbox',{name:'Alleen gekozen groep',exact:true}).check();await page.getByRole('checkbox',{name:'Alleen conflicten',exact:true}).check();
  const block=page.locator(`[data-visit-id="${visit.id}"]`);await block.scrollIntoViewIfNeeded();await expect(block).toHaveClass(/has-warning/);const start=(await block.boundingBox())!;const row=page.locator(`[data-portal-row="${target.id}"] .planboard-track`);const finish=(await row.boundingBox())!;
  await page.mouse.move(start.x+10,start.y+10);await page.mouse.down();await page.mouse.move(start.x+10,finish.y+40,{steps:10});await expect(block).toHaveCount(1);await expect(block).not.toHaveClass(/has-warning/);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.getByRole('dialog')).toHaveCount(0);expect((await snapshot(client)).inputHash).toBe(before.inputHash);

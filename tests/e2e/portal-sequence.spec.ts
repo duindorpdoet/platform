@@ -21,6 +21,8 @@ test("mobile organization and participant complete the destination sequence with
   test.skip(!url||!key,"Requires isolated real Auth and database");test.setTimeout(180_000);requireLocalTogetherDatabase();
   // Only this isolated synthetic event is changed. Yesterday's selectable start
   // is always in the past; no clock override or publication backdoor is needed.
+  // Keep the real finale in the future: the joint planner can compact its slot,
+  // and runtime must still fit today's actual walk, reception and final walk.
   sql(`update app_private.walking_edges set approved_at=null;
     update app_private.walking_nodes set verified_at=null;
     update app_private.start_points set walking_node_id=null,verified_at=null,version=version+1;
@@ -29,10 +31,9 @@ test("mobile organization and participant complete the destination sequence with
     update app_private.portal_windows set opens_at=date_trunc('day',clock_timestamp())-interval '36 hours',closes_at=date_trunc('day',clock_timestamp())+interval '36 hours';
     update app_private.event_route_settings set planner_mode='dynamic',first_start_at=date_trunc('day',clock_timestamp())-interval '36 hours',
       global_ordinary_stop_at=clock_timestamp()+interval '1 hour',preferred_start_min_local='17:30',preferred_start_max_local='18:30',preferred_start_step_minutes=30,
-      final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at=clock_timestamp(),finale_last_arrival_at=clock_timestamp()+interval '4 hours',
+      final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at=clock_timestamp()+interval '1 hour',finale_last_arrival_at=clock_timestamp()+interval '4 hours',
       finale_closes_at=clock_timestamp()+interval '5 hours',finale_available=true,finale_max_concurrent_groups=10,finale_max_concurrent_children=100,
-      ordinary_visit_seconds=60,route_buffer_seconds=0;
-    update app_private.walking_groups set desired_ordinary_visits=2 where id='${groupId}';`);
+      ordinary_visit_seconds=60,route_buffer_seconds=0;`);
   let providerCalls=0;
   await context.route(/directions|route\.project-osrm|api\.openrouteservice/,async route=>{providerCalls++;await route.fulfill({status:503,body:"Synthetic provider unavailable"});});
   const admin=await login(context,"admin@example.invalid");
@@ -62,7 +63,11 @@ test("mobile organization and participant complete the destination sequence with
   await card.getByRole("button",{name:"Startafspraken bevestigen en versturen"}).click();
   await page.getByRole("dialog").getByRole("button",{name:"Startafspraken bevestigen en versturen",exact:true}).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await reviewCanonicalFixtureRoutes(admin,event);await page.reload();
+  const proposal=await reviewCanonicalFixtureRoutes(admin,event);
+  const finale=proposal.groups.find(group=>group.groupId===groupId)!.visits.at(-1)!;
+  expect(finale.kind).toBe("finale");expect(finale.portalId).toBe("12000000-0000-0000-0000-000000000030");
+  expect(Date.parse(finale.startsAt)).toBeGreaterThan(Date.now()+30*60_000);
+  await page.reload();
   await card.getByRole("button",{name:"Poortvolgorde controleren"}).click();
   const preview=page.getByRole("dialog");await expect(preview).toContainText("Privé poortvolgorde");await expect(preview).toContainText("hemelsbreed");
   expect(await preview.locator(".start-ops-route-stops li").count()).toBeGreaterThan(2);await assertReadableLayout(page);
@@ -81,14 +86,20 @@ test("mobile organization and participant complete the destination sequence with
   const leader=await login(participant,"leader-a@example.invalid"),routePage=await participant.newPage();
   routePage.on("dialog",dialog=>dialog.accept());await routePage.goto("/mijn-groep");
   await routePage.locator(".attendance-row label.present").first().click();
+  const startResponse=routePage.waitForResponse(response=>response.url().endsWith("/rpc/run_start")&&response.request().method()==="POST");
   await routePage.getByRole("button",{name:"Start groep met 1 aanwezig"}).click();
+  const started=await startResponse,startedResult=await started.json();
+  expect(started.ok(),JSON.stringify(startedResult)).toBe(true);
+  expect(startedResult.dispatch.decision,JSON.stringify(startedResult)).toBe("ordinary");
   await expect(routePage.locator("#route-destination h2")).toBeVisible();await assertReadableLayout(routePage);
   const current=async()=>{const r=await leader.schema("api").rpc("group_snapshot",{_group_id:groupId});expect(r.error).toBeNull();return r.data;};
   const first=await current(),stop=first.run.currentStop;
   expect(JSON.stringify(first)).not.toContain('"candidate_summary"');expect(first.ops).toBeUndefined();
   expect(first.run.nextStop).toBeFalsy();
   for(const future of after.ops.routes[groupId].stops.filter((candidate:{portalId:string})=>candidate.portalId!==stop.portal.id)){
-    expect(JSON.stringify(first)).not.toContain(future.portalId);expect(JSON.stringify(first)).not.toContain(future.address);
+    expect(JSON.stringify(first)).not.toContain(future.portalId);
+    // Match the complete JSON string: fixture address 2 is a prefix of 22.
+    expect(JSON.stringify(first)).not.toContain(JSON.stringify(future.address));
   }
   await expect(routePage.locator(".participant-route-map .maplibregl-marker")).toHaveCount(1);
   await expect(routePage.locator(".participant-route-map .maplibregl-marker")).toBeVisible();
