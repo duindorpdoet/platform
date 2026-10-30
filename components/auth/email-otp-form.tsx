@@ -36,6 +36,7 @@ export function EmailOtpForm({
   authBusy?:boolean;
 }) {
   const router = useRouter();
+  const [hydrated, setHydrated] = useState(false);
   const [email, setEmail] = useState(initialEmail);
   const [otp, setOtp] = useState("");
   const [stage, setStage] = useState<"email" | "code">("email");
@@ -46,6 +47,12 @@ export function EmailOtpForm({
   const destination = safeReturnPath(nextPath);
 
   useEffect(() => {
+    // SSR controls must wait until React has attached their input listeners.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
     if (!cooldown) return;
     const timer = window.setInterval(() => setCooldown((value) => Math.max(0, value - 1)), 1_000);
     return () => window.clearInterval(timer);
@@ -53,7 +60,7 @@ export function EmailOtpForm({
 
   async function requestCode(event?: FormEvent) {
     event?.preventDefault();
-    if (cooldown || codeRequestPending.current || authBusy) return;
+    if (!hydrated || cooldown || codeRequestPending.current || authBusy) return;
     const supabase = createClient();
     if (!supabase) {
       setMessage("Inloggen is in deze omgeving nog niet gekoppeld. De organisatie is hiervan op de hoogte.");
@@ -116,12 +123,12 @@ export function EmailOtpForm({
     return (
       <form className={variant === "entry" ? "entry-otp-form auth-form" : "panel auth-form"} onSubmit={requestCode}>
         {variant !== "entry" && <><Mail size={32} /><h2>{children ? "Meld jullie plek aan" : "Ontvang je inlogcode."}</h2><p>{children ? "Vul je naam en telefoonnummer in. Bevestig daarna je e-mailadres met een code; vervolgens kun je de overige gegevens rustig aanvullen." : "We sturen een eenmalige code via e-mail. Je hebt geen wachtwoord nodig."}</p></>}
-        <label className="field"><span>E-mailadres{children ? " *" : ""}</span><input type="email" disabled={busy||authBusy} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
+        <label className="field"><span>E-mailadres{children ? " *" : ""}</span><input type="email" disabled={!hydrated||busy||authBusy} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
         {alternativeAuth?.(busy)}
         {children}
         {onRememberChange && <label className="entry-remember"><input type="checkbox" checked={rememberSession} onChange={event => onRememberChange(event.target.checked)} /><span>Ingelogd blijven op dit apparaat</span></label>}
         {message && <p className="form-error" role="alert">{message}</p>}
-        <button className="btn full" type="submit" disabled={busy || authBusy || cooldown > 0 || !email.includes("@")}>{busy ? "Code aanvragen…" : cooldown ? `Nieuwe code over ${cooldown}s` : "Stuur eenmalige code"}<ArrowRight size={17} /></button>
+        <button className="btn full" type="submit" disabled={!hydrated || busy || authBusy || cooldown > 0 || !email.includes("@")}>{busy ? "Code aanvragen…" : cooldown ? `Nieuwe code over ${cooldown}s` : "Stuur eenmalige code"}<ArrowRight size={17} /></button>
       </form>
     );
   }
