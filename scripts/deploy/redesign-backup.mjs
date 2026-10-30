@@ -12,6 +12,7 @@ import { backupKey, sealBackup } from './redesign-preflight.mjs';
 import { reconcileWorldPolicyInitialization,worldPolicyInitializationQuery } from './world-policy-reconciliation.mjs';
 import { jointRoutePolicyReleaseQuery,reconcileJointRoutePolicyRelease } from './joint-route-policy-reconciliation.mjs';
 import { jointRouteSettingsInitializationQuery,reconcileJointRouteSettingsInitialization } from './joint-route-settings-reconciliation.mjs';
+import { p12RoutePolicyQuery,reconcileP12RoutePolicy,jointRouteSettingsBeforeP12Policy } from './p12-route-policy-reconciliation.mjs';
 
 const quote=value=>'"'+value.replaceAll('"','""')+'"';
 const literal=value=>"'"+value.replaceAll("'","''")+"'";
@@ -56,12 +57,14 @@ export function preservationQuery(catalog,coverageBefore) {
   const coverage=worldPolicyInitializationQuery(coverageBefore);
   const routePolicy=jointRoutePolicyReleaseQuery(catalog);
   const routeSettings=jointRouteSettingsInitializationQuery(catalog);
+  const p12Policy=p12RoutePolicyQuery(catalog);
   if(!fingerprints.startsWith(session)||!coverage.startsWith(session))throw new Error('PRESERVATION_QUERY_SESSION_REQUIRED');
-  return session+`with coverage as (${coverage.slice(session.length)}),route_policy as (${routePolicy}),route_settings as (${routeSettings}) select jsonb_build_object(
+  return session+`with coverage as (${coverage.slice(session.length)}),route_policy as (${routePolicy}),route_settings as (${routeSettings}),p12_policy as (${p12Policy}) select jsonb_build_object(
     'rows',(select jsonb_agg(fingerprint) from (${fingerprints.slice(session.length)}) fingerprints),
     'worldPolicyInitialization',(select coverage_initialization from coverage),
     'jointRoutePolicyRelease',(select joint_route_policy_release from route_policy),
-    'jointRouteSettingsInitialization',(select joint_route_settings_initialization from route_settings)) as preservation`;
+    'jointRouteSettingsInitialization',(select joint_route_settings_initialization from route_settings),
+    'p12RoutePolicy',(select p12_route_policy from p12_policy)) as preservation`;
 }
 // Management's read_only role cannot execute the existing private location
 // helper. Use the deployment owner for this fixed inspection only, while
@@ -205,7 +208,7 @@ async function main() {
     const knownVersions=new Set([...repositoryMigrations,...installedStagingHistory()].map(name=>name.split('_')[0]));
     if(appliedMigrations.some(version=>!knownVersions.has(version))||repositoryMigrations.filter(name=>!reviewedSet.has(name)).some(name=>!appliedMigrations.includes(name.split('_')[0])))throw new Error('LIVE_MIGRATION_HISTORY_DRIFT');
     const preservationBefore=JSON.parse(await sourceQuery(preservationQuery(catalog),snapshot));
-    const before=preservationBefore.rows,coverageBefore=preservationBefore.worldPolicyInitialization,routePolicyBefore=preservationBefore.jointRoutePolicyRelease,routeSettingsBefore=preservationBefore.jointRouteSettingsInitialization;
+    const before=preservationBefore.rows,coverageBefore=preservationBefore.worldPolicyInitialization,routePolicyBefore=preservationBefore.jointRoutePolicyRelease,routeSettingsBefore=preservationBefore.jointRouteSettingsInitialization,p12PolicyBefore=preservationBefore.p12RoutePolicy;
     const roles=JSON.parse(await sourceQuery("select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper,'eventTriggerOwner',exists(select 1 from pg_event_trigger where evtowner=pg_roles.oid))) from pg_roles where rolname not like 'pg_%'",snapshot));
     const memberships=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(jsonb_build_object('role',r.rolname,'member',m.rolname,'adminOption',a.admin_option,'inheritOption',a.inherit_option,'setOption',a.set_option)),'[]') from pg_auth_members a join pg_roles r on r.oid=a.roleid join pg_roles m on m.oid=a.member",snapshot));
     const objects=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]') from storage.objects o",snapshot));
@@ -267,12 +270,16 @@ async function main() {
     const migrated=migratedPreservation.rows,coverageAfter=migratedPreservation.worldPolicyInitialization;
     const coverageReconciliation=reconcileWorldPolicyInitialization(coverageBefore,coverageAfter,reviewedMigrations.map(file=>file.split('_')[0]));
     const jointRoutePolicyReconciliation=reconcileJointRoutePolicyRelease(routePolicyBefore,migratedPreservation.jointRoutePolicyRelease,reviewedMigrations.map(file=>file.split('_')[0]));
-    const jointRouteSettingsReconciliation=reconcileJointRouteSettingsInitialization(routeSettingsBefore,migratedPreservation.jointRouteSettingsInitialization,reviewedMigrations.map(file=>file.split('_')[0]));
-    const reconciledTables=new Set([...coverageReconciliation.reconciledTables,...jointRoutePolicyReconciliation.reconciledTables,...jointRouteSettingsReconciliation.reconciledTables]);
-    const migrationDifferences=[...new Set([...compareFingerprints(before,migrated).filter(table=>!reconciledTables.has(table)),...coverageReconciliation.failures,...jointRoutePolicyReconciliation.failures,...jointRouteSettingsReconciliation.failures])];
+    const expectedVersions=reviewedMigrations.map(file=>file.split('_')[0]);
+    const p12RoutePolicyReconciliation=reconcileP12RoutePolicy(p12PolicyBefore,migratedPreservation.p12RoutePolicy,expectedVersions);
+    const settingsBeforeP12Policy=jointRouteSettingsBeforeP12Policy(p12PolicyBefore,migratedPreservation.p12RoutePolicy,expectedVersions,migratedPreservation.jointRouteSettingsInitialization);
+    const jointRouteSettingsReconciliation=reconcileJointRouteSettingsInitialization(routeSettingsBefore,settingsBeforeP12Policy,expectedVersions);
+    const reconciledTables=new Set([...coverageReconciliation.reconciledTables,...jointRoutePolicyReconciliation.reconciledTables,...jointRouteSettingsReconciliation.reconciledTables,...p12RoutePolicyReconciliation.reconciledTables]);
+    const migrationDifferences=[...new Set([...compareFingerprints(before,migrated).filter(table=>!reconciledTables.has(table)),...coverageReconciliation.failures,...jointRoutePolicyReconciliation.failures,...jointRouteSettingsReconciliation.failures,...p12RoutePolicyReconciliation.failures])];
     await save('world-policy-initialization.aes',{before:coverageBefore,after:coverageAfter,reconciliation:coverageReconciliation});
     await save('joint-route-policy-release.aes',{before:routePolicyBefore,after:migratedPreservation.jointRoutePolicyRelease,reconciliation:jointRoutePolicyReconciliation});
     await save('joint-route-settings-initialization.aes',{before:routeSettingsBefore,after:migratedPreservation.jointRouteSettingsInitialization,reconciliation:jointRouteSettingsReconciliation});
+    await save('p12-route-policy.aes',{before:p12PolicyBefore,after:migratedPreservation.p12RoutePolicy,reconciliation:p12RoutePolicyReconciliation});
     if(migrationDifferences.length)throw new Error('MIGRATION_DATA_MISMATCH: '+migrationDifferences.join(', '));
     // Preview historical exceptions only on the restored copy. Installing the
     // migrations and producing this report never starts an automatic backfill.
@@ -284,7 +291,7 @@ async function main() {
     const legacyPrint=JSON.parse(await localQuery("select jsonb_build_object('activeCredentials',count(*),'hashOnly',count(*) filter(where not exists(select 1 from app_private.portal_print_material m where m.credential_id=c.id))) from app_private.portal_credentials c where c.revoked_at is null and c.valid_from<=now() and (c.valid_until is null or c.valid_until>now())"));
     const files=[];
     for(const name of (await readdir(directory)).filter(name=>name.endsWith('.aes')).sort())files.push({name,...await fileDigest(join(directory,name))});
-    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,vaultVerified:true,vaultSecrets:vaultBefore.length,tables:catalog.length,objects:objects.length,migrations,coverageReconciliation,jointRoutePolicyReconciliation,jointRouteSettingsReconciliation,backfill,legacyPrint,files,
+    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,vaultVerified:true,vaultSecrets:vaultBefore.length,tables:catalog.length,objects:objects.length,migrations,coverageReconciliation,jointRoutePolicyReconciliation,jointRouteSettingsReconciliation,p12RoutePolicyReconciliation,backfill,legacyPrint,files,
       limits:['Provider runtime secrets remain in the existing secret store.','No live database configuration, migration, credential, or row was changed by this job.','Isolated SQL restore is not an Auth/mail/browser acceptance result.']};
     proof.signature=createHmac('sha256',key).update(JSON.stringify(proof)).digest('hex');
     await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});

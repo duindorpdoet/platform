@@ -76,6 +76,7 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261030131348_joint_route_policy_v3.sql',
   // Function-only objective salt; isolated full-row/ACL restore proof retained.
   '20261030153823_all_active_route_objective_hash.sql',
+  '20261030182243_p12_hard_close_and_75_minute_routes.sql',
 
 ]);
 

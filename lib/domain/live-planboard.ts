@@ -39,10 +39,13 @@ export function visitGeometry(visit:BoardVisit,rangeStart:number,pxPerMinute:num
  return {left:(Date.parse(visit.startsAt)-rangeStart)/60000*pxPerMinute,serviceWidth:(visitServiceEnd(visit)-Date.parse(visit.startsAt))/60000*pxPerMinute,bufferWidth:visit.kind==="start"?0:visit.bufferSeconds/60*pxPerMinute};
 }
 export function portalWindowPhysicalEnd(portal:BoardPortal,window:BoardPortal["windows"][number]) {
- return window.physicalClosesAt?Date.parse(window.physicalClosesAt):Date.parse(window.closesAt)+(portal.finale||portal.ordinaryHardClose?0:(portal.ordinaryEndGraceSeconds??0)*1000);
+ const closing=Date.parse(window.closesAt),hardClose=portal.finale||portal.ordinaryHardClose;
+ const physicalEnd=window.physicalClosesAt?Date.parse(window.physicalClosesAt):closing+(hardClose?0:(portal.ordinaryEndGraceSeconds??0)*1000);
+ return hardClose?Math.min(closing,physicalEnd):physicalEnd;
 }
 export function portalWindowReceives(portal:BoardPortal,window:BoardPortal["windows"][number],start:number) {
- const end=Date.parse(window.arrivalClosesAt??window.closesAt);
+ const receivingEnd=Date.parse(window.arrivalClosesAt??window.closesAt);
+ const end=portal.finale||portal.ordinaryHardClose?Math.min(receivingEnd,portalWindowPhysicalEnd(portal,window)):receivingEnd;
  return start>=Date.parse(window.opensAt)&&(portal.finale?start<=end:start<end);
 }
 export function localBoardWarnings(visits:BoardVisit[],portals:BoardPortal[],groups:BoardGroup[]=[]):BoardWarning[] {

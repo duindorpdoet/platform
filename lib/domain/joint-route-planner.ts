@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { optimizeJointFinaleMinimax, type JointFinaleMinimaxResult } from "./joint-route-finale-minimax.ts";
+import { jointTime as at, jointIso as iso, jointCompletionBounds as completionBounds } from "./joint-route-time.ts";
 
 /** An explicit proposal shares one physical calendar. It never applies or publishes itself. */
 export type JointRouteWindow = {
@@ -68,6 +70,7 @@ export type JointRouteProposal = {
   groups: JointRouteGroupPlan[]; conflicts: JointRouteDiagnostic[];
   metrics: { before: JointRouteMetrics; after: JointRouteMetrics };
   work: { candidateEvaluations: number; variants: number; pairReplans: number; routeRepairs: number; jointFinaleReplans: number; exhausted: boolean };
+  finaleScheduling?: { accepted: boolean; optimalForFixedOrdinaryVisits: boolean; reason: string; work: JointFinaleMinimaxResult["work"] };
   walkingPolicy: { maxOrdinaryLegSeconds: number; maxTotalSeconds: number; finaleLegLimitSeconds: null };
   completionPolicy: { maxEarlyFinishSeconds: number | null; maxOverrunSeconds: number };
   optimization: { mode: JointRouteOptimizationMode; organizerCoveragePortalIds: string[] };
@@ -81,29 +84,7 @@ export const JOINT_ROUTE_SEARCH_LIMITS = {
   jointFinaleReplans: 96, jointFinaleReplansPerPortfolio: 48,
   historicalCandidateEvaluations: 100_000, candidateEvaluations: 200_000,
 } as const;
-// PostgreSQL keeps microseconds; Date.parse alone discards the final three
-// digits and can move a fixed appointment or put an arrival before opening.
-const at = (value: string) => {
-  const fraction = /\.(\d+)(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.exec(value)?.[1] ?? "";
-  const micros = Date.parse(value) * 1000 + Number(fraction.slice(3, 6).padEnd(3, "0"));
-  return Number.isSafeInteger(micros) ? micros / 1_000_000 : NaN;
-};
-const iso = (value: number) => {
-  const micros = Math.round(value * 1_000_000), millis = Math.floor(micros / 1000);
-  const remainder = micros - millis * 1000, formatted = new Date(millis).toISOString();
-  return remainder ? `${formatted.slice(0, -1)}${String(remainder).padStart(3, "0")}Z` : formatted;
-};
 const compareId = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
-function completionBounds(input: JointRouteInput, group: JointRouteGroup) {
-  // Old inputs have no early-finish policy. A v3 input must declare it below;
-  // absent desired end times never acquire an invented lower boundary.
-  const earliest = group.desiredEndAt && input.maxEarlyFinishSeconds != null
-    ? Math.max(at(group.desiredEndAt) - input.maxEarlyFinishSeconds,
-      group.earliestCompletionAt ? at(group.earliestCompletionAt) : -Infinity) : -Infinity;
-  const latest = Math.min(group.desiredEndAt ? at(group.desiredEndAt) + input.maxGroupOverrunSeconds : Infinity,
-    group.latestCompletionAt ? at(group.latestCompletionAt) : Infinity);
-  return { earliest, latest };
-}
 function invalidPolicy(input: JointRouteInput) {
   return input.policyVersion === "joint-reception-v3" && (!Number.isInteger(input.maxEarlyFinishSeconds)
     || input.maxEarlyFinishSeconds! < 0 || !Number.isInteger(input.routePolicySettingsVersion) || input.routePolicySettingsVersion! < 1
@@ -269,7 +250,13 @@ export function measureJointRoutes(input: JointRouteInput, plans: JointRouteGrou
         .map(plan => plan.groupId).sort(compareId);
       return { portalId, groups: coveredGroupIds.length, totalGroups: input.groups.length,
         eligibleGroups: portal ? input.groups.filter(group => !group.excludedPortalIds.some(id => physicalId(id) === target)
-          && (!(group.requiresStepFree || group.accessibilityNeedsReview) || portal.accessibilityStatus === "step_free")).length : 0,
+          && (!(group.requiresStepFree || group.accessibilityNeedsReview) || portal.accessibilityStatus === "step_free")
+          // Optimistic zero-travel bound: a group starting after the last full
+          // reception cannot be covered, even by an otherwise perfect route.
+          && portal.windows.some(window => group.childCount <= window.maxChildren
+            && Math.max(at(group.startsAt), at(window.opensAt)) <= Math.min(at(window.closesAt) - window.visitSeconds - window.bufferSeconds,
+              at(group.ordinaryStopAt) - window.visitSeconds)
+            && Math.max(at(group.startsAt), at(window.opensAt)) < at(window.arrivalClosesAt))).length : 0,
         coveredGroupIds, missingGroupIds: input.groups.filter(group => !coveredGroupIds.includes(group.id)).map(group => group.id).sort(compareId) };
     }),
     absoluteEndDeviationSeconds: byGroup.reduce((sum, group) => sum + Math.abs(group.endDeviationSeconds ?? 0), 0),
@@ -288,14 +275,16 @@ export function jointRouteProposalDigestText(sourceHash: string, boardHash: stri
 
 function jointRouteScore(input: JointRouteInput, plans: JointRouteGroupPlan[], mode: JointRouteOptimizationMode) {
   const metrics = measureJointRoutes(input, plans);
-  const houseCounts = mode === "portal-spread" ? metrics.byPortal.map(portal => portal.visits).sort((a, b) => a - b) : [];
-  const organizerCoverage = mode !== "general" ? metrics.organizerCoverage.map(target => target.groups) : [];
+  const goalPhysicalIds = new Set((input.organizerCoveragePortalIds ?? []).map(id => input.portals.find(portal => portal.id === id)?.physicalId ?? id));
+  const houseCounts = mode === "portal-spread" ? metrics.byPortal.filter(portal => !goalPhysicalIds.has(input.portals.find(item => item.id === portal.portalId)?.physicalId ?? portal.portalId)).map(portal => portal.visits).sort((a, b) => a - b) : [];
+  // Equal organization goals are ranked by attainable coverage, independent of
+  // configuration order. An impossible late start never creates a false deficit.
+  const organizerCoverage = mode !== "general" ? metrics.organizerCoverage.map(target => target.eligibleGroups ? Math.min(1, target.groups / target.eligibleGroups) : 1).sort((a, b) => a - b) : [];
   return [-validateJointRoutes(input, plans).length, -metrics.zeroVisitGroups, -metrics.unvisitedPortals.length,
+    ...organizerCoverage,
     ...(mode === "portal-spread" ? [houseCounts[0] ?? 0] : []),
-    ...organizerCoverage, metrics.totalOrdinaryVisits,
-    ...metrics.byGroup.map(group => group.ordinaryVisits).sort((a, b) => a - b),
-    ...houseCounts,
-    -metrics.receptionWaitingSeconds, -metrics.unallocatedBeforeFinaleSeconds, -metrics.walkingSeconds,
+    metrics.totalOrdinaryVisits, ...houseCounts,
+    -metrics.longestWaitSeconds, -metrics.receptionWaitingSeconds, -metrics.unallocatedBeforeFinaleSeconds, -metrics.walkingSeconds,
     -metrics.byPortal.reduce((sum, portal) => sum + portal.visitsPerOpenHour ** 2, 0), -metrics.absoluteEndDeviationSeconds];
 }
 function compareJointRouteScores(input: JointRouteInput, left: JointRouteGroupPlan[], right: JointRouteGroupPlan[], a: number[], b: number[]) {
@@ -399,9 +388,9 @@ export function validateJointRoutes(input: JointRouteInput, plans: JointRouteGro
  * Deterministic shared-calendar constructions, pair removal/reinsertion and
  * bounded route insertion/reordering. Labels/preferences never enter the search.
  * Usable groups and active physical coverage precede total real unique visits;
- * equal counts are only a tie-break, never a cap on another group's route.
+ * house spread concerns physical recipients, never equal group route lengths.
  */
-export function proposeJointRoutes(input: JointRouteInput, options: { mode?: JointRouteOptimizationMode } = {}): JointRouteProposal {
+export function proposeJointRoutes(input: JointRouteInput, options: { mode?: JointRouteOptimizationMode; constructionWalkingLimitSeconds?: number; seedPlans?: JointRouteGroupPlan[][]; onFinaleSchedulingInput?: (plans: JointRouteGroupPlan[]) => void } = {}): JointRouteProposal {
   if (input.groups.length > 60 || input.portals.length > 120 || input.legs.length > 32_400
     || !input.sourceHash || !input.boardHash || new Set(input.groups.map(group => group.id)).size !== input.groups.length
     || input.groups.some(group => !Number.isFinite(at(group.startsAt)) || !Number.isFinite(at(group.ordinaryStopAt)))
@@ -412,7 +401,11 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
   const portalById = new Map(portals.map(portal => [portal.id, portal]));
   const physicalId = (id: string) => portalById.get(id)?.physicalId ?? id;
   const mode = options.mode ?? "general";
-  const targetIds = [...new Set((input.organizerCoveragePortalIds ?? []).map(physicalId))];
+  const targetIds = [...new Set((input.organizerCoveragePortalIds ?? []).map(physicalId))].sort((a, b) => {
+    const deadline = (id: string) => Math.min(Infinity, ...portals.filter(portal => physicalId(portal.id) === id).flatMap(portal => portal.windows.map(window => at(window.closesAt) - window.visitSeconds - window.bufferSeconds)));
+    return deadline(a) - deadline(b) || compareId(a, b);
+  });
+  const searchWalkingLimit = Math.min(input.maxTotalWalkingSeconds, Math.max(0, options.constructionWalkingLimitSeconds ?? input.maxTotalWalkingSeconds));
   const historicalIds = new Set(input.before.flatMap(plan => plan.visits.filter(visit => visit.kind === "ordinary").map(visit => physicalId(visit.portalId))));
   const historicalCandidates = new Set([...historicalIds, ...targetIds, ...groups.flatMap(group => group.fixedFirstPortalId ? [physicalId(group.fixedFirstPortalId)] : [])]);
   // A newly active house can change every greedy route. Keep an independent
@@ -438,7 +431,11 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
     return new Map([...recipients].map(([id, groupIds]) => [id, groupIds.size]));
   }
   const portalOpenHours = new Map(measureJointRoutes(input, []).byPortal.map(portal => [physicalId(portal.portalId), portal.usableOpenSeconds / 3600]));
-  const coverageVector = (visits: JointRouteVisit[]) => targetIds.map(id => Number(visits.some(visit => visit.kind === "ordinary" && physicalId(visit.portalId) === id)));
+  const eligibleTargets = new Map(measureJointRoutes(input, []).organizerCoverage.map(target => [physicalId(target.portalId), target.eligibleGroups]));
+  const coverageVector = (visits: JointRouteVisit[], otherCounts: Map<string, number>) => targetIds.map(id => {
+    const possible = eligibleTargets.get(id) ?? 0;
+    return possible ? Math.min(1, ((otherCounts.get(id) ?? 0) + Number(visits.some(visit => visit.kind === "ordinary" && physicalId(visit.portalId) === id))) / possible) : 1;
+  }).sort((a, b) => a - b);
   const legs = new Map(input.legs.map(leg => [`${leg.from}|${leg.to}`, leg]));
   const work = { candidateEvaluations: 0, variants: 0, pairReplans: 0, routeRepairs: 0, jointFinaleReplans: 0, exhausted: false };
   let evaluationLimit: number = JOINT_ROUTE_SEARCH_LIMITS.candidateEvaluations;
@@ -497,7 +494,7 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
       if (!anchor || portal.finale || constructionIds && !constructionIds.has(physicalId(portal.id)) || physicalId(portal.id) === physicalId(group.finale.portalId) || state.chosen.has(physicalId(portal.id))
         || (group.requiresStepFree || group.accessibilityNeedsReview) && portal.accessibilityStatus !== "step_free" || !budget()) return null;
       const walk = legs.get(`${state.node}|${portal.nodeId}`), exit = legs.get(`${portal.nodeId}|portal:${group.finale.portalId}`);
-      if (!walk || !exit || walk.seconds > input.maxLegWalkingSeconds || state.walking + walk.seconds + exit.seconds > input.maxTotalWalkingSeconds) return null;
+      if (!walk || !exit || walk.seconds > input.maxLegWalkingSeconds || state.walking + walk.seconds + exit.seconds > searchWalkingLimit) return null;
       const reachable = state.cursor + walk.seconds, limit = Math.min(at(group.ordinaryStopAt), at(anchor.startsAt) - exit.seconds);
       const feasible = earliest(calendar, portal, group, reachable, limit);
       if (!feasible || feasible.start + feasible.window.visitSeconds > limit) return null;
@@ -514,7 +511,7 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
         // These are named physical organization goals, never world or family
         // preferences. Their possible visit tradeoff is exposed as a variant.
         const rank = constructionTargets.indexOf(physicalId(portal.id));
-        if (rank >= 0) cost -= (constructionTargets.length - rank) * 1_000_000;
+        if (rank >= 0) cost -= 1_000_000 + (constructionTargets.length - rank) * 1000;
         else {
           const nextId = constructionTargets.find(id => !state.chosen.has(id));
           const nextTarget = nextId && portals.find(portal => physicalId(portal.id) === nextId);
@@ -552,7 +549,7 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
     }
     return states.map(state => {
       const finale = anchors.get(state.group.id), exit = finale && legs.get(`${state.node}|portal:${finale.portalId}`), visits = [...state.visits];
-      if (finale && exit && state.cursor + exit.seconds <= at(finale.startsAt) && state.walking + exit.seconds <= input.maxTotalWalkingSeconds)
+      if (finale && exit && state.cursor + exit.seconds <= at(finale.startsAt) && state.walking + exit.seconds <= searchWalkingLimit)
         visits.push({ ...finale, sequence: visits.length + 1, walkSeconds: exit.seconds, walkMeters: exit.meters });
       return makePlan(state.group, visits);
     });
@@ -605,6 +602,14 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
     evaluationLimit = Math.min(searchEvaluationLimit, initialEvaluations + constructionLimit);
     let best: JointRouteGroupPlan[] = [];
     let mostVisits: JointRouteGroupPlan[] = [];
+    // Revalidate warm candidates against the full current source. Search-only
+    // walking directions do not alter the authoritative 75-minute policy.
+    for (const seed of options.seedPlans ?? []) if (!validateJointRoutes(input, seed).length) {
+      const plans = seed.map(plan => ({ ...makePlan(groups.find(group => group.id === plan.groupId)!, structuredClone(plan.visits)),
+        diagnostics: plan.diagnostics.filter(diagnostic => ["FIRST_PORTAL_ALTERNATIVE", "FIXED_FIRST_PORTAL_REPLACED"].includes(diagnostic.code)).map(diagnostic => ({ ...diagnostic })) }));
+      if (!best.length || better(plans, best)) best = plans;
+      if (!mostVisits.length || better(plans, mostVisits, "general")) mostVisits = plans;
+    }
     let constructionTruncated = false;
     for (let variant = 0; variant < JOINT_ROUTE_SEARCH_LIMITS.variantsPerStrategy; variant++) {
       for (const strategy of strategies) {
@@ -645,7 +650,7 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
         const portal = portalById.get(id)!, walk = legs.get(`${node}|${portal.nodeId}`);
         if (portal.finale || seen.has(physicalId(id)) || !walk || walk.seconds > input.maxLegWalkingSeconds
           || (group.requiresStepFree || group.accessibilityNeedsReview) && portal.accessibilityStatus !== "step_free") return null;
-        walking += walk.seconds; if (walking > input.maxTotalWalkingSeconds) return null;
+        walking += walk.seconds; if (walking > searchWalkingLimit) return null;
         const received = earliest(calendar, portal, group, cursor + walk.seconds, at(group.ordinaryStopAt));
         if (!received || received.start + received.window.visitSeconds > at(group.ordinaryStopAt)) return null;
         const visit: JointRouteVisit = { portalId: id, kind: "ordinary", sequence: visits.length + 1, startsAt: iso(received.start),
@@ -654,7 +659,7 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
         visits.push(visit); seen.add(physicalId(id)); node = portal.nodeId; cursor = received.start + visit.visitSeconds;
       }
       const portal = portalById.get(group.finale.portalId), exit = portal && legs.get(`${node}|${portal.nodeId}`);
-      if (!portal?.finale || !exit || walking + exit.seconds > input.maxTotalWalkingSeconds) return null;
+      if (!portal?.finale || !exit || walking + exit.seconds > searchWalkingLimit) return null;
       const received = finalReception(calendar, portal, group, cursor + exit.seconds);
       if (!received || received.start > finalLimit(group, received.window)) return null;
       visits.push({ ...finalVisit(group, received.start, received.window), sequence: visits.length + 1, walkSeconds: exit.seconds, walkMeters: exit.meters });
@@ -720,7 +725,7 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
             const order = () => plan.visits.filter(visit => visit.kind === "ordinary").map(visit => visit.portalId);
             const fixed = () => group.fixedFirstPortalId && physicalId(order()[0] ?? "") === physicalId(group.fixedFirstPortalId) ? 1 : 0;
             const attempt = (ids: string[], allowJointFinales = false, forCoverage = false) => {
-              if (repairs >= seedLimit || groupRepairs >= JOINT_ROUTE_SEARCH_LIMITS.repairsPerGroupPass
+              if (repairs >= seedLimit || groupRepairs >= JOINT_ROUTE_SEARCH_LIMITS.repairsPerGroupPass * (spread ? 2 : 1)
                 || forCoverage && coverageRepairs >= JOINT_ROUTE_SEARCH_LIMITS.coverageRepairsPerPortfolio || work.exhausted) return;
               repairs++; groupRepairs++;
               if (forCoverage) coverageRepairs++;
@@ -741,15 +746,16 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
                 const ordinary = item.visits.filter(visit => visit.kind === "ordinary"), last = ordinary.at(-1);
                 const exit = item.visits.at(-1)?.walkSeconds ?? 0;
                 const visited = new Set(ordinary.map(visit => physicalId(visit.portalId)));
-                const houseCounts = mode === "portal-spread" ? [...ordinaryPhysicalIds]
+                const houseCounts = mode === "portal-spread" ? [...ordinaryPhysicalIds].filter(id => !targetIds.includes(id))
                   .map(id => (otherCounts.get(id) ?? 0) + Number(visited.has(id))).sort((a, b) => a - b) : [];
                 const load = [...ordinaryPhysicalIds].reduce((sum, id) => {
                   const hours = portalOpenHours.get(id) ?? 0, count = (otherCounts.get(id) ?? 0) + Number(visited.has(id));
                   return sum + (hours ? (count / hours) ** 2 : 0);
                 }, 0);
                 return [new Set([...otherCoverage, ...ordinary.map(visit => physicalId(visit.portalId))]).size,
-                  ...(mode === "portal-spread" ? [houseCounts[0] ?? 0] : []),
-                  ...(mode !== "general" ? coverageVector(item.visits) : []), ordinary.length, ...houseCounts,
+                  ...(mode !== "general" ? coverageVector(item.visits, otherCounts) : []),
+                  ...(mode === "portal-spread" ? [houseCounts[0] ?? 0] : []), ordinary.length, ...houseCounts,
+                  -Math.max(...ordinary.map(visit => visit.waitSeconds ?? 0), at(item.finaleArrivalAt!) - (last ? at(last.startsAt) + last.visitSeconds : at(group.startsAt)) - exit, 0),
                   -ordinary.reduce((sum, visit) => sum + (visit.waitSeconds ?? 0), 0),
                   -(at(item.finaleArrivalAt!) - (last ? at(last.startsAt) + last.visitSeconds : at(group.startsAt)) - exit),
                   -item.visits.reduce((sum, visit) => sum + visit.walkSeconds, 0),
@@ -797,17 +803,31 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
             for (const portal of ordinaryCandidates) {
               if (portal.finale || order().some(id => physicalId(id) === physicalId(portal.id))) continue;
               if (Number.isFinite(targetRank(portal.id))) continue;
-              for (let index = fixed(); index <= order().length && !order().some(id => physicalId(id) === physicalId(portal.id)); index++) {
+              const missing = () => !order().some(id => physicalId(id) === physicalId(portal.id));
+              // Try direct balancing before consuming the allowance on insertions.
+              // Organization goals and protected first houses cannot be displaced.
+              const removable = () => order().map((id, index) => ({ id, index }))
+                .filter(item => item.index >= fixed() && !targetIds.includes(physicalId(item.id))
+                  && (otherCounts.get(physicalId(item.id)) ?? 0) > (otherCounts.get(physicalId(portal.id)) ?? 0))
+                .sort((a, b) => (otherCounts.get(physicalId(b.id)) ?? 0) - (otherCounts.get(physicalId(a.id)) ?? 0) || a.index - b.index);
+              if (spread) for (const item of removable()) {
+                if (!missing()) break;
+                const ids = order(); ids[item.index] = portal.id; attempt(ids, true);
+              }
+              for (let index = fixed(); index <= order().length && missing(); index++) {
                 const ids = order(); ids.splice(index, 0, portal.id); attempt(ids);
               }
-              // Keep examining an underused house after its first real visit.
-              // Same-count substitutions retain physical coverage and are
-              // accepted only by the shared targets/waste/walking/load order.
-              for (let index = fixed(); spread && index < order().length && !order().some(id => physicalId(id) === physicalId(portal.id)); index++) {
-                const ids = order(), displaced = physicalId(ids[index]);
-                if ((otherCounts.get(displaced) ?? 0) + 1 <= (otherCounts.get(physicalId(portal.id)) ?? 0) + 1
-                  || !otherCoverage.has(displaced)) continue;
-                ids[index] = portal.id; attempt(ids, true);
+              // A crowded route may need two overrepresented houses exchanged
+              // for one underserved house. This explicit visit tradeoff is only
+              // accepted by the same full goal/spread/count score.
+              if (spread && mode === "portal-spread" && missing()) {
+                const removed = removable();
+                for (let first = 0; first < removed.length && missing(); first++) {
+                  for (let second = first + 1; second < removed.length && missing(); second++) {
+                    const ids = order().filter((_, index) => index !== removed[first].index && index !== removed[second].index);
+                    ids.splice(Math.min(removed[first].index, removed[second].index), 0, portal.id); attempt(ids, true);
+                  }
+                }
               }
             }
             const ids = order();
@@ -843,7 +863,20 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
   }
   work.exhausted ||= searchTruncated;
   best = compactFinales(best).sort((a, b) => compareId(a.groupId, b.groupId));
+  // Preserve a construction before its finale slots are compacted globally.
+  // Later route searches may need that calendar slack to insert another house.
+  options.onFinaleSchedulingInput?.(structuredClone(best));
+  const finaleSchedule = optimizeJointFinaleMinimax(input, best);
+  let finaleScheduleAccepted = false;
+  if (finaleSchedule.changed) {
+    const arrivals = new Map(finaleSchedule.arrivals.map(arrival => [arrival.groupId, arrival.startsAt]));
+    const candidate = best.map(plan => ({ ...makePlan(groups.find(group => group.id === plan.groupId)!, plan.visits.map(visit =>
+      visit.kind === "finale" ? { ...visit, startsAt: arrivals.get(plan.groupId) ?? visit.startsAt } : visit)), diagnostics: [...plan.diagnostics] }));
+    if (!validateJointRoutes(input, candidate).length && better(candidate, best)) { best = candidate; finaleScheduleAccepted = true; }
+  }
+  work.exhausted ||= finaleSchedule.work.exhausted;
   for (const plan of best) {
+    plan.diagnostics = [];
     const group = groups.find(group => group.id === plan.groupId)!, ordinary = plan.visits.filter(visit => visit.kind === "ordinary");
     const warning = (code: string, message: string, portalId?: string) => plan.diagnostics.push({ code, severity: "warning", groupId: group.id, portalId, message });
     const finalPortal = portalById.get(group.finale.portalId);
@@ -930,6 +963,7 @@ export function proposeJointRoutes(input: JointRouteInput, options: { mode?: Joi
   return { sourceHash: input.sourceHash, boardHash: input.boardHash, policyVersion: input.policyVersion,
     proposalHash: createHash("sha256").update(jointRouteProposalDigestText(input.sourceHash, input.boardHash, best)).digest("hex"),
     valid: !conflicts.some(conflict => conflict.severity === "block"), groups: best, conflicts, metrics: { before, after }, work,
+    finaleScheduling: { accepted: finaleScheduleAccepted, optimalForFixedOrdinaryVisits: finaleSchedule.optimal && (finaleScheduleAccepted || !finaleSchedule.changed), reason: finaleSchedule.reason, work: finaleSchedule.work },
     walkingPolicy: { maxOrdinaryLegSeconds: input.maxLegWalkingSeconds, maxTotalSeconds: input.maxTotalWalkingSeconds, finaleLegLimitSeconds: null },
     completionPolicy: { maxEarlyFinishSeconds: input.maxEarlyFinishSeconds ?? null, maxOverrunSeconds: input.maxGroupOverrunSeconds },
     optimization: { mode, organizerCoveragePortalIds: [...(input.organizerCoveragePortalIds ?? [])] } };

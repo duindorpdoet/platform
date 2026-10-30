@@ -1,5 +1,5 @@
 import {describe,it,expect} from "vitest";
-import {snappedStart,shiftedVisits,visitLanes,keepVisibleDuringDrag,localBoardWarnings,warningForGroup,planboardErrorText,visitGeometry,type BoardVisit,type BoardPortal} from "./live-planboard";
+import {snappedStart,shiftedVisits,visitLanes,keepVisibleDuringDrag,localBoardWarnings,warningForGroup,planboardErrorText,visitGeometry,portalWindowPhysicalEnd,portalWindowReceives,type BoardVisit,type BoardPortal} from "./live-planboard";
 const visit=(id:string,groupId="a",minute=0):BoardVisit=>({id,groupId,portalId:"p",sequence:Number(id)||1,kind:"ordinary",source:"expected",version:1,startsAt:new Date(Date.UTC(2026,9,31,17,minute)).toISOString(),plannedStartsAt:"",endsAt:new Date(Date.UTC(2026,9,31,17,minute+5)).toISOString(),durationSeconds:300,bufferSeconds:120,status:"planned",editable:true,confirmed:false,actualArrivalAt:null,actualDepartureAt:null});
 describe("live planboard interactions",()=>{
  it("translates transport timeout and abort variants without hiding a stale revision",()=>{
@@ -45,6 +45,32 @@ describe("live planboard interactions",()=>{
   expect(localBoardWarnings([last],[portal])).toHaveLength(0);
   for(const blocked of [{...portal,ordinaryHardClose:true},{...portal,finale:true}])expect(localBoardWarnings([last],[blocked]).some(w=>w.code==="OPENING_WINDOW")).toBe(true);
   expect(localBoardWarnings([visit("1","a",5)],[portal]).some(w=>w.code==="OPENING_WINDOW")).toBe(true);
+ });
+ it("ends a hard reception including its buffer by 19:00 in Amsterdam even when older explicit ends allow later",()=>{
+  const closes="2026-10-31T18:00:00Z"; // 19:00 Europe/Amsterdam
+  const portal:BoardPortal={id:"p",code:"P-test",name:"Hard reception",world:"Anders",worldSlug:"anders",operationStatus:"open",finale:false,
+   ordinaryHardClose:true,ordinaryEndGraceSeconds:300,windows:[{opensAt:"2026-10-31T16:00:00Z",closesAt:closes,
+    arrivalClosesAt:"2026-10-31T18:10:00Z",physicalClosesAt:"2026-10-31T18:15:00Z",maxGroups:2,maxChildren:20,durationSeconds:300,bufferSeconds:120}]};
+  const exact={...visit("1"),startsAt:"2026-10-31T17:53:00Z",endsAt:"2026-10-31T17:58:00Z"};
+  expect(portalWindowPhysicalEnd(portal,portal.windows[0])).toBe(Date.parse(closes));
+  expect(portalWindowReceives(portal,portal.windows[0],Date.parse(closes))).toBe(false);
+  expect(localBoardWarnings([exact],[portal])).toEqual([]);
+  for(const late of [{...exact,startsAt:"2026-10-31T17:53:00.001Z"},{...exact,bufferSeconds:121}])
+   expect(localBoardWarnings([late],[portal])).toEqual([expect.objectContaining({code:"OPENING_WINDOW",severity:"block"})]);
+  const earlier={...portal.windows[0],physicalClosesAt:"2026-10-31T17:59:00Z"};
+  expect(portalWindowPhysicalEnd(portal,earlier)).toBe(Date.parse(earlier.physicalClosesAt));
+ });
+ it("keeps other explicit grace and protected actual visits intact when a house closes hard",()=>{
+  const portal:BoardPortal={id:"p",code:"P-other",name:"Reception",world:"Anders",worldSlug:"anders",operationStatus:"open",finale:false,
+   ordinaryHardClose:false,ordinaryEndGraceSeconds:300,windows:[{opensAt:"2026-10-31T16:00:00Z",closesAt:"2026-10-31T18:00:00Z",
+    physicalClosesAt:"2026-10-31T18:05:00Z",maxGroups:2,maxChildren:20,durationSeconds:300,bufferSeconds:120}]};
+  const last={...visit("1"),startsAt:"2026-10-31T17:58:00Z",endsAt:"2026-10-31T18:03:00Z"};
+  expect(localBoardWarnings([last],[portal])).toEqual([]);
+  const actual={...last,source:"actual" as const,status:"completed" as const,editable:false,actualDepartureAt:last.endsAt};
+  const history=structuredClone(actual),hard={...portal,ordinaryHardClose:true};
+  expect(localBoardWarnings([actual],[hard])).toEqual([expect.objectContaining({code:"OPENING_WINDOW",severity:"warning"})]);
+  expect(actual).toEqual(history);
+  expect(localBoardWarnings([{...last,kind:"start"}],[hard])).toEqual([]);
  });
  it("ignores an empty planned group while retaining unknown groups and a real completed visit's buffer",()=>{
   const portal:BoardPortal={id:"p",code:"P-1",name:"Poort",world:"Anders",worldSlug:"anders",operationStatus:"open",finale:false,arrivalHeadwaySeconds:300,windows:[{opensAt:"2026-10-31T17:00Z",closesAt:"2026-10-31T18:00Z",maxGroups:1,maxChildren:20,durationSeconds:300,bufferSeconds:120}]};

@@ -66,9 +66,9 @@ select lives_ok(
 select throws_ok(
   $$
     insert into app_private.route_plan_stops(plan_version_id, position, portal_id, planned_arrival_at, planned_departure_at)
-    values ('24000000-0000-0000-0000-000000000050', 2, '12000000-0000-0000-0000-000000000007', '2026-10-31 18:38:00+01', '2026-10-31 18:43:00+01')
+    values ('24000000-0000-0000-0000-000000000050', 2, '12000000-0000-0000-0000-000000000001', '2026-10-31 18:38:00+01', '2026-10-31 18:43:00+01')
   $$,
-  '23514', 'DUPLICATE_PORTAL_OR_WORLD', 'one route cannot silently repeat a world or portal'
+  '23514', 'DUPLICATE_PHYSICAL_VISIT', 'one route cannot silently repeat a physical house'
 );
 
 update app_private.walking_edges set closed_at = now()

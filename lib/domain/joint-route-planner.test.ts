@@ -496,7 +496,8 @@ describe("65-minute walking, actual show completion and explicit physical covera
     expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
     expect(result.metrics.after.totalOrdinaryVisits).toBe(5);
     expect(result.groups[0].visits.map(visit => visit.portalId)).toEqual(["house-0", "house-2", "house-1", "finale"]);
-    expect(result.groups.map(plan => plan.finaleArrivalAt)).toEqual([time("17:25"), time("17:31")]);
+    expect(result.groups.map(plan => plan.finaleArrivalAt)).toEqual([time("17:30"), time("17:24")]);
+    expect(result.finaleScheduling?.accepted).toBe(true);
     expect(result.work.jointFinaleReplans).toBeGreaterThan(0);
     expect(result.work.jointFinaleReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.jointFinaleReplans);
     expect(result.groups.every(plan => plan.finaleChange?.proposedReservedAt === plan.finaleArrivalAt)).toBe(true);
@@ -742,4 +743,62 @@ describe("all active physical houses", () => {
     expect(adjusted.metrics.after.totalOrdinaryVisits).toBe(2);
     expect(adjusted.metrics.after.walkingSeconds).toBeLessThanOrEqual(3900);
   });
+});
+
+describe("hard reception close and equal attainable organization goals", () => {
+  it("finishes the P-12 visit and buffer exactly at 19:00 and rejects one microsecond of overflow", () => {
+    const input = fixture();
+    input.groups[0].startsAt = time("18:52"); input.groups[0].desiredEndAt = null;
+    const house = input.portals[0]; house.code = "P-12";
+    Object.assign(house.windows[0], { visitSeconds: 300, bufferSeconds: 120, arrivalClosesAt: time("19:00"), closesAt: time("19:00") });
+    input.legs.find(leg => leg.from === input.groups[0].startNodeId && leg.to === house.nodeId)!.seconds = 60;
+    const result = proposeJointRoutes(input);
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.groups[0].visits[0].startsAt).toBe(time("18:53"));
+    expect(validateJointRoutes(input, result.groups)).toEqual([]);
+    const changed = structuredClone(result.groups);
+    changed[0].visits[0].startsAt = "2026-10-31T18:53:00.000001Z";
+    expect(validateJointRoutes(input, changed).some(conflict => conflict.code === "OPENING_WINDOW")).toBe(true);
+  });
+
+  it("excludes starts after the last complete P-12 reception from the attainable coverage upper bound", () => {
+    const input = fixture(18); const house = input.portals[0]; house.code = "P-12";
+    input.organizerCoveragePortalIds = [house.id];
+    Object.assign(house.windows[0], { visitSeconds: 300, bufferSeconds: 120, arrivalClosesAt: time("19:00"), closesAt: time("19:00") });
+    input.groups[16].startsAt = time("19:00"); input.groups[17].startsAt = time("19:00");
+    expect(measureJointRoutes(input, []).organizerCoverage[0].eligibleGroups).toBe(16);
+  });
+
+  it("uses the same routes when the equal goal configuration is reversed", () => {
+    const input = fixture(3, 3);
+    input.organizerCoveragePortalIds = ["house-0", "house-1"];
+    input.portals[1].windows[0].arrivalClosesAt = time("18:00");
+    input.portals[1].windows[0].closesAt = time("18:00");
+    const a = proposeJointRoutes(input, { mode: "portal-spread" });
+    const b = proposeJointRoutes({ ...input, organizerCoveragePortalIds: [...input.organizerCoveragePortalIds].reverse() }, { mode: "portal-spread" });
+    expect(a.valid).toBe(true); expect(b.valid).toBe(true);
+    expect(b.groups).toEqual(a.groups);
+  });
+
+  it("retains a valid lower-budget warm route without changing the canonical walking policy", () => {
+    const input = fixture(2, 3); input.maxTotalWalkingSeconds = 4500;
+    const lower = proposeJointRoutes(input, { mode: "portal-spread", constructionWalkingLimitSeconds: 3900 });
+    const result = proposeJointRoutes(input, { mode: "portal-spread", seedPlans: [lower.groups] });
+    expect(result.valid).toBe(true);
+    expect(compareJointRouteProposals(input, result, lower, "portal-spread")).toBeGreaterThanOrEqual(0);
+    expect(result.walkingPolicy.maxTotalSeconds).toBe(4500);
+    expect(result.sourceHash).toBe(input.sourceHash);
+  });
+  it("rejects a stale warm route that violates the new hard reception closing", () => {
+    const input = fixture();
+    const previous = proposeJointRoutes(input);
+    input.groups[0].startsAt = time("18:59");
+    Object.assign(input.portals[0].windows[0], { closesAt: time("19:00"), arrivalClosesAt: time("19:00"), bufferSeconds: 120 });
+    expect(validateJointRoutes(input, previous.groups).length).toBeGreaterThan(0);
+    const result = proposeJointRoutes(input, { seedPlans: [previous.groups] });
+    expect(result.groups[0].startsAt).toBe(input.groups[0].startsAt);
+    expect(result.groups[0].visits.filter(visit => visit.kind === "ordinary")).toEqual([]);
+    expect(result.valid).toBe(false);
+  });
+
 });

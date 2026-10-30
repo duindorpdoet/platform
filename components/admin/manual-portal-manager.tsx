@@ -168,7 +168,7 @@ export function ManualPortalManager({ eventSlug, worlds, onChanged, initialPorta
       plannedClosesAt,
       maxGroups: Number(draft.maxGroups), maxChildren: Number(draft.maxChildren),
       visitMinutes: Number(draft.visitMinutes), bufferMinutes: Number(draft.bufferMinutes),
-      arrivalHeadwaySeconds: Number(draft.arrivalHeadwaySeconds), ordinaryEndGraceSeconds: Number(draft.ordinaryEndGraceSeconds),
+      arrivalHeadwaySeconds: Number(draft.arrivalHeadwaySeconds), ordinaryEndGraceSeconds: draft.isFinal || draft.ordinaryHardClose ? 0 : Number(draft.ordinaryEndGraceSeconds),
       accessibilityStatus: draft.accessibilityStatus ?? "unknown",
     };
     const body = JSON.stringify(payload);

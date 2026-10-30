@@ -24,14 +24,14 @@ export function PortalPlanningPolicyFields({ value, onChange, disabled = false, 
       </select>
     </label>
     <p>Deze aankomstafstand geldt ook bij ruimte voor meerdere groepen. Bezoekduur, wisseltijd en gelijktijdige capaciteit blijven afzonderlijke grenzen.</p>
-    {!finale && <label className="check-row"><input type="checkbox" checked={value.ordinaryHardClose} onChange={event => onChange({ ...value, ordinaryHardClose: event.target.checked })}/><span>Harde sluiting: bezoek en wisseltijd zijn vóór de sluiting afgerond</span></label>}
+    {!finale && <label className="check-row"><input type="checkbox" checked={value.ordinaryHardClose} onChange={event => onChange({ ...value, ordinaryHardClose: event.target.checked, ordinaryEndGraceSeconds: event.target.checked ? 0 : value.ordinaryEndGraceSeconds })}/><span>Harde sluiting: bezoek en wisseltijd zijn uiterlijk bij de sluiting afgerond</span></label>}
     <label className="field"><span>Toegestane einduitloop voor bezoek en wisseltijd</span>
       <select disabled={hardClose} value={hardClose ? 0 : value.ordinaryEndGraceSeconds} onChange={event => onChange({ ...value, ordinaryEndGraceSeconds: Number(event.target.value) })}>
         {!hardClose && value.ordinaryEndGraceSeconds % 60 !== 0 && <option value={value.ordinaryEndGraceSeconds}>{value.ordinaryEndGraceSeconds} seconden (huidige waarde)</option>}
         {Array.from({ length: 6 }, (_, minutes) => <option key={minutes} value={minutes * 60}>{minutes} minuten</option>)}
       </select>
     </label>
-    <p>{finale ? "Voor de finale blijft de fysieke sluiting hard: show en wisseltijd passen volledig binnen het definitieve finalevenster." : "Aankomst blijft vóór de oorspronkelijke sluiting. Deze kleine einduitloop is geen extra aankomstvenster en staat los van de maximaal 30 minuten groepsuitloop."}</p>
+    <p>{finale ? "Voor de finale blijft de fysieke sluiting hard: show en wisseltijd passen volledig binnen het definitieve finalevenster." : hardClose ? "Aankomst blijft vóór sluiting. Bezoek en wisseltijd zijn uiterlijk bij de sluiting klaar; er geldt geen einduitloop." : "Aankomst blijft vóór de oorspronkelijke sluiting. Deze kleine einduitloop is geen extra aankomstvenster en staat los van de maximaal 30 minuten groepsuitloop."}</p>
     <label className="field"><span>Toegankelijkheid van de ontvangstingang</span>
       <select value={value.accessibilityStatus ?? "unknown"} onChange={event => onChange({ ...value, accessibilityStatus: event.target.value as PortalPlanningPolicy["accessibilityStatus"] })}>
         <option value="unknown">Onbekend · eerst verifiëren</option>

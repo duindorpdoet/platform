@@ -19,7 +19,8 @@ export function PortalPlanningPolicyEditor({ portal, onChanged, disabled = false
   async function save() {
     if (!edit || !canManage || stale || disabled || saving.current) return;
     const client = createClient(); if (!client) return;
-    const args = { _portal_id: portal.id, _expected_version: edit.version, _payload: edit.policy };
+    const args = { _portal_id: portal.id, _expected_version: edit.version, _payload: { ...edit.policy,
+      ordinaryEndGraceSeconds: portal.isFinale || edit.policy.ordinaryHardClose ? 0 : edit.policy.ordinaryEndGraceSeconds } };
     const signature = JSON.stringify(args);
     if (request.current?.signature !== signature) request.current = { signature, key: crypto.randomUUID() };
     saving.current = true; setBusy(true); setNotice("");

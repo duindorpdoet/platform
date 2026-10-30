@@ -6,7 +6,8 @@ begin
  select id into eid from app_private.events where slug='duindorp-halloween-2026';
  -- This historical calendar explicitly permits its older early finale slots;
  -- dedicated v3 regressions exercise the new1800-second proposed default.
- update app_private.event_route_settings set max_early_finish_seconds=7200 where event_id=eid;
+ update app_private.event_route_settings set max_early_finish_seconds=7200,
+  max_total_walking_seconds=3900,route_policy_version=1 where event_id=eid;
  -- Keep every seeded family: the remaining two stored start appointments are
  -- separate drafts, alongside the first two immutable published appointments.
  for gid in select id from app_private.walking_groups where id in('23000000-0000-0000-0000-000000000003','23000000-0000-0000-0000-000000000004') order by id loop

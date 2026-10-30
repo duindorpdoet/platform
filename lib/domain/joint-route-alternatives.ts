@@ -1,5 +1,6 @@
 import { compareJointRouteProposals, JOINT_ROUTE_SEARCH_LIMITS, measureJointRoutes, proposeJointRoutes, validateJointRoutes,
-  type JointRouteInput, type JointRouteOptimizationMode } from "./joint-route-planner.ts";
+  type JointRouteInput, type JointRouteGroupPlan, type JointRouteOptimizationMode } from "./joint-route-planner.ts";
+import { JOINT_FINALE_MINIMAX_LIMITS } from "./joint-route-finale-minimax.ts";
 import type { JointRouteAlternatives } from "./joint-route-policy";
 
 /** The configured goals provide bounded search directions, never alternative hard policies. */
@@ -11,16 +12,26 @@ export const JOINT_ROUTE_COMPARISON_LIMITS = {
 export function proposeJointRouteAlternatives(input: JointRouteInput,
   propose: typeof proposeJointRoutes = proposeJointRoutes): JointRouteAlternatives {
   const goals = [...new Set(input.organizerCoveragePortalIds ?? [])];
-  const strategies: Array<{ mode: JointRouteOptimizationMode; goals: string[] }> = [
-    { mode: "general", goals },
-    ...(goals.length ? [{ mode: "organizer-coverage" as const, goals }] : []),
-    ...(goals.length > 1 ? [{ mode: "organizer-coverage" as const, goals: goals.slice(0, 1) },
-      { mode: "organizer-coverage" as const, goals: goals.slice(-1) }] : []),
-    // The first configured physical goal is one deterministic construction
-    // direction. The final comparison always restores the full canonical set.
-    { mode: "portal-spread", goals: goals.slice(0, 1) },
-  ];
-  const candidates = strategies.map(strategy => propose({ ...input, organizerCoveragePortalIds: strategy.goals }, { mode: strategy.mode }));
+  const candidates: ReturnType<typeof proposeJointRoutes>[] = [];
+  const routeSeeds: JointRouteGroupPlan[][] = [];
+  const run = (mode: JointRouteOptimizationMode, direction = goals, constructionWalkingLimitSeconds?: number) => {
+    let construction: JointRouteGroupPlan[] | undefined;
+    const candidate = propose({ ...input, organizerCoveragePortalIds: direction }, { mode,
+      ...(constructionWalkingLimitSeconds != null ? { constructionWalkingLimitSeconds } : {}),
+      seedPlans: routeSeeds,
+      onFinaleSchedulingInput: plans => { construction = plans; } });
+    candidates.push(candidate);
+    if (candidate.valid) routeSeeds.push(construction ?? candidate.groups);
+  };
+  run("general");
+  if (goals.length) run("organizer-coverage");
+  // Explore independent lower-budget constructions while retaining stronger
+  // valid warm routes. The source and reported hard policy remain canonical.
+  if (input.maxTotalWalkingSeconds > 3900) run("portal-spread", goals, 3900);
+  run("portal-spread");
+  // Revisit the full-goal portfolio after the first shared balancing pass.
+  // Equal organization goals remain present in every construction direction.
+  if (goals.length > 1 && candidates.length < JOINT_ROUTE_COMPARISON_LIMITS.strategies) run("portal-spread");
   const select = (mode: JointRouteOptimizationMode) => {
     const selected = candidates.reduce((best, candidate) =>
       compareJointRouteProposals(input, candidate, best, mode) > 0 ? candidate : best);
@@ -40,6 +51,8 @@ export function proposeJointRouteAlternatives(input: JointRouteInput,
     portalSpread: select("portal-spread"),
     search: { strategies: candidates.length,
       candidateEvaluations: candidates.reduce((sum, candidate) => sum + candidate.work.candidateEvaluations, 0),
-      maxCandidateEvaluations: JOINT_ROUTE_COMPARISON_LIMITS.candidateEvaluations },
+      maxCandidateEvaluations: JOINT_ROUTE_COMPARISON_LIMITS.candidateEvaluations,
+      finaleSchedulingOperations: candidates.reduce((sum, candidate) => sum + (candidate.finaleScheduling?.work.operations ?? 0), 0),
+      maxFinaleSchedulingOperations: candidates.length * JOINT_FINALE_MINIMAX_LIMITS.maxWork },
   };
 }

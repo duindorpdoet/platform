@@ -2,7 +2,7 @@ import type { JointRouteProposal } from "./joint-route-planner";
 
 export type JointRouteAlternatives = { general: JointRouteProposal; organizerCoverage: JointRouteProposal | null;
   portalSpread?: JointRouteProposal;
-  search?: { strategies: number; candidateEvaluations: number; maxCandidateEvaluations: number } };
+  search?: { strategies: number; candidateEvaluations: number; maxCandidateEvaluations: number; finaleSchedulingOperations?: number; maxFinaleSchedulingOperations?: number } };
 export type JointRouteProposalResponse = JointRouteProposal & { alternatives?: JointRouteAlternatives };
 
 export type JointRoutePolicySettings = {
