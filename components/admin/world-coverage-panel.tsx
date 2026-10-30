@@ -43,7 +43,7 @@ export function WorldCoveragePanel({ coverage, eventSlug, onChanged, disabled = 
     <p>{coverage.portalRegistrationOpen
       ? `De huisinschrijving is open. Voorlopig ontbreken: ${names(coverage.missingWorlds)}. De definitieve compensatie start pas wanneer de huisinschrijving sluit; deelnemersinschrijving staat hier los van.`
       : `Definitief ontbrekend: ${names(coverage.missingWorlds)}. Bij een echte gewone Anders-aankomst krijgt ieder aanwezig kind willekeurig een nog ontbrekende wereldzegel. Bij het laatste geschikte bezoek of de eigen afsluiting worden de overige zegels aangevuld op die bewezen aankomst.`}</p>
-    <p>Plan waar mogelijk een haalbaar gewoon Anders-bezoek. Bonuszegels zijn geen extra huisbezoeken; de finale telt hiervoor niet mee.</p>
+    <p>Alle geschikte gewone huizen tellen gelijk mee bij de routekeuze. Anders-poorten krijgen geen voorrang of gegarandeerd bezoek. Bonuszegels zijn geen extra huisbezoeken; de finale telt hiervoor niet mee.</p>
     {coverage.pendingRevision && <div className="form-warning">
       <strong>Gewijzigd huizenaanbod · beleidsrevisie {coverage.pendingRevision.version} controleren</strong>
       <p>Volgens het nieuwe aanbod ontbreken: {names(coverage.pendingRevision.missingWorlds)}. De huidige regeling blijft gelden totdat je deze wijziging beoordeelt. Verdiende zegels blijven bestaan.</p>

@@ -68,6 +68,9 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261029193334_persistent_portal_print_material.sql',
   '20261029215417_bounded_physical_planboard_warnings.sql',
   '20261029223103_cached_physical_reception_context.sql',
+  // Local dump/restore and unchanged-row proof: docs/reports/2026-10-30-joint-route-policy/local-validation.json.
+  // Deployment still requires its own environment-specific backup/restore proof.
+  '20261030065514_joint_route_policy_v2.sql',
 
 ]);
 

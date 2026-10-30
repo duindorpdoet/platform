@@ -6,7 +6,13 @@ export type CodedCalendar = {
  visits: Array<{ groupCode: string; portalCode: string; physicalCode?: string; kind: string; sequence: number; startsAt: string | null; durationSeconds: number; bufferSeconds: number; source: string; timingEvidence?: string; children?: number | null }>;
 };
 export type CodedCalendarAnalysis = { counts: Record<string, number>; byGroup: Array<{ code: string; ordinaryVisits: number | null; computed: boolean; hasStoredSchedule: boolean; finales: number; administrativeStarts: number; requiresStepFree: boolean; accessibilityReviewChildren: number; conflictCodes: string[] }>; conflicts: Array<{ code: string; groupCodes: string[]; portalCodes: string[]; [key: string]: unknown }> };
-export type CodedJointMetrics = { totalOrdinaryVisits: number | null; [key: string]: unknown };
+export type CodedJointMetrics = {
+ totalOrdinaryVisits: number | null;
+ receptionWaitingSeconds: number | null; unallocatedBeforeFinaleSeconds: number | null; longestWaitSeconds: number | null;
+ unvisitedPortals: string[];
+ byPortal: Array<{ code: string; remainingGapReason: string | null; [key: string]: unknown }>;
+ [key: string]: unknown;
+};
 export type CodedJointProposal = { code: string; available: true; readOnly: true; before: { valid: boolean; metrics: CodedJointMetrics; groups: Array<{ code: string; [key: string]: unknown }>; [key: string]: unknown }; after: { valid: boolean; metrics: CodedJointMetrics; groups: Array<{ code: string; [key: string]: unknown }>; [key: string]: unknown }; saved: false; applied: false; published: false; changedRows: 0; messagesSent: 0; [key: string]: unknown };
 export function auditPhysicalCalendar(calendar: CodedCalendar): CodedCalendarAnalysis;
 export function codedJointProposal(input: JointRouteInput, proposal: JointRouteProposal, beforeConflicts: JointRouteDiagnostic[], readAt: string, codeMaps?: { groups?: Record<string,string>; portals?: Record<string,string> }): CodedJointProposal;

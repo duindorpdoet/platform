@@ -30,7 +30,8 @@ describe("explicit authenticated joint route proposal", () => {
     const proposal = (await response.json()).data;
     expect(proposal.valid).toBe(true);
     expect(proposal.sourceHash).toBe("a".repeat(64));
-    expect(proposal.groups[0].finaleArrivalAt).toBe("2026-10-31T21:00:00.000Z");
+    expect(proposal.groups[0].finaleArrivalAt).toBe("2026-10-31T17:08:00.000Z");
+    expect(proposal.groups[0].finaleChange).toEqual({ portalId: "finale", previousReservedAt: "2026-10-31T21:00:00.000Z", proposedReservedAt: "2026-10-31T17:08:00.000Z" });
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("admin_joint_route_planning_input", { _event_slug: "duindorp-halloween-2026" });
     expect(JSON.stringify(proposal)).not.toMatch(/@|accessibility_note|private_address/);
   });

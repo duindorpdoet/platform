@@ -12,11 +12,14 @@ const readableDiagnostic = {
   ACCESSIBILITY_REVIEW_REQUIRED: "De bedoelde kindbehoefte of de toegankelijkheid moet worden geverifieerd.",
   NO_FEASIBLE_ORDINARY_VISIT: "Geen geschikt gewoon bezoek past binnen de gecontroleerde vaste afspraken en gedeelde kalender.",
   FINALE_APPOINTMENT_CHANGED: "De finale wijkt af van de opgeslagen gereserveerde afspraak.",
+  FINALE_CHANGE_REVIEW_REQUIRED: "Een ander tijdslot bij dezelfde finalepoort moet expliciet worden beoordeeld.",
+  FINALE_LOCATION_CHANGED: "P-38 blijft de enige fysieke finaleplaats.",
   FINALE_TIMING_MISMATCH: "Finale-aankomst en getoonde afronding gebruiken verschillende tijden.",
   GROUP_COMPLETION_LIMIT: "De show eindigt buiten de toegestane groepsafronding of het finalevenster.",
   DUPLICATE_PHYSICAL_VISIT: "Dit fysieke huis komt voor deze groep of bestaande kindhistorie meermaals voor.",
   TRAVEL_TIME: "Er is onvoldoende opgeslagen echte looptijd tussen bezoeken.",
   WALKING_BUDGET: "De route overschrijdt het vastgelegde loopbudget.",
+  ORDINARY_LEG_LIMIT: "Een gewone etappe overschrijdt de afzonderlijke gewone etappelimiet; die limiet geldt niet voor de finale-etappe.",
   ORDINARY_STOP_LIMIT: "Een gewoon bezoek eindigt na de expliciete stopgrens.",
   START_APPOINTMENT_CHANGED: "Het voorstel wijzigt een opgeslagen startafspraak.",
   FINALE_REQUIRED: "Een route heeft niet precies de gereserveerde finale als laatste fysiek bezoek.",
@@ -106,18 +109,23 @@ export function codedJointProposal(input, proposal, beforeConflicts, readAt, cod
     portalCode: value.portalId ? portalCode(value.portalId) : null, message: readableDiagnostic[value.code] ?? "Controleer dit gecodeerde planningsknelpunt in de beheeromgeving." });
   const metrics = value => ({ groups: numeric(value.groups), totalOrdinaryVisits: numeric(value.totalOrdinaryVisits), minOrdinaryVisits: numeric(value.minOrdinaryVisits), meanOrdinaryVisits: numeric(value.meanOrdinaryVisits),
     maxOrdinaryVisits: numeric(value.maxOrdinaryVisits), zeroVisitGroups: numeric(value.zeroVisitGroups), walkingSeconds: numeric(value.walkingSeconds), waitingSeconds: numeric(value.waitingSeconds),
+    receptionWaitingSeconds: numeric(value.receptionWaitingSeconds), unallocatedBeforeFinaleSeconds: numeric(value.unallocatedBeforeFinaleSeconds),
+    longestWaitSeconds: numeric(value.longestWaitSeconds), unvisitedPortals: (value.unvisitedPortals ?? []).map(portalCode),
     absoluteEndDeviationSeconds: numeric(value.absoluteEndDeviationSeconds), overrunSeconds: numeric(value.overrunSeconds), administrativeStarts: numeric(value.administrativeStarts),
     byGroup: value.byGroup.map(group => ({ code: groupCode(group.groupId), ordinaryVisits: numeric(group.ordinaryVisits), walkingSeconds: numeric(group.walkingSeconds), waitingSeconds: numeric(group.waitingSeconds),
+      receptionWaitingSeconds: numeric(group.receptionWaitingSeconds), longestWaitSeconds: numeric(group.longestWaitSeconds),
       endDeviationSeconds: numeric(group.endDeviationSeconds), finaleArrivalAt: stamp(group.finaleArrivalAt), unallocatedBeforeFinaleSeconds: numeric(group.unallocatedBeforeFinaleSeconds) })),
     byPortal: value.byPortal.map(portal => ({ code: portalCode(portal.portalId), visits: numeric(portal.visits), usableOpenSeconds: numeric(portal.usableOpenSeconds), visitsPerOpenHour: numeric(portal.visitsPerOpenHour),
       firstArrivalAt: stamp(portal.firstArrivalAt), firstDelaySeconds: numeric(portal.firstDelaySeconds), largestGapSeconds: numeric(portal.largestGapSeconds),
       quarterHourBuckets: portal.quarterHourBuckets.map(bucket => ({ startsAt: stamp(bucket.startsAt), visits: numeric(bucket.visits) })),
-      remainingGapReason: portal.explanation ? "BOUND_BY_DEMAND_WINDOWS_ACCESSIBILITY_WALKING_AND_FIXED_APPOINTMENTS" : null })) });
+      remainingGapReason: !portal.explanation ? null : portal.usableOpenSeconds > 0 ? "NO_BETTER_JOINT_ALTERNATIVE_FOUND_NOT_IMPOSSIBILITY_PROOF"
+        : "NO_DIRECT_REACHABLE_RECEPTION_WITHIN_WINDOWS_ACCESSIBILITY_AND_WALKING_BUDGET_INDIRECT_ROUTE_NOT_RULED_OUT" })) });
   const plans = values => values.map(plan => {
     const source = input.groups.find(group => group.id === plan.groupId);
     const ordinary = plan.visits.filter(visit => visit.kind === "ordinary").sort((a,b)=>a.sequence-b.sequence), last = ordinary.at(-1);
     return { code: groupCode(plan.groupId), startsAt: stamp(plan.startsAt), storedStartsAt: stamp(source?.startsAt), startUnchanged: millis(plan.startsAt) === millis(source?.startsAt), desiredEndAt: stamp(source?.desiredEndAt),
       storedFinaleAt: stamp(source?.finale.reservedAt), finaleArrivalAt: stamp(plan.finaleArrivalAt), finaleUnchanged: millis(plan.finaleArrivalAt) === millis(source?.finale.reservedAt),
+      finaleChange: plan.finaleChange ? { portalCode: portalCode(plan.finaleChange.portalId), previousReservedAt: stamp(plan.finaleChange.previousReservedAt), proposedReservedAt: stamp(plan.finaleChange.proposedReservedAt) } : null,
       ordinaryEndsAt: last&&Number.isFinite(millis(last.startsAt)) ? new Date(millis(last.startsAt)+last.visitSeconds*1000).toISOString() : null, expectedCompletionAt: stamp(plan.expectedCompletionAt),
       diagnostics: (plan.diagnostics ?? []).map(diagnostic), visits: plan.visits.map(visit => ({ portalCode: portalCode(visit.portalId), kind: ["ordinary","finale","start"].includes(visit.kind) ? visit.kind : "unknown",
         sequence: numeric(visit.sequence), startsAt: stamp(visit.startsAt), visitSeconds: numeric(visit.visitSeconds), bufferSeconds: numeric(visit.bufferSeconds), walkSeconds: numeric(visit.walkSeconds), walkMeters: numeric(visit.walkMeters), waitSeconds: numeric(visit.waitSeconds ?? 0) })) };
@@ -126,8 +134,9 @@ export function codedJointProposal(input, proposal, beforeConflicts, readAt, cod
   return { code: "READ_ONLY_CODED_JOINT_ROUTE_PROPOSAL", available: true, readOnly: true, databaseReadOnly: true, authorizedExistingAdmin: true, inputFunctionStable: true, readAt: stamp(readAt),
     sourceHash: fingerprint(proposal.sourceHash), boardHash: fingerprint(proposal.boardHash), proposalHash: fingerprint(proposal.proposalHash),
     maxGroupOverrunSeconds: numeric(input.maxGroupOverrunSeconds),
+    walkingPolicy: { maxOrdinaryLegSeconds: numeric(input.maxLegWalkingSeconds), maxTotalSeconds: numeric(input.maxTotalWalkingSeconds), finaleLegLimitSeconds: null },
     before: { valid: !beforeConflicts.some(conflict => conflict.severity === "block"), conflicts: beforeConflicts.map(diagnostic), metrics: metrics(proposal.metrics.before), groups: plans(input.before) },
     after: { valid: proposal.valid, conflicts: proposal.conflicts.map(diagnostic), metrics: metrics(proposal.metrics.after), groups: plans(proposal.groups) },
-    work: { candidateEvaluations: numeric(proposal.work.candidateEvaluations), variants: numeric(proposal.work.variants), pairReplans: numeric(proposal.work.pairReplans), exhausted: proposal.work.exhausted === true },
+    work: { candidateEvaluations: numeric(proposal.work.candidateEvaluations), variants: numeric(proposal.work.variants), pairReplans: numeric(proposal.work.pairReplans), routeRepairs: numeric(proposal.work.routeRepairs), exhausted: proposal.work.exhausted === true },
     saved: false, applied: false, published: false, changedRows: 0, messagesSent: 0 };
 }

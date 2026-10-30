@@ -38,11 +38,11 @@ async function concurrentWriters(name,actions){
  const label='joint_route_race_'+randomUUID().replaceAll('-','');
  const blocker=parallelSql(`begin;set local application_name='${label}';
   select 1 from app_private.events where slug='${event}' for update;select pg_sleep(2);commit;`);
- const ready=await until(`select count(*)from pg_stat_activity where application_name='${label}' and wait_event='PgSleep'`,'1');
+ const ready=await until(`select count(*)from pg_stat_activity where datname=current_database()and application_name='${label}' and wait_event='PgSleep'`,'1');
  if(!ready){await blocker;throw new Error('LOCAL_RACE_BARRIER_NOT_READY');}
  // Start both HTTP requests before inspecting their database wait state.
  const pending=actions.map(action=>Promise.resolve().then(action));
- const queued=await until(`select count(*)from pg_stat_activity where pid<>pg_backend_pid()and wait_event_type='Lock'and query like '%${name}%'`,'2');
+ const queued=await until(`select count(*)from pg_stat_activity where datname=current_database()and pid<>pg_backend_pid()and wait_event_type='Lock'and query like '%${name}%'`,'2');
  await blocker;
  const results=await Promise.all(pending);
  assert.ok(queued,'Both independent PostgREST writers must overlap behind the held event lock');
@@ -85,6 +85,23 @@ async function proposal(){
  return result;
 }
 const args=(value,key=randomUUID())=>({_event_slug:event,_proposal:value,_confirmed:true,_reason:'Synthetic independent joint route concurrency acceptance',_idempotency_key:key});
+async function reviewedFinales(value,receipt){
+ const current=await rpc('admin_joint_route_planning_input',{_event_slug:event});
+ for(const plan of value.groups){
+  const group=current.groups.find(group=>group.id===plan.groupId),stored=current.before.find(group=>group.groupId===plan.groupId);
+  assert.ok(group&&stored,'The accepted group and its canonical route remain available');
+  assert.equal(Date.parse(group.finale.reservedAt),Date.parse(plan.finaleArrivalAt),'Approved finale time and schedule agree');
+  assert.equal(Date.parse(stored.finaleArrivalAt),Date.parse(plan.finaleArrivalAt),'Planboard and approved finale time agree in the same commit');
+  assert.equal(stored.visits.filter(visit=>visit.kind==='finale').length,1,'The physical finale occurs exactly once');
+  assert.equal(stored.visits.find(visit=>visit.kind==='finale').portalId,group.finale.portalId,'The physical finale stays at the original gate');
+ }
+ const approvals=JSON.parse(sql(`select coalesce(jsonb_agg(jsonb_build_object('groupId',group_id,'portalId',portal_id,
+  'previousReservedAt',previous_reserved_at,'proposedReservedAt',proposed_reserved_at)order by group_id),'[]')
+  from app_private.joint_route_finale_approvals where accepted_version_id='${receipt.acceptedVersionId}'`));
+ const normalized=rows=>rows.map(row=>({...row,previousReservedAt:Date.parse(row.previousReservedAt),proposedReservedAt:Date.parse(row.proposedReservedAt)})).sort((a,b)=>a.groupId.localeCompare(b.groupId));
+ assert.deepEqual(normalized(approvals),normalized(value.groups.filter(plan=>plan.finaleChange).map(plan=>({groupId:plan.groupId,...plan.finaleChange}))),
+  'Each changed time has exactly one immutable approval; retries create no extra approval');
+}
 
 // Identical retries arriving in separate real sessions commit one immutable
 // version. The receipt is checked under the same event lock before staleness.
@@ -93,6 +110,7 @@ const retries=await concurrentWriters('admin_joint_route_plan_apply',admins.map(
 assert.ok(retries.every(result=>!result.error),'Both identical real callbacks must succeed');
 assert.deepEqual(retries[0].data,retries[1].data);
 assert.equal(countVersions(),1,'An identical command creates exactly one accepted version');
+await reviewedFinales(first,retries[0].data);
 assert.equal(preserved(),unchanged,'Route acceptance preserves starts, families, payments and all mail');
 
 // Different reviewed commands for the same board cannot both replace it.
@@ -101,6 +119,7 @@ const competing=await concurrentWriters('admin_joint_route_plan_apply',admins.ma
 assert.equal(competing.filter(result=>!result.error).length,1);
 assert.equal(competing.filter(result=>result.error?.message==='JOINT_ROUTE_PROPOSAL_STALE'&&result.error.code==='40001').length,1);
 assert.equal(countVersions(),2);
+await reviewedFinales(fresh,competing.find(result=>!result.error).data);
 assert.deepEqual(await rpc('admin_joint_route_plan_apply',sameCommand),retries[0].data,'An old exact retry still returns its original receipt without rewriting the newer board');
 assert.equal(countVersions(),2);
 assert.equal(preserved(),unchanged,'Concurrent proposals preserve every participant and published appointment');

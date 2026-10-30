@@ -1,0 +1,4306 @@
+{
+  "artifactType": "joint-route-review-only",
+  "applicableToDatabase": false,
+  "explanation": "Alle interne groep- en poortidentificaties zijn vervangen door codes. Dit bestand is uitsluitend voor beoordeling en kan niet als toepasbaar routecommando worden gebruikt.",
+  "source": {
+    "snapshotReadAt": "2026-10-30T07:15:13.705258+00:00",
+    "localInputModifiedAt": "2026-10-30T07:15:15.236Z",
+    "sourceHash": "40376532464a0b12e90912ef82458eb8aa78b2c99084b916be02f7c21dda4223",
+    "boardHash": "bed14f1d603f3e7157a8702600371ecc",
+    "inputPolicyVersion": "joint-reception-v1",
+    "candidatePolicyVersion": "joint-reception-v2",
+    "requiresFreshInputAfterMigration": true,
+    "latestReadOnlyProductionCheck": {
+      "readAt": "2026-10-30 07:15:29.831703+00",
+      "sourceHash": "40376532464a0b12e90912ef82458eb8aa78b2c99084b916be02f7c21dda4223",
+      "boardHash": "bed14f1d603f3e7157a8702600371ecc",
+      "unchangedFromSnapshot": true,
+      "jointVersions": 0,
+      "startedGroups": 0
+    },
+    "comparisonHistory": {
+      "previousSnapshotReadAt": "2026-10-30T06:54:42.611125+00:00",
+      "previousBoardHash": "4aaefcda523193c1653e9ad1d9a0cbf2",
+      "currentSnapshotReadAt": "2026-10-30T07:15:13.705258+00:00",
+      "currentBoardHash": "bed14f1d603f3e7157a8702600371ecc",
+      "sourceHashUnchanged": true,
+      "planningInputEqualExceptBoardHash": true,
+      "storedPlansUnchanged": true,
+      "oldCalculatedRoutesUnchanged": true,
+      "historicalOldCalculatedVisits": 191,
+      "currentOldCalculatedVisits": 191,
+      "explanation": "De route-invoer en opgeslagen bezoeken zijn gelijk gebleven; alleen de bredere bordhash is gewijzigd. Audit toont om 07:11:35 UTC een operationele statusmelding bij P-12. De bordhash neemt volledige poortmetadata mee, waaronder bijgewerkte versies/tijdstempels; de routebronhash neemt relevante ontvangstregels mee. Zonder de volledige oude ruwe bordmetadata kan de exact gewijzigde hashcomponent niet sluitend worden aangewezen."
+    },
+    "productionTreeAtInvestigation": "db5dbe2d9cd75de4b98601f570141f96bdec8042",
+    "oldPlannerBlob": "9a7bdbd9db065ec90d9cb50f2a33b97a0d048051",
+    "plannerSourceSha256": "29fc7bbb869c02e1c2f5c0aff23e3e7cc6f33b2f9caed7357d9f3eaf6a8c06fc"
+  },
+  "originalProposalHash": "6fb6320bc9c41221da38d98fc19238081a318661550d7f5d4635256c3792c8ef",
+  "localPolicyValid": true,
+  "walkingPolicy": {
+    "maxOrdinaryLegSeconds": 900,
+    "maxTotalSeconds": 3600,
+    "finaleLegLimitSeconds": null
+  },
+  "groups": [
+    {
+      "groupCode": "G-37",
+      "startsAt": "2026-10-31T16:00:00+00:00",
+      "startConfirmed": true,
+      "linkedFirstPortalCode": "P-12",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T18:22:50.000Z",
+      "expectedCompletionAt": "2026-10-31T18:28:50.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T20:09:00+00:00",
+        "proposedReservedAt": "2026-10-31T18:22:50.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:01:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:07:19.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 79,
+          "walkMeters": 64,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:14:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:20:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:28:49.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:38:15.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 266,
+          "walkMeters": 216,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:46:45.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 210,
+          "walkMeters": 171,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:00:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 356,
+          "walkMeters": 290,
+          "receptionWaitingSeconds": 139,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:07:08.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 128,
+          "walkMeters": 104,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:15:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 156,
+          "walkMeters": 127,
+          "receptionWaitingSeconds": 16,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:23:28.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:37:38.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 550,
+          "walkMeters": 448,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:44:29.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:00:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 350,
+          "walkMeters": 285,
+          "receptionWaitingSeconds": 281,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T18:22:50.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 707,
+          "walkMeters": 576,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 363
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-37",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T20:09:00+00:00 → 2026-10-31T18:22:50.000Z."
+        },
+        {
+          "code": "RECEPTION_WAIT",
+          "severity": "warning",
+          "groupCode": "G-37",
+          "message": "8 minuten ontvangstwachttijd door echte opening, aankomstafstand of bezetting; apart geteld van vrije tijd vóór P-38."
+        },
+        {
+          "code": "EVENING_DURATION_TRADEOFF",
+          "severity": "warning",
+          "groupCode": "G-37",
+          "message": "De 14 echte bezoeken en de show ronden 92 minuten vóór de gewenste eindtijd af. Een langere avond vraagt vrije tijd; er zijn geen extra bezoeken, rondjes of langere shows verzonnen."
+        },
+        {
+          "code": "ORDINARY_VISITS_REDUCED",
+          "severity": "warning",
+          "groupCode": "G-37",
+          "message": "3 minder gewone bezoeken dan het opgeslagen bord. De begrensde gezamenlijke herverdeling vond geen beter geldig alternatief; controleer de concrete ontvangstvensters en het aparte totale loopbudget."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-37",
+          "portalCode": "P-35",
+          "message": "Invoegen in de gevonden huisvolgorde vergt minstens 3671 seconden lopen; het aparte totale loopbudget is 3600 seconden, inclusief de werkelijke wandeling naar P-38."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-37",
+          "portalCode": "P-37",
+          "message": "Invoegen in de gevonden huisvolgorde vergt minstens 3720 seconden lopen; het aparte totale loopbudget is 3600 seconden, inclusief de werkelijke wandeling naar P-38."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-37",
+          "portalCode": "P-08",
+          "message": "Invoegen in de gevonden huisvolgorde vergt minstens 3752 seconden lopen; het aparte totale loopbudget is 3600 seconden, inclusief de werkelijke wandeling naar P-38."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-38",
+      "startsAt": "2026-10-31T16:30:00+00:00",
+      "startConfirmed": true,
+      "linkedFirstPortalCode": "P-12",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T18:45:00.000Z",
+      "expectedCompletionAt": "2026-10-31T18:51:00.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:21:00+00:00",
+        "proposedReservedAt": "2026-10-31T18:45:00.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:31:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:37:19.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 79,
+          "walkMeters": 64,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:44:23.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 124,
+          "walkMeters": 101,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:50:23.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:00:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 216,
+          "walkMeters": 176,
+          "receptionWaitingSeconds": 61,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:08:12.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 192,
+          "walkMeters": 156,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:16:14.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:22:14.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:33:10.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 356,
+          "walkMeters": 290,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:42:28.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 258,
+          "walkMeters": 210,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:49:20.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:58:41.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 255,
+          "walkMeters": 207,
+          "receptionWaitingSeconds": 6,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:07:32.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 231,
+          "walkMeters": 188,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:18:20.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 348,
+          "walkMeters": 283,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:28:13.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 293,
+          "walkMeters": 238,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T18:45:00.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 707,
+          "walkMeters": 576,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-38",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:21:00+00:00 → 2026-10-31T18:45:00.000Z."
+        },
+        {
+          "code": "EVENING_DURATION_TRADEOFF",
+          "severity": "warning",
+          "groupCode": "G-38",
+          "message": "De 15 echte bezoeken en de show ronden 69 minuten vóór de gewenste eindtijd af. Een langere avond vraagt vrije tijd; er zijn geen extra bezoeken, rondjes of langere shows verzonnen."
+        },
+        {
+          "code": "ORDINARY_VISITS_REDUCED",
+          "severity": "warning",
+          "groupCode": "G-38",
+          "message": "1 minder gewone bezoeken dan het opgeslagen bord. De begrensde gezamenlijke herverdeling vond geen beter geldig alternatief; controleer de concrete ontvangstvensters en het aparte totale loopbudget."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-38",
+          "portalCode": "P-08",
+          "message": "Invoegen in de gevonden huisvolgorde vergt minstens 3873 seconden lopen; het aparte totale loopbudget is 3600 seconden, inclusief de werkelijke wandeling naar P-38."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-38",
+          "portalCode": "P-14",
+          "message": "Invoegen in de gevonden huisvolgorde vergt minstens 3701 seconden lopen; het aparte totale loopbudget is 3600 seconden, inclusief de werkelijke wandeling naar P-38."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-39",
+      "startsAt": "2026-10-31T17:20:00+00:00",
+      "startConfirmed": true,
+      "linkedFirstPortalCode": "P-02",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:58:28.000Z",
+      "expectedCompletionAt": "2026-10-31T20:04:28.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:33:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:58:28.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:21:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:27:51.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:34:37.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:43:54.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 257,
+          "walkMeters": 209,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:51:25.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:58:27.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:06:39.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 192,
+          "walkMeters": 156,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:13:10.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 91,
+          "walkMeters": 74,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:21:02.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 172,
+          "walkMeters": 140,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:27:54.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:35:02.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 128,
+          "walkMeters": 104,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:43:14.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 192,
+          "walkMeters": 156,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:51:16.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:57:16.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:06:15.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 239,
+          "walkMeters": 194,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:14:59.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 224,
+          "walkMeters": 182,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 17,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:22:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 121,
+          "walkMeters": 98,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 18,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:58:28.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 744,
+          "walkMeters": 606,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 1144
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-39",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:33:00+00:00 → 2026-10-31T19:58:28.000Z."
+        },
+        {
+          "code": "UNALLOCATED_BEFORE_FINALE",
+          "severity": "warning",
+          "groupCode": "G-39",
+          "message": "20 minuten vrije tijd vóór P-38. Geen betere gezamenlijke combinatie gevonden binnen de begrensde zoekruimte; geen bewijs van onmogelijkheid."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-40",
+      "startsAt": "2026-10-31T16:40:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-12",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:15:50.000Z",
+      "expectedCompletionAt": "2026-10-31T19:21:50.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:27:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:15:50.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:41:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:47:17.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 77,
+          "walkMeters": 62,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:54:48.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:01:50.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:08:43.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 53,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:17:08.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 205,
+          "walkMeters": 167,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:24:16.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 128,
+          "walkMeters": 104,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:32:22.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 162,
+          "walkMeters": 132,
+          "receptionWaitingSeconds": 24,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:38:22.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 33,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:47:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 239,
+          "walkMeters": 194,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:56:56.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 215,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:09:12.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 436,
+          "walkMeters": 355,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:18:24.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 252,
+          "walkMeters": 205,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:25:15.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:33:50.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 215,
+          "walkMeters": 175,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:44:11.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 321,
+          "walkMeters": 261,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 17,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:59:03.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 167,
+          "walkMeters": 136,
+          "receptionWaitingSeconds": 425,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 18,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:15:50.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 707,
+          "walkMeters": 576,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-40",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:27:00+00:00 → 2026-10-31T19:15:50.000Z."
+        },
+        {
+          "code": "RECEPTION_WAIT",
+          "severity": "warning",
+          "groupCode": "G-40",
+          "message": "12 minuten ontvangstwachttijd door echte opening, aankomstafstand of bezetting; apart geteld van vrije tijd vóór P-38."
+        },
+        {
+          "code": "EVENING_DURATION_TRADEOFF",
+          "severity": "warning",
+          "groupCode": "G-40",
+          "message": "De 17 echte bezoeken en de show ronden 39 minuten vóór de gewenste eindtijd af. Een langere avond vraagt vrije tijd; er zijn geen extra bezoeken, rondjes of langere shows verzonnen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-41",
+      "startsAt": "2026-10-31T16:30:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-02",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T18:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T18:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T18:12:50.000Z",
+      "expectedCompletionAt": "2026-10-31T18:18:50.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T17:59:00+00:00",
+        "proposedReservedAt": "2026-10-31T18:12:50.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:31:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:37:51.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:44:37.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:55:15.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 338,
+          "walkMeters": 275,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:03:43.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:09:43.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:17:14.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:23:55.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 101,
+          "walkMeters": 82,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:31:26.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:42:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 355,
+          "walkMeters": 289,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:50:03.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 162,
+          "walkMeters": 132,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:58:15.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 192,
+          "walkMeters": 156,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T18:12:50.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 575,
+          "walkMeters": 468,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-41",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T17:59:00+00:00 → 2026-10-31T18:12:50.000Z."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-41",
+          "portalCode": "P-05",
+          "message": "Vóór P-11 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:55:16.000Z; bezoek plus 60 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:50:03.000Z met 673 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-41",
+          "portalCode": "P-22",
+          "message": "Vóór P-38 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:08:33.000Z; bezoek plus 380 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:12:50.000Z met 423 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-41",
+          "portalCode": "P-12",
+          "message": "Vóór P-45 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:26:00.000Z; bezoek plus 79 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:23:55.000Z met 504 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-41",
+          "portalCode": "P-44",
+          "message": "Vóór P-38 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:14:28.000Z; bezoek plus 399 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:12:50.000Z met 797 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-41",
+          "portalCode": "P-24",
+          "message": "Vóór P-38 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:48:35.000Z; bezoek plus 707 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:12:50.000Z met 3152 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-42",
+      "startsAt": "2026-10-31T16:00:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-02",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T18:35:38.000Z",
+      "expectedCompletionAt": "2026-10-31T18:41:38.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T20:15:00+00:00",
+        "proposedReservedAt": "2026-10-31T18:35:38.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:01:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:07:51.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:17:03.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 252,
+          "walkMeters": 205,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:25:31.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:31:31.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:40:42.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 251,
+          "walkMeters": 204,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:48:46.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 33,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:56:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 79,
+          "walkMeters": 64,
+          "receptionWaitingSeconds": 55,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:05:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 91,
+          "walkMeters": 74,
+          "receptionWaitingSeconds": 149,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:14:18.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 258,
+          "walkMeters": 210,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:21:22.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 124,
+          "walkMeters": 101,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:27:22.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 33,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:35:24.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:41:55.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 31,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:52:13.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 318,
+          "walkMeters": 259,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:05:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 134,
+          "walkMeters": 109,
+          "receptionWaitingSeconds": 333,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 17,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T18:35:38.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 707,
+          "walkMeters": 576,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 831
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-42",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T20:15:00+00:00 → 2026-10-31T18:35:38.000Z."
+        },
+        {
+          "code": "RECEPTION_WAIT",
+          "severity": "warning",
+          "groupCode": "G-42",
+          "message": "11 minuten ontvangstwachttijd door echte opening, aankomstafstand of bezetting; apart geteld van vrije tijd vóór P-38."
+        },
+        {
+          "code": "UNALLOCATED_BEFORE_FINALE",
+          "severity": "warning",
+          "groupCode": "G-42",
+          "message": "14 minuten vrije tijd vóór P-38. Geen betere gezamenlijke combinatie gevonden binnen de begrensde zoekruimte; geen bewijs van onmogelijkheid."
+        },
+        {
+          "code": "EVENING_DURATION_TRADEOFF",
+          "severity": "warning",
+          "groupCode": "G-42",
+          "message": "De 16 echte bezoeken en de show ronden 79 minuten vóór de gewenste eindtijd af. Een langere avond vraagt vrije tijd; er zijn geen extra bezoeken, rondjes of langere shows verzonnen."
+        },
+        {
+          "code": "ORDINARY_VISITS_REDUCED",
+          "severity": "warning",
+          "groupCode": "G-42",
+          "message": "1 minder gewone bezoeken dan het opgeslagen bord. De begrensde gezamenlijke herverdeling vond geen beter geldig alternatief; controleer de concrete ontvangstvensters en het aparte totale loopbudget."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-42",
+          "portalCode": "P-08",
+          "message": "Vóór P-38 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:19:39.000Z; bezoek plus 1114 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:35:38.000Z met 455 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-43",
+      "startsAt": "2026-10-31T16:00:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": null,
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T18:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T18:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T18:17:50.000Z",
+      "expectedCompletionAt": "2026-10-31T18:23:50.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T18:05:00+00:00",
+        "proposedReservedAt": "2026-10-31T18:17:50.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:01:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:09:30.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 210,
+          "walkMeters": 171,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:22:16.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 466,
+          "walkMeters": 379,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:30:44.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:36:44.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:43:46.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:52:17.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 60,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:00:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 51,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:09:18.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 258,
+          "walkMeters": 210,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:20:09.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 351,
+          "walkMeters": 286,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:26:55.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:37:27.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 332,
+          "walkMeters": 270,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:50:16.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 469,
+          "walkMeters": 382,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:01:56.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 192,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T18:17:50.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 399,
+          "walkMeters": 325,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 255
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-43",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T18:05:00+00:00 → 2026-10-31T18:17:50.000Z."
+        },
+        {
+          "code": "RECEPTION_WAIT",
+          "severity": "warning",
+          "groupCode": "G-43",
+          "message": "6 minuten ontvangstwachttijd door echte opening, aankomstafstand of bezetting; apart geteld van vrije tijd vóór P-38."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-43",
+          "portalCode": "P-02",
+          "message": "Vóór P-08 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:27:00.000Z; bezoek plus 215 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:26:55.000Z met 520 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-43",
+          "portalCode": "P-18",
+          "message": "Vóór P-42 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:12:08.000Z; bezoek plus 128 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:09:18.000Z met 598 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-43",
+          "portalCode": "P-24",
+          "message": "Vóór P-38 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:48:35.000Z; bezoek plus 707 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:17:50.000Z met 2852 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-44",
+      "startsAt": "2026-10-31T17:00:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": null,
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T18:10:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T18:34:00+00:00",
+      "finaleArrivalAt": "2026-10-31T18:30:38.000Z",
+      "expectedCompletionAt": "2026-10-31T18:36:38.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T18:11:00+00:00",
+        "proposedReservedAt": "2026-10-31T18:30:38.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:01:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:09:02.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:15:02.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:25:20.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 318,
+          "walkMeters": 259,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:32:56.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 156,
+          "walkMeters": 127,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:43:30.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 334,
+          "walkMeters": 272,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:50:52.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 142,
+          "walkMeters": 115,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:57:23.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 91,
+          "walkMeters": 74,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:03:40.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 77,
+          "walkMeters": 62,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:11:11.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T18:30:38.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 867,
+          "walkMeters": 706,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-44",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T18:11:00+00:00 → 2026-10-31T18:30:38.000Z."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-44",
+          "portalCode": "P-42",
+          "message": "Vóór P-19 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:47:21.000Z; bezoek plus 231 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:43:30.000Z met 762 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-44",
+          "portalCode": "P-08",
+          "message": "Vóór P-35 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:56:07.000Z; bezoek plus 321 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:50:52.000Z met 936 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-44",
+          "portalCode": "P-02",
+          "message": "Vóór P-35 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:54:44.000Z; bezoek plus 280 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:50:52.000Z met 812 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-44",
+          "portalCode": "P-03",
+          "message": "Vóór P-38 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:18:13.000Z; bezoek plus 745 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:30:38.000Z met 300 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-44",
+          "portalCode": "P-14",
+          "message": "Vóór P-45 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:12:57.000Z; bezoek plus 376 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:11:11.000Z met 782 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-44",
+          "portalCode": "P-24",
+          "message": "Vóór P-38 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:48:35.000Z; bezoek plus 707 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:30:38.000Z met 2084 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-44",
+          "portalCode": "P-20",
+          "message": "Vóór P-05 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:33:53.000Z; bezoek plus 231 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:32:56.000Z met 588 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-45",
+      "startsAt": "2026-10-31T17:00:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-02",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T19:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T19:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:09:54.000Z",
+      "expectedCompletionAt": "2026-10-31T19:15:54.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T18:54:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:09:54.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:01:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:07:51.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:14:37.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:23:54.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 257,
+          "walkMeters": 209,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:31:25.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:38:27.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:47:13.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 226,
+          "walkMeters": 184,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:55:41.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:03:03.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 142,
+          "walkMeters": 115,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:14:24.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 381,
+          "walkMeters": 310,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:23:23.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 239,
+          "walkMeters": 194,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:35:39.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 436,
+          "walkMeters": 355,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:42:31.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:50:13.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 162,
+          "walkMeters": 132,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:58:15.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:09:54.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 399,
+          "walkMeters": 325,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-45",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T18:54:00+00:00 → 2026-10-31T19:09:54.000Z."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-45",
+          "portalCode": "P-12",
+          "message": "Vóór P-37 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:26:00.000Z; bezoek plus 77 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:23:54.000Z met 503 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-45",
+          "portalCode": "P-18",
+          "message": "Vóór P-24 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:40:02.000Z; bezoek plus 134 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:35:39.000Z met 697 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-46",
+      "startsAt": "2026-10-31T16:50:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-12",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T19:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T19:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:00:57.000Z",
+      "expectedCompletionAt": "2026-10-31T19:06:57.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T18:48:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:00:57.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:51:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T16:57:17.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 77,
+          "walkMeters": 62,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:04:48.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:11:29.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 101,
+          "walkMeters": 82,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:18:51.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 142,
+          "walkMeters": 115,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:27:19.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:35:52.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 213,
+          "walkMeters": 173,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:43:28.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 156,
+          "walkMeters": 127,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:51:56.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:57:56.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:06:26.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 210,
+          "walkMeters": 171,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:15:50.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 264,
+          "walkMeters": 215,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:22:42.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:32:06.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 264,
+          "walkMeters": 215,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:38:57.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:00:57.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 1020,
+          "walkMeters": 831,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-46",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T18:48:00+00:00 → 2026-10-31T19:00:57.000Z."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-46",
+          "portalCode": "P-08",
+          "message": "Vóór P-14 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:40:41.000Z; bezoek plus 106 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:38:57.000Z met 510 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-46",
+          "portalCode": "P-03",
+          "message": "Vóór P-24 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:17:54.000Z; bezoek plus 138 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:15:50.000Z met 562 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-47",
+      "startsAt": "2026-10-31T17:00:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-12",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:33:28.000Z",
+      "expectedCompletionAt": "2026-10-31T19:39:28.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T20:03:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:33:28.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:01:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:07:17.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 77,
+          "walkMeters": 62,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:14:48.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:21:50.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:29:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:36:43.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 142,
+          "walkMeters": 115,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:45:08.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 205,
+          "walkMeters": 167,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:53:41.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 213,
+          "walkMeters": 173,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:02:53.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 252,
+          "walkMeters": 205,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:09:39.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:21:44.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 425,
+          "walkMeters": 346,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:30:28.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 224,
+          "walkMeters": 182,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:36:28.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 33,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:44:30.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:50:30.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:01:26.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 356,
+          "walkMeters": 290,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 17,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:33:28.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 671,
+          "walkMeters": 546,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 951
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-47",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T20:03:00+00:00 → 2026-10-31T19:33:28.000Z."
+        },
+        {
+          "code": "UNALLOCATED_BEFORE_FINALE",
+          "severity": "warning",
+          "groupCode": "G-47",
+          "message": "16 minuten vrije tijd vóór P-38. Geen betere gezamenlijke combinatie gevonden binnen de begrensde zoekruimte; geen bewijs van onmogelijkheid."
+        },
+        {
+          "code": "EVENING_DURATION_TRADEOFF",
+          "severity": "warning",
+          "groupCode": "G-47",
+          "message": "De 16 echte bezoeken en de show ronden 21 minuten vóór de gewenste eindtijd af. Een langere avond vraagt vrije tijd; er zijn geen extra bezoeken, rondjes of langere shows verzonnen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-47",
+          "portalCode": "P-02",
+          "message": "Vóór P-38 is het vroegste vrije ontvangsttijdstip 2026-10-31T19:13:58.000Z; bezoek plus 925 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T19:33:28.000Z met 55 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-48",
+      "startsAt": "2026-10-31T17:30:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-12",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:48:28.000Z",
+      "expectedCompletionAt": "2026-10-31T19:54:28.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:57:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:48:28.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:31:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:37:19.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 79,
+          "walkMeters": 64,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:44:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:50:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:57:43.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 142,
+          "walkMeters": 115,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:07:01.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 258,
+          "walkMeters": 210,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:14:09.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 128,
+          "walkMeters": 104,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:21:45.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 156,
+          "walkMeters": 127,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:27:45.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 33,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:35:47.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:41:47.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:54:03.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 436,
+          "walkMeters": 355,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:00:53.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 110,
+          "walkMeters": 89,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:08:58.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 185,
+          "walkMeters": 150,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:15:49.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:22:35.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 17,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:48:28.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 1114,
+          "walkMeters": 907,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 139
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-48",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:57:00+00:00 → 2026-10-31T19:48:28.000Z."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-48",
+          "portalCode": "P-37",
+          "message": "Vóór P-45 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:37:17.000Z; bezoek plus 151 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:37:19.000Z met 449 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-49",
+      "startsAt": "2026-10-31T17:20:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-12",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T20:03:28.000Z",
+      "expectedCompletionAt": "2026-10-31T20:09:28.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:39:00+00:00",
+        "proposedReservedAt": "2026-10-31T20:03:28.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:21:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:29:09.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 189,
+          "walkMeters": 154,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:36:31.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 142,
+          "walkMeters": 115,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:43:12.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 101,
+          "walkMeters": 82,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:50:14.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:59:22.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 248,
+          "walkMeters": 202,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:06:30.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 128,
+          "walkMeters": 104,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:14:42.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 192,
+          "walkMeters": 156,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:22:44.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:28:44.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:37:43.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 239,
+          "walkMeters": 194,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:46:34.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 231,
+          "walkMeters": 188,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:54:39.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 185,
+          "walkMeters": 150,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:01:30.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:08:16.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:17:33.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 257,
+          "walkMeters": 209,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 17,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T20:03:28.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 976,
+          "walkMeters": 795,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 1479
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-49",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:39:00+00:00 → 2026-10-31T20:03:28.000Z."
+        },
+        {
+          "code": "UNALLOCATED_BEFORE_FINALE",
+          "severity": "warning",
+          "groupCode": "G-49",
+          "message": "25 minuten vrije tijd vóór P-38. Geen betere gezamenlijke combinatie gevonden binnen de begrensde zoekruimte; geen bewijs van onmogelijkheid."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-49",
+          "portalCode": "P-24",
+          "message": "Vóór P-38 is het vroegste vrije ontvangsttijdstip 2026-10-31T19:28:26.000Z; bezoek plus 707 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T20:03:28.000Z met 206 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-50",
+      "startsAt": "2026-10-31T17:10:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-12",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T19:30:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T19:54:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:28:28.000Z",
+      "expectedCompletionAt": "2026-10-31T19:34:28.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:09:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:28:28.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:11:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:17:17.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 77,
+          "walkMeters": 62,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:24:09.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:31:40.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:40:26.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 226,
+          "walkMeters": 184,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:48:31.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 185,
+          "walkMeters": 150,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:55:22.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:02:08.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:14:33.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 445,
+          "walkMeters": 362,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:22:15.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 162,
+          "walkMeters": 132,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:30:17.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:36:17.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:46:35.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 318,
+          "walkMeters": 259,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:54:11.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 156,
+          "walkMeters": 127,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:04:03.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 224,
+          "walkMeters": 182,
+          "receptionWaitingSeconds": 68,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:11:04.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 121,
+          "walkMeters": 98,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 17,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:28:28.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 744,
+          "walkMeters": 606,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-50",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:09:00+00:00 → 2026-10-31T19:28:28.000Z."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-50",
+          "portalCode": "P-45",
+          "message": "Vóór P-19 is het vroegste vrije ontvangsttijdstip 2026-10-31T19:12:38.000Z; bezoek plus 124 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T19:11:04.000Z met 518 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-51",
+      "startsAt": "2026-10-31T17:10:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-02",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T19:30:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T19:54:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:23:11.000Z",
+      "expectedCompletionAt": "2026-10-31T19:29:11.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:03:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:23:11.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:11:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:19:05.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 185,
+          "walkMeters": 150,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:27:56.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 231,
+          "walkMeters": 188,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:36:55.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 239,
+          "walkMeters": 194,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:42:55.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:53:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 326,
+          "walkMeters": 265,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:01:03.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 162,
+          "walkMeters": 132,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:10:27.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 264,
+          "walkMeters": 215,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:17:28.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 121,
+          "walkMeters": 98,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:23:28.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:30:30.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:38:01.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:47:18.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 257,
+          "walkMeters": 209,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:54:04.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 15,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:03:47.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 283,
+          "walkMeters": 230,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 16,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:23:11.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 864,
+          "walkMeters": 704,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-51",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:03:00+00:00 → 2026-10-31T19:23:11.000Z."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-51",
+          "portalCode": "P-12",
+          "message": "Vóór P-20 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:26:00.000Z; bezoek plus 262 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:19:05.000Z met 977 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-51",
+          "portalCode": "P-18",
+          "message": "Vóór P-05 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:30:20.000Z; bezoek plus 156 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:27:56.000Z met 600 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-52",
+      "startsAt": "2026-10-31T18:00:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": null,
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:43:28.000Z",
+      "expectedCompletionAt": "2026-10-31T19:49:28.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:51:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:43:28.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:01:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 33,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:09:28.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:15:28.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:25:46.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 318,
+          "walkMeters": 259,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:32:54.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 128,
+          "walkMeters": 104,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:39:46.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:48:14.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 208,
+          "walkMeters": 169,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:54:14.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:01:16.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:08:47.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 151,
+          "walkMeters": 123,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:15:39.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:23:26.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 167,
+          "walkMeters": 136,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:43:28.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 707,
+          "walkMeters": 576,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 195
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-52",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:51:00+00:00 → 2026-10-31T19:43:28.000Z."
+        },
+        {
+          "code": "EVENING_DURATION_TRADEOFF",
+          "severity": "warning",
+          "groupCode": "G-52",
+          "message": "De 12 echte bezoeken en de show ronden 11 minuten vóór de gewenste eindtijd af. Een langere avond vraagt vrije tijd; er zijn geen extra bezoeken, rondjes of langere shows verzonnen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-52",
+          "portalCode": "P-12",
+          "message": "Geen vrij ontvangstmoment vanaf 2026-10-31T18:08:29.000Z tot de gewone stop 2026-10-31T19:30:00+00:00, binnen opening, aankomstafstand en bezetting. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-52",
+          "portalCode": "P-08",
+          "message": "Vóór P-37 is het vroegste vrije ontvangsttijdstip 2026-10-31T19:13:16.000Z; bezoek plus 257 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T19:08:47.000Z met 826 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-52",
+          "portalCode": "P-02",
+          "message": "Vóór P-20 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:42:18.000Z; bezoek plus 185 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:39:46.000Z met 637 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-52",
+          "portalCode": "P-11",
+          "message": "Vóór P-24 is het vroegste vrije ontvangsttijdstip 2026-10-31T19:27:38.000Z; bezoek plus 264 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T19:23:26.000Z met 816 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-52",
+          "portalCode": "P-14",
+          "message": "Vóór P-19 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:48:58.000Z; bezoek plus 405 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:48:14.000Z met 749 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-53",
+      "startsAt": "2026-10-31T18:00:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-02",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T20:00:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T20:24:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:53:28.000Z",
+      "expectedCompletionAt": "2026-10-31T19:59:28.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:45:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:53:28.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-02",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:01:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-14",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:07:53.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 111,
+          "walkMeters": 90,
+          "receptionWaitingSeconds": 2,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-08",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:14:39.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 106,
+          "walkMeters": 86,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-37",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:23:56.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 257,
+          "walkMeters": 209,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:30:48.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:37:29.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 101,
+          "walkMeters": 82,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:44:31.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:53:07.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 216,
+          "walkMeters": 176,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:00:43.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 156,
+          "walkMeters": 127,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:06:43.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 33,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:14:45.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:20:45.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:53:28.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 380,
+          "walkMeters": 309,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 1283
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-53",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:45:00+00:00 → 2026-10-31T19:53:28.000Z."
+        },
+        {
+          "code": "UNALLOCATED_BEFORE_FINALE",
+          "severity": "warning",
+          "groupCode": "G-53",
+          "message": "22 minuten vrije tijd vóór P-38. Geen betere gezamenlijke combinatie gevonden binnen de begrensde zoekruimte; geen bewijs van onmogelijkheid."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-53",
+          "portalCode": "P-19",
+          "message": "Vóór P-45 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:38:10.000Z; bezoek plus 124 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:37:29.000Z met 465 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-53",
+          "portalCode": "P-42",
+          "message": "Vóór P-11 is het vroegste vrije ontvangsttijdstip 2026-10-31T19:07:47.000Z; bezoek plus 162 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T19:06:43.000Z met 526 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-53",
+          "portalCode": "P-12",
+          "message": "Geen vrij ontvangstmoment vanaf 2026-10-31T18:11:47.000Z tot de gewone stop 2026-10-31T19:30:00+00:00, binnen opening, aankomstafstand en bezetting. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-53",
+          "portalCode": "P-24",
+          "message": "Vóór P-03 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:48:35.000Z; bezoek plus 138 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:44:31.000Z met 682 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-53",
+          "portalCode": "P-20",
+          "message": "Vóór P-18 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:53:17.000Z; bezoek plus 213 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:53:07.000Z met 523 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    },
+    {
+      "groupCode": "G-54",
+      "startsAt": "2026-10-31T17:50:00+00:00",
+      "startConfirmed": false,
+      "linkedFirstPortalCode": "P-12",
+      "ordinaryStopAt": "2026-10-31T19:30:00+00:00",
+      "desiredEndAt": "2026-10-31T19:30:00+00:00",
+      "latestFinaleArrivalAt": "2026-10-31T19:54:00+00:00",
+      "finaleArrivalAt": "2026-10-31T19:38:28.000Z",
+      "expectedCompletionAt": "2026-10-31T19:44:28.000Z",
+      "finaleChange": {
+        "portalCode": "P-38",
+        "previousReservedAt": "2026-10-31T19:15:00+00:00",
+        "proposedReservedAt": "2026-10-31T19:38:28.000Z"
+      },
+      "visits": [
+        {
+          "sequence": 1,
+          "portalCode": "P-12",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:51:00.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 0,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 2,
+          "portalCode": "P-45",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T17:57:19.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 79,
+          "walkMeters": 64,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 3,
+          "portalCode": "P-03",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:04:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 122,
+          "walkMeters": 99,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 4,
+          "portalCode": "P-19",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:10:21.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 16,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 5,
+          "portalCode": "P-18",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:19:09.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 205,
+          "walkMeters": 167,
+          "receptionWaitingSeconds": 23,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 6,
+          "portalCode": "P-20",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:27:42.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 213,
+          "walkMeters": 173,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 7,
+          "portalCode": "P-35",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:35:48.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 172,
+          "walkMeters": 140,
+          "receptionWaitingSeconds": 14,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 8,
+          "portalCode": "P-24",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:43:35.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 167,
+          "walkMeters": 136,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 9,
+          "portalCode": "P-42",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:50:27.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 112,
+          "walkMeters": 91,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 10,
+          "portalCode": "P-11",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T18:58:09.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 162,
+          "walkMeters": 132,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 11,
+          "portalCode": "P-44",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:06:11.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 182,
+          "walkMeters": 148,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 12,
+          "portalCode": "P-22",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:12:11.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 60,
+          "walkMeters": 25,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 13,
+          "portalCode": "P-05",
+          "kind": "ordinary",
+          "startsAt": "2026-10-31T19:21:10.000Z",
+          "visitSeconds": 300,
+          "bufferSeconds": 120,
+          "walkSeconds": 239,
+          "walkMeters": 194,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 0
+        },
+        {
+          "sequence": 14,
+          "portalCode": "P-38",
+          "kind": "finale",
+          "startsAt": "2026-10-31T19:38:28.000Z",
+          "visitSeconds": 360,
+          "bufferSeconds": 0,
+          "walkSeconds": 580,
+          "walkMeters": 472,
+          "receptionWaitingSeconds": 0,
+          "freeBeforeFinaleSeconds": 158
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "FINALE_TIME_CHANGE",
+          "severity": "warning",
+          "groupCode": "G-54",
+          "portalCode": "P-38",
+          "message": "Expliciet te beoordelen tijdslotwijziging bij dezelfde fysieke finale P-38: 2026-10-31T19:15:00+00:00 → 2026-10-31T19:38:28.000Z."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-54",
+          "portalCode": "P-37",
+          "message": "Vóór P-45 is het vroegste vrije ontvangsttijdstip 2026-10-31T17:57:17.000Z; bezoek plus 151 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T17:57:19.000Z met 449 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-54",
+          "portalCode": "P-08",
+          "message": "Vóór P-35 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:38:50.000Z; bezoek plus 321 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:35:48.000Z met 803 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-54",
+          "portalCode": "P-02",
+          "message": "Vóór P-35 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:37:06.000Z; bezoek plus 280 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:35:48.000Z met 658 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        },
+        {
+          "code": "OMITTED_PORTAL",
+          "severity": "warning",
+          "groupCode": "G-54",
+          "portalCode": "P-14",
+          "message": "Vóór P-24 is het vroegste vrije ontvangsttijdstip 2026-10-31T18:45:31.000Z; bezoek plus 350 seconden werkelijk lopen mist de volgende aankomst 2026-10-31T18:43:35.000Z met 766 seconden. Dit verklaart invoegen binnen de huidige aankomstafspraken. De begrensde herordening vond geen beter gezamenlijk alternatief; onmogelijkheid bij andere volgorden is niet bewezen."
+        }
+      ]
+    }
+  ],
+  "hardConflicts": [],
+  "globalQualityAdvice": []
+}

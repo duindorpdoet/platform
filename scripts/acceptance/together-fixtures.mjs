@@ -13,12 +13,18 @@ export function requireLocalTogetherDatabase() {
 }
 export function sql(query) {
   const container = requireLocalTogetherDatabase();
-  return execFileSync("docker", ["exec", "-i", container, "psql", "-U", "postgres", "-d", "postgres", "-X", "-qAt", "-v", "ON_ERROR_STOP=1"], { input: query, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+  return execFileSync("docker", ["exec", "-i", container, "psql", "-U", "postgres", "-d", fixtureDatabaseName(), "-X", "-qAt", "-v", "ON_ERROR_STOP=1"], { input: query, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+}
+function fixtureDatabaseName() {
+  const database = process.env.TOGETHER_TEST_DB_NAME ?? "postgres";
+  if (database !== "postgres" && (!process.env.TOGETHER_TEST_DB_CONTAINER || !/^codex_[a-z0-9_]{1,56}$/.test(database))) throw new Error("A named local fixture clone requires an explicit container and a codex_ database name");
+  return database;
 }
 export function parallelSql(query) {
   const container = requireLocalTogetherDatabase();
+  const database = fixtureDatabaseName();
   return new Promise((resolve, reject) => {
-    const child = spawn("docker", ["exec", "-i", container, "psql", "-U", "postgres", "-d", "postgres", "-X", "-qAt", "-v", "ON_ERROR_STOP=1"]);
+    const child = spawn("docker", ["exec", "-i", container, "psql", "-U", "postgres", "-d", database, "-X", "-qAt", "-v", "ON_ERROR_STOP=1"]);
     let output = ""; let error = "";
     child.stdout.on("data", (data) => { output += data; });
     child.stderr.on("data", (data) => { error += data; });

@@ -26,7 +26,7 @@ async function snapshot(client: SupabaseClient): Promise<BoardSnapshot> {
 function invariants() {
   return JSON.parse(sql(`select jsonb_build_object(
     'publishedStarts',(select md5(coalesce(jsonb_agg(to_jsonb(p) order by p.id)::text,'')) from app_private.group_start_publications p),
-    'scheduleTimes',(select md5(coalesce(jsonb_agg(jsonb_build_array(s.id,s.revision,s.state,s.start_slot_id,slot.start_point_id,slot.starts_at,s.effective_ordinary_stop_at,s.expected_finale_arrival_at) order by s.id)::text,'')) from app_private.group_schedule_revisions s join app_private.start_slots slot on slot.id=s.start_slot_id),
+    'scheduleTimes',(select md5(coalesce(jsonb_agg(jsonb_build_array(s.id,s.state,s.start_slot_id,slot.start_point_id,slot.starts_at,s.effective_ordinary_stop_at) order by s.id)::text,'')) from app_private.group_schedule_revisions s join app_private.start_slots slot on slot.id=s.start_slot_id),
     'families',(select md5(coalesce(jsonb_agg(to_jsonb(g) order by g.id)::text,'')) from app_private.group_registrations g),
     'children',(select md5(coalesce(jsonb_agg(to_jsonb(c) order by c.id)::text,'')) from app_private.children c),
     'payments',(select md5(coalesce(jsonb_agg(to_jsonb(p) order by p.id)::text,'')) from app_private.payment_requests p),
@@ -76,10 +76,22 @@ test("a joint proposal is read-only until reviewed draft apply, and true timebar
   await page.getByRole("button", { name: "Routes opnieuw berekenen met bevestigde starts", exact: true }).click(); const computed = await response; expect(computed.status()).toBe(200); const proposal = (await computed.json()).data as JointRouteProposal;
   expect(proposal.valid, JSON.stringify(proposal.conflicts)).toBe(true); expect(proposal.groups).toHaveLength(4); expect(proposal.metrics.after.zeroVisitGroups).toBe(0);
   expect(invariants()).toEqual(saved); expect((await snapshot(client)).inputHash).toBe(before.inputHash);
-  const dialog = page.getByRole("dialog", { name: "Gezamenlijk routevoorstel controleren", exact: true }); await expect(dialog).toContainText("Einde gewone poorten"); await expect(dialog).toContainText("Onbenutte tijd vóór vaste finale");
+  const dialog = page.getByRole("dialog", { name: "Gezamenlijk routevoorstel controleren", exact: true }); await expect(dialog).toContainText("Einde gewone poorten"); await expect(dialog).toContainText("Vrije tijd vóór P-38"); await expect(dialog).toContainText("Ontvangstwachten bij gewone huizen"); await expect(dialog).toContainText("Langste afzonderlijke wachttijd"); await expect(dialog).toContainText("Gewone poorten zonder bezoek");
+  await expect(dialog).toContainText("voor die laatste wandeling geldt geen vaste tijd- of afstandsgrens");
+  const finaleChanges = proposal.groups.filter(group => group.finaleChange);
+  if (finaleChanges.length) {
+    const changes = dialog.getByRole("region", { name: "Voorgestelde tijdswijzigingen bij P-38", exact: true });
+    await expect(changes.getByRole("listitem")).toHaveCount(finaleChanges.length);
+    for (const plan of finaleChanges) await expect(changes).toContainText(before.groups.find(group => group.id === plan.groupId)!.code);
+  }
+  for (const diagnostic of proposal.conflicts) {
+    const label = `${diagnostic.severity === "block" ? "Blokkade" : "Advies"}${diagnostic.groupId ? ` · ${before.groups.find(group => group.id === diagnostic.groupId)!.code}` : ""}${diagnostic.portalId ? ` · ${before.portals.find(portal => portal.id === diagnostic.portalId)!.code}` : ""}`;
+    await expect(dialog.locator("p").filter({ has: page.getByText(label, { exact: true }), hasText: diagnostic.message })).toHaveCount(1);
+  }
   const save = dialog.getByRole("button", { name: "Beoordeeld routeconcept opslaan", exact: true }); await expect(save).toBeDisabled(); await dialog.getByRole("textbox").fill("Synthetisch beoordeeld gezamenlijk routeconcept met behoud van starts"); await dialog.getByRole("checkbox").check(); await expect(save).toBeEnabled(); await save.click(); await expect(dialog).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: /Routeconcept .*opgeslagen/ })).toBeVisible(); expect(invariants()).toEqual(saved);
   const accepted = await snapshot(client), input = await rpc<JointRouteInput>(client, "admin_joint_route_planning_input", { _event_slug: event });
+  for (const plan of finaleChanges) expect(Date.parse(input.groups.find(group => group.id === plan.groupId)!.finale.reservedAt!)).toBe(Date.parse(plan.finaleChange!.proposedReservedAt));
   function routeRows(groups: JointRouteInput["before"]) { return groups.flatMap(group => group.visits.filter(visit => visit.kind !== "start").map(visit => ({ group: group.groupId, portal: visit.portalId, kind: visit.kind, sequence: visit.sequence, at: Date.parse(visit.startsAt), seconds: visit.visitSeconds, buffer: visit.bufferSeconds }))).sort((a, b) => a.group.localeCompare(b.group) || a.sequence - b.sequence); }
   expect(routeRows(input.before)).toEqual(routeRows(proposal.groups));
   expect(accepted.visits.filter(visit => visit.kind !== "start").map(visit => ({ group: visit.groupId, portal: visit.portalId, kind: visit.kind, sequence: visit.sequence, at: Date.parse(visit.startsAt), seconds: visit.durationSeconds, buffer: visit.bufferSeconds })).sort((a,b)=>a.group.localeCompare(b.group)||a.sequence-b.sequence)).toEqual(routeRows(proposal.groups));

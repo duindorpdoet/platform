@@ -1,0 +1,47 @@
+{
+  "scope": "local synthetic database and separate local Auth/PostgREST services only",
+  "migration": "20261030065514_joint_route_policy_v2.sql",
+  "migrationSha256": "266a15d9e8eecbca3bb3f5010a089c40b9098cea68a2319eed63377d45731b8a",
+  "browser": {
+    "suite": "tests/e2e/joint-route-planboard.spec.ts",
+    "engine": "Chromium",
+    "testsPassed": 2,
+    "durationSeconds": 17.5,
+    "checks": [
+      "read-only computation before explicit review",
+      "exact physical show and buffer geometry",
+      "explicit final-time change review and atomic route/schedule apply",
+      "preserved starts, families, children, payments and mail",
+      "same-key retry and stale-source rejection"
+    ]
+  },
+  "concurrency": {
+    "code": "JOINT_ROUTE_CONCURRENCY_VERIFIED",
+    "realSessions": 2,
+    "observedConcurrentLockWaiters": 2,
+    "sameCommandVersions": 1,
+    "differentCommandWinners": 1,
+    "directFinaleWinners": 1,
+    "finaleCapacity": 1,
+    "capacityCollectorRows": 0,
+    "exactFinaleApprovalScheduleAndPlanboardMatch": true,
+    "allFamiliesRetained": true,
+    "publishedStartsUnchanged": true,
+    "paymentUnchanged": true,
+    "noExternalDeliveries": true
+  },
+  "infrastructure": {
+    "isolatedNamedDatabase": true,
+    "isolatedAuthAndRest": true,
+    "sharedApplicationAndAuthRowsUntouched": true,
+    "runtimeDatabaseGuardsActiveDuringTests": true,
+    "syntheticRoutesAppliedForAcceptance": true,
+    "productionUntouched": true
+  },
+  "build": {
+    "command": "pnpm build --webpack",
+    "passed": true,
+    "clientArtifactScanPassed": true,
+    "defaultTurbopackLimitation": "checkout-local dependency symlink points outside the project root"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "scope": "local synthetic database only",
+  "backupSha256": "1e3b8dc251059a74b96440051a6244a688389b9ba1363b9e5446830cb8365f8b",
+  "migration": "20261030065514_joint_route_policy_v2.sql",
+  "migrationSha256": "266a15d9e8eecbca3bb3f5010a089c40b9098cea68a2319eed63377d45731b8a",
+  "restoredOriginalOwners": true,
+  "migrationRole": "postgres",
+  "localDatabaseRestoreVerified": true,
+  "tablesVerified": 196,
+  "unchangedExistingTables": 195,
+  "onlyMetadataAppend": "joint-reception-v2 policy release",
+  "existingRowsUnchanged": true,
+  "noRoutesApplied": true,
+  "noAppointmentsChanged": true,
+  "noMailQueued": true,
+  "productionUntouched": true
+}

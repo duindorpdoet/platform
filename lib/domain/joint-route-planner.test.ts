@@ -43,7 +43,10 @@ describe("one physical calendar", () => {
     input.groups[1].finale.reservedAt = new Date(Date.parse(input.groups[0].finale.reservedAt!) + 300_000).toISOString();
     input.portals.at(-1)!.windows[0].maxGroups = 2;
     input.portals.at(-1)!.windows[0].maxConcurrentChildren = 15;
-    expect(proposeJointRoutes(input).valid).toBe(false);
+    const separated = proposeJointRoutes(input);
+    expect(separated.valid).toBe(true);
+    const finals = separated.groups.map(group => Date.parse(group.finaleArrivalAt!)).sort((a, b) => a - b);
+    expect(finals[1] - finals[0]).toBeGreaterThanOrEqual(360_000);
     input.portals.at(-1)!.windows[0].maxConcurrentChildren = 20;
     expect(proposeJointRoutes(input).valid).toBe(true);
     input.portals[0].windows[0].maxTotalChildren = 15;
@@ -83,6 +86,7 @@ describe("actual openings, reserved finales and group completion", () => {
     input.groups[0].startsAt = "2026-10-31T18:00:00+01:00";
     input.groups[0].desiredEndAt = "2026-10-31T21:00:00+01:00";
     input.groups[0].finale.reservedAt = "2026-10-31T20:09:17.123456+01:00";
+    input.portals.at(-1)!.windows[0].opensAt = input.groups[0].finale.reservedAt;
     const result = proposeJointRoutes(input), plan = result.groups[0];
     expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
     expect(plan.startsAt).toBe(input.groups[0].startsAt);
@@ -93,17 +97,20 @@ describe("actual openings, reserved finales and group completion", () => {
     expect(new Date(plan.desiredEndAt!).toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" })).toBe("21:00");
     expect(validateJointRoutes(input, result.groups)).toEqual([]);
   });
-  it("rejects completion one microsecond beyond the per-group thirty-minute limit", () => {
+  it("rejects submitted completion one microsecond beyond the per-group limit", () => {
     const input = fixture();
     input.groups[0].finale.reservedAt = "2026-10-31T21:24:00.000000Z";
-    expect(proposeJointRoutes(input).valid).toBe(true);
-    input.groups[0].finale.reservedAt = "2026-10-31T21:24:00.000001Z";
-    const late = proposeJointRoutes(input);
-    expect(late.valid).toBe(false);
-    expect(late.groups[0].expectedCompletionAt).toBe("2026-10-31T21:30:00.000001Z");
-    expect(late.conflicts.some(item => item.code === "GROUP_COMPLETION_LIMIT")).toBe(true);
+    input.portals.at(-1)!.windows[0].opensAt = input.groups[0].finale.reservedAt;
+    const exact = proposeJointRoutes(input);
+    expect(exact.valid).toBe(true);
+    const plan = exact.groups[0];
+    plan.visits.at(-1)!.startsAt = "2026-10-31T21:24:00.000001Z";
+    plan.finaleArrivalAt = plan.visits.at(-1)!.startsAt;
+    plan.expectedCompletionAt = "2026-10-31T21:30:00.000001Z";
+    plan.finaleChange = { portalId: "finale", previousReservedAt: input.groups[0].finale.reservedAt, proposedReservedAt: plan.finaleArrivalAt };
+    expect(validateJointRoutes(input, exact.groups).some(item => item.code === "GROUP_COMPLETION_LIMIT")).toBe(true);
     input.groups[0].desiredEndAt = "2026-10-31T21:00:00.000001Z";
-    expect(proposeJointRoutes(input).valid).toBe(true);
+    expect(validateJointRoutes(input, exact.groups)).toEqual([]);
   });
   it("keeps a microsecond opening and exact physical close without rounding an arrival earlier", () => {
     const input = fixture();
@@ -126,41 +133,42 @@ describe("actual openings, reserved finales and group completion", () => {
     ordered[1].startsAt = `2026-10-31T17:${nextMinute}:00.123455Z`;
     expect(validateJointRoutes(input, exact.groups).some(item => item.code === "ARRIVAL_OR_CAPACITY_CONFLICT")).toBe(true);
   });
-  it("keeps the saved 21:09 finale instead of independently bringing it forward", () => {
+  it("proposes an explicit earlier time at the same finale to reduce the old gap", () => {
     const input = fixture();
     input.groups[0].finale.reservedAt = time("21:09");
     input.portals.at(-1)!.windows[0].opensAt = time("18:59");
     const result = proposeJointRoutes(input);
     expect(result.valid).toBe(true);
-    expect(result.groups[0].finaleArrivalAt).toBe(time("21:09"));
-    expect(result.groups[0].diagnostics.some(item => item.code === "UNALLOCATED_BEFORE_FINALE")).toBe(true);
+    expect(result.groups[0].finaleArrivalAt).toBe(time("18:59"));
+    expect(result.groups[0].finaleChange).toEqual({ portalId: "finale", previousReservedAt: time("21:09"), proposedReservedAt: time("18:59") });
+    expect(result.groups[0].diagnostics.some(item => item.code === "FINALE_TIME_CHANGE")).toBe(true);
     expect(result.groups[0].visits[0].visitSeconds).toBe(360);
     expect(result.groups[0].visits[0].waitSeconds).toBe(0);
-    expect(result.metrics.after.byGroup[0].unallocatedBeforeFinaleSeconds).toBeGreaterThan(3600);
+    expect(result.metrics.after.byGroup[0].unallocatedBeforeFinaleSeconds).toBeLessThan(2 * 3600);
   });
-  it("blocks an old 18:30 finale when the real portal opens at 18:59", () => {
+  it("repairs an old early finale only through an explicitly reviewed time change", () => {
     const input = fixture();
     input.groups[0].finale.reservedAt = time("18:30");
     input.portals.at(-1)!.windows[0].opensAt = time("18:59");
     const result = proposeJointRoutes(input);
-    expect(result.valid).toBe(false);
-    expect(result.conflicts.some(item => item.code === "FINALE_RESERVATION_INVALID")).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.groups[0].finaleChange?.proposedReservedAt).toBe(time("18:59"));
     expect(result.groups[0].visits.some(visit => visit.kind === "finale" && Date.parse(visit.startsAt) < Date.parse(time("18:59")))).toBe(false);
   });
   it("allows completion exactly at target +30 minutes, with turnover only in physical closure", () => {
     const input = fixture();
     input.groups[0].finale.reservedAt = time("21:24");
     const finale = input.portals.at(-1)!.windows[0];
-    finale.bufferSeconds = 120; finale.closesAt = time("21:32");
+    finale.bufferSeconds = 120; finale.opensAt = time("21:24"); finale.closesAt = time("21:32");
     expect(proposeJointRoutes(input).valid).toBe(true);
     finale.closesAt = time("21:31:59");
     expect(proposeJointRoutes(input).valid).toBe(false);
     finale.closesAt = time("21:40");
     input.groups[0].finale.reservedAt = time("21:24:01");
-    expect(proposeJointRoutes(input).conflicts.some(item => item.code === "GROUP_COMPLETION_LIMIT")).toBe(true);
-    input.groups[0].desiredEndAt = time("20:30"); input.groups[0].finale.reservedAt = time("20:54");
+    expect(proposeJointRoutes(input).groups[0].finaleChange?.proposedReservedAt).toBe(time("21:24"));
+    input.groups[0].desiredEndAt = time("20:30"); input.groups[0].finale.reservedAt = time("20:54"); finale.opensAt = time("20:54");
     expect(proposeJointRoutes(input).valid).toBe(true);
-    input.groups[0].finale.reservedAt = time("21:00");
+    input.groups[0].finale.reservedAt = time("21:00"); finale.opensAt = time("21:00");
     expect(proposeJointRoutes(input).valid).toBe(false);
   });
   it("never permits a new arrival after ordinary close; small end grace differs from hard close", () => {
@@ -180,7 +188,7 @@ describe("actual openings, reserved finales and group completion", () => {
     const result = proposeJointRoutes(input);
     expect(result.valid).toBe(false);
     expect(result.metrics.after.totalOrdinaryVisits).toBe(0);
-    expect(result.groups[0].visits.at(-1)?.startsAt).toBe(time("21:24"));
+    expect(result.groups[0].visits.at(-1)?.startsAt).toBe(time("20:00"));
   });
   it("counts physical buffer separately from group walking/departure time", () => {
     const input = fixture(1, 2);
@@ -236,7 +244,7 @@ describe("accessibility and honest useful evenings", () => {
     const input = fixture();
     input.portals[0].windows[0].arrivalClosesAt = time("22:00");
     const result = proposeJointRoutes(input);
-    expect(result.metrics.after.byPortal[0].usableOpenSeconds).toBeLessThan(3 * 3600);
+    expect(result.metrics.after.byPortal[0].usableOpenSeconds).toBe(3 * 3600 + 54 * 60);
     const before = measureJointRoutes(input, result.groups);
     expect(before.byGroup[0].walkingSeconds).toBe(0);
   });
@@ -255,5 +263,92 @@ describe("accessibility and honest useful evenings", () => {
     expect(result.work.candidateEvaluations).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.candidateEvaluations);
     expect(result.work.pairReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.pairReplans);
     expect(elapsed).toBeLessThan(5000);
+  });
+});
+
+describe("organization route policy of 30 October", () => {
+  it.each([925, 932, 976, 1020, 1114, 1200])("allows the actual final journey of %i seconds, measured and independently validated", seconds => {
+    const input = fixture();
+    input.groups[0].fixedFirstPortalId = "house-0";
+    input.legs.find(leg => leg.from === "portal:house-0" && leg.to === "portal:finale")!.seconds = seconds;
+    const result = proposeJointRoutes(input), finale = result.groups[0].visits.at(-1)!;
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.metrics.after.totalOrdinaryVisits).toBe(1);
+    expect(finale.walkSeconds).toBe(seconds);
+    expect(finale.kind).toBe("finale");
+    expect(Date.parse(finale.startsAt) - Date.parse(result.groups[0].visits[0].startsAt)).toBe((360 + seconds) * 1000);
+    expect(validateJointRoutes(input, result.groups)).toEqual([]);
+    expect(result.metrics.after.byPortal[0].usableOpenSeconds).toBeGreaterThan(0);
+  });
+  it("also allows a direct start-to-finale walk without adding a fabricated ordinary stop", () => {
+    const input = fixture();
+    input.groups[0].excludedPortalIds = ["house-0"];
+    input.legs.find(leg => leg.from === input.groups[0].startNodeId && leg.to === "portal:finale")!.seconds = 1200;
+    const result = proposeJointRoutes(input);
+    expect(result.valid).toBe(true);
+    expect(result.groups[0].visits).toHaveLength(1);
+    expect(result.groups[0].visits[0].walkSeconds).toBe(1200);
+    expect(result.groups[0].diagnostics.some(diagnostic => diagnostic.code === "ALL_HOUSES_ALREADY_VISITED")).toBe(true);
+  });
+  it("rejects a 20-minute final journey with only five minutes available, even if a browser calls it valid", () => {
+    const input = fixture();
+    input.legs.find(leg => leg.from === "portal:house-0" && leg.to === "portal:finale")!.seconds = 1200;
+    const result = proposeJointRoutes(input), plan = result.groups[0], first = plan.visits[0];
+    const tooEarly = new Date(Date.parse(first.startsAt) + (first.visitSeconds + 300) * 1000).toISOString();
+    plan.visits.at(-1)!.startsAt = tooEarly; plan.finaleArrivalAt = tooEarly;
+    plan.expectedCompletionAt = new Date(Date.parse(tooEarly) + 360_000).toISOString();
+    plan.finaleChange!.proposedReservedAt = tooEarly;
+    expect(validateJointRoutes(input, result.groups).some(diagnostic => diagnostic.code === "TRAVEL_TIME")).toBe(true);
+    plan.visits.at(-1)!.walkSeconds = 0;
+    expect(validateJointRoutes(input, result.groups).some(diagnostic => diagnostic.code === "TRAVEL_ESTIMATE_MISMATCH")).toBe(true);
+  });
+  it("retains the separate ordinary leg and visible total walking limits", () => {
+    const input = fixture();
+    input.legs.find(leg => leg.from === input.groups[0].startNodeId && leg.to === "portal:house-0")!.seconds = 901;
+    expect(proposeJointRoutes(input).metrics.after.totalOrdinaryVisits).toBe(0);
+    const changed = fixture();
+    changed.legs.find(leg => leg.from === "portal:house-0" && leg.to === "portal:finale")!.seconds = 1200;
+    changed.maxTotalWalkingSeconds = 1000;
+    const result = proposeJointRoutes(changed);
+    expect(result.metrics.after.totalOrdinaryVisits).toBe(0);
+    expect(result.walkingPolicy).toEqual({ maxOrdinaryLegSeconds: 900, maxTotalSeconds: 1000, finaleLegLimitSeconds: null });
+  });
+  it("makes identical choices for Anders flags and all world labels while preserving a useful linked first", () => {
+    const input = fixture(2, 4);
+    input.groups[0].fixedFirstPortalId = "house-3";
+    const ordinary = input.portals.filter(portal => !portal.finale);
+    ordinary.forEach((portal, index) => { portal.worldSlug = index % 2 ? "circuswereld" : "anders"; });
+    input.needsAnders = true;
+    const original = proposeJointRoutes(input);
+    const changed = structuredClone(input); changed.needsAnders = false;
+    changed.portals.forEach(portal => { portal.worldSlug = "ander-thema"; });
+    expect(proposeJointRoutes(changed)).toEqual(original);
+    expect(original.groups[0].visits[0].portalId).toBe("house-3");
+    expect(original.groups[0].diagnostics.some(diagnostic => diagnostic.code === "FIRST_PORTAL_ALTERNATIVE")).toBe(false);
+    const removed = structuredClone(original.groups); removed[0].visits.shift();
+    removed[0].visits.forEach((visit, index) => { visit.sequence = index + 1; });
+    expect(validateJointRoutes(input, removed).some(diagnostic => diagnostic.code === "FEASIBLE_FIRST_PORTAL_MUST_BE_PRESERVED")).toBe(true);
+  });
+  it("does not truncate real opportunities at historical desired/max visit counts or a common group count", () => {
+    const input = fixture(2, 17);
+    input.groups[0].maxOrdinaryVisits = 0;
+    input.groups[1].maxOrdinaryVisits = 11;
+    input.groups[1].ordinaryStopAt = time("18:00");
+    const result = proposeJointRoutes(input);
+    expect(result.valid).toBe(true);
+    expect(result.metrics.after.byGroup[0].ordinaryVisits).toBe(17);
+    expect(result.metrics.after.byGroup[1].ordinaryVisits).toBeGreaterThan(0);
+    expect(result.metrics.after.byGroup[1].ordinaryVisits).toBeLessThan(17);
+  });
+  it("requires explicit finale time review and the same physical destination, with exact service duration", () => {
+    const input = fixture(1, 2), result = proposeJointRoutes(input);
+    delete result.groups[0].finaleChange;
+    expect(validateJointRoutes(input, result.groups).some(diagnostic => diagnostic.code === "FINALE_CHANGE_REVIEW_REQUIRED")).toBe(true);
+    const changed = proposeJointRoutes(input);
+    changed.groups[0].visits.at(-1)!.portalId = "house-1";
+    expect(validateJointRoutes(input, changed.groups).some(diagnostic => diagnostic.code === "FINALE_LOCATION_CHANGED")).toBe(true);
+    const longerShow = proposeJointRoutes(input);
+    longerShow.groups[0].visits.at(-1)!.visitSeconds += 60;
+    expect(validateJointRoutes(input, longerShow.groups).some(diagnostic => diagnostic.code === "OPENING_WINDOW")).toBe(true);
   });
 });

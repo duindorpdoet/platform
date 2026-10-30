@@ -1,0 +1,82 @@
+{
+  "scope": "isolated restored local synthetic database",
+  "suites": [
+    {
+      "file": "030_time_control_and_emergency.sql",
+      "exitCode": 0,
+      "assertions": 23,
+      "failures": []
+    },
+    {
+      "file": "035_journey_preference_dispatch.sql",
+      "exitCode": 0,
+      "assertions": 6,
+      "failures": []
+    },
+    {
+      "file": "098_completion_target_overrun.sql",
+      "exitCode": 0,
+      "assertions": 40,
+      "failures": []
+    },
+    {
+      "file": "108_shared_physical_reception.sql",
+      "exitCode": 0,
+      "assertions": 31,
+      "failures": []
+    },
+    {
+      "file": "109_structured_child_accessibility.sql",
+      "exitCode": 0,
+      "assertions": 14,
+      "failures": []
+    },
+    {
+      "file": "110_canonical_joint_routes.sql",
+      "exitCode": 0,
+      "assertions": 49,
+      "failures": []
+    },
+    {
+      "file": "111_canonical_route_runtime.sql",
+      "exitCode": 0,
+      "assertions": 42,
+      "failures": []
+    },
+    {
+      "file": "113_batched_physical_planboard_warnings.sql",
+      "exitCode": 0,
+      "assertions": 49,
+      "failures": []
+    },
+    {
+      "file": "114_cached_physical_reception.sql",
+      "exitCode": 0,
+      "assertions": 26,
+      "failures": []
+    },
+    {
+      "file": "115_joint_route_policy_v2.sql",
+      "exitCode": 0,
+      "assertions": 55,
+      "failures": []
+    }
+  ],
+  "passed": true,
+  "assertions": 335,
+  "additionalLegacyFixtureProbe": {
+    "scope": "isolated local cloned synthetic fixture before policy v2",
+    "testFile": "028_dynamic_dispatch_and_finale.sql",
+    "assertion": 1,
+    "baselineBeforeMigrationHasSameFailure": true,
+    "v2MigrationPresentInBaseline": false,
+    "unchangedRelevantFunctions": {
+      "api.group_snapshot(uuid)": true,
+      "app_private.capture_published_start(uuid)": true,
+      "app_private.published_start_projection(uuid,timestamptz)": true
+    },
+    "reason": "The fixture inserts a draft while the seeded group is still legacy and still has a published legacy route. The existing capture_published_start trigger preserves that already published legacy departure. Changing the route mode to dynamic afterwards retains the frozen publication; its address-release time has arrived. The assertion incorrectly assumes no prior publication.",
+    "allOtherAssertionsPassed": true,
+    "productionUntouched": true
+  }
+}

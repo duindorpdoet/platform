@@ -56,6 +56,21 @@ describe("coded physical calendar diagnostics",()=>{
   expect(exported).toMatchObject({readOnly:true,available:true,saved:false,applied:false,published:false,changedRows:0,messagesSent:0,before:{valid:false},after:{valid:true}});
   expect((exported.after.conflicts as Array<{groupCode:string}>).at(-1)?.groupCode).toBe("G-MISSING");
   expect(exported.after.groups[0].code).toBe("G-SYNTH");expect(exported.after.metrics.totalOrdinaryVisits).toBe(1);
+  expect(exported.after.metrics.receptionWaitingSeconds).toBe(proposal.metrics.after.receptionWaitingSeconds);
+  expect(exported.after.metrics.unallocatedBeforeFinaleSeconds).toBe(proposal.metrics.after.unallocatedBeforeFinaleSeconds);
+  expect(exported.after.metrics.longestWaitSeconds).toBe(proposal.metrics.after.longestWaitSeconds);
+  expect(exported.walkingPolicy).toEqual({maxOrdinaryLegSeconds:900,maxTotalSeconds:3600,finaleLegLimitSeconds:null});
   expect(json).not.toMatch(/PRIVATE|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}|synthetic-start-node|coordinate|privateNote|childName/i);
+ });
+ it("exports reviewed finale time changes and unused gates without leaking physical IDs or claiming impossibility",()=>{
+  const input=syntheticJointInput();input.portals[1].windows[0].opensAt=at(0);
+  const unused={...input.portals[0],id:"20000000-0000-0000-0000-000000000003",code:"P-UNUSED",nodeId:"private-unreachable-node"};input.portals.push(unused);
+  const proposal=proposeJointRoutes(input);expect(proposal.valid).toBe(true);expect(proposal.groups[0].finaleChange).toBeDefined();
+  Object.assign(proposal.groups[0].finaleChange!,{privateNote:"PRIVATE REVIEW NOTE"});
+  const exported=codedJointProposal(input,proposal,[],at(0));
+  expect(exported.after.groups[0].finaleChange).toEqual({portalCode:"P-FINAL",previousReservedAt:at(59),proposedReservedAt:proposal.groups[0].finaleArrivalAt});
+  expect(exported.after.metrics.unvisitedPortals).toEqual(["P-UNUSED"]);
+  expect(exported.after.metrics.byPortal.find(portal=>portal.code==="P-UNUSED")!.remainingGapReason).toContain("INDIRECT_ROUTE_NOT_RULED_OUT");
+  expect(JSON.stringify(exported)).not.toMatch(/PRIVATE|20000000-0000|private-unreachable-node|privateNote/i);
  });
 });

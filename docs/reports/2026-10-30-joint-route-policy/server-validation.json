@@ -1,0 +1,22 @@
+{
+  "scope": "anonymous local PostgreSQL fixture using the unchanged authoritative physical matrix",
+  "validator": "app_private.validate_joint_route_proposal",
+  "inputSha256": "21b5543784d2879e1695e964cbfe1f0603713103ae0ecbf20f295ea06f8df0cb",
+  "proposalSha256": "89f70e8707fb67894eab3968cf2dd306052fcdf1bcaa62d21de195bd92670f2c",
+  "groups": 18,
+  "ordinaryVisits": 261,
+  "actualFinalWalksAbove900Seconds": [
+    976,
+    1020,
+    1114
+  ],
+  "serverAccepted": true,
+  "setupRolledBack": true,
+  "productionUntouched": true,
+  "sourceHash": "40376532464a0b12e90912ef82458eb8aa78b2c99084b916be02f7c21dda4223",
+  "boardHash": "bed14f1d603f3e7157a8702600371ecc",
+  "proposalHash": "6fb6320bc9c41221da38d98fc19238081a318661550d7f5d4635256c3792c8ef",
+  "migrationSha256": "266a15d9e8eecbca3bb3f5010a089c40b9098cea68a2319eed63377d45731b8a",
+  "proposalSourceMatchesInput": true,
+  "proposalBoardMatchesInput": true
+}

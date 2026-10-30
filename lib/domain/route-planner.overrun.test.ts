@@ -35,6 +35,22 @@ describe("completion target and bounded overrun", () => {
     expect(result.groups[0]).toMatchObject({ expectedCompletionAt: iso("20:55"), effectiveStopAt: iso("20:30"), endDeviationMinutes: -5 });
     expect(result.groups[0].warnings).not.toContain("GROUP_END_OVERRUN");
   });
+  it.each([925, 1114, 1200])("preserves a %s-second final transfer when reserving a real final slot", transferSeconds => {
+    const result = proposePlan({ ...base, finalePlanningTransferSeconds: transferSeconds });
+    expect(result.conflicts).toEqual([]);
+    const group = result.groups[0];
+    expect(group.effectiveStopAt).toBe(iso("20:30"));
+    expect(Date.parse(group.expectedFinaleArrivalAt) - Date.parse(group.effectiveStopAt)).toBe(transferSeconds * 1_000);
+    expect(Date.parse(group.expectedCompletionAt) - Date.parse(group.expectedFinaleArrivalAt)).toBe(base.finaleShowSeconds * 1_000);
+    expect(Date.parse(group.physicalFinaleEndsAt) - Date.parse(group.expectedFinaleArrivalAt)).toBe((base.finaleShowSeconds + base.finaleTurnoverSeconds) * 1_000);
+  });
+  it("cannot reserve a twenty-minute final transfer in the five minutes after departure", () => {
+    const result = proposePlan({ ...base, parties: [party("late", "21:00", "20:50")],
+      starts: [{ ...base.starts[0], startsAt: at("20:50") }], globalOrdinaryStopAt: at("20:55"),
+      finalePlanningTransferSeconds: 1200, finaleLastArrivalAt: at("20:55"), finaleClosesAt: at("21:07") });
+    expect(result.groups).toEqual([]);
+    expect(result.conflicts.some(conflict => conflict.code === "FINALE_WINDOW_CONFLICT")).toBe(true);
+  });
   it.each(["21:00", "20:30"])("keeps the deadline per group with desired %s", end => {
     const target = Date.parse(at(end));
     const arrival = new Date(target + 20 * 60_000).toISOString();
