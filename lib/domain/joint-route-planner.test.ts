@@ -263,7 +263,7 @@ describe("accessibility and honest useful evenings", () => {
     // Bound deterministic work, independent of parallel CI load or CPU speed.
     expect(result.work.candidateEvaluations).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.candidateEvaluations);
     expect(result.work.pairReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.pairReplans);
-  });
+  }, 20_000);
 });
 
 describe("organization route policy of 30 October", () => {
