@@ -524,4 +524,64 @@ describe("65-minute walking, actual show completion and explicit physical covera
     small.groups.reverse(); small.portals.reverse(); small.legs.reverse();
     expect(proposeJointRoutes(small, { mode: "organizer-coverage" })).toEqual(original);
   }, 20_000);
+  it.each(["general", "organizer-coverage"] as const)("preserves a stronger established route when a new greedy candidate opens in %s mode", mode => {
+    const input = fixture(1, 4), added = input.portals.splice(3, 1)[0];
+    const shifted = (seconds: number) => new Date(Date.parse(time("17:00")) + seconds * 1000).toISOString();
+    input.portals.filter(portal => !portal.finale).forEach((portal, index) => {
+      Object.assign(portal.windows[0], { opensAt: shifted(index * 360), arrivalClosesAt: shifted((index + 1) * 360 + 2), closesAt: shifted((index + 1) * 360 + 2) });
+    });
+    input.legs.find(leg => leg.from === input.groups[0].startNodeId && leg.to === input.portals[0].nodeId)!.seconds = 2;
+    const established = proposeJointRoutes(input, { mode });
+    expect(established.metrics.after.totalOrdinaryVisits).toBe(3);
+    input.before = established.groups;
+    // Its short walk is attractive, but the real twenty-minute visit consumes
+    // all three short openings. It cannot be inserted into the stronger route.
+    Object.assign(added, { id: "added-house", nodeId: "portal:added-house" });
+    Object.assign(added.windows[0], { visitSeconds: 1200, arrivalClosesAt: shifted(1200), closesAt: shifted(1200) });
+    const oldNode = "portal:house-3";
+    input.legs = input.legs.map(leg => ({ ...leg, from: leg.from === oldNode ? added.nodeId : leg.from, to: leg.to === oldNode ? added.nodeId : leg.to }));
+    input.portals.push(added);
+    const result = proposeJointRoutes(input, { mode });
+    expect(result.valid, JSON.stringify(result.conflicts)).toBe(true);
+    expect(result.metrics.after.totalOrdinaryVisits).toBe(3);
+    expect(result.groups[0].visits.map(visit => visit.portalId)).toEqual(["house-0", "house-1", "house-2", "finale"]);
+    input.groups.reverse(); input.portals.reverse(); input.legs.reverse();
+    expect(proposeJointRoutes(input, { mode })).toEqual(result);
+    // The established set remains a search seed, never an exclusion rule.
+    for (const portal of input.portals.filter(portal => !portal.finale)) Object.assign(portal.windows[0], { opensAt: time("17:00"), arrivalClosesAt: time("22:00"), closesAt: time("22:00") });
+    const expanded = proposeJointRoutes(input, { mode });
+    expect(expanded.valid, JSON.stringify(expanded.conflicts)).toBe(true);
+    expect(expanded.metrics.after.totalOrdinaryVisits).toBe(4);
+    expect(expanded.groups[0].visits.some(visit => visit.portalId === added.id)).toBe(true);
+  });
+  it("reserves full-candidate search work when the established portfolio exhausts its allowance", () => {
+    const input = fixture(16, 101), added = input.portals.splice(100, 1)[0];
+    const closes = "2026-11-01T06:00:00.000Z", ordinaryStopAt = "2026-11-01T05:00:00.000Z";
+    input.groups.forEach(group => { group.desiredEndAt = null; group.ordinaryStopAt = ordinaryStopAt; group.finale.latestArrivalAt = closes; });
+    [...input.portals, added].forEach((portal, index) => {
+      portal.code = portal.finale ? "P-38" : `P-H${index}`;
+      Object.assign(portal.windows[0], { arrivalClosesAt: closes, closesAt: closes });
+    });
+    const priorGroup = input.groups[1], ordinary = input.portals.filter(portal => !portal.finale).map((portal, index) => ({
+      portalId: portal.id, kind: "ordinary" as const, sequence: index + 1, startsAt: new Date(Date.parse(priorGroup.startsAt) + index * 360_000).toISOString(),
+      visitSeconds: 360, bufferSeconds: 0, walkSeconds: 0, walkMeters: 0,
+    }));
+    const priorFinale = new Date(Date.parse(priorGroup.startsAt) + ordinary.length * 360_000).toISOString();
+    input.before = [{ groupId: priorGroup.id, startsAt: priorGroup.startsAt, finaleArrivalAt: priorFinale, expectedCompletionAt: new Date(Date.parse(priorFinale) + 360_000).toISOString(), diagnostics: [], visits: [...ordinary,
+      { portalId: "finale", kind: "finale", sequence: ordinary.length + 1, startsAt: priorFinale, visitSeconds: 360, bufferSeconds: 0, walkSeconds: 0, walkMeters: 0 }] }];
+    input.groups[0].excludedPortalIds = ordinary.map(visit => visit.portalId);
+    input.portals.push(added);
+    const result = proposeJointRoutes(input);
+    expect(result.valid, JSON.stringify(result.conflicts.filter(diagnostic => diagnostic.severity === "block"))).toBe(true);
+    const historyGroup = result.groups.find(plan => plan.groupId === input.groups[0].id)!;
+    expect(historyGroup.visits.filter(visit => visit.kind === "ordinary").map(visit => visit.portalId)).toEqual([added.id]);
+    expect(result.groups.every(plan => plan.visits.filter(visit => visit.kind === "finale").length === 1)).toBe(true);
+    expect(result.work.exhausted).toBe(true);
+    expect(result.work.candidateEvaluations).toBeGreaterThan(JOINT_ROUTE_SEARCH_LIMITS.historicalCandidateEvaluations);
+    expect(result.work.candidateEvaluations).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.candidateEvaluations);
+    expect(result.work.variants).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.variants);
+    expect(result.work.pairReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.pairReplans);
+    expect(result.work.routeRepairs).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.routeRepairs);
+    expect(result.work.jointFinaleReplans).toBeLessThanOrEqual(JOINT_ROUTE_SEARCH_LIMITS.jointFinaleReplans);
+  }, 20_000);
 });

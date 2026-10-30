@@ -1,0 +1,1023 @@
+{
+  "artifactType": "joint-route-65-coverage-review",
+  "generatedAt": "2026-10-30T14:04:44.345Z",
+  "timeZone": "Europe/Amsterdam",
+  "applicableToDatabase": false,
+  "applied": false,
+  "published": false,
+  "participantsMessaged": false,
+  "explanation": "Lokaal beoordelingsrapport; geen route opgeslagen, toegepast, gepubliceerd of naar deelnemers verstuurd. Het bord met 261 bezoeken is werkelijk geaccepteerd. De vier nieuwe varianten gebruiken expliciet kandidaatbeleid v3 (65 minuten lopen, voorgestelde vroegtetolerantie 30 minuten) op dezelfde actuele v2-productiesnapshot. Oude bronhashen zijn niet aangepast; deze bestanden zijn geen toepasbare routecommando’s. Na ingebruikname van v3 is verse gezaghebbende RPC-invoer en herberekening nodig. De begrensde deterministische zoekroutine bewijst geen wereldwijd optimum. Een niet gevonden bezoek is uitsluitend bewezen onmogelijk wanneer de afzonderlijke gecontroleerde ondergrens dat aantoont.",
+  "source": {
+    "readAt": "2026-10-30T13:55:34.757129+00:00",
+    "projectRef": "dtubngvxfbupgvgfrjko",
+    "sourceHash": "362029c7d6230e8547ecc1311732e14272ae3ca7c79eb43bd2eb806cc9785ab5",
+    "boardHash": "bfd445c71ed15933dcfbc8554d5e1286",
+    "inputPolicyVersion": "joint-reception-v2",
+    "candidatePolicyVersion": "joint-reception-v3",
+    "plannerSourceSha256": "0790d644c7cfcf7d35f4a5e3c5722115ec864c2f7ccb4ac28c60ed832fa5f005",
+    "activeGroups": 18,
+    "activePlanningPortals": 19,
+    "inventoryPortals": 21,
+    "activeChildren": 289,
+    "childrenInPlanningGroups": 283,
+    "startedGroups": 0,
+    "acceptedVersions": [
+      {
+        "revision": 1,
+        "acceptedAt": "2026-10-30T12:55:04.42422+00:00",
+        "policyVersion": "joint-reception-v2"
+      }
+    ],
+    "latestReadOnlyProductionCheck": null,
+    "comparisonHistory": null,
+    "requiresFreshInputAfterMigration": true
+  },
+  "policy": {
+    "maxTotalWalkingSeconds": 3900,
+    "maxOrdinaryLegWalkingSeconds": 900,
+    "finaleLegLimitSeconds": null,
+    "maxEarlyFinishSeconds": 1800,
+    "maxOverrunSeconds": 1800,
+    "earlyFinishStandardIsNewProposal": true,
+    "routePolicySettingsVersion": 1
+  },
+  "searchLimits": {
+    "portfolios": 2,
+    "variants": 64,
+    "variantsPerStrategy": 8,
+    "constructionEvaluationsPerPortfolio": 120000,
+    "historicalConstructionEvaluations": 80000,
+    "pairReplans": 48,
+    "pairReplansPerPortfolio": 24,
+    "routeRepairs": 9600,
+    "repairsPerPortfolio": 4800,
+    "repairsPerSeed": 2400,
+    "repairsPerGroupPass": 48,
+    "jointFinaleReplans": 96,
+    "jointFinaleReplansPerPortfolio": 48,
+    "historicalCandidateEvaluations": 100000,
+    "candidateEvaluations": 200000
+  },
+  "independentTargetWindowBounds": [
+    {
+      "groupCode": "G-37",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T16:11:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-37",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T16:01:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-38",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T16:41:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-38",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T16:31:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-39",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T17:21:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-39",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T17:31:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-40",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T16:51:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-40",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T16:41:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-41",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T16:31:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-41",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T16:41:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-42",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T16:01:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-42",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T16:11:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-43",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": null,
+      "optimisticArrivalAt": "2026-10-31T16:06:10.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 370,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-43",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": null,
+      "optimisticArrivalAt": "2026-10-31T16:08:29.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 509,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-44",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": null,
+      "optimisticArrivalAt": "2026-10-31T17:06:10.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 370,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-44",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": null,
+      "optimisticArrivalAt": "2026-10-31T17:08:29.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 509,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-45",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T17:01:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-45",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T17:11:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-46",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:01:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-46",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T16:51:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-47",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:11:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-47",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:01:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-48",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:41:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-48",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:31:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-49",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:31:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-49",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:21:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-50",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:21:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-50",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:11:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-51",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T17:11:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-51",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T17:21:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-52",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": null,
+      "optimisticArrivalAt": "2026-10-31T18:06:10.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 370,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-52",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": null,
+      "optimisticArrivalAt": "2026-10-31T18:08:29.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 509,
+      "hardWindowConflictProven": true,
+      "explanation": "Zelfs de optimistische loopondergrens overschrijdt de laatste bruikbare ontvangst. Tussenliggende extra bezoeken en wachten kunnen dit niet herstellen."
+    },
+    {
+      "groupCode": "G-53",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T18:01:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-53",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-02",
+      "optimisticArrivalAt": "2026-10-31T18:11:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": true,
+      "explanation": "Zelfs de optimistische loopondergrens met het beschermde eerste bezoek aan P-02 overschrijdt de laatste bruikbare ontvangst. Tussenliggende extra bezoeken en wachten kunnen dit niet herstellen."
+    },
+    {
+      "groupCode": "G-54",
+      "portalCode": "P-02",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T18:01:47.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T19:25:00.000Z",
+      "optimisticWalkingSeconds": 407,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    },
+    {
+      "groupCode": "G-54",
+      "portalCode": "P-12",
+      "fixedFirstPortalCode": "P-12",
+      "optimisticArrivalAt": "2026-10-31T17:51:00.000Z",
+      "latestPossibleArrivalAt": "2026-10-31T18:08:00.000Z",
+      "optimisticWalkingSeconds": 60,
+      "hardWindowConflictProven": false,
+      "explanation": "De onafhankelijke start/opening-ondergrens sluit dit bezoek niet uit. Dit is geen bewijs dat het in de gedeelde kalender past."
+    }
+  ],
+  "independentCompletionBounds": [
+    {
+      "groupCode": "G-37",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 2940,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-38",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 1140,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-39",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-40",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 540,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-41",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-42",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 2940,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-43",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-44",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-45",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-46",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-47",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-48",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-49",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-50",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-51",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-52",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-53",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    },
+    {
+      "groupCode": "G-54",
+      "physicalFinaleAndEndWindowConflictProven": false,
+      "availableUniqueOrdinaryHouses": 18,
+      "maximumOrdinaryVisitSeconds": 5400,
+      "maximumWalkingSeconds": 3900,
+      "maximumShowSeconds": 360,
+      "minimumIdleSecondsBeforeEarliestCompletion": 0,
+      "explanation": "Conservatieve duurondergrens: zelfs alle echte unieke huizen met hun langste echte bezoekduur, het volledige loopbudget en de echte show vullen samen slechts een begrensde tijd. Een positief restant moet binnen dit eindvenster ontvangstwachttijd of vrije tijd zijn. Het bewijs veronderstelt geen verplichte omweg en bewijst niet dat alle huizen gezamenlijk passen."
+    }
+  ],
+  "variants": [
+    {
+      "key": "stored",
+      "label": "Opgeslagen bord · 60 minuten",
+      "localPolicyValid": true,
+      "metrics": {
+        "totalOrdinaryVisits": 261,
+        "minOrdinaryVisits": 10,
+        "maxOrdinaryVisits": 17,
+        "zeroVisitGroups": 0,
+        "walkingSeconds": 56213,
+        "receptionWaitingSeconds": 2231,
+        "freeBeforeFinaleSeconds": 6798,
+        "longestWaitSeconds": 1479,
+        "endWindowViolations": 4,
+        "unvisitedPortals": [
+          "P-48"
+        ],
+        "coverage": [
+          {
+            "portalCode": "P-02",
+            "groups": 13,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-39",
+              "G-40",
+              "G-41",
+              "G-42",
+              "G-45",
+              "G-46",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-51",
+              "G-53"
+            ],
+            "missingGroups": [
+              "G-43",
+              "G-44",
+              "G-47",
+              "G-52",
+              "G-54"
+            ]
+          },
+          {
+            "portalCode": "P-12",
+            "groups": 13,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-39",
+              "G-40",
+              "G-42",
+              "G-43",
+              "G-44",
+              "G-46",
+              "G-47",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-54"
+            ],
+            "missingGroups": [
+              "G-41",
+              "G-45",
+              "G-51",
+              "G-52",
+              "G-53"
+            ]
+          }
+        ]
+      },
+      "work": null
+    },
+    {
+      "key": "general",
+      "label": "65 minuten · algemeen",
+      "localPolicyValid": true,
+      "metrics": {
+        "totalOrdinaryVisits": 272,
+        "minOrdinaryVisits": 9,
+        "maxOrdinaryVisits": 17,
+        "zeroVisitGroups": 0,
+        "walkingSeconds": 55617,
+        "receptionWaitingSeconds": 4119,
+        "freeBeforeFinaleSeconds": 23415,
+        "longestWaitSeconds": 5899,
+        "endWindowViolations": 0,
+        "unvisitedPortals": [
+          "P-48"
+        ],
+        "coverage": [
+          {
+            "portalCode": "P-02",
+            "groups": 17,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-39",
+              "G-40",
+              "G-41",
+              "G-42",
+              "G-43",
+              "G-44",
+              "G-45",
+              "G-46",
+              "G-47",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-51",
+              "G-53",
+              "G-54"
+            ],
+            "missingGroups": [
+              "G-52"
+            ]
+          },
+          {
+            "portalCode": "P-12",
+            "groups": 16,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-39",
+              "G-40",
+              "G-41",
+              "G-42",
+              "G-43",
+              "G-44",
+              "G-45",
+              "G-46",
+              "G-47",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-51",
+              "G-54"
+            ],
+            "missingGroups": [
+              "G-52",
+              "G-53"
+            ]
+          }
+        ]
+      },
+      "work": {
+        "candidateEvaluations": 176914,
+        "variants": 64,
+        "pairReplans": 48,
+        "routeRepairs": 4320,
+        "jointFinaleReplans": 2,
+        "exhausted": false
+      }
+    },
+    {
+      "key": "p02",
+      "label": "65 minuten · P-02-doel",
+      "localPolicyValid": true,
+      "metrics": {
+        "totalOrdinaryVisits": 265,
+        "minOrdinaryVisits": 10,
+        "maxOrdinaryVisits": 17,
+        "zeroVisitGroups": 0,
+        "walkingSeconds": 54210,
+        "receptionWaitingSeconds": 7089,
+        "freeBeforeFinaleSeconds": 22358,
+        "longestWaitSeconds": 6496,
+        "endWindowViolations": 0,
+        "unvisitedPortals": [
+          "P-48"
+        ],
+        "coverage": [
+          {
+            "portalCode": "P-02",
+            "groups": 18,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-39",
+              "G-40",
+              "G-41",
+              "G-42",
+              "G-43",
+              "G-44",
+              "G-45",
+              "G-46",
+              "G-47",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-51",
+              "G-52",
+              "G-53",
+              "G-54"
+            ],
+            "missingGroups": []
+          },
+          {
+            "portalCode": "P-12",
+            "groups": 10,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-40",
+              "G-41",
+              "G-46",
+              "G-47",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-54"
+            ],
+            "missingGroups": [
+              "G-39",
+              "G-42",
+              "G-43",
+              "G-44",
+              "G-45",
+              "G-51",
+              "G-52",
+              "G-53"
+            ]
+          }
+        ]
+      },
+      "work": {
+        "candidateEvaluations": 99955,
+        "variants": 32,
+        "pairReplans": 48,
+        "routeRepairs": 6048,
+        "jointFinaleReplans": 14,
+        "exhausted": false
+      }
+    },
+    {
+      "key": "p12",
+      "label": "65 minuten · P-12-doel",
+      "localPolicyValid": true,
+      "metrics": {
+        "totalOrdinaryVisits": 273,
+        "minOrdinaryVisits": 10,
+        "maxOrdinaryVisits": 17,
+        "zeroVisitGroups": 0,
+        "walkingSeconds": 53291,
+        "receptionWaitingSeconds": 4167,
+        "freeBeforeFinaleSeconds": 24355,
+        "longestWaitSeconds": 5899,
+        "endWindowViolations": 0,
+        "unvisitedPortals": [],
+        "coverage": [
+          {
+            "portalCode": "P-02",
+            "groups": 16,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-39",
+              "G-40",
+              "G-41",
+              "G-42",
+              "G-43",
+              "G-45",
+              "G-46",
+              "G-47",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-51",
+              "G-53",
+              "G-54"
+            ],
+            "missingGroups": [
+              "G-44",
+              "G-52"
+            ]
+          },
+          {
+            "portalCode": "P-12",
+            "groups": 16,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-39",
+              "G-40",
+              "G-41",
+              "G-42",
+              "G-43",
+              "G-44",
+              "G-45",
+              "G-46",
+              "G-47",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-51",
+              "G-54"
+            ],
+            "missingGroups": [
+              "G-52",
+              "G-53"
+            ]
+          }
+        ]
+      },
+      "work": {
+        "candidateEvaluations": 100928,
+        "variants": 32,
+        "pairReplans": 48,
+        "routeRepairs": 6912,
+        "jointFinaleReplans": 0,
+        "exhausted": false
+      }
+    },
+    {
+      "key": "p02-p12",
+      "label": "65 minuten · P-02 en P-12",
+      "localPolicyValid": true,
+      "metrics": {
+        "totalOrdinaryVisits": 264,
+        "minOrdinaryVisits": 10,
+        "maxOrdinaryVisits": 17,
+        "zeroVisitGroups": 0,
+        "walkingSeconds": 54295,
+        "receptionWaitingSeconds": 10252,
+        "freeBeforeFinaleSeconds": 20300,
+        "longestWaitSeconds": 5956,
+        "endWindowViolations": 0,
+        "unvisitedPortals": [
+          "P-48"
+        ],
+        "coverage": [
+          {
+            "portalCode": "P-02",
+            "groups": 18,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-39",
+              "G-40",
+              "G-41",
+              "G-42",
+              "G-43",
+              "G-44",
+              "G-45",
+              "G-46",
+              "G-47",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-51",
+              "G-52",
+              "G-53",
+              "G-54"
+            ],
+            "missingGroups": []
+          },
+          {
+            "portalCode": "P-12",
+            "groups": 16,
+            "totalGroups": 18,
+            "coveredGroups": [
+              "G-37",
+              "G-38",
+              "G-39",
+              "G-40",
+              "G-41",
+              "G-42",
+              "G-43",
+              "G-44",
+              "G-45",
+              "G-46",
+              "G-47",
+              "G-48",
+              "G-49",
+              "G-50",
+              "G-51",
+              "G-54"
+            ],
+            "missingGroups": [
+              "G-52",
+              "G-53"
+            ]
+          }
+        ]
+      },
+      "work": {
+        "candidateEvaluations": 182748,
+        "variants": 64,
+        "pairReplans": 48,
+        "routeRepairs": 8928,
+        "jointFinaleReplans": 14,
+        "exhausted": true
+      }
+    }
+  ],
+  "regressionValidation": {
+    "unitTestsPassed": 810,
+    "unitTestsSkipped": 1,
+    "newCandidateRegressionCasesPassed": 3,
+    "lintPassed": true,
+    "typecheckPassed": true,
+    "productionBuildPassed": true,
+    "clientArtifactPrivacyScanPassed": true,
+    "independentBudgetAndPolicyReviewPassed": true,
+    "sqlChanged": false,
+    "productionWrites": 0
+  }
+}
