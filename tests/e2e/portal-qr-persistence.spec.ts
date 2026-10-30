@@ -31,7 +31,10 @@ async function setup(admin: SupabaseClient) {
     do $fixture$ begin
       perform pg_temp.joint_canonical_fixture(date_bin(interval '10 minutes',clock_timestamp(),timestamptz '2000-01-01')-interval '20 minutes');
       update app_private.walking_groups set retired_at=clock_timestamp() where id in('23000000-0000-0000-0000-000000000002','23000000-0000-0000-0000-000000000003','23000000-0000-0000-0000-000000000004');
-      update app_private.walking_groups set desired_ordinary_visits=1 where id='${group}';
+      -- The compacted finale still needs room for today's actual walk and visit.
+      -- Its existing last arrival, show, closing and group end remain enforced.
+      update app_private.event_route_settings set finale_opens_at=clock_timestamp()+interval '1 hour'
+        where event_id=(select id from app_private.events where slug='${event}');
       update app_private.children set step_free_required=false;
       update app_private.portals set accessibility_status='step_free',operation_status=case when id='${finale}' then 'open'::app_private.portal_operation_status else 'closed'::app_private.portal_operation_status end;
     end $fixture$;`);
@@ -114,6 +117,8 @@ test("real printable QR and manual code survive concurrent provisioning, reload,
   expect((await admin.auth.signInWithPassword({ email: "admin@example.invalid", password: "local-test-only" })).error).toBeNull();
   await setup(admin); const owner = await login(context, baseURL!);
   const proposal = await reviewCanonicalFixtureRoutes(admin, event); expect(proposal.groups).toHaveLength(1); expect(proposal.groups[0].visits.some(visit => visit.portalId === portal && visit.kind === "ordinary")).toBe(true);
+  const finalVisit=proposal.groups[0].visits.at(-1)!;expect(finalVisit.kind).toBe("finale");expect(finalVisit.portalId).toBe(finale);
+  expect(Date.parse(finalVisit.startsAt)).toBeGreaterThan(Date.now()+30*60_000);
   const inputBefore = await api<{ sourceHash: string }>(admin, "admin_joint_route_planning_input", { _event_slug: event }), before = checkpoint();
   expect(before.material).toBe(0); const material = await simultaneousPrintable(context), after = checkpoint();
   expect(after.material - before.material).toBe(1); expect(after.active - before.active).toBe(1);
@@ -135,7 +140,8 @@ test("real printable QR and manual code survive concurrent provisioning, reload,
   expect((await leader.auth.signInWithPassword({ email: "leader-a@example.invalid", password: "local-test-only" })).error).toBeNull();
   const state = await api<{ group: { version: number; children: { registrationChildId: string }[] } }>(leader, "group_snapshot", { _group_id: group });
   const present = JSON.parse(sql(`select jsonb_agg(rc.id) from app_private.group_registrations gr join app_private.registration_children rc on rc.registration_id=gr.registration_id where gr.group_id='${group}' and gr.superseded_at is null and rc.participation_status='active'`)) as string[];
-  await api(leader, "run_start", { _group_id: group, _present_registration_child_ids: present, _expected_group_version: state.group.version, _idempotency_key: randomUUID(), _request_hash: present.sort().join(":") });
+  const startResult=await api<{dispatch:{decision:string}}>(leader, "run_start", { _group_id: group, _present_registration_child_ids: present, _expected_group_version: state.group.version, _idempotency_key: randomUUID(), _request_hash: present.sort().join(":") });
+  expect(startResult.dispatch.decision,JSON.stringify(startResult)).toBe("ordinary");
   const active = await api<{ run: { id: string; version: number; currentStop: { id: string; portal: { id: string } } } }>(leader, "group_snapshot", { _group_id: group });
   expect(active.run.currentStop.portal.id).toBe(portal); const seals = Number(sql("select count(*)from app_private.poortenboek_passport_seals"));
   for (const [credential, method] of [[new URL(arrival).searchParams.get("code")!, "qr"], [material.shortCode, "short_code"], ["TEST-PORTAL-01-TOKEN", "qr"], ["TEST-01", "short_code"]]) {
