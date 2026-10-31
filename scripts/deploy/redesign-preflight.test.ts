@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { backupKey, management, openBackup, sealBackup } from './redesign-preflight.mjs';
+// These cases exercise the Management HTTP contract, independent of the runner transport.
+beforeEach(()=>vi.stubEnv('RELEASE_READ_TRANSPORT',''));
+afterEach(()=>vi.unstubAllEnvs());
 describe('private release inventory encryption',()=>{
   const secret=Buffer.alloc(32,7).toString('base64'),key=backupKey(secret);
   it('round trips without writing plaintext and uses fresh nonces',()=>{

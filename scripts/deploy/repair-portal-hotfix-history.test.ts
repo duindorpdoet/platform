@@ -83,6 +83,8 @@ describe('metadata-only portal history repair',()=>{
 
 describe('actual deployment guard flow',()=>{
  beforeEach(()=>{
+  // This suite asserts the original Management HTTP request and CLI repair flow.
+  vi.stubEnv('RELEASE_READ_TRANSPORT','');
   vi.stubEnv('APP_ENVIRONMENT','staging');vi.stubEnv('SUPABASE_PROJECT_REF','nocteiuvohesvqbowchw');
   vi.stubEnv('GITHUB_REF','refs/heads/staging');vi.stubEnv('GITHUB_SHA','a'.repeat(40));
   vi.stubEnv('SUPABASE_ACCESS_TOKEN','synthetic-local-proof');vi.stubEnv('SUPABASE_DB_PASSWORD','synthetic-local-proof');
