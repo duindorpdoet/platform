@@ -59,7 +59,7 @@ describe("production pooler read-only diagnostics", () => {
     const workflow = readFileSync(new URL("../../.github/workflows/deploy-production.yml", import.meta.url), "utf8");
     const job = (name: string) => workflow.split(`\n  ${name}:\n`)[1]?.split(/\n  [a-z][a-z-]+:\n/)[0] ?? "";
     expect(job("database-connection-diagnostics")).toContain("github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && inputs.database_diagnostics_scope != 'direct-capability' && !inputs.database_connection_recovery && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'");
-    for (const name of ["backup-restore", "deploy", "readonly-baseline", "mail-worker-diagnostics"])
+    for (const name of ["prepare-database-client", "backup-export", "backup-restore", "deploy", "readonly-baseline", "mail-worker-diagnostics"])
       expect(job(name).split("\n").find(line => line.trim().startsWith("if:"))).toContain("!inputs.database_connection_diagnostics");
     expect(workflow).toMatch(/database_connection_diagnostics:\n(?:[^\n]*\n){2}        default: false/);
   });

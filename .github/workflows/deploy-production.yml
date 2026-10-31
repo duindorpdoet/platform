@@ -242,16 +242,50 @@ jobs:
           path: ${{ runner.temp }}/duindorp-evening-baseline/
           retention-days: 30
           if-no-files-found: error
-  backup-restore:
-    name: Encrypted production backup and isolated restore
+  prepare-database-client:
+    name: Prepare pinned public PostgreSQL clients for the existing VPS
     needs: release-policy
     if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && !inputs.database_connection_recovery
-    environment: production
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    outputs:
+      artifact: ${{ steps.artifact.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Require exact successful staging revision before preparing tools
+        run: node scripts/deploy/require-staging-success.mjs
+      - name: Prepare only pinned public PostgreSQL client binaries and libraries
+        run: node scripts/deploy/portable-postgres-clients.mjs build "${RUNNER_TEMP}/duindorp-pg-clients"
+      - name: Retain public tools bound to their complete fixed file hashes
+        id: artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: production-postgres-clients-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/duindorp-pg-clients/
+          retention-days: 2
+          if-no-files-found: error
+  backup-export:
+    name: Export encrypted production snapshot directly from the existing VPS
+    needs: [prepare-database-client, release-policy]
+    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && !inputs.database_connection_recovery
+    environment:
+      name: production
+      deployment: false
+    runs-on: [self-hosted, Linux, X64, dg-sites, production, duindorphalloweenprod]
     timeout-minutes: 35
     env:
       APP_ENVIRONMENT: production
-      RELEASE_READ_TRANSPORT: session-pooler
+      RELEASE_READ_TRANSPORT: direct
+      RELEASE_BACKUP_MODE: export
+      RELEASE_PG_CLIENT_DIRECTORY: ${{ runner.temp }}/duindorp-pg-clients
       SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -264,7 +298,16 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          clean: false
           ref: ${{ github.sha }}
+      - name: Verify existing dedicated production runner boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = "duindorphalloweenprod"
+          test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenprod-01"
+          [[ "${GITHUB_WORKSPACE}" == /srv/sites/duindorphalloweenprod/actions-runner/_work/* ]]
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -272,7 +315,14 @@ jobs:
         run: |
           npm install --global pnpm@11.25.0
           pnpm install --frozen-lockfile
-
+      - name: Fetch only the prepared public client artifact from this run
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          artifact-ids: ${{ needs.prepare-database-client.outputs.artifact }}
+          path: ${{ runner.temp }}/duindorp-pg-clients
+          merge-multiple: true
+      - name: Verify every pinned client and library before execution
+        run: node scripts/deploy/portable-postgres-clients.mjs verify "${RELEASE_PG_CLIENT_DIRECTORY}"
       - name: Require exact successful staging revision
         run: node scripts/deploy/require-staging-success.mjs
       - name: Audit saved routes before migration (read only)
@@ -289,9 +339,57 @@ jobs:
           if-no-files-found: error
       - name: Verify the canonical live portal hotfix with production credentials
         run: node scripts/deploy/repair-portal-hotfix-history.mjs
-      - name: Snapshot, encrypt, restore and dry-run exact migrations
+      - name: Export one coherent snapshot and encrypt all source backup files
         run: node scripts/deploy/redesign-backup.mjs
-      - name: Retain only encrypted backup files and signed proof
+      - name: Retain encrypted source export without claiming restore success
+        id: artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: redesign-source-production-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/duindorp-release-backup/
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
+  backup-restore:
+    name: Verify encrypted production backup in the isolated restore
+    needs: [backup-export, release-policy]
+    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && !inputs.database_connection_recovery
+    environment:
+      name: production
+      deployment: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APP_ENVIRONMENT: production
+      RELEASE_BACKUP_MODE: restore
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      CHILD_CODE_ENCRYPTION_KEY: ${{ secrets.CHILD_CODE_ENCRYPTION_KEY }}
+      GITHUB_TOKEN: ${{ github.token }}
+    outputs:
+      artifact: ${{ steps.artifact.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pinned restore dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Require exact successful staging revision
+        run: node scripts/deploy/require-staging-success.mjs
+      - name: Fetch encrypted source export from this exact workflow run
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          artifact-ids: ${{ needs.backup-export.outputs.artifact }}
+          path: ${{ runner.temp }}/duindorp-release-backup
+          merge-multiple: true
+      - name: Authenticate export, restore without network and dry-run exact migrations
+        run: node scripts/deploy/redesign-backup.mjs
+      - name: Retain only encrypted backup files and final signed restore proof
         id: artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
@@ -317,7 +415,7 @@ jobs:
     timeout-minutes: 40
     env:
       APP_ENVIRONMENT: production
-      RELEASE_READ_TRANSPORT: session-pooler
+      RELEASE_READ_TRANSPORT: direct
       APP_REVISION: ${{ github.sha }}
       APP_URL: https://halloween.duindorpdoet.nl
       NEXT_PUBLIC_SITE_URL: https://halloween.duindorpdoet.nl
@@ -424,14 +522,12 @@ jobs:
         env:
           RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/duindorp-release-backup
         run: node scripts/deploy/redesign-preflight.mjs
-      - name: Link and migrate production database
+      - name: Migrate production database through the verified direct endpoint
         env:
           PGOPTIONS: '-c lock_timeout=5000 -c statement_timeout=300000'
         run: |
           set -euo pipefail
-          pnpm exec supabase link --project-ref "${SUPABASE_PROJECT_REF}" --password "${SUPABASE_DB_PASSWORD}"
-          pnpm exec supabase db push --linked --include-all --yes
-          pnpm exec supabase db query --linked --file scripts/deploy/nachtpost-activation-report.sql --output json
+          node scripts/deploy/migrate-production-direct.mjs
       - name: Compare existing production data before deploying the application
         run: node scripts/deploy/redesign-postmigration.mjs
       - name: Initialize central provider configuration without activation

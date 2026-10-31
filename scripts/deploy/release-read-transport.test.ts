@@ -31,17 +31,17 @@ describe("explicit release read transport workflow contract", () => {
     const source = read(`.github/workflows/deploy-${environment}.yml`);
     const entries = jobs(source);
     const enabled = [...entries].filter(([, body]) => body.includes("RELEASE_READ_TRANSPORT:")).map(([name]) => name).sort();
-    expect(enabled).toEqual(["backup-restore", "deploy"]);
+    expect(enabled).toEqual(environment === "production" ? ["backup-export", "deploy"] : ["backup-restore", "deploy"]);
     expect(source.slice(0, source.indexOf("\njobs:\n"))).not.toContain("RELEASE_READ_TRANSPORT");
     for (const name of enabled) {
       const body = entries.get(name)!;
       if (environment === "production") {
-        expect(body).toContain("RELEASE_READ_TRANSPORT: session-pooler");
+        expect(body).toContain("RELEASE_READ_TRANSPORT: direct");
         expect(body).toContain("!inputs.database_connection_diagnostics");
         expect(body).toContain("!inputs.database_connection_recovery");
       } else {
         // Existing isolated branch deployments retain their previous path;
-        // regular staging exercises the same path as production.
+        // regular staging retains its tested session-pooler source path.
         expect(body).toContain("RELEASE_READ_TRANSPORT: ${{ github.ref == 'refs/heads/staging' && 'session-pooler' || '' }}");
       }
       expect(body).toContain("SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}");
@@ -51,7 +51,7 @@ describe("explicit release read transport workflow contract", () => {
   });
 
   it.each(["staging", "production"])("installs the frozen native driver before the first %s backup read", environment => {
-    const backup = jobs(read(`.github/workflows/deploy-${environment}.yml`)).get("backup-restore")!;
+    const backup = jobs(read(`.github/workflows/deploy-${environment}.yml`)).get(environment === "production" ? "backup-export" : "backup-restore")!;
     ordered(backup, "node-version: 24", "npm install --global pnpm@11.25.0", "pnpm install --frozen-lockfile");
     const installed = backup.indexOf("pnpm install --frozen-lockfile");
     for (const script of ["repair-portal-hotfix-history.mjs", "redesign-backup.mjs", ...(environment === "production" ? ["evening-readiness-audit.mjs"] : [])]) {
@@ -74,7 +74,7 @@ describe("explicit release read transport workflow contract", () => {
       "run: node scripts/deploy/inspect-finale-planning.mjs",
       "run: pnpm verify",
       "run: node scripts/deploy/redesign-preflight.mjs",
-      `Link and migrate ${environment} database`,
+      environment === "production" ? "Migrate production database through the verified direct endpoint" : `Link and migrate ${environment} database`,
       "run: node scripts/deploy/redesign-postmigration.mjs",
       "/usr/local/bin/dg-site-deploy",
       "run: node scripts/deploy/check-security-advisors.mjs",
@@ -82,8 +82,29 @@ describe("explicit release read transport workflow contract", () => {
       "run: node scripts/deploy/check-startregie-reads.mjs",
     );
     if (environment === "production") {
-      for (const name of ["backup-restore", "deploy"]) expect(entries.get(name)).toContain("run: node scripts/deploy/require-staging-success.mjs");
+      for (const name of ["prepare-database-client", "backup-export", "backup-restore", "deploy"]) expect(entries.get(name)).toContain("run: node scripts/deploy/require-staging-success.mjs");
       expect(deployment).toContain("run: node scripts/deploy/evening-readiness-audit.mjs");
+    }
+  });
+
+
+  it("restores only authenticated encrypted source exports without production database credentials", () => {
+    const entries = jobs(read(".github/workflows/deploy-production.yml"));
+    const prepare = entries.get("prepare-database-client")!, source = entries.get("backup-export")!, restore = entries.get("backup-restore")!;
+    ordered(prepare, "require-staging-success.mjs", "portable-postgres-clients.mjs build", "actions/upload-artifact@");
+    expect(source).toContain("needs: [prepare-database-client, release-policy]");
+    expect(source).toContain("RELEASE_BACKUP_MODE: export");
+    expect(source).toContain("needs.prepare-database-client.outputs.artifact");
+    ordered(source, "portable-postgres-clients.mjs verify", "evening-readiness-audit.mjs", "repair-portal-hotfix-history.mjs", "redesign-backup.mjs", "Retain encrypted source export without claiming restore success");
+    expect(restore).toContain("needs: [backup-export, release-policy]");
+    expect(restore).toContain("RELEASE_BACKUP_MODE: restore");
+    expect(restore).toContain("needs.backup-export.outputs.artifact");
+    for (const secret of ["SUPABASE_DB_PASSWORD", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ACCESS_TOKEN", "RELEASE_READ_TRANSPORT"]) expect(restore).not.toContain(secret);
+    expect(restore).toContain("CHILD_CODE_ENCRYPTION_KEY: ${{ secrets.CHILD_CODE_ENCRYPTION_KEY }}");
+    ordered(restore, "require-staging-success.mjs", "actions/download-artifact@", "redesign-backup.mjs", "actions/upload-artifact@");
+    for (const name of ["prepare-database-client", "backup-export", "backup-restore", "deploy"]) {
+      const condition = entries.get(name)!.split("\n").find(line => line.trim().startsWith("if:"))!;
+      for (const mode of ["database_connection_diagnostics", "database_connection_recovery", "readonly_baseline", "mail_worker_diagnostics"]) expect(condition).toContain(`!inputs.${mode}`);
     }
   });
 

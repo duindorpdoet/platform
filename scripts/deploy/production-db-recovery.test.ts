@@ -127,7 +127,7 @@ describe("explicit protected production database recovery", () => {
     const workflow = readFileSync(new URL("../../.github/workflows/deploy-production.yml", import.meta.url), "utf8");
     const job = (name: string) => workflow.split(`\n  ${name}:\n`)[1]?.split(/\n  [a-z][a-z-]+:\n/)[0] ?? "";
     expect(job("database-connection-recovery")).toContain("github.event_name == 'workflow_dispatch' && inputs.database_connection_recovery == true && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'");
-    for (const name of ["backup-restore", "deploy", "readonly-baseline", "mail-worker-diagnostics", "database-connection-diagnostics"])
+    for (const name of ["prepare-database-client", "backup-export", "backup-restore", "deploy", "readonly-baseline", "mail-worker-diagnostics", "database-connection-diagnostics"])
       expect(job(name).split("\n").find(line => line.trim().startsWith("if:"))).toContain("!inputs.database_connection_recovery");
     expect(workflow).toMatch(/database_connection_recovery:\n(?:[^\n]*\n){2}        default: false/);
     expect(job("backup-restore")).toContain("Require exact successful staging revision");

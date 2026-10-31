@@ -57,6 +57,6 @@ describe("dedicated VPS local capabilities", () => {
     expect(local).toContain("- duindorphalloweenprod"); expect(local).toContain('test "$(id -un)" = "duindorphalloweenprod"');
     expect(local).toContain("clean: false"); expect(local).toContain("externals/node24/bin/node");
     expect(local).not.toMatch(/SUPABASE|pnpm|npm |setup-node|sudo|curl|psql /);
-    for (const name of ["backup-restore", "deploy"]) expect(job(name).split("\n").find(line => line.trim().startsWith("if:"))).toContain("!inputs.database_connection_diagnostics");
+    for (const name of ["prepare-database-client", "backup-export", "backup-restore", "deploy"]) expect(job(name).split("\n").find(line => line.trim().startsWith("if:"))).toContain("!inputs.database_connection_diagnostics");
   });
 });
