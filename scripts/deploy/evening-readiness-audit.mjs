@@ -340,6 +340,25 @@ export const SNAPSHOT_STATS_QUERY = `select calls,round(mean_exec_time::numeric,
  case when query ilike '%admin_live_planboard_snapshot%' then 'admin_live_planboard_snapshot' else 'other' end rpc
  from extensions.pg_stat_statements where query ilike '%admin_live_planboard_snapshot%' and query not ilike '%pg_stat_statements%' order by calls desc limit 10`;
 
+function completeBaseAudit(audit) {
+  const object = value => value !== null && typeof value === "object" && !Array.isArray(value);
+  return object(audit) && audit.readOnly === true && /^\d{4}-\d{2}-\d{2}$/.test(audit.eventDate ?? "")
+    && Number.isSafeInteger(audit.settingsVersion) && audit.settingsVersion >= 0
+    && object(audit.registrationChannels) && typeof audit.registrationChannels.housesOpen === "boolean"
+    && typeof audit.registrationChannels.participantsOpen === "boolean"
+    && object(audit.counts) && ["groups", "approvedActiveHouses", "storedBoardVisits", "runRecords", "begunRuns"]
+      .every(key => Number.isSafeInteger(audit.counts[key]) && audit.counts[key] >= 0)
+    && Array.isArray(audit.groups) && audit.counts.groups === audit.groups.length
+    && audit.groups.every(group => object(group) && typeof group.code === "string")
+    && object(audit.finale) && object(audit.worldCoverage)
+    && ["active", "pending", "latest"].every(key => Object.hasOwn(audit.worldCoverage, key))
+    && Array.isArray(audit.possiblePhysicalAliases) && object(audit.physicalCalendar)
+    && typeof audit.physicalCalendar.source === "string"
+    && ["groups", "portals", "visits"].every(key => Array.isArray(audit.physicalCalendar[key]))
+    && object(audit.checkpoint) && ["settings", "appointments", "routesAndRuns"]
+      .every(key => typeof audit.checkpoint[key] === "string" && /^[a-f0-9]{32}$/.test(audit.checkpoint[key]));
+}
+
 export async function runAudit(env = process.env, request = fetch) {
   if (!/^[a-z0-9]{15,30}$/.test(env.SUPABASE_PROJECT_REF ?? "") || !env.SUPABASE_ACCESS_TOKEN) throw new Error("READ_ONLY_AUDIT_CONFIGURATION_REQUIRED");
   async function query(sql, ownerReadOnly = false) {
@@ -356,19 +375,28 @@ export async function runAudit(env = process.env, request = fetch) {
     }
     return response.json();
   }
-  let [{ audit }] = await query(AUDIT_QUERY);
-  if (!audit || !Array.isArray(audit.groups)) throw new Error("READ_ONLY_AUDIT_EVENT_MISSING");
+  let audit;
+  let projectionFailure = "PROTECTED_PRODUCTION_ENVIRONMENT_REQUIRED";
   if (ownerPreviewAllowed(env)) {
     try {
       const [projected] = await query(PREVIEW_AUDIT_QUERY, true);
-      if (!projected?.audit?.routeProjection?.databaseReadOnly || !projected.audit.routeProjection.authorizedExistingAdmin) throw new Error("OWNER_READ_ONLY_AUDIT_PROOF_MISSING");
-      audit = projected.audit;
-      const checks = new Map(audit.routeProjection.groups.map(group => [group.code, group]));
-      audit.groups = audit.groups.map(group => ({ ...group, routeCheck: checks.get(group.code) ?? null }));
+      const complete = projected?.audit;
+      if (!completeBaseAudit(complete)
+        || complete.routeProjection?.readable !== true || complete.routeProjection.databaseReadOnly !== true
+        || complete.routeProjection.authorizedExistingAdmin !== true || !Array.isArray(complete.routeProjection.groups)) throw new Error("OWNER_READ_ONLY_AUDIT_PROOF_MISSING");
+      const checks = new Map(complete.routeProjection.groups.map(group => [group.code, group]));
+      audit = { ...complete, groups: complete.groups.map(group => ({ ...group, routeCheck: checks.get(group.code) ?? null })) };
     } catch (error) {
-      audit.routeProjection = { readable: false, reasonCode: /^OWNER_READ_ONLY_AUDIT_[A-Z0-9_]+$/.test(error?.message ?? "") ? error.message : "BOUNDED_PREVIEW_INSPECTION_UNAVAILABLE" };
+      projectionFailure = /^OWNER_READ_ONLY_AUDIT_[A-Z0-9_]+$/.test(error?.message ?? "") ? error.message : "BOUNDED_PREVIEW_INSPECTION_UNAVAILABLE";
     }
-  } else audit.routeProjection = { readable: false, reasonCode: "PROTECTED_PRODUCTION_ENVIRONMENT_REQUIRED" };
+  }
+  if (!audit) {
+    // The owner preview already includes the entire mandatory base audit. On
+    // unavailable/invalid proof, obtain that base independently and fail closed.
+    const [base] = await query(AUDIT_QUERY);
+    if (!base?.audit || !Array.isArray(base.audit.groups)) throw new Error("READ_ONLY_AUDIT_EVENT_MISSING");
+    audit = { ...base.audit, routeProjection: { readable: false, reasonCode: projectionFailure } };
+  }
   let proposalArtifact = { code: "READ_ONLY_CODED_JOINT_ROUTE_PROPOSAL", readOnly: true, available: false, reasonCode: "PROTECTED_PRODUCTION_ENVIRONMENT_REQUIRED", saved: false, applied: false, published: false, changedRows: 0, messagesSent: 0 };
   if (ownerPreviewAllowed(env)) {
     try {
