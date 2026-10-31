@@ -4,5 +4,5 @@ type ProcessResult = { error: null | {code?: string | number; killed?: boolean};
 type Tools = { psql: string };
 export function parseReleaseCsv(source: string, nullMarker: string): Record<string, unknown>[];
 export function libpqReadQuery(batch: string, env: Environment, plan: AdminDatabasePlan, caBundle: string, statementMs: number,
-  run?: (command: string, args: string[], environment: Environment, timeout: number) => Promise<ProcessResult>,
+  run?: (command: string, args: string[], environment: Environment, timeout: number, input: string) => Promise<ProcessResult>,
   validate?: (directory: string) => Promise<Tools>): Promise<Record<string, unknown>[]>;
