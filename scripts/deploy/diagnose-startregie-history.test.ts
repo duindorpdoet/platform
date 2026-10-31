@@ -21,7 +21,7 @@ versions: ["20261027033940"], wrapper_versions: [] };
 type Result = { rows: Record<string, unknown>[]; fields?: {name: string}[] };
 const result = (row?: Record<string, unknown>): Result => ({ rows: row ? [row] : [] });
 function fixture(options: { splitError?: { name: string; code?: string; message?: string }; connectFailure?: string; observerFailure?: boolean;
-  emptyObserver?: boolean; nullServerTime?: boolean; nullBackendTime?: boolean; originalError?: Error; originalDelayMs?: number; capacityFailure?: boolean; capacityClientFailure?: boolean; capacitySize?: unknown; metadataStatus?: number } = {}) {
+  emptyObserver?: boolean; nullServerTime?: boolean; nullBackendTime?: boolean; originalError?: Error; originalDelayMs?: number; capacityFailure?: boolean; capacityClientFailure?: boolean; capacityCount?: unknown; metadataStatus?: number } = {}) {
   const clients: FakeClient[] = [];
   const queries: { client: string; text: string; query_timeout: number }[] = [];
   let queryPhase = "", tick = 1_800_000_000_000;
@@ -36,7 +36,7 @@ function fixture(options: { splitError?: { name: string; code?: string; message?
       if (input.text === CAPACITY_SQL) {
         if (options.capacityClientFailure) throw new Error("Query read timeout PRIVATE");
         if (options.capacityFailure) throw Object.assign(new Error("PRIVATE_CAPACITY_ERROR"), { code: "42501" });
-        return result({ diagnostic_capacity: { maxConnections: "60", reservedConnections: "3", superuserReservedConnections: "3", databaseConnectionLimit: -1, roleConnectionLimit: -1, databaseSizeBytes: options.capacitySize ?? "104857600", totalBackends: 8, activeBackends: 2, idleBackends: 3, idleInTransactionBackends: 1, clientBackends: 6, clientBackendsCurrentDatabase: 5, clientBackendsCurrentRole: 2, clientBackendsActive: 2, clientBackendsIdle: 3, clientBackendsIdleInTransaction: 1, walSenderBackends: 1, otherBackendProcesses: 1, private: "PRIVATE_CAPACITY" } });
+        return result({ diagnostic_capacity: { maxConnections: options.capacityCount ?? "60", reservedConnections: "3", superuserReservedConnections: "3", databaseConnectionLimit: -1, roleConnectionLimit: -1, totalBackends: 8, activeBackends: 2, idleBackends: 3, idleInTransactionBackends: 1, clientBackends: 6, clientBackendsCurrentDatabase: 5, clientBackendsCurrentRole: 2, clientBackendsActive: 2, clientBackendsIdle: 3, clientBackendsIdleInTransaction: 1, walSenderBackends: 1, otherBackendProcesses: 1, private: "PRIVATE_CAPACITY" } });
       }
       if (input.text.startsWith("select pg_stat_clear_snapshot()")) {
         if (options.observerFailure) throw new Error("PRIVATE_OBSERVER_ERROR");
@@ -137,20 +137,20 @@ describe("focused native history diagnosis", () => {
   it("separates client, WAL sender and background counts without inferring connection exhaustion", async () => {
     const f = fixture(); const report = await runHistoryDiagnosis(directEnv, f.request, f.Client);
     expect(report.capacityInterpretation).toBe("COUNTS_ONLY_NO_EXHAUSTION_INFERENCE");
-    expect(report.capacity).toMatchObject({ databaseSizeBytes: 104857600, totalBackends: 8, clientBackends: 6,
+    expect(report.capacity).toMatchObject({ totalBackends: 8, clientBackends: 6,
       clientBackendsCurrentDatabase: 5, clientBackendsCurrentRole: 2, clientBackendsActive: 2, clientBackendsIdle: 3,
       clientBackendsIdleInTransaction: 1, walSenderBackends: 1, otherBackendProcesses: 1 });
     expect(f.queries.filter(query => query.text === CAPACITY_SQL)).toHaveLength(1);
-    expect(CAPACITY_SQL.match(/pg_database_size\(current_database\(\)\)/g)).toHaveLength(1);
+    expect(CAPACITY_SQL).not.toMatch(/pg_database_size|databaseSizeBytes|pg_tablespace_size|pg_relation_size/);
     expect(CAPACITY_SQL).toContain("'clientBackends',count(*) filter(where backend_type='client backend')");
     expect(CAPACITY_SQL).toContain("'walSenderBackends',count(*) filter(where backend_type='walsender')");
     expect(CAPACITY_SQL).toContain("backend_type is distinct from 'client backend' and backend_type is distinct from 'walsender'");
     expect(JSON.stringify(report)).not.toContain("PRIVATE_CAPACITY");
   });
-  it.each(["PRIVATE_DATABASE_SIZE", "9007199254740992"])("does not expose malformed or unsafe capacity values: %s", async capacitySize => {
-    const f = fixture({ capacitySize }); const report = await runHistoryDiagnosis(directEnv, f.request, f.Client);
+  it.each(["PRIVATE_CAPACITY_COUNT", "9007199254740992"])("does not expose malformed or unsafe capacity values: %s", async capacityCount => {
+    const f = fixture({ capacityCount }); const report = await runHistoryDiagnosis(directEnv, f.request, f.Client);
     expect(report.capacity).toEqual({ unavailable: "HISTORY_DIAGNOSIS_CAPACITY_INVALID_RESULT" });
-    expect(JSON.stringify(report)).not.toContain(capacitySize);
+    expect(JSON.stringify(report)).not.toContain(capacityCount);
   });
   it.each(["57014", "55P03"])("recovers an aborted component with SQLSTATE %s without replaying it or attempting the fifth phase", async code => {
     const f = fixture({ splitError: { name: "trigger_definition", code } });
@@ -169,6 +169,8 @@ describe("focused native history diagnosis", () => {
     expect(report.phases[0]).toMatchObject({ serverStopProven: false });
     expect(f.queries.filter(query => query.client === f.clients[0].name && /rollback|reset all/.test(query.text))).toHaveLength(0);
     expect(f.clients[0].end).toHaveBeenCalledOnce();
+    expect(f.queries.some(query => query.text === CAPACITY_SQL)).toBe(false);
+    expect(report.capacity).toEqual({ unavailable: "HISTORY_DIAGNOSIS_UNCONFIRMED_HISTORY_COMPLETION" });
   });
   it.each([
     ["canceling statement due to statement timeout", "STATEMENT_TIMEOUT"],
@@ -207,16 +209,34 @@ describe("focused native history diagnosis", () => {
       expect(report.phases[0].status === "failed" || !report.observerAvailable).toBe(true);
     }
   });
-  it("keeps optional capacity failure separate and restores the observer transaction before mandatory reads", async () => {
+  it("runs optional capacity after all five history reads and cleans up only afterwards", async () => {
+    const f = fixture(); const report = await runHistoryDiagnosis(env, f.request, f.Client);
+    expect(report.status).toBe("passed"); expect(report.capacityStage).toBe("after_history_reads");
+    const capacityIndex = f.queries.findIndex(query => query.text === CAPACITY_SQL);
+    expect(capacityIndex).toBeGreaterThan(f.queries.findIndex(query => query.text === hotfixProofQuery));
+    expect(f.queries.slice(0, capacityIndex).filter(query => query.text.startsWith("savepoint"))).toHaveLength(4);
+    expect(f.queries.slice(capacityIndex + 1).every(query => query.text === "rollback;reset all")).toBe(true);
+  });
+  it("keeps optional capacity SQL failure separate after the mandatory reads", async () => {
     const f = fixture({ capacityFailure: true }); const report = await runHistoryDiagnosis(env, f.request, f.Client);
     expect(report.status).toBe("passed");
     expect(report.capacity).toEqual({ unavailable: "SQLSTATE_42501" });
-    expect(f.queries.some(query => query.client.includes("observer") && query.text.startsWith("rollback;begin read only;"))).toBe(true);
+    expect(report.phases).toHaveLength(5);
+    expect(f.queries.at(-1)).toMatchObject({ client: f.clients[1].name, text: "rollback;reset all" });
+    expect(f.queries.some(query => query.text.startsWith("rollback;begin read only;"))).toBe(false);
   });
   it("never queues capacity rollback behind an uncertain observer timeout", async () => {
     const f = fixture({ capacityClientFailure: true }); const report = await runHistoryDiagnosis(env, f.request, f.Client);
-    expect(report.status).toBe("failed"); expect(report.phases).toHaveLength(0);
+    expect(report.status).toBe("passed"); expect(report.phases).toHaveLength(5);
+    expect(report.capacity).toEqual({ unavailable: "CLIENT_TIMEOUT" }); expect(report.observerAvailable).toBe(false);
     expect(f.queries.some(query => query.client.includes("observer") && query.text.startsWith("rollback;"))).toBe(false);
+    expect(f.clients[1].end).toHaveBeenCalledOnce();
+  });
+  it("skips optional capacity when the mandatory observer becomes unsafe", async () => {
+    const f = fixture({ observerFailure: true }); const report = await runHistoryDiagnosis(env, f.request, f.Client);
+    expect(report.status).toBe("failed"); expect(report.observerAvailable).toBe(false);
+    expect(report.capacity).toEqual({ unavailable: "HISTORY_DIAGNOSIS_OBSERVER_UNAVAILABLE" });
+    expect(f.queries.some(query => query.text === CAPACITY_SQL)).toBe(false);
     expect(f.clients[1].end).toHaveBeenCalledOnce();
   });
   it.each([new Error("RELEASE_READ_SQLSTATE_57014"), new Error("RELEASE_READ_CLIENT_TIMEOUT")])("retains the exact sanitized old-helper failure and pending SQL step: %s", async error => {
@@ -224,6 +244,10 @@ describe("focused native history diagnosis", () => {
     expect(report.status).toBe("failed");
     expect(report.phases.at(-1)).toMatchObject({ failureStep: "original_sql", originalSqlInvocations: 1 });
     expect(JSON.stringify(report)).toContain(error.message.includes("57014") ? "SQLSTATE_57014" : "CLIENT_TIMEOUT");
+    if (error.message.includes("CLIENT_TIMEOUT")) {
+      expect(f.queries.some(query => query.text === CAPACITY_SQL)).toBe(false);
+      expect(report.capacity).toEqual({ unavailable: "HISTORY_DIAGNOSIS_UNCONFIRMED_HISTORY_COMPLETION" });
+    }
   });
   it("fails exact-context checks before any network and never retries metadata HTTP failures", async () => {
     for (const change of [{ HISTORY_DIAGNOSTICS_REQUESTED: "false" }, { GITHUB_REF: "refs/heads/staging" }, { GITHUB_EVENT_NAME: "push" }, { GITHUB_REPOSITORY: "other/repo" }]) {
@@ -288,6 +312,8 @@ describe("focused native history diagnosis", () => {
       expect(f.clients).toHaveLength(2);
       expect(f.queries).toHaveLength(sent);
       expect(f.queries.some(query => query.text === hotfixProofQuery)).toBe(false);
+      expect(f.queries.some(query => query.text === CAPACITY_SQL)).toBe(false);
+      expect(report.capacity).toEqual({ unavailable: "HISTORY_DIAGNOSIS_TOTAL_DEADLINE_EXPIRED" });
     } finally { vi.useRealTimers(); }
   });
   it("observes a long original query throughout its wait without replaying it", async () => {

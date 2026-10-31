@@ -102,7 +102,7 @@ function safeSample(answer) {
   return { targetSeen: targets.length > 0, inference: "NO_REACHABILITY_INFERENCE_FROM_ABSENCE", observedAtMs: finite(row.observedAtMs), targets, otherActive };
 }
 
-export const CAPACITY_SQL = `select jsonb_build_object('maxConnections',current_setting('max_connections'),'reservedConnections',current_setting('reserved_connections',true),'superuserReservedConnections',current_setting('superuser_reserved_connections',true),'databaseConnectionLimit',(select datconnlimit from pg_database where datname=current_database()),'roleConnectionLimit',(select rolconnlimit from pg_roles where rolname=current_user),'databaseSizeBytes',pg_database_size(current_database()),'totalBackends',count(*),'activeBackends',count(*) filter(where state='active'),'idleBackends',count(*) filter(where state='idle'),'idleInTransactionBackends',count(*) filter(where state like 'idle in transaction%'),'clientBackends',count(*) filter(where backend_type='client backend'),'clientBackendsCurrentDatabase',count(*) filter(where backend_type='client backend' and datname=current_database()),'clientBackendsCurrentRole',count(*) filter(where backend_type='client backend' and usename=current_user),'clientBackendsActive',count(*) filter(where backend_type='client backend' and state='active'),'clientBackendsIdle',count(*) filter(where backend_type='client backend' and state='idle'),'clientBackendsIdleInTransaction',count(*) filter(where backend_type='client backend' and state like 'idle in transaction%'),'walSenderBackends',count(*) filter(where backend_type='walsender'),'otherBackendProcesses',count(*) filter(where backend_type is distinct from 'client backend' and backend_type is distinct from 'walsender')) diagnostic_capacity from pg_stat_activity;`;
+export const CAPACITY_SQL = `select jsonb_build_object('maxConnections',current_setting('max_connections'),'reservedConnections',current_setting('reserved_connections',true),'superuserReservedConnections',current_setting('superuser_reserved_connections',true),'databaseConnectionLimit',(select datconnlimit from pg_database where datname=current_database()),'roleConnectionLimit',(select rolconnlimit from pg_roles where rolname=current_user),'totalBackends',count(*),'activeBackends',count(*) filter(where state='active'),'idleBackends',count(*) filter(where state='idle'),'idleInTransactionBackends',count(*) filter(where state like 'idle in transaction%'),'clientBackends',count(*) filter(where backend_type='client backend'),'clientBackendsCurrentDatabase',count(*) filter(where backend_type='client backend' and datname=current_database()),'clientBackendsCurrentRole',count(*) filter(where backend_type='client backend' and usename=current_user),'clientBackendsActive',count(*) filter(where backend_type='client backend' and state='active'),'clientBackendsIdle',count(*) filter(where backend_type='client backend' and state='idle'),'clientBackendsIdleInTransaction',count(*) filter(where backend_type='client backend' and state like 'idle in transaction%'),'walSenderBackends',count(*) filter(where backend_type='walsender'),'otherBackendProcesses',count(*) filter(where backend_type is distinct from 'client backend' and backend_type is distinct from 'walsender')) diagnostic_capacity from pg_stat_activity;`;
 
 /** Fixed, read-only diagnosis only. No retries, repairs or deployments. */
 export async function runHistoryDiagnosis(env = process.env, request = fetch, ClientOverride) {
@@ -206,26 +206,6 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
     const readerPid = report.connections.reader.backendPid;
     if (readerPid === report.connections.observer.backendPid) fail("DISTINCT_BACKENDS_NOT_PROVEN");
     report.observerAvailable = true;
-    let capacityCompleted = false;
-    try {
-      ensureBudget();
-      const capacityAnswer = await observer.query({ text: CAPACITY_SQL, query_timeout: 3000 });
-      ensureBudget();
-      capacityCompleted = true;
-      const capacity = rowsOf(capacityAnswer).flatMap(result => result.rows).find(row => row.diagnostic_capacity)?.diagnostic_capacity;
-      const keys = ["maxConnections", "reservedConnections", "superuserReservedConnections", "databaseConnectionLimit", "roleConnectionLimit", "databaseSizeBytes", "totalBackends", "activeBackends", "idleBackends", "idleInTransactionBackends", "clientBackends", "clientBackendsCurrentDatabase", "clientBackendsCurrentRole", "clientBackendsActive", "clientBackendsIdle", "clientBackendsIdleInTransaction", "walSenderBackends", "otherBackendProcesses"];
-      if (!capacity || keys.some(key => capacity[key] !== null && (!/^-?\d+$/.test(String(capacity[key])) || !Number.isSafeInteger(Number(capacity[key]))))) fail("CAPACITY_INVALID_RESULT");
-      report.capacity = Object.fromEntries(keys.map(key => [key, capacity[key] === null ? null : Number(capacity[key])]));
-    } catch (error) {
-      report.capacity = { unavailable: diagnosticError(error) };
-      // A failed optional statement aborts its transaction; restore observer
-      // policy before any mandatory reader SQL, without reconnecting or retrying.
-      if (!totalExpired && (capacityCompleted || sqlState(error))) {
-        try { await observer.query({ text: `rollback;begin read only;${policy(false)}`, query_timeout: 3000 }); }
-        catch { unsafeObserver = true; report.observerAvailable = false; }
-      } else { unsafeObserver = true; report.observerAvailable = false; await close(observer); }
-    }
-    if (unsafeObserver) fail("OBSERVER_UNAVAILABLE");
     const componentResults = {};
     async function observe(phase, pid, original = false) {
       if (unsafeObserver || totalExpired) return;
@@ -387,6 +367,29 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
     }
   } catch (error) { report.errorClass = diagnosticError(error); }
   finally {
+    // Optional aggregate metadata comes after every history phase. It must
+    // never consume the observer before the queries it is meant to observe.
+    report.capacityStage = "after_history_reads";
+    const unsafeHistorySql = unsafeReader || report.phases.some(phase => phase.name === "combined_original" && phase.failureStep && !phase.serverStopProven);
+    if (observer && report.observerAvailable && !unsafeObserver && !unsafeHistorySql && !totalExpired) {
+      try {
+        ensureBudget();
+        const capacityAnswer = await observer.query({ text: CAPACITY_SQL, query_timeout: 3000 });
+        ensureBudget();
+        const capacity = rowsOf(capacityAnswer).flatMap(result => result.rows).find(row => row.diagnostic_capacity)?.diagnostic_capacity;
+        const keys = ["maxConnections", "reservedConnections", "superuserReservedConnections", "databaseConnectionLimit", "roleConnectionLimit", "totalBackends", "activeBackends", "idleBackends", "idleInTransactionBackends", "clientBackends", "clientBackendsCurrentDatabase", "clientBackendsCurrentRole", "clientBackendsActive", "clientBackendsIdle", "clientBackendsIdleInTransaction", "walSenderBackends", "otherBackendProcesses"];
+        if (!capacity || keys.some(key => capacity[key] !== null && (!/^-?\d+$/.test(String(capacity[key])) || !Number.isSafeInteger(Number(capacity[key]))))) fail("CAPACITY_INVALID_RESULT");
+        report.capacity = Object.fromEntries(keys.map(key => [key, capacity[key] === null ? null : Number(capacity[key])]));
+      } catch (error) {
+        report.capacity = { unavailable: diagnosticError(error) };
+        // A real PostgreSQL error proves completion. A client/network timeout
+        // does not: close directly and never queue cleanup behind that query.
+        if (!sqlState(error) && error?.message !== "HISTORY_DIAGNOSIS_CAPACITY_INVALID_RESULT") {
+          unsafeObserver = true; report.observerAvailable = false; await close(observer);
+        }
+      }
+    } else report.capacity = { unavailable: totalExpired ? "HISTORY_DIAGNOSIS_TOTAL_DEADLINE_EXPIRED"
+      : unsafeHistorySql ? "HISTORY_DIAGNOSIS_UNCONFIRMED_HISTORY_COMPLETION" : "HISTORY_DIAGNOSIS_OBSERVER_UNAVAILABLE" };
     for (const [client, unsafe] of [[reader, unsafeReader], [observer, unsafeObserver]]) {
       if (client && !unsafe && !totalExpired) try { ensureBudget(); await client.query({ text: "rollback;reset all", query_timeout: 3000 }); } catch { /* Socket close remains mandatory. */ }
       await close(client);
