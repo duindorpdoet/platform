@@ -140,8 +140,7 @@ test("a delayed snapshot and an outdated open editor cannot replace a newer serv
     await editor.getByRole("button", { name: "Locatie opslaan" }).click();
     await expect(editor.getByRole("alert").filter({ hasText: "opslaan geweigerd" })).toBeVisible();
     await editor.getByRole("button", { name: "Annuleren", exact: true }).click();
-    await expect(editor).toContainText("handmatige routingpositie");
-    releaseOld(); await page.waitForTimeout(300);
+    releaseOld();
     await expect(editor).toContainText("handmatige routingpositie");
     await editor.getByRole("button", { name: "Marker verplaatsen" }).click();
     await editor.getByText("Technische locatiegegevens", { exact: true }).click();

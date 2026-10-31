@@ -57,20 +57,67 @@ test("saved start selects survive timestamp spelling and refresh; publication ex
   await expect(page.getByText("Opgeslagen serverwaarden: finalekaders gereed", { exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Indeling", exact: true }).click();
   await expect(selectedTime).toHaveValue("2026-10-31T16:10:00.000Z");
-  // A failed read-only publication check must never retain permission from a
-  // previous ready response, or claim that a location save failed.
-  await page.route("**/rest/v1/rpc/admin_startregie_publication_readiness", route => route.fulfill({
-    status: 500, contentType: "application/json", body: JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout", details: null, hint: null }),
-  }));
+  // Begin with a real successful check, then fail the last preflight. The old
+  // permission must disappear while the request is still pending.
   await card.getByRole("button", { name: "Startafspraken bevestigen en versturen", exact: true }).click();
   const failedCheck = page.getByRole("dialog");
+  const confirm = failedCheck.getByRole("button", { name: "Startafspraken bevestigen en versturen", exact: true });
+  await expect(confirm).toBeEnabled();
+  let failPreflight!: () => void, preflightStarted!: () => void;
+  const pendingFailure = new Promise<void>(resolve => { failPreflight = resolve; });
+  const started = new Promise<void>(resolve => { preflightStarted = resolve; });
+  await page.route("**/rest/v1/rpc/admin_startregie_publication_readiness", async route => {
+    preflightStarted(); await pendingFailure;
+    await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout", details: null, hint: null }) });
+  });
+  await confirm.click(); await started;
+  try { await expect(confirm).toBeDisabled(); } finally { failPreflight(); }
   await expect(failedCheck).toContainText("De database heeft de controle afgebroken");
   await expect(failedCheck).toContainText("57014");
   await expect(failedCheck).not.toContainText("Opslag niet bevestigd");
   await expect(failedCheck.getByRole("button", { name: "Startafspraken bevestigen en versturen", exact: true })).toBeDisabled();
+  const failedAgain = page.waitForResponse(response => response.url().includes("/rpc/admin_startregie_publication_readiness"));
   await failedCheck.getByRole("button", { name: "Opnieuw controleren", exact: true }).click();
   await expect(failedCheck.getByRole("button", { name: "Startafspraken bevestigen en versturen", exact: true })).toBeDisabled();
-  await failedCheck.getByRole("button", { name: "Terug", exact: true }).click();
+  expect((await failedAgain).status()).toBe(500);
   await page.unroute("**/rest/v1/rpc/admin_startregie_publication_readiness");
+  const recovered = page.waitForResponse(response => response.url().includes("/rpc/admin_startregie_publication_readiness"));
+  await failedCheck.getByRole("button", { name: "Opnieuw controleren", exact: true }).click();
+  expect((await recovered).ok()).toBe(true);
+  await expect(confirm).toBeEnabled();
+
+  // Retained data after a failed snapshot cannot retain publication permission,
+  // even if the subsequent successful reload has the same source hash.
+  await page.route("**/rest/v1/rpc/admin_startregie_snapshot", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Synthetic snapshot read failure" }) }));
+  const failedSnapshot = page.waitForResponse(response => response.url().includes("/rpc/admin_startregie_snapshot"));
+  await page.evaluate(() => window.dispatchEvent(new Event("focus"))); await failedSnapshot;
+  await expect(failedCheck).toContainText("De laatste Startregie-ophaalactie is mislukt");
+  await expect(confirm).toBeDisabled();
+  await page.unroute("**/rest/v1/rpc/admin_startregie_snapshot");
+  const restoredSnapshot = page.waitForResponse(response => response.url().includes("/rpc/admin_startregie_snapshot"));
+  await failedCheck.getByRole("button", { name: "Opnieuw ophalen", exact: true }).click();
+  expect((await restoredSnapshot).ok()).toBe(true);
+  await expect(failedCheck).not.toContainText("De laatste Startregie-ophaalactie is mislukt");
+  await expect(confirm).toBeDisabled();
+  const recheckedSnapshot = page.waitForResponse(response => response.url().includes("/rpc/admin_startregie_publication_readiness"));
+  await failedCheck.getByRole("button", { name: "Opnieuw controleren", exact: true }).click();
+  expect((await recheckedSnapshot).ok()).toBe(true);
+  await expect(confirm).toBeEnabled();
+
+  // A later server snapshot revokes the ready result without publishing. On
+  // refocus, reload real changed server inputs; retry must read them again.
+  state = await rpc("admin_startregie_snapshot", { _event_slug: event });
+  await rpc("admin_startregie_settings_save", { _event_slug: event, _settings: { ...state.settings, finaleAvailable: false }, _expected_version: state.settings.version, _reason: "Synthetic readiness changes after a successful browser preflight" });
+  const changed = page.waitForResponse(response => response.url().includes("/rpc/admin_startregie_snapshot"));
+  await page.evaluate(() => window.dispatchEvent(new Event("focus"))); await changed;
+  await expect(confirm).toBeDisabled();
+  await expect(failedCheck).toContainText("De planning is intussen gewijzigd");
+  const freshCheck = page.waitForResponse(response => response.url().includes("/rpc/admin_startregie_publication_readiness"));
+  await failedCheck.getByRole("button", { name: "Opnieuw controleren", exact: true }).click();
+  const freshReadiness = await (await freshCheck).json();
+  expect(freshReadiness.ready).toBe(false);
+  await expect(failedCheck).toContainText("Laatste poort veilig beschikbaar is nog niet bevestigd");
+  await expect(confirm).toBeDisabled();
+  await failedCheck.getByRole("button", { name: "Terug", exact: true }).click();
   expect(publicationWrites).toEqual([]);
 });

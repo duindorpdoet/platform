@@ -212,7 +212,7 @@ function readableError(message: string, details?: string | null) {
     ["START_POINT_MARKER_INVALID", "De locatiegegevens van dit startpunt zijn nog niet compleet."],
     ["START_POINT_CLOSED", "Dit startpunt is buiten zijn geplande beschikbaarheid."],
     ["START_TIME_OUTSIDE_EVENT", "Dit tijdstip valt buiten het ingestelde startvenster."],
-    ["STALE_VERSION", "Iemand anders heeft deze gegevens zojuist gewijzigd. De actuele planning is opnieuw geladen."],
+    ["STALE_VERSION", "Iemand anders heeft deze gegevens zojuist gewijzigd. Controleer de actuele planning."],
     ["MOVE_GROUPS_FIRST", "Verplaats eerst de gekoppelde routegroepen naar een ander startpunt."],
   ];
   return mappings.find(([code]) => message.includes(code))?.[1] ?? message;
@@ -282,6 +282,11 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
   const [scheduleIds, setScheduleIds] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [snapshotReadVersion, setSnapshotReadVersion] = useState(0);
+  const readFailure = useCallback((error: unknown) => {
+    setLoadError(startReadError(error));
+    setSnapshotReadVersion(version => version + 1);
+  }, []);
   const [busy, setBusy] = useState(false);
   useDialogFocus(Boolean(pointEditor),".start-point-editor",()=>setPointEditor(null),busy);
   const [undoMove, setUndoMove] = useState<UndoMove | null>(null);
@@ -296,10 +301,10 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
   const { load, invalidate } = useSnapshotLoader(useCallback(async () => {
     const serial = ++refreshSerial.current;
     try {
-    const client = createClient(); if (!client) { setLoadError(startReadError("Geen serververbinding")); return; }
+    const client = createClient(); if (!client) { readFailure("Geen serververbinding"); return; }
     const { data, error } = await client.schema("api").rpc("admin_startregie_snapshot", { _event_slug: eventSlug }).abortSignal(AbortSignal.timeout(20_000));
     if (serial !== refreshSerial.current) return;
-    if (error || !data) { setLoadError(startReadError(error ?? "Geen serverantwoord")); return; }
+    if (error || !data) { readFailure(error ?? "Geen serverantwoord"); return; }
     const next = data as Snapshot;
     const serverTime = Date.parse(next.ops?.now ?? "");
     if (Number.isFinite(serverTime) && serverTime < lastServerTime.current) return;
@@ -310,8 +315,8 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     setLoadError("");
     setScheduleIds(current => current.filter(id => next.groups.some(group => group.schedule?.id === id && ["draft", "confirmed", "published"].includes(group.schedule.state))));
     setSettingsDraft(current => !current || JSON.stringify(current) === JSON.stringify(previousSettings) ? next.settings : current);
-    } catch (error) { if (serial === refreshSerial.current) setLoadError(startReadError(error)); }
-  }, [eventSlug]));
+    } catch (error) { if (serial === refreshSerial.current) readFailure(error); }
+  }, [eventSlug, readFailure]));
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => { window.clearTimeout(timer); discardSnapshotResponses(); }; }, [load, discardSnapshotResponses]);
   const realtimeConnected = usePrivateBroadcast(snapshot?.realtimeTopic, invalidate);
   useSnapshotRefresh(load);
@@ -579,7 +584,9 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
         _reason: change.reason, _restore_from_address: change.restoreFromAddress, _expected_version: change.expectedVersion ?? resource.version,
       }).abortSignal(AbortSignal.timeout(20_000));
       if (error) {
-        if (error.message.includes("STALE_VERSION")) await load();
+        // Report the rejected write immediately, even while an older read is pending.
+        // The queue still fetches fresh server state after that read has settled.
+        if (error.message.includes("STALE_VERSION")) void load();
         throw new Error(`${resource.name} — locatie opslaan geweigerd: ${readableError(error.message, error.details)}`);
       }
       if (data?.id !== resource.id || !Number.isInteger(data.version) || !coordinate(data.longitude, data.latitude)) {
@@ -620,7 +627,7 @@ export function StartScheduleBoard({ eventSlug, maxGroupSize, onOpenPortals }: {
     {tab === "planning" && <section className="panel" aria-label="Bestaande groepen automatisch plannen"><h3>Groepen automatisch over startpunten verdelen</h3><p>Bestaande samenstellingen blijven intact. Bevestigde en gepubliceerde startafspraken blijven behouden.</p><button className="btn" type="button" disabled={busy} onClick={() => void calculate("existing")}>Groepen automatisch over startpunten verdelen</button>
       {proposalMode === "existing" && proposal && <><p>{proposal.groups.length} groepen toegewezen · {proposal.conflicts.length} aandachtspunten</p>{proposal.groups.map(group => <ProposalAssignment key={group.key} group={group} points={snapshot.startPoints} label={snapshot.groups.find(item => item.id === group.key)?.systemCode} />)}{proposal.conflicts.map((c,i)=><p className="form-warning" key={i}>{c.subjectId}: {c.message}</p>)}<button className="btn outline" type="button" disabled={busy||!proposal.groups.length||proposal.conflicts.length>0} onClick={()=>void saveProposal()}>Conceptslotverdeling opslaan</button></>}
     </section>}
-    {tab === "planning" && <StartOpsWorkspace publicationReviewRef={publicationReviewRef} snapshot={snapshot} eventSlug={eventSlug} busy={busy} setBusy={setBusy} onReload={load} onNotice={setNotice} onMove={async (group,target)=>{const current=snapshot.groups.find(item=>item.id===group.id);if(current)await moveGroup(current,target);}} onOpenPoints={() => setTab("points")} onReadinessAction={openReadinessAction} settingsDirty={settingsDirty} selectedIds={scheduleIds} onSelectedIds={setScheduleIds} />}
+    {tab === "planning" && <StartOpsWorkspace publicationReviewRef={publicationReviewRef} snapshot={snapshot} snapshotReadError={Boolean(loadError)} snapshotReadVersion={snapshotReadVersion} eventSlug={eventSlug} busy={busy} setBusy={setBusy} onReload={load} onNotice={setNotice} onMove={async (group,target)=>{const current=snapshot.groups.find(item=>item.id===group.id);if(current)await moveGroup(current,target);}} onOpenPoints={() => setTab("points")} onReadinessAction={openReadinessAction} settingsDirty={settingsDirty} selectedIds={scheduleIds} onSelectedIds={setScheduleIds} />}
     {tab === "planning" && <details className="start-ops-advanced"><summary><Settings2 /> Automatisch voorstel en uitgebreid planbord</summary><PlanningPanel snapshot={snapshot} activePoints={activePoints} times={times} displayedTimes={displayedTimes} visibleTimes={visibleTimes}
       visiblePoints={visiblePoints} visibleGroups={visibleGroups} filters={filters} setFilters={setFilters}
       filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen} busy={busy} proposal={proposal}
