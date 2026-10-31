@@ -74,9 +74,16 @@ export function parseReleaseCsv(source, nullMarker) {
   });
 }
 
-function execute(command, args, environment, timeout) {
-  return new Promise(resolve => execFile(command, args, { env: environment, encoding: "utf8", timeout, killSignal: "SIGKILL", maxBuffer: MAX_OUTPUT_BYTES },
-    (error, stdout, stderr) => resolve({ error, stdout, stderr })));
+function execute(command, args, environment, timeout, input) {
+  return new Promise(resolve => {
+    let inputError;
+    const child = execFile(command, args, { env: environment, encoding: "utf8", timeout, killSignal: "SIGKILL", maxBuffer: MAX_OUTPUT_BYTES },
+      (error, stdout, stderr) => resolve({ error: error ?? inputError, stdout, stderr }));
+    // A failed or early-exiting client must not leave an unhandled EPIPE, nor
+    // let apparently valid partial stdout conceal an incomplete input write.
+    child.stdin.on("error", error => { inputError = error; });
+    child.stdin.end(input);
+  });
 }
 
 /** One verified portable psql process; no query retry, fallback or output logs. */
@@ -106,15 +113,25 @@ export async function libpqReadQuery(batch, env, plan, caBundle, statementMs, ru
     // Same actual-session setup and unmodified readBatch, sent together. The DO
     // guard runs before the original SQL; a session default protects inner COMMIT.
     const sql = `set default_transaction_read_only=on;set statement_timeout='${statementMs}ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='${clientMs}ms';${batch}`;
-    const args = ["-X", "-q", "--csv", "-w", "-v", `ON_ERROR_STOP=${session ? "0" : "1"}`, "-v", "VERBOSITY=verbose", "--pset", `null=${nullMarker}`, "--command", sql];
+    // Keep potentially large baseline SQL out of argv (Linux limits each
+    // argument to about 128 KiB). Plain stdin SQL would split the original
+    // single wire batch at semicolons and could continue after a failed guard.
+    // gexec sends its one returned text field literally as one server query,
+    // retaining the same fail-closed batch semantics as the original -c.
+    let delimiter;
+    do { delimiter = `$duindorp_read_batch_${randomBytes(32).toString("hex")}$`; }
+    while (sql.includes(delimiter));
+    const input = `select ${delimiter}${sql}${delimiter}\n\\gexec\n`;
+    const args = ["-X", "-q", "--csv", "-w", "-v", `ON_ERROR_STOP=${session ? "0" : "1"}`, "-v", "VERBOSITY=verbose", "--pset", `null=${nullMarker}`, "--file=-"];
     // A session-pooler backend is borrowed. Restore its session settings after
     // either a completed read or a PostgreSQL ErrorResponse, on this connection.
-    // Each -c is one wire batch: an error aborts the rest of the read batch.
+    // The gexec read and the cleanup -c each remain one wire batch: an error
+    // aborts the rest of that batch.
     // Noninteractive psql exits on lost connections and never reconnects; a
     // client deadline kills this process rather than queuing cleanup afterward.
     if (session) args.push("--command", "rollback;reset all");
     let result;
-    try { result = await run(tools.psql, args, environment, 30_000 + clientMs); }
+    try { result = await run(tools.psql, args, environment, 30_000 + clientMs, input); }
     catch { fail("PROCESS_FAILED"); }
     // With ON_ERROR_STOP=0 a successful cleanup can give exit 0 after the read
     // failed. Every server error still vetoes all partial or apparently valid

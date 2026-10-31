@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { existsSync, readFileSync, statSync } from "node:fs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { libpqReadQuery, parseReleaseCsv as parse } from "./production-libpq-read.mjs";
 import { adminDatabasePlan, enabledSessionReads } from "./production-read-query.mjs";
 
@@ -13,6 +17,11 @@ const tools = { psql: "/fixed/public-clients/bin/psql" };
 const nullMarker = "__duindorp_null_" + "a".repeat(64) + "__";
 const parseReleaseCsv = (source: string) => parse(source, nullMarker);
 const csv = (fields: unknown[]) => fields.map(value => value === null ? nullMarker : `"${String(value).replaceAll('"', '""')}"`).join(",") + "\n";
+const originalBatch = (input: string) => {
+  const match = /^select (\$duindorp_read_batch_[a-f0-9]{64}\$)([\s\S]*)\1\n\\gexec\n$/.exec(input);
+  expect(match).not.toBeNull();
+  return match![2];
+};
 
 describe("fixed release CSV result contract", () => {
   it.each(["audit", "joint_input", "metadata", "preservation", "diagnostic", "nachtpost_activation", "manual_portals", "fingerprint"])("decodes the fixed %s JSON result with native JSON semantics", header => {
@@ -59,12 +68,13 @@ describe("explicit production portable libpq read", () => {
     const batch = "begin read only;select '{}'::jsonb audit;commit;";
     let ca = "", home = "";
     const validate = vi.fn(async () => tools);
-    const run = vi.fn(async (command: string, args: string[], environment: Record<string, string | undefined>, timeout: number) => {
+    const run = vi.fn(async (command: string, args: string[], environment: Record<string, string | undefined>, timeout: number, input: string) => {
       expect(validate).toHaveBeenCalledExactlyOnceWith(env.RELEASE_PG_CLIENT_DIRECTORY);
       expect(command).toBe(tools.psql); expect(timeout).toBe(100_000);
       expect(args.slice(0, 9)).toEqual(["-X", "-q", "--csv", "-w", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose", "--pset"]);
-      expect(args[9]).toMatch(/^null=__duindorp_null_[a-f0-9]{64}__$/); expect(args[10]).toBe("--command");
-      expect(args[11]).toBe("set default_transaction_read_only=on;set statement_timeout='60000ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='70000ms';" + batch);
+      expect(args[9]).toMatch(/^null=__duindorp_null_[a-f0-9]{64}__$/); expect(args[10]).toBe("--file=-");
+      expect(originalBatch(input)).toBe("set default_transaction_read_only=on;set statement_timeout='60000ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='70000ms';" + batch);
+      expect(args.join(" ")).not.toContain(batch);
       expect(args.join(" ")).not.toContain(env.SUPABASE_DB_PASSWORD);
       ca = environment.PGSSLROOTCERT!; home = environment.HOME!;
       expect(statSync(ca).mode & 0o777).toBe(0o600); expect(statSync(home).mode & 0o777).toBe(0o700);
@@ -91,10 +101,10 @@ describe("explicit production portable libpq read", () => {
     const sessionPlan = adminDatabasePlan(sessionEnv, { id: ref, region: "eu-west-2", database: { host: `db.${ref}.supabase.co` } },
       [{ pool_mode: "session", db_host: "aws-1-eu-west-2.pooler.supabase.com", db_user: "postgres", db_name: "postgres" }]);
     expect(enabledSessionReads(sessionEnv)).toBe(true);
-    const run = vi.fn(async (_command: string, args: string[], environment: Record<string, string | undefined>) => {
+    const run = vi.fn(async (_command: string, args: string[], environment: Record<string, string | undefined>, _timeout: number, input: string) => {
       expect(args[5]).toBe("ON_ERROR_STOP=0"); expect(args.slice(-2)).toEqual(["--command", "rollback;reset all"]);
       expect(args.filter(value => value === "fixed-batch")).toHaveLength(0);
-      expect(args[11].endsWith("fixed-batch")).toBe(true);
+      expect(originalBatch(input).endsWith("fixed-batch")).toBe(true);
       expect(environment).toMatchObject({ PGHOST: "aws-1-eu-west-2.pooler.supabase.com", PGPORT: "5432", PGUSER: `postgres.${ref}`,
         PGSSLMODE: "verify-full", PGCONNECT_TIMEOUT: "30", PGGSSENCMODE: "disable" });
       return { error: null, stdout: "audit\n{}\n", stderr: "" };
@@ -108,6 +118,37 @@ describe("explicit production portable libpq read", () => {
         "CA", 60_000, run, async () => tools)).rejects.toThrow("RELEASE_READ_LIBPQ_ENVIRONMENT_BOUNDARY");
     }
     expect(run).toHaveBeenCalledOnce();
+  });
+  it("delivers SQL exceeding the OS argument limit intact through a real child process", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "duindorp-libpq-input-test-"));
+    const command = join(directory, "psql-fixture");
+    // This child receives the actual execFile pipes and argv. A large -c
+    // argument fails at spawn before it can return the validated result.
+    await writeFile(command, `#!${process.execPath}
+const { readFileSync } = require('node:fs');
+const { createHash } = require('node:crypto');
+const input = readFileSync(0, 'utf8');
+const match = /^select (\\$duindorp_read_batch_[a-f0-9]{64}\\$)([\\s\\S]*)\\1\\n\\\\gexec\\n$/.exec(input);
+if (!match || !process.argv.includes('--file=-') || process.argv.some(arg => Buffer.byteLength(arg) > 1024)) process.exit(3);
+const value = JSON.stringify({ bytes: Buffer.byteLength(match[2]), sha256: createHash('sha256').update(match[2]).digest('hex') });
+process.stdout.write('audit\\n"' + value.replaceAll('"', '""') + '"\\n');
+`, { mode: 0o700 });
+    const batch = "begin read only;\nselect 'quoted,\"value\"\\nline';\n/*" + "x".repeat(256 * 1024) + "*/\ncommit;";
+    const setup = "set default_transaction_read_only=on;set statement_timeout='60000ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='70000ms';";
+    try {
+      expect(await libpqReadQuery(batch, env, plan, "CA", 60_000, undefined, async () => ({ psql: command }))).toEqual([
+        { audit: { bytes: Buffer.byteLength(setup + batch), sha256: createHash("sha256").update(setup + batch).digest("hex") } },
+      ]);
+    } finally { await rm(directory, { recursive: true, force: true }); }
+  });
+  it("vetoes apparently valid output when a real early-exiting client does not accept its stdin", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "duindorp-libpq-input-test-"));
+    const command = join(directory, "psql-fixture");
+    await writeFile(command, `#!${process.execPath}\nprocess.stdout.write('audit\\n{}\\n');\n`, { mode: 0o700 });
+    try {
+      await expect(libpqReadQuery("x".repeat(2 * 1024 * 1024), env, plan, "CA", 60_000, undefined,
+        async () => ({ psql: command }))).rejects.toThrow("RELEASE_READ_LIBPQ_CONNECT_FAILED");
+    } finally { await rm(directory, { recursive: true, force: true }); }
   });
   it.each(["ERROR:  57014: private original SQL error", "ERROR:  42501: private cleanup error", "FATAL:  08006: private connection error", "ERROR: private unclassified server error"])("vetoes a server failure even after successful session cleanup exit zero: %s", async stderr => {
     const sessionEnv = { ...env, RELEASE_READ_TRANSPORT: "session-pooler" };
