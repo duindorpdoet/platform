@@ -15,7 +15,7 @@ const project = { id: ref, region: "eu-west-2", database: { host: `db.${ref}.sup
 const pooler = { pool_mode: "transaction", db_port: 6543, db_host: "aws-1-eu-west-2.pooler.supabase.com", db_user: "postgres", db_name: "postgres" };
 type Result = { command: string; fields: unknown[]; rows: Record<string, unknown>[] };
 const result = (rows: Record<string, unknown>[] = [], command = "SELECT"): Result => ({ command, fields: command === "SELECT" ? [{}] : [], rows });
-function fixture(options: { project?: unknown; poolers?: unknown; answer?: Result | Result[]; error?: Error; proof?: Record<string, unknown>;
+function fixture(options: { project?: unknown; poolers?: unknown; answer?: Result | Result[]; error?: Error;
   connectError?: Error; policyError?: Error; cleanupError?: Error; closeError?: Error } = {}) {
   const queries: { text: string; query_timeout: number }[] = [];
   let configuration: Record<string, unknown> = {};
@@ -33,7 +33,6 @@ function fixture(options: { project?: unknown; poolers?: unknown; answer?: Resul
         return result([], "RESET");
       }
       if (queries.length <= 2 && options.policyError) throw options.policyError;
-      if (input.text.startsWith("select current_setting")) return result([options.proof ?? { read_only: "on", statement_timeout: queries[1].text.includes("300000ms") ? "5min" : "1min", lock_timeout: "3s", jit: "off" }]);
       if (queries.length <= 2) return result([], "SET");
       if (options.error) throw options.error;
       return options.answer ?? result([{ connectivity: 1 }]);
@@ -47,6 +46,10 @@ function expectOriginalBody(batch: string, sql: string) {
   expect(batch).toMatch(/^begin read only;set default_transaction_read_only=on;/);
   expect(batch).toContain("set local jit=off;");
   expect(batch).toContain("do $release_read_policy$begin");
+  expect(batch).toContain("current_setting('transaction_read_only')<>'on' or current_setting('default_transaction_read_only')<>'on'");
+  expect(batch).toContain("current_setting('statement_timeout')<>'");
+  expect(batch).toContain("current_setting('lock_timeout')<>'3s' or current_setting('jit')<>'off'");
+  expect(batch.indexOf("raise exception 'RELEASE_READ_POLICY_REQUIRED'")).toBeLessThan(batch.indexOf(sql.replace(/^begin read only;/i, "")));
   expect(batch.split("end $release_read_policy$;")[0]).not.toMatch(/select current_setting/);
   expect(batch.endsWith(begin ? sql.slice(begin.length) : `${sql}\n;commit;`)).toBe(true);
   expect(batch.match(/begin read only;/gi)).toHaveLength(1);
@@ -63,23 +66,24 @@ describe("explicit release session reads", () => {
       expect(() => enabledSessionReads({ ...env, ...change })).toThrow("ENVIRONMENT_BOUNDARY");
     expect(enabledSessionReads({ ...env, APP_REVISION: env.GITHUB_SHA })).toBe(true);
   });
-  it("sets and proves actual session read-only state before preserving original multi-statement SQL", async () => {
+  it("sets session policy and proves it inside the original SQL batch without a separate proof round trip", async () => {
     const f = fixture({ answer: [result([], "BEGIN"), result([{ previous: true }]), result([]), result([], "COMMIT")] });
     const sql = "begin read only;select 1;select 2 where false;commit;";
     expect(await sessionReadQuery(sql, env, f.request, f.Client)).toEqual([{ previous: true }]);
-    expect(f.queries.slice(0, 3).map(query => query.text)).toEqual([
+    expect(f.queries.slice(0, 2).map(query => query.text)).toEqual([
       "set default_transaction_read_only=on",
       "set statement_timeout='60000ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='70000ms'",
-      "select current_setting('default_transaction_read_only') as read_only,current_setting('statement_timeout') as statement_timeout,current_setting('lock_timeout') as lock_timeout,current_setting('jit') as jit",
     ]);
-    expectOriginalBody(f.queries[3].text, sql);
+    expectOriginalBody(f.queries[2].text, sql);
+    expect(f.queries).toHaveLength(4);
+    expect(f.queries.some(query => query.text.startsWith("select current_setting"))).toBe(false);
     expect(f.queries.at(-1)?.text).toBe("rollback;reset all");
     expect(f.queries.at(-2)?.query_timeout).toBe(70_000);
     expect(f.end).toHaveBeenCalledOnce();
     expect(f.request.mock.calls.map(([url, opts]) => [url, opts?.method])).toEqual([
       [`https://api.supabase.com/v1/projects/${ref}`, "GET"], [`https://api.supabase.com/v1/projects/${ref}/config/database/pooler`, "GET"],
     ]);
-    expect(f.configuration()).toMatchObject({ host: pooler.db_host, port: 5432, user: `postgres.${ref}`, database: "postgres", password: env.SUPABASE_DB_PASSWORD, ssl: { rejectUnauthorized: true } });
+    expect(f.configuration()).toMatchObject({ host: pooler.db_host, port: 5432, user: `postgres.${ref}`, database: "postgres", password: env.SUPABASE_DB_PASSWORD, ssl: { rejectUnauthorized: true }, connectionTimeoutMillis: 30000 });
     const tls = f.configuration().ssl as { ca: string[] };
     expect(tls.ca).toContain(readFileSync(new URL("./supabase-root-2021.crt", import.meta.url), "utf8"));
     expect(f.queries.join(" ")).not.toContain(env.SUPABASE_DB_PASSWORD);
@@ -135,16 +139,22 @@ describe("explicit release session reads", () => {
     expect(f.queries[1].text).toContain("statement_timeout='300000ms'");
     expect(f.queries.at(-2)?.query_timeout).toBe(310_000);
   });
-  it("aborts on an unproven policy and closes directly on errors without leaking query, credentials or row data", async () => {
-    const bad = fixture({ proof: { read_only: "off", statement_timeout: "1min", lock_timeout: "3s", jit: "off" } });
-    await expect(sessionReadQuery("select 'private-query'", env, bad.request, bad.Client)).rejects.toThrow("POLICY_NOT_CONFIRMED");
+  it("fails closed on an actual-batch policy assertion before accepting any original result, without replaying SQL", async () => {
+    const bad = fixture({ error: Object.assign(new Error("RELEASE_READ_POLICY_REQUIRED"), { code: "P0001" }), answer: result([{ private: "unusable-row" }]) });
+    const sql = "select 'private-query'";
+    await expect(sessionReadQuery(sql, env, bad.request, bad.Client)).rejects.toThrow(/^RELEASE_READ_POLICY_SQLSTATE_P0001$/);
+    expectOriginalBody(bad.queries[2].text, sql);
+    expect(bad.queries.filter(query => query.text.includes(sql))).toHaveLength(1);
     expect(bad.queries).toHaveLength(4);
+    expect(bad.queries.at(-1)?.text).toBe("rollback;reset all");
     expect(bad.end).toHaveBeenCalledOnce();
+  });
+  it("closes directly on client timeouts without leaking query, credentials or row data", async () => {
     for (const error of [Object.assign(new Error("private-query fixture-password fixture-row"), { code: "25006" }), new Error("Query read timeout private-query")]) {
       const f = fixture({ error });
       await expect(sessionReadQuery("select 'private-query'", env, f.request, f.Client)).rejects.toThrow(/^RELEASE_READ_ORIGINAL_(SQLSTATE_25006|CLIENT_TIMEOUT)$/);
       expect(f.end).toHaveBeenCalledOnce();
-      expect(f.queries).toHaveLength(error.message.includes("timeout") ? 4 : 5);
+      expect(f.queries).toHaveLength(error.message.includes("timeout") ? 3 : 4);
       expect(f.queries.some(query => /^rollback/i.test(query.text))).toBe(!error.message.includes("timeout"));
     }
   });

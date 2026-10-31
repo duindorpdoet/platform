@@ -81,7 +81,7 @@ function clientPlan(env, project, poolers) {
   if (!pooler) fail("TRUSTED_SESSION_POOLER_REQUIRED");
   return { host: pooler.db_host, port: 5432, database: "postgres", user: `postgres.${ref}`,
     password: env.SUPABASE_DB_PASSWORD, ssl: { rejectUnauthorized: true, ca: [...rootCertificates, supabaseCA] },
-    connectionTimeoutMillis: 10_000, application_name: "duindorp-release-readonly" };
+    connectionTimeoutMillis: 30_000, application_name: "duindorp-release-readonly" };
 }
 
 function safeErrorCode(error) {
@@ -168,17 +168,15 @@ export async function sessionReadQuery(sql, env = process.env, request = fetch, 
     }
     await query("set default_transaction_read_only=on", 10_000);
     await query(`set statement_timeout='${statementMs}ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='${clientMs}ms'`, 10_000);
-    const proof = await query("select current_setting('default_transaction_read_only') as read_only,current_setting('statement_timeout') as statement_timeout,current_setting('lock_timeout') as lock_timeout,current_setting('jit') as jit", 10_000);
-    const settings = proof.rows?.[0];
-    if (settings?.read_only !== "on" || settings.jit !== "off"
-      || settings.lock_timeout !== "3s" || settings.statement_timeout !== (longRead ? "5min" : "1min")) fail("POLICY_NOT_CONFIRMED");
+    // readBatch asserts these settings and transaction read-only state in the
+    // same wire message as the original SQL, before its first statement.
     phase = "ORIGINAL";
     const answer = await query(readBatch(sql, statementMs), clientMs);
     if (clientError) throw clientError;
     const results = Array.isArray(answer) ? answer : [answer];
     if (results.some(result => !Array.isArray(result?.rows))) fail("ORIGINAL_RESULT_REQUIRED");
     // Match postgres-meta's multi-statement response contract exactly. Setup
-    // and proof queries above are separate, so they can never become data.
+    // queries above are separate, so they can never become data.
     return results.reverse().find(result => result.rows.length !== 0)?.rows ?? [];
   } catch (error) {
     if (!isSqlState(error?.code) && /^RELEASE_READ_[A-Z0-9_]+$/.test(error?.message ?? "")) throw error;
