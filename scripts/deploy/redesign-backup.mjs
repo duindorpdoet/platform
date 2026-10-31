@@ -102,8 +102,8 @@ export function compareFingerprints(before,after) {
   const current=new Map(after.map(row=>[row.table,row]));
   return before.filter(row=>{const next=current.get(row.table);return !next||row.rows!==next.rows||row.sha256!==next.sha256;}).map(row=>row.table);
 }
-function processCommand(command,args,env={}) {
-  const child=spawn(command,args,{env:{...process.env,...env},stdio:['pipe','pipe','pipe']});
+function processCommand(command,args,env={},inheritEnvironment=true) {
+  const child=spawn(command,args,{env:inheritEnvironment?{...process.env,...env}:env,stdio:['pipe','pipe','pipe']});
   child.stdin.on('error',()=>{});
   let errorBytes=0,firstError='';
   child.stderr.on('data',chunk=>{errorBytes+=chunk.length;if(firstError.length<2048)firstError+=chunk.toString();});
@@ -120,8 +120,8 @@ function processCommand(command,args,env={}) {
   done.catch(()=>{});
   return {child,done};
 }
-async function capture(command,args,input='',env={}) {
-  const {child,done}=processCommand(command,args,env),chunks=[];let size=0;
+async function capture(command,args,input='',env={},inheritEnvironment=true) {
+  const {child,done}=processCommand(command,args,env,inheritEnvironment),chunks=[];let size=0;
   child.stdout.on('data',chunk=>{size+=chunk.length;if(size>64*1024*1024){child.kill();return;}chunks.push(chunk);});
   child.stdin.end(input);await done;
   if(size>64*1024*1024)throw new Error('PRIVATE_METADATA_TOO_LARGE');
@@ -286,7 +286,12 @@ async function exportSource({env,key,context,directory,save,request,captureComma
       caDirectory=await mkdtemp(join(env.RUNNER_TEMP,'duindorp-source-client-ca-'));
       const ca=join(caDirectory,'roots.crt');
       await writeFile(ca,publicReleaseCaBundle(),{flag:'wx',mode:0o600});
-      sourceEnv={PGHOST:config.host,PGPORT:String(config.port),PGDATABASE:config.database,PGUSER:config.user,PGPASSWORD:config.password,
+      // Native libpq must never merge ambient endpoint/service/TLS settings.
+      // A private empty HOME also prevents default client certificates or
+      // service files in the runner account from changing this fixed plan.
+      sourceEnv={PATH:process.env.PATH,LANG:'C',LC_ALL:'C',HOME:caDirectory,
+        PGSERVICE:'',PGSERVICEFILE:'',PGPASSFILE:'',PGHOSTADDR:'',PGSSLCERT:'',PGSSLKEY:'',PGSSLPASSWORD:'',PGGSSENCMODE:'disable',
+        PGHOST:config.host,PGPORT:String(config.port),PGDATABASE:config.database,PGUSER:config.user,PGPASSWORD:config.password,
         PGSSLMODE:'verify-full',PGSSLROOTCERT:ca,PGCONNECT_TIMEOUT:'30',PGOPTIONS:'-c statement_timeout=300000 -c lock_timeout=3000 -c jit=off'};
       sourceClient=tool=>({command:tool==='psql'?tools.psql:tools.pgDump,args:[]});
     } else {
@@ -299,10 +304,10 @@ async function exportSource({env,key,context,directory,save,request,captureComma
       const clientArgs=['run','--rm','-i','--network','host',...Object.keys(sourceEnv).flatMap(name=>['--env',name]),image];
       sourceClient=tool=>({command:'docker',args:[...clientArgs,tool]});
     }
-    const psql=sourceClient('psql'),dumpClient=sourceClient('pg_dump');
+    const psql=sourceClient('psql'),dumpClient=sourceClient('pg_dump'),inheritSourceEnvironment=env.RELEASE_READ_TRANSPORT!=='direct';
   const sourceQuery=(phase,sql,snapshot)=>withSourceReadPhase(phase,()=>
-    captureCommand(psql.command,[...psql.args,'-X','-qAt','-v','ON_ERROR_STOP=1'],sourceReadPrefix(snapshot)+sql+';commit;',sourceEnv));
-  const holder=spawnCommand(psql.command,[...psql.args,'-X','-qAt','-v','ON_ERROR_STOP=1'],sourceEnv);
+    captureCommand(psql.command,[...psql.args,'-X','-qAt','-v','ON_ERROR_STOP=1'],sourceReadPrefix(snapshot)+sql+';commit;',sourceEnv,inheritSourceEnvironment));
+  const holder=spawnCommand(psql.command,[...psql.args,'-X','-qAt','-v','ON_ERROR_STOP=1'],sourceEnv,inheritSourceEnvironment);
   const snapshot=await withSourceReadPhase('snapshot-export',()=>new Promise((resolve,reject)=>{
     let value='';const timer=setTimeout(()=>reject(new Error('SNAPSHOT_TIMEOUT')),60000);
     holder.child.stdout.on('data',chunk=>{value+=chunk.toString();const match=value.match(/^([0-9a-f]+-[0-9a-f]+-\d+)$/im);if(match){clearTimeout(timer);resolve(match[1]);}});
@@ -332,7 +337,7 @@ async function exportSource({env,key,context,directory,save,request,captureComma
     const vaultBefore=JSON.parse(await sourceQuery('vault-fingerprint',vaultFingerprint,snapshot));
     await save('catalog.aes',catalog);await save('inventory.aes',before);await save('roles.aes',roles);await save('role-memberships.aes',memberships);await save('settings.aes',settings);await save('objects.aes',objects);
     await save('vault-root-key.aes',vaultKey);await save('vault-inventory.aes',vaultBefore);
-    const dump=spawnCommand(dumpClient.command,[...dumpClient.args,'--format=custom','--no-subscriptions','--lock-wait-timeout=3000',`--snapshot=${snapshot}`],sourceEnv);
+    const dump=spawnCommand(dumpClient.command,[...dumpClient.args,'--format=custom','--no-subscriptions','--lock-wait-timeout=3000',`--snapshot=${snapshot}`],sourceEnv,inheritSourceEnvironment);
     dump.child.stdin.end();
     await Promise.all([encryptStream(dump.child.stdout,join(directory,'database.aes'),key,context+':database.aes'),dump.done]);
     await verifyBackupFile(join(directory,'database.aes'),key,context+':database.aes');

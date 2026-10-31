@@ -17,7 +17,7 @@ export function verifyBackupFile(filename: string, key: Uint8Array, context: str
 export function dryRunReleaseMigrations(files: string[], appliedVersions: string[], localQuery: (sql: string) => Promise<unknown>): Promise<Array<{file: string; sha256: string; execution: string; durationMs: number}>>;
 export function runReleaseBackup(env?: Record<string,string|undefined>, dependencies?: {
  request?: typeof fetch;
- captureCommand?: (command: string,args: string[],input?: string,env?: Record<string,string>)=>Promise<string>;
- processCommand?: (command: string,args: string[],env?: Record<string,string>)=>{child: import('node:child_process').ChildProcessWithoutNullStreams;done: Promise<void>};
+ captureCommand?: (command: string,args: string[],input?: string,env?: Record<string,string|undefined>,inheritEnvironment?: boolean)=>Promise<string>;
+ processCommand?: (command: string,args: string[],env?: Record<string,string|undefined>,inheritEnvironment?: boolean)=>{child: import('node:child_process').ChildProcessWithoutNullStreams;done: Promise<void>};
  startRestore?: (image: string,container: string,rootKey: string)=>Promise<void>;
 }): Promise<void>;
