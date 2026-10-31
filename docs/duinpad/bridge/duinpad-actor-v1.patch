@@ -1,0 +1,2369 @@
+diff --git a/INHOUD-SHA256.json b/INHOUD-SHA256.json
+--- a/INHOUD-SHA256.json
++++ b/INHOUD-SHA256.json
+@@ -10,6 +10,7 @@
+   "Start-QLC-Windows.cmd": "2ad9fcc86e867d22c7f0bfb299f3aa2fe5b63c1af1b3c97997a3f3e798772a8f",
+   "Start-Simulatie-Mac.command": "506fdd90f9f9478b8cefb852994ec36391fac959d58f568127fc68e2f3d835ba",
+   "Start-Simulatie-Windows.cmd": "f815637f65e038f08f340a9bb27969fb518e69222098529231d9459fccdd020a",
++  "TESTRAPPORT-ACTOR-V1.json": "ecbb8234a36f5894f3f91e298faf1467b588b03b972fea99649feb5cd5d07aa8",
+   "TESTRAPPORT.json": "61fe19df11e6867982870de6d76790a675a50defc03291cc1cebc9b0dc91e293",
+   "audio/LEESMIJ.txt": "4bf991d9c33a3e71adb253a4fad1a573ad130a011cc8c7373fe2a65fec6b9a5a",
+   "audio/MEDIA-ANALYSE.json": "6f342a62983d385b2a9c6d27f02e4af3f2e393cde5fe33b19ebb2b2056fa0b59",
+@@ -21,25 +22,28 @@
+   "audio/zone3-alarm.wav": "a7164310e4dd3c488b845621a185d30e15b695c1120d2e2e05c1954ea08f3ffc",
+   "bridge/__init__.py": "393b1b0a66be3fbfaca5080db268ddde5d2283e84a5801c57634542a78f4295b",
+   "bridge/__main__.py": "e3da231473221541f3027a9a4433832707bd4ba31394aa8ffbe1809bcdd8a7f3",
++  "bridge/actor_adapter.py": "81c3104b06f0faf37b1bdb959d942a0fdfea5eb1add5de969aa580846acc09d7",
++  "bridge/actor_protocol.py": "819c4429abe8da05ba0a05212296075f5c68bfbf74720ea499ba4b465e81d0a3",
+   "bridge/audio.py": "bd753980581738c98db4644b934ceef6d387345ac60bf424cceb69a1fead65d9",
+   "bridge/auth.py": "b500d7a180d9ba9e4acaf04828677c41af00ddbcf47bc414f1e31f90f146e47b",
+   "bridge/config.py": "e538f9e4cd8d51e5312167d0189cfe12dc4fd4d9cf17f5a717e9008ca764655e",
+-  "bridge/controller.py": "c3ac0430eadf73d05899b40f91fac93586545550c39787a9fc02ed67e8604e28",
++  "bridge/controller.py": "2f18f3319854ef55324b9d253719a4ea95a33f6f62f207c0b5e3d1ea4192465a",
+   "bridge/qlc.py": "16427403ed21d3809bf18891747b3b07cc9d4ba833ab77617a8b376de72e849a",
+-  "bridge/relay_client.py": "1aa7500ff0bb77029da26894137798c9c3272f7f07a2841591a96de15300bbd8",
++  "bridge/relay_client.py": "9ca6f162d1c157d1d077a40079fd9c4a598240298a1a4b71e914efa5d5b4a812",
+   "bridge/server.py": "14dabfd3a489573ca04ab1f0d47cd4066aabd834cd84e4183f5853ac50e38abe",
+-  "bridge/store.py": "51cf4375c1ba4e2c8c8d0b5641dba73d30ab6647cd592965da6f273f33de9e34",
++  "bridge/store.py": "755403ae493b06c6d1246290c01e1d5d4022b4c1432dfe03e7d95b4b4ed50ac5",
+   "bridge/visitor.py": "9a1f644633987b546c63b96efa9a38b55c2639ad040ed0742d179301a2d23ddb",
+   "config/show.json": "2f23de60ad797c1d0dfa41ea50dc077161d9f2023882777622a93cefa074a090",
+-  "deploy/.env.example": "0821a14c162e324f57d1d586a9992f1397bc37771d6b0f3b246d05ba3e12a653",
++  "deploy/.env.example": "afcfc9e0e566e8b6111888ccc0c0f4c6bc67aa09583195cdfa63174470e5922d",
+   "deploy/Caddyfile": "13bb3b12085d09d28df95cc77cd151ae6b40d93bd3f1587ad7e47d19ddc902bb",
+-  "deploy/Dockerfile": "c4366b7d4cd6dca89c781c4052d48c0d5a71eaf6d7fb03d722b1a5a05a5cdc82",
++  "deploy/Dockerfile": "6774122a87388b55d2a5283fd1b3f576663e94cbbbda5174ae5ce01a64a217fd",
+   "deploy/LEESMIJ.md": "d472f9bb05eb95983ed182b2ab2bef333d633c863457f2b4d2554c53526756e8",
+   "deploy/MAAK-GEHEIMEN.py": "eaaac364b9cf1e68a041b80cd5feb6fa092aedec57c67769ced748a129b1d904",
+   "deploy/PROMPT-HALLOWEEN-APP.txt": "438cabea402e7e32cc8764d37481ec15b3cb4c706651d39a828c153905a39edf",
+   "deploy/compose.yaml": "44a9b24e80b142a9cefe4b8fe943cb550f82dbe9dfb694fb99ac492423d5365f",
+-  "deploy/relay_app.py": "e447043ea667815d76c15e8aacf5a5f81d89e066e75e9dc4f314c32c1103039e",
++  "deploy/relay_app.py": "572b208b2cb0ad5344f186c3cc87c92ec0103bb1f7cca29e9830c5f1d74e7050",
+   "deploy/requirements.txt": "34833497f8f0f124622fd93a1c252f7a66d3252ce74ed268deabd79141323cfb",
++  "docs/ACTOR-ADAPTER-V1.md": "88afafcaee7d51f9c3237cc0cc36dc2f013b6c3ad4cf5f59810961f1db98f47c",
+   "docs/BEKABELING.md": "eb4df7baccbde7ef5cbd97f078aa2b6175d2c64636b545c426c7d2ff624c8bb4",
+   "docs/Duinpad-Showpakket-2.0-Startgids.pdf": "e6d7d722efecfee25f400a20370d49991f803ea16e2355ea1dfc0d1e081614ff",
+   "package.json": "7577c5e9b16b36c93f28b0decf338ec6d817b5e10011c78aeb14e824b3da85c6",
+@@ -58,6 +62,9 @@
+   "qlc/functions.json": "715054df60edcc144be58333161ea79ef3f1553f6ea6c399eb33882277061257",
+   "requirements-dev.txt": "b6dc8c3d290a017b04a26c6a9f730a97e860ef760deb103b73586ea32a541817",
+   "requirements.txt": "e313a65895fa4aac6f85b73d8994b79f7e66403792ac055ed8284f35ea9a598a",
++  "tests/fixtures/actor-v1-fixtures.json": "e82a97daac299a1a26b78e5308bbabd4e5eb542d9804e337e8f5471c010759d8",
++  "tests/test_actor_protocol.py": "cd90920897b08519978bc2a33efbca8a45b5550c1a8405183d6ad08400e1edfd",
++  "tests/test_actor_relay.py": "76883c134f03fcbfa358e4cd464f44d5bc66b50aff1788c852ff347348eaa27f",
+   "tests/test_relay.py": "57b9af2417f746a0beefb140aeadbddd09e6c6d0a8776de5904756148e491d66",
+   "tests/test_show.py": "49b0c85921ee71931977ad56e52ccbe2bd1363c4c628506de6de128a86ef6013",
+   "tools/build_manual.py": "d9420ddac0d57b0cdc7dc56f7c2da684abf0f35b294e3c7a7bf23b1e7b9df3e5",
+@@ -67,10 +74,10 @@
+   "tools/prepare_audio_assets.py": "cf8b6db7cdf966f2945085fa2baefe2e51d5dff6e6de94541d69d758678ff45c",
+   "tools/send_arrival.py": "ee19e0657a862b1e968880c52e9f1d3e43f28494d67c4afc15f74463117c19cc",
+   "tools/start_local.py": "094a118d9233faebc733b5bd6aac1fbb05cf265437b1b4f62075f0075de405a3",
+-  "web/app.js": "1b101df02d5a1f765d88ef07b045c04e478aef22c4ad8486c8e56b7a2bdba3ef",
++  "web/app.js": "e5b3415cb36d079159792dd00421c48cc924d43b75483912d97714ca3cfb266c",
+   "web/handleiding.html": "dfb8d234ce95edf6f33af90461aaa55e00a22c35c9b62e55a61a9a2e8b804fb3",
+   "web/icon.svg": "284638e4692ea7a3848136f50984e60d4f3b3306e6da833e00a8b36b2618d7d6",
+-  "web/index.html": "164460696f38062974b37c07cde538a934d3bf654f4ca1f90f560124281a1cd4",
++  "web/index.html": "c148352292c349ed753eccda33c1dac5a4104250c508eb04e3b73d10ed4b0dcc",
+   "web/style.css": "e988e4d125914ec8f7f1d333b10ce588769f09f9a19477908fad3f881e8c5724",
+   "web/visitor.html": "0a268bf11eceac3c5e5bc3894c397f49773213f833e535834ec2363afa7c7411"
+ }
+diff --git a/TESTRAPPORT-ACTOR-V1.json b/TESTRAPPORT-ACTOR-V1.json
+new file mode 100644
+--- /dev/null
++++ b/TESTRAPPORT-ACTOR-V1.json
+@@ -0,0 +1,481 @@
++{
++  "report_type": "Isolated bridge/relay software simulation. No physical output or production execution.",
++  "generated_at_utc": "2026-10-31T14:49:45.400218+00:00",
++  "app_checkout_base_commit": "db5e9fee4fe86aecddbb05b9f0fe6ad3840c66f8",
++  "baseline_zip": "Duinpad-Showpakket-2.0.0.zip",
++  "baseline_zip_sha256": "e3dc2a5d47c0376484fc60391ffe81cabbeb624d159850ae3d1644179d761622",
++  "bridge_protocol": "duinpad.actor.v1",
++  "python": "3.12.3",
++  "command": "python -m unittest discover -s tests -v",
++  "tests_run": 104,
++  "passed": 104,
++  "failures": 0,
++  "errors": 0,
++  "skipped": 0,
++  "duration_seconds": 9.739,
++  "baseline_existing_tests": 72,
++  "new_tests": 32,
++  "tests": [
++    {
++      "name": "test_actor_finale_uses_existing_limited_finale_role (test_actor_protocol.ActorCase.test_actor_finale_uses_existing_limited_finale_role)",
++      "result": "ok"
++    },
++    {
++      "name": "test_concurrent_identical_actor_commands_execute_once (test_actor_protocol.ActorCase.test_concurrent_identical_actor_commands_execute_once)",
++      "result": "ok"
++    },
++    {
++      "name": "test_confirmed_started_finale_can_never_be_resolved_as_nonexecuted (test_actor_protocol.ActorCase.test_confirmed_started_finale_can_never_be_resolved_as_nonexecuted)",
++      "result": "ok"
++    },
++    {
++      "name": "test_durable_finale_slot_survives_local_group_reset (test_actor_protocol.ActorCase.test_durable_finale_slot_survives_local_group_reset)",
++      "result": "ok"
++    },
++    {
++      "name": "test_exact_cross_language_hmac_fixture (test_actor_protocol.ActorCase.test_exact_cross_language_hmac_fixture)",
++      "result": "ok"
++    },
++    {
++      "name": "test_expiry_and_disconnect_rechecked_after_execution_lock (test_actor_protocol.ActorCase.test_expiry_and_disconnect_rechecked_after_execution_lock)",
++      "result": "ok"
++    },
++    {
++      "name": "test_explicit_stop_all_is_required_for_emergency (test_actor_protocol.ActorCase.test_explicit_stop_all_is_required_for_emergency)",
++      "result": "ok"
++    },
++    {
++      "name": "test_finale_audio_failure_remains_unknown_and_never_releases (test_actor_protocol.ActorCase.test_finale_audio_failure_remains_unknown_and_never_releases)",
++      "result": "ok"
++    },
++    {
++      "name": "test_finale_qlc_failure_no_both_ack (test_actor_protocol.ActorCase.test_finale_qlc_failure_no_both_ack)",
++      "result": "ok"
++    },
++    {
++      "name": "test_heks_group_is_explicit_and_cannot_select_another_group (test_actor_protocol.ActorCase.test_heks_group_is_explicit_and_cannot_select_another_group)",
++      "result": "ok"
++    },
++    {
++      "name": "test_hmac_is_over_exact_ascii_payload_and_rejects_changes (test_actor_protocol.ActorCase.test_hmac_is_over_exact_ascii_payload_and_rejects_changes)",
++      "result": "ok"
++    },
++    {
++      "name": "test_old_qr_receipt_never_uses_a_fresh_execution_timestamp (test_actor_protocol.ActorCase.test_old_qr_receipt_never_uses_a_fresh_execution_timestamp)",
++      "result": "ok"
++    },
++    {
++      "name": "test_pending_attempt_is_unknown_without_reexecution (test_actor_protocol.ActorCase.test_pending_attempt_is_unknown_without_reexecution)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr2_and_actor_finale_share_one_start_and_ack (test_actor_protocol.ActorCase.test_qr2_and_actor_finale_share_one_start_and_ack)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr2_audio_valueerror_after_qlc_start_is_unknown_not_blocked (test_actor_protocol.ActorCase.test_qr2_audio_valueerror_after_qlc_start_is_unknown_not_blocked)",
++      "result": "ok"
++    },
++    {
++      "name": "test_receipts_are_readonly_payload_and_actor_bound_and_never_missing_proof (test_actor_protocol.ActorCase.test_receipts_are_readonly_payload_and_actor_bound_and_never_missing_proof)",
++      "result": "ok"
++    },
++    {
++      "name": "test_restart_interrupts_cue_and_keeps_pending_unknown (test_actor_protocol.ActorCase.test_restart_interrupts_cue_and_keeps_pending_unknown)",
++      "result": "ok"
++    },
++    {
++      "name": "test_revocation_and_revision_survive_restart (test_actor_protocol.ActorCase.test_revocation_and_revision_survive_restart)",
++      "result": "ok"
++    },
++    {
++      "name": "test_revocation_blocks_a_command_waiting_for_controller_lock (test_actor_protocol.ActorCase.test_revocation_blocks_a_command_waiting_for_controller_lock)",
++      "result": "ok"
++    },
++    {
++      "name": "test_same_id_changed_signed_payload_is_rejected (test_actor_protocol.ActorCase.test_same_id_changed_signed_payload_is_rejected)",
++      "result": "ok"
++    },
++    {
++      "name": "test_static_contract_fixture_cases (test_actor_protocol.ActorCase.test_static_contract_fixture_cases)",
++      "result": "ok"
++    },
++    {
++      "name": "test_status_is_strict_whitelist_and_contains_only_owned_controls (test_actor_protocol.ActorCase.test_status_is_strict_whitelist_and_contains_only_owned_controls)",
++      "result": "ok"
++    },
++    {
++      "name": "test_strict_args_scope_event_times_and_malformed_types (test_actor_protocol.ActorCase.test_strict_args_scope_event_times_and_malformed_types)",
++      "result": "ok"
++    },
++    {
++      "name": "test_three_zone_permissions_map_only_to_internal_two_three_four (test_actor_protocol.ActorCase.test_three_zone_permissions_map_only_to_internal_two_three_four)",
++      "result": "ok"
++    },
++    {
++      "name": "test_unknown_resolution_requires_explicit_local_regie_and_preserves_history (test_actor_protocol.ActorCase.test_unknown_resolution_requires_explicit_local_regie_and_preserves_history)",
++      "result": "ok"
++    },
++    {
++      "name": "test_zone_stop_never_inherits_global_emergency (test_actor_protocol.ActorCase.test_zone_stop_never_inherits_global_emergency)",
++      "result": "ok"
++    },
++    {
++      "name": "test_actor_protocol_requires_auth_fresh_scope_and_negotiation (test_actor_relay.ActorRelayCase.test_actor_protocol_requires_auth_fresh_scope_and_negotiation)",
++      "result": "ok"
++    },
++    {
++      "name": "test_command_status_revocation_and_readonly_receipt_end_to_end (test_actor_relay.ActorRelayCase.test_command_status_revocation_and_readonly_receipt_end_to_end)",
++      "result": "ok"
++    },
++    {
++      "name": "test_disconnect_while_command_pending_is_unknown_without_queue (test_actor_relay.ActorRelayCase.test_disconnect_while_command_pending_is_unknown_without_queue)",
++      "result": "ok"
++    },
++    {
++      "name": "test_forged_signature_extra_args_stale_and_body_limit_rejected (test_actor_relay.ActorRelayCase.test_forged_signature_extra_args_stale_and_body_limit_rejected)",
++      "result": "ok"
++    },
++    {
++      "name": "test_group_status_and_missing_receipt_are_filtered_and_safe (test_actor_relay.ActorRelayCase.test_group_status_and_missing_receipt_are_filtered_and_safe)",
++      "result": "ok"
++    },
++    {
++      "name": "test_stale_status_is_never_accepted_as_current (test_actor_relay.ActorRelayCase.test_stale_status_is_never_accepted_as_current)",
++      "result": "ok"
++    },
++    {
++      "name": "test_signed_credential_rejects_tampering_expiry_and_wrong_secret (test_relay.CredentialCase.test_signed_credential_rejects_tampering_expiry_and_wrong_secret)",
++      "result": "ok"
++    },
++    {
++      "name": "test_outbound_client_never_executes_expired_or_nonfinite_envelopes (test_relay.LocalRelayDeadlineCase.test_outbound_client_never_executes_expired_or_nonfinite_envelopes)",
++      "result": "ok"
++    },
++    {
++      "name": "test_backend_integration_auth_expiry_and_body_limits (test_relay.RelayCase.test_backend_integration_auth_expiry_and_body_limits)",
++      "result": "ok"
++    },
++    {
++      "name": "test_disconnect_after_forwarding_reports_unknown_and_does_not_queue (test_relay.RelayCase.test_disconnect_after_forwarding_reports_unknown_and_does_not_queue)",
++      "result": "ok"
++    },
++    {
++      "name": "test_end_to_end_visitor_flow_blocks_early_finale_then_starts_once (test_relay.RelayCase.test_end_to_end_visitor_flow_blocks_early_finale_then_starts_once)",
++      "result": "ok"
++    },
++    {
++      "name": "test_engine_connection_requires_secret_and_rejects_a_second_engine (test_relay.RelayCase.test_engine_connection_requires_secret_and_rejects_a_second_engine)",
++      "result": "ok"
++    },
++    {
++      "name": "test_offline_registration_retains_identity_without_queuing (test_relay.RelayCase.test_offline_registration_retains_identity_without_queuing)",
++      "result": "ok"
++    },
++    {
++      "name": "test_wrong_gate_forged_or_expired_cookie_and_cross_origin_rejected (test_relay.RelayCase.test_wrong_gate_forged_or_expired_cookie_and_cross_origin_rejected)",
++      "result": "ok"
++    },
++    {
++      "name": "test_cross_zone_command_and_origin_rejected (test_show.HTTPCase.test_cross_zone_command_and_origin_rejected)",
++      "result": "ok"
++    },
++    {
++      "name": "test_demo_routes_are_off_by_default (test_show.HTTPCase.test_demo_routes_are_off_by_default)",
++      "result": "ok"
++    },
++    {
++      "name": "test_health_and_state_authentication (test_show.HTTPCase.test_health_and_state_authentication)",
++      "result": "ok"
++    },
++    {
++      "name": "test_legacy_qr2_endpoint_also_starts_instead_of_arrival (test_show.HTTPCase.test_legacy_qr2_endpoint_also_starts_instead_of_arrival)",
++      "result": "ok"
++    },
++    {
++      "name": "test_public_finale_requires_same_browser_and_retries_after_a_block (test_show.HTTPCase.test_public_finale_requires_same_browser_and_retries_after_a_block)",
++      "result": "ok"
++    },
++    {
++      "name": "test_public_visitor_registration_is_idempotent_and_does_not_leak_staff_state (test_show.HTTPCase.test_public_visitor_registration_is_idempotent_and_does_not_leak_staff_state)",
++      "result": "ok"
++    },
++    {
++      "name": "test_public_wrong_gate_or_forged_credential_cannot_trigger (test_show.HTTPCase.test_public_wrong_gate_or_forged_credential_cannot_trigger)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr1_endpoint_only_registers_and_never_starts_show (test_show.HTTPCase.test_qr1_endpoint_only_registers_and_never_starts_show)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr2_endpoint_rejects_actor_token_and_expired_scan (test_show.HTTPCase.test_qr2_endpoint_rejects_actor_token_and_expired_scan)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr2_endpoint_starts_finale_once_and_releases_intro (test_show.HTTPCase.test_qr2_endpoint_starts_finale_once_and_releases_intro)",
++      "result": "ok"
++    },
++    {
++      "name": "test_background_routes_only_to_three_pad_buses_and_ducks_only_own_zone (test_show.MixerCase.test_background_routes_only_to_three_pad_buses_and_ducks_only_own_zone)",
++      "result": "ok"
++    },
++    {
++      "name": "test_ducking_and_natural_audio_end (test_show.MixerCase.test_ducking_and_natural_audio_end)",
++      "result": "ok"
++    },
++    {
++      "name": "test_import_preserves_duration_and_converts_sample_rate (test_show.MixerCase.test_import_preserves_duration_and_converts_sample_rate)",
++      "result": "ok"
++    },
++    {
++      "name": "test_independent_six_channel_mix (test_show.MixerCase.test_independent_six_channel_mix)",
++      "result": "ok"
++    },
++    {
++      "name": "test_live_audio_requires_real_callback_acknowledgement (test_show.MixerCase.test_live_audio_requires_real_callback_acknowledgement)",
++      "result": "ok"
++    },
++    {
++      "name": "test_audio_channel_mapping_must_be_unique (test_show.ProjectCase.test_audio_channel_mapping_must_be_unique)",
++      "result": "ok"
++    },
++    {
++      "name": "test_exact_rental_patch_and_modes (test_show.ProjectCase.test_exact_rental_patch_and_modes)",
++      "result": "ok"
++    },
++    {
++      "name": "test_finale_reveal_and_sweepers_have_sync_and_independent_motion (test_show.ProjectCase.test_finale_reveal_and_sweepers_have_sync_and_independent_motion)",
++      "result": "ok"
++    },
++    {
++      "name": "test_generated_fixture_definitions_match_project_modes (test_show.ProjectCase.test_generated_fixture_definitions_match_project_modes)",
++      "result": "ok"
++    },
++    {
++      "name": "test_generated_project_integrity_and_duration (test_show.ProjectCase.test_generated_project_integrity_and_duration)",
++      "result": "ok"
++    },
++    {
++      "name": "test_heks_blackout_is_full_twenty_seconds_and_backlights_fade_to_full (test_show.ProjectCase.test_heks_blackout_is_full_twenty_seconds_and_backlights_fade_to_full)",
++      "result": "ok"
++    },
++    {
++      "name": "test_patch_detects_overlap (test_show.ProjectCase.test_patch_detects_overlap)",
++      "result": "ok"
++    },
++    {
++      "name": "test_second_gobo_is_before_heks_and_requires_a_physical_purple_filter (test_show.ProjectCase.test_second_gobo_is_before_heks_and_requires_a_physical_purple_filter)",
++      "result": "ok"
++    },
++    {
++      "name": "test_sequence_bound_scene_has_exactly_its_effect_scope (test_show.ProjectCase.test_sequence_bound_scene_has_exactly_its_effect_scope)",
++      "result": "ok"
++    },
++    {
++      "name": "test_smoke_has_no_leds_and_is_off_by_default_with_bounded_bursts (test_show.ProjectCase.test_smoke_has_no_leds_and_is_off_by_default_with_bounded_bursts)",
++      "result": "ok"
++    },
++    {
++      "name": "test_native_ambient_loops_stay_running_in_simulation_until_stopped (test_show.QLCProtocolCase.test_native_ambient_loops_stay_running_in_simulation_until_stopped)",
++      "result": "ok"
++    },
++    {
++      "name": "test_native_websocket_commands_and_acknowledgement (test_show.QLCProtocolCase.test_native_websocket_commands_and_acknowledgement)",
++      "result": "ok"
++    },
++    {
++      "name": "test_actor_cannot_start_other_zone_or_edit_settings (test_show.ShowCase.test_actor_cannot_start_other_zone_or_edit_settings)",
++      "result": "ok"
++    },
++    {
++      "name": "test_actual_finalestart_unlocks_once (test_show.ShowCase.test_actual_finalestart_unlocks_once)",
++      "result": "ok"
++    },
++    {
++      "name": "test_bad_timing_is_transactional (test_show.ShowCase.test_bad_timing_is_transactional)",
++      "result": "ok"
++    },
++    {
++      "name": "test_critical_zone_stop_during_overlap_leaves_no_orphan_show (test_show.ShowCase.test_critical_zone_stop_during_overlap_leaves_no_orphan_show)",
++      "result": "ok"
++    },
++    {
++      "name": "test_delayed_background_deadline_causes_visible_recovery_not_a_catchup_start (test_show.ShowCase.test_delayed_background_deadline_causes_visible_recovery_not_a_catchup_start)",
++      "result": "ok"
++    },
++    {
++      "name": "test_duplicate_intro_only_one_execution (test_show.ShowCase.test_duplicate_intro_only_one_execution)",
++      "result": "ok"
++    },
++    {
++      "name": "test_emergency_and_conscious_new_round (test_show.ShowCase.test_emergency_and_conscious_new_round)",
++      "result": "ok"
++    },
++    {
++      "name": "test_emergency_cancels_pending_direction_music_and_gold (test_show.ShowCase.test_emergency_cancels_pending_direction_music_and_gold)",
++      "result": "ok"
++    },
++    {
++      "name": "test_expired_command_rejected (test_show.ShowCase.test_expired_command_rejected)",
++      "result": "ok"
++    },
++    {
++      "name": "test_finale_audio_start_failure_never_unlocks_next_heks (test_show.ShowCase.test_finale_audio_start_failure_never_unlocks_next_heks)",
++      "result": "ok"
++    },
++    {
++      "name": "test_finale_engine_failure_does_not_unlock_intro (test_show.ShowCase.test_finale_engine_failure_does_not_unlock_intro)",
++      "result": "ok"
++    },
++    {
++      "name": "test_finale_gold_does_not_hold_pad_and_survives_ready_reset (test_show.ShowCase.test_finale_gold_does_not_hold_pad_and_survives_ready_reset)",
++      "result": "ok"
++    },
++    {
++      "name": "test_finale_reset_does_not_start_an_unrequested_wait_loop (test_show.ShowCase.test_finale_reset_does_not_start_an_unrequested_wait_loop)",
++      "result": "ok"
++    },
++    {
++      "name": "test_fixture_confirmation_requires_real_accu_mapping_and_keeps_project_signature (test_show.ShowCase.test_fixture_confirmation_requires_real_accu_mapping_and_keeps_project_signature)",
++      "result": "ok"
++    },
++    {
++      "name": "test_green_direction_at_35_and_route_music_at_45_after_intro_has_finished (test_show.ShowCase.test_green_direction_at_35_and_route_music_at_45_after_intro_has_finished)",
++      "result": "ok"
++    },
++    {
++      "name": "test_heks_done_turns_all_pad_zones_on_but_does_not_unlock (test_show.ShowCase.test_heks_done_turns_all_pad_zones_on_but_does_not_unlock)",
++      "result": "ok"
++    },
++    {
++      "name": "test_initial_pad_dark_and_preparation_required (test_show.ShowCase.test_initial_pad_dark_and_preparation_required)",
++      "result": "ok"
++    },
++    {
++      "name": "test_interrupted_intro_does_not_light_pad_or_complete_group (test_show.ShowCase.test_interrupted_intro_does_not_light_pad_or_complete_group)",
++      "result": "ok"
++    },
++    {
++      "name": "test_manual_finale_go_is_reserve_without_arrival_step (test_show.ShowCase.test_manual_finale_go_is_reserve_without_arrival_step)",
++      "result": "ok"
++    },
++    {
++      "name": "test_missing_live_hardware_and_media_block_program (test_show.ShowCase.test_missing_live_hardware_and_media_block_program)",
++      "result": "ok"
++    },
++    {
++      "name": "test_next_group_direction_spots_reset_at_heks_go_and_return_after_35_seconds (test_show.ShowCase.test_next_group_direction_spots_reset_at_heks_go_and_return_after_35_seconds)",
++      "result": "ok"
++    },
++    {
++      "name": "test_nonfinite_timestamp_never_bypasses_expiry (test_show.ShowCase.test_nonfinite_timestamp_never_bypasses_expiry)",
++      "result": "ok"
++    },
++    {
++      "name": "test_overlap_does_not_override_finale_or_release_twice (test_show.ShowCase.test_overlap_does_not_override_finale_or_release_twice)",
++      "result": "ok"
++    },
++    {
++      "name": "test_pause_allows_running_scene_to_finish (test_show.ShowCase.test_pause_allows_running_scene_to_finish)",
++      "result": "ok"
++    },
++    {
++      "name": "test_pause_only_blocks_new_starts_and_keeps_current_group_cues (test_show.ShowCase.test_pause_only_blocks_new_starts_and_keeps_current_group_cues)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr2_before_heks_end_or_for_wrong_group_cannot_start (test_show.ShowCase.test_qr2_before_heks_end_or_for_wrong_group_cannot_start)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr2_directly_starts_finale_and_unlocks_without_arrival_step (test_show.ShowCase.test_qr2_directly_starts_finale_and_unlocks_without_arrival_step)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr2_new_event_for_already_started_group_never_releases_twice (test_show.ShowCase.test_qr2_new_event_for_already_started_group_never_releases_twice)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr2_rejected_while_paused_is_not_queued (test_show.ShowCase.test_qr2_rejected_while_paused_is_not_queued)",
++      "result": "ok"
++    },
++    {
++      "name": "test_qr2_rejected_without_ready_is_not_queued (test_show.ShowCase.test_qr2_rejected_without_ready_is_not_queued)",
++      "result": "ok"
++    },
++    {
++      "name": "test_reset_groups_requires_stopped_program_and_preserves_event_history (test_show.ShowCase.test_reset_groups_requires_stopped_program_and_preserves_event_history)",
++      "result": "ok"
++    },
++    {
++      "name": "test_restart_never_replays_or_unlocks (test_show.ShowCase.test_restart_never_replays_or_unlocks)",
++      "result": "ok"
++    },
++    {
++      "name": "test_route_effect_durations_are_independent (test_show.ShowCase.test_route_effect_durations_are_independent)",
++      "result": "ok"
++    },
++    {
++      "name": "test_stopped_finale_keeps_safe_pad_when_next_heks_finishes (test_show.ShowCase.test_stopped_finale_keeps_safe_pad_when_next_heks_finishes)",
++      "result": "ok"
++    },
++    {
++      "name": "test_three_pad_buttons_and_finale_priority (test_show.ShowCase.test_three_pad_buttons_and_finale_priority)",
++      "result": "ok"
++    },
++    {
++      "name": "test_uncertain_event_is_not_reported_as_completed (test_show.ShowCase.test_uncertain_event_is_not_reported_as_completed)",
++      "result": "ok"
++    },
++    {
++      "name": "test_wrong_project_signature_rejected (test_show.ShowCase.test_wrong_project_signature_rejected)",
++      "result": "ok"
++    }
++  ],
++  "additional_checks": [
++    "python -m compileall -q bridge deploy/relay_app.py",
++    "node --check web/app.js"
++  ],
++  "covered_package_matrix": [
++    "C01",
++    "C02",
++    "C03",
++    "C04",
++    "C05 (bridge mixed QR2/actor slot)",
++    "C06",
++    "C07",
++    "C08 (bridge/relay only)",
++    "C09",
++    "D06 (adapter only)",
++    "D07 (adapter revision/push only)",
++    "D08",
++    "D09",
++    "D10",
++    "F01 (protocol only)",
++    "F02 (status whitelist only)",
++    "F06 (bridge only)",
++    "G02",
++    "G03",
++    "G05 (adapter only)",
++    "G06 (bridge reset/restart only)"
++  ],
++  "not_executed": [
++    "production VPS deployment",
++    "production migrations",
++    "physical QLC lighting",
++    "physical audio output",
++    "Art-Net",
++    "smoke/fog",
++    "real Google OAuth",
++    "real mail send or delivery",
++    "production actor invitations",
++    "browser authorization (covered separately by app change)"
++  ],
++  "limitations": [
++    "All controller/audio/QLC effect tests use simulation. ASGI/WSS transport tests run in process.",
++    "Successful local software ACK is not proof of audible/visible output or show completion.",
++    "A failed revocation push cannot prove immediate remote revocation; grants expire after at most five seconds.",
++    "The original TESTRAPPORT.json remains the untouched baseline report; this report describes only the new tested source."
++  ]
++}
+diff --git a/bridge/actor_adapter.py b/bridge/actor_adapter.py
+new file mode 100644
+--- /dev/null
++++ b/bridge/actor_adapter.py
+@@ -0,0 +1,194 @@
++"""Internet commands are translated here, never forwarded as arbitrary local actions."""
++import os
++import re
++import threading
++from .actor_protocol import ACTIONS, MAX_STALE, STATUS, digest, qr_payload, validate, verify
++from .visitor import public_result
++
++
++class ActorAdapter:
++    def __init__(self, controller, secret=None, event_scope_id=None):
++        self.controller = controller
++        self.secret = os.getenv('DUINPAD_ACTOR_AUTH_SECRET', '') if secret is None else secret
++        self.event_scope_id = os.getenv('DUINPAD_EVENT_SCOPE_ID', '') if event_scope_id is None else event_scope_id
++        self.access_lock = threading.RLock()
++
++    @property
++    def compatible(self):
++        return len(self.secret) >= 32 and bool(self.event_scope_id)
++
++    def grant(self, envelope):
++        data, _ = verify(self.secret, envelope)
++        validate(data, self.event_scope_id, self.controller.wall(), access=True)
++        with self.access_lock:
++            self.controller.store.set_access(data)
++        return data
++
++    def _current(self, data, permission=None, fresh=True):
++        stored = self.controller.store.access(data['actor_subject'])
++        now = self.controller.wall()
++        if not stored or not stored['active'] or stored['permissions_revision'] != data['permissions_revision']:
++            raise PermissionError('Acteursrecht ingetrokken of gewijzigd')
++        if stored['event_scope_id'] != data['event_scope_id'] or (fresh and (not 0 <= now - stored['issued_at'] <= MAX_STALE or now >= stored['expires_at'])):
++            raise PermissionError('Acteursrechten verouderd; vernieuw de status')
++        if permission is not None and permission not in stored['permissions']:
++            raise PermissionError('Deze knop is niet toegewezen')
++        return stored
++
++    def status(self, envelope):
++        grant = self.grant(envelope)
++        c = self.controller
++        with c.lock, self.access_lock:
++            current = self._current(grant)
++            # Construct a whitelist from local facts. Never serialize public(role).
++            controls = []
++            for action in current['permissions']:
++                role, zone, local = ACTIONS[action]
++                group = None
++                reason = None
++                if not c.connected or not c.qlc.connected or not c.audio.connected:
++                    reason = 'Geen verbinding met de showcomputer'
++                elif local == 'ready':
++                    if c.recovery: reason = 'Bewust herstel nodig'
++                    elif zone in c.active: reason = 'Effect speelt'
++                    elif zone == 5 and c.states[5] == 'RESET' and c.clock() < getattr(c, 'reset_after', 0):
++                        reason = 'Wacht op uitstroom/reset-tijd'
++                elif local == 'go':
++                    if zone == 1:
++                        reason = c._intro_reason(); group = c._next_intro()
++                    elif zone == 5:
++                        reason = c._finale_reason(); group = c._next_finale()
++                    else:
++                        reason = ('Bewust herstel nodig' if c.recovery else 'Finale bestuurt het pad' if 5 in c.active
++                                  else 'Start eerst het programma' if not c.program else 'Instroom gepauzeerd' if c.paused
++                                  else 'Wacht op einde heks' if not c.pad_on else 'Effect speelt' if zone in c.active else None)
++                    if group:
++                        slot = c.store.finale_slot(group['id']) if zone == 5 else None
++                        if slot and slot['status']!='not_executed': reason = 'Finale voor deze groep is al gestart' if slot['status'] == 'started' else 'Finale-uitkomst onbekend; controleer de regie'
++                elif local == 'stop_zone' and 5 in c.active:
++                    reason = 'Finale bestuurt het pad'
++                run = c.active.get(zone)
++                controls.append({'action': action, 'enabled': reason is None, 'blocked_reason': reason,
++                                 'group_id': group['id'] if group else None,
++                                 'effect': {'active': bool(run), 'remaining': round(max(0, run['duration'] - (c.clock() - run['started'])), 2) if run else 0}})
++            return {'version': STATUS, 'compatible': self.compatible, 'connected': bool(c.connected and c.qlc.connected and c.audio.connected),
++                    'observed_at': c.wall(), 'permissions_revision': current['permissions_revision'], 'controls': controls}
++
++    def execute(self, envelope, grant, live=lambda: True):
++        data, payload_hash = verify(self.secret, envelope)
++        validate(data, self.event_scope_id, self.controller.wall())
++        granted = self.grant(grant)
++        if any(data[k] != granted[k] for k in ('actor_subject', 'event_scope_id', 'permissions_revision')):
++            raise PermissionError('Actorautorisatie hoort niet bij deze opdracht')
++        c = self.controller
++        # Recheck everything after acquiring the execution lock; queued commands never
++        # survive their deadline, revocation, disconnect or local recovery state.
++        with c.lock, self.access_lock:
++            validate(data, self.event_scope_id, c.wall())
++            self._current(data, data['action'])
++            if not live(): raise PermissionError('Verbinding verbroken; opdracht niet uitgevoerd')
++            previous = c.store.remote(data['command_id'])
++            if previous:
++                self._match(previous, 'actor', data['group_id'], payload_hash, data['actor_subject'])
++                return {**previous['result'], 'duplicate': True}
++            role, zone, local = ACTIONS[data['action']]
++            if data['action'] in ('heks.go', 'finale.go'):
++                current_group = c._next_intro() if zone == 1 else c._next_finale()
++                slot = c.store.finale_slot(data['group_id']) if zone == 5 else None
++                if (not slot or slot['status']=='not_executed') and (not current_group or current_group['id'] != data['group_id']):
++                    raise PermissionError('Groep is niet meer de actuele groep')
++            c.store.reserve_remote(data['command_id'], 'actor', self.event_scope_id, data['actor_subject'], data['group_id'], payload_hash)
++            args = {} if zone is None else {'zone': zone}
++            if local == 'ready': args['ready'] = data['args']['ready']
++            # The existing narrow finale role uses the same bound start function
++            # as QR2. It never inherits a generic regie execution permission.
++            if data['action'] == 'finale.go':
++                args['group_id'] = data['group_id']
++            result = self._execute_local(local, args, role, data['command_id'], data['issued_at'])
++            result['command_id'] = data['command_id']
++            if result.get('ok'):
++                result['meaning'] = ('finale_started' if data['action'] == 'finale.go' else 'scene_started' if local == 'go'
++                                     else 'ready_updated' if local == 'ready' else 'all_stopped' if local == 'emergency' else 'zone_stopped')
++                if data['action'] == 'finale.go': result['confirmation'] = {'qlc_started': True, 'audio_started': True}
++            c.store.finish_remote(data['command_id'], result)
++            return result
++
++    def qr(self, event, deadline, live=lambda: True):
++        c = self.controller
++        with c.lock:
++            if deadline <= c.wall() or not live():
++                raise ValueError('Verlopen of verbroken relay-opdracht; niet uitgevoerd')
++            stage, gid, ident = event['stage'], event['group_id'], event['event_id']
++            if stage not in ('qr1', 'qr2') or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}', gid):
++                raise ValueError('Ongeldige QR-opdracht')
++            payload_hash = digest(qr_payload(event))
++            previous = c.store.remote(ident)
++            if previous:
++                self._match(previous, 'qr', gid, payload_hash, None)
++                return {**previous['result'], 'duplicate': True}
++            c.store.reserve_remote(ident, 'qr', self.event_scope_id, None, gid, payload_hash)
++            args = {'group_id': gid}
++            if stage == 'qr1': args['label'] = event.get('label', '')
++            result = self._execute_local('group_add' if stage == 'qr1' else 'qr2_start', args, 'regie', ident, event['issued_at'])
++            c.store.finish_remote(ident, result)
++            return public_result(result)
++
++    def _execute_local(self, action, args, role, ident, issued):
++        try:
++            result = public_result(self.controller.action(action, args, role, ident, issued))
++            return {**result, 'outcome': 'unknown' if result.get('unknown') else 'started' if result.get('ok') else 'blocked'}
++        except (ValueError, PermissionError) as exc:
++            # A scene may have started before a value error (e.g. audio callback).
++            # Any reserved finale slot without both start ACKs is always unknown.
++            is_finale=action=='qr2_start' or (action=='go' and args.get('zone')==5)
++            slot = self.controller.store.finale_slot(args.get('group_id')) if is_finale else None
++            if slot and slot['status'] == 'unknown':
++                return {'ok': False, 'unknown': True, 'outcome': 'unknown', 'error': 'Geen startbevestiging ontvangen. Vraag de begeleider om de regie te controleren.'}
++            return {'ok': False, 'outcome': 'blocked', 'error': str(exc)}
++        except Exception:
++            return {'ok': False, 'unknown': True, 'outcome': 'unknown', 'error': 'Geen startbevestiging ontvangen. Vraag de begeleider om de regie te controleren.'}
++
++    def _match(self, row, kind, gid, payload_hash, subject):
++        if row['kind'] != kind or row['event_scope_id'] != self.event_scope_id or row['group_id'] != gid or row['payload_hash'] != payload_hash or row['actor_subject'] != subject:
++            raise PermissionError('Ontvangst hoort niet bij deze aanvraag')
++
++    def receipt(self, ident, kind, gid, payload_hash, grant=None):
++        subject = None
++        if kind == 'actor':
++            # A receipt query never installs a capability or modifies any ledger.
++            data, _ = verify(self.secret, grant)
++            validate(data, self.event_scope_id, self.controller.wall(), access=True)
++            with self.access_lock: self._current(data, fresh=False)
++            subject = data['actor_subject']
++        elif kind != 'qr':
++            raise ValueError('Onbekend ontvangsttype')
++        row = self.controller.store.remote(ident)
++        if row is None:
++            # Absence of this ledger does not prove physical non-execution.
++            return {'found':False,'command_id':ident,'group_id':gid,'payload_hash':payload_hash,
++                    'result':{'ok': False, 'unknown': True, 'outcome': 'unknown', 'error': 'Geen lokale ontvangst gevonden; controleer de regie'}}
++        self._match(row, kind, gid, payload_hash, subject)
++        result = dict(row['result'])
++        group = self.group_status(gid) if gid else None
++        # A crash can occur after both ACKs were durably recorded but before the
++        # outer attempt was finalized. Read that concrete evidence without writes.
++        slot = self.controller.store.finale_slot(gid) if gid else None
++        if result.get('unknown') and slot and slot['event_id'] == ident and slot['status'] == 'started':
++            result = {'ok': True, 'outcome': 'started', 'meaning':'finale_started', 'confirmation': {'qlc_started': True, 'audio_started': True}}
++        resolution=self.controller.store.finale_resolution(ident)
++        if result.get('unknown') and resolution and resolution['group_id']==gid:
++            result={'ok':False,'outcome':'blocked','message':'Regie heeft lokaal gecontroleerd en bevestigd: de finale is niet uitgevoerd.'}
++        if kind=='actor':result['command_id']=ident
++        return {'found':True,'command_id':ident,'group_id':gid,'payload_hash':payload_hash,'result':result,'group':group}
++
++    def group_status(self, gid):
++        c = self.controller
++        with c.lock:
++            slot = c.store.finale_slot(gid)
++            group = next((g for g in c.groups if g['id'] == gid), None)
++            return {'group_id': gid, 'observed_at': c.wall(), 'connected':bool(c.connected and c.qlc.connected and c.audio.connected), 'registered': group is not None,
++                    'finale_started': bool(slot and slot['status'] == 'started'),
++                    'released': bool(slot and slot['status'] == 'started'),
++                    'outcome': slot['status'] if slot else 'not_requested',
++                    'recovery_required': bool(c.recovery or (slot and slot['status'] == 'unknown')),
++                    'group_status': group['status'] if group else None}
+diff --git a/bridge/actor_protocol.py b/bridge/actor_protocol.py
+new file mode 100644
+--- /dev/null
++++ b/bridge/actor_protocol.py
+@@ -0,0 +1,145 @@
++"""Closed internet protocol. This module has no network or hardware side effects."""
++import base64
++import hashlib
++import hmac
++import json
++import math
++import re
++
++ENVELOPE = 'duinpad.actor-envelope.v1'
++COMMAND = 'duinpad.actor.v1'
++ACCESS = 'duinpad.actor-access.v1'
++STATUS = 'duinpad.actor-status.v1'
++MAX_STALE = 5
++# permission: (local role, internal zone, local action)
++ACTIONS = {
++    'heks.ready': ('heks', 1, 'ready'), 'heks.go': ('heks', 1, 'go'),
++    'zone1.trigger': ('pad1', 2, 'go'), 'zone2.trigger': ('pad2', 3, 'go'),
++    'zone3.trigger': ('pad3', 4, 'go'),
++    'finale.ready': ('finale', 5, 'ready'), 'finale.go': ('finale', 5, 'go'),
++    'zone1.stop': ('pad1', 2, 'stop_zone'), 'zone2.stop': ('pad2', 3, 'stop_zone'),
++    'zone3.stop': ('pad3', 4, 'stop_zone'), 'stop-all': ('regie', None, 'emergency'),
++}
++
++
++def b64encode(raw):
++    return base64.urlsafe_b64encode(raw).decode('ascii').rstrip('=')
++
++
++def b64decode(raw, limit=8192):
++    if not isinstance(raw, str) or not 0 < len(raw) <= limit or not re.fullmatch(r'[A-Za-z0-9_-]+', raw):
++        raise ValueError('Ongeldige codering')
++    try:
++        decoded = base64.b64decode(raw + '=' * (-len(raw) % 4), altchars=b'-_', validate=True)
++    except Exception:
++        raise ValueError('Ongeldige codering') from None
++    if b64encode(decoded) != raw:
++        raise ValueError('Niet-canonieke codering')
++    return decoded
++
++
++def _pairs(pairs):
++    result = {}
++    for key, value in pairs:
++        if key in result:
++            raise ValueError('Dubbele JSON-key')
++        result[key] = value
++    return result
++
++
++def parse_json(raw):
++    try:
++        return json.loads(raw, object_pairs_hook=_pairs,
++                          parse_constant=lambda _: (_ for _ in ()).throw(ValueError('Ongeldig getal')))
++    except (UnicodeDecodeError, json.JSONDecodeError):
++        raise ValueError('Ongeldige JSON') from None
++
++
++def compact(data):
++    return json.dumps(data, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
++
++
++def digest(raw):
++    return hashlib.sha256(raw).hexdigest()
++
++
++def sign(secret, payload):
++    """For protocol tests/tools only; production app signs its own exact JSON bytes."""
++    raw = b64encode(compact(payload))
++    return {'version': ENVELOPE, 'payload': raw,
++            'signature': b64encode(hmac.new(secret.encode(), raw.encode('ascii'), hashlib.sha256).digest())}
++
++
++def verify(secret, envelope):
++    if len(secret) < 32:
++        raise PermissionError('Actorprotocol niet geconfigureerd')
++    if not isinstance(envelope, dict) or set(envelope) != {'version', 'payload', 'signature'} or envelope['version'] != ENVELOPE:
++        raise ValueError('Ongeldige actor-envelop')
++    raw = b64decode(envelope['payload'])
++    sig = b64decode(envelope['signature'], 43)
++    expected = hmac.new(secret.encode(), envelope['payload'].encode('ascii'), hashlib.sha256).digest()
++    if len(sig) != 32 or not hmac.compare_digest(sig, expected):
++        raise PermissionError('Ongeldige actorautorisatie')
++    data = parse_json(raw)
++    if not isinstance(data, dict):
++        raise ValueError('JSON-object vereist')
++    return data, digest(raw)
++
++
++def _text(value, minimum=1, maximum=100):
++    return isinstance(value, str) and minimum <= len(value) <= maximum and all(ord(c) >= 32 for c in value)
++
++
++def _time(data, now, maximum):
++    issued, expires = data.get('issued_at'), data.get('expires_at')
++    if any(type(v) not in (int, float) or not math.isfinite(v) for v in (issued, expires)):
++        raise ValueError('Ongeldige opdrachttijd')
++    # No future-dated authorization, and no boundary grace extending a short grant.
++    if not 0 <= now - issued <= 20 or not issued < expires <= issued + maximum or now >= expires:
++        raise ValueError('Verlopen opdracht; nooit later uitvoeren')
++
++
++def validate(data, event_scope_id, now, access=False):
++    common = {'version', 'event_scope_id', 'actor_subject', 'permissions_revision', 'issued_at', 'expires_at'}
++    expected = common | ({'permissions', 'active'} if access else {'command_id', 'action', 'group_id', 'args', 'scope'})
++    if set(data) != expected or data['version'] != (ACCESS if access else COMMAND):
++        raise ValueError('Onbekend actorcontract of extra velden')
++    if not event_scope_id or data['event_scope_id'] != event_scope_id or not _text(data['event_scope_id']):
++        raise PermissionError('Verkeerd evenement')
++    if not _text(data['actor_subject']) or type(data['permissions_revision']) is not int or data['permissions_revision'] < 1:
++        raise ValueError('Ongeldige acteursidentiteit')
++    _time(data, now, MAX_STALE if access else 8)
++    if access:
++        permissions = data['permissions']
++        if type(data['active']) is not bool or not isinstance(permissions, list) or any(not isinstance(p,str) or p not in ACTIONS for p in permissions) or len(permissions) != len(set(permissions)):
++            raise ValueError('Ongeldige actorrechten')
++        if not data['active'] and permissions:
++            raise ValueError('Ingetrokken actor heeft geen rechten')
++        return data
++    if not _text(data['command_id'], 8) or not isinstance(data['action'],str) or data['action'] not in ACTIONS:
++        raise ValueError('Onbekende actoractie')
++    action = data['action']; zone = ACTIONS[action][1]
++    expected_scope = {'permission': action, 'internal_zones': [] if zone is None else [zone]}
++    if not isinstance(data['scope'],dict) or data['scope'] != expected_scope or any(type(z) is not int for z in data['scope'].get('internal_zones', [])):
++        raise PermissionError('Actie en beperkte scope komen niet overeen')
++    args = data['args']
++    if not isinstance(args, dict):
++        raise ValueError('Onverwachte actorargumenten')
++    if action.endswith('.ready'):
++        valid_args=set(args)=={'ready'} and type(args['ready']) is bool
++    else:
++        valid_args=not args
++    if not valid_args:
++        raise ValueError('Onverwachte actorargumenten')
++    gid = data['group_id']
++    if action in ('heks.go', 'finale.go'):
++        if not isinstance(gid, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}', gid):
++            raise ValueError('Actuele groepsbinding vereist')
++    elif gid is not None:
++        raise ValueError('Deze actie heeft geen groep')
++    return data
++
++
++def qr_payload(event):
++    """Fixed key order shared with the app; a query never renews this timestamp."""
++    return compact({key: event.get(key, '') for key in ('stage', 'group_id', 'event_id', 'issued_at', 'label')})
+diff --git a/bridge/controller.py b/bridge/controller.py
+--- a/bridge/controller.py
++++ b/bridge/controller.py
+@@ -65,6 +65,15 @@
+         return None
+ 
+     def _start_finale(self,group_id=None):
++        # Durable guard shared by QR2, the actor adapter and local manual GO.
++        # In particular reset_groups/new_round must not erase historical starts.
++        if group_id is None:
++            next_group=self._next_finale()
++            group_id=next_group['id'] if next_group else None
++        slot=self.store.finale_slot(group_id) if group_id else None
++        if slot:
++            if slot['status']=='started':return 'Finale voor deze groep is al gestart; geen nieuwe start'
++            if slot['status']!='not_executed':raise ValueError('Finale-uitkomst onbekend; controleer de regie en herstel bewust')
+         group=self._group(group_id) if group_id is not None else None
+         if group:
+             # A repeated scan must never start a second show or release another permit.
+@@ -74,9 +83,11 @@
+         reason=self._finale_reason()
+         if reason:raise ValueError(reason)
+         group=group or self._next_finale()
++        self.store.reserve_finale(group['id'],getattr(self,'_executing_event_id',None),self.wall())
+         self._scene(5,'finale',group['id']);group['status']='finale'
+         # Both local engines have acknowledged their start before releasing a permit.
+         self.released.add(group['id']);self.awaiting=None;self.intro_permit=True
++        self.store.finish_finale(group['id'],self.wall())
+         return 'Finale lokaal gestart; volgende Heks GO vrijgegeven'
+ 
+     def public(self,role='regie'):
+@@ -94,6 +105,7 @@
+                 data['zones']=[z for z in zones if z['key']==role]
+                 data['groups']=[g for g in self.groups if (role=='heks' and g['status']=='waiting') or (role=='finale' and g['status']=='route')]
+                 data['logs']=[]
++            else:data['finale_recovery']=self.store.unresolved_finales()
+             return data
+ 
+     def preflight(self):
+@@ -119,6 +131,8 @@
+ 
+     def _scene(self,z,kind,group=None):
+         if z in self.active:raise ValueError('Zone speelt al')
++        if z in [1,5] and not self.simulation and f'z{z}_cue' not in self.audio.buffers:
++            raise RuntimeError('Vereiste showaudio niet ingelezen; geen bevestigde start mogelijk')
+         duration=self.config['timing']['heks_duration_s' if z==1 else 'finale_duration_s'] if z in [1,5] else self.config['media'][f'z{z}_cue'].get('duration_s',self.config['timing'].get(f'zone{z}_duration_s',self.config['timing']['passage_duration_s']))
+         function='Z1_SHOW' if z==1 else 'FINALE_SHOW' if z==5 else f'Z{z}_PASSAGE'
+         if z==1:
+@@ -145,7 +159,9 @@
+                 self.audio.start(key,tag,duration=duration)
+         except Exception:
+             self.audio.stop(tag);self.qlc.stop(function)
+-            raise
++            # Any failure after attempting either motor is ambiguous to an
++            # internet caller, including ValueError from an audio adapter.
++            raise RuntimeError('Lokale scène-start niet volledig bevestigd; controleer de regie') from None
+         self.active[z]={'kind':kind,'group':group,'function':function,'tag':tag if has_audio else None,'started':self.clock(),'duration':duration,'light_duration':self.config['timing'].get('finale_gold_start_s',42.3) if z==5 else duration}
+         self.states[z]='SPEELT';self.ready[z]=False
+         if z==1:
+@@ -199,16 +215,17 @@
+             if previous:
+                 if previous[0]!=payload:raise ValueError('Event-ID is al gebruikt voor een andere opdracht')
+                 pending=previous[1].get('in_progress',False)
+-                return {'ok':not (previous[1].get('error') or pending),'duplicate':True,'state':self.public(role),'message':'Eerdere start heeft een onzekere uitkomst; controleer en herstel bewust' if pending else previous[1].get('message','Opdracht eerder verwerkt')}
++                return {'ok':not (previous[1].get('error') or pending),'duplicate':True,'unknown':bool(pending or previous[1].get('unknown')),'state':self.public(role),'message':'Eerdere start heeft een onzekere uitkomst; controleer en herstel bewust' if pending else previous[1].get('message','Opdracht eerder verwerkt')}
+             self.store.reserve(event_id,payload,self.snapshot())
+             try:
++                self._executing_event_id=event_id
+                 message=self._apply(action,args,role,own)
+                 response={'ok':True,'message':message}
+             except (ValueError,PermissionError) as e:
+                 self.store.finish(event_id,{'error':True,'message':str(e)},self.snapshot(),self.wall(),action+': '+str(e));raise
+             except Exception as e:
+                 self.emergency('Technische fout: '+str(e))
+-                self.store.finish(event_id,{'error':True,'message':str(e)},self.snapshot(),self.wall(),action+': technische fout');raise
++                self.store.finish(event_id,{'error':True,'unknown':True,'message':'Technische fout; controleer de regie'},self.snapshot(),self.wall(),action+': technische fout');raise
+             self.store.finish(event_id,response,self.snapshot(),self.wall(),action+': '+message)
+             return {**response,'state':self.public(role)}
+ 
+@@ -222,7 +239,7 @@
+             issues=self.preflight()
+             if issues:raise ValueError('; '.join(issues))
+             if not self.connected:self.connect()
+-            self.program=True;self.paused=False;self.pad_on=False;self.intro_permit=True;self.error=None
++            self.program=True;self.paused=False;self.pad_on=False;self.intro_permit=not bool(self.awaiting);self.error=None
+             self.qlc.start('Z1_BASE');self.qlc.start('Z5_BASE');self._pad_restore()
+             self.qlc.start('DIRECTION_DARK')
+             return 'Programma klaar; eerste Heks GO kan na gereedmelding'
+@@ -257,7 +274,7 @@
+                 group=self._next_intro();self._scene(1,'heks',group['id'])
+                 group['status']='intro';self.awaiting=group['id'];self.intro_permit=False
+             elif z==5:
+-                return self._start_finale()
++                return self._start_finale(a.get('group_id'))
+             elif z in [2,3,4]:
+                 status=next(x for x in self.public()['zones'] if x['zone']==z)
+                 if not status['go_enabled']:raise ValueError(status['blocked'])
+@@ -293,6 +310,20 @@
+             self.groups=[];self.selected=None;self.awaiting=None;self.released.clear();self.intro_permit=False
+             self.scheduled.clear();self.background=None
+             return 'Groepenlijst geleegd; logboek en bescherming tegen dubbele QR-opdrachten bewaard'
++        if action=='resolve_finale_not_executed':
++            if self.program or self.active:raise ValueError('Stop eerst alle effecten en kies Nieuwe ronde')
++            if a.get('physical_not_started') is not True:raise ValueError('Controleer en bevestig expliciet dat de fysieke finale niet is uitgevoerd')
++            reason=a.get('reason','')
++            if not isinstance(reason,str) or not 10<=len(reason.strip())<=200 or any(ord(c)<32 for c in reason):
++                raise ValueError('Leg de lokale controle vast in een korte reden (10-200 tekens)')
++            group=self._group(a.get('group_id'))
++            if self.awaiting and self.awaiting!=group['id']:raise ValueError('Een andere groep wacht al op de finale')
++            self.store.resolve_finale(group['id'],a.get('attempt_id'),self.wall(),reason.strip())
++            # The original slot was acquired only after this group's heks/route
++            # checks passed. Conscious local resolution restores that binding,
++            # without starting a timeline or permitting the next heks.
++            group['status']='route';self.awaiting=group['id'];self.intro_permit=False
++            return 'Regiecontrole niet uitgevoerd vastgelegd; een nieuwe bewuste poging volgt de normale lokale voorwaarden'
+         if action=='gain':
+             value=float(a['value'])
+             if not 0<=value<=1:raise ValueError('Volume moet tussen 0 en 1 liggen')
+diff --git a/bridge/relay_client.py b/bridge/relay_client.py
+--- a/bridge/relay_client.py
++++ b/bridge/relay_client.py
+@@ -1,62 +1,137 @@
+-"""Optional outbound VPS connection. No local port forwarding and no event queue."""
++"""Outbound WSS only. Commands are never retained across disconnects."""
+ import json
+ import math
+-import time
+ import os
+ import threading
++import time
+ from urllib.parse import urlparse
++from .actor_adapter import ActorAdapter
+ from .visitor import public_result
+ 
++
+ class RelayClient:
+-    def __init__(self,controller):
+-        self.controller=controller;self.stop=threading.Event();self.thread=None;self.ws=None
+-        self.url=os.getenv('DUINPAD_RELAY_URL','');self.secret=os.getenv('DUINPAD_RELAY_SECRET','')
+-        self.connected=False
++    def __init__(self, controller):
++        self.controller = controller
++        self.adapter = ActorAdapter(controller)
++        self.stop = threading.Event()
++        self.thread = None
++        self.ws = None
++        self.url = os.getenv('DUINPAD_RELAY_URL', '')
++        self.secret = os.getenv('DUINPAD_RELAY_SECRET', '')
++        self.connected = False
++        self.send_lock = threading.Lock()
++        self.slots = threading.BoundedSemaphore(8)
++
+     def start(self):
+-        if not self.url:return
+-        u=urlparse(self.url)
+-        if u.scheme!='wss' or not u.hostname or len(self.secret)<32:
++        if not self.url: return
++        u = urlparse(self.url)
++        if u.scheme != 'wss' or not u.hostname or len(self.secret) < 32:
+             raise ValueError('VPS: gebruik wss:// en DUINPAD_RELAY_SECRET van minstens 32 tekens')
+-        self.thread=threading.Thread(target=self.run,daemon=True);self.thread.start()
++        if self.adapter.secret and self.adapter.secret == self.secret:
++            raise ValueError('Actorautorisatie vereist een apart geheim')
++        self.thread = threading.Thread(target=self.run, daemon=True)
++        self.thread.start()
++
++    def handle(self, body, live=lambda: True):
++        """One bounded request; also usable by an isolated test engine."""
++        kind = body.get('kind', 'qr')
++        try:
++            if kind == 'actor.access':
++                self.adapter.grant(body['grant'])
++                return {'ok': True, 'version': 'duinpad.actor-access.v1'}
++            if kind == 'actor.status': return self.adapter.status(body['grant'])
++            if kind == 'receipt':
++                q = body['query']
++                return self.adapter.receipt(q['command_id'], q['kind'], q.get('group_id'), q['payload_hash'], body.get('grant'))
++            if kind == 'group.status': return self.adapter.group_status(body['group_id'])
++            if kind == 'actor.command': return self.adapter.execute(body['command'], body['grant'], live)
++            if kind != 'qr': raise ValueError('Onbekend relayprotocol')
++            event = body.get('event', {})
++            stage = event.get('stage')
++            action = 'group_add' if stage == 'qr1' else 'qr2_start' if stage == 'qr2' else None
++            if not action: raise ValueError('Onbekende QR-fase')
++            deadline = float(body.get('expires_at', 0))
++            if not math.isfinite(deadline) or deadline <= time.time() or not live():
++                raise ValueError('Verlopen relay-opdracht; niet uitgevoerd')
++            if self.adapter.compatible:
++                return self.adapter.qr(event, deadline, live)
++            # Backward-compatible QR transport while the actor feature is disabled.
++            args = {'group_id': event['group_id']}
++            if stage == 'qr1': args['label'] = event.get('label', '')
++            return public_result(self.controller.action(action, args, 'regie', event['event_id'], event['issued_at']))
++        except (ValueError, PermissionError, KeyError, TypeError) as exc:
++            if kind=='qr' and body.get('event',{}).get('stage')=='qr2':
++                slot=self.controller.store.finale_slot(body['event'].get('group_id'))
++                if isinstance(slot,dict) and slot.get('status')=='unknown':
++                    return {'ok':False,'unknown':True,'outcome':'unknown','error':'Geen startbevestiging ontvangen. Vraag de begeleider om de regie te controleren.'}
++            result = {'ok': False, 'outcome': 'blocked', 'error': str(exc)[:200] if isinstance(exc,(ValueError,PermissionError)) else 'Ongeldige opdracht'}
++            if kind == 'actor.command':
++                # This ID is included only after authenticating the immutable command.
++                from .actor_protocol import verify
++                try:
++                    command,_ = verify(self.adapter.secret,body.get('command'))
++                    if isinstance(command.get('command_id'),str): result['command_id'] = command['command_id']
++                except (ValueError,PermissionError,KeyError,TypeError): pass
++            return result
++        except Exception:
++            return {'ok': False, 'unknown': True, 'outcome': 'unknown', 'error': 'Geen startbevestiging ontvangen. Vraag de begeleider om de regie te controleren.'}
++
++    def _send(self, socket, body, result):
++        with self.send_lock:
++            if self.ws is socket and self.connected and not self.stop.is_set():
++                socket.send(json.dumps({'request_id': body['request_id'], 'event_id': body.get('event_id') or body.get('event', {}).get('event_id'), 'result': result}))
++
++    def _worker(self, socket, body):
++        try:
++            result = self.handle(body, lambda: self.ws is socket and self.connected and not self.stop.is_set())
++            self._send(socket, body, result)
++        except Exception: pass
++        finally: self.slots.release()
++
+     def run(self):
+         import websocket
+         while not self.stop.is_set():
+             try:
+-                # Default TLS certificate + hostname checks stay enabled.
+-                self.ws=websocket.create_connection(self.url,header={'Authorization':'Bearer '+self.secret},timeout=10)
+-                self.connected=True
++                self.ws = websocket.create_connection(self.url, header={'Authorization': 'Bearer ' + self.secret}, timeout=10)
++                self.connected = True
++                socket = self.ws
++                if self.adapter.compatible:
++                    socket.send(json.dumps({'type': 'capabilities', 'versions': ['duinpad.actor.v1'],
++                                            'event_scope_id': self.adapter.event_scope_id, 'observed_at': time.time(),
++                                            'actor_status_max_age': 5, 'zone_stops': [2, 3, 4]}))
+                 while not self.stop.is_set():
+-                    try:raw=self.ws.recv()
++                    try: raw = socket.recv()
+                     except websocket.WebSocketTimeoutException:
+-                        self.ws.ping();continue
+-                    if not raw:break
+-                    if len(raw)>4096:raise ValueError('Te groot relaybericht')
+-                    body=json.loads(raw);event=body.get('event',{});stage=event.get('stage')
+-                    action='group_add' if stage=='qr1' else 'qr2_start' if stage=='qr2' else None
+-                    if not action:raise ValueError('Onbekende QR-fase')
+-                    args={'group_id':event['group_id']}
+-                    if stage=='qr1':args['label']=event.get('label','')
+-                    try:
+-                        deadline=float(body.get('expires_at',0))
+-                        if not math.isfinite(deadline) or deadline<time.time():raise ValueError('Verlopen relay-opdracht; niet uitgevoerd')
+-                        result=self.controller.action(action,args,'regie',event['event_id'],event['issued_at'])
+-                        result=public_result(result)
+-                    except (ValueError,PermissionError) as e:result={'ok':False,'error':str(e)}
+-                    except Exception:result={'ok':False,'unknown':True,'error':'Controleer de regie; uitkomst onbekend'}
+-                    self.ws.send(json.dumps({'request_id':body['request_id'],'event_id':event['event_id'],'result':result}))
++                        socket.ping(); continue
++                    if not raw: break
++                    if len(raw) > 16384: raise ValueError('Te groot relaybericht')
++                    body = json.loads(raw)
++                    if not isinstance(body, dict): raise ValueError('JSON-object vereist')
++                    if not self.adapter.compatible:
++                        # Preserve legacy synchronous wire behavior.
++                        result = self.handle(body)
++                        socket.send(json.dumps({'request_id': body['request_id'], 'event_id': body.get('event', {}).get('event_id'), 'result': result}))
++                    elif body.get('kind') == 'actor.access':
++                        # Revocations are processed by the receive loop even while a
++                        # previous command waits to acquire the controller lock.
++                        self._send(socket, body, self.handle(body))
++                    elif self.slots.acquire(blocking=False):
++                        threading.Thread(target=self._worker, args=(socket, body), daemon=True).start()
++                    else:
++                        self._send(socket, body, {'ok': False, 'outcome': 'not_dispatched', 'error': 'Showbediening bezet; opdracht niet bewaard'})
+             except Exception:
+-                # Never retain an event for a later connection.
+                 pass
+             finally:
+-                self.connected=False
++                self.connected = False
+                 if self.ws:
+-                    try:self.ws.close()
+-                    except Exception:pass
+-                self.ws=None
++                    try: self.ws.close()
++                    except Exception: pass
++                self.ws = None
+             self.stop.wait(2)
++
+     def close(self):
+         self.stop.set()
+         if self.ws:
+-            try:self.ws.close()
+-            except Exception:pass
+-        if self.thread:self.thread.join(timeout=3)
++            try: self.ws.close()
++            except Exception: pass
++        if self.thread: self.thread.join(timeout=3)
+diff --git a/bridge/store.py b/bridge/store.py
+--- a/bridge/store.py
++++ b/bridge/store.py
+@@ -9,6 +9,16 @@
+         self.lock=threading.RLock();self.db=sqlite3.connect(path,check_same_thread=False)
+         self.db.execute('PRAGMA journal_mode=WAL')
+         self.db.executescript('CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,payload TEXT NOT NULL,response TEXT NOT NULL); CREATE TABLE IF NOT EXISTS state(id INTEGER PRIMARY KEY CHECK(id=1),value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS log(id INTEGER PRIMARY KEY AUTOINCREMENT,at REAL,kind TEXT,message TEXT);')
++        # Additive migration. No local group reset removes these security ledgers.
++        self.db.executescript('''
++            CREATE TABLE IF NOT EXISTS actor_access(subject TEXT PRIMARY KEY, revision INTEGER NOT NULL, value TEXT NOT NULL);
++            CREATE TABLE IF NOT EXISTS remote_attempts(id TEXT PRIMARY KEY, kind TEXT NOT NULL, scope_id TEXT NOT NULL,
++                subject TEXT, group_id TEXT, payload_hash TEXT NOT NULL, response TEXT NOT NULL);
++            CREATE TABLE IF NOT EXISTS finale_slots(group_id TEXT PRIMARY KEY, event_id TEXT,
++                status TEXT NOT NULL, started_at REAL, response TEXT);
++            CREATE TABLE IF NOT EXISTS finale_resolutions(event_id TEXT PRIMARY KEY,group_id TEXT NOT NULL,
++                resolved_at REAL NOT NULL,reason TEXT NOT NULL);
++        ''')
+         self.db.commit()
+     def get_event(self,eid):
+         with self.lock:
+@@ -38,3 +48,74 @@
+         with self.lock,self.db:self.db.execute('INSERT INTO log(at,kind,message) VALUES(?,?,?)',(at,kind,message))
+     def logs(self,limit=50):
+         with self.lock:return [{'at':r[0],'kind':r[1],'message':r[2]} for r in self.db.execute('SELECT at,kind,message FROM log ORDER BY id DESC LIMIT ?',(limit,))]
++
++    def access(self,subject):
++        with self.lock:
++            row=self.db.execute('SELECT value FROM actor_access WHERE subject=?',(subject,)).fetchone()
++            return json.loads(row[0]) if row else None
++
++    def set_access(self,value):
++        with self.lock,self.db:
++            old=self.access(value['actor_subject'])
++            if old:
++                if value['permissions_revision']<old['permissions_revision']:
++                    raise PermissionError('Acteursrechten zijn verouderd')
++                if value['permissions_revision']==old['permissions_revision']:
++                    if any(old[k]!=value[k] for k in ('event_scope_id','active','permissions')):
++                        raise PermissionError('Rechtenwijziging vereist nieuwe revisie')
++                    if value['issued_at']<old['issued_at']:
++                        raise PermissionError('Actorautorisatie is verouderd')
++            self.db.execute('INSERT OR REPLACE INTO actor_access VALUES(?,?,?)',
++                (value['actor_subject'],value['permissions_revision'],json.dumps(value)))
++
++    def remote(self,ident):
++        with self.lock:
++            row=self.db.execute('SELECT kind,scope_id,subject,group_id,payload_hash,response FROM remote_attempts WHERE id=?',(ident,)).fetchone()
++            return dict(zip(('kind','event_scope_id','actor_subject','group_id','payload_hash','result'),
++                (*row[:5],json.loads(row[5])))) if row else None
++
++    def reserve_remote(self,ident,kind,scope_id,subject,group_id,payload_hash):
++        with self.lock,self.db:
++            self.db.execute('INSERT INTO remote_attempts VALUES(?,?,?,?,?,?,?)',
++                (ident,kind,scope_id,subject,group_id,payload_hash,json.dumps({'ok':False,'unknown':True,'outcome':'unknown'})))
++
++    def finish_remote(self,ident,result):
++        with self.lock,self.db:
++            self.db.execute('UPDATE remote_attempts SET response=? WHERE id=?',(json.dumps(result),ident))
++
++    def finale_slot(self,gid):
++        with self.lock:
++            row=self.db.execute('SELECT event_id,status,started_at,response FROM finale_slots WHERE group_id=?',(gid,)).fetchone()
++            return dict(zip(('event_id','status','started_at','response'),row)) if row else None
++
++    def reserve_finale(self,gid,event_id,now):
++        with self.lock,self.db:
++            result=self.db.execute('''INSERT INTO finale_slots VALUES(?,?,?,?,NULL)
++                ON CONFLICT(group_id) DO UPDATE SET event_id=excluded.event_id,status=excluded.status,
++                started_at=excluded.started_at,response=NULL WHERE finale_slots.status='not_executed' ''',
++                (gid,event_id,'unknown',now))
++            if result.rowcount!=1:raise ValueError('Finaleslot is al bezet')
++
++    def finish_finale(self,gid,now):
++        with self.lock,self.db:
++            self.db.execute("UPDATE finale_slots SET status='started',started_at=?,response=? WHERE group_id=?",
++                (now,json.dumps({'qlc_started':True,'audio_started':True,'released':True}),gid))
++
++    def finale_resolution(self,eid):
++        with self.lock:
++            row=self.db.execute('SELECT group_id,resolved_at FROM finale_resolutions WHERE event_id=?',(eid,)).fetchone()
++            return {'group_id':row[0],'resolved_at':row[1]} if row else None
++
++    def resolve_finale(self,gid,eid,now,reason):
++        with self.lock,self.db:
++            slot=self.finale_slot(gid)
++            if not slot or slot['event_id']!=eid or slot['status']!='unknown':
++                raise ValueError('Alleen de exacte onzekere finalepoging kan worden afgehandeld')
++            self.db.execute('INSERT INTO finale_resolutions VALUES(?,?,?,?)',(eid,gid,now,reason))
++            self.db.execute("UPDATE finale_slots SET status='not_executed' WHERE group_id=?",(gid,))
++            self.db.execute('INSERT INTO log(at,kind,message) VALUES(?,?,?)',
++                (now,'finale_resolution','Regie bevestigt niet uitgevoerd: '+gid+' / '+eid+' / '+reason))
++
++    def unresolved_finales(self):
++        with self.lock:
++            return [{'group_id':r[0],'event_id':r[1]} for r in self.db.execute("SELECT group_id,event_id FROM finale_slots WHERE status='unknown'")]
+diff --git a/deploy/.env.example b/deploy/.env.example
+--- a/deploy/.env.example
++++ b/deploy/.env.example
+@@ -3,3 +3,7 @@
+ DUINPAD_VISITOR_SECRET=VERVANG_DOOR_ANDER_UNIEK_GEHEIM_MINIMAAL_32_TEKENS
+ DUINPAD_GATE_QR1=VERVANG_DOOR_ANDER_UNIEK_GEHEIM_MINIMAAL_32_TEKENS
+ DUINPAD_GATE_QR2=VERVANG_DOOR_ANDER_UNIEK_GEHEIM_MINIMAAL_32_TEKENS
++# Nieuwe actoradapter: apart geheim, minimaal 32 tekens; uitsluitend app/relay/bridge.
++DUINPAD_ACTOR_AUTH_SECRET=
++# Werkelijk Halloween-evenement-ID; identiek op app, relay en showcomputer.
++DUINPAD_EVENT_SCOPE_ID=
+diff --git a/deploy/Dockerfile b/deploy/Dockerfile
+--- a/deploy/Dockerfile
++++ b/deploy/Dockerfile
+@@ -2,8 +2,8 @@
+ WORKDIR /app
+ COPY deploy/requirements.txt /app/requirements.txt
+ RUN pip install --no-cache-dir -r requirements.txt
+-COPY bridge/__init__.py bridge/visitor.py /app/bridge/
++COPY bridge/__init__.py bridge/visitor.py bridge/actor_protocol.py /app/bridge/
+ COPY deploy/relay_app.py /app/deploy/relay_app.py
+ COPY web/visitor.html /app/web/visitor.html
+ USER 65534:65534
+-CMD ["uvicorn","deploy.relay_app:app","--host","0.0.0.0","--port","8000","--workers","1","--ws-max-size","8192"]
++CMD ["uvicorn","deploy.relay_app:app","--host","0.0.0.0","--port","8000","--workers","1","--ws-max-size","16384"]
+diff --git a/deploy/relay_app.py b/deploy/relay_app.py
+--- a/deploy/relay_app.py
++++ b/deploy/relay_app.py
+@@ -13,6 +13,7 @@
+ from fastapi import FastAPI,Request,WebSocket,WebSocketDisconnect
+ from fastapi.responses import HTMLResponse,JSONResponse
+ from bridge.visitor import sign_credential,read_credential,new_group,event_id,public_result
++from bridge.actor_protocol import b64decode,parse_json,validate,verify,STATUS,ACTIONS
+ 
+ app=FastAPI(docs_url=None,redoc_url=None,openapi_url=None)
+ secret=os.getenv('DUINPAD_RELAY_SECRET','')
+@@ -20,7 +21,12 @@
+ gates={stage:os.getenv('DUINPAD_GATE_'+stage.upper(),'') for stage in ['qr1','qr2']}
+ if any(len(s)<32 for s in [secret,visitor_secret,*gates.values()]):
+     raise RuntimeError('Configureer alle vier unieke DUINPAD-geheimen (minimaal 32 tekens).')
++actor_secret=os.getenv('DUINPAD_ACTOR_AUTH_SECRET','')
++event_scope_id=os.getenv('DUINPAD_EVENT_SCOPE_ID','')
++if actor_secret and (len(actor_secret)<32 or not event_scope_id or actor_secret in (secret,visitor_secret,*gates.values())):
++    raise RuntimeError('Configureer aparte actorautorisatie en evenementbinding.')
+ engine=None
++capabilities=None
+ pending={}
+ send_lock=asyncio.Lock()
+ attempts={}
+@@ -36,7 +42,7 @@
+     async for chunk in request.stream():
+         raw.extend(chunk)
+         if len(raw)>4096:raise ValueError('Te groot')
+-    body=json.loads(raw)
++    body=parse_json(raw)
+     if not isinstance(body,dict):raise ValueError('JSON-object vereist')
+     return body
+ 
+@@ -50,7 +56,7 @@
+     return response
+ 
+ @app.get('/api/health')
+-async def health():return {'service':'Duinpad QR relay','engine_connected':engine is not None}
++async def health():return {'service':'Duinpad QR relay','engine_connected':engine is not None,'actor_compatible':actor_compatible()}
+ 
+ @app.post('/api/visitor/scan')
+ async def scan(request:Request):
+@@ -109,7 +115,7 @@
+ 
+ @app.websocket('/engine')
+ async def engine_connection(ws:WebSocket):
+-    global engine
++    global engine,capabilities
+     if not hmac.compare_digest(ws.headers.get('authorization',''),'Bearer '+secret):
+         await ws.close(code=1008);return
+     if engine is not None:
+@@ -118,13 +124,180 @@
+     try:
+         while True:
+             raw=await ws.receive_text()
+-            if len(raw)>8192:break
+-            data=json.loads(raw);item=pending.get(data.get('request_id'))
++            if len(raw)>16384:break
++            data=parse_json(raw)
++            if data.get('type')=='capabilities':
++                if capabilities is not None:break
++                capabilities=data;continue
++            item=pending.get(data.get('request_id'))
+             if item and item[1] is ws and item[2]==data.get('event_id') and not item[0].done():item[0].set_result(data.get('result',{}))
+     except (WebSocketDisconnect,ValueError,RuntimeError):pass
+     finally:
+-        if engine is ws:engine=None
++        if engine is ws:engine=None;capabilities=None
+         for future,owner,_ in list(pending.values()):
+             if owner is ws and not future.done():future.set_exception(ConnectionError('Verbinding verbroken'))
+         try:await ws.close()
+         except RuntimeError:pass
++
++
++def actor_compatible():
++    return bool(actor_secret and engine is not None and capabilities
++                and capabilities.get('event_scope_id') == event_scope_id
++                and 'duinpad.actor.v1' in capabilities.get('versions', [])
++                and capabilities.get('zone_stops') == [2, 3, 4]
++                and capabilities.get('actor_status_max_age') == 5)
++
++
++def integration_auth(request):
++    if not hmac.compare_digest(request.headers.get('authorization', ''), 'Bearer ' + secret):
++        raise PermissionError('Ongeldige integratiesleutel')
++
++
++def grant_header(request):
++    encoded = request.headers.get('x-duinpad-actor-grant', '')
++    envelope = parse_json(b64decode(encoded, 8192))
++    data, _ = verify(actor_secret, envelope)
++    validate(data, event_scope_id, time.time(), access=True)
++    return envelope, data
++
++
++def filtered(kind, result):
++    if not isinstance(result, dict): raise ValueError('Ongeldige lokale bevestiging')
++    if kind == 'actor.status':
++        if result.get('version') != STATUS or not result.get('compatible') or type(result.get('observed_at')) not in (int, float) or not 0 <= time.time() - result['observed_at'] <= 5:
++            raise ValueError('Verouderde lokale status')
++        controls = []
++        for item in result.get('controls', []):
++            if not isinstance(item, dict) or item.get('action') not in ACTIONS: raise ValueError('Onbekende lokale knop')
++            control={k:item[k] for k in ('action','enabled','blocked_reason','group_id') if k in item}
++            effect=item.get('effect')
++            control['effect']={k:effect[k] for k in ('active','remaining') if k in effect} if isinstance(effect,dict) else None
++            controls.append(control)
++        return {**{k: result[k] for k in ('version', 'compatible', 'connected', 'observed_at', 'permissions_revision')}, 'controls': controls}
++    if kind == 'group.status':
++        if type(result.get('observed_at')) not in (int,float) or not 0<=time.time()-result['observed_at']<=5:
++            raise ValueError('Verouderde lokale status')
++        return {k: result[k] for k in ('group_id', 'observed_at', 'connected', 'registered', 'finale_started', 'released', 'outcome', 'recovery_required', 'group_status') if k in result}
++    if kind == 'receipt':
++        return {**{k: result[k] for k in ('found', 'command_id', 'group_id', 'payload_hash') if k in result},
++                'result': filtered('actor.command', result.get('result', {})),
++                'group': filtered('group.status', result['group']) if result.get('group') else None}
++    safe = {k: result[k] for k in ('ok', 'message', 'duplicate', 'unknown', 'error', 'outcome', 'command_id', 'meaning') if k in result}
++    if result.get('confirmation') == {'qlc_started': True, 'audio_started': True}:
++        safe['confirmation'] = {'qlc_started': True, 'audio_started': True}
++    return safe
++
++
++async def forward_protocol(kind, packet, ident, timeout=12):
++    ws = engine
++    if ws is None:
++        return {'ok': False, 'outcome': 'not_dispatched', 'error': 'De showcomputer is niet verbonden. Vraag de begeleider.'}, 503
++    if not actor_compatible():
++        return {'ok': False, 'outcome': 'not_dispatched', 'error': 'Showcomputer ondersteunt het actorprotocol niet; controleer configuratie.'}, 503
++    if len(pending) >= 64:
++        return {'ok': False, 'outcome': 'not_dispatched', 'error': 'Showbediening bezet; opdracht niet bewaard'}, 503
++    rid = uuid.uuid4().hex
++    future = asyncio.get_running_loop().create_future()
++    pending[rid] = (future, ws, ident)
++    try:
++        async with send_lock:
++            if engine is not ws: raise ConnectionError('Verbinding verbroken')
++            await ws.send_json({'request_id': rid, 'event_id': ident, 'kind': kind, **packet})
++        result = await asyncio.wait_for(future, timeout=timeout)
++        if not isinstance(result,dict): raise ValueError('Ongeldige lokale bevestiging')
++        if result.get('unknown'):
++            return filtered(kind, result), 504
++        if result.get('outcome')=='not_dispatched':
++            return filtered(kind,result),503
++        if result.get('ok') is False and kind in ('actor.status', 'receipt', 'group.status'):
++            return public_result(result), 409
++        return filtered(kind, result), 200
++    except (asyncio.TimeoutError, ConnectionError, WebSocketDisconnect, RuntimeError, ValueError, KeyError):
++        return {'ok': False, 'unknown': True, 'outcome': 'unknown', 'error': 'Geen startbevestiging ontvangen. Vraag de begeleider om de regie te controleren.'}, 504
++    finally:
++        pending.pop(rid, None)
++
++
++@app.post('/api/integration/actor-access')
++async def actor_access(request: Request):
++    try:
++        integration_auth(request)
++        envelope = await request_json(request)
++        data, _ = verify(actor_secret, envelope)
++        validate(data, event_scope_id, time.time(), access=True)
++    except PermissionError:
++        return JSONResponse({'ok': False, 'error': 'Ongeldige actorautorisatie'}, 403)
++    except (ValueError, KeyError, TypeError):
++        return JSONResponse({'ok': False, 'error': 'Ongeldige of verlopen actorautorisatie'}, 409)
++    result, status = await forward_protocol('actor.access', {'grant': envelope}, uuid.uuid4().hex, timeout=2)
++    return JSONResponse(result, status)
++
++
++@app.post('/api/integration/actor-command')
++async def actor_command(request: Request):
++    try:
++        integration_auth(request)
++        envelope = await request_json(request)
++        data, _ = verify(actor_secret, envelope)
++        validate(data, event_scope_id, time.time())
++        grant, access = grant_header(request)
++        if not access['active'] or data['action'] not in access['permissions'] or any(data[k] != access[k] for k in ('event_scope_id', 'actor_subject', 'permissions_revision')):
++            raise PermissionError('Actor heeft deze rechten niet')
++    except PermissionError:
++        return JSONResponse({'ok': False, 'error': 'Ongeldige actorautorisatie'}, 403)
++    except (ValueError, KeyError, TypeError):
++        return JSONResponse({'ok': False, 'error': 'Ongeldige of verlopen actoropdracht'}, 409)
++    # Install current permissions before dispatch. This is never retried or queued.
++    synced, status = await forward_protocol('actor.access', {'grant': grant}, uuid.uuid4().hex, timeout=2)
++    if status != 200 or synced.get('ok') is not True:
++        # Access synchronization cannot start any cue. No command was dispatched.
++        return JSONResponse({'ok':False,'outcome':'not_dispatched','command_id':data['command_id'],
++                             'error':'Actuele acteursrechten niet bevestigd; opdracht niet verstuurd'},503)
++    result, status = await forward_protocol('actor.command', {'command': envelope, 'grant': grant}, data['command_id'])
++    return JSONResponse(result, status)
++
++
++@app.get('/api/integration/actor-status')
++async def actor_status(request: Request):
++    try:
++        integration_auth(request)
++        grant, _ = grant_header(request)
++    except PermissionError:
++        return JSONResponse({'ok': False, 'error': 'Ongeldige actorautorisatie'}, 403)
++    except (ValueError, KeyError, TypeError):
++        return JSONResponse({'ok': False, 'error': 'Ongeldige of verlopen actorautorisatie'}, 409)
++    result, status = await forward_protocol('actor.status', {'grant': grant}, uuid.uuid4().hex, timeout=4)
++    return JSONResponse(result, status)
++
++
++@app.get('/api/integration/group-status')
++async def group_status(request: Request):
++    try:
++        integration_auth(request)
++        gid = request.query_params.get('group_id', '')
++        if not re.fullmatch(r'[A-Za-z0-9_-]{1,40}', gid): raise ValueError('Ongeldige groep')
++    except PermissionError:
++        return JSONResponse({'ok': False, 'error': 'Ongeldige integratiesleutel'}, 403)
++    except ValueError:
++        return JSONResponse({'ok': False, 'error': 'Ongeldige statusaanvraag'}, 409)
++    result, status = await forward_protocol('group.status', {'group_id': gid}, uuid.uuid4().hex, timeout=4)
++    return JSONResponse(result, status)
++
++
++@app.get('/api/integration/receipts/{command_id}')
++async def receipt(request: Request, command_id: str):
++    try:
++        integration_auth(request)
++        kind = request.query_params.get('kind', 'qr')
++        gid = request.query_params.get('group_id') or None
++        payload_hash = request.query_params.get('payload_hash', '')
++        if kind not in ('qr', 'actor') or not 8 <= len(command_id) <= 100 or not re.fullmatch(r'[a-f0-9]{64}', payload_hash): raise ValueError('Ongeldige ontvangst')
++        if gid is not None and not re.fullmatch(r'[A-Za-z0-9_-]{1,40}', gid): raise ValueError('Ongeldige groep')
++        if kind == 'qr' and not gid: raise ValueError('Groepsbinding vereist')
++        grant = grant_header(request)[0] if kind == 'actor' else None
++    except PermissionError:
++        return JSONResponse({'ok': False, 'error': 'Ongeldige actorautorisatie'}, 403)
++    except (ValueError, KeyError, TypeError):
++        return JSONResponse({'ok': False, 'error': 'Ongeldige ontvangstaanvraag'}, 409)
++    result, status = await forward_protocol('receipt', {'query': {'kind': kind, 'command_id': command_id, 'group_id': gid, 'payload_hash': payload_hash}, 'grant': grant}, command_id, timeout=4)
++    return JSONResponse(result, status)
+diff --git a/docs/ACTOR-ADAPTER-V1.md b/docs/ACTOR-ADAPTER-V1.md
+new file mode 100644
+--- /dev/null
++++ b/docs/ACTOR-ADAPTER-V1.md
+@@ -0,0 +1,91 @@
++# Duinpad actoradapter v1 en ontvangstherstel
++
++Deze wijzigingsset hoort bij de bestaande Halloween-app en Showpakket 2.0.0. Er is geen nieuwe productieapp. De uitgaande WSS-verbinding `/engine` blijft de enige internetverbinding naar de showcomputer. QLC+, audio, Art-Net, rook en de showtijdlijn blijven lokaal. De normale voorbereiding, cue-timing, audiokanalen, finaleprioriteit en rookstandaard zijn niet gewijzigd.
++
++De extra SQLite-tabellen worden met `CREATE TABLE IF NOT EXISTS` toegevoegd bij openen van de bestaande database: `actor_access`, `remote_attempts`, `finale_slots`, `finale_resolutions`. Bestaande events, controllerstaat en logboek blijven staan. Maak voor een bevoegde uitrol een kopie van de bestaande SQLite-database inclusief WAL/SHM volgens de lokale beheerprocedure; wis geen groepen, events of productiegegevens voor installatie.
++
++## Configuratie en compatibiliteit
++
++Op app-backend, relay en showcomputer zijn dezelfde **afzonderlijke** `DUINPAD_ACTOR_AUTH_SECRET` (minimaal 32 tekens) en `DUINPAD_EVENT_SCOPE_ID` (het werkelijke Halloween-event-ID) nodig. De bestaande `DUINPAD_RELAY_SECRET` wordt niet geroteerd. Het actorsecret mag niet gelijk zijn aan het relaysecret; de relay weigert ook gelijkheid met de oude bezoekergeheimen. De nieuwe `.env.example` bevat lege actorwaarden. Dit document levert geen geheimwaarden, domein of evenement-ID.
++
++App-backend gebruikt `DUINPAD_SHOW_API_BASE_URL` (bestaande echte HTTPS-relayorigin) en `DUINPAD_SHOW_API_TOKEN` (bestaande relaysecret). De showcomputer gebruikt de bestaande `DUINPAD_RELAY_URL` (echte WSS `/engine`-URL) en `DUINPAD_RELAY_SECRET`. Geen sleutel of ondertekende grant gaat naar de browser, QR-poster, `NEXT_PUBLIC_`, URL-query, foutmelding of auditlog.
++
++De nieuwe showcomputer meldt na verbinden `type:capabilities`, `versions:['duinpad.actor.v1']`, `event_scope_id`, `observed_at`, `actor_status_max_age:5`, `zone_stops:[2,3,4]`. Zonder passende onderhandelde mogelijkheden zijn alle nieuwe actor/status/receiptpaden 503 en wordt niets bewaard voor later. De bestaande QR1/QR2-wirevorm blijft terugwaarts compatibel. Een oude relay of oude bridge ondersteunt de nieuwe acteurbediening niet.
++
++Controleer vóór livegebruik kloksynchronisatie op VPS, relay en showcomputer. Actorgrants zijn maximaal vijf seconden geldig; toekomstige en verstreken grants worden geweigerd. Een klokafwijking blokkeert zo veilig. Status wordt live opgevraagd en bij meer dan vijf seconden ouderdom afgewezen. Een geldige QR-poster en een verbonden showcomputer zijn afzonderlijke feiten.
++
++## Gesloten protocol
++
++Alle interne HTTP-paden vereisen `Authorization: Bearer <bestaand relaysecret>`. De telefoon spreekt uitsluitend de eigen geauthenticeerde app-API. Request bodies hebben maximaal 4096 bytes. Eén relayworker, één engineverbinding, maximaal 64 gelijktijdig wachtende relayrequests en maximaal acht actieve softwareworkers op de bridge; er is geen duurzame of offline showqueue en geen reconnect-replay.
++
++Envelope: `{version:'duinpad.actor-envelope.v1',payload,signature}`. `payload` is base64url zonder padding van de **exact verzonden UTF-8 JSON-bytes**. `signature` is base64url zonder padding van HMAC-SHA256 over de ASCII `payload`-string. Het volledige command is getekend. Dubbele JSON-keys, niet-canonieke base64url, extra velden, niet-eindige getallen en onbekende acties worden geweigerd; handtekeningvergelijking is constant-time.
++
++Commandpayload (exact conform het aangeleverde schema):
++
++```json
++{"version":"duinpad.actor.v1","command_id":"<unieke poging>","event_scope_id":"<echt event-ID>","actor_subject":"<geverifieerd account-ID>","permissions_revision":1,"action":"zone1.trigger","group_id":null,"args":{},"issued_at":0,"expires_at":8,"scope":{"permission":"zone1.trigger","internal_zones":[2]}}
++```
++
++De tijden in het voorbeeld zijn alleen veldillustratie en zijn nooit uitvoerbaar. Uitgifte gebruikt actuele Unixseconden, `expires_at > issued_at`, `expires_at <= issued_at+8`; uitvoering controleert ook de lokale twintigsecondenregel. `heks.go` en `finale.go` vereisen de actuele lokaal geselecteerde groep. Alle andere acties vereisen `group_id:null`. De backend haalt de groep uit verse lokale status; een browser kiest geen groep. Ready heeft uitsluitend `{ready:boolean}`. Alle andere `args` zijn `{}`.
++
++Een verse accessgrant gebruikt dezelfde envelope met payload `{version:'duinpad.actor-access.v1',event_scope_id,actor_subject,permissions_revision,permissions:[...],active:boolean,issued_at,expires_at}`. `expires_at <= issued_at+5`. Ingetrokken toegang heeft `active:false,permissions:[]`. Rechtenwijzigingen/intrekking verhogen de revision. Lagere revisions en inhoudelijk gewijzigde rechten bij dezelfde revision worden geweigerd en de hoogste revision blijft bewaard na herstart.
++
++| HTTP-pad | Invoer / betekenis |
++|---|---|
++| `POST /api/integration/actor-access` | Accessgrant-envelope als JSON-body; push rechtenwijziging/intrekking; ACK na duurzame lokale update. Geen cue. |
++| `GET /api/integration/actor-status` | Header `X-Duinpad-Actor-Grant` = base64url UTF-8 compact JSON **envelope** van de verse accessgrant. Retourneert alleen de eigen controls. |
++| `POST /api/integration/actor-command` | Command-envelope body plus dezelfde grantheader. Eerst live grant-sync, daarna hoogstens één directe uitvoering. |
++| `GET /api/integration/receipts/<id>?kind=actor&payload_hash=<sha256>[&group_id=<id>]` | Verse eigen grantheader. Hash = SHA256 van exacte gedecodeerde command-JSON-bytes. Leest uitsluitend. Laat `group_id` weg voor null. |
++| `GET /api/integration/receipts/<id>?kind=qr&group_id=<id>&payload_hash=<sha256>` | Geen actorgrant. Vertrouwde backend bewijst in de app de eigen groepsautorisatie. Hash volgens onderstaande QR-normalisatie. |
++| `GET /api/integration/group-status?group_id=<id>` | Beperkte status van uitsluitend die groep; backend autoriseert de browser. Geen volledige groepenlijst. |
++
++De relay stuurt uitsluitend vaste packetkinds `actor.access`, `actor.status`, `actor.command`, `receipt`, `group.status` en het bestaande `qr` over WSS. Er is geen generieke regieproxy of willekeurige interne actie-/zoneparameter.
++
++QR-hash gebruikt exact compact JSON met vaste keyvolgorde `{stage,group_id,event_id,issued_at,label}`; ontbrekend label wordt `''`. De app gebruikt gehele Unixseconden. Een receiptquery verandert nooit `issued_at`, maakt geen event en roept geen start aan. Een oude POST opnieuw sturen is nadrukkelijk geen statusquery.
++
++Statusbody: `{version:'duinpad.actor-status.v1',compatible:true,connected,observed_at,permissions_revision,controls:[{action,enabled,blocked_reason,group_id,effect:{active,remaining}}]}`. Uitsluitend toegewezen acties; geen deelnemers, andere actorrechten, labels, `next_intro`, `next_finale`, hardwareconfiguratie of geheimen. De backend controleert revision, ouderdom en eigen permissions nogmaals.
++
++Command-ACK: `{ok,message?,duplicate?,unknown?,error?,outcome,command_id,meaning?,confirmation?}`. `meaning` is `scene_started`, `finale_started`, `ready_updated`, `zone_stopped` of `all_stopped`. Alleen finale-ACK bevat `confirmation:{qlc_started:true,audio_started:true}` en pas nadat beide lokale motoren hebben bevestigd. Dit bewijst geen fysieke zicht-/hoorbaarheid of showvoltooiing. `ok:false` met `outcome:'blocked'` is een expliciete weigering; timeout/verbroken verbinding is `unknown`. Een niet verstuurd command geeft 503/`not_dispatched`. Geen automatische retry.
++
++Receiptwrapper: `{found,command_id,group_id,payload_hash,result,group?}`. Alleen bij exact ID, hash, soort, groep, event en eigen actor is `found:true` mogelijk. Een miss blijft `found:false,result:{ok:false,unknown:true,outcome:'unknown'}`; ontbrekend bewijs is geen bewijs van niet uitgevoerd. De receipt-handler schrijft geen capability, receipt of controllerstaat. Hij kan een eerdere unknown teruglezen als gestart als het duurzame **zelfde poging-ID** beide start-ACKs bewijst, of als expliciet niet uitgevoerd na de lokale regiehandeling hieronder.
++
++## Rechten en races
++
++| Internetpermission | Lokale rol / actie |
++|---|---|
++| `heks.ready`, `heks.go` | heks / interne 1 / ready of gebonden GO |
++| `zone1.trigger`, `zone1.stop` | pad1 / interne 2 / GO of alleen zone 2 stoppen |
++| `zone2.trigger`, `zone2.stop` | pad2 / interne 3 / GO of alleen zone 3 stoppen |
++| `zone3.trigger`, `zone3.stop` | pad3 / interne 4 / GO of alleen zone 4 stoppen |
++| `finale.ready`, `finale.go` | finale / interne 5 / ready of dezelfde gebonden QR2-finalestart |
++| `stop-all` | uitsluitend expliciete globale emergency-scope; geen presetrecht |
++
++De oude lokale rollen mogen meer dan de internetadapter. De adapter erft nooit hun algemene emergency-knop. Zone 1/5 is nooit een internet-zonestop. Tijdens een finale weigert de controller ook beperkte padstops als de finale het pad bestuurt.
++
++Onder de controllerlock worden vlak vóór uitvoering handtekening, event, groep, deadline, actieve capability, hoogste revision en verse grant opnieuw gecontroleerd. De WSS-ontvanglus verwerkt revocaties terwijl een startworker op die lock wacht. Een ontvangen nieuwe revision blokkeert zo oude nog niet uitgevoerde opdrachten. Een lopende cue stopt uitsluitend via een afzonderlijk toegewezen stoprecht of lokale regie.
++
++De app controleert actuele DB-rechten vlak vóór iedere dispatch en pusht intrekking/revisions naar de bridge. Als die push niet bevestigd wordt, moet de UI dat melden. Een onbereikbare verbinding kan geen onmiddellijke remote intrekking bevestigen: bestaande grants verlopen uiterlijk na vijf seconden. Claim daarom geen onmiddellijke synchronisatie bij een mislukte push; er wordt niets automatisch opnieuw gestuurd.
++
++## Eén finale en lokaal herstel
++
++QR2, internet-`finale.go` en lokale handmatige Finale GO delen dezelfde controllerlock en duurzame `finale_slots`-rij. Reservering gebeurt direct vóór de lokale motorstart. Alleen na QLC- én audio-ACK wordt de rij `started` en Heks GO voor de volgende groep vrijgegeven. Geen automatische Heks GO. Een fout vóór beide ACKs houdt het slot unknown en de volgende heks geblokkeerd. Een reset van de lokale groepenlijst wist dit slot niet.
++
++Bij een herstart worden geen cues hervat; actieve groepen worden interrupted en regieherstel blijft nodig. Een receipt van een historische bevestigde start kan tegelijk `group.recovery_required:true` melden. Toon dit als herstelcontrole; het historische ACK-bewijs geeft geen nieuwe startmogelijkheid.
++
++Bij unknown:
++
++1. Vraag uitsluitend de eigen receipt/status op; herhaal geen uitvoerings-POST en verzin geen nieuwe poging-ID.
++2. Controleer ter plaatse QLC, audio, controllerlog en de groep. Een ontbrekende receipt of stille speaker is op zichzelf geen bewijs van niet uitgevoerd.
++3. Stop indien nodig lokaal bewust alle effecten en kies **Nieuwe ronde / herstel**. Wis geen groepen of events.
++4. Alleen als regie daadwerkelijk heeft vastgesteld dat de fysieke finale niet is uitgevoerd: gebruik de lokale kaart **Onzekere finale: lokale controle nodig**, controleer de exacte groep en poging-ID, bevestig de fysieke niet-uitvoering en leg een reden van 10–200 tekens vast. Dit is de uitsluitend lokale regieactie `resolve_finale_not_executed`; zij bestaat niet in de internetallowlist.
++5. De beslissing blijft duurzaam geaudit en het oude receipt wordt expliciet blocked/niet uitgevoerd. De oorspronkelijke groepsbinding wordt hersteld, zonder cue of volgende-Heks-vrijgave. Start het programma en meld de finale opnieuw gereed via de normale lokale voorwaarden. Pas daarna kan een **nieuwe bewuste** app-/actorhandeling een nieuwe poging maken. De zakelijke bezoekersscan en avonddeadline blijven intact.
++
++Een `started`-slot kan nooit als niet uitgevoerd worden vrijgemaakt. Een verdwenen groep kan niet stilzwijgend worden hermaakt door deze herstelactie. Laat die situatie door organisatie/regie onderzoeken. Het wissen van historische slots, aanpassen van de database of hergebruiken van een andere groepscode is geen normale herstelhandeling.
++
++## Uitrol en testbewijs
++
++Pas uitsluitend toe op de exacte meegeleverde baseline in een aparte wijzigingsset en volg de bestaande bevoegde releaseprocedure. Deploy relay en bridge samen voordat actorbediening wordt geactiveerd. Bouw de relayimage met het aangepaste Dockerfile; draai één worker. Start de bridge eerst in SIMULATIE en controleer de feature-negotiatie, eigen controls, intrekking en readonly receipts. Gebruik bestaande synthetische tests en geen echte uitnodigingen/mails.
++
++De bestaande reverse proxy blijft zonder toegevoegde POST-retries. Voeg ook in jobs, fetchwrappers, serviceworkers of reconnect geen commandoreplay toe. Er is wel een zakelijke app-/mailverwerking; deze bridge maakt geen bezoekersscans, avonddeadlines of e-mails.
++
++Voor hardwarevrijgave blijven een afzonderlijke bevoegde locatieproef, echte QLC/audio-outputbevestiging, gecontroleerde bekabeling en veilige lokale werkwijze nodig. De meegeleverde unittests en ASGI/WSS-proeven zijn uitsluitend softwarebewijs. Deze wijzigingsset heeft geen echte Art-Net-output, audio-output, rook, productie-uitrol, Google-login of mailbezorging getest.
+diff --git a/tests/fixtures/actor-v1-fixtures.json b/tests/fixtures/actor-v1-fixtures.json
+new file mode 100644
+--- /dev/null
++++ b/tests/fixtures/actor-v1-fixtures.json
+@@ -0,0 +1,186 @@
++{
++  "purpose": "Static contract fixtures only; no HMAC/live authorization/execution proof",
++  "cases": [
++    {
++      "name": "zone1 maps to internal2",
++      "valid": true,
++      "payload": {
++        "version": "duinpad.actor.v1",
++        "command_id": "00000000-0000-4000-8000-000000000001",
++        "event_scope_id": "event-fixture",
++        "actor_subject": "actor-fixture",
++        "permissions_revision": 1,
++        "action": "zone1.trigger",
++        "group_id": null,
++        "args": {},
++        "issued_at": 1000,
++        "expires_at": 1008,
++        "scope": {
++          "permission": "zone1.trigger",
++          "internal_zones": [
++            2
++          ]
++        }
++      }
++    },
++    {
++      "name": "wrong internal zone",
++      "valid": false,
++      "payload": {
++        "version": "duinpad.actor.v1",
++        "command_id": "00000000-0000-4000-8000-000000000001",
++        "event_scope_id": "event-fixture",
++        "actor_subject": "actor-fixture",
++        "permissions_revision": 1,
++        "action": "zone1.trigger",
++        "group_id": null,
++        "args": {},
++        "issued_at": 1000,
++        "expires_at": 1008,
++        "scope": {
++          "permission": "zone1.trigger",
++          "internal_zones": [
++            1
++          ]
++        }
++      }
++    },
++    {
++      "name": "permission action mismatch",
++      "valid": false,
++      "payload": {
++        "version": "duinpad.actor.v1",
++        "command_id": "00000000-0000-4000-8000-000000000001",
++        "event_scope_id": "event-fixture",
++        "actor_subject": "actor-fixture",
++        "permissions_revision": 1,
++        "action": "zone1.trigger",
++        "group_id": null,
++        "args": {},
++        "issued_at": 1000,
++        "expires_at": 1008,
++        "scope": {
++          "permission": "stop-all",
++          "internal_zones": [
++            2
++          ]
++        }
++      }
++    },
++    {
++      "name": "arbitrary extra argument",
++      "valid": false,
++      "payload": {
++        "version": "duinpad.actor.v1",
++        "command_id": "00000000-0000-4000-8000-000000000001",
++        "event_scope_id": "event-fixture",
++        "actor_subject": "actor-fixture",
++        "permissions_revision": 1,
++        "action": "zone1.trigger",
++        "group_id": null,
++        "args": {
++          "url": "https://example.invalid"
++        },
++        "issued_at": 1000,
++        "expires_at": 1008,
++        "scope": {
++          "permission": "zone1.trigger",
++          "internal_zones": [
++            2
++          ]
++        }
++      }
++    },
++    {
++      "name": "unknown action",
++      "valid": false,
++      "payload": {
++        "version": "duinpad.actor.v1",
++        "command_id": "00000000-0000-4000-8000-000000000001",
++        "event_scope_id": "event-fixture",
++        "actor_subject": "actor-fixture",
++        "permissions_revision": 1,
++        "action": "regie.anything",
++        "group_id": null,
++        "args": {},
++        "issued_at": 1000,
++        "expires_at": 1008,
++        "scope": {
++          "permission": "zone1.trigger",
++          "internal_zones": [
++            2
++          ]
++        }
++      }
++    },
++    {
++      "name": "extra outer actor field",
++      "valid": false,
++      "payload": {
++        "version": "duinpad.actor.v1",
++        "command_id": "00000000-0000-4000-8000-000000000001",
++        "event_scope_id": "event-fixture",
++        "actor_subject": "actor-fixture",
++        "permissions_revision": 1,
++        "action": "zone1.trigger",
++        "group_id": null,
++        "args": {},
++        "issued_at": 1000,
++        "expires_at": 1008,
++        "scope": {
++          "permission": "zone1.trigger",
++          "internal_zones": [
++            2
++          ]
++        },
++        "admin": true
++      }
++    },
++    {
++      "name": "finale without group",
++      "valid": false,
++      "payload": {
++        "version": "duinpad.actor.v1",
++        "command_id": "00000000-0000-4000-8000-000000000001",
++        "event_scope_id": "event-fixture",
++        "actor_subject": "actor-fixture",
++        "permissions_revision": 1,
++        "action": "finale.go",
++        "group_id": null,
++        "args": {},
++        "issued_at": 1000,
++        "expires_at": 1008,
++        "scope": {
++          "permission": "finale.go",
++          "internal_zones": [
++            5
++          ]
++        }
++      }
++    },
++    {
++      "name": "ready requires boolean",
++      "valid": true,
++      "payload": {
++        "version": "duinpad.actor.v1",
++        "command_id": "00000000-0000-4000-8000-000000000001",
++        "event_scope_id": "event-fixture",
++        "actor_subject": "actor-fixture",
++        "permissions_revision": 1,
++        "action": "heks.ready",
++        "group_id": null,
++        "args": {
++          "ready": true
++        },
++        "issued_at": 1000,
++        "expires_at": 1008,
++        "scope": {
++          "permission": "heks.ready",
++          "internal_zones": [
++            1
++          ]
++        }
++      }
++    }
++  ]
++}
+diff --git a/tests/test_actor_protocol.py b/tests/test_actor_protocol.py
+new file mode 100644
+--- /dev/null
++++ b/tests/test_actor_protocol.py
+@@ -0,0 +1,323 @@
++"""Isolated software protocol proof. All QLC and audio engines use SIMULATION."""
++import copy
++import json
++import os
++from pathlib import Path
++import queue
++import tempfile
++import threading
++import time
++import unittest
++from unittest.mock import patch
++import uuid
++
++from bridge.actor_adapter import ActorAdapter
++from bridge.actor_protocol import ACTIONS, ACCESS, COMMAND, b64encode, compact, digest, qr_payload, sign, validate, verify
++from bridge.audio import AudioEngine
++from bridge.config import read_config, ROOT
++from bridge.controller import Controller
++from bridge.qlc import QLC
++from bridge.relay_client import RelayClient
++from bridge.store import Store
++
++TEST_SECRET = 'simulation-only-actor-signing-secret-0000'
++EVENT = 'simulation-event'
++
++
++class ActorCase(unittest.TestCase):
++    def setUp(self):
++        self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
++        self.store = Store(Path(self.tmp.name) / 'show.db'); self.addCleanup(self.store.db.close)
++        self.now = 1000.0
++        self.cfg = read_config()
++        self.c = Controller(self.cfg, QLC(self.cfg, True, lambda: self.now), AudioEngine(self.cfg, True, lambda: self.now), self.store, True, lambda: self.now, lambda: self.now)
++        self.adapter = ActorAdapter(self.c, TEST_SECRET, EVENT)
++        self.act('program_start')
++
++    def act(self, action, args=None):
++        return self.c.action(action, args or {}, 'regie', uuid.uuid4().hex, self.now)
++
++    def grant(self, permissions, revision=1, active=True, subject='actor-A'):
++        return sign(TEST_SECRET, {'version': ACCESS, 'event_scope_id': EVENT, 'actor_subject': subject,
++                    'permissions_revision': revision, 'permissions': permissions, 'active': active,
++                    'issued_at': self.now, 'expires_at': self.now + 5})
++
++    def command(self, action, group=None, revision=1, subject='actor-A', args=None):
++        zone = ACTIONS[action][1]
++        return {'version': COMMAND, 'command_id': uuid.uuid4().hex, 'event_scope_id': EVENT,
++                'actor_subject': subject, 'permissions_revision': revision, 'action': action, 'group_id': group,
++                'args': args if args is not None else ({'ready': True} if action.endswith('.ready') else {}),
++                'issued_at': self.now, 'expires_at': self.now + 8,
++                'scope': {'permission': action, 'internal_zones': [] if zone is None else [zone]}}
++
++    def execute(self, command, permissions=None, **kwargs):
++        return self.adapter.execute(sign(TEST_SECRET, command), self.grant(permissions or [command['action']], revision=command['permissions_revision'], subject=command['actor_subject']), **kwargs)
++
++    def route(self):
++        self.act('group_add', {'group_id': 'A'})
++        self.now += 16
++        self.act('ready', {'zone': 1}); self.act('ready', {'zone': 5})
++        self.act('go', {'zone': 1})
++        # A periodic ticker preserves the unchanged local cue timing.
++        for _ in range(750):
++            self.now += .05; self.c.tick()
++        self.assertEqual(self.c._group('A')['status'], 'route')
++
++    def test_static_contract_fixture_cases(self):
++        fixtures = json.loads((ROOT / 'tests/fixtures/actor-v1-fixtures.json').read_text())
++        for case in fixtures['cases']:
++            with self.subTest(case=case['name']):
++                if case['valid']:
++                    validate(case['payload'], 'event-fixture', 1000)
++                else:
++                    with self.assertRaises((ValueError, PermissionError)):
++                        validate(case['payload'], 'event-fixture', 1000)
++
++    def test_hmac_is_over_exact_ascii_payload_and_rejects_changes(self):
++        payload = self.command('zone1.trigger')
++        env = sign(TEST_SECRET, payload)
++        self.assertEqual(verify(TEST_SECRET, env)[0], payload)
++        changed = dict(env); changed['payload'] = b64encode(compact({**payload, 'group_id': 'other'}))
++        with self.assertRaises(PermissionError): verify(TEST_SECRET, changed)
++        for value in ({**env, 'admin': True}, {**env, 'signature': 'A' * 43}, {**env, 'payload': env['payload'] + '='}):
++            with self.assertRaises((ValueError, PermissionError)): verify(TEST_SECRET, value)
++        with self.assertRaises(PermissionError): verify('other-isolated-signing-secret-000000', env)
++
++    def test_exact_cross_language_hmac_fixture(self):
++        fixture=json.loads((ROOT/'tests/fixtures/actor-v1-fixtures.json').read_text())['cases'][0]['payload']
++        self.assertEqual(sign('fixture-only-secret-32-characters-minimum',fixture)['signature'],
++                         'V3iWM0Sx4TZGK1cT-Em4GTByX5bITPnr5LblHwyi9l8')
++
++    def test_strict_args_scope_event_times_and_malformed_types(self):
++        command = self.command('zone1.trigger')
++        cases = [dict(command, args={'zone': 1}), dict(command, action='emergency'), dict(command, event_scope_id='another'),
++                 dict(command, expires_at=self.now + 9), dict(command, issued_at=self.now + 1),
++                 dict(command, expires_at=self.now), dict(command, permissions_revision=True),
++                 dict(command, scope=[]), dict(command, action=[]), dict(command, args=[]),
++                 dict(command, scope={'permission': 'zone1.trigger', 'internal_zones': [True]}),
++                 dict(command, group_id='A'), dict(command, admin=True)]
++        for value in cases:
++            with self.subTest(value=value):
++                with self.assertRaises((ValueError, PermissionError)): validate(value, EVENT, self.now)
++
++    def test_three_zone_permissions_map_only_to_internal_two_three_four(self):
++        self.route()
++        for action, zone in [('zone1.trigger', 2), ('zone2.trigger', 3), ('zone3.trigger', 4)]:
++            result = self.execute(self.command(action), ['zone1.trigger','zone2.trigger','zone3.trigger'])
++            self.assertTrue(result['ok']); self.assertIn(zone, self.c.active)
++        self.assertNotIn(1, self.c.active); self.assertNotIn(5, self.c.active)
++
++    def test_zone_stop_never_inherits_global_emergency(self):
++        self.route()
++        self.execute(self.command('zone1.trigger'))
++        cmd = self.command('zone1.stop', revision=2)
++        result = self.execute(cmd)
++        self.assertTrue(result['ok']); self.assertFalse(self.c.recovery); self.assertNotIn(2, self.c.active)
++        for zone in [1, 5]:
++            cmd = self.command('zone1.stop'); cmd['scope']['internal_zones'] = [zone]
++            with self.assertRaises(PermissionError): self.execute(cmd)
++        self.assertTrue(self.c.program)
++
++    def test_explicit_stop_all_is_required_for_emergency(self):
++        command = self.command('stop-all')
++        with self.assertRaises(PermissionError): self.execute(command, ['heks.go'])
++        self.assertFalse(self.c.recovery)
++        command = self.command('stop-all', revision=2)
++        self.assertTrue(self.execute(command)['ok']); self.assertTrue(self.c.recovery)
++
++    def test_status_is_strict_whitelist_and_contains_only_owned_controls(self):
++        self.act('group_add', {'group_id': 'A', 'label': 'DO NOT DISCLOSE'})
++        status = self.adapter.status(self.grant(['zone1.trigger']))
++        self.assertEqual(set(status), {'version', 'compatible', 'connected', 'observed_at', 'permissions_revision', 'controls'})
++        self.assertEqual(len(status['controls']), 1)
++        self.assertEqual(status['controls'][0]['action'], 'zone1.trigger')
++        self.assertFalse(status['controls'][0]['enabled'])
++        serialized = json.dumps(status)
++        for word in ['next_intro', 'next_finale', 'DO NOT DISCLOSE', 'groups', 'secret', 'DMX', 'master_gain']:
++            self.assertNotIn(word, serialized)
++
++    def test_heks_group_is_explicit_and_cannot_select_another_group(self):
++        self.act('group_add', {'group_id': 'A'}); self.act('group_add', {'group_id': 'B'})
++        self.now += 16; self.act('ready', {'zone': 1})
++        with self.assertRaises(PermissionError): self.execute(self.command('heks.go', 'B'))
++        self.assertNotIn(1, self.c.active)
++        self.assertTrue(self.execute(self.command('heks.go', 'A'))['ok'])
++
++    def test_concurrent_identical_actor_commands_execute_once(self):
++        self.route()
++        cmd = self.command('zone1.trigger'); envelope = sign(TEST_SECRET, cmd); grant = self.grant(['zone1.trigger'])
++        results = []
++        def run(): results.append(self.adapter.execute(envelope, grant))
++        count = self.c.audio.start_count
++        threads = [threading.Thread(target=run) for _ in range(8)]
++        for thread in threads: thread.start()
++        for thread in threads: thread.join(3); self.assertFalse(thread.is_alive())
++        self.assertEqual(self.c.audio.start_count, count + 1)
++        self.assertEqual(sum(bool(r.get('duplicate')) for r in results), 7)
++
++    def test_same_id_changed_signed_payload_is_rejected(self):
++        self.route(); cmd = self.command('zone1.trigger')
++        self.execute(cmd)
++        changed = copy.deepcopy(cmd); changed['action'] = 'zone1.stop'; changed['scope']['permission'] = 'zone1.stop'
++        with self.assertRaises(PermissionError): self.execute(changed, ['zone1.trigger', 'zone1.stop'])
++
++    def test_qr2_and_actor_finale_share_one_start_and_ack(self):
++        self.route()
++        cmd = self.command('finale.go', 'A')
++        event = {'stage': 'qr2', 'group_id': 'A', 'event_id': uuid.uuid4().hex, 'issued_at': self.now, 'label': ''}
++        count = self.c.audio.start_count
++        results = []
++        t1 = threading.Thread(target=lambda: results.append(self.execute(cmd)))
++        t2 = threading.Thread(target=lambda: results.append(self.adapter.qr(event, self.now + 8)))
++        t1.start(); t2.start(); t1.join(3); t2.join(3)
++        self.assertEqual(len(results), 2); self.assertTrue(all(r['ok'] for r in results))
++        self.assertEqual(self.c.audio.start_count, count + 1)
++        self.assertEqual(self.store.finale_slot('A')['status'], 'started'); self.assertTrue(self.c.intro_permit)
++        actor = next(r for r in results if r.get('command_id'))
++        self.assertEqual(actor['confirmation'], {'qlc_started': True, 'audio_started': True})
++
++    def test_actor_finale_uses_existing_limited_finale_role(self):
++        self.route()
++        with patch.object(self.c,'action',wraps=self.c.action) as execute:
++            self.assertTrue(self.execute(self.command('finale.go','A'))['ok'])
++        self.assertEqual(execute.call_args.args[:3],('go',{'zone':5,'group_id':'A'},'finale'))
++
++    def test_finale_audio_failure_remains_unknown_and_never_releases(self):
++        self.route(); command = self.command('finale.go', 'A')
++        with patch.object(self.c.audio, 'start', side_effect=RuntimeError('synthetic audio failure')):
++            result = self.execute(command)
++        self.assertTrue(result['unknown']); self.assertFalse(result['ok']); self.assertFalse(self.c.intro_permit)
++        self.assertEqual(self.store.finale_slot('A')['status'], 'unknown')
++        count = self.c.audio.start_count
++        receipt = self.adapter.receipt(command['command_id'], 'actor', 'A', digest(compact(command)), self.grant(['finale.go']))
++        self.assertTrue(receipt['result']['unknown']); self.assertEqual(count, self.c.audio.start_count)
++        other = self.command('finale.go', 'A')
++        result = self.execute(other)
++        self.assertTrue(result['unknown']); self.assertEqual(count, self.c.audio.start_count)
++
++    def test_finale_qlc_failure_no_both_ack(self):
++        self.route(); original = self.c.qlc.start
++        def fail(function):
++            if function == 'FINALE_SHOW': raise RuntimeError('simulation QLC no start ACK')
++            return original(function)
++        with patch.object(self.c.qlc, 'start', side_effect=fail):
++            result = self.execute(self.command('finale.go', 'A'))
++        self.assertTrue(result['unknown']); self.assertNotIn('confirmation', result); self.assertFalse(self.c.intro_permit)
++
++    def test_qr2_audio_valueerror_after_qlc_start_is_unknown_not_blocked(self):
++        self.route()
++        event={'stage':'qr2','group_id':'A','event_id':uuid.uuid4().hex,'issued_at':self.now,'label':''}
++        with patch.object(self.c.audio,'start',side_effect=ValueError('simulation missing audio buffer')):
++            result=self.adapter.qr(event,self.now+8)
++        self.assertFalse(result['ok']);self.assertTrue(result['unknown']);self.assertFalse(self.c.intro_permit)
++        receipt=self.adapter.receipt(event['event_id'],'qr','A',digest(qr_payload(event)))
++        self.assertTrue(receipt['result']['unknown']);self.assertEqual(receipt['result']['outcome'],'unknown')
++
++    def test_revocation_and_revision_survive_restart(self):
++        self.adapter.grant(self.grant([], revision=2, active=False))
++        with self.assertRaises(PermissionError): self.execute(self.command('heks.ready'))
++        other = ActorAdapter(self.c, TEST_SECRET, EVENT)
++        with self.assertRaises(PermissionError): other.grant(self.grant(['heks.ready']))
++        self.now += 6
++        with self.assertRaises(PermissionError): self.execute(self.command('heks.ready'), live=lambda: False)
++
++    def test_revocation_blocks_a_command_waiting_for_controller_lock(self):
++        errors = []; entered = threading.Event()
++        command = self.command('heks.ready'); grant = self.grant(['heks.ready'])
++        original = self.adapter.grant
++        def observed(value):
++            result = original(value); entered.set(); return result
++        def run():
++            try: self.adapter.execute(sign(TEST_SECRET, command), grant)
++            except Exception as exc: errors.append(exc)
++        with self.c.lock, patch.object(self.adapter, 'grant', side_effect=observed):
++            thread = threading.Thread(target=run); thread.start(); self.assertTrue(entered.wait(2))
++            original(self.grant([], revision=2, active=False))
++        thread.join(3)
++        self.assertEqual(len(errors), 1); self.assertIsInstance(errors[0], PermissionError); self.assertFalse(self.c.ready[1])
++
++    def test_expiry_and_disconnect_rechecked_after_execution_lock(self):
++        cmd = self.command('heks.ready'); grant = self.grant(['heks.ready'])
++        with self.assertRaises(PermissionError): self.adapter.execute(sign(TEST_SECRET, cmd), grant, live=lambda: False)
++        self.assertFalse(self.c.ready[1])
++        self.now += 5
++        with self.assertRaises(ValueError): self.adapter.status(grant)
++
++    def test_receipts_are_readonly_payload_and_actor_bound_and_never_missing_proof(self):
++        cmd = self.command('heks.ready'); result = self.execute(cmd)
++        old_count = self.store.db.total_changes
++        receipt = self.adapter.receipt(cmd['command_id'], 'actor', None, digest(compact(cmd)), self.grant(['heks.ready']))
++        self.assertTrue(receipt['found']); self.assertEqual(receipt['result'], result)
++        self.assertEqual(self.store.db.total_changes, old_count)
++        for gid, hash_value in [('other', digest(compact(cmd))), (None, '0' * 64)]:
++            with self.assertRaises(PermissionError): self.adapter.receipt(cmd['command_id'], 'actor', gid, hash_value, self.grant(['heks.ready']))
++        with self.assertRaises(PermissionError): self.adapter.receipt(cmd['command_id'], 'actor', None, digest(compact(cmd)), self.grant(['heks.ready'], subject='actor-B'))
++        missing = self.adapter.receipt('missing-command', 'qr', 'A', 'a' * 64)
++        self.assertFalse(missing['found']); self.assertTrue(missing['result']['unknown'])
++
++    def test_old_qr_receipt_never_uses_a_fresh_execution_timestamp(self):
++        event = {'stage': 'qr1', 'group_id': 'A', 'event_id': uuid.uuid4().hex, 'issued_at': self.now, 'label': ''}
++        self.adapter.qr(event, self.now + 8)
++        self.now += 60
++        before = self.store.db.total_changes
++        result = self.adapter.receipt(event['event_id'], 'qr', 'A', digest(qr_payload(event)))
++        self.assertTrue(result['found']); self.assertTrue(result['result']['ok'])
++        self.assertEqual(before, self.store.db.total_changes); self.assertEqual(len(self.c.groups), 1)
++
++    def test_pending_attempt_is_unknown_without_reexecution(self):
++        command = self.command('heks.ready')
++        self.store.reserve_remote(command['command_id'], 'actor', EVENT, 'actor-A', None, digest(compact(command)))
++        result = self.execute(command)
++        self.assertTrue(result['unknown']); self.assertFalse(self.c.ready[1])
++
++    def test_durable_finale_slot_survives_local_group_reset(self):
++        self.route(); self.execute(self.command('finale.go', 'A'))
++        self.act('emergency'); self.act('new_round', {'confirmed': True}); self.act('reset_groups', {'confirmed': True})
++        self.assertFalse(self.c.groups); self.assertFalse(self.c.released)
++        count = self.c.audio.start_count
++        result = self.adapter.qr({'stage': 'qr2', 'group_id': 'A', 'event_id': uuid.uuid4().hex, 'issued_at': self.now, 'label': ''}, self.now + 8)
++        self.assertTrue(result['ok']); self.assertEqual(count, self.c.audio.start_count)
++        self.assertTrue(self.adapter.group_status('A')['finale_started'])
++
++    def test_restart_interrupts_cue_and_keeps_pending_unknown(self):
++        self.route(); command = self.command('finale.go', 'A'); self.execute(command)
++        restored = Controller(self.cfg, QLC(self.cfg, True), AudioEngine(self.cfg, True), self.store, True)
++        self.assertTrue(restored.recovery); self.assertTrue(restored.paused); self.assertFalse(restored.active)
++        self.assertEqual(restored._group('A')['status'], 'interrupted')
++        self.assertEqual(self.store.finale_slot('A')['status'], 'started')
++
++    def test_unknown_resolution_requires_explicit_local_regie_and_preserves_history(self):
++        self.route(); command=self.command('finale.go','A')
++        with patch.object(self.c.audio,'start',side_effect=RuntimeError('simulation no ACK')):
++            self.execute(command)
++        args={'group_id':'A','attempt_id':command['command_id'],'physical_not_started':True,'reason':'Simulatie: lokaal gecontroleerd, cue heeft niet uitgevoerd'}
++        with self.assertRaises(PermissionError):
++            self.c.action('resolve_finale_not_executed',args,'finale',uuid.uuid4().hex,self.now)
++        with self.assertRaises(ValueError):self.act('resolve_finale_not_executed',args)
++        self.act('new_round',{'confirmed':True})
++        with self.assertRaises(ValueError):self.act('resolve_finale_not_executed',{**args,'physical_not_started':False})
++        with self.assertRaises(ValueError):self.act('resolve_finale_not_executed',{**args,'attempt_id':'wrong-id'})
++        self.act('resolve_finale_not_executed',args)
++        receipt=self.adapter.receipt(command['command_id'],'actor','A',digest(compact(command)),self.grant(['finale.go']))
++        self.assertTrue(receipt['found']);self.assertFalse(receipt['result']['ok']);self.assertEqual(receipt['result']['outcome'],'blocked')
++        self.assertEqual(receipt['result']['command_id'],command['command_id'])
++        self.assertIsNotNone(self.store.finale_resolution(command['command_id']))
++        self.assertFalse(self.c.intro_permit);self.assertFalse(self.c.active)
++        self.act('program_start');self.assertFalse(self.c.intro_permit)
++        self.act('ready',{'zone':5})
++        self.assertTrue(self.execute(self.command('finale.go','A'))['ok'])
++        self.assertTrue(self.c.intro_permit)
++        # The resolved historical receipt remains explicitly not executed even
++        # after the new, deliberately initiated attempt succeeds.
++        old=self.adapter.receipt(command['command_id'],'actor','A',digest(compact(command)),self.grant(['finale.go']))
++        self.assertEqual(old['result']['outcome'],'blocked')
++
++    def test_confirmed_started_finale_can_never_be_resolved_as_nonexecuted(self):
++        self.route();command=self.command('finale.go','A');self.execute(command)
++        self.act('emergency');self.act('new_round',{'confirmed':True})
++        with self.assertRaises(ValueError):
++            self.act('resolve_finale_not_executed',{'group_id':'A','attempt_id':command['command_id'],'physical_not_started':True,'reason':'Geen geldige reden voor wissen van ACK'})
++        self.assertEqual(self.store.finale_slot('A')['status'],'started')
++
++
++if __name__ == '__main__': unittest.main()
+diff --git a/tests/test_actor_relay.py b/tests/test_actor_relay.py
+new file mode 100644
+--- /dev/null
++++ b/tests/test_actor_relay.py
+@@ -0,0 +1,157 @@
++"""ASGI + WSS transport integration; software simulation, no network or hardware."""
++import importlib.util
++import json
++import os
++from pathlib import Path
++import queue
++import tempfile
++import threading
++import time
++import unittest
++from unittest.mock import patch
++import uuid
++from bridge.actor_protocol import ACCESS, COMMAND, ACTIONS, b64encode, compact, digest, sign
++from bridge.config import read_config, ROOT
++from bridge.controller import Controller
++from bridge.qlc import QLC
++from bridge.audio import AudioEngine
++from bridge.store import Store
++from bridge.relay_client import RelayClient
++
++
++@unittest.skipUnless(importlib.util.find_spec('fastapi') and importlib.util.find_spec('httpx'),
++                     'Install deploy/requirements.txt and httpx to test optional VPS relay')
++class ActorRelayCase(unittest.TestCase):
++    def setUp(self):
++        from fastapi.testclient import TestClient
++        self.env = {'DUINPAD_RELAY_SECRET': 'simulation-relay-secret-0000000000000', 'DUINPAD_VISITOR_SECRET': 'simulation-visitor-secret-00000000000',
++                    'DUINPAD_GATE_QR1': 'simulation-gate-1-secret-000000000000', 'DUINPAD_GATE_QR2': 'simulation-gate-2-secret-000000000000',
++                    'DUINPAD_ACTOR_AUTH_SECRET': 'simulation-actor-secret-0000000000000', 'DUINPAD_EVENT_SCOPE_ID': 'event-simulation'}
++        spec = importlib.util.spec_from_file_location('actor_relay_test_' + uuid.uuid4().hex, ROOT / 'deploy/relay_app.py')
++        self.relay = importlib.util.module_from_spec(spec)
++        with patch.dict(os.environ, self.env): spec.loader.exec_module(self.relay)
++        self.client = TestClient(self.relay.app, base_url='https://testserver')
++        self.client.__enter__(); self.addCleanup(self.client.__exit__, None, None, None)
++        self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
++        self.store = Store(Path(self.tmp.name) / 'show.db'); self.addCleanup(self.store.db.close)
++        cfg = read_config()
++        self.c = Controller(cfg, QLC(cfg, True), AudioEngine(cfg, True), self.store, True)
++        self.c.action('program_start', {}, 'regie', uuid.uuid4().hex, time.time())
++        with patch.dict(os.environ, self.env): self.engine = RelayClient(self.c)
++        self.auth = {'Authorization': 'Bearer ' + self.env['DUINPAD_RELAY_SECRET']}
++
++    def grant(self, active=True, revision=1):
++        now = time.time()
++        return sign(self.env['DUINPAD_ACTOR_AUTH_SECRET'], {'version': ACCESS, 'event_scope_id': self.env['DUINPAD_EVENT_SCOPE_ID'],
++            'actor_subject': 'actor-simulation', 'permissions_revision': revision, 'permissions': ['heks.ready'] if active else [],
++            'active': active, 'issued_at': now, 'expires_at': now + 5})
++
++    def command(self):
++        now = time.time()
++        return {'version': COMMAND, 'command_id': uuid.uuid4().hex, 'event_scope_id': self.env['DUINPAD_EVENT_SCOPE_ID'],
++                'actor_subject': 'actor-simulation', 'permissions_revision': 1, 'action': 'heks.ready', 'group_id': None,
++                'args': {'ready': True}, 'issued_at': now, 'expires_at': now + 8,
++                'scope': {'permission': 'heks.ready', 'internal_zones': [1]}}
++
++    def header(self, grant=None):
++        return {**self.auth, 'X-Duinpad-Actor-Grant': b64encode(compact(grant or self.grant()))}
++
++    def hello(self, ws, **changes):
++        ws.send_json({'type': 'capabilities', 'versions': [COMMAND], 'event_scope_id': self.env['DUINPAD_EVENT_SCOPE_ID'],
++                      'actor_status_max_age': 5, 'zone_stops': [2, 3, 4], **changes})
++
++    def request(self, method, url, **kwargs):
++        results = queue.Queue()
++        def run():
++            try: results.put(self.client.request(method, url, **kwargs))
++            except BaseException as exc: results.put(exc)
++        thread = threading.Thread(target=run); thread.start()
++        return results, thread
++
++    def pump(self, ws, request, count=1, mutate=None):
++        packets = []
++        for _ in range(count):
++            body = ws.receive_json(); packets.append(body)
++            result = self.engine.handle(body)
++            if mutate: result = mutate(result)
++            ws.send_json({'request_id': body['request_id'], 'event_id': body['event_id'], 'result': result})
++        results, thread = request; thread.join(4); self.assertFalse(thread.is_alive())
++        response = results.get(timeout=1)
++        if isinstance(response, BaseException): raise response
++        return response, packets
++
++    def test_actor_protocol_requires_auth_fresh_scope_and_negotiation(self):
++        payload = self.command(); envelope = sign(self.env['DUINPAD_ACTOR_AUTH_SECRET'], payload)
++        self.assertEqual(self.client.post('/api/integration/actor-command', json=envelope).status_code, 403)
++        self.assertEqual(self.client.post('/api/integration/actor-command', json=envelope, headers=self.header()).status_code, 503)
++        with self.client.websocket_connect('/engine', headers=self.auth) as ws:
++            self.assertEqual(self.client.get('/api/integration/actor-status', headers=self.header()).status_code, 503)
++            self.hello(ws, event_scope_id='another-event')
++            self.assertEqual(self.client.get('/api/integration/actor-status', headers=self.header()).status_code, 503)
++        self.assertFalse(self.c.ready[1]); self.assertFalse(self.relay.pending)
++
++    def test_command_status_revocation_and_readonly_receipt_end_to_end(self):
++        command = self.command(); envelope = sign(self.env['DUINPAD_ACTOR_AUTH_SECRET'], command)
++        with self.client.websocket_connect('/engine', headers=self.auth) as ws:
++            self.hello(ws)
++            response, _ = self.pump(ws, self.request('GET', '/api/integration/actor-status', headers=self.header()))
++            self.assertEqual(response.status_code, 200)
++            self.assertEqual(response.json()['controls'][0]['action'], 'heks.ready')
++            self.assertNotIn('groups', response.json())
++            response, packets = self.pump(ws, self.request('POST', '/api/integration/actor-command', json=envelope, headers=self.header()), 2)
++            self.assertEqual([p['kind'] for p in packets], ['actor.access', 'actor.command'])
++            self.assertTrue(response.json()['ok']); self.assertTrue(self.c.ready[1])
++            self.assertEqual(response.json()['command_id'], command['command_id'])
++            changes = self.store.db.total_changes
++            receipt = '/api/integration/receipts/' + command['command_id'] + '?kind=actor&payload_hash=' + digest(compact(command))
++            response, _ = self.pump(ws, self.request('GET', receipt, headers=self.header()))
++            self.assertTrue(response.json()['found']); self.assertTrue(response.json()['result']['ok'])
++            self.assertEqual(self.store.db.total_changes, changes)
++            response, _ = self.pump(ws, self.request('POST', '/api/integration/actor-access', json=self.grant(False, 2), headers=self.auth))
++            self.assertTrue(response.json()['ok'])
++            response, _ = self.pump(ws, self.request('POST', '/api/integration/actor-command', json=envelope, headers=self.header()))
++            self.assertFalse(response.json()['ok'])
++        self.assertFalse(self.relay.pending)
++
++    def test_forged_signature_extra_args_stale_and_body_limit_rejected(self):
++        command = self.command()
++        cases = []
++        envelope = sign(self.env['DUINPAD_ACTOR_AUTH_SECRET'], command); envelope['signature'] = 'a' * 43; cases.append(envelope)
++        cases.append(sign(self.env['DUINPAD_ACTOR_AUTH_SECRET'], {**command, 'args': {'ready': True, 'zone': 5}}))
++        cases.append(sign(self.env['DUINPAD_ACTOR_AUTH_SECRET'], {**command, 'issued_at': time.time() - 30, 'expires_at': time.time() - 22}))
++        for envelope in cases:
++            self.assertIn(self.client.post('/api/integration/actor-command', json=envelope, headers=self.header()).status_code, (403, 409))
++        self.assertEqual(self.client.post('/api/integration/actor-command', content=b'x' * 5000, headers=self.header()).status_code, 409)
++        self.assertFalse(self.c.ready[1]); self.assertFalse(self.relay.pending)
++
++    def test_group_status_and_missing_receipt_are_filtered_and_safe(self):
++        with self.client.websocket_connect('/engine', headers=self.auth) as ws:
++            self.hello(ws)
++            response, _ = self.pump(ws, self.request('GET', '/api/integration/group-status?group_id=connection-check', headers=self.auth))
++            self.assertTrue(response.json()['connected']); self.assertNotIn('groups', response.json())
++            missing = '/api/integration/receipts/missing-command?group_id=A&payload_hash=' + 'a' * 64
++            response, _ = self.pump(ws, self.request('GET', missing, headers=self.auth))
++            self.assertFalse(response.json()['found']); self.assertTrue(response.json()['result']['unknown'])
++
++    def test_stale_status_is_never_accepted_as_current(self):
++        with self.client.websocket_connect('/engine', headers=self.auth) as ws:
++            self.hello(ws)
++            response, _ = self.pump(ws, self.request('GET', '/api/integration/actor-status', headers=self.header()),
++                                    mutate=lambda r: {**r, 'observed_at': time.time() - 6})
++            self.assertEqual(response.status_code, 504); self.assertTrue(response.json()['unknown'])
++
++    def test_disconnect_while_command_pending_is_unknown_without_queue(self):
++        command = self.command(); envelope = sign(self.env['DUINPAD_ACTOR_AUTH_SECRET'], command)
++        with self.client.websocket_connect('/engine', headers=self.auth) as ws:
++            self.hello(ws)
++            request = self.request('POST', '/api/integration/actor-command', json=envelope, headers=self.header())
++            access = ws.receive_json()
++            ws.send_json({'request_id': access['request_id'], 'event_id': access['event_id'], 'result': self.engine.handle(access)})
++            packet = ws.receive_json(); self.assertEqual(packet['kind'], 'actor.command'); ws.close()
++            responses, thread = request; thread.join(4); self.assertFalse(thread.is_alive())
++            result = responses.get(timeout=1)
++            self.assertEqual(result.status_code, 504); self.assertTrue(result.json()['unknown'])
++        self.assertFalse(self.c.ready[1]); self.assertFalse(self.relay.pending)
++
++
++if __name__ == '__main__': unittest.main()
+diff --git a/web/app.js b/web/app.js
+--- a/web/app.js
++++ b/web/app.js
+@@ -66,6 +66,9 @@
+  }
+  }
+  if(s.role!=='regie')extra.hidden=false;
++ const recovery=$('#finale-recovery');const unresolved=s.role==='regie'?(s.finale_recovery||[]):[];
++ recovery.hidden=!unresolved.length;
++ recovery.innerHTML=unresolved.length?`<h2>Onzekere finale: lokale controle nodig</h2><p>Controleer QLC, audio en de situatie op het pad. Bevestig hieronder uitsluitend wanneer de fysieke finale aantoonbaar niet is uitgevoerd. Stop eerst alle effecten en kies Nieuwe ronde. Een bevestigde start kan nooit worden vrijgemaakt.</p>${unresolved.map(item=>`<p><b>${esc(item.group_id)}</b> · poging ${esc(item.event_id)} <button class="button small danger" data-resolve-finale="${esc(item.group_id)}" data-attempt-id="${esc(item.event_id)}" ${s.program||s.zones.some(z=>z.state==='SPEELT')?'disabled':''}>Niet uitgevoerd vastleggen</button></p>`).join('')}`:'';
+ }
+ async function poll(){try{const s=await api('/api/state');render(s)}catch(e){if(e.status===401){$('#login').hidden=false;$('#show').hidden=true;return}$('#connection').className='connection offline';$('#connection').innerHTML='<i></i>Verbinding weg';document.querySelectorAll('[data-action="go"]').forEach(b=>b.disabled=true)}}
+ $('#login-form').onsubmit=async e=>{e.preventDefault();$('#login-error').textContent='';try{await api('/api/login',{method:'POST',body:JSON.stringify({role:$('#role').value,pin:$('#pin').value})});$('#pin').value='';await poll()}catch(e){$('#login-error').textContent=e.message}};
+@@ -77,6 +80,11 @@
+ $('#reset-groups').onclick=()=>$('#reset-dialog').showModal();$('#reset-dialog').addEventListener('close',()=>{if($('#reset-dialog').returnValue==='yes')bindCommand('reset_groups',{confirmed:true})});
+ $('#new-round').onclick=()=>$('#confirm-dialog').showModal();$('#confirm-dialog').addEventListener('close',()=>{if($('#confirm-dialog').returnValue==='yes')bindCommand('new_round',{confirmed:true})});
+ document.addEventListener('click',e=>{
++ const resolution=e.target.closest('[data-resolve-finale]');if(resolution){
++  if(!confirm('Heb je ter plaatse gecontroleerd dat deze fysieke finale NIET is uitgevoerd? Dit geeft geen automatische start.'))return;
++  const reason=prompt('Leg je lokale controle vast (10-200 tekens, geen persoonsgegevens of geheimen).');
++  if(reason)bindCommand('resolve_finale_not_executed',{group_id:resolution.dataset.resolveFinale,attempt_id:resolution.dataset.attemptId,physical_not_started:true,reason});return;
++ }
+  const b=e.target.closest('[data-action]');if(b){const args={zone:Number(b.dataset.zone)};if(b.dataset.action==='ready')args.ready=b.dataset.value==='true';bindCommand(b.dataset.action,args)}
+  const p=e.target.closest('[data-panel]');if(p){if(p.dataset.panel==='close')closeSetup();else openSetup()}
+ });
+diff --git a/web/index.html b/web/index.html
+--- a/web/index.html
++++ b/web/index.html
+@@ -17,6 +17,7 @@
+   <div class="section-label"><span id="zones-caption">DE ROUTE</span><span id="pad-owner">PADLICHT / UIT</span></div>
+   <section id="zone-grid" class="zone-grid"></section>
+   <section id="actor-extra" hidden></section>
++  <section id="finale-recovery" class="panel regie-only" hidden aria-live="polite"></section>
+   <div class="lower-grid regie-only"><section class="panel flow-panel"><div class="panel-title"><h2>De volgorde staat vast.</h2><span class="pill subtle">LIVE LOGICA</span></div><div class="flow"><span>Heks GO</span><b>→</b><span>Pad in sfeer</span><b>→</b><span>QR2 / finale</span><b>↗</b><span>Volgende heks</span></div><p id="flow-note">De heks geeft het pad licht. De finalestart geeft de volgende heks vrij.</p><div class="legend"><i class="dot purple"></i> Sfeer <i class="dot amber"></i> Speelt <i class="dot red"></i> Geblokkeerd</div></section><section class="panel event-panel"><div class="panel-title"><h2>Laatste gebeurtenissen</h2><span id="log-count" class="quiet">LOKAAL</span></div><div id="event-log"></div></section></div>
+   <footer class="workspace-foot"><span id="engine-status">MOTOREN / NOG NIET VERBONDEN</span><span>Lokale bediening · bezoekers via wifi of VPS</span><span>DUINPAD 2.0</span></footer>
+  </div>

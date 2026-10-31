@@ -1,0 +1,87 @@
+{
+  "baseline_zip": "Duinpad-Showpakket-2.0.0.zip",
+  "baseline_zip_sha256": "e3dc2a5d47c0376484fc60391ffe81cabbeb624d159850ae3d1644179d761622",
+  "patch_sha256": "a2e7fd599c88e796852577c8a002847de7e11ef99d6219d3da46c77b38048dcb",
+  "files": [
+    {
+      "path": "INHOUD-SHA256.json",
+      "before_sha256": "1e560100033bdb779af23947df3c1fba2f3c43cce87388ab928bf782e662c5b3",
+      "after_sha256": "e89e3b3eada236fa0cbe74058918a675fe3aff30a42de1f0f9f80d7a936788f2"
+    },
+    {
+      "path": "TESTRAPPORT-ACTOR-V1.json",
+      "before_sha256": null,
+      "after_sha256": "ecbb8234a36f5894f3f91e298faf1467b588b03b972fea99649feb5cd5d07aa8"
+    },
+    {
+      "path": "bridge/actor_adapter.py",
+      "before_sha256": null,
+      "after_sha256": "81c3104b06f0faf37b1bdb959d942a0fdfea5eb1add5de969aa580846acc09d7"
+    },
+    {
+      "path": "bridge/actor_protocol.py",
+      "before_sha256": null,
+      "after_sha256": "819c4429abe8da05ba0a05212296075f5c68bfbf74720ea499ba4b465e81d0a3"
+    },
+    {
+      "path": "bridge/controller.py",
+      "before_sha256": "c3ac0430eadf73d05899b40f91fac93586545550c39787a9fc02ed67e8604e28",
+      "after_sha256": "2f18f3319854ef55324b9d253719a4ea95a33f6f62f207c0b5e3d1ea4192465a"
+    },
+    {
+      "path": "bridge/relay_client.py",
+      "before_sha256": "1aa7500ff0bb77029da26894137798c9c3272f7f07a2841591a96de15300bbd8",
+      "after_sha256": "9ca6f162d1c157d1d077a40079fd9c4a598240298a1a4b71e914efa5d5b4a812"
+    },
+    {
+      "path": "bridge/store.py",
+      "before_sha256": "51cf4375c1ba4e2c8c8d0b5641dba73d30ab6647cd592965da6f273f33de9e34",
+      "after_sha256": "755403ae493b06c6d1246290c01e1d5d4022b4c1432dfe03e7d95b4b4ed50ac5"
+    },
+    {
+      "path": "deploy/.env.example",
+      "before_sha256": "0821a14c162e324f57d1d586a9992f1397bc37771d6b0f3b246d05ba3e12a653",
+      "after_sha256": "afcfc9e0e566e8b6111888ccc0c0f4c6bc67aa09583195cdfa63174470e5922d"
+    },
+    {
+      "path": "deploy/Dockerfile",
+      "before_sha256": "c4366b7d4cd6dca89c781c4052d48c0d5a71eaf6d7fb03d722b1a5a05a5cdc82",
+      "after_sha256": "6774122a87388b55d2a5283fd1b3f576663e94cbbbda5174ae5ce01a64a217fd"
+    },
+    {
+      "path": "deploy/relay_app.py",
+      "before_sha256": "e447043ea667815d76c15e8aacf5a5f81d89e066e75e9dc4f314c32c1103039e",
+      "after_sha256": "572b208b2cb0ad5344f186c3cc87c92ec0103bb1f7cca29e9830c5f1d74e7050"
+    },
+    {
+      "path": "docs/ACTOR-ADAPTER-V1.md",
+      "before_sha256": null,
+      "after_sha256": "88afafcaee7d51f9c3237cc0cc36dc2f013b6c3ad4cf5f59810961f1db98f47c"
+    },
+    {
+      "path": "tests/fixtures/actor-v1-fixtures.json",
+      "before_sha256": null,
+      "after_sha256": "e82a97daac299a1a26b78e5308bbabd4e5eb542d9804e337e8f5471c010759d8"
+    },
+    {
+      "path": "tests/test_actor_protocol.py",
+      "before_sha256": null,
+      "after_sha256": "cd90920897b08519978bc2a33efbca8a45b5550c1a8405183d6ad08400e1edfd"
+    },
+    {
+      "path": "tests/test_actor_relay.py",
+      "before_sha256": null,
+      "after_sha256": "76883c134f03fcbfa358e4cd464f44d5bc66b50aff1788c852ff347348eaa27f"
+    },
+    {
+      "path": "web/app.js",
+      "before_sha256": "1b101df02d5a1f765d88ef07b045c04e478aef22c4ad8486c8e56b7a2bdba3ef",
+      "after_sha256": "e5b3415cb36d079159792dd00421c48cc924d43b75483912d97714ca3cfb266c"
+    },
+    {
+      "path": "web/index.html",
+      "before_sha256": "164460696f38062974b37c07cde538a934d3bf654f4ca1f90f560124281a1cd4",
+      "after_sha256": "c148352292c349ed753eccda33c1dac5a4104250c508eb04e3b73d10ed4b0dcc"
+    }
+  ]
+}

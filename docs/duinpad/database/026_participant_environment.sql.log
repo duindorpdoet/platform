@@ -1,0 +1,257 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..35
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 1 - viewer invites have RLS defense in depth
+(1 row)
+
+                      ok                       
+-----------------------------------------------
+ ok 2 - viewer access has RLS defense in depth
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 3 - participant updates have RLS defense in depth
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 4 - browser cannot query viewer access directly
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 5 - anonymous visitors cannot inspect viewer progress
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 6 - authenticated users can discover only their own roles
+(1 row)
+
+CREATE TABLE
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 7 - an ordinary adult cannot invite a group viewer
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                lives_ok                                
+------------------------------------------------------------------------
+ ok 8 - the current leader can create addressed, expiring viewer access
+(1 row)
+
+SET
+INSERT 0 1
+                            is                             
+-----------------------------------------------------------
+ ok 9 - viewer invitation queues a SendGrid outbox message
+(1 row)
+
+                                         ok                                          
+-------------------------------------------------------------------------------------
+ ok 10 - viewer token is high entropy and only present in the private outbox payload
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                               throws_ok                               
+-----------------------------------------------------------------------
+ ok 11 - an addressed invitation cannot be accepted by another account
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            lives_ok                            
+----------------------------------------------------------------
+ ok 12 - the addressed account can accept the viewer invitation
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 13 - accepted viewer access appears as a distinct role
+(1 row)
+
+SET
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 14 - an account can hold two deliberate participant roles
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 15 - multi-role context keeps the homeowner experience separately selectable
+(1 row)
+
+SET
+DELETE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                             lives_ok                             
+------------------------------------------------------------------
+ ok 16 - an active viewer can load the redacted progress snapshot
+(1 row)
+
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 17 - viewer snapshot contains no child names, private address, or portal names
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 18 - viewer access does not grant the richer participant group snapshot
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 19 - a viewer cannot list other viewer identities
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 20 - the leader can manage the one active viewer
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 21 - an authorized organizer can publish a role-specific update
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 22 - publishing a viewer update queues one opted-in viewer email
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 23 - viewer sees the role-specific update
+(1 row)
+
+                       lives_ok                       
+------------------------------------------------------
+ ok 24 - viewer can mark an authorized update as read
+(1 row)
+
+                   ok                    
+-----------------------------------------
+ ok 25 - read state persists per account
+(1 row)
+
+                          lives_ok                           
+-------------------------------------------------------------
+ ok 26 - viewer can load private profile and preference data
+(1 row)
+
+                                        lives_ok                                         
+-----------------------------------------------------------------------------------------
+ ok 27 - viewer can update display and accessibility preferences with optimistic locking
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 28 - a portal owner receives the homeowner role
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 29 - homeowner cockpit aggregates expected children across published plans
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 30 - planned arrival windows never expose child names
+(1 row)
+
+                                               ok                                               
+------------------------------------------------------------------------------------------------
+ ok 31 - homeowner arrival windows expose group names and G-codes without adult email addresses
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 32 - a group viewer cannot inspect homeowner arrival planning
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 33 - a viewer can revoke their own access
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 34 - revoked viewer access disappears immediately from role discovery
+(1 row)
+
+                         throws_ok                         
+-----------------------------------------------------------
+ ok 35 - revoked viewer access can no longer read progress
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

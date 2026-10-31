@@ -1,0 +1,5 @@
+# Preserve exact unified-patch context and captured psql/progress-log bytes.
+bridge/*.patch -text -whitespace
+database/*.log -text -whitespace
+evidence/*.txt -text -whitespace
+evidence/*.log -text -whitespace

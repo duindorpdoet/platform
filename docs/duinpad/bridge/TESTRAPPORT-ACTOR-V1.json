@@ -1,0 +1,481 @@
+{
+  "report_type": "Isolated bridge/relay software simulation. No physical output or production execution.",
+  "generated_at_utc": "2026-10-31T14:49:45.400218+00:00",
+  "app_checkout_base_commit": "db5e9fee4fe86aecddbb05b9f0fe6ad3840c66f8",
+  "baseline_zip": "Duinpad-Showpakket-2.0.0.zip",
+  "baseline_zip_sha256": "e3dc2a5d47c0376484fc60391ffe81cabbeb624d159850ae3d1644179d761622",
+  "bridge_protocol": "duinpad.actor.v1",
+  "python": "3.12.3",
+  "command": "python -m unittest discover -s tests -v",
+  "tests_run": 104,
+  "passed": 104,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "duration_seconds": 9.739,
+  "baseline_existing_tests": 72,
+  "new_tests": 32,
+  "tests": [
+    {
+      "name": "test_actor_finale_uses_existing_limited_finale_role (test_actor_protocol.ActorCase.test_actor_finale_uses_existing_limited_finale_role)",
+      "result": "ok"
+    },
+    {
+      "name": "test_concurrent_identical_actor_commands_execute_once (test_actor_protocol.ActorCase.test_concurrent_identical_actor_commands_execute_once)",
+      "result": "ok"
+    },
+    {
+      "name": "test_confirmed_started_finale_can_never_be_resolved_as_nonexecuted (test_actor_protocol.ActorCase.test_confirmed_started_finale_can_never_be_resolved_as_nonexecuted)",
+      "result": "ok"
+    },
+    {
+      "name": "test_durable_finale_slot_survives_local_group_reset (test_actor_protocol.ActorCase.test_durable_finale_slot_survives_local_group_reset)",
+      "result": "ok"
+    },
+    {
+      "name": "test_exact_cross_language_hmac_fixture (test_actor_protocol.ActorCase.test_exact_cross_language_hmac_fixture)",
+      "result": "ok"
+    },
+    {
+      "name": "test_expiry_and_disconnect_rechecked_after_execution_lock (test_actor_protocol.ActorCase.test_expiry_and_disconnect_rechecked_after_execution_lock)",
+      "result": "ok"
+    },
+    {
+      "name": "test_explicit_stop_all_is_required_for_emergency (test_actor_protocol.ActorCase.test_explicit_stop_all_is_required_for_emergency)",
+      "result": "ok"
+    },
+    {
+      "name": "test_finale_audio_failure_remains_unknown_and_never_releases (test_actor_protocol.ActorCase.test_finale_audio_failure_remains_unknown_and_never_releases)",
+      "result": "ok"
+    },
+    {
+      "name": "test_finale_qlc_failure_no_both_ack (test_actor_protocol.ActorCase.test_finale_qlc_failure_no_both_ack)",
+      "result": "ok"
+    },
+    {
+      "name": "test_heks_group_is_explicit_and_cannot_select_another_group (test_actor_protocol.ActorCase.test_heks_group_is_explicit_and_cannot_select_another_group)",
+      "result": "ok"
+    },
+    {
+      "name": "test_hmac_is_over_exact_ascii_payload_and_rejects_changes (test_actor_protocol.ActorCase.test_hmac_is_over_exact_ascii_payload_and_rejects_changes)",
+      "result": "ok"
+    },
+    {
+      "name": "test_old_qr_receipt_never_uses_a_fresh_execution_timestamp (test_actor_protocol.ActorCase.test_old_qr_receipt_never_uses_a_fresh_execution_timestamp)",
+      "result": "ok"
+    },
+    {
+      "name": "test_pending_attempt_is_unknown_without_reexecution (test_actor_protocol.ActorCase.test_pending_attempt_is_unknown_without_reexecution)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr2_and_actor_finale_share_one_start_and_ack (test_actor_protocol.ActorCase.test_qr2_and_actor_finale_share_one_start_and_ack)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr2_audio_valueerror_after_qlc_start_is_unknown_not_blocked (test_actor_protocol.ActorCase.test_qr2_audio_valueerror_after_qlc_start_is_unknown_not_blocked)",
+      "result": "ok"
+    },
+    {
+      "name": "test_receipts_are_readonly_payload_and_actor_bound_and_never_missing_proof (test_actor_protocol.ActorCase.test_receipts_are_readonly_payload_and_actor_bound_and_never_missing_proof)",
+      "result": "ok"
+    },
+    {
+      "name": "test_restart_interrupts_cue_and_keeps_pending_unknown (test_actor_protocol.ActorCase.test_restart_interrupts_cue_and_keeps_pending_unknown)",
+      "result": "ok"
+    },
+    {
+      "name": "test_revocation_and_revision_survive_restart (test_actor_protocol.ActorCase.test_revocation_and_revision_survive_restart)",
+      "result": "ok"
+    },
+    {
+      "name": "test_revocation_blocks_a_command_waiting_for_controller_lock (test_actor_protocol.ActorCase.test_revocation_blocks_a_command_waiting_for_controller_lock)",
+      "result": "ok"
+    },
+    {
+      "name": "test_same_id_changed_signed_payload_is_rejected (test_actor_protocol.ActorCase.test_same_id_changed_signed_payload_is_rejected)",
+      "result": "ok"
+    },
+    {
+      "name": "test_static_contract_fixture_cases (test_actor_protocol.ActorCase.test_static_contract_fixture_cases)",
+      "result": "ok"
+    },
+    {
+      "name": "test_status_is_strict_whitelist_and_contains_only_owned_controls (test_actor_protocol.ActorCase.test_status_is_strict_whitelist_and_contains_only_owned_controls)",
+      "result": "ok"
+    },
+    {
+      "name": "test_strict_args_scope_event_times_and_malformed_types (test_actor_protocol.ActorCase.test_strict_args_scope_event_times_and_malformed_types)",
+      "result": "ok"
+    },
+    {
+      "name": "test_three_zone_permissions_map_only_to_internal_two_three_four (test_actor_protocol.ActorCase.test_three_zone_permissions_map_only_to_internal_two_three_four)",
+      "result": "ok"
+    },
+    {
+      "name": "test_unknown_resolution_requires_explicit_local_regie_and_preserves_history (test_actor_protocol.ActorCase.test_unknown_resolution_requires_explicit_local_regie_and_preserves_history)",
+      "result": "ok"
+    },
+    {
+      "name": "test_zone_stop_never_inherits_global_emergency (test_actor_protocol.ActorCase.test_zone_stop_never_inherits_global_emergency)",
+      "result": "ok"
+    },
+    {
+      "name": "test_actor_protocol_requires_auth_fresh_scope_and_negotiation (test_actor_relay.ActorRelayCase.test_actor_protocol_requires_auth_fresh_scope_and_negotiation)",
+      "result": "ok"
+    },
+    {
+      "name": "test_command_status_revocation_and_readonly_receipt_end_to_end (test_actor_relay.ActorRelayCase.test_command_status_revocation_and_readonly_receipt_end_to_end)",
+      "result": "ok"
+    },
+    {
+      "name": "test_disconnect_while_command_pending_is_unknown_without_queue (test_actor_relay.ActorRelayCase.test_disconnect_while_command_pending_is_unknown_without_queue)",
+      "result": "ok"
+    },
+    {
+      "name": "test_forged_signature_extra_args_stale_and_body_limit_rejected (test_actor_relay.ActorRelayCase.test_forged_signature_extra_args_stale_and_body_limit_rejected)",
+      "result": "ok"
+    },
+    {
+      "name": "test_group_status_and_missing_receipt_are_filtered_and_safe (test_actor_relay.ActorRelayCase.test_group_status_and_missing_receipt_are_filtered_and_safe)",
+      "result": "ok"
+    },
+    {
+      "name": "test_stale_status_is_never_accepted_as_current (test_actor_relay.ActorRelayCase.test_stale_status_is_never_accepted_as_current)",
+      "result": "ok"
+    },
+    {
+      "name": "test_signed_credential_rejects_tampering_expiry_and_wrong_secret (test_relay.CredentialCase.test_signed_credential_rejects_tampering_expiry_and_wrong_secret)",
+      "result": "ok"
+    },
+    {
+      "name": "test_outbound_client_never_executes_expired_or_nonfinite_envelopes (test_relay.LocalRelayDeadlineCase.test_outbound_client_never_executes_expired_or_nonfinite_envelopes)",
+      "result": "ok"
+    },
+    {
+      "name": "test_backend_integration_auth_expiry_and_body_limits (test_relay.RelayCase.test_backend_integration_auth_expiry_and_body_limits)",
+      "result": "ok"
+    },
+    {
+      "name": "test_disconnect_after_forwarding_reports_unknown_and_does_not_queue (test_relay.RelayCase.test_disconnect_after_forwarding_reports_unknown_and_does_not_queue)",
+      "result": "ok"
+    },
+    {
+      "name": "test_end_to_end_visitor_flow_blocks_early_finale_then_starts_once (test_relay.RelayCase.test_end_to_end_visitor_flow_blocks_early_finale_then_starts_once)",
+      "result": "ok"
+    },
+    {
+      "name": "test_engine_connection_requires_secret_and_rejects_a_second_engine (test_relay.RelayCase.test_engine_connection_requires_secret_and_rejects_a_second_engine)",
+      "result": "ok"
+    },
+    {
+      "name": "test_offline_registration_retains_identity_without_queuing (test_relay.RelayCase.test_offline_registration_retains_identity_without_queuing)",
+      "result": "ok"
+    },
+    {
+      "name": "test_wrong_gate_forged_or_expired_cookie_and_cross_origin_rejected (test_relay.RelayCase.test_wrong_gate_forged_or_expired_cookie_and_cross_origin_rejected)",
+      "result": "ok"
+    },
+    {
+      "name": "test_cross_zone_command_and_origin_rejected (test_show.HTTPCase.test_cross_zone_command_and_origin_rejected)",
+      "result": "ok"
+    },
+    {
+      "name": "test_demo_routes_are_off_by_default (test_show.HTTPCase.test_demo_routes_are_off_by_default)",
+      "result": "ok"
+    },
+    {
+      "name": "test_health_and_state_authentication (test_show.HTTPCase.test_health_and_state_authentication)",
+      "result": "ok"
+    },
+    {
+      "name": "test_legacy_qr2_endpoint_also_starts_instead_of_arrival (test_show.HTTPCase.test_legacy_qr2_endpoint_also_starts_instead_of_arrival)",
+      "result": "ok"
+    },
+    {
+      "name": "test_public_finale_requires_same_browser_and_retries_after_a_block (test_show.HTTPCase.test_public_finale_requires_same_browser_and_retries_after_a_block)",
+      "result": "ok"
+    },
+    {
+      "name": "test_public_visitor_registration_is_idempotent_and_does_not_leak_staff_state (test_show.HTTPCase.test_public_visitor_registration_is_idempotent_and_does_not_leak_staff_state)",
+      "result": "ok"
+    },
+    {
+      "name": "test_public_wrong_gate_or_forged_credential_cannot_trigger (test_show.HTTPCase.test_public_wrong_gate_or_forged_credential_cannot_trigger)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr1_endpoint_only_registers_and_never_starts_show (test_show.HTTPCase.test_qr1_endpoint_only_registers_and_never_starts_show)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr2_endpoint_rejects_actor_token_and_expired_scan (test_show.HTTPCase.test_qr2_endpoint_rejects_actor_token_and_expired_scan)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr2_endpoint_starts_finale_once_and_releases_intro (test_show.HTTPCase.test_qr2_endpoint_starts_finale_once_and_releases_intro)",
+      "result": "ok"
+    },
+    {
+      "name": "test_background_routes_only_to_three_pad_buses_and_ducks_only_own_zone (test_show.MixerCase.test_background_routes_only_to_three_pad_buses_and_ducks_only_own_zone)",
+      "result": "ok"
+    },
+    {
+      "name": "test_ducking_and_natural_audio_end (test_show.MixerCase.test_ducking_and_natural_audio_end)",
+      "result": "ok"
+    },
+    {
+      "name": "test_import_preserves_duration_and_converts_sample_rate (test_show.MixerCase.test_import_preserves_duration_and_converts_sample_rate)",
+      "result": "ok"
+    },
+    {
+      "name": "test_independent_six_channel_mix (test_show.MixerCase.test_independent_six_channel_mix)",
+      "result": "ok"
+    },
+    {
+      "name": "test_live_audio_requires_real_callback_acknowledgement (test_show.MixerCase.test_live_audio_requires_real_callback_acknowledgement)",
+      "result": "ok"
+    },
+    {
+      "name": "test_audio_channel_mapping_must_be_unique (test_show.ProjectCase.test_audio_channel_mapping_must_be_unique)",
+      "result": "ok"
+    },
+    {
+      "name": "test_exact_rental_patch_and_modes (test_show.ProjectCase.test_exact_rental_patch_and_modes)",
+      "result": "ok"
+    },
+    {
+      "name": "test_finale_reveal_and_sweepers_have_sync_and_independent_motion (test_show.ProjectCase.test_finale_reveal_and_sweepers_have_sync_and_independent_motion)",
+      "result": "ok"
+    },
+    {
+      "name": "test_generated_fixture_definitions_match_project_modes (test_show.ProjectCase.test_generated_fixture_definitions_match_project_modes)",
+      "result": "ok"
+    },
+    {
+      "name": "test_generated_project_integrity_and_duration (test_show.ProjectCase.test_generated_project_integrity_and_duration)",
+      "result": "ok"
+    },
+    {
+      "name": "test_heks_blackout_is_full_twenty_seconds_and_backlights_fade_to_full (test_show.ProjectCase.test_heks_blackout_is_full_twenty_seconds_and_backlights_fade_to_full)",
+      "result": "ok"
+    },
+    {
+      "name": "test_patch_detects_overlap (test_show.ProjectCase.test_patch_detects_overlap)",
+      "result": "ok"
+    },
+    {
+      "name": "test_second_gobo_is_before_heks_and_requires_a_physical_purple_filter (test_show.ProjectCase.test_second_gobo_is_before_heks_and_requires_a_physical_purple_filter)",
+      "result": "ok"
+    },
+    {
+      "name": "test_sequence_bound_scene_has_exactly_its_effect_scope (test_show.ProjectCase.test_sequence_bound_scene_has_exactly_its_effect_scope)",
+      "result": "ok"
+    },
+    {
+      "name": "test_smoke_has_no_leds_and_is_off_by_default_with_bounded_bursts (test_show.ProjectCase.test_smoke_has_no_leds_and_is_off_by_default_with_bounded_bursts)",
+      "result": "ok"
+    },
+    {
+      "name": "test_native_ambient_loops_stay_running_in_simulation_until_stopped (test_show.QLCProtocolCase.test_native_ambient_loops_stay_running_in_simulation_until_stopped)",
+      "result": "ok"
+    },
+    {
+      "name": "test_native_websocket_commands_and_acknowledgement (test_show.QLCProtocolCase.test_native_websocket_commands_and_acknowledgement)",
+      "result": "ok"
+    },
+    {
+      "name": "test_actor_cannot_start_other_zone_or_edit_settings (test_show.ShowCase.test_actor_cannot_start_other_zone_or_edit_settings)",
+      "result": "ok"
+    },
+    {
+      "name": "test_actual_finalestart_unlocks_once (test_show.ShowCase.test_actual_finalestart_unlocks_once)",
+      "result": "ok"
+    },
+    {
+      "name": "test_bad_timing_is_transactional (test_show.ShowCase.test_bad_timing_is_transactional)",
+      "result": "ok"
+    },
+    {
+      "name": "test_critical_zone_stop_during_overlap_leaves_no_orphan_show (test_show.ShowCase.test_critical_zone_stop_during_overlap_leaves_no_orphan_show)",
+      "result": "ok"
+    },
+    {
+      "name": "test_delayed_background_deadline_causes_visible_recovery_not_a_catchup_start (test_show.ShowCase.test_delayed_background_deadline_causes_visible_recovery_not_a_catchup_start)",
+      "result": "ok"
+    },
+    {
+      "name": "test_duplicate_intro_only_one_execution (test_show.ShowCase.test_duplicate_intro_only_one_execution)",
+      "result": "ok"
+    },
+    {
+      "name": "test_emergency_and_conscious_new_round (test_show.ShowCase.test_emergency_and_conscious_new_round)",
+      "result": "ok"
+    },
+    {
+      "name": "test_emergency_cancels_pending_direction_music_and_gold (test_show.ShowCase.test_emergency_cancels_pending_direction_music_and_gold)",
+      "result": "ok"
+    },
+    {
+      "name": "test_expired_command_rejected (test_show.ShowCase.test_expired_command_rejected)",
+      "result": "ok"
+    },
+    {
+      "name": "test_finale_audio_start_failure_never_unlocks_next_heks (test_show.ShowCase.test_finale_audio_start_failure_never_unlocks_next_heks)",
+      "result": "ok"
+    },
+    {
+      "name": "test_finale_engine_failure_does_not_unlock_intro (test_show.ShowCase.test_finale_engine_failure_does_not_unlock_intro)",
+      "result": "ok"
+    },
+    {
+      "name": "test_finale_gold_does_not_hold_pad_and_survives_ready_reset (test_show.ShowCase.test_finale_gold_does_not_hold_pad_and_survives_ready_reset)",
+      "result": "ok"
+    },
+    {
+      "name": "test_finale_reset_does_not_start_an_unrequested_wait_loop (test_show.ShowCase.test_finale_reset_does_not_start_an_unrequested_wait_loop)",
+      "result": "ok"
+    },
+    {
+      "name": "test_fixture_confirmation_requires_real_accu_mapping_and_keeps_project_signature (test_show.ShowCase.test_fixture_confirmation_requires_real_accu_mapping_and_keeps_project_signature)",
+      "result": "ok"
+    },
+    {
+      "name": "test_green_direction_at_35_and_route_music_at_45_after_intro_has_finished (test_show.ShowCase.test_green_direction_at_35_and_route_music_at_45_after_intro_has_finished)",
+      "result": "ok"
+    },
+    {
+      "name": "test_heks_done_turns_all_pad_zones_on_but_does_not_unlock (test_show.ShowCase.test_heks_done_turns_all_pad_zones_on_but_does_not_unlock)",
+      "result": "ok"
+    },
+    {
+      "name": "test_initial_pad_dark_and_preparation_required (test_show.ShowCase.test_initial_pad_dark_and_preparation_required)",
+      "result": "ok"
+    },
+    {
+      "name": "test_interrupted_intro_does_not_light_pad_or_complete_group (test_show.ShowCase.test_interrupted_intro_does_not_light_pad_or_complete_group)",
+      "result": "ok"
+    },
+    {
+      "name": "test_manual_finale_go_is_reserve_without_arrival_step (test_show.ShowCase.test_manual_finale_go_is_reserve_without_arrival_step)",
+      "result": "ok"
+    },
+    {
+      "name": "test_missing_live_hardware_and_media_block_program (test_show.ShowCase.test_missing_live_hardware_and_media_block_program)",
+      "result": "ok"
+    },
+    {
+      "name": "test_next_group_direction_spots_reset_at_heks_go_and_return_after_35_seconds (test_show.ShowCase.test_next_group_direction_spots_reset_at_heks_go_and_return_after_35_seconds)",
+      "result": "ok"
+    },
+    {
+      "name": "test_nonfinite_timestamp_never_bypasses_expiry (test_show.ShowCase.test_nonfinite_timestamp_never_bypasses_expiry)",
+      "result": "ok"
+    },
+    {
+      "name": "test_overlap_does_not_override_finale_or_release_twice (test_show.ShowCase.test_overlap_does_not_override_finale_or_release_twice)",
+      "result": "ok"
+    },
+    {
+      "name": "test_pause_allows_running_scene_to_finish (test_show.ShowCase.test_pause_allows_running_scene_to_finish)",
+      "result": "ok"
+    },
+    {
+      "name": "test_pause_only_blocks_new_starts_and_keeps_current_group_cues (test_show.ShowCase.test_pause_only_blocks_new_starts_and_keeps_current_group_cues)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr2_before_heks_end_or_for_wrong_group_cannot_start (test_show.ShowCase.test_qr2_before_heks_end_or_for_wrong_group_cannot_start)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr2_directly_starts_finale_and_unlocks_without_arrival_step (test_show.ShowCase.test_qr2_directly_starts_finale_and_unlocks_without_arrival_step)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr2_new_event_for_already_started_group_never_releases_twice (test_show.ShowCase.test_qr2_new_event_for_already_started_group_never_releases_twice)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr2_rejected_while_paused_is_not_queued (test_show.ShowCase.test_qr2_rejected_while_paused_is_not_queued)",
+      "result": "ok"
+    },
+    {
+      "name": "test_qr2_rejected_without_ready_is_not_queued (test_show.ShowCase.test_qr2_rejected_without_ready_is_not_queued)",
+      "result": "ok"
+    },
+    {
+      "name": "test_reset_groups_requires_stopped_program_and_preserves_event_history (test_show.ShowCase.test_reset_groups_requires_stopped_program_and_preserves_event_history)",
+      "result": "ok"
+    },
+    {
+      "name": "test_restart_never_replays_or_unlocks (test_show.ShowCase.test_restart_never_replays_or_unlocks)",
+      "result": "ok"
+    },
+    {
+      "name": "test_route_effect_durations_are_independent (test_show.ShowCase.test_route_effect_durations_are_independent)",
+      "result": "ok"
+    },
+    {
+      "name": "test_stopped_finale_keeps_safe_pad_when_next_heks_finishes (test_show.ShowCase.test_stopped_finale_keeps_safe_pad_when_next_heks_finishes)",
+      "result": "ok"
+    },
+    {
+      "name": "test_three_pad_buttons_and_finale_priority (test_show.ShowCase.test_three_pad_buttons_and_finale_priority)",
+      "result": "ok"
+    },
+    {
+      "name": "test_uncertain_event_is_not_reported_as_completed (test_show.ShowCase.test_uncertain_event_is_not_reported_as_completed)",
+      "result": "ok"
+    },
+    {
+      "name": "test_wrong_project_signature_rejected (test_show.ShowCase.test_wrong_project_signature_rejected)",
+      "result": "ok"
+    }
+  ],
+  "additional_checks": [
+    "python -m compileall -q bridge deploy/relay_app.py",
+    "node --check web/app.js"
+  ],
+  "covered_package_matrix": [
+    "C01",
+    "C02",
+    "C03",
+    "C04",
+    "C05 (bridge mixed QR2/actor slot)",
+    "C06",
+    "C07",
+    "C08 (bridge/relay only)",
+    "C09",
+    "D06 (adapter only)",
+    "D07 (adapter revision/push only)",
+    "D08",
+    "D09",
+    "D10",
+    "F01 (protocol only)",
+    "F02 (status whitelist only)",
+    "F06 (bridge only)",
+    "G02",
+    "G03",
+    "G05 (adapter only)",
+    "G06 (bridge reset/restart only)"
+  ],
+  "not_executed": [
+    "production VPS deployment",
+    "production migrations",
+    "physical QLC lighting",
+    "physical audio output",
+    "Art-Net",
+    "smoke/fog",
+    "real Google OAuth",
+    "real mail send or delivery",
+    "production actor invitations",
+    "browser authorization (covered separately by app change)"
+  ],
+  "limitations": [
+    "All controller/audio/QLC effect tests use simulation. ASGI/WSS transport tests run in process.",
+    "Successful local software ACK is not proof of audible/visible output or show completion.",
+    "A failed revocation push cannot prove immediate remote revocation; grants expire after at most five seconds.",
+    "The original TESTRAPPORT.json remains the untouched baseline report; this report describes only the new tested source."
+  ]
+}
