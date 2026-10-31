@@ -4,10 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       run_history_diagnosis:
-        description: Explicitly run one bounded read-only native history diagnosis; no deployment
+        description: Explicitly run one bounded read-only diagnosis; no deployment
         type: boolean
         required: true
         default: false
+      diagnostic_mode:
+        description: History, two resource snapshots without SQL, or both with direct VPS history
+        type: choice
+        required: true
+        default: history
+        options:
+          - history
+          - resources-only
+          - resources-with-history
       connection_path:
         description: Explicit connection path; direct-vps uses the existing dedicated production VPS runner
         type: choice
@@ -30,7 +39,7 @@ jobs:
     environment:
       name: production
       deployment: false
-    runs-on: ${{ fromJSON(inputs.connection_path == 'direct-vps' && '["self-hosted","Linux","X64","dg-sites","production","duindorphalloweenprod"]' || '["ubuntu-latest"]') }}
+    runs-on: ${{ fromJSON((inputs.diagnostic_mode == 'resources-only' || inputs.diagnostic_mode == 'resources-with-history' || inputs.connection_path == 'direct-vps') && '["self-hosted","Linux","X64","dg-sites","production","duindorphalloweenprod"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -39,7 +48,7 @@ jobs:
           ref: ${{ github.sha }}
           clean: false
       - name: Verify dedicated direct VPS runner boundary
-        if: inputs.connection_path == 'direct-vps'
+        if: inputs.diagnostic_mode == 'resources-only' || inputs.diagnostic_mode == 'resources-with-history' || inputs.connection_path == 'direct-vps'
         shell: bash
         run: |
           set -euo pipefail
@@ -51,10 +60,12 @@ jobs:
         with:
           node-version: 24
       - name: Install pinned native driver from frozen dependencies
+        if: inputs.diagnostic_mode != 'resources-only'
         run: |
           npm install --global pnpm@11.25.0
           pnpm install --frozen-lockfile --ignore-scripts
       - name: Diagnose five fixed native history reads without writes
+        if: inputs.diagnostic_mode == 'history'
         env:
           HISTORY_DIAGNOSTICS_REQUESTED: ${{ inputs.run_history_diagnosis }}
           HISTORY_CONNECTION_PATH: ${{ inputs.connection_path }}
@@ -63,11 +74,31 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: node scripts/deploy/diagnose-startregie-history.mjs
+      - name: Collect two bounded resource snapshots with optional direct history
+        if: inputs.diagnostic_mode == 'resources-only' || inputs.diagnostic_mode == 'resources-with-history'
+        env:
+          HISTORY_DIAGNOSTICS_REQUESTED: ${{ inputs.run_history_diagnosis }}
+          HISTORY_DIAGNOSTIC_MODE: ${{ inputs.diagnostic_mode }}
+          HISTORY_CONNECTION_PATH: direct-vps
+          APP_ENVIRONMENT: production
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ inputs.diagnostic_mode == 'resources-with-history' && secrets.SUPABASE_ACCESS_TOKEN || '' }}
+          SUPABASE_DB_PASSWORD: ${{ inputs.diagnostic_mode == 'resources-with-history' && secrets.SUPABASE_DB_PASSWORD || '' }}
+        run: node scripts/deploy/diagnose-startregie-resources.mjs
       - name: Retain only the small sanitized diagnosis
-        if: always()
+        if: always() && inputs.diagnostic_mode == 'history'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: startregie-history-diagnosis-${{ github.sha }}-${{ github.run_id }}
           path: ${{ runner.temp }}/startregie-history-diagnosis/report.json
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Retain only the small sanitized resource diagnosis
+        if: always() && (inputs.diagnostic_mode == 'resources-only' || inputs.diagnostic_mode == 'resources-with-history')
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: startregie-resource-diagnosis-${{ github.sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/startregie-resource-diagnosis/report.json
           retention-days: 7
           if-no-files-found: ignore
