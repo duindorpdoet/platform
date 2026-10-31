@@ -21,6 +21,24 @@ const catalogSQL=`select coalesce(jsonb_agg(jsonb_build_object('schema',n.nspnam
  'columns',(select jsonb_agg(a.attname order by a.attnum) from pg_attribute a where a.attrelid=c.oid and a.attnum>0 and not a.attisdropped)) order by n.nspname,c.relname),'[]')
  from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in (${schemas.map(literal).join(',')}) and c.relkind in ('r','p')`;
 
+// Pooler startup options are not a substitute for transaction-local policy.
+// Preserve one exported MVCC snapshot and the existing administrative bounds.
+export function sourceReadPrefix(snapshot) {
+  if(snapshot!==undefined&&!/^[0-9a-f]+-[0-9a-f]+-\d+$/i.test(snapshot))throw new Error('INVALID_BACKUP_SNAPSHOT');
+  return "begin isolation level repeatable read read only;"+(snapshot?`set transaction snapshot ${literal(snapshot)};`:'')+
+    "set local statement_timeout='5min';set local lock_timeout='3s';set local jit=off;set local timezone='UTC';set local datestyle='ISO';";
+}
+const sourceReadPhases=new Set(['snapshot-export','catalog','migration-history','preservation','roles','role-memberships','storage-objects','vault-fingerprint','storage-before','storage-after']);
+export async function withSourceReadPhase(phase,read,report=value=>console.log(JSON.stringify(value)),now=()=>performance.now()) {
+  if(!sourceReadPhases.has(phase))throw new Error('INVALID_BACKUP_READ_PHASE');
+  const started=now();report({backupRead:phase,status:'started'});
+  try {
+    const result=await read();report({backupRead:phase,status:'passed',durationMs:Math.round(now()-started)});return result;
+  } catch(error) {
+    report({backupRead:phase,status:'failed',durationMs:Math.round(now()-started)});throw error;
+  }
+}
+
 export async function dryRunReleaseMigrations(files,appliedVersions,localQuery) {
   assertReviewedReleaseMigrations(files);
   const applied=new Set(appliedVersions),proof=[];
@@ -182,17 +200,15 @@ async function main() {
   const poolerUser=pooler.db_user==='postgres'?'postgres.'+process.env.SUPABASE_PROJECT_REF:pooler.db_user;
   const sourceEnv={PGHOST:pooler.db_host,PGPORT:'5432',PGDATABASE:pooler.db_name,PGUSER:poolerUser,PGPASSWORD:process.env.SUPABASE_DB_PASSWORD,PGSSLMODE:'require',PGCONNECT_TIMEOUT:'30',PGOPTIONS:'-c statement_timeout=300000 -c lock_timeout=3000 -c jit=off'};
   const clientArgs=['run','--rm','-i','--network','host',...Object.keys(sourceEnv).flatMap(name=>['--env',name]),image];
-  const sourceQuery=async(sql,snapshot)=>{
-    const prefix="begin isolation level repeatable read read only;"+(snapshot?`set transaction snapshot ${literal(snapshot)};`:'')+"set local timezone='UTC';set local datestyle='ISO';";
-    return capture('docker',[...clientArgs,'psql','-X','-qAt','-v','ON_ERROR_STOP=1'],prefix+sql+';commit;',sourceEnv);
-  };
+  const sourceQuery=(phase,sql,snapshot)=>withSourceReadPhase(phase,()=>
+    capture('docker',[...clientArgs,'psql','-X','-qAt','-v','ON_ERROR_STOP=1'],sourceReadPrefix(snapshot)+sql+';commit;',sourceEnv));
   const holder=processCommand('docker',[...clientArgs,'psql','-X','-qAt','-v','ON_ERROR_STOP=1'],sourceEnv);
-  const snapshot=await new Promise((resolve,reject)=>{
+  const snapshot=await withSourceReadPhase('snapshot-export',()=>new Promise((resolve,reject)=>{
     let value='';const timer=setTimeout(()=>reject(new Error('SNAPSHOT_TIMEOUT')),60000);
     holder.child.stdout.on('data',chunk=>{value+=chunk.toString();const match=value.match(/^([0-9a-f]+-[0-9a-f]+-\d+)$/im);if(match){clearTimeout(timer);resolve(match[1]);}});
     holder.done.catch(error=>{clearTimeout(timer);reject(error);});
-    holder.child.stdin.write('begin isolation level repeatable read read only;select pg_catalog.pg_export_snapshot();\n');
-  }).catch(error=>{holder.child.stdin.end();holder.child.kill();throw error;});
+    holder.child.stdin.write(sourceReadPrefix()+'select pg_catalog.pg_export_snapshot();\n');
+  })).catch(error=>{holder.child.stdin.end();holder.child.kill();throw error;});
   const keepAlive=setInterval(()=>{
     if(!holder.child.stdin.destroyed&&!holder.child.stdin.writableEnded)holder.child.stdin.write('select 1;\n');
   },20000);
@@ -200,22 +216,22 @@ async function main() {
   let localStarted=false;
   try {
     console.log('Private repeatable-read database snapshot opened.');
-    const catalog=JSON.parse(await sourceQuery(catalogSQL,snapshot));
+    const catalog=JSON.parse(await sourceQuery('catalog',catalogSQL,snapshot));
     const repositoryMigrations=(await readdir('supabase/migrations')).filter(name=>name.endsWith('.sql')).sort();
     const reviewedMigrations=reviewedRepositoryMigrations(repositoryMigrations);
     const reviewedSet=new Set(reviewedMigrations);
-    const appliedMigrations=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(version::text order by version),'[]') from supabase_migrations.schema_migrations",snapshot));
+    const appliedMigrations=JSON.parse(await sourceQuery('migration-history',"select coalesce(jsonb_agg(version::text order by version),'[]') from supabase_migrations.schema_migrations",snapshot));
     const knownVersions=new Set([...repositoryMigrations,...installedStagingHistory()].map(name=>name.split('_')[0]));
     if(appliedMigrations.some(version=>!knownVersions.has(version))||repositoryMigrations.filter(name=>!reviewedSet.has(name)).some(name=>!appliedMigrations.includes(name.split('_')[0])))throw new Error('LIVE_MIGRATION_HISTORY_DRIFT');
-    const preservationBefore=JSON.parse(await sourceQuery(preservationQuery(catalog),snapshot));
+    const preservationBefore=JSON.parse(await sourceQuery('preservation',preservationQuery(catalog),snapshot));
     const before=preservationBefore.rows,coverageBefore=preservationBefore.worldPolicyInitialization,routePolicyBefore=preservationBefore.jointRoutePolicyRelease,routeSettingsBefore=preservationBefore.jointRouteSettingsInitialization,p12PolicyBefore=preservationBefore.p12RoutePolicy;
-    const roles=JSON.parse(await sourceQuery("select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper,'eventTriggerOwner',exists(select 1 from pg_event_trigger where evtowner=pg_roles.oid))) from pg_roles where rolname not like 'pg_%'",snapshot));
-    const memberships=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(jsonb_build_object('role',r.rolname,'member',m.rolname,'adminOption',a.admin_option,'inheritOption',a.inherit_option,'setOption',a.set_option)),'[]') from pg_auth_members a join pg_roles r on r.oid=a.roleid join pg_roles m on m.oid=a.member",snapshot));
-    const objects=JSON.parse(await sourceQuery("select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]') from storage.objects o",snapshot));
+    const roles=JSON.parse(await sourceQuery('roles',"select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper,'eventTriggerOwner',exists(select 1 from pg_event_trigger where evtowner=pg_roles.oid))) from pg_roles where rolname not like 'pg_%'",snapshot));
+    const memberships=JSON.parse(await sourceQuery('role-memberships',"select coalesce(jsonb_agg(jsonb_build_object('role',r.rolname,'member',m.rolname,'adminOption',a.admin_option,'inheritOption',a.inherit_option,'setOption',a.set_option)),'[]') from pg_auth_members a join pg_roles r on r.oid=a.roleid join pg_roles m on m.oid=a.member",snapshot));
+    const objects=JSON.parse(await sourceQuery('storage-objects',"select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]') from storage.objects o",snapshot));
     const settings={project,auth:await api('/config/auth'),rest:await api('/postgrest'),backups:await api('/database/backups')};
     const vaultKey=await api('/pgsodium');
     if(!/^[a-f0-9]{64}$/.test(vaultKey.root_key??''))throw new Error('VAULT_RESTORE_KEY_REQUIRED');
-    const vaultBefore=JSON.parse(await sourceQuery(vaultFingerprint,snapshot));
+    const vaultBefore=JSON.parse(await sourceQuery('vault-fingerprint',vaultFingerprint,snapshot));
     await save('catalog.aes',catalog);await save('inventory.aes',before);await save('roles.aes',roles);await save('role-memberships.aes',memberships);await save('settings.aes',settings);await save('objects.aes',objects);
     await save('vault-root-key.aes',vaultKey);await save('vault-inventory.aes',vaultBefore);
     const dump=processCommand('docker',[...clientArgs,'pg_dump','--format=custom','--no-subscriptions','--lock-wait-timeout=3000',`--snapshot=${snapshot}`],sourceEnv);
@@ -225,7 +241,7 @@ async function main() {
     console.log('Database backup encrypted and authentication verified.');
     const objectChecks=[];
     for(let i=0;i<objects.length;i++) {
-      const object=objects[i],current=JSON.parse(await sourceQuery(`select to_jsonb(o) from storage.objects o where id=${literal(object.id)}::uuid`));
+      const object=objects[i],current=JSON.parse(await sourceQuery('storage-before',`select to_jsonb(o) from storage.objects o where id=${literal(object.id)}::uuid`));
       if(JSON.stringify(current)!==JSON.stringify(object))throw new Error('STORAGE_CHANGED_DURING_BACKUP');
       const name=`object-${i}.aes`,objectPath=[object.bucket_id,...object.name.split('/')].map(encodeURIComponent).join('/');
       const response=await fetch(`https://${process.env.SUPABASE_PROJECT_REF}.supabase.co/storage/v1/object/authenticated/${objectPath}`,{headers:{apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:`Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`},signal:AbortSignal.timeout(180000)});
@@ -233,7 +249,7 @@ async function main() {
       await encryptStream(Readable.fromWeb(response.body),join(directory,name),key,context+':'+name);
       const verified=await verifyBackupFile(join(directory,name),key,context+':'+name);
       if(object.metadata?.size!=null&&Number(object.metadata.size)!==verified.bytes)throw new Error('STORAGE_SIZE_MISMATCH');
-      const after=JSON.parse(await sourceQuery(`select to_jsonb(o) from storage.objects o where id=${literal(object.id)}::uuid`));
+      const after=JSON.parse(await sourceQuery('storage-after',`select to_jsonb(o) from storage.objects o where id=${literal(object.id)}::uuid`));
       if(JSON.stringify(after)!==JSON.stringify(object))throw new Error('STORAGE_CHANGED_DURING_BACKUP');
       objectChecks.push({id:object.id,file:name,...verified});
     }

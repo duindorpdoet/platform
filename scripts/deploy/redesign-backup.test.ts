@@ -4,7 +4,32 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { createHash } from 'node:crypto';
-import { encryptStream, verifyBackupFile, compareFingerprints, dryRunReleaseMigrations, preservationManagementRequest, fingerprintManagementRequest } from './redesign-backup.mjs';
+import { encryptStream, verifyBackupFile, compareFingerprints, dryRunReleaseMigrations, preservationManagementRequest, fingerprintManagementRequest, sourceReadPrefix, withSourceReadPhase } from './redesign-backup.mjs';
+
+it('enforces existing backup policy locally for both exported and imported repeatable-read snapshots',()=>{
+  const exported=sourceReadPrefix(),imported=sourceReadPrefix('00000001-00000002-1');
+  expect(exported).toMatch(/^begin isolation level repeatable read read only;/);
+  expect(exported).not.toContain('set transaction snapshot');
+  expect(imported).toMatch(/^begin isolation level repeatable read read only;set transaction snapshot '00000001-00000002-1';/);
+  for(const prefix of [exported,imported]) {
+    expect(prefix).toContain("set local statement_timeout='5min';set local lock_timeout='3s';set local jit=off;");
+    expect(prefix).toContain("set local timezone='UTC';set local datestyle='ISO';");
+    expect(prefix).not.toMatch(/\b(alter|insert|update|delete|grant|set role)\b/i);
+  }
+  expect(()=>sourceReadPrefix("00000001-00000002-1';commit;")).toThrow('INVALID_BACKUP_SNAPSHOT');
+});
+
+it('reports fixed source phases and duration on failure without logging query results or error details',async()=>{
+  const metadata:unknown[]=[],report=(value:unknown)=>metadata.push(value);let tick=0;
+  const now=()=>tick+=7;
+  const result=await withSourceReadPhase('preservation',async()=>({private:'PRIVATE_RESULT'}),report,now);
+  expect(result).toEqual({private:'PRIVATE_RESULT'});
+  const error=new Error('PRIVATE_PROVIDER_DETAIL');
+  await expect(withSourceReadPhase('vault-fingerprint',async()=>{throw error;},report,now)).rejects.toBe(error);
+  expect(metadata).toEqual([{backupRead:'preservation',status:'started'},{backupRead:'preservation',status:'passed',durationMs:7},
+    {backupRead:'vault-fingerprint',status:'started'},{backupRead:'vault-fingerprint',status:'failed',durationMs:7}]);
+  expect(JSON.stringify(metadata)).not.toContain('PRIVATE_');
+});
 
 it('authenticates a streamed backup and rejects a corrupt archive',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'duindorp-backup-contract-'));
