@@ -358,7 +358,11 @@ jobs:
       - name: Verify every pinned client and library before execution
         env:
           RELEASE_PG_CLIENT_DIRECTORY: ${{ runner.temp }}/duindorp-pg-clients
-        run: node scripts/deploy/portable-postgres-clients.mjs verify "${RELEASE_PG_CLIENT_DIRECTORY}"
+        run: |
+          set -euo pipefail
+          node scripts/deploy/portable-postgres-clients.mjs verify "${RELEASE_PG_CLIENT_DIRECTORY}"
+          printf 'RELEASE_PG_CLIENT_DIRECTORY=%s\n' "${RELEASE_PG_CLIENT_DIRECTORY}" >> "${GITHUB_ENV}"
+          printf 'RELEASE_READ_CLIENT=libpq\n' >> "${GITHUB_ENV}"
       - name: Require exact successful staging revision
         run: node scripts/deploy/require-staging-success.mjs
       - name: Audit saved routes before migration (read only)
@@ -439,7 +443,7 @@ jobs:
   deploy:
     name: Promote exact staging release
     if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && !inputs.database_connection_recovery
-    needs: [backup-restore, release-policy]
+    needs: [prepare-database-client, backup-restore, release-policy]
     environment:
       name: production
       url: https://halloween.duindorpdoet.nl
@@ -540,6 +544,20 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Require exact successful staging revision
         run: node scripts/deploy/require-staging-success.mjs
+      - name: Fetch the same immutable public clients for production verification
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          artifact-ids: ${{ needs.prepare-database-client.outputs.artifact }}
+          path: ${{ runner.temp }}/duindorp-pg-clients
+          merge-multiple: true
+      - name: Verify and select the proven production libpq read client
+        env:
+          RELEASE_PG_CLIENT_DIRECTORY: ${{ runner.temp }}/duindorp-pg-clients
+        run: |
+          set -euo pipefail
+          node scripts/deploy/portable-postgres-clients.mjs verify "${RELEASE_PG_CLIENT_DIRECTORY}"
+          printf 'RELEASE_PG_CLIENT_DIRECTORY=%s\n' "${RELEASE_PG_CLIENT_DIRECTORY}" >> "${GITHUB_ENV}"
+          printf 'RELEASE_READ_CLIENT=libpq\n' >> "${GITHUB_ENV}"
       - name: Validate production configuration
         run: node scripts/deploy/validate-environment.mjs production
       - name: Fetch encrypted release backup for private retention
@@ -551,6 +569,9 @@ jobs:
       - name: Inspect actual finale window and anonymized timing alternatives (read only)
         run: node scripts/deploy/inspect-finale-planning.mjs
       - name: Validate application
+        env:
+          RELEASE_READ_CLIENT: ''
+          RELEASE_PG_CLIENT_DIRECTORY: ''
         run: pnpm verify
       - name: Diagnose worker result RPC before migration (no delivery)
         run: node scripts/deploy/diagnose-mail-worker.mjs

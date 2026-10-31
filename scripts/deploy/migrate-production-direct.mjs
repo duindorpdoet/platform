@@ -49,7 +49,7 @@ function migrationEnvironment(env, plan, caFile) {
 }
 
 /** One private CLI attempt. No output or error object from the child is logged. */
-async function pushDatabase(url, password, childEnv, filenames, spawnProcess) {
+async function pushDatabase(url, password, childEnv, filenames, spawnProcess, dryRun) {
   const allowed = new Set(filenames.filter(name => /^\d{14}_[a-z0-9_]+\.sql$/.test(name)));
   let stdout = "", stderr = "", bytes = 0, terminal = null, child;
   const result = await new Promise(resolve => {
@@ -73,7 +73,8 @@ async function pushDatabase(url, password, childEnv, filenames, spawnProcess) {
       // Pinned CLI 2.117.0's parseLegacyConnectionString/resolveLibpqPassword
       // uses PGPASSWORD when --db-url omits a password. Keep it out of argv.
       // https://github.com/supabase/cli/blob/v2.117.0/apps/cli/src/command-internal/legacy-db-config.parse.ts#L270-L298
-      child = spawnProcess("pnpm", ["exec", "supabase", "db", "push", "--db-url", url, "--include-all", "--yes"], {
+      child = spawnProcess("pnpm", ["exec", "supabase", "db", "push", "--db-url", url,
+        ...(dryRun ? ["--dry-run"] : []), "--include-all", "--yes"], {
         env: childEnv, detached: true, stdio: ["ignore", "pipe", "pipe"],
       });
       const capture = stream => chunk => {
@@ -96,8 +97,7 @@ async function pushDatabase(url, password, childEnv, filenames, spawnProcess) {
   return summary;
 }
 
-/** Production-only direct migration; no link, retry, replay or history repair. */
-export async function runProductionDirectMigration(env = process.env, request = fetch, spawnProcess = spawn) {
+async function runMigration(env, request, spawnProcess, dryRun) {
   requireContext(env); // Before metadata, private files, child processes or SQL.
   let directory;
   try {
@@ -121,12 +121,17 @@ export async function runProductionDirectMigration(env = process.env, request = 
     await writeFile(caFile, publicReleaseCaBundle(), { mode: 0o600, flag: "wx" });
     const url = new URL(`postgresql://postgres@${plan.host}:5432/postgres`);
     url.searchParams.set("sslmode", "verify-full"); url.searchParams.set("sslrootcert", caFile);
-    const migration = await pushDatabase(url.href, plan.password, migrationEnvironment(env, plan, caFile), filenames, spawnProcess);
+    const migration = await pushDatabase(url.href, plan.password, migrationEnvironment(env, plan, caFile), filenames, spawnProcess, dryRun);
     if (migration.status !== "SUCCESS") {
       // Only fixed classes, explicit SQLSTATEs and exact repository filenames
       // are observable. In particular, never stringify the child process.
       console.error(JSON.stringify(migration));
       fail(migration.status);
+    }
+    if (dryRun) {
+      const result = { ...migration, dryRun: true };
+      console.log(JSON.stringify(result));
+      return result;
     }
     const sql = await readFile(REPORT_FILE, "utf8");
     const rows = await sessionReadQuery(sql, env, request);
@@ -141,6 +146,17 @@ export async function runProductionDirectMigration(env = process.env, request = 
       catch { fail("CA_CLEANUP_FAILED"); }
     }
   }
+}
+
+/** Production-only direct migration; no link, retry, replay or history repair. */
+export async function runProductionDirectMigration(env = process.env, request = fetch, spawnProcess = spawn) {
+  return runMigration(env, request, spawnProcess, false);
+}
+
+/** Explicit manual connection proof. Its command always includes --dry-run. */
+export async function runProductionDirectMigrationDryRun(env = process.env, request = fetch, spawnProcess = spawn) {
+  if (env.GITHUB_EVENT_NAME !== "workflow_dispatch" || env.MIGRATION_CONNECT_PROOF !== "true") fail("ENVIRONMENT_BOUNDARY");
+  return runMigration(env, request, spawnProcess, true);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

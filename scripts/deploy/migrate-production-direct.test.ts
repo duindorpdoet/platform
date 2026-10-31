@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "node:events";
 import { readFileSync, statSync, existsSync } from "node:fs";
 import type { spawn } from "node:child_process";
-import { runProductionDirectMigration } from "./migrate-production-direct.mjs";
+import { runProductionDirectMigration, runProductionDirectMigrationDryRun } from "./migrate-production-direct.mjs";
 import { publicReleaseCaBundle, sessionReadQuery } from "./production-read-query.mjs";
 
 vi.mock("./production-read-query.mjs", async importOriginal => ({
@@ -46,12 +46,47 @@ function fixture(options: { status?: number; metadata?: unknown; requestError?: 
   });
   vi.mocked(sessionReadQuery).mockResolvedValue([{ nachtpost_activation: { private: "never-print-report" } }]);
   return { request, child, spawnProcess, caFile: () => caFile, spawnedAt: () => spawnedAt,
-    run: (context: Record<string, string | undefined> = env) => runProductionDirectMigration(context, request, spawnProcess as unknown as typeof spawn) };
+    run: (context: Record<string, string | undefined> = env) => runProductionDirectMigration(context, request, spawnProcess as unknown as typeof spawn),
+    runDry: (context: Record<string, string | undefined> = { ...env, MIGRATION_CONNECT_PROOF: "true" }) => runProductionDirectMigrationDryRun(context, request, spawnProcess as unknown as typeof spawn) };
 }
 
 function observedOutput() { return [...stdout.mock.calls, ...stderr.mock.calls].flat().join("\n"); }
 
 describe("production direct migration", () => {
+  it("requires explicit manual dry-run proof before any metadata, command or report", async () => {
+    for (const changes of [{ MIGRATION_CONNECT_PROOF: undefined }, { MIGRATION_CONNECT_PROOF: "false" }, { GITHUB_EVENT_NAME: "push" },
+      { GITHUB_REF: "refs/heads/main" }, { GITHUB_REPOSITORY: "other/platform" }, { SUPABASE_PROJECT_REF: "nocteiuvohesvqbowchw" }]) {
+      const f = fixture();
+      await expect(f.runDry({ ...env, MIGRATION_CONNECT_PROOF: "true", ...changes })).rejects.toThrow(/^PRODUCTION_DIRECT_MIGRATION_ENVIRONMENT_BOUNDARY$/);
+      expect(f.request).not.toHaveBeenCalled(); expect(f.spawnProcess).not.toHaveBeenCalled(); expect(sessionReadQuery).not.toHaveBeenCalled();
+    }
+  });
+  it("hardcodes one dry-run command with environment-only credentials and never runs the activation report", async () => {
+    const f = fixture({ output: `${migrationName}\n20990101010101_private.sql\n${env.SUPABASE_DB_PASSWORD}`, onSpawn: (args, options) => {
+      const url = new URL(args[5]);
+      expect(args).toEqual(["exec", "supabase", "db", "push", "--db-url", url.href, "--dry-run", "--include-all", "--yes"]);
+      expect(args.filter(arg => arg === "--dry-run")).toHaveLength(1);
+      expect(url.hostname).toBe(project.database.host); expect(url.password).toBe("");
+      expect(args.join(" ")).not.toContain(env.SUPABASE_DB_PASSWORD);
+      expect(options).toMatchObject({ env: { PGPASSWORD: env.SUPABASE_DB_PASSWORD, PGSSLMODE: "verify-full" } });
+    } });
+    const result = await f.runDry({ ...env, MIGRATION_CONNECT_PROOF: "true", DRY_RUN: "false", SUPABASE_CLI_ARGS: "--no-dry-run" });
+    expect(result).toEqual({ status: "SUCCESS", sqlStates: [], migrations: [migrationName], dryRun: true });
+    expect(f.spawnProcess).toHaveBeenCalledOnce(); expect(f.request).toHaveBeenCalledOnce(); expect(sessionReadQuery).not.toHaveBeenCalled();
+    expect(existsSync(f.caFile())).toBe(false); expect(observedOutput()).not.toContain(env.SUPABASE_DB_PASSWORD);
+    expect(observedOutput()).not.toContain("20990101010101_private.sql");
+  });
+  it("never lets a proof environment toggle change the normal apply API", async () => {
+    const f = fixture(); await f.run({ ...env, MIGRATION_CONNECT_PROOF: "true", DRY_RUN: "true" });
+    expect(f.spawnProcess.mock.calls[0][1]).not.toContain("--dry-run"); expect(sessionReadQuery).toHaveBeenCalledOnce();
+  });
+  it("fails a dry-run CLI attempt without a report, replay or unredacted output", async () => {
+    const f = fixture({ exit: 1, output: `${env.SUPABASE_ACCESS_TOKEN} ${env.SUPABASE_DB_PASSWORD}\n(SQLSTATE 57014)` });
+    await expect(f.runDry()).rejects.toThrow(/^PRODUCTION_DIRECT_MIGRATION_CLI_FAILED$/);
+    expect(f.spawnProcess).toHaveBeenCalledOnce(); expect(f.spawnProcess.mock.calls[0][1]).toContain("--dry-run");
+    expect(sessionReadQuery).not.toHaveBeenCalled(); expect(existsSync(f.caFile())).toBe(false);
+    expect(observedOutput()).not.toContain(env.SUPABASE_DB_PASSWORD); expect(observedOutput()).not.toContain(env.SUPABASE_ACCESS_TOKEN);
+  });
   it("rejects every foreign release boundary before metadata, CLI or report SQL", async () => {
     for (const changes of [{ RELEASE_READ_TRANSPORT: "session-pooler" }, { RELEASE_READ_TRANSPORT: "" },
       { APP_ENVIRONMENT: "staging", GITHUB_REF: "refs/heads/staging", SUPABASE_PROJECT_REF: "nocteiuvohesvqbowchw" },
@@ -128,11 +163,11 @@ describe("production direct migration", () => {
     for (const privateValue of [env.SUPABASE_ACCESS_TOKEN, env.SUPABASE_DB_PASSWORD, "private SQL", "20990101010101_private.sql"])
       expect(observedOutput()).not.toContain(privateValue);
   });
-  it("kills the CLI at the same five-minute client deadline without replay or report SQL", async () => {
+  it.each(["apply", "dry-run"])("kills the %s CLI at the same five-minute client deadline without replay or report SQL", async mode => {
     vi.useFakeTimers(); const f = fixture({ pending: true });
     const killGroup = vi.spyOn(process, "kill").mockReturnValue(true); f.child.pid = 12345;
     try {
-      const promise = f.run(); const failure = expect(promise).rejects.toThrow(/^PRODUCTION_DIRECT_MIGRATION_CLI_TIMEOUT$/);
+      const promise = mode === "dry-run" ? f.runDry() : f.run(); const failure = expect(promise).rejects.toThrow(/^PRODUCTION_DIRECT_MIGRATION_CLI_TIMEOUT$/);
       // Filesystem setup is real; let it finish before advancing the CLI deadline.
       await vi.waitFor(() => expect(f.spawnProcess).toHaveBeenCalledOnce());
       await vi.advanceTimersByTimeAsync(299_999 - (Date.now() - f.spawnedAt())); expect(f.child.kill).not.toHaveBeenCalled();

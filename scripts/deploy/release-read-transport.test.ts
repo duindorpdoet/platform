@@ -79,7 +79,7 @@ describe("explicit release read transport workflow contract", () => {
   it.each(["staging", "production"])("preserves exact revision, restore, migration, data and HTTP gates for %s", environment => {
     const source = read(`.github/workflows/deploy-${environment}.yml`);
     const entries = jobs(source), deployment = entries.get("deploy")!;
-    expect(deployment).toContain("needs: [backup-restore, release-policy]");
+    expect(deployment).toContain(environment === "production" ? "needs: [prepare-database-client, backup-restore, release-policy]" : "needs: [backup-restore, release-policy]");
     expect(deployment).toContain("APP_REVISION: ${{ github.sha }}");
     expect(deployment).toContain("SKIP_MAIL_TESTS: ${{ needs.release-policy.outputs.skip_mail_tests }}");
     expect(deployment).toContain("actions/download-artifact@");
@@ -97,6 +97,12 @@ describe("explicit release read transport workflow contract", () => {
     );
     if (environment === "production") {
       for (const name of ["prepare-database-client", "backup-export", "backup-restore", "deploy"]) expect(entries.get(name)).toContain("run: node scripts/deploy/require-staging-success.mjs");
+      for (const name of ["backup-export", "deploy"]) {
+        const body = entries.get(name)!;
+        ordered(body, "needs.prepare-database-client.outputs.artifact", "portable-postgres-clients.mjs verify", "RELEASE_READ_CLIENT=libpq", name === "backup-export" ? "evening-readiness-audit.mjs" : "inspect-finale-planning.mjs");
+        expect(body).toContain('printf \'RELEASE_PG_CLIENT_DIRECTORY=%s\\n\' "${RELEASE_PG_CLIENT_DIRECTORY}" >> "${GITHUB_ENV}"');
+      }
+      expect(entries.get("backup-restore")).not.toContain("RELEASE_READ_CLIENT");
       expect(deployment).toContain("run: node scripts/deploy/evening-readiness-audit.mjs");
     }
   });

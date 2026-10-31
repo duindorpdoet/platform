@@ -22,7 +22,8 @@ async function validatedMetadata(env, request, load) {
   // validates its environment on every call and opens a new SQL connection.
   const context = JSON.stringify([env.GITHUB_REPOSITORY, env.GITHUB_REF, env.GITHUB_EVENT_NAME,
     env.GITHUB_SHA, env.APP_ENVIRONMENT, env.APP_REVISION, env.SUPABASE_PROJECT_REF,
-    env.SUPABASE_ACCESS_TOKEN, env.SUPABASE_DB_PASSWORD, env.RELEASE_READ_TRANSPORT]);
+    env.SUPABASE_ACCESS_TOKEN, env.SUPABASE_DB_PASSWORD, env.RELEASE_READ_TRANSPORT,
+    env.RELEASE_READ_CLIENT, env.RELEASE_PG_CLIENT_DIRECTORY]);
   const now = performance.now();
   for (const [key, entry] of entries) if (now < entry.createdAt || now >= entry.expiresAt) entries.delete(key);
   const cached = entries.get(context);
@@ -54,6 +55,8 @@ function configured(env) {
 }
 
 export function enabledSessionReads(env = process.env) {
+  if (env.RELEASE_READ_CLIENT && (env.RELEASE_READ_CLIENT !== "libpq" || env.RELEASE_READ_TRANSPORT !== "direct"
+    || env.APP_ENVIRONMENT !== "production" || !env.RELEASE_PG_CLIENT_DIRECTORY)) fail("CLIENT_ENVIRONMENT_BOUNDARY");
   if (!env.RELEASE_READ_TRANSPORT) return false;
   if (!["session-pooler", "direct"].includes(env.RELEASE_READ_TRANSPORT)) fail("TRANSPORT_NOT_ENABLED");
   if (!configured(env) || (env.RELEASE_READ_TRANSPORT === "direct" && env.APP_ENVIRONMENT !== "production")) fail("ENVIRONMENT_BOUNDARY");
@@ -149,6 +152,10 @@ export async function sessionReadQuery(sql, env = process.env, request = fetch, 
   const longRead = sql.startsWith(preservationPrefix);
   const statementMs = longRead ? 300_000 : 60_000;
   const clientMs = statementMs + 10_000;
+  if (env.RELEASE_READ_CLIENT === "libpq") {
+    const { libpqReadQuery } = await import("./production-libpq-read.mjs");
+    return libpqReadQuery(readBatch(sql, statementMs), env, plan, publicReleaseCaBundle(), statementMs);
+  }
   let clientError = null;
   let safelyIdle = false;
   let client;

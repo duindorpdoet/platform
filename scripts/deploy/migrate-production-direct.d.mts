@@ -6,3 +6,5 @@ export type DirectMigrationResult = {
 };
 export function runProductionDirectMigration(env?: Environment, request?: typeof fetch,
   spawnProcess?: typeof spawn): Promise<DirectMigrationResult>;
+export function runProductionDirectMigrationDryRun(env?: Environment, request?: typeof fetch,
+  spawnProcess?: typeof spawn): Promise<{status: "SUCCESS"; sqlStates: string[]; migrations: string[]; dryRun: true}>;
