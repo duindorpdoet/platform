@@ -68,6 +68,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      - name: Inspect the exact public registry pull without database credentials
+        run: |
+          set -euo pipefail
+          PUBLIC_POSTGRES_CLIENT_IMAGE="$(node --input-type=module -e 'import { CLIENT_IMAGE } from "./scripts/deploy/portable-postgres-clients.mjs"; process.stdout.write(CLIENT_IMAGE)')"
+          docker pull --quiet --platform linux/amd64 "${PUBLIC_POSTGRES_CLIENT_IMAGE}"
       - name: Build and verify only pinned public client files on a clean runner
         run: |
           set -euo pipefail
