@@ -6,6 +6,11 @@ on:
       - production
   workflow_dispatch:
     inputs:
+      database_connection_diagnostics:
+        description: Inspect production session-pooler connectivity and classified activity read-only; no deployment
+        type: boolean
+        default: false
+        required: false
       skip_mail_tests:
         description: 'Explicitly skip all mail tests for this release run; other release gates remain required'
         type: boolean
@@ -30,9 +35,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  database-connection-diagnostics:
+    name: Inspect production database through its session pooler (read only)
+    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Read connectivity and classified database activity without changing data
+        env:
+          APP_ENVIRONMENT: production
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: node scripts/deploy/production-db-diagnostics.mjs
   mail-worker-diagnostics:
     name: Inspect mail worker RPC and application error codes
-    if: github.event_name == 'workflow_dispatch' && inputs.mail_worker_diagnostics && github.ref == 'refs/heads/production'
+    if: github.event_name == 'workflow_dispatch' && inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && github.ref == 'refs/heads/production'
     environment: production
     runs-on: [self-hosted, Linux, X64, dg-sites, production, duindorphalloweenprod]
     timeout-minutes: 5
@@ -69,7 +97,7 @@ jobs:
         run: node scripts/deploy/mail-test-policy.mjs
   readonly-baseline:
     name: Read-only production evening baseline
-    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && github.ref == 'refs/heads/production'
+    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && !inputs.database_connection_diagnostics && github.ref == 'refs/heads/production'
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -100,7 +128,7 @@ jobs:
   backup-restore:
     name: Encrypted production backup and isolated restore
     needs: release-policy
-    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics
+    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -151,7 +179,7 @@ jobs:
           if-no-files-found: error
   deploy:
     name: Promote exact staging release
-    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics
+    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics
     needs: [backup-restore, release-policy]
     environment:
       name: production
