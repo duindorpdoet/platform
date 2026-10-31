@@ -99,7 +99,7 @@ export async function probePoolerConnection(env, project, poolers, execute = cap
     activity: rows.find(row => Array.isArray(row.activity))?.activity ?? null };
 }
 
-export async function runDiagnostics(env = process.env, request = fetch, execute = capture) {
+export async function runDiagnostics(env = process.env, request = fetch, execute = capture, connectOnlyProbe) {
   // Reject outside context before even requesting project metadata.
   if (env.GITHUB_EVENT_NAME !== "workflow_dispatch" || env.GITHUB_REF !== BRANCH
     || env.GITHUB_REPOSITORY !== "duindorpdoet/platform" || env.APP_ENVIRONMENT !== "production"
@@ -116,6 +116,10 @@ export async function runDiagnostics(env = process.env, request = fetch, execute
   const project = await metadata("");
   const poolers = await metadata("/config/database/pooler");
   const plan = diagnosticPlan(env, project, poolers);
+  if (env.DIAGNOSTIC_NATIVE_CONNECT_ONLY === "true") {
+    const probe = connectOnlyProbe ?? (await import("./production-connect-only.mjs")).runConnectOnlyDiagnostics;
+    return probe(env, project, poolers);
+  }
   console.log(JSON.stringify({ diagnostic: "production-session-pooler", readOnly: true, image: plan.image }));
   const result = await probePoolerConnection(env, project, poolers, execute);
   const { durationMs, connectivity, activity } = result;
@@ -137,8 +141,11 @@ export async function runDiagnostics(env = process.env, request = fetch, execute
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  runDiagnostics().then(result => console.log(JSON.stringify(result))).catch(error => {
-    console.error(/^POOLER_DIAGNOSTICS_[A-Z0-9_]+$/.test(error?.message ?? "") ? error.message : "POOLER_DIAGNOSTICS_FAILED");
+  runDiagnostics().then(result => {
+    console.log(JSON.stringify(result));
+    if (result.diagnostic === "production-connect-only" && result.probes.some(probe => !probe.connected || probe.cleanupErrorClass)) process.exitCode = 1;
+  }).catch(error => {
+    console.error(/^POOLER_(?:DIAGNOSTICS|CONNECT_ONLY)_[A-Z0-9_]+$/.test(error?.message ?? "") ? error.message : "POOLER_DIAGNOSTICS_FAILED");
     process.exitCode = 1;
   });
 }

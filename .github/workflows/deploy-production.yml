@@ -16,7 +16,7 @@ on:
         type: string
         required: false
       database_connection_diagnostics:
-        description: Inspect production session-pooler connectivity and classified activity read-only; no deployment
+        description: Compare one native and one libpq session-pooler connection without SQL or deployment
         type: boolean
         default: false
         required: false
@@ -74,7 +74,9 @@ jobs:
   database-connection-diagnostics:
     name: Inspect production database through its session pooler (read only)
     if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && !inputs.database_connection_recovery && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
-    environment: production
+    environment:
+      name: production
+      deployment: false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -87,8 +89,13 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - name: Read connectivity and classified database activity without changing data
+      - name: Install pinned release database driver for connection diagnosis
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Compare native and libpq connectivity without sending SQL
         env:
+          DIAGNOSTIC_NATIVE_CONNECT_ONLY: "true"
           APP_ENVIRONMENT: production
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

@@ -10,8 +10,9 @@ export function classifyConnectionError(stderr: string): ConnectionErrorClass;
 export function probePoolerConnection(env: Record<string, string | undefined>, project: unknown, poolers: unknown, execute?: Execution): Promise<{
   connectivity: boolean; durationMs: number; code: number | null; expired: boolean; errorClass: ConnectionErrorClass | null; activity: unknown[] | null;
 }>;
-export function runDiagnostics(env?: Record<string, string | undefined>, request?: typeof fetch, execute?: Execution): Promise<{
+export function runDiagnostics(env?: Record<string, string | undefined>, request?: typeof fetch, execute?: Execution,
+  connectOnlyProbe?: (env: Record<string, string | undefined>, project: unknown, poolers: unknown) => Promise<import("./production-connect-only.mjs").ConnectOnlyReport>): Promise<{
   readOnly: boolean; changedRows: number; messagesSent: number; durationMs: number;
   activity: Array<{ role: string; state: string; waitType: string; waitEvent: string; queryClass: string;
     backends: number; activeAtLeast15s: number; longestActiveSeconds: number | null }>;
-}>;
+} | import("./production-connect-only.mjs").ConnectOnlyReport>;
