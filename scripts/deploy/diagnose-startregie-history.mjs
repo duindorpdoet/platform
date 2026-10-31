@@ -5,6 +5,7 @@ import { rootCertificates } from "node:tls";
 import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
+import { cpus, freemem, loadavg } from "node:os";
 import { diagnosticPlan } from "./production-db-diagnostics.mjs";
 import { componentBodies, originalHistorySha256 } from "./startregie-history-components.mjs";
 import { assertInstalledHotfix, hotfixProofQuery, hotfixRepairActions } from "./repair-portal-hotfix-history.mjs";
@@ -32,11 +33,17 @@ export function traceConnection(client, entry) {
   const connection = client.connection;
   entry.eventsAvailable = Boolean(connection?.once && connection?.stream?.once);
   if (!entry.eventsAvailable) return;
-  const began = performance.now(), seen = new Set(), streams = new WeakSet();
+  const began = performance.now(), cpuBegan = process.cpuUsage(), seen = new Set(), streams = new WeakSet();
+  // These counters include all work in this Node process, including concurrent
+  // connections. They do not attribute CPU to SCRAM, one client or the database.
+  entry.cpuMeasurementScope = "SHARED_NODE_PROCESS";
+  entry.cpuMeasurementBaseline = "TRACE_START";
   const record = (event, error) => {
     if (seen.has(event)) return;
     seen.add(event);
-    const value = { event, elapsedMs: Math.round((performance.now() - began) * 1000) / 1000 };
+    const cpu = process.cpuUsage(cpuBegan);
+    const value = { event, elapsedMs: Math.round((performance.now() - began) * 1000) / 1000,
+      sharedProcessCpuDeltaMs: Math.round((cpu.user + cpu.system)) / 1000 };
     if (error) value.errorCode = connectionErrorCode(error);
     entry.events.push(value);
   };
@@ -61,8 +68,29 @@ export function traceConnection(client, entry) {
     const original = connection[method];
     if (typeof original === "function") connection[method] = function (...args) { const answer = Reflect.apply(original, this, args); record(event); return answer; };
   }
+  const finalMessage = connection.sendSCRAMClientFinalMessage;
+  if (typeof finalMessage === "function") connection.sendSCRAMClientFinalMessage = function (...args) {
+    // pg's method discards _send's false return when the stream is no longer
+    // writable. Successful method return alone therefore cannot prove queueing.
+    const writable = this.stream?.writable === true;
+    const answer = Reflect.apply(finalMessage, this, args);
+    record(writable ? "SCRAM_CLIENT_FINAL_LOCAL_QUEUED" : "SCRAM_CLIENT_FINAL_LOCAL_NOT_WRITABLE");
+    return answer;
+  };
+  connection.once("authenticationSASLContinue", message => {
+    // Retain only a bounded positive integer. Salt, nonce and SCRAM data never
+    // enter the report, even when parsing fails or the iteration field repeats.
+    if (typeof message?.data === "string" && message.data.length <= 8192) {
+      const values = message.data.split(",").filter(value => value.startsWith("i="));
+      if (values.length === 1 && /^i=[1-9]\d{0,9}$/.test(values[0])) {
+        const iterations = Number(values[0].slice(2));
+        if (Number.isSafeInteger(iterations) && iterations <= 2147483647) entry.serverScramIterations = iterations;
+      }
+    }
+    record("AUTH_SASL_CONTINUE");
+  });
   for (const [event, fixed] of [["authenticationCleartextPassword", "AUTH_CLEARTEXT_CHALLENGE"], ["authenticationMD5Password", "AUTH_MD5_CHALLENGE"],
-    ["authenticationSASL", "AUTH_SASL_CHALLENGE"], ["authenticationSASLContinue", "AUTH_SASL_CONTINUE"], ["authenticationSASLFinal", "AUTH_SASL_FINAL_RECEIVED"],
+    ["authenticationSASL", "AUTH_SASL_CHALLENGE"], ["authenticationSASLFinal", "AUTH_SASL_FINAL_RECEIVED"],
     ["authenticationOk", "AUTH_OK_RECEIVED"], ["backendKeyData", "BACKEND_KEY_RECEIVED"], ["readyForQuery", "READY_FOR_QUERY"], ["end", "CONNECTION_END"]]) connection.once(event, () => record(fixed));
   connection.once("error", error => record("CONNECTION_ERROR", error));
   connection.once("errorMessage", error => record("POSTGRES_ERROR", error));
@@ -97,11 +125,15 @@ function safeSample(answer) {
 
 export const CAPACITY_SQL = `select jsonb_build_object('maxConnections',current_setting('max_connections'),'reservedConnections',current_setting('reserved_connections',true),'superuserReservedConnections',current_setting('superuser_reserved_connections',true),'databaseConnectionLimit',(select datconnlimit from pg_database where datname=current_database()),'roleConnectionLimit',(select rolconnlimit from pg_roles where rolname=current_user),'totalBackends',count(*),'activeBackends',count(*) filter(where state='active'),'idleBackends',count(*) filter(where state='idle'),'idleInTransactionBackends',count(*) filter(where state like 'idle in transaction%'),'clientBackends',count(*) filter(where backend_type='client backend'),'clientBackendsCurrentDatabase',count(*) filter(where backend_type='client backend' and datname=current_database()),'clientBackendsCurrentRole',count(*) filter(where backend_type='client backend' and usename=current_user),'clientBackendsActive',count(*) filter(where backend_type='client backend' and state='active'),'clientBackendsIdle',count(*) filter(where backend_type='client backend' and state='idle'),'clientBackendsIdleInTransaction',count(*) filter(where backend_type='client backend' and state like 'idle in transaction%'),'walSenderBackends',count(*) filter(where backend_type='walsender'),'otherBackendProcesses',count(*) filter(where backend_type is distinct from 'client backend' and backend_type is distinct from 'walsender')) diagnostic_capacity from pg_stat_activity;`;
 
+function clientHostSample() {
+  return { loadAverage: loadavg(), cpuCount: cpus().length, freeMemoryBytes: freemem() };
+}
+
 /** Fixed, read-only diagnosis only. No retries, repairs or deployments. */
 export async function runHistoryDiagnosis(env = process.env, request = fetch, ClientOverride) {
   const report = { diagnostic: "startregie-history", revision: /^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? "") ? env.GITHUB_SHA : null, readOnly: true, changedRows: 0,
     status: "failed", limits: { statementMs: 5000, lockMs: 500, readerClientMs: 7000, observerStatementMs: 2000,
-      observerClientMs: 3000, configuredDriverConnectMs: 10000, samplesPerSplitPhase: 4, samplesOriginalMaximum: 36, originalSampleIntervalMs: 5000, totalMs: 180000, normalReleaseConfiguredStatementMs: 60000, normalReleaseConfiguredClientMs: 70000 },
+      observerClientMs: 3000, configuredDriverConnectMs: 30000, normalReleaseConfiguredDriverConnectMs: 10000, samplesPerSplitPhase: 4, samplesOriginalMaximum: 36, originalSampleIntervalMs: 5000, totalMs: 180000, normalReleaseConfiguredStatementMs: 60000, normalReleaseConfiguredClientMs: 70000 },
     connections: {}, phases: [], observerAvailable: false, checks: { splitCanonical: null, combinedCanonical: null, combinedMatchesSplit: null } };
   let reader, observer, reproduction, unsafeReader = false, unsafeObserver = false, totalExpired = false;
   const started = performance.now();
@@ -130,6 +162,10 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
     const direct = connectionPath === "direct-vps";
     if (direct && (env.RUNNER_NAME !== "dg-sites-vps-01-duindorphalloweenprod-01"
       || !env.GITHUB_WORKSPACE?.startsWith("/srv/sites/duindorphalloweenprod/actions-runner/_work/"))) fail("DIRECT_VPS_BOUNDARY");
+    if (env.RUNNER_NAME === "dg-sites-vps-01-duindorphalloweenprod-01"
+      && env.GITHUB_WORKSPACE?.startsWith("/srv/sites/duindorphalloweenprod/actions-runner/_work/")) {
+      report.clientHost = { scope: "VPS_CLIENT", interpretation: "WORKFLOW_RUNNER_NOT_DATABASE", initial: clientHostSample() };
+    }
     report.connectionPath = connectionPath;
     report.originalSessionPoolerReproduction = !direct;
     report.capacityInterpretation = "COUNTS_ONLY_NO_EXHAUSTION_INFERENCE";
@@ -163,7 +199,7 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
     const endpoint = direct ? { host: project.database.host, port: 5432, user: "postgres" } : { host: plan.PGHOST, port: 5432, user: plan.PGUSER };
     const configuration = { ...endpoint, database: "postgres", password: env.SUPABASE_DB_PASSWORD,
       ssl: { rejectUnauthorized: true, ca: [...rootCertificates, readFileSync(new URL("./supabase-root-2021.crt", import.meta.url), "utf8")] },
-      connectionTimeoutMillis: 10000 };
+      connectionTimeoutMillis: 30000 };
     reader = new Client({ ...configuration, application_name: "duindorp-release-history-diagnosis" });
     observer = new Client({ ...configuration, application_name: "duindorp-release-history-observer" });
     reader.on("error", () => { unsafeReader = true; });
@@ -410,6 +446,7 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
     if (totalExpired) { report.status = "failed"; report.errorClass ??= "HISTORY_DIAGNOSIS_TOTAL_DEADLINE_EXPIRED"; }
     report.totalMs = Math.round(performance.now() - started);
     report.totalExpired = totalExpired;
+    if (report.clientHost) report.clientHost.final = clientHostSample();
   }
   return report;
 }

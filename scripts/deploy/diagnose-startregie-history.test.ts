@@ -73,6 +73,8 @@ describe("focused native history diagnosis", () => {
   it("binds exact fixed component bodies and preserves the original full query byte hash", () => {
     expect(Object.keys(PHASE_BODIES)).toEqual(["function_hashes", "trigger_definition", "draft_metadata", "migration_history"]);
     expect(createHash("sha256").update(hotfixProofQuery).digest("hex")).toBe(originalHistorySha256);
+    expect(createHash("sha256").update(readFileSync(new URL("./production-read-query.mjs", import.meta.url))).digest("hex"))
+      .toBe("987896ba4fa4be8556ab231927525014a20b25486ce9c83fbf0e97a55f6274e7");
     for (const name of Object.keys(PHASE_BODIES)) expect(phaseSql(name)).toContain(`\n${PHASE_BODIES[name]}\n;`);
     expect(() => phaseSql("combined_original")).toThrow("UNKNOWN_PHASE");
     expect(() => observerSql(-1)).toThrow("INVALID_READER_PID");
@@ -88,8 +90,12 @@ describe("focused native history diagnosis", () => {
     expect(report.phases.map(phase => phase.name)).toEqual([...Object.keys(PHASE_BODIES), "combined_original"]);
     expect(report.checks).toEqual({ splitCanonical: true, combinedCanonical: true, combinedMatchesSplit: true });
     expect(f.clients).toHaveLength(3);
-    expect(f.clients.every(client => client.config.connectionTimeoutMillis === 10_000)).toBe(true);
-    expect(report.limits).toMatchObject({ configuredDriverConnectMs: 10000 });
+    expect(f.clients.map(client => client.config.connectionTimeoutMillis)).toEqual([30_000, 30_000, 10_000]);
+    expect(report.connections.reader).toMatchObject({ configuredDriverConnectMs: 30000 });
+    expect(report.connections.observer).toMatchObject({ configuredDriverConnectMs: 30000 });
+    expect(report.phases.at(-1)?.connection).toMatchObject({ configuredDriverConnectMs: 10000 });
+    expect(report.limits).toMatchObject({ configuredDriverConnectMs: 30000, normalReleaseConfiguredDriverConnectMs: 10000,
+      statementMs: 5000, lockMs: 500, readerClientMs: 7000, observerStatementMs: 2000, observerClientMs: 3000, totalMs: 180000 });
     expect(report).toMatchObject({ connectionPath: "session-pooler", originalSessionPoolerReproduction: true });
     expect(f.clients.every(client => client.config.host === pooler.db_host && client.config.user === `postgres.${ref}` && client.config.port === 5432)).toBe(true);
     expect(f.clients.every(client => client.end.mock.calls.length === 1)).toBe(true);
@@ -118,11 +124,28 @@ describe("focused native history diagnosis", () => {
     expect(direct.clients).toHaveLength(3);
     for (const [index, client] of direct.clients.entries()) {
       expect(client.config).toEqual({ ...pooled.clients[index].config, host: project.database.host, port: 5432, user: "postgres" });
-      expect(client.config).toMatchObject({ connectionTimeoutMillis: 10000, ssl: { rejectUnauthorized: true } });
+      expect(client.config).toMatchObject({ connectionTimeoutMillis: index < 2 ? 30000 : 10000, ssl: { rejectUnauthorized: true } });
     }
     expect(direct.queries).toEqual(pooled.queries);
     expect(direct.request.mock.calls.map(call => call[0])).toEqual(pooled.request.mock.calls.map(call => call[0]));
     expect(direct.request).toHaveBeenCalledTimes(4);
+  });
+  it("labels initial and final host counters solely as the dedicated VPS client, never the database", async () => {
+    const f = fixture(); const report = await runHistoryDiagnosis(directEnv, f.request, f.Client);
+    const host = report.clientHost as { scope: string; interpretation: string; initial: Record<string, unknown>; final: Record<string, unknown> };
+    expect(host).toMatchObject({ scope: "VPS_CLIENT", interpretation: "WORKFLOW_RUNNER_NOT_DATABASE" });
+    for (const sample of [host.initial, host.final]) {
+      expect(Object.keys(sample).sort()).toEqual(["cpuCount", "freeMemoryBytes", "loadAverage"]);
+      expect(Number.isSafeInteger(sample.cpuCount)).toBe(true); expect(Number(sample.cpuCount)).toBeGreaterThan(0);
+      expect(Number.isSafeInteger(sample.freeMemoryBytes)).toBe(true); expect(Number(sample.freeMemoryBytes)).toBeGreaterThanOrEqual(0);
+      expect(Array.isArray(sample.loadAverage)).toBe(true);
+      expect(sample.loadAverage).toHaveLength(3);
+      expect((sample.loadAverage as number[]).every(value => Number.isFinite(value) && value >= 0)).toBe(true);
+    }
+    for (const changes of [{}, { RUNNER_NAME: directEnv.RUNNER_NAME }, { GITHUB_WORKSPACE: directEnv.GITHUB_WORKSPACE }]) {
+      const hosted = fixture(); const result = await runHistoryDiagnosis({ ...env, ...changes }, hosted.request, hosted.Client);
+      expect(result.clientHost).toBeUndefined();
+    }
   });
   it("rejects unknown paths and a direct path outside the dedicated VPS before any metadata or SQL", async () => {
     for (const changes of [{ HISTORY_CONNECTION_PATH: "direct" }, { HISTORY_CONNECTION_PATH: "" },
@@ -388,6 +411,52 @@ describe("focused native history diagnosis", () => {
 });
 
 describe("native connection lifecycle timing", () => {
+  it("distinguishes SCRAM continuation, a locally queued final response and the subsequent server response without retaining payloads", () => {
+    const stream = Object.assign(new EventEmitter(), { writable: true });
+    const finalMessage = vi.fn(function (this: { stream: unknown }, value: string) { expect(this.stream).toBe(stream); expect(value).toBe("PRIVATE_CLIENT_FINAL"); return "PRIVATE_RETURN"; });
+    const connection = Object.assign(new EventEmitter(), { stream, sendSCRAMClientFinalMessage: finalMessage });
+    const entry: Record<string, unknown> = {};
+    traceConnection({ connection }, entry);
+    connection.emit("authenticationSASLContinue", { data: "r=PRIVATE_SERVER_NONCE,s=PRIVATE_SALT,i=4096" });
+    expect((entry.events as {event: string}[]).map(row => row.event)).toEqual(["AUTH_SASL_CONTINUE"]);
+    expect(connection.sendSCRAMClientFinalMessage("PRIVATE_CLIENT_FINAL")).toBe("PRIVATE_RETURN");
+    connection.emit("authenticationSASLFinal", { data: "PRIVATE_SERVER_FINAL" });
+    connection.emit("authenticationOk");
+    const events = entry.events as Array<{event: string; elapsedMs: number; sharedProcessCpuDeltaMs: number}>;
+    expect(events.map(row => row.event)).toEqual(["AUTH_SASL_CONTINUE", "SCRAM_CLIENT_FINAL_LOCAL_QUEUED", "AUTH_SASL_FINAL_RECEIVED", "AUTH_OK_RECEIVED"]);
+    expect(entry).toMatchObject({ serverScramIterations: 4096, cpuMeasurementScope: "SHARED_NODE_PROCESS", cpuMeasurementBaseline: "TRACE_START" });
+    expect(events.every(row => Number.isFinite(row.sharedProcessCpuDeltaMs) && row.sharedProcessCpuDeltaMs >= 0)).toBe(true);
+    expect(events.every((row, index) => index === 0 || row.sharedProcessCpuDeltaMs >= events[index - 1].sharedProcessCpuDeltaMs)).toBe(true);
+    expect(events.every(row => Object.keys(row).sort().join(",") === "elapsedMs,event,sharedProcessCpuDeltaMs")).toBe(true);
+    expect(finalMessage).toHaveBeenCalledExactlyOnceWith("PRIVATE_CLIENT_FINAL");
+    expect(JSON.stringify(entry)).not.toContain("PRIVATE");
+  });
+  it("does not call a late non-writable final response queued or report a response when the original method throws", () => {
+    const stream = Object.assign(new EventEmitter(), { writable: false });
+    const finalMessage = vi.fn();
+    const connection = Object.assign(new EventEmitter(), { stream, sendSCRAMClientFinalMessage: finalMessage });
+    const entry: Record<string, unknown> = {};
+    traceConnection({ connection }, entry);
+    connection.sendSCRAMClientFinalMessage("PRIVATE_LATE_FINAL");
+    expect(entry.events).toEqual([expect.objectContaining({ event: "SCRAM_CLIENT_FINAL_LOCAL_NOT_WRITABLE" })]);
+    expect(finalMessage).toHaveBeenCalledExactlyOnceWith("PRIVATE_LATE_FINAL");
+    const throws = Object.assign(new EventEmitter(), { stream: Object.assign(new EventEmitter(), { writable: true }),
+      sendSCRAMClientFinalMessage() { throw new Error("PRIVATE_SYNCHRONOUS_ERROR"); } });
+    const thrownEntry: Record<string, unknown> = {};
+    traceConnection({ connection: throws }, thrownEntry);
+    expect(() => throws.sendSCRAMClientFinalMessage()).toThrow("PRIVATE_SYNCHRONOUS_ERROR");
+    expect(thrownEntry.events).toEqual([]);
+    expect(JSON.stringify([entry, thrownEntry])).not.toContain("PRIVATE");
+  });
+  it.each(["PRIVATE", "r=PRIVATE,s=PRIVATE", "i=0", "i=-1", "i=1.5", "i=04096", "i=2147483648", "i=4096,i=4096", "i=4096,i=PRIVATE", `r=${"x".repeat(8192)},i=4096`])("does not retain malformed or unbounded SCRAM iteration data (%#)", data => {
+    const connection = Object.assign(new EventEmitter(), { stream: new EventEmitter() });
+    const entry: Record<string, unknown> = {};
+    traceConnection({ connection }, entry);
+    connection.emit("authenticationSASLContinue", { data });
+    expect(entry.serverScramIterations).toBeUndefined();
+    expect(entry.events).toEqual([expect.objectContaining({ event: "AUTH_SASL_CONTINUE" })]);
+    expect(JSON.stringify(entry)).not.toContain("PRIVATE");
+  });
   it("follows the SSL stream replacement without confusing socket creation, handshake or backend-key payloads", () => {
     const raw = new EventEmitter(), secure = Object.assign(new EventEmitter(), { authorized: true });
     const requestSsl = vi.fn(), startup = vi.fn();
