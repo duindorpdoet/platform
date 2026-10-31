@@ -189,4 +189,39 @@ describe("manual native and libpq connections without SQL", () => {
     expect(createHash("sha256").update(readFileSync(new URL("./production-read-query.mjs", import.meta.url))).digest("hex"))
       .toBe("c5c26eb00908b5ae741006dfbb60afbecb39d281d3b13fe88b7736ae276d9c51");
   });
+  it("opens only the explicitly authorized direct project endpoint and fetches only its project metadata", async () => {
+    const directEnv = { ...env, DIAGNOSTIC_DIRECT_CAPABILITY: "true" };
+    const f = fixture();
+    const report = await runConnectOnlyDiagnostics(directEnv, project, undefined, f.Client, f.execute, "direct");
+    expect(report.connectionPath).toBe("direct"); expect(report.probes.every(probe => probe.connected)).toBe(true);
+    expect(f.clients[0].config).toMatchObject({ host: project.database.host, user: "postgres", port: 5432, database: "postgres", connectionTimeoutMillis: 30000, ssl: { rejectUnauthorized: true } });
+    expect(f.execute.mock.calls[1][1]).toMatchObject({ PGHOST: project.database.host, PGUSER: "postgres", PGPORT: "5432", PGSSLMODE: "verify-full" });
+    expect(f.query).not.toHaveBeenCalled(); expect(f.clients[0].connect).toHaveBeenCalledOnce(); expect(f.execute).toHaveBeenCalledTimes(2);
+    const request = vi.fn<typeof fetch>(async () => Response.json(project)), execute = vi.fn(), probe = vi.fn(async () => report);
+    expect(await runDiagnostics(directEnv, request, execute, probe)).toBe(report);
+    expect(request).toHaveBeenCalledExactlyOnceWith(`https://api.supabase.com/v1/projects/${ref}`, expect.objectContaining({ method: "GET" }));
+    expect(probe).toHaveBeenCalledExactlyOnceWith(directEnv, project, undefined, "direct"); expect(execute).not.toHaveBeenCalled();
+  });
+  it("rejects direct capability without explicit mode, trusted project metadata and connect-only authorization", async () => {
+    for (const [changes, metadata, mode] of [
+      [{}, project, "direct"], [{ DIAGNOSTIC_DIRECT_CAPABILITY: "true" }, project, "pooler"],
+      [{ DIAGNOSTIC_DIRECT_CAPABILITY: "true" }, { ...project, database: { ...project.database, host: "PRIVATE_UNTRUSTED" } }, "direct"],
+      [{ DIAGNOSTIC_DIRECT_CAPABILITY: "true" }, { ...project, id: "nocteiuvohesvqbowchw" }, "direct"],
+    ] as const) {
+      const f = fixture();
+      await expect(runConnectOnlyDiagnostics({ ...env, ...changes }, metadata, [pooler], f.Client, f.execute, mode)).rejects.toThrow(/ENDPOINT_MODE_REQUIRED|PROJECT_METADATA_BOUNDARY/);
+      expect(f.clients).toHaveLength(0); expect(f.execute).not.toHaveBeenCalled();
+    }
+    const request = vi.fn();
+    await expect(runDiagnostics({ ...env, DIAGNOSTIC_DIRECT_CAPABILITY: "true", DIAGNOSTIC_NATIVE_CONNECT_ONLY: "false" }, request)).rejects.toThrow("EXPLICIT_CONNECT_ONLY_REQUIRED");
+    expect(request).not.toHaveBeenCalled();
+  });
+  it("does not fall back to the pooler or replay either direct connection after failure", async () => {
+    const f = fixture({ connectError: Object.assign(new Error("PRIVATE_DIRECT_FAILURE"), { code: "ECONNREFUSED" }), libpq: { code: 2, expired: false, stderr: "PRIVATE_FAILURE" } });
+    const report = await runConnectOnlyDiagnostics({ ...env, DIAGNOSTIC_DIRECT_CAPABILITY: "true" }, project, undefined, f.Client, f.execute, "direct");
+    expect(report.probes.every(probe => !probe.connected)).toBe(true);
+    expect(f.clients).toHaveLength(1); expect(f.clients[0].config.host).toBe(project.database.host);
+    expect(f.execute.mock.calls[1][1].PGHOST).toBe(project.database.host); expect(f.execute).toHaveBeenCalledTimes(2); expect(f.query).not.toHaveBeenCalled();
+    expect(JSON.stringify(report)).not.toContain("PRIVATE");
+  });
 });

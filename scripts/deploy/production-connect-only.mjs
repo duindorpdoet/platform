@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { rootCertificates } from "node:tls";
-import { diagnosticPlan } from "./production-db-diagnostics.mjs";
+import { diagnosticPlan, validateDiagnosticProject } from "./production-db-diagnostics.mjs";
 
 const fail = code => { throw new Error(`POOLER_CONNECT_ONLY_${code}`); };
 const caUrl = new URL("./supabase-root-2021.crt", import.meta.url);
@@ -97,12 +97,17 @@ function capture(args, environment, timeoutMs) {
 }
 
 /** Two independent connection clients, once each. Neither sends any SQL. */
-export async function runConnectOnlyDiagnostics(env, project, poolers, ClientOverride, execute = capture) {
+export async function runConnectOnlyDiagnostics(env, project, poolers, ClientOverride, execute = capture, endpointMode = "pooler") {
   if (env.DIAGNOSTIC_NATIVE_CONNECT_ONLY !== "true") fail("EXPLICIT_FLAG_REQUIRED");
-  const plan = diagnosticPlan(env, project, poolers);
+  let plan;
+  if (endpointMode === "direct" && env.DIAGNOSTIC_DIRECT_CAPABILITY === "true") {
+    const { image } = validateDiagnosticProject(env, project);
+    plan = { image, environment: { PGHOST: project.database.host, PGPORT: "5432", PGDATABASE: "postgres", PGUSER: "postgres", PGPASSWORD: env.SUPABASE_DB_PASSWORD } };
+  } else if (endpointMode === "pooler" && env.DIAGNOSTIC_DIRECT_CAPABILITY !== "true") plan = diagnosticPlan(env, project, poolers);
+  else fail("ENDPOINT_MODE_REQUIRED");
   const certificates = [...rootCertificates, readFileSync(caUrl, "utf8")];
   const report = { diagnostic: "production-connect-only", readOnly: true, sqlSent: false, changedRows: 0, messagesSent: 0,
-    comparison: "INDEPENDENT_CLIENTS_NO_CAUSAL_INFERENCE", connectionLimitMs: 30000, probes: [] };
+    comparison: "INDEPENDENT_CLIENTS_NO_CAUSAL_INFERENCE", connectionPath: endpointMode === "direct" ? "direct" : "session-pooler", connectionLimitMs: 30000, probes: [] };
   // Prepare the existing exact Postgres image before starting either connection.
   let prepared;
   try { prepared = await execute(["pull", plan.image], {}, 120_000); } catch { fail("IMAGE_PREPARATION_FAILED"); }

@@ -32,7 +32,7 @@ select jsonb_build_object('activity',coalesce(jsonb_agg(to_jsonb(summary) order 
 rollback;
 `;
 
-export function diagnosticPlan(env, project, poolers) {
+export function validateDiagnosticProject(env, project) {
   if (env.GITHUB_EVENT_NAME !== "workflow_dispatch" || env.GITHUB_REF !== BRANCH
     || env.GITHUB_REPOSITORY !== "duindorpdoet/platform" || env.APP_ENVIRONMENT !== "production"
     || env.SUPABASE_PROJECT_REF !== PROJECT || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? "")
@@ -40,6 +40,11 @@ export function diagnosticPlan(env, project, poolers) {
   if (project?.id !== PROJECT || !/^[a-z]{2}-[a-z]+-\d$/.test(project?.region ?? "")
     || project.database?.host !== `db.${PROJECT}.supabase.co`
     || !/^\d+\.\d+\.\d+\.\d+$/.test(project.database?.version ?? "")) fail("PROJECT_METADATA_BOUNDARY");
+  return { image: `supabase/postgres:${project.database.version}` };
+}
+
+export function diagnosticPlan(env, project, poolers) {
+  const { image } = validateDiagnosticProject(env, project);
   const allowedHost = new RegExp(`^aws-[0-9]+-${project.region}\\.pooler\\.supabase\\.com$`);
   if (!Array.isArray(poolers)) fail("POOLER_METADATA_REQUIRED");
   const trusted = poolers.filter(row => allowedHost.test(row.db_host ?? "")
@@ -48,7 +53,6 @@ export function diagnosticPlan(env, project, poolers) {
   // session endpoint is still port 5432, as in the existing backup procedure.
   const pooler = trusted.find(row => row.pool_mode === "session") ?? trusted.find(row => row.pool_mode === "transaction");
   if (!pooler) fail("TRUSTED_SESSION_POOLER_REQUIRED");
-  const image = `supabase/postgres:${project.database.version}`;
   const environment = {
     PGHOST: pooler.db_host, PGPORT: "5432", PGDATABASE: "postgres",
     PGUSER: pooler.db_user === "postgres" ? `postgres.${PROJECT}` : pooler.db_user,
@@ -105,6 +109,7 @@ export async function runDiagnostics(env = process.env, request = fetch, execute
     || env.GITHUB_REPOSITORY !== "duindorpdoet/platform" || env.APP_ENVIRONMENT !== "production"
     || env.SUPABASE_PROJECT_REF !== PROJECT || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? "")
     || !env.SUPABASE_ACCESS_TOKEN || !env.SUPABASE_DB_PASSWORD) fail("PRODUCTION_BOUNDARY");
+  if (env.DIAGNOSTIC_DIRECT_CAPABILITY === "true" && env.DIAGNOSTIC_NATIVE_CONNECT_ONLY !== "true") fail("EXPLICIT_CONNECT_ONLY_REQUIRED");
   async function metadata(path) {
     let response;
     try { response = await request(`https://api.supabase.com/v1/projects/${PROJECT}${path}`, {
@@ -114,6 +119,12 @@ export async function runDiagnostics(env = process.env, request = fetch, execute
     try { return await response.json(); } catch { fail("METADATA_INVALID_JSON"); }
   }
   const project = await metadata("");
+  if (env.DIAGNOSTIC_DIRECT_CAPABILITY === "true") {
+    validateDiagnosticProject(env, project);
+    if (connectOnlyProbe) return connectOnlyProbe(env, project, undefined, "direct");
+    const { runConnectOnlyDiagnostics } = await import("./production-connect-only.mjs");
+    return runConnectOnlyDiagnostics(env, project, undefined, undefined, undefined, "direct");
+  }
   const poolers = await metadata("/config/database/pooler");
   const plan = diagnosticPlan(env, project, poolers);
   if (env.DIAGNOSTIC_NATIVE_CONNECT_ONLY === "true") {

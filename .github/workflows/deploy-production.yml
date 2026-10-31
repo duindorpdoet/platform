@@ -20,6 +20,14 @@ on:
         type: boolean
         default: false
         required: false
+      database_diagnostics_scope:
+        description: Connection-only diagnostic scope; direct capability also inventories local VPS tools
+        type: choice
+        default: pooler
+        options:
+          - pooler
+          - direct-capability
+        required: false
       skip_mail_tests:
         description: 'Explicitly skip all mail tests for this release run; other release gates remain required'
         type: boolean
@@ -73,7 +81,7 @@ jobs:
         run: node scripts/deploy/production-db-recovery.mjs
   database-connection-diagnostics:
     name: Inspect production database through its session pooler (read only)
-    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && !inputs.database_connection_recovery && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
+    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && inputs.database_diagnostics_scope != 'direct-capability' && !inputs.database_connection_recovery && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
     environment:
       name: production
       deployment: false
@@ -101,6 +109,72 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: node scripts/deploy/production-db-diagnostics.mjs
+  database-direct-capability:
+    name: Compare direct native and libpq startup without SQL
+    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && inputs.database_diagnostics_scope == 'direct-capability' && !inputs.database_connection_recovery && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
+    environment:
+      name: production
+      deployment: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pinned release database driver for direct capability
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Open each verified direct connection once without sending SQL
+        env:
+          DIAGNOSTIC_NATIVE_CONNECT_ONLY: "true"
+          DIAGNOSTIC_DIRECT_CAPABILITY: "true"
+          APP_ENVIRONMENT: production
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: node scripts/deploy/production-db-diagnostics.mjs
+  database-vps-capability:
+    name: Inventory existing VPS database client tools without network access
+    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && inputs.database_diagnostics_scope == 'direct-capability' && !inputs.database_connection_recovery && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
+    environment:
+      name: production
+      deployment: false
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+      - dg-sites
+      - production
+      - duindorphalloweenprod
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          clean: false
+          ref: ${{ github.sha }}
+      - name: Verify existing dedicated VPS runner boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = "duindorphalloweenprod"
+          test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenprod-01"
+          [[ "${GITHUB_WORKSPACE}" == /srv/sites/duindorphalloweenprod/actions-runner/_work/* ]]
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - name: Read only local versions and free space with the existing Node runtime
+        env:
+          DIAGNOSTIC_VPS_CAPABILITIES: "true"
+          APP_ENVIRONMENT: production
+        run: /srv/sites/duindorphalloweenprod/actions-runner/externals/node24/bin/node scripts/deploy/production-vps-capabilities.mjs
   mail-worker-diagnostics:
     name: Inspect mail worker RPC and application error codes
     if: github.event_name == 'workflow_dispatch' && inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && !inputs.database_connection_recovery && github.ref == 'refs/heads/production'
