@@ -1,3 +1,4 @@
+import { enabledSessionReads, sessionReadQuery } from "./production-read-query.mjs";
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { chmod, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
@@ -26,6 +27,10 @@ export function openBackup(value,key,context) {
   return Buffer.concat([cipher.update(value.subarray(32)),cipher.final()]);
 }
 export async function management(path,body) {
+  if(path==='/database/query' && enabledSessionReads(process.env)) {
+    if(!body || typeof body.query!=='string' || (body.read_only!==true && !/^begin read only;/i.test(body.query)))throw new Error('PREFLIGHT_NATIVE_READ_ONLY_REQUIRED');
+    return sessionReadQuery(body.query);
+  }
   const response=await fetch(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_REF}${path}`,{
     method:body?'POST':'GET',headers:{Authorization:`Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,'Content-Type':'application/json'},
     ...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(60000),

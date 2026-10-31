@@ -1,3 +1,4 @@
+import { enabledSessionReads, sessionReadQuery } from "./production-read-query.mjs";
 // Read-only release diagnosis. Only aggregate timing facts leave memory. No
 // addresses, contacts, registration/group/slot IDs or participant rows are saved.
 import { execFileSync } from "node:child_process";
@@ -6,9 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import ts from "typescript";
-const response = await fetch(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_REF}/database/query`, {
-  method: "POST", headers: { Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, "Content-Type": "application/json" },
-  body: JSON.stringify({ read_only: true, query: `with e as(select id,settings from app_private.events where slug='duindorp-halloween-2026'),
+const diagnosticQuery = `with e as(select id,settings from app_private.events where slug='duindorp-halloween-2026'),
   focus as(select g.* from app_private.walking_groups g join e on e.id=g.event_id where g.system_number=48 and g.retired_at is null),
   points as(select p.*,row_number() over(order by p.id)::text anonymous_id from app_private.start_points p join e on e.id=p.event_id),
   slots as(select s.*,row_number() over(order by s.id)::text anonymous_id from app_private.start_slots s join e on e.id=s.event_id),
@@ -45,10 +44,18 @@ const response = await fetch(`https://api.supabase.com/v1/projects/${process.env
    'stored',(select jsonb_build_object('ordinaryStop',s.effective_ordinary_stop_at,'arrival',s.expected_finale_arrival_at,'state',s.state)
     from focus g join app_private.group_schedule_revisions s on s.id=g.current_schedule_revision_id),
    'started',(select exists(select 1 from app_private.group_runs r join focus g on g.id=r.group_id))
-  ) diagnostic` }), signal: AbortSignal.timeout(60_000),
-});
-if (!response.ok) throw new Error(`READ_ONLY_FINALE_DIAGNOSTIC_${response.status}`);
-const [{ diagnostic }] = await response.json();
+  ) diagnostic`;
+let diagnosticRows;
+if(enabledSessionReads(process.env)) diagnosticRows = await sessionReadQuery(diagnosticQuery);
+else {
+  const response = await fetch(`https://api.supabase.com/v1/projects/${process.env.SUPABASE_PROJECT_REF}/database/query`, {
+    method: "POST", headers: { Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ read_only: true, query: diagnosticQuery }), signal: AbortSignal.timeout(60_000),
+  });
+  if (!response.ok) throw new Error(`READ_ONLY_FINALE_DIAGNOSTIC_${response.status}`);
+  diagnosticRows = await response.json();
+}
+const [{ diagnostic }] = diagnosticRows;
 const directory = await mkdtemp(join(tmpdir(), "finale-planner-source-"));
 try {
   for (const name of ["start-preference", "route-planner"]) {

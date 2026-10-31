@@ -1,0 +1,136 @@
+import { readFileSync } from "node:fs";
+import { rootCertificates } from "node:tls";
+
+const PROJECTS = { production: "dtubngvxfbupgvgfrjko", staging: "nocteiuvohesvqbowchw" };
+// Public Supabase CA, downloaded from the official distribution endpoint:
+// https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt
+const supabaseCA = readFileSync(new URL("./supabase-root-2021.crt", import.meta.url), "utf8");
+const fail = code => { throw new Error(`RELEASE_READ_${code}`); };
+const isSqlState = code => typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) && /[0-9]/.test(code);
+const preservationPrefix = "begin read only;set local statement_timeout='5min';set local lock_timeout='3s';do $preservation_read_only$";
+
+function configured(env) {
+  return env.GITHUB_REPOSITORY === "duindorpdoet/platform"
+    && Object.hasOwn(PROJECTS, env.APP_ENVIRONMENT ?? "")
+    && env.SUPABASE_PROJECT_REF === PROJECTS[env.APP_ENVIRONMENT]
+    && env.GITHUB_REF === `refs/heads/${env.APP_ENVIRONMENT}`
+    && ["push", "workflow_dispatch"].includes(env.GITHUB_EVENT_NAME)
+    && /^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? "")
+    && (!env.APP_REVISION || env.APP_REVISION === env.GITHUB_SHA)
+    && Boolean(env.SUPABASE_ACCESS_TOKEN && env.SUPABASE_DB_PASSWORD);
+}
+
+export function enabledSessionReads(env = process.env) {
+  if (env.RELEASE_READ_TRANSPORT !== "session-pooler") return false;
+  if (!configured(env)) fail("ENVIRONMENT_BOUNDARY");
+  return true;
+}
+
+// These inputs are fixed repository release inspections, never user SQL. The
+// database enforces read-only state, including statements after an inner COMMIT.
+// Reject attempts to remove that session policy before sending any SQL.
+function validateReadSql(sql) {
+  if (typeof sql !== "string" || !sql.trim() || sql.includes("\0")) fail("SQL_REQUIRED");
+  const normalized = sql.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ")
+    .replace(/"(default_transaction_read_only|transaction_read_only|transaction|all)"/gi, "$1");
+  if (/\bread\s+write\b|\b(?:reset|discard)\b|\bset\s+(?:(?:local|session)\s+)?(?:default_transaction_read_only|transaction_read_only|transaction|session\s+characteristics)\b/i.test(normalized)
+    || /\bset_config\s*\(\s*'(?:default_transaction_read_only|transaction_read_only)'/i.test(normalized)) fail("READ_ONLY_POLICY_REQUIRED");
+  for (const match of normalized.matchAll(/\bset_config\s*\(/gi)) {
+    if (!/^\s*'(?:request\.jwt\.claims|app\.readiness_joint_input)'\s*,/i.test(normalized.slice(match.index + match[0].length))) fail("READ_ONLY_POLICY_REQUIRED");
+  }
+}
+
+function clientPlan(env, project, poolers) {
+  const ref = env.SUPABASE_PROJECT_REF;
+  if (project?.id !== ref || !/^[a-z]{2}-[a-z]+-\d$/.test(project?.region ?? "")
+    || project.database?.host !== `db.${ref}.supabase.co`) fail("PROJECT_METADATA_BOUNDARY");
+  if (!Array.isArray(poolers)) fail("POOLER_METADATA_REQUIRED");
+  const host = new RegExp(`^aws-[0-9]+-${project.region}\\.pooler\\.supabase\\.com$`);
+  const trusted = poolers.filter(row => host.test(row?.db_host ?? "")
+    && ["postgres", `postgres.${ref}`].includes(row.db_user) && row.db_name === "postgres");
+  const pooler = trusted.find(row => row.pool_mode === "session") ?? trusted.find(row => row.pool_mode === "transaction");
+  if (!pooler) fail("TRUSTED_SESSION_POOLER_REQUIRED");
+  return { host: pooler.db_host, port: 5432, database: "postgres", user: `postgres.${ref}`,
+    password: env.SUPABASE_DB_PASSWORD, ssl: { rejectUnauthorized: true, ca: [...rootCertificates, supabaseCA] },
+    connectionTimeoutMillis: 10_000, application_name: "duindorp-release-readonly" };
+}
+
+function safeErrorCode(error) {
+  if (isSqlState(error?.code)) return `SQLSTATE_${error.code}`;
+  if (/timeout/i.test(error?.message ?? "") || error?.name === "TimeoutError") return "CLIENT_TIMEOUT";
+  if (/certificate|SSL|TLS/i.test(error?.message ?? "")) return "TLS";
+  if (["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EAI_AGAIN", "ENOTFOUND"].includes(error?.code)) return "CONNECTION_FAILED";
+  return "QUERY_FAILED";
+}
+
+/** Explicit native transport for the known release read queries; no retry/fallback. */
+export async function sessionReadQuery(sql, env = process.env, request = fetch, ClientOverride) {
+  if (!enabledSessionReads(env)) fail("TRANSPORT_NOT_ENABLED");
+  validateReadSql(sql);
+  async function metadata(path) {
+    let response;
+    try { response = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}${path}`, {
+      method: "GET", headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}` }, signal: AbortSignal.timeout(15_000),
+    }); } catch { fail("METADATA_REQUEST_FAILED"); }
+    if (!response.ok) fail(`METADATA_HTTP_${response.status}`);
+    try { return await response.json(); } catch { fail("METADATA_INVALID_JSON"); }
+  }
+  const project = await metadata("");
+  const poolers = await metadata("/config/database/pooler");
+  const plan = clientPlan(env, project, poolers);
+  const Client = ClientOverride ?? (await import("@supabase/pg")).Client;
+  const client = new Client(plan);
+  // Preservation already has a bounded administrative five-minute wrapper.
+  const longRead = sql.startsWith(preservationPrefix);
+  const statementMs = longRead ? 300_000 : 60_000;
+  const clientMs = statementMs + 10_000;
+  let clientError = null;
+  let safelyIdle = false;
+  // An idle network failure must not become an unhandled EventEmitter error.
+  const onError = error => { clientError = error; };
+  client.on("error", onError);
+  try {
+    await client.connect();
+    safelyIdle = true;
+    // SET is executed on this actual session: Supavisor can ignore startup GUCs.
+    // A session default survives COMMIT in the existing owner-only SQL wrappers.
+    async function query(text, timeoutMs) {
+      safelyIdle = false;
+      try {
+        const answer = await client.query({ text, query_timeout: timeoutMs });
+        safelyIdle = true;
+        return answer;
+      } catch (error) {
+        // A PostgreSQL ErrorResponse completes the command. A client timer or
+        // network failure does not prove the server has stopped running it.
+        safelyIdle = isSqlState(error?.code);
+        throw error;
+      }
+    }
+    await query("set default_transaction_read_only=on", 10_000);
+    await query(`set statement_timeout='${statementMs}ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='${clientMs}ms'`, 10_000);
+    const proof = await query("select current_setting('default_transaction_read_only') as read_only,current_setting('statement_timeout') as statement_timeout,current_setting('lock_timeout') as lock_timeout,current_setting('jit') as jit", 10_000);
+    const settings = proof.rows?.[0];
+    if (settings?.read_only !== "on" || settings.jit !== "off"
+      || settings.lock_timeout !== "3s" || settings.statement_timeout !== (longRead ? "5min" : "1min")) fail("SESSION_POLICY_NOT_CONFIRMED");
+    const answer = await query(sql, clientMs);
+    if (clientError) throw clientError;
+    const results = Array.isArray(answer) ? answer : [answer];
+    if (results.some(result => !Array.isArray(result?.rows))) fail("RESULT_REQUIRED");
+    // Match postgres-meta's multi-statement response contract exactly. Setup
+    // and proof queries above are separate, so they can never become data.
+    return results.reverse().find(result => result.rows.length !== 0)?.rows ?? [];
+  } catch (error) {
+    if (/^RELEASE_READ_[A-Z0-9_]+$/.test(error?.message ?? "")) throw error;
+    fail(safeErrorCode(error));
+  } finally {
+    if (safelyIdle && !clientError) {
+      // Restore the borrowed session only when its command has completed.
+      try { await client.query({ text: "rollback;reset all", query_timeout: 10_000 }); } catch { /* Close on any cleanup failure. */ }
+    }
+    // query_timeout does not cancel pg's active server query. end() destroys an
+    // active connection; do not queue ROLLBACK behind the timed-out operation.
+    try { await client.end(); } catch { /* No private driver errors escape. */ }
+  }
+}
+

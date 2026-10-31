@@ -170,6 +170,7 @@ jobs:
     timeout-minutes: 35
     env:
       APP_ENVIRONMENT: production
+      RELEASE_READ_TRANSPORT: session-pooler
       SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -186,6 +187,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      - name: Install pinned release database driver
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+
       - name: Require exact successful staging revision
         run: node scripts/deploy/require-staging-success.mjs
       - name: Audit saved routes before migration (read only)
@@ -230,6 +236,7 @@ jobs:
     timeout-minutes: 40
     env:
       APP_ENVIRONMENT: production
+      RELEASE_READ_TRANSPORT: session-pooler
       APP_REVISION: ${{ github.sha }}
       APP_URL: https://halloween.duindorpdoet.nl
       NEXT_PUBLIC_SITE_URL: https://halloween.duindorpdoet.nl

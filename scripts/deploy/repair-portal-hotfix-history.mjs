@@ -1,3 +1,4 @@
+import { enabledSessionReads, sessionReadQuery } from "./production-read-query.mjs";
 import { execFileSync } from 'node:child_process';
 import { appendFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
@@ -85,6 +86,7 @@ export function assertEquivalentHotfix(staging, production) {
  hotfixRepairActions(staging,'staging');hotfixRepairActions(production,'production');
 }
 async function inspect(ref) {
+ if(enabledSessionReads(process.env))return (await sessionReadQuery(hotfixProofQuery))[0];
  const r=await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`,{method:'POST',headers:{Authorization:`Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({query:hotfixProofQuery,read_only:true}),signal:AbortSignal.timeout(30000)});
  if(!r.ok)throw new Error(`HOTFIX_PROOF_API_${r.status}`);
  return (await r.json())[0];

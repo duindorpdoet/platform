@@ -1,3 +1,4 @@
+import { enabledSessionReads, sessionReadQuery } from "./production-read-query.mjs";
 // Restricted release audit. Direct table reads remain available to the read-only
 // management role; authorized pure previews run only in a bounded READ ONLY
 // transaction through the existing protected production deployment connection.
@@ -343,6 +344,7 @@ export async function runAudit(env = process.env, request = fetch) {
   if (!/^[a-z0-9]{15,30}$/.test(env.SUPABASE_PROJECT_REF ?? "") || !env.SUPABASE_ACCESS_TOKEN) throw new Error("READ_ONLY_AUDIT_CONFIGURATION_REQUIRED");
   async function query(sql, ownerReadOnly = false) {
     if (ownerReadOnly && (![PREVIEW_AUDIT_QUERY, JOINT_PROPOSAL_INPUT_QUERY].includes(sql) || !ownerPreviewAllowed(env))) throw new Error("OWNER_READ_ONLY_AUDIT_BOUNDARY");
+    if (enabledSessionReads(env)) return sessionReadQuery(sql, env, request);
     const response = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}/database/query`, {
       method: "POST", headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}`, "Content-Type": "application/json" },
       body: JSON.stringify({ read_only: !ownerReadOnly, query: sql }), signal: AbortSignal.timeout(60_000),

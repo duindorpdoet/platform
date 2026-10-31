@@ -1,3 +1,4 @@
+import { enabledSessionReads, sessionReadQuery } from "./production-read-query.mjs";
 import { createHmac } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
@@ -48,7 +49,7 @@ export async function checkStartregieReads(env = process.env, request = fetch, n
   }
   const managementHeaders = { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}`, "Content-Type": "application/json" };
   const managementUrl = `https://api.supabase.com/v1/projects/${ref}`;
-  const actors = await json(`${managementUrl}/database/query`, {
+  const actors = enabledSessionReads(env) ? await sessionReadQuery(ACTOR_QUERY, env, request) : await json(`${managementUrl}/database/query`, {
     method: "POST", headers: managementHeaders, body: JSON.stringify({ read_only: true, query: ACTOR_QUERY }),
   }, "ACTOR");
   const actor = actors?.[0]?.actor_id;

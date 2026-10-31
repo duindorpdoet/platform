@@ -224,6 +224,7 @@ jobs:
     timeout-minutes: 35
     env:
       APP_ENVIRONMENT: staging
+      RELEASE_READ_TRANSPORT: ${{ github.ref == 'refs/heads/staging' && 'session-pooler' || '' }}
       SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -239,6 +240,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      - name: Install pinned release database driver
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+
       - name: Prove and reconcile already installed portal hotfix history
         if: github.ref == 'refs/heads/staging'
         run: node scripts/deploy/repair-portal-hotfix-history.mjs
@@ -270,6 +276,7 @@ jobs:
     timeout-minutes: 40
     env:
       APP_ENVIRONMENT: staging
+      RELEASE_READ_TRANSPORT: ${{ github.ref == 'refs/heads/staging' && 'session-pooler' || '' }}
       APP_REVISION: ${{ github.sha }}
       GITHUB_TOKEN: ${{ github.token }}
       APP_URL: https://staging-halloween.duindorpdoet.nl
