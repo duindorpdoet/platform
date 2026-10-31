@@ -20,6 +20,8 @@ import {
   X,
 } from "lucide-react";
 import { KidGuide } from "./kid-guide";
+import { SnapshotRefreshQueue } from "@/lib/poortenboek/refresh-queue";
+import { readBookSnapshot, validateBookSnapshot } from "@/lib/poortenboek/snapshot-response";
 import { BookArrivalSync } from "@/components/redesign/arrival-sync-ui";
 import { BookFarewell, hasBookFarewell } from "@/components/redesign/book-farewell";
 import { BookIdentityCheck, bookIdentityKey, bookIdentitySource, readConfirmedBookIdentity, saveConfirmedBookIdentity } from "@/components/redesign/book-identity-check";
@@ -66,6 +68,11 @@ export function Poortenboek({
   initial: BookSnapshot;
   section: BookSection;
 }) {
+  // A new child/session gets a fresh queue and can never reuse the old reader's state.
+  return <PoortenboekSession key={`${initial.eventId}:${initial.childId}:${initial.demo}:${initial.expiresAt}`} initial={initial} section={section}/>;
+}
+
+function PoortenboekSession({ initial, section }: { initial: BookSnapshot; section: BookSection }) {
   const event = useEventDetails();
   const [snapshot, setSnapshot] = useState<BookSnapshot | null>(initial);
   const [offline, setOffline] = useState(false);
@@ -85,115 +92,139 @@ export function Poortenboek({
     void bookIdentityKey(snapshot).then(key=>{if(active)setIdentity({source,key});}).catch(()=>{if(active)setIdentity({source,key:'memory:'+source});});
     return()=>{active=false;};
   },[snapshot]);
-  const load = useCallback(async () => {
-    if (document.hidden) return;
-    const current = ++sequence.current;
-    try {
-      const result = await fetch("/api/poortenboek/snapshot", {
-        cache: "no-store",
-      });
-      if (current !== sequence.current) return;
-      if (result.status === 401) {
-        setSnapshot(null);
-        saveConfirmedBookIdentity("");
-        window.location.replace("/poortenboek/inloggen");
-        return;
-      }
-      if (!result.ok) throw new Error("offline");
-      const data = (await result.json()) as BookSnapshot;
-      if (current !== sequence.current) return;
-      setSnapshot(data);
-      setOffline(false);
-      document.documentElement.removeAttribute("data-pb-hidden");
-    } catch {
-      if (current === sequence.current) {
-        setSnapshot(null);
-        setOffline(true);
-        document.documentElement.removeAttribute("data-pb-hidden");
-      }
-    }
+  const freshRead = useRef<BookSnapshot | null>(null);
+  const mounted = useRef(true);
+  const revoked = useRef(false);
+  const pageHidden = useRef(false);
+  const deny = useCallback(() => {
+    revoked.current = true;
+    freshRead.current = null;
+    sequence.current++;
+    setSnapshot(null);
+    saveConfirmedBookIdentity("");
+    window.location.replace("/poortenboek/inloggen");
   }, []);
+  // eslint-disable-next-line react-hooks/refs -- The constructor only stores run; refs are read when a refresh starts after mounting.
+  const [refreshQueue] = useState(() => new SnapshotRefreshQueue<BookSnapshot>({
+    requestTimeoutMs: 15_000,
+    run: async (signal) => {
+      const current = sequence.current;
+      const stale = () => !mounted.current || current !== sequence.current || revoked.current || document.hidden || pageHidden.current || !navigator.onLine || pending.current;
+      try {
+        const result = await readBookSnapshot(signal, initial);
+        if (stale()) return { kind: "cancelled" };
+        if (signal.aborted) throw new Error("snapshot timeout");
+        if (result.kind === "stopped") {
+          deny();
+        } else if (result.kind === "success") {
+          freshRead.current = result.value;
+          setSnapshot(result.value);
+          setOffline(false);
+          setNow(Date.now());
+          document.documentElement.removeAttribute("data-pb-hidden");
+        } else {
+          setOffline(true);
+        }
+        return result;
+      } catch {
+        if (stale()) return { kind: "cancelled" };
+        // Only confirmed data from this session survives a temporary read failure.
+        setOffline(true);
+        return { kind: "retry" };
+      }
+    },
+  }));
+  const requestSnapshot = useCallback(() => {
+    const available = mounted.current && !document.hidden && !pageHidden.current && navigator.onLine && !pending.current && !revoked.current;
+    return refreshQueue.setAvailable(available) ?? refreshQueue.request();
+  }, [refreshQueue]);
+  const load = useCallback(async () => { await requestSnapshot(); }, [requestSnapshot]);
+  const requestGuideSnapshot = useCallback(() => {
+    // The coordinator already revalidates on mount/resume. A remounted guide
+    // consumes that confirmed result instead of requesting it twice in Strict Mode.
+    if (mounted.current && !document.hidden && !pageHidden.current && navigator.onLine && !pending.current && !revoked.current && freshRead.current) return Promise.resolve(freshRead.current);
+    return requestSnapshot();
+  }, [requestSnapshot]);
   useEffect(() => {
     const guide = (event: Event) => { const detail=(event as CustomEvent).detail; if(["friends","banner","practice"].includes(detail?.teamTab))setTeamTab(detail.teamTab); if(["settings","appearance"].includes(detail?.profileTab))setProfileTab(detail.profileTab); };
     window.addEventListener("poortenboek-guide-navigate",guide);
     return () => window.removeEventListener("poortenboek-guide-navigate",guide);
   }, []);
   useEffect(() => {
+    mounted.current = true;
+    const stop = () => { mounted.current = false; freshRead.current = null; sequence.current++; refreshQueue.stop(); };
     const hide = () => {
       sequence.current++;
+      freshRead.current = null;
+      refreshQueue.setAvailable(false);
       document.documentElement.dataset.pbHidden = "true";
       setSnapshot(null);
     };
     const visible = () => {
       if (document.hidden) hide();
-      else void load();
+      else { pageHidden.current = false; void load(); }
     };
     const lost = () => {
       sequence.current++;
+      freshRead.current = null;
+      refreshQueue.setAvailable(false);
       setSnapshot(null);
       setOffline(true);
       document.documentElement.removeAttribute("data-pb-hidden");
     };
-    const refresh = () => void load();
-    window.addEventListener("pagehide", hide);
-    window.addEventListener("pageshow", refresh);
+    const pagehide = () => { pageHidden.current = true; hide(); };
+    const pageshow = () => { pageHidden.current = false; void load(); };
+    const refresh = () => { void load(); };
+    const storage = () => {
+      // Another tab may have switched the account or child behind HttpOnly cookies.
+      sequence.current++;
+      freshRead.current = null;
+      refreshQueue.invalidate();
+      setSnapshot(null);
+      setConfirmedIdentity(readConfirmedBookIdentity());
+      void load();
+    };
+    window.addEventListener("pagehide", pagehide);
+    window.addEventListener("pageshow", pageshow);
     window.addEventListener("online", refresh);
     window.addEventListener("offline", lost);
     window.addEventListener("focus", refresh);
-
-    window.addEventListener("storage", refresh);
+    window.addEventListener("storage", storage);
     document.addEventListener("visibilitychange", visible);
-    const timer = window.setInterval(() => {
-      setNow(Date.now());
-      if (["team", "boek", "nu"].includes(section) && !document.hidden) void load();
-    }, 12_000);
+    refreshQueue.setPolling(["team", "boek", "nu"].includes(section));
+    refreshQueue.setAvailable(!document.hidden && navigator.onLine && !pending.current && !revoked.current);
     return () => {
-      window.clearInterval(timer);
-      window.removeEventListener("pagehide", hide);
-      window.removeEventListener("pageshow", refresh);
+      stop();
+      window.removeEventListener("pagehide", pagehide);
+      window.removeEventListener("pageshow", pageshow);
       window.removeEventListener("online", refresh);
       window.removeEventListener("offline", lost);
       window.removeEventListener("focus", refresh);
-
-      window.removeEventListener("storage", refresh);
+      window.removeEventListener("storage", storage);
       document.removeEventListener("visibilitychange", visible);
       document.documentElement.removeAttribute("data-pb-hidden");
     };
-  }, [load, section]);
+  }, [load, refreshQueue, section]);
   useEffect(() => {
-    if (!offline) return;
-    // The browser can announce "online" just before its worker reconnects.
-    // Keep the neutral screen until a fresh, authorized response succeeds.
-    const retry = window.setInterval(() => {
-      if (navigator.onLine) void load();
-    }, 1500);
-    return () => window.clearInterval(retry);
-  }, [offline, load]);
-  useEffect(() => {
-    if (!snapshot) return;
-    const timer = window.setTimeout(
-      () => {
-        setSnapshot(null);
-        saveConfirmedBookIdentity("");
-        window.location.replace("/poortenboek/inloggen");
-      },
-      Math.max(0, new Date(snapshot.expiresAt).getTime() - Date.now()),
-    );
+    // Privacy/offline clearing must not remove the session's expiry deadline.
+    const timer = window.setTimeout(() => { refreshQueue.stop(); deny(); }, Math.max(0, Date.parse(initial.expiresAt) - Date.now()));
     return () => window.clearTimeout(timer);
-  }, [snapshot]);
+  }, [initial.expiresAt, refreshQueue, deny]);
   const act = useCallback(
     async (action: string, payload: Record<string, unknown> = {}) => {
-      if (pending.current) return;
+      if (!mounted.current || pending.current || revoked.current) return;
       pending.current = true;
+      const current = ++sequence.current;
+      freshRead.current = null;
+      // Pause reads only. The mutation has its own request and original idempotency key.
+      refreshQueue.setAvailable(false);
       setBusy(true);
       setNotice("");
-      const current = ++sequence.current;
-      if (action === "checklist")
-        setSnapshot((current) =>
-          current
-            ? { ...current, checklist: payload.values as boolean[] }
-            : null,
-        );
+      if (action === "logout") {
+        revoked.current = true;
+        setSnapshot(null);
+        saveConfirmedBookIdentity("");
+      }
       try {
         const result = await fetch(`/api/poortenboek/${action}`, {
           method: "POST",
@@ -201,41 +232,34 @@ export function Poortenboek({
           cache: "no-store",
           body: JSON.stringify(payload),
         });
+        if (!mounted.current || current !== sequence.current) return;
+        if (result.status === 401 || result.status === 403) { deny(); return; }
         const data = await result.json();
-        if (current !== sequence.current || document.hidden) {
-          if (!document.hidden && navigator.onLine) await load();
-          return;
-        }
-        if (result.status === 401) {
-          setSnapshot(null);
-          saveConfirmedBookIdentity("");
-        window.location.replace("/poortenboek/inloggen");
-          return;
-        }
+        if (current !== sequence.current || document.hidden || pageHidden.current || revoked.current) return;
         if (!result.ok) {
-          setNotice(data.error ?? "Dat lukte even niet.");
-          await load();
+          setNotice(result.status >= 500 ? "De wijziging is nog niet bevestigd. Controleer je boek voordat je het opnieuw probeert." : data.error ?? "Dat lukte even niet.");
           return;
         }
-        if (action === "logout") {
-          setSnapshot(null);
-          saveConfirmedBookIdentity("");
-        window.location.replace("/poortenboek/inloggen");
-          return;
-        }
-        setSnapshot(data as BookSnapshot);
+        const confirmed = validateBookSnapshot(data, initial);
+        if (confirmed.kind === "stopped") { deny(); return; }
+        if (confirmed.kind !== "success") throw new Error("unconfirmed mutation");
+        freshRead.current = confirmed.value;
+        setSnapshot(confirmed.value);
         setOffline(false);
       } catch {
-        if (current === sequence.current && !document.hidden) {
-          setSnapshot(null);
-          setOffline(true);
+        if (current === sequence.current && !document.hidden && !revoked.current) {
+          setNotice("De wijziging is nog niet bevestigd. Controleer je boek voordat je het opnieuw probeert.");
         }
       } finally {
         pending.current = false;
         setBusy(false);
+        if (mounted.current) {
+          if (action === "logout") deny();
+          else if (!revoked.current) void load();
+        }
       }
     },
-    [load],
+    [deny, initial, load, refreshQueue],
   );
   if (!snapshot)
     return (
@@ -269,7 +293,7 @@ export function Poortenboek({
   const ready = snapshot.checklist.filter(Boolean).length;
   return (
     <div className="pb-app">
-      <KidGuide snapshot={snapshot} section={section} onComplete={load}/>
+      <KidGuide snapshot={snapshot} section={section} onComplete={load} requestSnapshot={requestGuideSnapshot}/>
       <header className="pb-header">
         <a href="/poortenboek" aria-label="Het Poortenboek, naar Nu">
           <img
@@ -306,6 +330,7 @@ export function Poortenboek({
           <span><Moon size={13} /> {event.dateLong}</span>
         </div>
         <BookArrivalSync childId={snapshot.childId} confirmedStopIds={snapshot.journey.seals.flatMap(seal=>seal.stopId?[seal.stopId]:[])}/>
+        {offline && <p role="status" className="pb-error">Verversen lukt even niet. Je ziet de laatst bevestigde stand.</p>}
         {notice && (
           <p role="status" className="pb-error">
             {notice}

@@ -66,6 +66,8 @@ jobs:
           pnpm exec playwright install --with-deps chromium
       - name: Browser acceptance tests
         run: pnpm test:e2e
+      - name: Verify serialized Poortenboek refreshes without a database
+        run: pnpm exec playwright test --config playwright.poortenboek-refresh.config.ts
 
   database:
     name: Database migrations, contracts and lint

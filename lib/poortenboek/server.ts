@@ -35,10 +35,18 @@ export function childSecrets() {
     encryptionKey: env.CHILD_CODE_ENCRYPTION_KEY,
   };
 }
-export async function childRpc(name: string, args: Record<string, unknown>) {
+export async function childRpc(
+  name: string,
+  args: Record<string, unknown>,
+  signal?: AbortSignal,
+) {
+  signal?.throwIfAborted();
   const client = createPrivilegedClient();
   if (!client) throw new Error("Poortenboek service unavailable");
-  const result = await client.schema("api").rpc(name, args);
+  const request = client.schema("api").rpc(name, args);
+  if (signal) request.abortSignal(signal);
+  const result = await request;
+  signal?.throwIfAborted();
   if (result.error)
     throw Object.assign(new Error(result.error.message), {
       code: result.error.code,
@@ -75,16 +83,31 @@ export async function writeDemo(session: DemoSession) {
     { ...cookieOptions, expires: new Date(session.expiresAt) },
   );
 }
-export async function childSnapshot(): Promise<BookSnapshot | null> {
+export async function childSnapshot(
+  signal?: AbortSignal,
+): Promise<BookSnapshot | null> {
+  signal?.throwIfAborted();
   const demo = await readDemo();
+  signal?.throwIfAborted();
   if (demo) return withBookStories(demoSnapshot(demo));
   const token = (await cookies()).get(CHILD_COOKIE)?.value;
+  signal?.throwIfAborted();
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
+  const controller = new AbortController();
+  const abort = () => controller.abort(signal?.reason);
+  signal?.addEventListener("abort", abort, { once: true });
+  // Bound only snapshot HTTP work. Aborting fetch does not prove that the
+  // database transaction has stopped; the serial client queue limits demand.
+  const timeout = setTimeout(
+    () => controller.abort(new DOMException("Snapshot timed out", "TimeoutError")),
+    15_000,
+  );
   try {
-    return (await childRpc("poortenboek_child_action", {
-      _token_hash: tokenHash(token),
-      _action: "snapshot",
-    })) as BookSnapshot;
+    return (await childRpc(
+      "poortenboek_child_action",
+      { _token_hash: tokenHash(token), _action: "snapshot" },
+      controller.signal,
+    )) as BookSnapshot;
   } catch (error) {
     if (
       error instanceof Error &&
@@ -92,5 +115,8 @@ export async function childSnapshot(): Promise<BookSnapshot | null> {
     )
       return null;
     throw error;
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener("abort", abort);
   }
 }

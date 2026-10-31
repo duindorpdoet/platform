@@ -155,6 +155,40 @@ describe("child HTTP boundaries", () => {
     );
     expect(result.headers.get("x-robots-tag")).toBe("noindex, nofollow");
   });
+  it("forwards the GET snapshot cancellation signal without exposing credentials", async () => {
+    mocks.snapshot.mockResolvedValue({ child: { id: "child-a" } });
+    const controller = new AbortController();
+    const request = new Request("https://example.invalid/api/poortenboek/snapshot", {
+      signal: controller.signal,
+    });
+    const result = await GET(request, { params: Promise.resolve({ action: "snapshot" }) });
+    expect(result.status).toBe(200);
+    expect(mocks.snapshot).toHaveBeenCalledExactlyOnceWith(request.signal);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("does not attach a snapshot abort signal to a user mutation or repeat it", async () => {
+    mocks.jar.set("__Host-poortenboek-session", "a".repeat(43));
+    const controller = new AbortController();
+    const requestId = "11111111-1111-4111-8111-111111111111";
+    let finish!: (value: object) => void;
+    mocks.rpc.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const result = POST(new Request("https://example.invalid/api/poortenboek/practice", {
+      method: "POST",
+      headers: { origin: "https://example.invalid", "Content-Type": "application/json" },
+      body: JSON.stringify({ heldMs: 1500, requestId }),
+      signal: controller.signal,
+    }), { params: Promise.resolve({ action: "practice" }) });
+    await vi.waitFor(() => expect(mocks.rpc).toHaveBeenCalledOnce());
+    controller.abort();
+    finish({ ok: true });
+    expect((await result).status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("poortenboek_child_action", {
+      _token_hash: tokenHash("a".repeat(43)),
+      _action: "practice",
+      _payload: { heldMs: 1500, requestId },
+      _request_id: requestId,
+    });
+  });
   it("opening as a child requires verified parent Auth and a trusted origin", async () => {
     const payload = { action: "open", childId: "11111111-1111-4111-8111-111111111111" };
     mocks.jar.set("__Host-poortenboek-session", "a".repeat(43));
