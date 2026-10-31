@@ -427,6 +427,8 @@ jobs:
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed staging release
         run: node scripts/deploy/verify-deployment.mjs staging "${APP_URL}"
+      - name: Check Startregie HTTP reads without publication (empty staging is no production performance proof)
+        run: node scripts/deploy/check-startregie-reads.mjs
       - name: Verify text status RPC through the real service role route
         run: node scripts/deploy/diagnose-mail-worker.mjs --require-v2
       - name: Activate Resend default for the authorized exact release

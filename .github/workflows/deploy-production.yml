@@ -321,6 +321,8 @@ jobs:
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed production release
         run: node scripts/deploy/verify-deployment.mjs production "${APP_URL}"
+      - name: Measure complete Startregie reads with real production groups without publication
+        run: node scripts/deploy/check-startregie-reads.mjs
       - name: Audit saved routes after deployment (read only)
         run: node scripts/deploy/evening-readiness-audit.mjs
       - name: Retain coded readiness report after deployment
