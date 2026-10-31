@@ -78,28 +78,21 @@ export function phaseSql(name) {
   if (!Object.hasOwn(PHASE_BODIES, name)) fail("UNKNOWN_PHASE");
   return `savepoint history_diagnosis_phase;${policy(true)}select ${epoch} as diagnostic_server_start,pg_backend_pid() as diagnostic_reader_pid,current_setting('transaction_read_only') as diagnostic_read_only,current_setting('jit') as diagnostic_jit,current_setting('statement_timeout') as diagnostic_timeout,current_setting('lock_timeout') as diagnostic_lock;\n${PHASE_BODIES[name]}\n;select ${epoch} as diagnostic_server_end;release savepoint history_diagnosis_phase;`;
 }
-export function observerSql(pid, original = false) {
-  if (pid !== null && (!Number.isSafeInteger(pid) || pid < 1 || pid > 2147483647)) fail("INVALID_READER_PID");
-  if (pid === null && !original) fail("INVALID_READER_PID");
-  const prefix = hotfixProofQuery.slice(0, 120).replaceAll("'", "''");
-  const matches = `application_name='duindorp-release-readonly' and left(query,120)='${prefix}'`;
-  const target = `${pid === null ? "false" : `pid=${pid}`} ${original ? `or (${matches})` : ""}`;
-  return `select pg_stat_clear_snapshot();with activity as materialized(select * from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid()),targets as(select pid,state,wait_event_type,wait_event,pg_blocking_pids(pid) blocking_pids,extract(epoch from query_start)*1000 query_started_at_ms,(${matches}) original_query_matches from activity where ${target} order by pid limit 4),other as(select case when query ilike '%admin_startregie_publication_readiness%' then 'startregie_readiness' when query ilike '%admin_startregie_snapshot%' then 'startregie_snapshot' when query ~* '(pg_catalog|pg_stat_activity|pg_settings|current_setting|select[[:space:]]+1)' then 'metadata' else 'other' end class,count(*) backends,max(greatest(0,extract(epoch from clock_timestamp()-query_start)*1000)) max_active_age_ms from activity where state='active' and not (${target}) and application_name not in('duindorp-release-history-diagnosis','duindorp-release-history-observer','duindorp-release-readonly') group by 1) select jsonb_build_object('observedAtMs',${epoch},'targets',coalesce((select jsonb_agg(to_jsonb(targets)) from targets),'[]'),'otherActive',coalesce((select jsonb_agg(to_jsonb(other) order by class) from other),'[]')) diagnostic_observation;`;
+export function observerSql(pid) {
+  if (!Number.isSafeInteger(pid) || pid < 1 || pid > 2147483647) fail("INVALID_READER_PID");
+  return `select pg_stat_clear_snapshot();select jsonb_build_object('observedAtMs',${epoch},'targets',coalesce((select jsonb_agg(jsonb_build_object('pid',a.pid,'state',a.state,'wait_event_type',a.wait_event_type,'wait_event',a.wait_event,'blocking_pids',pg_blocking_pids(a.pid),'query_started_at_ms',extract(epoch from a.query_start)*1000)) from pg_catalog.pg_stat_get_activity(${pid}) a),'[]'::jsonb),'otherActive','[]'::jsonb) diagnostic_observation;`;
 }
 function safeSample(answer) {
   const row = rowsOf(answer).flatMap(result => result.rows).find(value => value.diagnostic_observation)?.diagnostic_observation;
-  if (!row || !Array.isArray(row.targets) || row.targets.length > 4 || !Array.isArray(row.otherActive) || row.otherActive.length > 4 || finite(row.observedAtMs) === null) fail("INVALID_OBSERVER_RESULT");
+  if (!row || !Array.isArray(row.targets) || row.targets.length > 4 || !Array.isArray(row.otherActive) || row.otherActive.length !== 0 || finite(row.observedAtMs) === null) fail("INVALID_OBSERVER_RESULT");
   const text = value => value === null ? null : typeof value === "string" && /^[A-Za-z_ ()]{1,80}$/.test(value) ? value : "other";
   const targets = row.targets.map(value => {
     if (!Number.isSafeInteger(value.pid) || !Array.isArray(value.blocking_pids) || !value.blocking_pids.every(pid => Number.isSafeInteger(pid) && pid > 0) || value.blocking_pids.length > 100) fail("INVALID_OBSERVER_RESULT");
     return { readerPid: value.pid, state: text(value.state), waitType: text(value.wait_event_type), waitEvent: text(value.wait_event), blockingPids: value.blocking_pids,
-      queryStartedAtMs: finite(value.query_started_at_ms), originalQueryMatches: value.original_query_matches === true };
+      queryStartedAtMs: finite(value.query_started_at_ms) };
   });
-  const otherActive = row.otherActive.map(value => {
-    if (!["startregie_snapshot", "startregie_readiness", "metadata", "other"].includes(value.class) || !Number.isSafeInteger(value.backends) || value.backends < 0 || finite(value.max_active_age_ms) === null) fail("INVALID_OBSERVER_RESULT");
-    return { class: value.class, backends: value.backends, maxActiveAgeMs: finite(value.max_active_age_ms) };
-  });
-  return { targetSeen: targets.length > 0, inference: "NO_REACHABILITY_INFERENCE_FROM_ABSENCE", observedAtMs: finite(row.observedAtMs), targets, otherActive };
+
+  return { targetSeen: targets.length > 0, inference: "NO_REACHABILITY_INFERENCE_FROM_ABSENCE", observedAtMs: finite(row.observedAtMs), targets, otherActive: [] };
 }
 
 export const CAPACITY_SQL = `select jsonb_build_object('maxConnections',current_setting('max_connections'),'reservedConnections',current_setting('reserved_connections',true),'superuserReservedConnections',current_setting('superuser_reserved_connections',true),'databaseConnectionLimit',(select datconnlimit from pg_database where datname=current_database()),'roleConnectionLimit',(select rolconnlimit from pg_roles where rolname=current_user),'totalBackends',count(*),'activeBackends',count(*) filter(where state='active'),'idleBackends',count(*) filter(where state='idle'),'idleInTransactionBackends',count(*) filter(where state like 'idle in transaction%'),'clientBackends',count(*) filter(where backend_type='client backend'),'clientBackendsCurrentDatabase',count(*) filter(where backend_type='client backend' and datname=current_database()),'clientBackendsCurrentRole',count(*) filter(where backend_type='client backend' and usename=current_user),'clientBackendsActive',count(*) filter(where backend_type='client backend' and state='active'),'clientBackendsIdle',count(*) filter(where backend_type='client backend' and state='idle'),'clientBackendsIdleInTransaction',count(*) filter(where backend_type='client backend' and state like 'idle in transaction%'),'walSenderBackends',count(*) filter(where backend_type='walsender'),'otherBackendProcesses',count(*) filter(where backend_type is distinct from 'client backend' and backend_type is distinct from 'walsender')) diagnostic_capacity from pg_stat_activity;`;
@@ -199,31 +192,42 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
         if (entry.stage === "driver_connect") entry.driverConnectMs = Math.round(performance.now() - began);
         else entry.backendProofMs = Math.round(performance.now() - began);
         entry.errorClass = diagnosticError(error); if (isReader) unsafeReader = true; else unsafeObserver = true;
+        await close(client);
       }
     }
     await Promise.all([establish(reader, "reader", true), establish(observer, "observer", false)]);
-    if (report.connections.reader.status !== "ready" || report.connections.observer.status !== "ready") fail("BOTH_BACKENDS_NOT_READY");
+    if (report.connections.reader.status !== "ready" || unsafeReader) fail("READER_BACKEND_NOT_READY");
     const readerPid = report.connections.reader.backendPid;
-    if (readerPid === report.connections.observer.backendPid) fail("DISTINCT_BACKENDS_NOT_PROVEN");
-    report.observerAvailable = true;
+    if (report.connections.observer.status === "ready" && !unsafeObserver) {
+      if (readerPid === report.connections.observer.backendPid) fail("DISTINCT_BACKENDS_NOT_PROVEN");
+      report.observerAvailable = true;
+    } else { unsafeObserver = true; report.observerAvailable = false; await close(observer); }
     const componentResults = {};
     async function observe(phase, pid, original = false) {
       if (unsafeObserver || totalExpired) return;
+      if (original && pid === null) {
+        phase.samples.push({ observationStatus: "NOT_SAMPLED_BACKEND_PID_NOT_YET_PROVEN", otherActiveCollection: "NOT_COLLECTED",
+          inference: "NO_REACHABILITY_INFERENCE_FROM_ABSENCE", wallObservedAt: new Date().toISOString() });
+        return;
+      }
       const sampled = performance.now();
       try {
         ensureBudget();
-        const value = safeSample(await observer.query({ text: observerSql(pid, original), query_timeout: 3000 }));
+        const value = safeSample(await observer.query({ text: observerSql(pid), query_timeout: 3000 }));
         ensureBudget();
-        if (!original && value.targets.some(target => target.readerPid !== pid)) fail("OBSERVER_PID_MISMATCH");
-        if (original && value.targets.some(target => target.readerPid !== pid && !target.originalQueryMatches)) fail("OBSERVER_PID_MISMATCH");
-        if (original) value.targetAttribution = pid === null ? "PREFIX_CANDIDATES_ONLY_NO_OWNERSHIP_INFERENCE" : "PROOF_PID_OR_ORIGINAL_PREFIX_CANDIDATE";
+        if (value.targets.some(target => target.readerPid !== pid)) fail("OBSERVER_PID_MISMATCH");
+        value.targetAttribution = "KNOWN_READER_PID_ONLY"; value.otherActiveCollection = "NOT_COLLECTED";
         phase.samples.push({ ...value, wallMs: Math.round(performance.now() - sampled), wallObservedAt: new Date().toISOString() });
-      } catch (failure) { unsafeObserver = true; report.observerAvailable = false; phase.samples.push({ observerErrorClass: diagnosticError(failure) }); }
+      } catch (failure) {
+        unsafeObserver = true; report.observerAvailable = false;
+        phase.samples.push({ observerErrorClass: diagnosticError(failure), observerCancelReason: cancelReason(failure) });
+        await close(observer);
+      }
     }
     for (const name of Object.keys(PHASE_BODIES)) {
-      if (unsafeReader || unsafeObserver || totalExpired) break;
+      if (unsafeReader || totalExpired) break;
       const phase = { name, status: "failed", wallStartedAt: new Date().toISOString(), wallMs: null, serverStartedAtMs: null,
-        serverEndedAtMs: null, serverMs: null, serverStopProven: false, samples: [] };
+        serverEndedAtMs: null, serverMs: null, serverStopProven: false, observerAvailableAtStart: !unsafeObserver && report.observerAvailable, samples: [] };
       report.phases.push(phase);
       const began = performance.now();
       let answer, error, settled = false;
@@ -257,15 +261,22 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
       }
       await observe(phase, readerPid);
       for (const value of phase.samples) value.overlapsCompletedServerInterval = phase.serverStartedAtMs !== null && value.observedAtMs >= phase.serverStartedAtMs && value.observedAtMs <= phase.serverEndedAtMs;
+      phase.observerAvailableAtEnd = !unsafeObserver && report.observerAvailable;
+      phase.observationStatus = phase.samples.some(value => value.targetSeen && value.overlapsCompletedServerInterval) ? "OBSERVED_DURING_SERVER_INTERVAL"
+        : unsafeObserver ? "UNOBSERVED_OBSERVER_UNAVAILABLE" : "NO_PROVEN_OVERLAPPING_OBSERVATION";
       if (error && phase.serverStopProven && !unsafeReader && !totalExpired) {
         try { await reader.query({ text: "rollback to savepoint history_diagnosis_phase;release savepoint history_diagnosis_phase;", query_timeout: 7000 }); }
         catch (failure) { phase.recoveryErrorClass = diagnosticError(failure); unsafeReader = true; }
       }
     }
-    if (report.phases.length === 4 && report.phases.every(phase => phase.status === "passed") && !unsafeReader && !unsafeObserver && !totalExpired) {
+    if (report.phases.length === 4 && report.phases.every(phase => phase.status === "passed") && !unsafeReader && !totalExpired) {
       const split = Object.assign({}, ...Object.keys(componentBodies).map(name => componentResults[name]));
       try { assertInstalledHotfix(split); hotfixRepairActions(split, "production"); report.checks.splitCanonical = true; }
       catch { report.checks.splitCanonical = false; }
+      if (unsafeObserver || !report.observerAvailable) {
+        report.originalSkippedReason = "OBSERVER_UNAVAILABLE";
+        fail("OBSERVER_UNAVAILABLE_FOR_ORIGINAL");
+      }
       await reader.query({ text: "rollback;reset all", query_timeout: 7000 });
       await close(reader); reader = null;
       const phase = { name: "combined_original", status: "failed", stage: "metadata", samples: [], originalSqlInvocations: 0,

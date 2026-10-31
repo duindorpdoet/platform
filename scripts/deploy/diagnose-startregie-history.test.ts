@@ -20,7 +20,7 @@ const proof = { save_hash: "b173e2e2a2fe8341cb6e146e62be8b99", save_functions: {
 versions: ["20261027033940"], wrapper_versions: [] };
 type Result = { rows: Record<string, unknown>[]; fields?: {name: string}[] };
 const result = (row?: Record<string, unknown>): Result => ({ rows: row ? [row] : [] });
-function fixture(options: { splitError?: { name: string; code?: string; message?: string }; connectFailure?: string; observerFailure?: boolean;
+function fixture(options: { splitError?: { name: string; code?: string; message?: string }; connectFailure?: string; observerFailure?: boolean; observerError?: Error; observerProofTimeout?: boolean;
   emptyObserver?: boolean; nullServerTime?: boolean; nullBackendTime?: boolean; originalError?: Error; originalDelayMs?: number; capacityFailure?: boolean; capacityClientFailure?: boolean; capacityCount?: unknown; metadataStatus?: number } = {}) {
   const clients: FakeClient[] = [];
   const queries: { client: string; text: string; query_timeout: number }[] = [];
@@ -39,11 +39,15 @@ function fixture(options: { splitError?: { name: string; code?: string; message?
         return result({ diagnostic_capacity: { maxConnections: options.capacityCount ?? "60", reservedConnections: "3", superuserReservedConnections: "3", databaseConnectionLimit: -1, roleConnectionLimit: -1, totalBackends: 8, activeBackends: 2, idleBackends: 3, idleInTransactionBackends: 1, clientBackends: 6, clientBackendsCurrentDatabase: 5, clientBackendsCurrentRole: 2, clientBackendsActive: 2, clientBackendsIdle: 3, clientBackendsIdleInTransaction: 1, walSenderBackends: 1, otherBackendProcesses: 1, private: "PRIVATE_CAPACITY" } });
       }
       if (input.text.startsWith("select pg_stat_clear_snapshot()")) {
+        if (options.observerError) throw options.observerError;
         if (options.observerFailure) throw new Error("PRIVATE_OBSERVER_ERROR");
-        const original = /from activity where (?:false|pid=\d+)\s+or\b/.test(input.text);
-        return result({ diagnostic_observation: { observedAtMs: ++tick, targets: options.emptyObserver ? [] : [{ pid: original ? 103 : 101, state: "idle in transaction", wait_event_type: "Client", wait_event: "ClientRead", blocking_pids: [], query_started_at_ms: tick - 1, original_query_matches: original }], otherActive: [{ class: "startregie_snapshot", backends: 2, max_active_age_ms: 100 }] } });
+        const original = input.text.includes("pg_stat_get_activity(103)");
+        return result({ diagnostic_observation: { observedAtMs: ++tick, targets: options.emptyObserver ? [] : [{ pid: original ? 103 : 101, state: "idle in transaction", wait_event_type: "Client", wait_event: "ClientRead", blocking_pids: [], query_started_at_ms: tick - 1, original_query_matches: original }], otherActive: [] } });
       }
-      if (input.text.startsWith("begin ") && input.text.includes("as diagnostic_pid")) return result({ diagnostic_pid: this.pid, diagnostic_owner: true, diagnostic_read_only: "on", diagnostic_jit: "off", diagnostic_timeout: this.pid === 101 ? "5s" : "2s", diagnostic_lock: this.pid === 101 ? "500ms" : "200ms", diagnostic_backend_at: options.nullBackendTime ? null : ++tick });
+      if (input.text.startsWith("begin ") && input.text.includes("as diagnostic_pid")) {
+        if (options.observerProofTimeout && this.pid === 102) throw new Error("Query read timeout PRIVATE");
+        return result({ diagnostic_pid: this.pid, diagnostic_owner: true, diagnostic_read_only: "on", diagnostic_jit: "off", diagnostic_timeout: this.pid === 101 ? "5s" : "2s", diagnostic_lock: this.pid === 101 ? "500ms" : "200ms", diagnostic_backend_at: options.nullBackendTime ? null : ++tick });
+      }
       if (input.text.startsWith("savepoint history_diagnosis_phase")) {
         queryPhase = Object.keys(PHASE_BODIES).find(name => input.text.includes(PHASE_BODIES[name])) ?? "";
         if (queryPhase === options.splitError?.name) throw Object.assign(new Error(options.splitError.message ?? "PRIVATE_SQL_ERROR"), options.splitError.code ? { code: options.splitError.code } : {});
@@ -73,6 +77,9 @@ describe("focused native history diagnosis", () => {
     expect(() => phaseSql("combined_original")).toThrow("UNKNOWN_PHASE");
     expect(() => observerSql(-1)).toThrow("INVALID_READER_PID");
     expect(observerSql(101)).toContain("pg_stat_clear_snapshot()");
+    expect(observerSql(101)).toContain("pg_catalog.pg_stat_get_activity(101)");
+    expect(observerSql(101)).not.toMatch(/from pg_stat_activity|\bilike\b|\bleft\(query|\bclass\b/);
+    expect(() => observerSql(0)).toThrow("INVALID_READER_PID");
     expect(observerSql(101)).not.toMatch(/jsonb_build_object\([^;]*(?:'query'|'address'|'email')/);
   });
   it("establishes two actual backend proofs, runs four components once and reproduces the unchanged old helper once", async () => {
@@ -182,18 +189,35 @@ describe("focused native history diagnosis", () => {
     expect(report.phases[0]).toMatchObject({ errorClass: "SQLSTATE_57014", cancelReason: expected });
     expect(JSON.stringify(report)).not.toContain(message);
   });
-  it("reports independently failed observer connection before any component", async () => {
-    const f = fixture({ connectFailure: "duindorp-release-history-observer" });
-    const report = await runHistoryDiagnosis(env, f.request, f.Client);
-    expect(report.connections.observer).toMatchObject({ stage: "driver_connect", status: "failed", errorClass: "CONNECTION_FAILED" });
+  it.each([
+    { connectFailure: "duindorp-release-history-observer" },
+    { observerProofTimeout: true },
+  ])("runs four bounded reader components despite an initially unavailable observer: %j", async options => {
+    const f = fixture(options); const report = await runHistoryDiagnosis(env, f.request, f.Client);
+    expect(report.status).toBe("failed"); expect(report.observerAvailable).toBe(false);
+    expect(report.connections.observer).toMatchObject({ status: "failed" });
     expect(report.connections.reader).toMatchObject({ status: "ready", backendPid: 101 });
-    expect(report.phases).toHaveLength(0);
+    expect(report.phases).toHaveLength(4); expect(report.phases.every(phase => phase.status === "passed")).toBe(true);
+    expect(report.checks).toEqual({ splitCanonical: true, combinedCanonical: null, combinedMatchesSplit: null });
+    expect(report.originalSkippedReason).toBe("OBSERVER_UNAVAILABLE");
+    expect(report.phases.every(phase => phase.observationStatus === "UNOBSERVED_OBSERVER_UNAVAILABLE")).toBe(true);
+    expect(f.clients).toHaveLength(2); expect(f.clients[1].end).toHaveBeenCalledOnce();
+    const observerQueries = f.queries.filter(query => query.client === f.clients[1].name);
+    expect(observerQueries).toHaveLength("observerProofTimeout" in options ? 1 : 0);
+    expect(f.queries.some(query => query.text === CAPACITY_SQL || query.text === hotfixProofQuery)).toBe(false);
+    expect(f.queries.filter(query => query.text.startsWith("savepoint")).every(query => query.query_timeout === 7000 && query.text.includes("statement_timeout='5s'") && query.text.includes("lock_timeout='500ms'"))).toBe(true);
+  });
+  it("hard stops before components if the mandatory reader backend cannot be proved", async () => {
+    const f = fixture({ connectFailure: "duindorp-release-history-diagnosis" });
+    const report = await runHistoryDiagnosis(env, f.request, f.Client);
+    expect(report.phases).toHaveLength(0); expect(report.errorClass).toBe("HISTORY_DIAGNOSIS_READER_BACKEND_NOT_READY");
+    expect(f.queries.some(query => query.text.startsWith("savepoint") || query.text === CAPACITY_SQL || query.text === hotfixProofQuery)).toBe(false);
   });
   it("never infers reachability from absent observer targets", async () => {
     const f = fixture({ emptyObserver: true });
     const report = await runHistoryDiagnosis(env, f.request, f.Client);
     expect(report.status).toBe("passed");
-    expect(report.phases.flatMap(phase => phase.samples).every(sample => sample.targetSeen === false && sample.inference === "NO_REACHABILITY_INFERENCE_FROM_ABSENCE")).toBe(true);
+    expect(report.phases.flatMap(phase => phase.samples).filter(sample => !sample.observationStatus).every(sample => sample.targetSeen === false && sample.inference === "NO_REACHABILITY_INFERENCE_FROM_ABSENCE")).toBe(true);
   });
   it("requires a real server timestamp for both initial backend proofs", async () => {
     const f = fixture({ nullBackendTime: true }); const report = await runHistoryDiagnosis(env, f.request, f.Client);
@@ -201,13 +225,9 @@ describe("focused native history diagnosis", () => {
     expect(report.connections.reader).toMatchObject({ errorClass: "HISTORY_DIAGNOSIS_BACKEND_POLICY_NOT_PROVEN" });
     expect(report.connections.observer).toMatchObject({ errorClass: "HISTORY_DIAGNOSIS_BACKEND_POLICY_NOT_PROVEN" });
   });
-  it("does not proceed after an observer failure or a null required server timestamp", async () => {
-    for (const options of [{ observerFailure: true }, { nullServerTime: true }]) {
-      const f = fixture(options); const report = await runHistoryDiagnosis(env, f.request, f.Client);
-      expect(report.status).toBe("failed");
-      expect(report.phases).toHaveLength(1);
-      expect(report.phases[0].status === "failed" || !report.observerAvailable).toBe(true);
-    }
+  it("does not proceed after a null required reader server timestamp", async () => {
+    const f = fixture({ nullServerTime: true }); const report = await runHistoryDiagnosis(env, f.request, f.Client);
+    expect(report.status).toBe("failed"); expect(report.phases).toHaveLength(1); expect(report.phases[0].status).toBe("failed");
   });
   it("runs optional capacity after all five history reads and cleans up only afterwards", async () => {
     const f = fixture(); const report = await runHistoryDiagnosis(env, f.request, f.Client);
@@ -232,11 +252,26 @@ describe("focused native history diagnosis", () => {
     expect(f.queries.some(query => query.client.includes("observer") && query.text.startsWith("rollback;"))).toBe(false);
     expect(f.clients[1].end).toHaveBeenCalledOnce();
   });
-  it("skips optional capacity when the mandatory observer becomes unsafe", async () => {
-    const f = fixture({ observerFailure: true }); const report = await runHistoryDiagnosis(env, f.request, f.Client);
+  it.each([
+    Object.assign(new Error("canceling statement due to statement timeout"), { code: "57014" }),
+    Object.assign(new Error("canceling statement due to user request"), { code: "57014" }),
+    Object.assign(new Error("PRIVATE_STATEMENT_TIMEOUT"), { code: "57014" }),
+    new Error("Query read timeout PRIVATE"),
+  ])("continues four reads and skips fifth/capacity when the observer becomes unsafe: %s", async observerError => {
+    const f = fixture({ observerError }); const report = await runHistoryDiagnosis(env, f.request, f.Client);
     expect(report.status).toBe("failed"); expect(report.observerAvailable).toBe(false);
+    expect(report.phases).toHaveLength(4); expect(report.phases.every(phase => phase.status === "passed")).toBe(true);
+    expect(report.checks.splitCanonical).toBe(true); expect(report.originalSkippedReason).toBe("OBSERVER_UNAVAILABLE");
+    const reason = observerError.message === "canceling statement due to statement timeout" ? "STATEMENT_TIMEOUT"
+      : observerError.message === "canceling statement due to user request" ? "USER_CANCEL"
+        : observerError.message.startsWith("PRIVATE") ? "UNKNOWN" : undefined;
+    expect(report.phases[0].samples[0].observerCancelReason).toBe(reason);
+    expect(JSON.stringify(report)).not.toContain(observerError.message);
+    expect(report.phases.slice(1).every(phase => phase.observationStatus === "UNOBSERVED_OBSERVER_UNAVAILABLE" && phase.samples.length === 0)).toBe(true);
+    expect(f.queries.filter(query => query.client === f.clients[1].name)).toHaveLength(2);
+    expect(f.queries.filter(query => query.text.startsWith("savepoint"))).toHaveLength(4);
     expect(report.capacity).toEqual({ unavailable: "HISTORY_DIAGNOSIS_OBSERVER_UNAVAILABLE" });
-    expect(f.queries.some(query => query.text === CAPACITY_SQL)).toBe(false);
+    expect(f.queries.some(query => query.text === CAPACITY_SQL || query.text === hotfixProofQuery)).toBe(false);
     expect(f.clients[1].end).toHaveBeenCalledOnce();
   });
   it.each([new Error("RELEASE_READ_SQLSTATE_57014"), new Error("RELEASE_READ_CLIENT_TIMEOUT")])("retains the exact sanitized old-helper failure and pending SQL step: %s", async error => {
@@ -330,6 +365,24 @@ describe("focused native history diagnosis", () => {
       const times = phase.samples.map(sample => Date.parse(String(sample.wallObservedAt)));
       expect(Math.max(...times) - Math.min(...times)).toBeGreaterThanOrEqual(10_000);
       expect(f.queries.filter(query => query.text === hotfixProofQuery)).toHaveLength(1);
+    } finally { vi.useRealTimers(); }
+  });
+  it("does no observer SQL before the original backend PID proof and scopes later samples to that PID", async () => {
+    vi.useFakeTimers();
+    try {
+      const f = fixture({ originalDelayMs: 6000 });
+      const pending = runHistoryDiagnosis(env, f.request, f.Client);
+      await vi.advanceTimersByTimeAsync(6000);
+      const report = await pending;
+      expect(report.status).toBe("passed");
+      const phase = report.phases.at(-1)!;
+      expect(phase.samples[0]).toMatchObject({ observationStatus: "NOT_SAMPLED_BACKEND_PID_NOT_YET_PROVEN", otherActiveCollection: "NOT_COLLECTED" });
+      const proofIndex = f.queries.findIndex(query => query.text.startsWith("select current_setting('default_transaction_read_only')"));
+      const originalSamples = f.queries.map((query, index) => ({ query, index })).filter(({ query }) => query.text.includes("pg_stat_get_activity(103)"));
+      expect(originalSamples.length).toBeGreaterThan(0);
+      expect(originalSamples.every(({ index }) => index > proofIndex)).toBe(true);
+      expect(f.queries.filter(query => query.text.startsWith("select pg_stat_clear_snapshot()")).every(query => !/pg_stat_activity|\bilike\b|left\(query/.test(query.text))).toBe(true);
+      expect(phase.samples.every(sample => sample.otherActiveCollection === "NOT_COLLECTED")).toBe(true);
     } finally { vi.useRealTimers(); }
   });
 });
