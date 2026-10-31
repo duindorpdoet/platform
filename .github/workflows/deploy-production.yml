@@ -27,6 +27,7 @@ on:
         options:
           - pooler
           - direct-capability
+          - public-client-build
         required: false
       skip_mail_tests:
         description: 'Explicitly skip all mail tests for this release run; other release gates remain required'
@@ -52,9 +53,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  public-client-build-diagnostics:
+    name: Verify public PostgreSQL client build without database access
+    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && inputs.database_diagnostics_scope == 'public-client-build' && !inputs.database_connection_recovery && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && github.repository == 'duindorpdoet/platform' && (github.ref == 'refs/heads/codex/startregie-read-timeout-hotfix' || github.ref == 'refs/heads/production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Build and verify only pinned public client files on a clean runner
+        run: |
+          set -euo pipefail
+          node scripts/deploy/portable-postgres-clients.mjs build "${RUNNER_TEMP}/duindorp-public-client-proof"
+          "${RUNNER_TEMP}/duindorp-public-client-proof/bin/psql" --version
+          "${RUNNER_TEMP}/duindorp-public-client-proof/bin/pg_dump" --version
+          "${RUNNER_TEMP}/duindorp-public-client-proof/bin/pg_restore" --version
   database-connection-recovery:
     name: Explicit guarded production database recovery without deployment
-    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_recovery == true && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
+    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_recovery == true && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform' && !inputs.database_connection_diagnostics
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -81,7 +104,7 @@ jobs:
         run: node scripts/deploy/production-db-recovery.mjs
   database-connection-diagnostics:
     name: Inspect production database through its session pooler (read only)
-    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && inputs.database_diagnostics_scope != 'direct-capability' && !inputs.database_connection_recovery && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
+    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && inputs.database_diagnostics_scope == 'pooler' && !inputs.database_connection_recovery && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
     environment:
       name: production
       deployment: false

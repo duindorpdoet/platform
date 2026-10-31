@@ -45,7 +45,7 @@ describe("dedicated VPS local capabilities", () => {
     const source = readFileSync(new URL("../../.github/workflows/deploy-production.yml", import.meta.url), "utf8");
     const job = (name: string) => source.split(`\n  ${name}:\n`)[1]?.split(/\n  [a-z][a-z-]+:\n/)[0] ?? "";
     expect(source).toContain("database_diagnostics_scope:"); expect(source).toContain("default: pooler");
-    expect(job("database-connection-diagnostics")).toContain("inputs.database_diagnostics_scope != 'direct-capability'");
+    expect(job("database-connection-diagnostics")).toContain("inputs.database_diagnostics_scope == 'pooler'");
     for (const name of ["database-direct-capability", "database-vps-capability"]) {
       const value = job(name);
       for (const guard of ["github.event_name == 'workflow_dispatch'", "inputs.database_connection_diagnostics == true", "inputs.database_diagnostics_scope == 'direct-capability'", "!inputs.database_connection_recovery", "github.ref == 'refs/heads/production'", "github.repository == 'duindorpdoet/platform'"]) expect(value).toContain(guard);
@@ -58,5 +58,23 @@ describe("dedicated VPS local capabilities", () => {
     expect(local).toContain("clean: false"); expect(local).toContain("externals/node24/bin/node");
     expect(local).not.toMatch(/SUPABASE|pnpm|npm |setup-node|sudo|curl|psql /);
     for (const name of ["prepare-database-client", "backup-export", "backup-restore", "deploy"]) expect(job(name).split("\n").find(line => line.trim().startsWith("if:"))).toContain("!inputs.database_connection_diagnostics");
+  });
+  it("isolates an explicitly selected public client build from all database and deployment jobs", () => {
+    const source = readFileSync(new URL("../../.github/workflows/deploy-production.yml", import.meta.url), "utf8");
+    const job = (name: string) => source.split(`\n  ${name}:\n`)[1]?.split(/\n  [a-z][a-z-]+:\n/)[0] ?? "";
+    const publicBuild = job("public-client-build-diagnostics");
+    for (const guard of ["github.event_name == 'workflow_dispatch'", "inputs.database_connection_diagnostics == true", "inputs.database_diagnostics_scope == 'public-client-build'", "!inputs.database_connection_recovery", "!inputs.readonly_baseline", "!inputs.mail_worker_diagnostics", "github.repository == 'duindorpdoet/platform'", "github.ref == 'refs/heads/codex/startregie-read-timeout-hotfix'"]) expect(publicBuild).toContain(guard);
+    expect(publicBuild).toContain("runs-on: ubuntu-latest");
+    expect(publicBuild).toContain("contents: read");
+    expect(publicBuild).not.toMatch(/environment:|secrets\.|SUPABASE|RELEASE_READ_TRANSPORT|redesign-|dg-site|pnpm|sudo/);
+    expect(publicBuild).toContain('ref: ${{ github.sha }}');
+    expect(publicBuild).toContain('portable-postgres-clients.mjs build "${RUNNER_TEMP}/duindorp-public-client-proof"');
+    for (const tool of ["psql", "pg_dump", "pg_restore"]) expect(publicBuild).toContain(`/bin/${tool}" --version`);
+    expect(job("database-connection-diagnostics")).toContain("inputs.database_diagnostics_scope == 'pooler'");
+    for (const name of ["database-direct-capability", "database-vps-capability"]) expect(job(name)).toContain("inputs.database_diagnostics_scope == 'direct-capability'");
+    for (const name of ["prepare-database-client", "backup-export", "backup-restore", "deploy", "database-connection-recovery"]) expect(job(name).split("\n").find(line => line.trim().startsWith("if:"))).toContain("!inputs.database_connection_diagnostics");
+    const policy = job("release-policy");
+    expect(policy).toContain("run: node scripts/deploy/mail-test-policy.mjs");
+    expect(policy).not.toMatch(/environment:|secrets\.|SUPABASE|pnpm|curl/);
   });
 });
