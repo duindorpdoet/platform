@@ -27,7 +27,7 @@ twee tabbladen of apparaten houden ieder hun eigen coordinator en blijven samen
 belasting veroorzaken. Bestaande SQL-locks blijven in fase 1 bestaan.
 
 Verbergen, offline gaan, storagewijzigingen, logout, sessiewissel en unmount
-invalidateren reads. De bestaande privacyschermen gaan voor oude data. Een tijdelijke
+maken reads ongeldig. De bestaande privacyschermen gaan voor oude data. Een tijdelijke
 netwerk-/5xx-fout houdt uitsluitend de laatst bevestigde data van dezelfde nog
 geldige sessie vast, met een melding. De sessie-expirytimer blijft ook zonder
 zichtbare snapshot actief. De kinduitleg gebruikt de verse coordinatorsnapshot.
@@ -45,6 +45,13 @@ alleen een gebundelde read; de gebruiker moet de bevestigde stand controleren.
   routing zijn gecontroleerde testdoubles. De klok, headers en body zijn stuurbaar.
 - Project: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm test:artifacts`.
   De browsercheck is ook aan de bestaande application-CI toegevoegd.
+  Lokaal resultaat: lint/typecheck geslaagd, 1.190 unittests geslaagd en één
+  overgeslagen, 14 browsertests geslaagd, productiebuild geslaagd en PRIV-08
+  artifactscan geslaagd voor 1.344 bestanden. De eerste volledige testsuite had
+  vijf routeplanner-timeouts tijdens lokale geheugenbelasting; de geïsoleerde
+  plannerherhaling en volledige herhaling met twee workers slagen zonder
+  aangepaste test- of applicatietimeouts. De build draaide met dezelfde gelockte
+  dependencies in een tijdelijke volledige kopie wegens de lokaal volle schijf.
 - Bestaande releasevolgorde: groene CI, exact dezelfde SHA naar staging, controleer
   daadwerkelijke deployment en acceptatie, vervolgens dezelfde SHA naar production.
   Geen releasegates of mailcontroles overslaan als onderdeel van deze hotfix.
@@ -66,7 +73,10 @@ vastgesteld. Het logsvenster 17:08:51–17:13:51 gaf Poortenboek 14 RPC-verzoeke
 HTTP-5xx, guidance 36/23, room 4/2 en Auth 273/13. SQLSTATE 57014: respectievelijk
 6/10/1 voor de drie RPC-paden. De geselecteerde logs bevestigen queryannulering;
 de precieze statement-timeoutmelding en latency-eenheid zijn hiermee niet bewezen.
-Een eerste begrensde healthcontrole gaf binnen 15 seconden geen antwoord.
+De aanvankelijke controle van `/api/health/deployment` liep na 15 seconden af;
+dit is geen bestaand healthendpoint. De juiste `/api/health` gaf daarna HTTP 200
+in 0,174 seconden en bevestigde environment=production en onderstaande revision.
+Dit endpoint leest geen database en bewijst geen herstel van Auth of de deelnemersapp.
 
 De vooraf succesvolle productierelease is
 `db5e9fee4fe86aecddbb05b9f0fe6ad3840c66f8`, deployment 7455963021,
