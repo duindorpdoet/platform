@@ -8,6 +8,35 @@ const supabaseCA = readFileSync(new URL("./supabase-root-2021.crt", import.meta.
 const fail = code => { throw new Error(`RELEASE_READ_${code}`); };
 const isSqlState = code => typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) && /[0-9]/.test(code);
 const preservationPrefix = "begin read only;set local statement_timeout='5min';set local lock_timeout='3s';do $preservation_read_only$";
+const metadataByRequest = new WeakMap();
+const metadataTtlMs = 5 * 60_000;
+
+async function validatedMetadata(env, request, load) {
+  let entries = metadataByRequest.get(request);
+  if (!entries) { entries = new Map(); metadataByRequest.set(request, entries); }
+  // Credentials and context stay in process memory only. The caller still
+  // validates its environment on every call and opens a new SQL connection.
+  const context = JSON.stringify([env.GITHUB_REPOSITORY, env.GITHUB_REF, env.GITHUB_EVENT_NAME,
+    env.GITHUB_SHA, env.APP_ENVIRONMENT, env.APP_REVISION, env.SUPABASE_PROJECT_REF,
+    env.SUPABASE_ACCESS_TOKEN, env.SUPABASE_DB_PASSWORD]);
+  const now = performance.now();
+  for (const [key, entry] of entries) if (now < entry.createdAt || now >= entry.expiresAt) entries.delete(key);
+  const cached = entries.get(context);
+  if (cached) return cached.promise;
+  const entry = { createdAt: now, expiresAt: now + metadataTtlMs, promise: null };
+  entry.promise = (async () => {
+    const project = await load("");
+    const poolers = await load("/config/database/pooler");
+    clientPlan(env, project, poolers); // Never retain invalid metadata.
+    entry.expiresAt = performance.now() + metadataTtlMs;
+    return { project, poolers };
+  })().catch(error => {
+    if (entries.get(context) === entry) entries.delete(context);
+    throw error;
+  });
+  entries.set(context, entry);
+  return entry.promise;
+}
 
 function configured(env) {
   return env.GITHUB_REPOSITORY === "duindorpdoet/platform"
@@ -103,8 +132,7 @@ export async function sessionReadQuery(sql, env = process.env, request = fetch, 
       await new Promise(resolve => setTimeout(resolve, attempt * 250));
     }
   }
-  const project = await metadata("");
-  const poolers = await metadata("/config/database/pooler");
+  const { project, poolers } = await validatedMetadata(env, request, metadata);
   const plan = clientPlan(env, project, poolers);
   // Preservation already has a bounded administrative five-minute wrapper.
   const longRead = sql.startsWith(preservationPrefix);

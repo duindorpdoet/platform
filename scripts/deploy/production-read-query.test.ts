@@ -268,4 +268,93 @@ describe("explicit release session reads", () => {
       expect(report.mock.calls).toEqual([["RELEASE_READ_CLEANUP_SQLSTATE_42501"], ["RELEASE_READ_CLEANUP_CLOSE_TLS"]]);
     } finally { report.mockRestore(); }
   });
+  it("reuses only validated metadata while every explicit SQL read gets a fresh connection and result", async () => {
+    const answer = result([{ revision: 1 }]);
+    const f = fixture({ answer });
+    const sql = "select 'fresh-server-data'";
+    expect(await sessionReadQuery(sql, env, f.request, f.Client)).toEqual([{ revision: 1 }]);
+    answer.rows = [{ revision: 2 }];
+    expect(await sessionReadQuery(sql, env, f.request, f.Client)).toEqual([{ revision: 2 }]);
+    expect(f.request).toHaveBeenCalledTimes(2);
+    expect(f.connect).toHaveBeenCalledTimes(2);
+    expect(f.end).toHaveBeenCalledTimes(2);
+    expect(f.queries.filter(query => query.text.includes(sql))).toHaveLength(2);
+  });
+  it("coalesces concurrent metadata fetches without coalescing SQL reads", async () => {
+    const f = fixture();
+    let release: () => void = () => {};
+    const ready = new Promise<void>(resolve => { release = resolve; });
+    const request = vi.fn<typeof fetch>(async (url, options) => { await ready; return f.request(url, options); });
+    const first = sessionReadQuery("select 'first-read'", env, request, f.Client);
+    const second = sessionReadQuery("select 'second-read'", env, request, f.Client);
+    expect(request).toHaveBeenCalledOnce();
+    expect(f.connect).not.toHaveBeenCalled();
+    release();
+    await Promise.all([first, second]);
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(f.connect).toHaveBeenCalledTimes(2);
+    expect(f.queries.filter(query => query.text.includes("'first-read'") || query.text.includes("'second-read'"))).toHaveLength(2);
+  });
+  it("expires metadata after five minutes without extending the lifetime on a cache hit", async () => {
+    const clock = vi.spyOn(performance, "now").mockReturnValue(100);
+    try {
+      const f = fixture();
+      await sessionReadQuery("select 1", env, f.request, f.Client);
+      clock.mockReturnValue(100 + 299_999);
+      await sessionReadQuery("select 2", env, f.request, f.Client);
+      expect(f.request).toHaveBeenCalledTimes(2);
+      clock.mockReturnValue(100 + 300_000);
+      await sessionReadQuery("select 3", env, f.request, f.Client);
+      expect(f.request).toHaveBeenCalledTimes(4);
+      expect(f.connect).toHaveBeenCalledTimes(3);
+    } finally { clock.mockRestore(); }
+  });
+  it("isolates metadata by request function, credentials and every exact release context", async () => {
+    const f = fixture();
+    const request = vi.fn<typeof fetch>(async (url, options) => {
+      if (String(url).includes("nocteiuvohesvqbowchw")) return Response.json(String(url).endsWith("/pooler") ? [pooler] : {
+        ...project, id: "nocteiuvohesvqbowchw", database: { host: "db.nocteiuvohesvqbowchw.supabase.co" },
+      });
+      return f.request(url, options);
+    });
+    for (const context of [env, { ...env, GITHUB_SHA: "b".repeat(40) }, { ...env, SUPABASE_ACCESS_TOKEN: "other-private-token" },
+      { ...env, SUPABASE_DB_PASSWORD: "other-private-password" }, { ...env, GITHUB_EVENT_NAME: "push" }, { ...env, APP_REVISION: env.GITHUB_SHA },
+      { ...env, APP_ENVIRONMENT: "staging", GITHUB_REF: "refs/heads/staging", SUPABASE_PROJECT_REF: "nocteiuvohesvqbowchw" }])
+      await sessionReadQuery("select 1", context, request, f.Client);
+    expect(request).toHaveBeenCalledTimes(14);
+    const otherRequest = vi.fn<typeof fetch>((url, options) => f.request(url, options));
+    await sessionReadQuery("select 1", env, otherRequest, f.Client);
+    expect(otherRequest).toHaveBeenCalledTimes(2);
+  });
+  it("never retains failed or invalid metadata and retries a later explicit call freshly", async () => {
+    const f = fixture();
+    let invalid = true;
+    const request = vi.fn<typeof fetch>(async (url, options) => invalid && !String(url).endsWith("/pooler")
+      ? Response.json({ ...project, id: "different-project" }) : f.request(url, options));
+    await expect(sessionReadQuery("select 1", env, request, f.Client)).rejects.toThrow("PROJECT_METADATA_BOUNDARY");
+    expect(f.connect).not.toHaveBeenCalled();
+    invalid = false;
+    await sessionReadQuery("select 2", env, request, f.Client);
+    expect(request).toHaveBeenCalledTimes(4);
+    expect(f.connect).toHaveBeenCalledOnce();
+    let malformed = true;
+    const jsonRequest = vi.fn<typeof fetch>(async (url, options) => malformed ? new Response("private-invalid-json") : f.request(url, options));
+    await expect(sessionReadQuery("select 3", env, jsonRequest, f.Client)).rejects.toThrow("METADATA_INVALID_JSON");
+    malformed = false;
+    await sessionReadQuery("select 4", env, jsonRequest, f.Client);
+    expect(jsonRequest).toHaveBeenCalledTimes(3);
+  });
+  it("does not retain a coalesced failed request for later callers", async () => {
+    const f = fixture();
+    let denied = true;
+    const request = vi.fn<typeof fetch>(async (url, options) => denied ? new Response("private-auth-body", { status: 401 }) : f.request(url, options));
+    const failed = await Promise.allSettled([sessionReadQuery("select 1", env, request, f.Client), sessionReadQuery("select 2", env, request, f.Client)]);
+    expect(failed.every(answer => answer.status === "rejected")).toBe(true);
+    expect(request).toHaveBeenCalledOnce();
+    expect(f.connect).not.toHaveBeenCalled();
+    denied = false;
+    await sessionReadQuery("select 3", env, request, f.Client);
+    expect(request).toHaveBeenCalledTimes(3);
+    expect(f.connect).toHaveBeenCalledOnce();
+  });
 });
