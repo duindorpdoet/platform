@@ -42,9 +42,11 @@ export function diagnosticPlan(env, project, poolers) {
     || !/^\d+\.\d+\.\d+\.\d+$/.test(project.database?.version ?? "")) fail("PROJECT_METADATA_BOUNDARY");
   const allowedHost = new RegExp(`^aws-[0-9]+-${project.region}\\.pooler\\.supabase\\.com$`);
   if (!Array.isArray(poolers)) fail("POOLER_METADATA_REQUIRED");
-  const pooler = poolers.find(row => row.pool_mode === "session" && allowedHost.test(row.db_host ?? "")
-    && ["postgres", `postgres.${PROJECT}`].includes(row.db_user) && row.db_name === "postgres"
-    && Number(row.db_port ?? 5432) === 5432);
+  const trusted = poolers.filter(row => allowedHost.test(row.db_host ?? "")
+    && ["postgres", `postgres.${PROJECT}`].includes(row.db_user) && row.db_name === "postgres");
+  // The API may only return transaction/6543 metadata for the same host. Its
+  // session endpoint is still port 5432, as in the existing backup procedure.
+  const pooler = trusted.find(row => row.pool_mode === "session") ?? trusted.find(row => row.pool_mode === "transaction");
   if (!pooler) fail("TRUSTED_SESSION_POOLER_REQUIRED");
   const image = `supabase/postgres:${project.database.version}`;
   const environment = {
@@ -59,18 +61,42 @@ export function diagnosticPlan(env, project, poolers) {
     "--entrypoint", "psql", image, "-X", "-qAt", "-v", "ON_ERROR_STOP=1"] };
 }
 
+export function classifyConnectionError(stderr) {
+  if (/authentication failed|invalid password|tenant or user not found|role .+ does not exist/i.test(stderr)) return "AUTH_FAILED";
+  if (/SSL|TLS|certificate|secure connection/i.test(stderr)) return "TLS";
+  if (/could not translate host name|name or service not known|getaddrinfo|name resolution|nodename nor servname/i.test(stderr)) return "DNS";
+  if (/connection[^\n]*timed out|timeout expired|connection timeout|connect[^\n]*ETIMEDOUT/i.test(stderr)) return "CONNECTION_TIMEOUT";
+  return "OTHER";
+}
+
 function capture(args, input = "", environment = {}, timeoutMs = 30_000) {
   return new Promise((resolve, reject) => {
     const child = spawn("docker", args, { env: { PATH: process.env.PATH, HOME: process.env.HOME, ...environment }, stdio: ["pipe", "pipe", "pipe"] });
-    let stdout = "", expired = false;
+    let stdout = "", stderr = "", expired = false;
     const timer = setTimeout(() => { expired = true; child.kill(); }, timeoutMs);
     child.stdout.on("data", chunk => { if (stdout.length < 100_000) stdout += chunk.toString(); });
-    child.stderr.resume(); // Never expose raw provider/psql errors or credentials.
+    child.stderr.on("data", chunk => { if (stderr.length < 16_000) stderr += chunk.toString(); });
     child.stdin.on("error", () => {});
     child.once("error", () => { clearTimeout(timer); reject(new Error("POOLER_DIAGNOSTICS_DOCKER_UNAVAILABLE")); });
-    child.once("close", code => { clearTimeout(timer); resolve({ code, expired, stdout }); });
+    // Raw stderr stays inside this function; only its predefined class leaves.
+    child.once("close", code => { clearTimeout(timer); resolve({ code, expired, stdout, errorClass: code === 0 && !expired ? null : classifyConnectionError(stderr) }); });
     child.stdin.end(input);
   });
+}
+
+export async function probePoolerConnection(env, project, poolers, execute = capture) {
+  const plan = diagnosticPlan(env, project, poolers);
+  const pull = await execute(["pull", plan.image], "", {}, 120_000);
+  if (pull.code !== 0 || pull.expired) fail("IMAGE_PULL_FAILED");
+  const started = performance.now();
+  const result = await execute(plan.clientArgs, DIAGNOSTIC_SQL, plan.environment);
+  const rows = result.stdout.trim().split("\n").filter(Boolean).map(line => {
+    try { return JSON.parse(line); } catch { fail("UNEXPECTED_QUERY_OUTPUT"); }
+  });
+  return { connectivity: rows.some(row => row.connectivity === 1 && row.readOnly === true),
+    durationMs: Math.round(performance.now() - started), code: result.code, expired: result.expired,
+    errorClass: result.code === 0 && !result.expired ? null : ["CONNECTION_TIMEOUT", "AUTH_FAILED", "TLS", "DNS", "OTHER"].includes(result.errorClass) ? result.errorClass : "OTHER",
+    activity: rows.find(row => Array.isArray(row.activity))?.activity ?? null };
 }
 
 export async function runDiagnostics(env = process.env, request = fetch, execute = capture) {
@@ -91,20 +117,12 @@ export async function runDiagnostics(env = process.env, request = fetch, execute
   const poolers = await metadata("/config/database/pooler");
   const plan = diagnosticPlan(env, project, poolers);
   console.log(JSON.stringify({ diagnostic: "production-session-pooler", readOnly: true, image: plan.image }));
-  const pull = await execute(["pull", plan.image], "", {}, 120_000);
-  if (pull.code !== 0 || pull.expired) fail("IMAGE_PULL_FAILED");
-  const started = performance.now();
-  const result = await execute(plan.clientArgs, DIAGNOSTIC_SQL, plan.environment);
-  const durationMs = Math.round(performance.now() - started);
+  const result = await probePoolerConnection(env, project, poolers, execute);
+  const { durationMs, connectivity, activity } = result;
   // Reconstruct output from an allowlisted shape. Do not print raw stdout even
   // on an unexpected psql/provider failure.
-  const rows = result.stdout.trim().split("\n").filter(Boolean).map(line => {
-    try { return JSON.parse(line); } catch { fail("UNEXPECTED_QUERY_OUTPUT"); }
-  });
-  const connectivity = rows.find(row => row.connectivity === 1 && row.readOnly === true);
-  console.log(JSON.stringify({ connectivity: Boolean(connectivity), durationMs, clientTimedOut: result.expired, clientExitCode: result.code }));
+  console.log(JSON.stringify({ connectivity, durationMs, clientTimedOut: result.expired, clientExitCode: result.code, errorClass: result.errorClass }));
   if (result.code !== 0 || result.expired) fail("READ_FAILED");
-  const activity = rows.find(row => Array.isArray(row.activity))?.activity;
   if (!connectivity || !activity) fail("INCOMPLETE_RESULT");
   const safeText = value => typeof value === "string" && /^[A-Za-z0-9_ ()]{1,80}$/.test(value);
   const safeActivity = activity.map(row => {

@@ -3,7 +3,12 @@ export function diagnosticPlan(env: Record<string, string | undefined>, project:
   image: string; environment: Record<string, string>; clientArgs: string[];
 };
 type Execution = (args: string[], input?: string, environment?: Record<string, string>, timeoutMs?: number) => Promise<{
-  code: number | null; expired: boolean; stdout: string;
+  code: number | null; expired: boolean; stdout: string; errorClass?: string | null;
+}>;
+export type ConnectionErrorClass = "CONNECTION_TIMEOUT" | "AUTH_FAILED" | "TLS" | "DNS" | "OTHER";
+export function classifyConnectionError(stderr: string): ConnectionErrorClass;
+export function probePoolerConnection(env: Record<string, string | undefined>, project: unknown, poolers: unknown, execute?: Execution): Promise<{
+  connectivity: boolean; durationMs: number; code: number | null; expired: boolean; errorClass: ConnectionErrorClass | null; activity: unknown[] | null;
 }>;
 export function runDiagnostics(env?: Record<string, string | undefined>, request?: typeof fetch, execute?: Execution): Promise<{
   readOnly: boolean; changedRows: number; messagesSent: number; durationMs: number;

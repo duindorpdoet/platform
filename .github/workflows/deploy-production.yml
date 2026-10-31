@@ -6,6 +6,15 @@ on:
       - production
   workflow_dispatch:
     inputs:
+      database_connection_recovery:
+        description: Explicit production database restart only after three independent connection failures; no deployment
+        type: boolean
+        default: false
+        required: false
+      database_recovery_reason:
+        description: Required only for explicit recovery; explain the confirmed outage (20-500 characters)
+        type: string
+        required: false
       database_connection_diagnostics:
         description: Inspect production session-pooler connectivity and classified activity read-only; no deployment
         type: boolean
@@ -35,9 +44,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  database-connection-recovery:
+    name: Explicit guarded production database recovery without deployment
+    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_recovery == true && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Require independent outage evidence before one explicit restart request
+        env:
+          APP_ENVIRONMENT: production
+          DATABASE_RECOVERY_REQUESTED: ${{ inputs.database_connection_recovery }}
+          DATABASE_RECOVERY_REASON: ${{ inputs.database_recovery_reason }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: node scripts/deploy/production-db-recovery.mjs
   database-connection-diagnostics:
     name: Inspect production database through its session pooler (read only)
-    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
+    if: github.event_name == 'workflow_dispatch' && inputs.database_connection_diagnostics == true && !inputs.database_connection_recovery && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -60,7 +96,7 @@ jobs:
         run: node scripts/deploy/production-db-diagnostics.mjs
   mail-worker-diagnostics:
     name: Inspect mail worker RPC and application error codes
-    if: github.event_name == 'workflow_dispatch' && inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && github.ref == 'refs/heads/production'
+    if: github.event_name == 'workflow_dispatch' && inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && !inputs.database_connection_recovery && github.ref == 'refs/heads/production'
     environment: production
     runs-on: [self-hosted, Linux, X64, dg-sites, production, duindorphalloweenprod]
     timeout-minutes: 5
@@ -97,7 +133,7 @@ jobs:
         run: node scripts/deploy/mail-test-policy.mjs
   readonly-baseline:
     name: Read-only production evening baseline
-    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && !inputs.database_connection_diagnostics && github.ref == 'refs/heads/production'
+    if: github.event_name == 'workflow_dispatch' && inputs.readonly_baseline && !inputs.database_connection_diagnostics && !inputs.database_connection_recovery && github.ref == 'refs/heads/production'
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -128,7 +164,7 @@ jobs:
   backup-restore:
     name: Encrypted production backup and isolated restore
     needs: release-policy
-    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics
+    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && !inputs.database_connection_recovery
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -179,7 +215,7 @@ jobs:
           if-no-files-found: error
   deploy:
     name: Promote exact staging release
-    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics
+    if: github.ref == 'refs/heads/production' && !inputs.readonly_baseline && !inputs.mail_worker_diagnostics && !inputs.database_connection_diagnostics && !inputs.database_connection_recovery
     needs: [backup-restore, release-policy]
     environment:
       name: production
