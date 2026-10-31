@@ -40,14 +40,10 @@ jobs:
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/duindorp-vps-proof-clients
           merge-multiple: true
-      - name: Verify all fixed client hashes and read each endpoint once
+      - name: Verify all fixed public client hashes before owner reads
         env:
-          APP_ENVIRONMENT: production
           RELEASE_PG_CLIENT_DIRECTORY: ${{ runner.temp }}/duindorp-vps-proof-clients
-          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: node scripts/deploy/production-vps-client-proof.mjs
+        run: node scripts/deploy/portable-postgres-clients.mjs verify "${RELEASE_PG_CLIENT_DIRECTORY}"
       - name: Prove unchanged canonical checks and migration CLI without applying migrations
         env:
           APP_ENVIRONMENT: production

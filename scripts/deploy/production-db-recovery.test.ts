@@ -131,7 +131,7 @@ describe("explicit protected production database recovery", () => {
       expect(job(name).split("\n").find(line => line.trim().startsWith("if:"))).toContain("!inputs.database_connection_recovery");
     expect(workflow).toMatch(/database_connection_recovery:\n(?:[^\n]*\n){2}        default: false/);
     expect(job("backup-restore")).toContain("Require exact successful staging revision");
-    expect(job("deploy")).toContain("needs: [backup-restore, release-policy]");
+    expect(job("deploy")).toContain("needs: [prepare-database-client, backup-restore, release-policy]");
     const script = readFileSync(new URL("./production-db-recovery.mjs", import.meta.url), "utf8");
     expect(script).not.toMatch(/\/restore|\/reset|pg_(cancel|terminate)_backend|\b(update|insert|delete|truncate|alter|drop)\s/i);
   });
