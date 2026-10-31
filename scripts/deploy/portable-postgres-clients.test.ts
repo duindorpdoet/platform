@@ -10,7 +10,7 @@ afterEach(() => vi.unstubAllEnvs());
 
 describe("pinned user-space PostgreSQL17 clients", () => {
   it("pins the official image, exactly three wrappers and the complete independent ELF/loader/library hashes", () => {
-    expect(CLIENT_IMAGE).toBe("public.ecr.aws/supabase/postgres@sha256:6942962433a569e87f228b4d4ab7e11db5deca64e43babb3a038443ad6c4f1bb");
+    expect(CLIENT_IMAGE).toBe("docker.io/supabase/postgres@sha256:6942962433a569e87f228b4d4ab7e11db5deca64e43babb3a038443ad6c4f1bb");
     expect(CLIENT_VERSION).toBe("17.6");
     const manifest = portableClientManifest();
     expect(manifest.files).toHaveLength(26);
