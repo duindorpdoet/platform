@@ -1,0 +1,168 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..27
+(1 row)
+
+CREATE TABLE
+GRANT
+CREATE FUNCTION
+CREATE FUNCTION
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 1 - participants cannot set the event group policy
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 2 - one child is a valid organizer policy
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 3 - the dashboard reads the saved minimum of one
+(1 row)
+
+                            lives_ok                            
+----------------------------------------------------------------
+ ok 4 - 12, 20, 30 and 45 persist through the same event policy
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 5 - group composition has no hidden twenty-child ceiling
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 6 - registration reads the same current policy
+(1 row)
+
+                throws_ok                 
+------------------------------------------
+ ok 7 - zero is rejected without mutation
+(1 row)
+
+              throws_ok              
+-------------------------------------
+ ok 8 - negative limits are rejected
+(1 row)
+
+             throws_ok              
+------------------------------------
+ ok 9 - missing maximum is rejected
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 10 - target cannot exceed the event maximum
+(1 row)
+
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 11 - an explicit target of 24 is saved with maximum 30
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 12 - the planner target is an explicit event preference
+(1 row)
+
+                               throws_ok                               
+-----------------------------------------------------------------------
+ ok 13 - lowering below an explicit target requires a valid new target
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 14 - invalid target leaves the saved maximum unchanged
+(1 row)
+
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 15 - following the maximum is an explicit saved choice
+(1 row)
+
+SET
+INSERT 0 1
+INSERT 0 1
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 16 - all forty-five children can be stored and assigned as one group
+(1 row)
+
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 17 - a forty-sixth participant cannot bypass the current policy
+(1 row)
+
+INSERT 0 1
+SET
+                             throws_ok                             
+-------------------------------------------------------------------
+ ok 18 - an old setter cannot silently lower below existing groups
+(1 row)
+
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 19 - reviewed lowering preserves an oversized existing group
+(1 row)
+
+SET
+                                               is                                               
+------------------------------------------------------------------------------------------------
+ ok 20 - group IDs, children, membership IDs and complete prior rows survive lowering unchanged
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 21 - direct writes cannot round fractional policy values
+(1 row)
+
+                                 lives_ok                                  
+---------------------------------------------------------------------------
+ ok 22 - metadata corrections are possible for an oversized existing group
+(1 row)
+
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 23 - a deliberate reduction can remain above the lowered policy
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 24 - safe reduction removes no other child or membership
+(1 row)
+
+                             throws_ok                             
+-------------------------------------------------------------------
+ ok 25 - an old existing-exception status does not permit regrowth
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 26 - anonymous clients cannot use the new setter
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 27 - the policy implementation is private behind scoped APIs
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

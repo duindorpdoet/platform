@@ -1,0 +1,62 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+SELECT 1
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 1 - materialized context preserves the exact original canonical hash
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 2 - an absent event preserves the original empty/null-field hash
+(1 row)
+
+UPDATE 1
+                               is                                
+-----------------------------------------------------------------
+ ok 3 - a changed route setting retains exact canonical equality
+(1 row)
+
+                                      isnt                                      
+--------------------------------------------------------------------------------
+ ok 4 - a later statement sees changed inputs without transaction-local caching
+(1 row)
+
+SELECT 1
+UPDATE 1
+                                   is                                   
+------------------------------------------------------------------------
+ ok 5 - portal reception-policy changes retain exact canonical equality
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 6 - anonymous users still cannot access private route inputs
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 7 - the existing private execute ACL remains unchanged
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 8 - there is one start-context expression independent of JSON field count
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 9 - the start-context evaluation boundary cannot be pulled up by the planner
+(1 row)
+
+ finish 
+--------
+ 1..9
+(1 row)
+
+ROLLBACK

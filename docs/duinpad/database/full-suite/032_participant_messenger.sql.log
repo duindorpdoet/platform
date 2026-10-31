@@ -1,0 +1,276 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..34
+(1 row)
+
+                   ok                   
+----------------------------------------
+ ok 1 - messenger conversations use RLS
+(1 row)
+
+                ok                 
+-----------------------------------
+ ok 2 - messenger messages use RLS
+(1 row)
+
+            ok            
+--------------------------
+ ok 3 - presence uses RLS
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 4 - clients cannot query durable messages directly
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 5 - anonymous users cannot create conversations
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                             matches                              
+------------------------------------------------------------------
+ ok 6 - a current group leader receives the stable G-code context
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 7 - an unrelated participant cannot open a group conversation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                             matches                              
+------------------------------------------------------------------
+ ok 8 - an active portal owner receives the stable P-code context
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 9 - an authorized organizer can publish a bounded presence heartbeat
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 10 - a group leader can durably start one conversation
+(1 row)
+
+SET
+                               is                               
+----------------------------------------------------------------
+ ok 11 - the initial participant message is stored exactly once
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 lives_ok                                  
+---------------------------------------------------------------------------
+ ok 12 - replaying the same idempotency key returns its stored safe result
+(1 row)
+
+SET
+                            is                             
+-----------------------------------------------------------
+ ok 13 - an idempotent replay does not duplicate a message
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 14 - the first participant burst queues one admin notification
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 15 - the admin inbox contains the durable conversation
+(1 row)
+
+                             lives_ok                             
+------------------------------------------------------------------
+ ok 16 - an available organizer can claim the queued conversation
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 17 - the participant can append against the current conversation version
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 18 - the admin snapshot reports the unread participant reply
+(1 row)
+
+                        lives_ok                        
+--------------------------------------------------------
+ ok 19 - the claimed organizer can send a durable reply
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 20 - the participant snapshot reports the unread organization reply
+(1 row)
+
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 21 - opening the participant widget durably marks the organization reply read
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 22 - the participant unread counter clears after marking read
+(1 row)
+
+SET
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 23 - an organization reply queues exactly one participant notification
+(1 row)
+
+                                          ok                                           
+---------------------------------------------------------------------------------------
+ ok 24 - messenger outbox payloads contain no message body or participant contact data
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 25 - the conversation keeps its durable ownership and waiting state
+(1 row)
+
+SET
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   throws_ok                                    
+--------------------------------------------------------------------------------
+ ok 26 - groups_manage alone cannot read the event-wide private messenger inbox
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                     lives_ok                                      
+-----------------------------------------------------------------------------------
+ ok 27 - a participant can send up to thirty messages in the durable hourly budget
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 28 - the thirty-first participant message in an hour is rejected
+(1 row)
+
+SET
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 29 - the messenger budget is counted atomically without charging the rejected write
+(1 row)
+
+INSERT 0 120
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 30 - conversation snapshots return at most the most recent one hundred messages
+(1 row)
+
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 31 - revoked group access removes an existing conversation from the participant snapshot
+(1 row)
+
+SET
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 32 - revoked group access also removes the private Realtime subscription
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 33 - a revoked group actor cannot reply to the existing conversation
+(1 row)
+
+                                  throws_ok                                  
+-----------------------------------------------------------------------------
+ ok 34 - a revoked group actor cannot mark the existing conversation as read
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

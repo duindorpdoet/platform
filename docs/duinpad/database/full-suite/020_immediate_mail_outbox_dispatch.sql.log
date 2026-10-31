@@ -1,0 +1,63 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..10
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 1 - the outbox has an immediate dispatch trigger
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 2 - public cannot execute the immediate trigger function
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 3 - anon cannot execute the immediate trigger function
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 4 - authenticated users cannot execute the immediate trigger function
+(1 row)
+
+                      ok                       
+-----------------------------------------------
+ ok 5 - public cannot start mail worker probes
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 6 - anon cannot read mail worker probe results
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 7 - authenticated users cannot start mail worker probes
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 8 - service role can start mail worker probes
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 9 - service role can read mail worker probe results
+(1 row)
+
+DELETE 0
+                                     lives_ok                                     
+----------------------------------------------------------------------------------
+ ok 10 - outbox insert remains durable when no active worker configuration exists
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

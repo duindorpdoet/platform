@@ -1,0 +1,56 @@
+BEGIN
+CREATE EXTENSION
+ plan 
+------
+ 1..5
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                                      lives_ok                                       
+-------------------------------------------------------------------------------------
+ ok 1 - confirmed resident can register basic details before supplying house details
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 2 - email is taken from the confirmed account
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 3 - basic details persist in the private draft
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         isnt                          
+-------------------------------------------------------
+ ok 4 - another resident cannot read the private draft
+(1 row)
+
+RESET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                        throws_ok                        
+---------------------------------------------------------
+ ok 5 - an unconfirmed account cannot save house details
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

@@ -1,0 +1,192 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..29
+(1 row)
+
+INSERT 0 1
+                        ok                        
+--------------------------------------------------
+ ok 1 - application review snapshot is not public
+(1 row)
+
+                 ok                  
+-------------------------------------
+ ok 2 - review command is not public
+(1 row)
+
+                     ok                     
+--------------------------------------------
+ ok 3 - location verification is not public
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                                lives_ok                                 
+-------------------------------------------------------------------------
+ ok 4 - an incomplete private house draft can be saved before submission
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 5 - the incomplete draft survives a fresh snapshot
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 6 - an incomplete house draft cannot be submitted
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 7 - the applicant can restore the private submitted draft after a refresh
+(1 row)
+
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 8 - an ordinary applicant cannot enumerate private applications
+(1 row)
+
+                             throws_ok                             
+-------------------------------------------------------------------
+ ok 9 - an ordinary applicant cannot approve their own application
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 10 - an authorized reviewer sees the applicant identity in the private review queue
+(1 row)
+
+                           lives_ok                            
+---------------------------------------------------------------
+ ok 11 - an authorized reviewer can request a versioned change
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 12 - the applicant receives private review feedback
+(1 row)
+
+                      lives_ok                       
+-----------------------------------------------------
+ ok 13 - the applicant can save a requested revision
+(1 row)
+
+                          lives_ok                           
+-------------------------------------------------------------
+ ok 14 - the complete revised application can be resubmitted
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 15 - resubmission clears the editable review state
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                   lives_ok                                                   
+--------------------------------------------------------------------------------------------------------------
+ ok 16 - an authorized reviewer can approve a complete application without pretending the address is verified
+(1 row)
+
+SET
+                       is                       
+------------------------------------------------
+ ok 17 - approval changes the application state
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 18 - approval creates exactly one portal
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 19 - approval assigns exactly one active owner
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 20 - approval creates a privacy-safe publication
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 21 - approval creates one operating window
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 22 - the applicant opening time uses the event timezone
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 23 - approval alone does not verify a physical location
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 24 - an unverified newly approved portal is absent from planning input
+(1 row)
+
+                                     throws_ok                                      
+------------------------------------------------------------------------------------
+ ok 25 - a stale duplicate approval is rejected before it can create another portal
+(1 row)
+
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 26 - an authorized reviewer can explicitly verify the physical location
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 27 - only after location verification is the portal available to the planner
+(1 row)
+
+SET
+                            is                             
+-----------------------------------------------------------
+ ok 28 - location verification advances the portal version
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 29 - approval and verification both leave an audit trail
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

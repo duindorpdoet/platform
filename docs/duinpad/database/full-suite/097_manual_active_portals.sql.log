@@ -1,0 +1,181 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 2
+INSERT 0 2
+UPDATE 1
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 1 - another manual house cannot replace the event P-38 finale
+(1 row)
+
+SELECT 1
+SELECT 1
+CREATE FUNCTION
+                           is                            
+---------------------------------------------------------
+ ok 2 - P-38 appears exactly once without an application
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 3 - approved P-44 appears exactly once while preparing
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 4 - manual portal keeps its absent application
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 5 - manual contact name preserves accents and particles
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 6 - each manual portal uses its own contact
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 7 - manual contact phone is projected
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 8 - manual contact email is projected
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 9 - open operational status is preserved
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 10 - preparation is not silently changed to open
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 11 - the manual P-38 remains the actual finale
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 12 - a preparing manual ordinary house is not presented as a second finale
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 13 - reservation counts remain authoritative
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 14 - expected children retain reservation totals
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 15 - registration, concepts, capabilities and other sections are preserved
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 16 - reading does not alter portal statuses or relationships
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 17 - reading does not alter availability
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 18 - reading queues no instructions or other mail
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 19 - reading grants no membership
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 20 - listing does not activate the approved portal
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 21 - resident application portals remain visible
+(1 row)
+
+UPDATE 1
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 22 - a concept does not appear as an approved operational record
+(1 row)
+
+UPDATE 1
+                                ok                                
+------------------------------------------------------------------
+ ok 23 - an archive stays excluded even with an old approved flag
+(1 row)
+
+UPDATE 1
+                    ok                    
+------------------------------------------
+ ok 24 - unreviewed records stay excluded
+(1 row)
+
+UPDATE 1
+                   ok                   
+----------------------------------------
+ ok 25 - rejected records stay excluded
+(1 row)
+
+UPDATE 1
+                              ok                              
+--------------------------------------------------------------
+ ok 26 - a fresh snapshot reflects the current eligible state
+(1 row)
+
+                       ok                       
+------------------------------------------------
+ ok 27 - anonymous callers cannot read contacts
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 28 - the underlying projection remains private
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 29 - ordinary participants cannot inspect portal contacts
+(1 row)
+
+ finish 
+--------
+ 1..29
+(1 row)
+
+ROLLBACK

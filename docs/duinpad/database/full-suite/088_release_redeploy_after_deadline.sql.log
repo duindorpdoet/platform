@@ -1,0 +1,58 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+UPDATE 1
+INSERT 0 1
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 1 - staging redeploy succeeds after the historical registration deadline
+(1 row)
+
+                                                  is                                                   
+-------------------------------------------------------------------------------------------------------
+ ok 2 - staging redeploy preserves dates, operator phase, channel closure and settings version exactly
+(1 row)
+
+UPDATE 1
+TRUNCATE TABLE
+INSERT 0 1
+                                         lives_ok                                          
+-------------------------------------------------------------------------------------------
+ ok 3 - production redeploy retains the existing deadline rather than reopening enrollment
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 4 - production redeploy preserves all existing release control data
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 5 - explicit mode transition still applies the existing closure contract
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 6 - invalid release mode remains rejected
+(1 row)
+
+                           ok                            
+---------------------------------------------------------
+ ok 7 - participants cannot modify release configuration
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 8 - existing trusted deployment service retains its authority
+(1 row)
+
+ finish 
+--------
+ 1..8
+(1 row)
+
+ROLLBACK

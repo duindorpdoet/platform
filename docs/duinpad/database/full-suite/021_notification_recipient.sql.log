@@ -1,0 +1,57 @@
+BEGIN
+CREATE EXTENSION
+ plan 
+------
+ 1..8
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 1 - anonymous visitors cannot change notification destination
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 2 - signed-in visitors cannot change notification destination
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 3 - deployment can configure notification destination
+(1 row)
+
+            throws_ok            
+---------------------------------
+ ok 4 - invalid mailbox rejected
+(1 row)
+
+           throws_ok           
+-------------------------------
+ ok 5 - unknown event rejected
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 6 - deployment configures normalized mailbox
+(1 row)
+
+                         submit_public_contact                         
+-----------------------------------------------------------------------
+ {"stored": true, "reference": "c4549dcd-4f4c-47f7-be2b-862df2efd74c"}
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 7 - contact goes to fixed configured mailbox rather than visitor
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 8 - contact emits the organization notification contract
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

@@ -1,0 +1,315 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..43
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 1 - capacity-review requests have RLS defense in depth
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 2 - ticket threads have RLS defense in depth
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 3 - clients cannot query private tickets directly
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 4 - anonymous visitors cannot create tickets
+(1 row)
+
+CREATE TABLE
+GRANT
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           lives_ok                            
+---------------------------------------------------------------
+ ok 5 - an authorized organizer can set the shared group limit
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 6 - the capacity command returns the applied limit
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 7 - lowering below an existing party requires an explicit impact review
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                               throws_ok                                
+------------------------------------------------------------------------
+ ok 8 - an ordinary participant cannot inspect capacity-review requests
+(1 row)
+
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 9 - a participant can request the code of an already full party
+(1 row)
+
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 10 - an over-limit request preserves the otherwise valid registration
+(1 row)
+
+SET
+INSERT 0 1
+                                   isnt                                    
+---------------------------------------------------------------------------
+ ok 11 - an over-limit registration remains safely isolated pending review
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 12 - the overflow creates a pending organizer decision
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 13 - the participant sees that the together request awaits review
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 14 - an oversized merge cannot be accepted accidentally
+(1 row)
+
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 15 - an organizer can explicitly override the limit with an audit reason
+(1 row)
+
+SET
+                             is                              
+-------------------------------------------------------------
+ ok 16 - the approved registration joins the requested party
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 17 - the oversized party stores the explicit override decision
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 18 - the route planner receives the authorized oversize marker
+(1 row)
+
+SET
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 19 - an organizer can reject a pending join request
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 20 - retrying the same rejection with the original version is idempotent
+(1 row)
+
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 21 - an opposite decision cannot overwrite an already rejected request
+(1 row)
+
+SET
+                                   is                                   
+------------------------------------------------------------------------
+ ok 22 - a rejection queues one message for each involved adult contact
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 23 - rejection recipients are unique by adult contact
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 24 - both source and target adult contacts receive the rejection
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 25 - a rejection retry cannot duplicate mail for a recipient and state
+(1 row)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 26 - an idempotent rejection retry does not duplicate the decision audit event
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                     lives_ok                     
+--------------------------------------------------
+ ok 27 - a current group leader can open a ticket
+(1 row)
+
+SET
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 28 - each message queues mail for both the organization and group leader
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 29 - leader notification opens Hulp & contact in the unified participant environment
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   throws_ok                                   
+-------------------------------------------------------------------------------
+ ok 30 - a participant who is not the current leader cannot read group tickets
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 31 - the current leader sees the private ticket thread
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 32 - an organizer sees the event ticket inbox
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 33 - an organizer can mark the leader message as read
+(1 row)
+
+SET
+                         ok                         
+----------------------------------------------------
+ ok 34 - the leader message stores its read receipt
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      lives_ok                      
+----------------------------------------------------
+ ok 35 - an organizer can reply to the group leader
+(1 row)
+
+SET
+                                is                                
+------------------------------------------------------------------
+ ok 36 - an organizer reply again queues mail for both recipients
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                          lives_ok                          
+------------------------------------------------------------
+ ok 37 - the leader can mark the organization reply as read
+(1 row)
+
+SET
+                              ok                               
+---------------------------------------------------------------
+ ok 38 - the organization reply stores the leader read receipt
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                        lives_ok                        
+--------------------------------------------------------
+ ok 39 - an organizer can close a resolved conversation
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 40 - closed tickets reject new replies until explicitly reopened
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 41 - closed tickets are not counted as open work
+(1 row)
+
+                                           ok                                           
+----------------------------------------------------------------------------------------
+ ok 42 - authenticated clients reach the ticket authorization boundary only through RPC
+(1 row)
+
+SET
+                          ok                           
+-------------------------------------------------------
+ ok 43 - ticket creation is present in the audit trail
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

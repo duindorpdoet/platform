@@ -1,0 +1,109 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+                        ok                         
+---------------------------------------------------
+ ok 1 - portal initially has no start-point record
+(1 row)
+
+UPDATE 1
+                      ok                      
+----------------------------------------------
+ ok 2 - yes enables a real linked start point
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 3 - portal selection needs no inspection, approach or 75m confirmation
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 4 - selection does not fabricate a physical walking inspection
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 5 - approach text is optional for a selected portal
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 6 - portal manager shows yes after enable
+(1 row)
+
+                       lives_ok                        
+-------------------------------------------------------
+ ok 7 - repeated yes reuses the existing linked record
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 8 - repeated yes does not create duplicate start points
+(1 row)
+
+UPDATE 1
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 9 - yes immediately makes the portal usable for a real group assignment
+(1 row)
+
+                                lives_ok                                
+------------------------------------------------------------------------
+ ok 10 - selected portal can be confirmed without an inspection command
+(1 row)
+
+                       lives_ok                        
+-------------------------------------------------------
+ ok 11 - the selected portal can be published normally
+(1 row)
+
+UPDATE 1
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 12 - no disables future starts even when a published appointment exists
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 13 - no removes the point from new-start availability
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 14 - existing published appointment stays exactly intact
+(1 row)
+
+                 throws_ok                 
+-------------------------------------------
+ ok 15 - no prevents new group assignments
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 16 - participant cannot change organization start selection
+(1 row)
+
+ finish 
+--------
+ 1..16
+(1 row)
+
+ROLLBACK

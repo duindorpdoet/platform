@@ -1,0 +1,145 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 1 - a parent cannot read another family mail material
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 2 - an anonymous client cannot obtain invitation tokens
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 3 - the existing mail worker can resolve family changes
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 4 - the service cannot call the unguarded old gateway directly
+(1 row)
+
+SELECT 1
+ALTER TABLE
+ALTER TABLE
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                        matches                         
+--------------------------------------------------------
+ ok 5 - worker adds a bounded opaque invitation binding
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 6 - mail material does not turn contact email into public display data
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+CREATE FUNCTION
+                               is                                
+-----------------------------------------------------------------
+ ok 7 - a stale renderer is deferred before creating an envelope
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 8 - stale rendering creates no provider attempt
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 9 - wrong recipient fails the gateway recheck
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 10 - the current invitation may prepare one durable envelope
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 11 - one envelope is stored for the invitation
+(1 row)
+
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 12 - an authorized correction rotates the pending invitation
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 13 - the old invitation becomes unavailable after email correction
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 14 - an existing retry envelope cannot bypass the revoked invitation
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 15 - a prior attempted envelope remains auditable instead of being resent
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 16 - revoking a link preserves the durable child identity
+(1 row)
+
+UPDATE 1
+                              is                               
+---------------------------------------------------------------
+ ok 17 - historical provider acceptance never dispatches again
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 18 - existing provider acceptance remains a fact after a later family change
+(1 row)
+
+CREATE FUNCTION
+                                                                                                                                                                                                  registration_management_fixture                                                                                                                                                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"source": {"groupId": "23000000-0000-0000-0000-000000000001", "pointId": "94c71ed5-a19b-4012-9c95-026db4aa94d8", "startsAt": "2026-10-31T16:00:00+00:00", "scheduleId": "a602fd7a-5083-454d-ba45-a7e4b883d555"}, "target": {"groupId": "23000000-0000-0000-0000-000000000002", "pointId": "82814cc9-6e8f-48cb-8a57-166f3a10a581", "startsAt": "2026-10-31T16:10:00+00:00", "scheduleId": "7e0a55b0-4094-4614-8896-9559cb01f259"}}
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 19 - a supported family move retains an independent leader role
+(1 row)
+
+                                set_config                                
+--------------------------------------------------------------------------
+ {"sub": "a0000000-0000-0000-0000-000000000001", "role": "authenticated"}
+(1 row)
+
+                                                   is                                                   
+--------------------------------------------------------------------------------------------------------
+ ok 20 - the participant environment follows the moved household rather than a separate old leader role
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 21 - an independently authorized leader role is preserved
+(1 row)
+
+ finish 
+--------
+ 1..21
+(1 row)
+
+ROLLBACK

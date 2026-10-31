@@ -1,0 +1,190 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..23
+(1 row)
+
+CREATE TABLE
+INSERT 0 3
+GRANT
+UPDATE 30
+INSERT 0 3
+                                is                                 
+-------------------------------------------------------------------
+ ok 1 - the timed-control groups have distinct physical departures
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 2 - three departures occupy consecutive ten-minute slots
+(1 row)
+
+UPDATE 1
+INSERT 0 3
+UPDATE 3
+UPDATE 3
+CREATE FUNCTION
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                  lives_ok                                                  
+------------------------------------------------------------------------------------------------------------
+ ok 3 - the first already-begun legacy group initially had one ordinary destination before its fixed cutoff
+(1 row)
+
+                                           throws_ok                                            
+------------------------------------------------------------------------------------------------
+ ok 4 - even a direct schedule edit cannot rewrite a published cutoff after a journey has begun
+(1 row)
+
+SAVEPOINT
+                                              lives_ok                                               
+-----------------------------------------------------------------------------------------------------
+ ok 5 - the next already-begun legacy group initially had another capacity-safe ordinary destination
+(1 row)
+
+SET
+                               is                                
+-----------------------------------------------------------------
+ ok 6 - both groups have exactly one active ordinary reservation
+(1 row)
+
+SET
+                               lives_ok                                
+-----------------------------------------------------------------------
+ ok 7 - the minute worker evaluates a group even without a recent scan
+(1 row)
+
+SET
+                                                 is                                                 
+----------------------------------------------------------------------------------------------------
+ ok 8 - after the stop boundary an unscanned ordinary assignment is replaced by the terminal portal
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 9 - the timed redirect records why the unconfirmed ordinary stop was not visited
+(1 row)
+
+UPDATE 1
+SET
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 10 - the minute worker replans an expired unscanned ordinary reservation
+(1 row)
+
+SET
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 11 - the expired destination is retained in history as a safe system skip
+(1 row)
+
+                                              is                                              
+----------------------------------------------------------------------------------------------
+ ok 12 - an expired destination is replaced by one current capacity-safe ordinary destination
+(1 row)
+
+ROLLBACK
+UPDATE 1
+UPDATE 1
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 13 - a physical scan distinguishes a visit that is actually in progress
+(1 row)
+
+SET
+ pg_sleep 
+----------
+ 
+(1 row)
+
+SET
+                             lives_ok                              
+-------------------------------------------------------------------
+ ok 14 - the worker also evaluates a scanned visit at the boundary
+(1 row)
+
+SET
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 15 - a truly active visit is not interrupted when the stop boundary passes
+(1 row)
+
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 16 - the leader and organization receive one warning to finish the active visit safely
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                   lives_ok                                                    
+---------------------------------------------------------------------------------------------------------------
+ ok 17 - an already-begun legacy journey with an unavailable finale is retained for safe organization handling
+(1 row)
+
+SET
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 18 - the dispatcher pauses instead of publishing an ordinary or unsafe emergency address
+(1 row)
+
+                                          is                                           
+---------------------------------------------------------------------------------------
+ ok 19 - no destination is automatically exposed while the final portal is unavailable
+(1 row)
+
+SET
+                                 is                                  
+---------------------------------------------------------------------
+ ok 20 - the unavailable finale creates an urgent organization alert
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 21 - only the organization activates the preconfigured emergency closure
+(1 row)
+
+SET
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 22 - the emergency closure stops each affected dynamic run and cancels further routing
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                           matches                                           
+---------------------------------------------------------------------------------------------
+ ok 23 - affected groups receive only the organization-approved safe destination instruction
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

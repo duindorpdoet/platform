@@ -1,0 +1,233 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 2
+SELECT 2
+UPDATE 1
+UPDATE 1
+CREATE TABLE
+                          ok                           
+-------------------------------------------------------
+ ok 1 - anonymous cannot inspect participant samenloop
+(1 row)
+
+                 ok                  
+-------------------------------------
+ ok 2 - anonymous cannot submit code
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 3 - household can request after registering
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 4 - another household registration stays private
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 5 - cannot submit a request for another household
+(1 row)
+
+                                    throws_ok                                     
+----------------------------------------------------------------------------------
+ ok 6 - participant input remains exactly four characters, never a cluster lookup
+(1 row)
+
+             throws_ok             
+-----------------------------------
+ ok 7 - own party code is rejected
+(1 row)
+
+INSERT 0 1
+                    is                    
+------------------------------------------
+ ok 8 - new code remains pending approval
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 9 - participant submission is idempotent
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 10 - retry emits one request audit
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 11 - request does not move memberships
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 12 - participant sees requested status
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 13 - requester can withdraw open request
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 14 - only one outgoing request is offered
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 15 - own household can subscribe to its private registration topic
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 16 - participant cannot subscribe to another household
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 17 - participant receives no admin topic access
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 18 - target household sees incoming request without source identity
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 19 - target cannot withdraw someone else’s request
+(1 row)
+
+                                          throws_ok                                           
+----------------------------------------------------------------------------------------------
+ ok 20 - even an organizer cannot use the participant withdraw endpoint for another household
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 21 - requester can cancel pending request
+(1 row)
+
+               lives_ok                
+---------------------------------------
+ ok 22 - withdrawal retry remains safe
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 23 - withdrawn status is visible
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 24 - withdrawing a request never cancels registration
+(1 row)
+
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                     lives_ok                      
+---------------------------------------------------
+ ok 25 - new request is still decided by organizer
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                   ok                    
+-----------------------------------------
+ ok 26 - rejected status remains visible
+(1 row)
+
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 27 - organizer accepts after participant resubmission
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 28 - confirmed membership is authoritative after approval
+(1 row)
+
+                           matches                           
+-------------------------------------------------------------
+ ok 29 - participant sees their own confirmed cluster number
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 30 - participant sees count without household identities
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 31 - accepted request is visible but not withdrawable
+(1 row)
+
+                                     throws_ok                                      
+------------------------------------------------------------------------------------
+ ok 32 - concurrent approval prevents pending withdrawal from splitting the cluster
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 33 - snapshot does not disclose the other registration UUID
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 34 - snapshot has no private household or member projection
+(1 row)
+
+UPDATE 1
+                          is                          
+------------------------------------------------------
+ ok 35 - locked cluster cannot submit another request
+(1 row)
+
+ finish 
+--------
+ 1..35
+(1 row)
+
+ROLLBACK

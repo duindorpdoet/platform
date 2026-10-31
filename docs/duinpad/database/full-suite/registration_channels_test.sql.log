@@ -1,0 +1,132 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..15
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+                              ok                               
+---------------------------------------------------------------
+ ok 1 - anonymous visitors cannot change registration channels
+(1 row)
+
+SET
+                              is                               
+---------------------------------------------------------------
+ ok 2 - the local fixture publishes group registration as open
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 3 - the local fixture publishes portal registration as open
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 4 - an ordinary parent cannot change a registration channel
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                             lives_ok                             
+------------------------------------------------------------------
+ ok 5 - an event admin can close group registration independently
+(1 row)
+
+SET
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 6 - closing groups is immediately visible in the public projection
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 7 - closing groups leaves portal applications open
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 8 - the database rejects group submissions while that channel is closed
+(1 row)
+
+                               lives_ok                               
+----------------------------------------------------------------------
+ ok 9 - portal applicants can still save while only groups are closed
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 10 - an event admin can close portal applications independently
+(1 row)
+
+SET
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 11 - closing portals is immediately visible in the public projection
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                     lives_ok                                     
+----------------------------------------------------------------------------------
+ ok 12 - an existing house draft remains editable after the public channel closes
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                     throws_ok                                     
+-----------------------------------------------------------------------------------
+ ok 13 - the database still rejects a new house draft while that channel is closed
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 14 - stale admin screens cannot overwrite newer channel settings
+(1 row)
+
+SET
+                                 is                                 
+--------------------------------------------------------------------
+ ok 15 - each successful channel change is written to the audit log
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

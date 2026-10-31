@@ -1,0 +1,476 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 5
+CREATE TABLE
+SELECT 12
+SELECT 17
+SELECT 4
+                               is                                
+-----------------------------------------------------------------
+ ok 1 - single active member does not acquire a cluster identity
+(1 row)
+
+                                    matches                                     
+--------------------------------------------------------------------------------
+ ok 2 - two submitted members automatically acquire a safe event-year reference
+(1 row)
+
+               is               
+--------------------------------
+ ok 3 - generator is idempotent
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 4 - references are unique within each event
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 5 - an assigned reference cannot be replaced
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 6 - an assigned reference cannot be cleared
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 7 - historical references cannot be deleted and recycled
+(1 row)
+
+              throws_ok              
+-------------------------------------
+ ok 8 - empty references are invalid
+(1 row)
+
+                throws_ok                
+-----------------------------------------
+ ok 9 - ambiguous characters are invalid
+(1 row)
+
+                      results_eq                       
+-------------------------------------------------------
+ ok 10 - ensuring identities never changes memberships
+(1 row)
+
+                               results_eq                                
+-------------------------------------------------------------------------
+ ok 11 - individual references and four-character codes remain unchanged
+(1 row)
+
+                          results_eq                           
+---------------------------------------------------------------
+ ok 12 - identity generation never changes walking assignments
+(1 row)
+
+ALTER TABLE
+INSERT 0 1
+ALTER TABLE
+SELECT 2
+                         is                          
+-----------------------------------------------------
+ ok 13 - historical fixture has no cluster reference
+(1 row)
+
+                        matches                        
+-------------------------------------------------------
+ ok 14 - backfill repairs an existing two-member party
+(1 row)
+
+                        results_eq                        
+----------------------------------------------------------
+ ok 15 - backfill preserves membership ids and timestamps
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 16 - anonymous clients cannot read organizer snapshot
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 17 - anonymous clients cannot resolve identities
+(1 row)
+
+                   ok                   
+----------------------------------------
+ ok 18 - anonymous clients cannot merge
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 19 - authenticated clients cannot execute generator
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 20 - private projection cannot be called directly
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    throws_ok                     
+--------------------------------------------------
+ ok 21 - participant cannot read other households
+(1 row)
+
+                             throws_ok                             
+-------------------------------------------------------------------
+ ok 22 - knowledge of an SL code does not grant participant access
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 23 - participant cannot preview private data
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 24 - resolver normalizes cluster identifier
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 25 - DPH resolver returns authoritative party
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 26 - four-character resolver remains supported
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 27 - search matches cluster reference
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 28 - search for one registration returns complete cluster
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 29 - snapshot respects bounded page size
+(1 row)
+
+INSERT 0 1
+                    is                    
+------------------------------------------
+ ok 30 - two unassigned singles may merge
+(1 row)
+
+INSERT 0 1
+                      matches                      
+---------------------------------------------------
+ ok 31 - manual two-single merge creates reference
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 32 - retry returns identical saved result
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 33 - idempotent retry writes exactly one audit
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 34 - two singles become one confirmed party
+(1 row)
+
+                  ok                   
+---------------------------------------
+ ok 35 - source is historically locked
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 36 - empty historical singleton never gets a usable reference
+(1 row)
+
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 37 - reusing a command key with different arguments fails
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+                           is                           
+--------------------------------------------------------
+ ok 38 - single plus cluster preserves target reference
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+                           is                            
+---------------------------------------------------------
+ ok 39 - cluster plus cluster preserves target reference
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 40 - historical source retains its identity
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 41 - all source cluster memberships move atomically
+(1 row)
+
+                          results_eq                           
+---------------------------------------------------------------
+ ok 42 - manual merges never silently move walking assignments
+(1 row)
+
+              ok               
+-------------------------------
+ ok 43 - same party is blocked
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 44 - projected size above current limit is blocked
+(1 row)
+
+                throws_ok                 
+------------------------------------------
+ ok 45 - capacity is enforced server-side
+(1 row)
+
+UPDATE 1
+                ok                
+----------------------------------
+ ok 46 - locked source is blocked
+(1 row)
+
+                ok                
+----------------------------------
+ ok 47 - locked target is blocked
+(1 row)
+
+INSERT 0 2
+INSERT 0 1
+UPDATE 1
+                         throws_ok                         
+-----------------------------------------------------------
+ ok 48 - changed preview state cannot be silently accepted
+(1 row)
+
+                   throws_ok                   
+-----------------------------------------------
+ ok 49 - reason must have 10 to 500 characters
+(1 row)
+
+INSERT 0 2
+INSERT 0 1
+                         ok                         
+----------------------------------------------------
+ ok 50 - one assigned and one unassigned is blocked
+(1 row)
+
+INSERT 0 1
+                      ok                      
+----------------------------------------------
+ ok 51 - different walking groups are blocked
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 52 - group conflict is enforced in mutation
+(1 row)
+
+UPDATE 1
+                     is                      
+---------------------------------------------
+ ok 53 - same draft walking group is allowed
+(1 row)
+
+UPDATE 2
+                   ok                    
+-----------------------------------------
+ ok 54 - published assignment is blocked
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 55 - published state enforced in mutation
+(1 row)
+
+UPDATE 2
+                lives_ok                 
+-----------------------------------------
+ ok 56 - same draft group merge succeeds
+(1 row)
+
+INSERT 0 3
+INSERT 0 2
+                             is                             
+------------------------------------------------------------
+ ok 57 - pending requests do not create a confirmed cluster
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 58 - reject remains a separate decision
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 59 - rejection does not create a reference
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 60 - accepted join preserves approval semantics
+(1 row)
+
+INSERT 0 1
+                lives_ok                 
+-----------------------------------------
+ ok 61 - accepted request retry succeeds
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 62 - accept retry preserves generated identity
+(1 row)
+
+                      matches                       
+----------------------------------------------------
+ ok 63 - accepted request creates cluster reference
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 64 - accepted mail contains safe cluster number
+(1 row)
+
+                           lives_ok                            
+---------------------------------------------------------------
+ ok 65 - one move call moves a whole five-registration cluster
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 66 - all cluster members share a walking group after one RPC
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 67 - group board snapshot exposes cluster identity
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 68 - roster exposes party and cluster identity
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 69 - party from another event cannot be a mutation target
+(1 row)
+
+                     throws_ok                     
+---------------------------------------------------
+ ok 70 - resolver cannot cross event authorization
+(1 row)
+
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 71 - registration managers can read samenloop overview
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 72 - registration managers can subscribe to organizer refresh
+(1 row)
+
+UPDATE 1
+                       lives_ok                        
+-------------------------------------------------------
+ ok 73 - group managers can resolve cluster identities
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+                          ok                           
+-------------------------------------------------------
+ ok 74 - cancelled registration membership is reported
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 75 - inactive members cannot be manually merged
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 76 - unique constraint prevents multiple active memberships
+(1 row)
+
+SELECT 1
+ALTER TABLE
+INSERT 0 3
+ALTER TABLE
+UPDATE 1
+CREATE SEQUENCE
+CREATE FUNCTION
+DO
+                                   is                                   
+------------------------------------------------------------------------
+ ok 77 - generator retries a collision and keeps the reserved reference
+(1 row)
+
+CREATE FUNCTION
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 78 - exhausted retries fail safely rather than recycling
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 79 - failed generator leaves party unchanged
+(1 row)
+
+DO
+ finish 
+--------
+ 1..79
+(1 row)
+
+ROLLBACK

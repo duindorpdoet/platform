@@ -1,0 +1,489 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+GRANT
+INSERT 0 1
+                           ok                           
+--------------------------------------------------------
+ ok 1 - anonymous cannot publish child payment requests
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 2 - child batch links cannot be read directly
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 3 - participants cannot change batch membership
+(1 row)
+
+                      ok                       
+-----------------------------------------------
+ ok 4 - batch storage has RLS defense in depth
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 5 - isolated registration has three independently payable children
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000083","role":"authenticated"}
+(1 row)
+
+                               throws_ok                               
+-----------------------------------------------------------------------
+ ok 6 - a parent cannot enumerate other children through the admin API
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 7 - a parent cannot publish child payment links
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                  throws_ok                  
+---------------------------------------------
+ ok 8 - payment URL credentials are rejected
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 9 - duplicate child cannot inflate amount
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 10 - anchor must belong to selected children
+(1 row)
+
+                         throws_ok                         
+-----------------------------------------------------------
+ ok 11 - one stale child rolls back the complete selection
+(1 row)
+
+RESET
+                    is                    
+------------------------------------------
+ ok 12 - failed publish links no children
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 13 - failed publish creates no e-mail
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    lives_ok                     
+-------------------------------------------------
+ ok 14 - two siblings can share one payment link
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 15 - two selected children total 500 cents
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 16 - batch describes only the two selected children
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 17 - publication replay returns the original batch
+(1 row)
+
+RESET
+                   is                   
+----------------------------------------
+ ok 18 - third sibling remains unlinked
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 19 - third sibling version is unchanged
+(1 row)
+
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 20 - one adult receives exactly one e-mail despite two selected children and replay
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 21 - mail identifies the covered children
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 22 - mail identifies the one active payment child
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 23 - payment mail includes the registration code
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 24 - payment mail includes the exact amount for every selected child
+(1 row)
+
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 25 - legacy direct link cannot replace a child-mode request
+(1 row)
+
+                                  throws_ok                                   
+------------------------------------------------------------------------------
+ ok 26 - legacy registration confirmation cannot collect child invoices again
+(1 row)
+
+                      lives_ok                      
+----------------------------------------------------
+ ok 27 - third sibling gets a separate payment link
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 28 - separate child amount is 250 cents
+(1 row)
+
+                       isnt                        
+---------------------------------------------------
+ ok 29 - separate request has independent identity
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000084","role":"authenticated"}
+(1 row)
+
+                                throws_ok                                 
+--------------------------------------------------------------------------
+ ok 30 - a different household cannot report the anchor household payment
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 31 - another household snapshot contains no sibling payment URL
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 32 - another household snapshot does not disclose private child names
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000083","role":"authenticated"}
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 33 - parent snapshot gives the actual child anchor identity
+(1 row)
+
+                        lives_ok                        
+--------------------------------------------------------
+ ok 34 - anchor household can report the shared payment
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 35 - report awaits bank verification
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 36 - reported batch no longer exposes a payment link
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 37 - partial shared receipt cannot falsely pay two children
+(1 row)
+
+                        lives_ok                         
+---------------------------------------------------------
+ ok 38 - confirmed 500 cents covers exactly two siblings
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 39 - confirmation replay returns same receipt
+(1 row)
+
+RESET
+                        is                         
+---------------------------------------------------
+ ok 40 - registration total remains partially paid
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 41 - replay adds no accounting entry
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 42 - only 500 cents booked so far
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 43 - third sibling remains unpaid
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 44 - separate third receipt finishes the registration
+(1 row)
+
+RESET
+                     is                      
+---------------------------------------------
+ ok 45 - 750 cents confirms the registration
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 46 - ledger total is exactly 750 cents
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 47 - one entry per settled child batch
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 48 - independent household gets a request
+(1 row)
+
+RESET
+UPDATE 1
+                                is                                 
+-------------------------------------------------------------------
+ ok 49 - child cancellation marks the existing payment link unsafe
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 50 - invalidated payment URL is suppressed
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000084","role":"authenticated"}
+(1 row)
+
+                       throws_ok                        
+--------------------------------------------------------
+ ok 51 - parent cannot report a cancelled child request
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 52 - organization cannot confirm invalidated membership
+(1 row)
+
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 53 - organization can explicitly release invalidated request
+(1 row)
+
+RESET
+                     is                     
+--------------------------------------------
+ ok 54 - cancelled batch releases its child
+(1 row)
+
+UPDATE 1
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                lives_ok                                 
+-------------------------------------------------------------------------
+ ok 55 - released child can receive a fresh request with its new version
+(1 row)
+
+RESET
+       set_config        
+-------------------------
+ {"role":"service_role"}
+(1 row)
+
+SET
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 56 - mail worker can claim current child notifications
+(1 row)
+
+RESET
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 57 - settled and cancelled payment-link mails are suppressed before delivery
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 58 - current replacement mail remains deliverable
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                         is                         
+----------------------------------------------------
+ ok 59 - cancelled child is not presented as active
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 60 - active sibling remains paid when the other covered child cancels
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 61 - separate paid sibling remains confirmed after cancellation
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 62 - cancellation does not rewrite already verified bank receipt
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000083","role":"authenticated"}
+(1 row)
+
+               throws_ok                
+----------------------------------------
+ ok 63 - parents cannot record a refund
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 64 - whole-registration refund API cannot bypass child batch accounting
+(1 row)
+
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 65 - partial batch refund cannot erase both covered obligations
+(1 row)
+
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 66 - organizer records exactly 500 cents returned for the shared pair
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 67 - refund replay returns the original result without another refund
+(1 row)
+
+RESET
+                                is                                 
+-------------------------------------------------------------------
+ ok 68 - replayed refund creates exactly one negative ledger entry
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 69 - refund ledger contains exactly minus 500 cents
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 70 - separate third child retains its 250 cents of payment
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 71 - only the requested shared batch is refunded
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 72 - separate third sibling stays confirmed after the shared refund
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 73 - third sibling ledger has no extra payment or refund entry
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 74 - refunded active sibling is released for a future new request
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 75 - refunded sibling must await a new link instead of retaining paid access
+(1 row)
+
+ finish 
+--------
+ 1..75
+(1 row)
+
+ROLLBACK

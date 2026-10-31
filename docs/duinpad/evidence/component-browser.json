@@ -1,0 +1,281 @@
+{
+  "testedAt": "2026-10-31T15:13:55.527Z",
+  "revision": "bfd44ba7d241f8035676a07812573a4ebb8cf5db",
+  "environment": "local component browser with synthetic HTTP mocks; working tree changes",
+  "hardware": "not tested",
+  "auth": "synthetic Supabase auth-state callbacks only; provider/OTP/Google authentication not tested",
+  "mail": "not sent",
+  "checks": [
+    {
+      "name": "actor 320px no horizontal overflow",
+      "pass": true,
+      "evidence": "document.scrollWidth <= viewport"
+    },
+    {
+      "name": "actor 320px only assigned buttons",
+      "pass": true,
+      "evidence": "unassigned controls absent"
+    },
+    {
+      "name": "actor 320px large touch targets",
+      "pass": true,
+      "evidence": "buttons >=48 CSS px"
+    },
+    {
+      "name": "actor 320px keyboard focus",
+      "pass": true,
+      "evidence": "keyboard reaches assigned action"
+    },
+    {
+      "name": "actor 320px unknown blocks retry",
+      "pass": true,
+      "evidence": "unknown requires read-only receipt"
+    },
+    {
+      "name": "actor 320px receipt never retries",
+      "pass": true,
+      "evidence": "GET receipt emits no POST command"
+    },
+    {
+      "name": "actor 320px shared finale receipt readable while GO blocked",
+      "pass": true,
+      "evidence": "separate read-only recovery does not require an enabled execution control or original actor receipt"
+    },
+    {
+      "name": "actor 320px shared finale recovery is GET without browser group",
+      "pass": true,
+      "evidence": "group derived by authenticated backend; no execution POST from recovery"
+    },
+    {
+      "name": "actor 320px revocation removes controls",
+      "pass": true,
+      "evidence": "403 focus refresh removes controls"
+    },
+    {
+      "name": "actor 320px stale blocks all actions",
+      "pass": true,
+      "evidence": "9s old local status rejected"
+    },
+    {
+      "name": "actor management 320px starts without rights",
+      "pass": true,
+      "evidence": "new invite rights none"
+    },
+    {
+      "name": "actor management 320px preset excludes global stop",
+      "pass": true,
+      "evidence": "global stop separate"
+    },
+    {
+      "name": "actor management 320px no horizontal overflow",
+      "pass": true,
+      "evidence": "document.scrollWidth <= viewport"
+    },
+    {
+      "name": "finale 320px server location",
+      "pass": true,
+      "evidence": "server snapshot location"
+    },
+    {
+      "name": "finale 320px reduced motion",
+      "pass": true,
+      "evidence": "prefers-reduced-motion disables gate animation"
+    },
+    {
+      "name": "finale 320px no horizontal overflow",
+      "pass": true,
+      "evidence": "document.scrollWidth <= viewport"
+    },
+    {
+      "name": "finale 320px validation does not confirm",
+      "pass": true,
+      "evidence": "validation only opens participation confirmation"
+    },
+    {
+      "name": "finale 320px skip child preserved",
+      "pass": true,
+      "evidence": "explicit skipped child sent to business confirmation"
+    },
+    {
+      "name": "finale 320px server ended removes starts",
+      "pass": true,
+      "evidence": "server eveningEnded hides scan action"
+    },
+    {
+      "name": "posters 320px distinct codes",
+      "pass": true,
+      "evidence": "separate QR1/QR2 preview and short code"
+    },
+    {
+      "name": "posters 320px show offline separate",
+      "pass": true,
+      "evidence": "valid app posters do not claim connected show"
+    },
+    {
+      "name": "posters 320px no horizontal overflow",
+      "pass": true,
+      "evidence": "document.scrollWidth <= viewport"
+    },
+    {
+      "name": "auth generation 320px mocked subscription active",
+      "pass": true,
+      "evidence": "actual component onAuthStateChange callback subscribed to synthetic emitter"
+    },
+    {
+      "name": "finale receipt 320px scopes recorded receipt to QR2",
+      "pass": true,
+      "evidence": "recorded account does not recover a QR1 registration as finale receipt"
+    },
+    {
+      "name": "auth generation 320px late receipt A cannot mark B started",
+      "pass": true,
+      "evidence": "hold receipt A, emit SIGNED_IN B, load B, release started receipt A"
+    },
+    {
+      "name": "auth generation 320px late retry A cannot mark B started",
+      "pass": true,
+      "evidence": "hold retry A, switch B, release successful old retry after B snapshot"
+    },
+    {
+      "name": "auth generation 320px late A403 cannot erase B snapshot",
+      "pass": true,
+      "evidence": "hold A403, load B after auth event, release stale authorization error"
+    },
+    {
+      "name": "actor 390px no horizontal overflow",
+      "pass": true,
+      "evidence": "document.scrollWidth <= viewport"
+    },
+    {
+      "name": "actor 390px only assigned buttons",
+      "pass": true,
+      "evidence": "unassigned controls absent"
+    },
+    {
+      "name": "actor 390px large touch targets",
+      "pass": true,
+      "evidence": "buttons >=48 CSS px"
+    },
+    {
+      "name": "actor 390px keyboard focus",
+      "pass": true,
+      "evidence": "keyboard reaches assigned action"
+    },
+    {
+      "name": "actor 390px unknown blocks retry",
+      "pass": true,
+      "evidence": "unknown requires read-only receipt"
+    },
+    {
+      "name": "actor 390px receipt never retries",
+      "pass": true,
+      "evidence": "GET receipt emits no POST command"
+    },
+    {
+      "name": "actor 390px shared finale receipt readable while GO blocked",
+      "pass": true,
+      "evidence": "separate read-only recovery does not require an enabled execution control or original actor receipt"
+    },
+    {
+      "name": "actor 390px shared finale recovery is GET without browser group",
+      "pass": true,
+      "evidence": "group derived by authenticated backend; no execution POST from recovery"
+    },
+    {
+      "name": "actor 390px revocation removes controls",
+      "pass": true,
+      "evidence": "403 focus refresh removes controls"
+    },
+    {
+      "name": "actor 390px stale blocks all actions",
+      "pass": true,
+      "evidence": "9s old local status rejected"
+    },
+    {
+      "name": "actor management 390px starts without rights",
+      "pass": true,
+      "evidence": "new invite rights none"
+    },
+    {
+      "name": "actor management 390px preset excludes global stop",
+      "pass": true,
+      "evidence": "global stop separate"
+    },
+    {
+      "name": "actor management 390px no horizontal overflow",
+      "pass": true,
+      "evidence": "document.scrollWidth <= viewport"
+    },
+    {
+      "name": "finale 390px server location",
+      "pass": true,
+      "evidence": "server snapshot location"
+    },
+    {
+      "name": "finale 390px reduced motion",
+      "pass": true,
+      "evidence": "prefers-reduced-motion disables gate animation"
+    },
+    {
+      "name": "finale 390px no horizontal overflow",
+      "pass": true,
+      "evidence": "document.scrollWidth <= viewport"
+    },
+    {
+      "name": "finale 390px validation does not confirm",
+      "pass": true,
+      "evidence": "validation only opens participation confirmation"
+    },
+    {
+      "name": "finale 390px skip child preserved",
+      "pass": true,
+      "evidence": "explicit skipped child sent to business confirmation"
+    },
+    {
+      "name": "finale 390px server ended removes starts",
+      "pass": true,
+      "evidence": "server eveningEnded hides scan action"
+    },
+    {
+      "name": "posters 390px distinct codes",
+      "pass": true,
+      "evidence": "separate QR1/QR2 preview and short code"
+    },
+    {
+      "name": "posters 390px show offline separate",
+      "pass": true,
+      "evidence": "valid app posters do not claim connected show"
+    },
+    {
+      "name": "posters 390px no horizontal overflow",
+      "pass": true,
+      "evidence": "document.scrollWidth <= viewport"
+    },
+    {
+      "name": "auth generation 390px mocked subscription active",
+      "pass": true,
+      "evidence": "actual component onAuthStateChange callback subscribed to synthetic emitter"
+    },
+    {
+      "name": "finale receipt 390px scopes recorded receipt to QR2",
+      "pass": true,
+      "evidence": "recorded account does not recover a QR1 registration as finale receipt"
+    },
+    {
+      "name": "auth generation 390px late receipt A cannot mark B started",
+      "pass": true,
+      "evidence": "hold receipt A, emit SIGNED_IN B, load B, release started receipt A"
+    },
+    {
+      "name": "auth generation 390px late retry A cannot mark B started",
+      "pass": true,
+      "evidence": "hold retry A, switch B, release successful old retry after B snapshot"
+    },
+    {
+      "name": "auth generation 390px late A403 cannot erase B snapshot",
+      "pass": true,
+      "evidence": "hold A403, load B after auth event, release stale authorization error"
+    }
+  ],
+  "failures": []
+}

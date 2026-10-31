@@ -1,0 +1,144 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+SELECT 3
+                       portal_registration_begin                        
+------------------------------------------------------------------------
+ {"accepted": true, "intakeId": "a741976e-d574-43c1-a806-5631f77f0932"}
+(1 row)
+
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                                            is                                            
+------------------------------------------------------------------------------------------
+ ok 1 - an unclaimed intake has an editable authoritative preview without making a portal
+(1 row)
+
+                  lives_ok                  
+--------------------------------------------
+ ok 2 - organization edits a pre-OTP intake
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 3 - old preview cannot authorize a changed intake
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                              ok                               
+---------------------------------------------------------------
+ ok 4 - same verified parent claims the incomplete application
+(1 row)
+
+                                   lives_ok                                    
+-------------------------------------------------------------------------------
+ ok 5 - parent child books remain available alongside an incomplete house role
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                              is                               
+---------------------------------------------------------------
+ ok 6 - withdrawal explicitly preserves ordinary participation
+(1 row)
+
+                                          is                                          
+--------------------------------------------------------------------------------------
+ ok 7 - incomplete application is withdrawn without approval or an operational portal
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 8 - uncertain retry returns the original receipt
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 9 - lifecycle never needs a fabricated portal
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 10 - old OTP claim cannot revive withdrawn participation
+(1 row)
+
+                     throws_ok                     
+---------------------------------------------------
+ ok 11 - a late save cannot revive the application
+(1 row)
+
+                            lives_ok                            
+----------------------------------------------------------------
+ ok 12 - same parent keeps safe book selection after withdrawal
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 13 - parent environment role survives withdrawal
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 14 - ordinary parent cannot inspect private organization lifecycle data
+(1 row)
+
+                                 lives_ok                                  
+---------------------------------------------------------------------------
+ ok 15 - verified parent can deliberately restart their unused application
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 16 - deliberate restart uses the existing application identity
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 17 - all registration-child rows and statuses preserved
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 18 - all payment rows and history preserved
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 19 - all ordinary registration fields preserved
+(1 row)
+
+                   ok                    
+-----------------------------------------
+ ok 20 - no anonymous lifecycle mutation
+(1 row)
+
+ finish 
+--------
+ 1..20
+(1 row)
+
+ROLLBACK

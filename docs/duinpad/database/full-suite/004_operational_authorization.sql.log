@@ -1,0 +1,98 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..12
+(1 row)
+
+                  ok                  
+--------------------------------------
+ ok 1 - admin dashboard is not public
+(1 row)
+
+                  ok                   
+---------------------------------------
+ ok 2 - portal dashboard is not public
+(1 row)
+
+                     ok                      
+---------------------------------------------
+ ok 3 - public contact writer is server-only
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 4 - admin bootstrap is never available to browsers
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 5 - admin bootstrap is restricted to the service role
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+               lives_ok                
+---------------------------------------
+ ok 6 - event admin can read dashboard
+(1 row)
+
+                    lives_ok                    
+------------------------------------------------
+ ok 7 - groups manager can read planning inputs
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 8 - ordinary parent cannot read dashboard
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 9 - unrelated household cannot read pre-run roster
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                throws_ok                                 
+--------------------------------------------------------------------------
+ ok 10 - participating parent cannot enumerate other households in roster
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           ok                            
+---------------------------------------------------------
+ ok 11 - portal owner can read own operational dashboard
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 12 - unrelated user receives no portal data
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

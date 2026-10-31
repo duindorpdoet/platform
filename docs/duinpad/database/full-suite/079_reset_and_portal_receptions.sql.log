@@ -1,0 +1,116 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+                           is                            
+---------------------------------------------------------
+ ok 1 - incomplete reception window is never operational
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 2 - explicit partial availability retained in maintenance draft
+(1 row)
+
+                                     lives_ok                                     
+----------------------------------------------------------------------------------
+ ok 3 - unused concept can still be deleted despite its private maintenance draft
+(1 row)
+
+                                   lives_ok                                    
+-------------------------------------------------------------------------------
+ ok 4 - active incomplete maintenance can be saved without silent deactivation
+(1 row)
+
+                is                
+----------------------------------
+ ok 5 - active lifecycle retained
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                                                                                                                                                                        admin_startregie_confirm_point                                                                                                                                                                                        
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "ee6c8a4a-4695-44ce-8af8-0fc6ba4780ff", "active": true, "version": 1, "confirmed": true, "readiness": {"location": {"valid": true, "reason": null, "source": "address", "latitude": 52.100100, "longitude": 4.270100}, "confirmed": true, "canConfirm": true, "routeReady": true, "confirmedAt": "2026-10-31T15:16:18.760491+00:00", "linkedPortalName": "Testpoort 01", "confirmationReason": null}}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                  admin_startregie_confirm_and_send                                  
+-----------------------------------------------------------------------------------------------------
+ {"published": 1, "planningVersion": 1, "planningVersionId": "66401743-8880-487a-8368-1105826c8ded"}
+(1 row)
+
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 6 - own team sees a confirmed linked start independently of route reservations
+(1 row)
+
+                   is                   
+----------------------------------------
+ ok 7 - linked start group counted once
+(1 row)
+
+                                                       admin_portal_start_point_set                                                        
+-------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "12000000-0000-0000-0000-000000000001", "version": 4, "startPoint": false, "startPointId": "ee6c8a4a-4695-44ce-8af8-0fc6ba4780ff"}
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 8 - disabling start choice preserves the externally valid appointment
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 9 - disabled start is absent for new planning
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+                                ok                                
+------------------------------------------------------------------
+ ok 10 - reset preview exposes the specific started-group blocker
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 11 - one live group refuses the whole reset
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 12 - blocked reset makes no partial data or communication change
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 13 - household cannot inspect organization reset impact
+(1 row)
+
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 14 - another household cannot read the own-team reception projection
+(1 row)
+
+ finish 
+--------
+ 1..14
+(1 row)
+
+ROLLBACK

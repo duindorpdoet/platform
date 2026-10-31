@@ -1,0 +1,53 @@
+BEGIN
+CREATE EXTENSION
+ plan 
+------
+ 1..6
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 1 - anonymous visitors cannot read the registration roster
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 2 - a participant cannot read other registrations
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 3 - an event administrator sees submitted registrations
+(1 row)
+
+                                        ok                                        
+----------------------------------------------------------------------------------
+ ok 4 - the roster includes the list and detail fields required by the backoffice
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 5 - registration details include the registered children
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 6 - every registration has an immediately usable group label before planning
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

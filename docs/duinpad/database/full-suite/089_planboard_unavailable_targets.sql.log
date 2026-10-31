@@ -1,0 +1,58 @@
+BEGIN
+CREATE FUNCTION
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                                                                                                                                                                        admin_startregie_confirm_point                                                                                                                                                                                        
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "d624c340-9924-418d-a204-96c58f42ff1e", "active": true, "version": 1, "confirmed": true, "readiness": {"location": {"valid": true, "reason": null, "source": "address", "latitude": 52.100100, "longitude": 4.270100}, "confirmed": true, "canConfirm": true, "routeReady": true, "confirmedAt": "2026-10-31T15:16:23.801132+00:00", "linkedPortalName": "Testpoort 01", "confirmationReason": null}}
+(1 row)
+
+ withdraw_group_appointment 
+----------------------------
+ 
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                    lives_ok                                     
+---------------------------------------------------------------------------------
+ ok 1 - future target can be safely archived without deleting its route identity
+(1 row)
+
+UPDATE 1
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 2 - archived route target stays visible and identifies its real status
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 3 - associated visit does not disappear from the board
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 4 - the affected visit retains its hard domain warning
+(1 row)
+
+ finish 
+--------
+ 1..4
+(1 row)
+
+ROLLBACK

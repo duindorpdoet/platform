@@ -1,0 +1,489 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+SELECT 1
+UPDATE 1
+CREATE TABLE
+GRANT
+GRANT
+                             ok                              
+-------------------------------------------------------------
+ ok 1 - anonymous callers cannot use the organizer exception
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 2 - private invitation material belongs only to the mail worker
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         throws_ok                         
+-----------------------------------------------------------
+ ok 3 - a participant cannot invoke administrator creation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                          lives_ok                                           
+---------------------------------------------------------------------------------------------
+ ok 4 - organizer creates one family with three children while public registration is closed
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 5 - new registration waits for first verified claim
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 6 - retry returns the exact command receipt
+(1 row)
+
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 7 - another create for the same event/email points to the existing registration
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 8 - pending family is durable and visible in the actual admin roster
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 9 - pending registration derives paid count from real payment status
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 10 - unassigned registration has no inferred attendance count
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 11 - organizer options reuse real preference/group/together fields
+(1 row)
+
+RESET
+UPDATE 1
+                               is                                
+-----------------------------------------------------------------
+ ok 12 - one registration owns all three stable child identities
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 13 - administrator does not invent a verified owner
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 14 - administrator creates no fictitious household member
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 15 - administrator creates no Auth account
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 16 - successful creation queues exactly one invitation
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 17 - creation does not also queue a generic registration receipt
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 18 - pending participation is never automatically marked paid
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 19 - outbox carries a revision, never the invitation bearer
+(1 row)
+
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 20 - service-only renderer builds the current secure activation path
+(1 row)
+
+INSERT 0 3
+INSERT 0 4
+INSERT 0 1
+INSERT 0 1
+SET
+                                                                 set_config                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000001","iat":9999999999}
+(1 row)
+
+                                      throws_ok                                       
+--------------------------------------------------------------------------------------
+ ok 21 - an old session with refreshed token timestamps cannot automatically activate
+(1 row)
+
+                                                        set_config                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000002","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000003"}
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 22 - another verified email cannot take ownership
+(1 row)
+
+                                                        set_config                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000001","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000002"}
+(1 row)
+
+                                        lives_ok                                        
+----------------------------------------------------------------------------------------
+ ok 23 - the correct fresh Auth session activates without reopening public registration
+(1 row)
+
+                      lives_ok                      
+----------------------------------------------------
+ ok 24 - repeated verified callbacks are idempotent
+(1 row)
+
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 25 - parent snapshot chooses this event registration before an older unrelated household
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 26 - preference snapshot uses the same event household
+(1 row)
+
+RESET
+                              is                              
+--------------------------------------------------------------
+ ok 27 - one actual activation audit despite callback retries
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 28 - claim reuses all three existing children
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 29 - claim creates no second confirmation mail
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 30 - already claimed invitations are not sent later by a stale worker
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+RESET
+UPDATE 1
+UPDATE 1
+SET
+                                                        set_config                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000003","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000004"}
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 31 - an expired invitation cannot grant ownership
+(1 row)
+
+                                           lives_ok                                           
+----------------------------------------------------------------------------------------------
+ ok 32 - verified invited parent can request a new invitation after expiry and public closure
+(1 row)
+
+                       lives_ok                       
+------------------------------------------------------
+ ok 33 - renewal retry queues no duplicate invitation
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 34 - the old reference is revoked by renewal
+(1 row)
+
+RESET
+UPDATE 1
+SET
+                                                        set_config                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000003","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000004"}
+(1 row)
+
+                                                 lives_ok                                                  
+-----------------------------------------------------------------------------------------------------------
+ ok 35 - existing verified account can explicitly accept the newest invitation with an older valid session
+(1 row)
+
+RESET
+                     is                      
+---------------------------------------------
+ ok 36 - existing verified account is reused
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 37 - expiry and reissue preserve the same registration children
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+RESET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                    lives_ok                                    
+--------------------------------------------------------------------------------
+ ok 38 - organizer can correct a still unclaimed address and reissue atomically
+(1 row)
+
+                                lives_ok                                 
+-------------------------------------------------------------------------
+ ok 39 - exact correction retry returns the receipt without another mail
+(1 row)
+
+                                  throws_ok                                  
+-----------------------------------------------------------------------------
+ ok 40 - another admin cannot overwrite a stale pending registration version
+(1 row)
+
+                                                        set_config                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000002","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000003"}
+(1 row)
+
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 41 - the previous email and token lose claim rights immediately
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 42 - the previous email cannot renew a corrected invitation
+(1 row)
+
+RESET
+                         is                         
+----------------------------------------------------
+ ok 43 - correction adds exactly one new invitation
+(1 row)
+
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 44 - old leased or pending invitation cannot render after correction
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 45 - new invitation addresses only the corrected email
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 46 - email correction is explicitly audited
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+SET
+                                                        set_config                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000004","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000003"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 47 - a signed identity cannot reuse another account session
+(1 row)
+
+                                                        set_config                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000004","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000005"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 48 - null mode cannot bypass automatic freshness validation
+(1 row)
+
+                                         lives_ok                                         
+------------------------------------------------------------------------------------------
+ ok 49 - the corrected verified identity can explicitly activate the same stored children
+(1 row)
+
+RESET
+SELECT 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                              lives_ok                                               
+-----------------------------------------------------------------------------------------------------
+ ok 50 - pending children can be assigned with the same scoped capacity guard as administrator edits
+(1 row)
+
+RESET
+UPDATE 1
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 51 - all three pending children already reserve physical group capacity
+(1 row)
+
+UPDATE 1
+UPDATE 1
+SET
+                                                        set_config                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000002","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000003"}
+(1 row)
+
+                                                 throws_ok                                                  
+------------------------------------------------------------------------------------------------------------
+ ok 52 - activation revalidates an unstarted group when its physical start capacity has become insufficient
+(1 row)
+
+RESET
+                                             ok                                             
+--------------------------------------------------------------------------------------------
+ ok 53 - capacity conflict preserves the pending registration instead of granting ownership
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+SELECT 1
+SELECT 1
+SET
+                                                        set_config                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b7010000-0000-0000-0000-000000000002","role":"authenticated","session_id":"b7020000-0000-0000-0000-000000000003"}
+(1 row)
+
+                                               lives_ok                                               
+------------------------------------------------------------------------------------------------------
+ ok 54 - a later verified ownership claim never rewrites a started group or adds participant capacity
+(1 row)
+
+RESET
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 55 - the started run is byte-for-byte unchanged by ownership claim
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 56 - real attendance and departures are unchanged by ownership claim
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 57 - actual present count excludes the child who already departed
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 58 - activation count stays separate from real attendance
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 59 - activation and attendance never manufacture a confirmed payment
+(1 row)
+
+UPDATE 1
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 60 - a genuinely waived child counts separately from two unpaid children
+(1 row)
+
+UPDATE 1
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 61 - actual confirmed family payment counts the two paid children and one waiver
+(1 row)
+
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 62 - registration-only organizer options do not grant group-management authority
+(1 row)
+
+                               throws_ok                                
+------------------------------------------------------------------------
+ ok 63 - registration-only capability cannot attach a family to a group
+(1 row)
+
+                                    throws_ok                                    
+---------------------------------------------------------------------------------
+ ok 64 - registration-only capability cannot attach a family to a together party
+(1 row)
+
+                                     lives_ok                                      
+-----------------------------------------------------------------------------------
+ ok 65 - registration-only organizer may still create an unassigned pending family
+(1 row)
+
+RESET
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 66 - creation, login, claim and renewal never reopen public registration
+(1 row)
+
+ finish 
+--------
+ 1..66
+(1 row)
+
+ROLLBACK

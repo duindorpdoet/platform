@@ -1,0 +1,69 @@
+BEGIN
+CREATE EXTENSION
+CREATE FUNCTION
+GRANT
+ plan 
+------
+ 1..6
+(1 row)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+UPDATE 30
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+GRANT
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       lives_ok                        
+-------------------------------------------------------
+ ok 1 - leader chooses one ordinary visit before start
+(1 row)
+
+UPDATE 1
+SET
+UPDATE 1
+SET
+                        throws_ok                         
+----------------------------------------------------------
+ ok 2 - live journey changes require organization support
+(1 row)
+
+DO
+                                                 is                                                  
+-----------------------------------------------------------------------------------------------------
+ ok 3 - a physically reached house counts toward the visit limit even when every child stays outside
+(1 row)
+
+SET
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 4 - the outside child has a real arrival fact for that first ordinary house
+(1 row)
+
+SET
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 5 - reaching the chosen count does not finish the route before the show
+(1 row)
+
+SET
+                          is                          
+------------------------------------------------------
+ ok 6 - exactly one active finale reservation remains
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

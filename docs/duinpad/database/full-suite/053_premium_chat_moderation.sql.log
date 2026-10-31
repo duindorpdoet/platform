@@ -1,0 +1,315 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                     ok                     
+--------------------------------------------
+ ok 1 - anonymous users cannot manage roles
+(1 row)
+
+                  ok                   
+---------------------------------------
+ ok 2 - old entrypoint remains private
+(1 row)
+
+                   ok                   
+----------------------------------------
+ ok 3 - permission helper stays private
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 4 - messages are only available through authorized snapshots
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+ ?column? 
+----------
+ t
+(1 row)
+
+              set_config              
+--------------------------------------
+ 9e00cf46-20d7-461f-9e87-851d6813ab7f
+(1 row)
+
+              set_config              
+--------------------------------------
+ 0a3b6914-0b64-4a23-bf09-5b6d34190021
+(1 row)
+
+              set_config              
+--------------------------------------
+ 24ecb666-3cab-49c2-9ddd-965996cdc7db
+(1 row)
+
+INSERT 0 2
+                   is                    
+-----------------------------------------
+ ok 5 - primary owner moderates own room
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 6 - owner is not a moderator of the community
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 7 - owner cannot impersonate organization announcements
+(1 row)
+
+ set_config 
+------------
+ 49
+(1 row)
+
+ set_config 
+------------
+ 50
+(1 row)
+
+                  throws_ok                  
+---------------------------------------------
+ ok 8 - owner cannot hide community messages
+(1 row)
+
+              lives_ok              
+------------------------------------
+ ok 9 - owner pins own team message
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 10 - existing coadmin pin right is retained
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 11 - coadmin does not automatically receive full moderation
+(1 row)
+
+            lives_ok             
+---------------------------------
+ ok 12 - coadmin can still unpin
+(1 row)
+
+                 throws_ok                  
+--------------------------------------------
+ ok 13 - coadmin cannot delegate moderation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 14 - viewer starts without moderation
+(1 row)
+
+              throws_ok              
+-------------------------------------
+ ok 15 - viewer cannot hide messages
+(1 row)
+
+                     throws_ok                     
+---------------------------------------------------
+ ok 16 - viewer cannot grant themselves moderation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 17 - owner delegates moderation without changing other roles
+(1 row)
+
+             lives_ok              
+-----------------------------------
+ ok 18 - delegation retry succeeds
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 19 - retry creates exactly one audit event
+(1 row)
+
+                     throws_ok                     
+---------------------------------------------------
+ ok 20 - key cannot be reused for different rights
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 21 - moderation does not grant operational or member-management rights
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 22 - team snapshot projects assigned rights
+(1 row)
+
+         throws_ok          
+----------------------------
+ ok 23 - requires a boolean
+(1 row)
+
+               throws_ok                
+----------------------------------------
+ ok 24 - primary owner keeps moderation
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 25 - cannot grant an unrelated account moderation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 26 - delegated moderator receives the action controls
+(1 row)
+
+                       lives_ok                        
+-------------------------------------------------------
+ ok 27 - delegated moderator hides an own-team message
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 28 - hidden body is removed from the projection
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 29 - delegation cannot cross into the community
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 30 - moderation does not grant access to another portal
+(1 row)
+
+UPDATE 1
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 31 - suspension also removes chat moderation and reading
+(1 row)
+
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            portal_team_command                             
+----------------------------------------------------------------------------
+ {"userId": "a0000000-0000-0000-0000-000000000001", "chatModerator": false}
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 32 - revoking moderation takes effect immediately
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 33 - organization moderates community
+(1 row)
+
+                   lives_ok                    
+-----------------------------------------------
+ ok 34 - organization hides community messages
+(1 row)
+
+ set_config 
+------------
+ 53
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 35 - organizer chat knows its own sender
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 36 - organizer sees the two public rooms and announcements
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 37 - organizer Praatkamer excludes house-only rooms
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 38 - non-urgent updates appear in the owner cockpit
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 39 - ordinary update does not become an urgent push
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+ portal_chat_action 
+--------------------
+ {"ok": true}
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 40 - hidden announcements disappear from cockpit too
+(1 row)
+
+ finish 
+--------
+ 1..40
+(1 row)
+
+ROLLBACK

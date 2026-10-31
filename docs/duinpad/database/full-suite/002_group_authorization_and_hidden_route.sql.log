@@ -1,0 +1,100 @@
+BEGIN
+INSERT 0 4
+CREATE EXTENSION
+ plan  
+-------
+ 1..10
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                     lives_ok                      
+---------------------------------------------------
+ ok 1 - current leader can read the assigned group
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       lives_ok                        
+-------------------------------------------------------
+ ok 2 - household member can read their assigned group
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 3 - a second household cannot read another group
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 4 - an unrelated portal owner cannot read a group
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+               throws_ok               
+---------------------------------------
+ ok 5 - an empty group can never start
+(1 row)
+
+SET
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                   ok                   
+----------------------------------------
+ ok 6 - leader starts a non-empty group
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 7 - same idempotency key returns the original run
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 8 - reused key with another payload is rejected
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 9 - snapshot does not reveal the next portal
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 10 - snapshot does not reveal a future portal identifier
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

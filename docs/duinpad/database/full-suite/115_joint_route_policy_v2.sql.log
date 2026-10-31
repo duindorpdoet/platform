@@ -1,0 +1,418 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+                                                                                                                                                                                                                                                                                                                                                                                                                       joint_canonical_fixture                                                                                                                                                                                                                                                                                                                                                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"third": {"groupId": "23000000-0000-0000-0000-000000000003", "pointId": "22c4b206-b153-45af-93a9-4aa2bb7fd248", "startsAt": "2026-10-31T16:20:00+00:00", "scheduleId": "ad6cd138-9e55-475c-8999-35152999685e"}, "fourth": {"groupId": "23000000-0000-0000-0000-000000000004", "pointId": "2655acd0-7fdf-489d-9327-240a953b4f81", "startsAt": "2026-10-31T16:30:00+00:00", "scheduleId": "d89aa4e5-4696-45c6-b3e5-55135f8b44ee"}, "source": {"groupId": "23000000-0000-0000-0000-000000000001", "pointId": "09755c64-535d-4e8a-af88-b6691927ec03", "startsAt": "2026-10-31T16:00:00+00:00", "scheduleId": "5ea78bf2-16e7-43d2-92ae-51ec376feeb1"}, "target": {"groupId": "23000000-0000-0000-0000-000000000002", "pointId": "a6c09d40-0d3c-4226-b4fd-292667f812ea", "startsAt": "2026-10-31T16:10:00+00:00", "scheduleId": "2b7126bc-b6aa-4bbd-99f9-98c81577417d"}}
+(1 row)
+
+INSERT 0 1
+CREATE FUNCTION
+CREATE FUNCTION
+                            is                            
+----------------------------------------------------------
+ ok 1 - server projects the current explicit route policy
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 2 - world coverage does not request an Anders visit
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 3 - a browser cannot manufacture finale approval evidence
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 4 - browser cannot supply trusted validator inputs
+(1 row)
+
+                            lives_ok                            
+----------------------------------------------------------------
+ ok 5 - ordinary baseline and physical P-38 finale remain valid
+(1 row)
+
+SAVEPOINT
+SET
+UPDATE 1
+SET
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 6 - the configured physical finale cannot move away from P-38
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 7 - rejected location replacement preserves the real P-38 finale
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+ policy_walk 
+-------------
+ 
+(1 row)
+
+                                         lives_ok                                          
+-------------------------------------------------------------------------------------------
+ ok 8 - a real last walk of 925 seconds passes server policy without an intermediate house
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+ policy_walk 
+-------------
+ 
+(1 row)
+
+                        lives_ok                         
+---------------------------------------------------------
+ ok 9 - a real last walk of 1114 seconds is also allowed
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+ policy_walk 
+-------------
+ 
+(1 row)
+
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 10 - there is no replacement 20-minute maximum to P-38
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+ policy_walk 
+-------------
+ 
+(1 row)
+
+                               throws_ok                                
+------------------------------------------------------------------------
+ ok 11 - the separate ordinary leg limit remains independently enforced
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+ policy_walk 
+-------------
+ 
+(1 row)
+
+UPDATE 1
+                                          throws_ok                                          
+---------------------------------------------------------------------------------------------
+ ok 12 - the total walking budget is explicit and separate from the removed finale leg limit
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+ policy_walk 
+-------------
+ 
+(1 row)
+
+UPDATE 1
+                                        throws_ok                                         
+------------------------------------------------------------------------------------------
+ ok 13 - twenty minutes of actual travel cannot fit five minutes before the booked finale
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+                                     throws_ok                                      
+------------------------------------------------------------------------------------
+ ok 14 - direct apply reloads real travel and refuses a fabricated zero-minute walk
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+UPDATE 1
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 15 - historic desired visit caps do not become joint route limits
+(1 row)
+
+UPDATE 1
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 16 - a historical zero input cap cannot reject a genuine feasible visit
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+                                 is                                 
+--------------------------------------------------------------------
+ ok 17 - reading a proposal does not change a historical route mode
+(1 row)
+
+                                     lives_ok                                      
+-----------------------------------------------------------------------------------
+ ok 18 - an explicitly accepted joint calendar also owns a previously legacy route
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 19 - run_start and the worker will use the newly approved joint calendar
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+UPDATE 1
+                                  is                                  
+----------------------------------------------------------------------
+ ok 20 - changing only a theme label does not invalidate route policy
+(1 row)
+
+                                      lives_ok                                       
+-------------------------------------------------------------------------------------
+ ok 21 - a different world label cannot exclude an otherwise suitable physical visit
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+UPDATE 1
+                                        throws_ok                                         
+------------------------------------------------------------------------------------------
+ ok 22 - a client diagnostic cannot override an independently feasible linked first house
+(1 row)
+
+DO
+                                       throws_ok                                       
+---------------------------------------------------------------------------------------
+ ok 23 - the first physical visit is sequence one even when the JSON array is permuted
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+ policy_finale_change 
+----------------------
+ 
+(1 row)
+
+                                      throws_ok                                       
+--------------------------------------------------------------------------------------
+ ok 24 - a changed P-38 time must carry the exact before/after appointment for review
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+ policy_finale_change 
+----------------------
+ 
+(1 row)
+
+                              throws_ok                               
+----------------------------------------------------------------------
+ ok 25 - review flags cannot override actual finale reception headway
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 26 - failed calendar validation creates no approval or schedule change
+(1 row)
+
+ROLLBACK
+ policy_finale_change 
+----------------------
+ 
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                          lives_ok                                           
+---------------------------------------------------------------------------------------------
+ ok 27 - an approved real finale change atomically stores the schedule and physical calendar
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 28 - the reserved schedule now has precisely the approved P-38 time
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 29 - the planboard and approved reservation have the same finale arrival
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 30 - one immutable server approval records the exact changed appointment
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 31 - acceptance stores trusted walking policy rather than browser metrics
+(1 row)
+
+                                                ok                                                 
+---------------------------------------------------------------------------------------------------
+ ok 32 - new semantic hashes keep every accepted route current immediately after the atomic change
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 33 - finale approval never republishes or edits confirmed start publications
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 34 - finale approval never sends or queues participant mail
+(1 row)
+
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 35 - start locations, times, states and ordinary time limits remain unchanged
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 36 - retrying the approved joint change returns the same durable result
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 37 - idempotent retry does not create duplicate approvals
+(1 row)
+
+SAVEPOINT
+CREATE TABLE
+                                         ok                                          
+-------------------------------------------------------------------------------------
+ ok 38 - a planned house or administrative gathering is not an actual physical visit
+(1 row)
+
+DO
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 39 - a confirmed visit to one portal is also history for its physical alias
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 40 - an unrelated group does not inherit another child history
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 41 - arrival history never crosses event boundaries
+(1 row)
+
+SAVEPOINT
+SET
+UPDATE 1
+SET
+                                             ok                                              
+---------------------------------------------------------------------------------------------
+ ok 42 - reassigning a household preserves its actual child arrivals across physical aliases
+(1 row)
+
+ROLLBACK
+INSERT 0 1
+                                                     ok                                                     
+------------------------------------------------------------------------------------------------------------
+ ok 43 - a present non-departed transferred child protects its history even without changing the assignment
+(1 row)
+
+UPDATE 1
+                                             ok                                             
+--------------------------------------------------------------------------------------------
+ ok 44 - a departed child outside the current assignments no longer restricts another group
+(1 row)
+
+UPDATE 1
+SELECT 1
+                                              is                                              
+----------------------------------------------------------------------------------------------
+ ok 45 - an already bound run rechecks the transferred child physical history before dispatch
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 46 - history protection creates no duplicate physical stop
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 47 - history protection does not reserve a duplicate ordinary or finale stop
+(1 row)
+
+                                              is                                               
+-----------------------------------------------------------------------------------------------
+ ok 48 - history protection asks for explicit replanning and preserves the accepted intentions
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 49 - retrying still cannot dispatch the already visited house
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 50 - repeated runtime checks show one concrete history advisory
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                             ok                                             
+--------------------------------------------------------------------------------------------
+ ok 51 - runtime fixture has a genuine stored entrance-pin walk longer than fifteen minutes
+(1 row)
+
+                                            lives_ok                                            
+------------------------------------------------------------------------------------------------
+ ok 52 - live dispatch accepts the actual long last walk when it reaches the approved P-38 slot
+(1 row)
+
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 53 - the actual long last walk dispatches P-38 directly without an extra ordinary stop
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 54 - dispatch records the full actual final walking duration
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+                                          lives_ok                                          
+--------------------------------------------------------------------------------------------
+ ok 55 - approval evidence can explicitly represent an initially missing finale reservation
+(1 row)
+
+ROLLBACK
+                              throws_ok                               
+----------------------------------------------------------------------
+ ok 56 - the record of explicit finale approval cannot be overwritten
+(1 row)
+
+ finish 
+--------
+ 1..56
+(1 row)
+
+ROLLBACK

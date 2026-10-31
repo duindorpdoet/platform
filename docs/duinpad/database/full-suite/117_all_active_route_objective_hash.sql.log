@@ -1,0 +1,106 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+                                                                                                                                                                                                                                                                                                                                                                                                                       joint_canonical_fixture                                                                                                                                                                                                                                                                                                                                                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"third": {"groupId": "23000000-0000-0000-0000-000000000003", "pointId": "27c111c2-5fa1-4d67-8794-00e9b5672c9d", "startsAt": "2026-10-31T16:20:00+00:00", "scheduleId": "a0293b6f-1742-459c-a90c-2637dec30268"}, "fourth": {"groupId": "23000000-0000-0000-0000-000000000004", "pointId": "e306d104-91ff-43e7-9de9-50341f355f28", "startsAt": "2026-10-31T16:30:00+00:00", "scheduleId": "2ee0c828-f2bc-4c41-948a-1705f882a285"}, "source": {"groupId": "23000000-0000-0000-0000-000000000001", "pointId": "f1c9e86d-d217-4028-a286-265a8c0a1de0", "startsAt": "2026-10-31T16:00:00+00:00", "scheduleId": "7ae7ead4-2889-4df9-95c5-6ff5d5fca635"}, "target": {"groupId": "23000000-0000-0000-0000-000000000002", "pointId": "97246bbc-af83-4e79-8ba2-387097be9b8d", "startsAt": "2026-10-31T16:10:00+00:00", "scheduleId": "fb062e44-2b6d-4c77-b9cc-dc52a028e99a"}}
+(1 row)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+                                       isnt                                        
+-----------------------------------------------------------------------------------
+ ok 1 - the old v3 source hash is stale solely because the route objective changed
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 2 - objective salt preserves the same authoritative v3 source provenance
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 3 - objective revision keeps the exact existing hard policy version
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 4 - actual65-minute walking budget remains unchanged
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 5 - anonymous users gain no private source-hash access
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 6 - authenticated browsers still cannot manufacture trusted hashes
+(1 row)
+
+                                                lives_ok                                                
+--------------------------------------------------------------------------------------------------------
+ ok 7 - unchanged old route geometry still passes hard constraints; source freshness is a separate gate
+(1 row)
+
+                                      throws_ok                                       
+--------------------------------------------------------------------------------------
+ ok 8 - a stale client cannot apply an old v3 proposal after the objective deployment
+(1 row)
+
+                                                                 is                                                                  
+-------------------------------------------------------------------------------------------------------------------------------------
+ ok 9 - rejecting an old objective hash preserves settings, all stored appointments, history, participants, policy releases and mail
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 10 - rejecting stale input accepts no route version
+(1 row)
+
+                                         lives_ok                                         
+------------------------------------------------------------------------------------------
+ ok 11 - a fresh source hash accepts the same independently validated hard-feasible route
+(1 row)
+
+                                                         is                                                         
+--------------------------------------------------------------------------------------------------------------------
+ ok 12 - fresh acceptance without a finale change preserves every stored start/finale appointment and sends no mail
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 13 - newly accepted versions retain the existing hard policy
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 14 - accepted runs keep a trusted immutable walking-policy snapshot
+(1 row)
+
+UPDATE 1
+                                                is                                                
+--------------------------------------------------------------------------------------------------
+ ok 15 - a begun v3 run keeps its approved65-minute snapshot despite the newly salted source hash
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 16 - objective deployment never rewrites immutable acceptance evidence
+(1 row)
+
+ finish 
+--------
+ 1..16
+(1 row)
+
+ROLLBACK

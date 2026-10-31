@@ -1,0 +1,75 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+GRANT
+INSERT 0 1
+                           ok                            
+---------------------------------------------------------
+ ok 1 - anonymous users cannot decide a reported payment
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       throws_ok                        
+--------------------------------------------------------
+ ok 2 - one child payment link cannot mix registrations
+(1 row)
+
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000084","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                     is                      
+---------------------------------------------
+ ok 3 - parent report waits for admin review
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 4 - parent cannot decide the review outcome
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                           is                           
+--------------------------------------------------------
+ ok 5 - admin can mark the reported payment link unpaid
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 6 - unpaid decision restores the existing payment link
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 7 - only a reported payment can be marked unpaid
+(1 row)
+
+RESET
+                           is                           
+--------------------------------------------------------
+ ok 8 - the automatic status decision remains auditable
+(1 row)
+
+ finish 
+--------
+ 1..8
+(1 row)
+
+ROLLBACK

@@ -1,0 +1,311 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+SELECT 1
+SELECT 5
+                        ok                         
+---------------------------------------------------
+ ok 1 - fixture route has multiple active children
+(1 row)
+
+                     ok                      
+---------------------------------------------
+ ok 2 - child seals are not directly exposed
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 3 - portal presentations are server projected
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 4 - inner portal V2 command is not client callable
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 5 - authorized adults use the guarded room contract
+(1 row)
+
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 6 - owner changes editing access separately from role
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 7 - separate editing access is persisted
+(1 row)
+
+                   lives_ok                    
+-----------------------------------------------
+ ok 8 - owner temporarily deactivates a member
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 9 - suspended member immediately loses authorization
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 10 - owner can see suspended status in team management
+(1 row)
+
+                       lives_ok                       
+------------------------------------------------------
+ ok 11 - owner safely reactivates the same membership
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 12 - reactivated member regains only the existing role
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 13 - V2 navigation exposes only the two event-wide Praatkamer channels
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+                lives_ok                 
+-----------------------------------------
+ ok 14 - child stores a curated identity
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 15 - identity belongs to session child
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 16 - identity action never mutates a companion
+(1 row)
+
+                 lives_ok                 
+------------------------------------------
+ ok 17 - practice gate records completion
+(1 row)
+
+               is                
+---------------------------------
+ ok 18 - practice is stored once
+(1 row)
+
+                 lives_ok                 
+------------------------------------------
+ ok 19 - practice replay stays idempotent
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 20 - practice replay creates no visit or extra record
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 21 - practice never increments real team progress
+(1 row)
+
+INSERT 0 5
+                      is                      
+----------------------------------------------
+ ok 22 - server resolves complete banner vote
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 23 - banner resolution is stable on retry
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 24 - portal manager submits an immutable presentation
+(1 row)
+
+              set_config              
+--------------------------------------
+ f3e90438-2fe2-49d6-9426-83961406386a
+(1 row)
+
+                                      lives_ok                                      
+------------------------------------------------------------------------------------
+ ok 25 - submitted content can be revised into a new review attempt before approval
+(1 row)
+
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      lives_ok                      
+----------------------------------------------------
+ ok 26 - authorized organizer approves presentation
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 27 - approved presentation content is immutable
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 28 - portal owner activates only the approved version
+(1 row)
+
+                    lives_ok                     
+-------------------------------------------------
+ ok 29 - owner can submit a later review version
+(1 row)
+
+              set_config              
+--------------------------------------
+ 32327b0e-7bb5-43fb-b699-1036e06d30bd
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 30 - organizer can explicitly reject unsafe presentation content
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 31 - rejected content can never become active
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+SELECT 1
+INSERT 0 5
+SELECT 1
+INSERT 0 5
+INSERT 0 1
+INSERT 0 5
+UPDATE 1
+                    is                     
+-------------------------------------------
+ ok 32 - one seal per active visited child
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 33 - team progress counts the visit exactly once
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 34 - first visit unlocks chapter two once per child
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 35 - seal pins the active approved presentation version
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 36 - passport snapshot contains no address or contact data
+(1 row)
+
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 37 - duplicate authoritative event cannot create a second child seal
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 38 - medical incident category is impossible
+(1 row)
+
+                     lives_ok                      
+---------------------------------------------------
+ ok 39 - adult team reports a non-medical incident
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 40 - incident appears in organizer cockpit snapshot
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+ set_config 
+------------
+ 5
+(1 row)
+
+              set_config              
+--------------------------------------
+ 4f1d1cf6-d989-47ef-bd55-f588a3b5d5c1
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 41 - simulation can exercise a seal phase
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 42 - simulation never writes a real seal
+(1 row)
+
+                           lives_ok                           
+--------------------------------------------------------------
+ ok 43 - simulation reset removes only marked simulation data
+(1 row)
+
+                 ok                 
+------------------------------------
+ ok 44 - simulation run was deleted
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 45 - simulation reset preserves real visit results
+(1 row)
+
+ finish 
+--------
+ 1..45
+(1 row)
+
+ROLLBACK

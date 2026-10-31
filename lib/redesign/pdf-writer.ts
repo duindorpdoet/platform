@@ -1,6 +1,6 @@
 /** Small, self-contained A4 PDF writer. QR modules remain vector paths at any print size. */
 import QRCode from 'qrcode';
-export type PosterData={gateName:string;gateCode:string;shortCode:string;arrivalUrl:string;eventDate:string;revision?:number};
+export type PosterData={gateName:string;gateCode:string;shortCode:string;arrivalUrl:string;eventDate:string;revision?:number;duinpadStage?:'qr1'|'qr2';instruction?:string};
 export type PosterMode='colour'|'mono';
 type EmbeddedFont={bytes:Uint8Array;widths:number[];ascent:number;descent:number;bbox:number[]};
 let fonts:[EmbeddedFont,EmbeddedFont]|null=null;
@@ -36,7 +36,7 @@ export function createGatePosterPdf(data:PosterData,mode:PosterMode='colour'):Ui
  const headerInk=colour?[1,1,1]:ink;
  text('DE DUINDORPSE POORTEN',49,58,12,headerInk,true);text('VAN HALLOWEEN',49,76,12,headerInk,true);
  text(new Date(data.eventDate+'T12:00:00Z').toLocaleDateString('nl-NL',{dateStyle:'full',timeZone:'Europe/Amsterdam'}).toUpperCase(),49,104,10,colour?[.97,.7,.43]:ink,true);
- text('Welkom bij deze poort',49,147,27,headerInk,true);
+ text(data.duinpadStage ? `${data.duinpadStage.toUpperCase()} - ${data.duinpadStage==='qr1'?'Ingang Duinpad':'Finalepoort'}` : 'Welkom bij deze poort',49,147,27,headerInk,true);
  const titleLines=wrapped(data.gateName,35).slice(0,2);titleLines.forEach((l,i)=>center(l,213+i*28,25,ink,true));
  center(`${data.gateCode}  |  SCAN BIJ AANKOMST`,titleLines.length>1?269:248,11,accent,true);
  const box=288,top=titleLines.length>1?283:266,left=(W-box)/2;
@@ -46,7 +46,7 @@ export function createGatePosterPdf(data:PosterData,mode:PosterMode='colour'):Ui
  for(let r=0;r<count;r++){let start=-1;for(let c=0;c<=count;c++){const dark=c<count&&qr.modules.get(r,c);if(dark&&start<0)start=c;if(!dark&&start>=0){stream+=`${n(left+(start+4)*unit)} ${n(H-top-(r+5)*unit)} ${n((c-start)*unit+.015)} ${n(unit+.015)} re f\n`;start=-1;}}}
  const after=top+box;
  rect(85,after+9,W-170,63,light);center('LUKT SCANNEN NIET? VUL DEZE CODE IN:',after+29,9,ink,true);center(data.shortCode,after+56,23,ink,true);
- const instructions=[['1','Open de route van jullie groep.'],['2','Scan deze QR of vul de korte poortcode in.'],['3','Bevestig wie erbij is. De volgende poort verschijnt.']];
+ const instructions=data.duinpadStage ? [['1',data.duinpadStage==='qr1'?'Hangt voor de heks: meld jullie groep aan.':'Scan bij de echte finalepoort.'],['2','Scan de QR of vul de korte code in en bevestig.'],['3',data.duinpadStage==='qr1'?'Wacht op de begeleider. Hij bepaalt wanneer jullie lopen.':'Blijf samen en volg de aanwijzingen van de acteurs.']] : [['1','Open de route van jullie groep.'],['2','Scan deze QR of vul de korte poortcode in.'],['3','Bevestig wie erbij is. De volgende poort verschijnt.']];
  const startY=after+95;instructions.forEach(([num,txt],i)=>{const y=startY+i*30;rect(54,y-13,20,20,accent);text(num,60,y+1,11,[1,1,1],true);text(txt,86,y+1,11,ink,i===2);});
  line(48,777,W-48,777,colour?[.85,.79,.7]:[.75,.75,.75]);center('Blijf samen met jullie groep. Een te spannende poort overslaan mag.',798,9,ink);
  center(`BEVESTIG JULLIE AANKOMST IN DE ROUTE  |  V${data.revision||1}`,820,7,ink,true);

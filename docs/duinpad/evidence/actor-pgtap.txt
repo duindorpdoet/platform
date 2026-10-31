@@ -1,0 +1,387 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 3
+                      ok                      
+----------------------------------------------
+ ok 1 - browser cannot enumerate actor access
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 2 - mail service cannot directly enumerate invitation hashes
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 3 - anonymous invitation opening cannot claim
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 4 - a browser cannot invent a local execution receipt
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 5 - trusted backend can persist a physical result
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 6 - an actor cannot read invitation mail material
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 7 - gateway cannot bypass latest invitation check
+(1 row)
+
+SELECT 1
+SELECT 1
+                   is                   
+----------------------------------------
+ ok 8 - new actors start with no rights
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 9 - actor invitation creates no participant registration
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 10 - actor invitation creates no child
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 11 - actor invitation creates no portal
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 12 - invited email is normalized
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 13 - only a 32-byte token hash is persisted
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 14 - durable invitation outbox contains no token
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 15 - durable invitation outbox contains no plaintext claim link
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 16 - opening an invitation has no actor permission
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 17 - organizer explicitly assigns buttons
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 18 - stale form cannot overwrite a newer permission set
+(1 row)
+
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 19 - no finale/heks emergency alias can be assigned as zonestop
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b8100000-0000-4000-8000-000000000002","role":"authenticated"}
+(1 row)
+
+                        throws_ok                        
+---------------------------------------------------------
+ ok 20 - login alone does not authorize actor management
+(1 row)
+
+                       throws_ok                        
+--------------------------------------------------------
+ ok 21 - wrong verified Google/OTP account cannot claim
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 22 - uninvited account has no actors room
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b8100000-0000-4000-8000-000000000001","role":"authenticated"}
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 23 - pending invitation adds no chooser card
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 24 - explicit verified claim activates existing identity
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 25 - repeated callbacks/claim are idempotent
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 26 - duplicate claims create no second actor account
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 27 - actor sees only its explicit rights
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 28 - active link adds existing environment chooser card
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 29 - existing account navigation remembers actor environment
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 30 - actor resume remains authorized via current database access
+(1 row)
+
+SELECT 1
+                            is                            
+----------------------------------------------------------
+ ok 31 - current explicit permission reserves one command
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 32 - same immutable command returns receipt without redispatch
+(1 row)
+
+                   throws_ok                   
+-----------------------------------------------
+ ok 33 - same command ID cannot change payload
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 34 - unknown remains a separate durable outcome
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 35 - unknown blocks blind new command IDs
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 36 - owner can read its uncertain receipt
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b8100000-0000-4000-8000-000000000002","role":"authenticated"}
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 37 - another account cannot read receipt or group
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                               lives_ok                                
+-----------------------------------------------------------------------
+ ok 38 - reinvitation rotates link and requires another explicit claim
+(1 row)
+
+                ok                 
+-----------------------------------
+ ok 39 - old invitation is revoked
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 40 - old queued invitation is suppressed
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b8100000-0000-4000-8000-000000000001","role":"authenticated"}
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 41 - old link cannot reclaim after reinvitation
+(1 row)
+
+                                   throws_ok                                   
+-------------------------------------------------------------------------------
+ ok 42 - old logged-in session cannot retain active actor rights while pending
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 43 - replacement link explicitly activates same existing identity
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      lives_ok                       
+-----------------------------------------------------
+ ok 44 - organization revokes access transactionally
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b8100000-0000-4000-8000-000000000001","role":"authenticated"}
+(1 row)
+
+                                throws_ok                                 
+--------------------------------------------------------------------------
+ ok 45 - unchanged JWT no longer accesses actor snapshot after revocation
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 46 - revoked open page/direct API loses execution permission
+(1 row)
+
+                      ok                       
+-----------------------------------------------
+ ok 47 - revocation removes actor chooser card
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 48 - revocation also removes actor resume
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 49 - claims, rights and commands leave minimal audits
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 50 - audit records do not contain claim tokens or hashes
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   lives_ok                                   
+------------------------------------------------------------------------------
+ ok 51 - actor invitation is independent of verified participant registration
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b8100000-0000-4000-8000-000000000003","role":"authenticated"}
+(1 row)
+
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 52 - unverified email cannot activate an actor invitation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                  lives_ok                  
+--------------------------------------------
+ ok 53 - expired invitation fixture created
+(1 row)
+
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b8100000-0000-4000-8000-000000000002","role":"authenticated"}
+(1 row)
+
+                               throws_ok                                
+------------------------------------------------------------------------
+ ok 54 - expired link cannot activate despite correct verified identity
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 55 - worker refuses superseded mail even if an old lease was recovered
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 56 - gateway rechecks the recovered stale actor envelope immediately before dispatch
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+SELECT 1
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 57 - current actor invitation can prepare through existing gateway
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 58 - even gateway storage contains no plaintext actor claim link
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 59 - only nonsecret invitation material is frozen for durable retries
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 60 - changed rendering cannot reuse a prior provider idempotency key
+(1 row)
+
+ finish 
+--------
+ 1..60
+(1 row)
+
+ROLLBACK

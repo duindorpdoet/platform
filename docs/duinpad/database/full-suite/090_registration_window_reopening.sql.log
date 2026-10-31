@@ -1,0 +1,145 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+UPDATE 1
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 1 - an expired window overrides the switch before an explicit reopening
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                     throws_ok                     
+---------------------------------------------------
+ ok 2 - submission also rejects the expired window
+(1 row)
+
+                 throws_ok                 
+-------------------------------------------
+ ok 3 - a parent cannot clear the deadline
+(1 row)
+
+RESET
+SELECT 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 4 - an authorized opening clears the expired deadline
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 5 - visitors immediately see the open channel
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 6 - reopening groups preserves the portal closure
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      lives_ok                      
+----------------------------------------------------
+ ok 7 - the reopened channel accepts a parent draft
+(1 row)
+
+                          lives_ok                          
+------------------------------------------------------------
+ ok 8 - the reopened channel accepts an actual registration
+(1 row)
+
+RESET
+                   ok                   
+----------------------------------------
+ ok 9 - the removed deadline is audited
+(1 row)
+
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                          lives_ok                          
+------------------------------------------------------------
+ ok 10 - explicit opening also clears a future opening time
+(1 row)
+
+RESET
+                        ok                        
+--------------------------------------------------
+ ok 11 - a valid future closing time is preserved
+(1 row)
+
+UPDATE 1
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 12 - ordinary redeploy with a custom deadline succeeds
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 13 - redeploy preserves an intentional custom expired deadline
+(1 row)
+
+UPDATE 1
+                       lives_ok                        
+-------------------------------------------------------
+ ok 14 - redeploy checks the legacy generated deadline
+(1 row)
+
+                                            ok                                            
+------------------------------------------------------------------------------------------
+ ok 15 - the legacy generated deadline cannot silently keep an upcoming open event closed
+(1 row)
+
+SELECT 1
+                lives_ok                 
+-----------------------------------------
+ ok 16 - the following redeploy succeeds
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 17 - deadline repair is idempotent
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 18 - explicit release closure still works
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 19 - explicit release opening still works
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 20 - new openings no longer invent an October 25 deadline
+(1 row)
+
+ finish 
+--------
+ 1..20
+(1 row)
+
+ROLLBACK

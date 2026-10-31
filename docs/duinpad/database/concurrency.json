@@ -1,0 +1,1 @@
+{"code":"DUINPAD_FINALE_CONCURRENCY_VERIFIED","environment":"dedicated local PostgreSQL, synthetic fixtures","concurrentScans":3,"uniqueReceipts":2,"oneUnchangedDeadline":true,"lockWaitCrossingDeadlineRejected":true,"arrivals":3,"seals":3,"concurrentWorkers":2,"uniqueClosingMails":4,"realMail":false,"relay":false,"hardware":false}

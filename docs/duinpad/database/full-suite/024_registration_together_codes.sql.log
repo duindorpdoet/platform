@@ -1,0 +1,207 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..28
+(1 row)
+
+INSERT 0 2
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 1 - the first household saves a registration without an incoming code
+(1 row)
+
+                           lives_ok                           
+--------------------------------------------------------------
+ ok 2 - the first household submits and receives its own code
+(1 row)
+
+SET
+UPDATE 1
+                                matches                                 
+------------------------------------------------------------------------
+ ok 3 - the generated code contains exactly four unambiguous characters
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                             lives_ok                              
+-------------------------------------------------------------------
+ ok 4 - a second household can save the shared four-character code
+(1 row)
+
+                           lives_ok                           
+--------------------------------------------------------------
+ ok 5 - the second household can submit with an existing code
+(1 row)
+
+SET
+UPDATE 1
+                                   is                                   
+------------------------------------------------------------------------
+ ok 6 - a join request queues one actionable message for the head group
+(1 row)
+
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 7 - the pending request goes to the target head household rather than the requester
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 8 - the pending request payload identifies the editable head-group name
+(1 row)
+
+                                      matches                                      
+-----------------------------------------------------------------------------------
+ ok 9 - the pending request payload includes the stable system code when available
+(1 row)
+
+                                                 isnt                                                  
+-------------------------------------------------------------------------------------------------------
+ ok 10 - a join request keeps both registrations in separate planner parties before organizer approval
+(1 row)
+
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 11 - joining by code creates a pending request rather than granting immediate membership
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 12 - the participant snapshot does not count a pending household as linked
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 13 - an organizer explicitly approves the join request
+(1 row)
+
+SET
+                                   is                                   
+------------------------------------------------------------------------
+ ok 14 - both registrations share one planner party only after approval
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                             is                                             
+--------------------------------------------------------------------------------------------
+ ok 15 - retrying the same approval with the original version returns the recorded decision
+(1 row)
+
+SET
+                                   is                                   
+------------------------------------------------------------------------
+ ok 16 - an approval queues one message for each involved adult contact
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 17 - approval recipients are unique by adult contact
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 18 - both source and target adult contacts receive the approval
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 19 - a decision retry cannot duplicate mail for a recipient and state
+(1 row)
+
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 20 - an idempotent approval retry does not duplicate the decision audit event
+(1 row)
+
+                            isnt                            
+------------------------------------------------------------
+ ok 21 - every registration keeps its own unique share code
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                        is                                                         
+-------------------------------------------------------------------------------------------------------------------
+ ok 22 - the participant snapshot reports the linked registration count after approval without exposing identities
+(1 row)
+
+SET
+                            ok                             
+-----------------------------------------------------------
+ ok 23 - the unknown-code fixture is not already allocated
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000003","role":"authenticated"}
+(1 row)
+
+                                      lives_ok                                       
+-------------------------------------------------------------------------------------
+ ok 24 - a syntactically valid code can be saved without revealing whether it exists
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 25 - an unknown code is rejected atomically during submission
+(1 row)
+
+SET
+                              is                               
+---------------------------------------------------------------
+ ok 26 - a rejected code leaves no partial registration behind
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 27 - free-text together preferences are absent from all drafts
+(1 row)
+
+                                          ok                                           
+---------------------------------------------------------------------------------------
+ ok 28 - the database uniqueness constraint remains satisfied after linked submissions
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

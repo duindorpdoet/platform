@@ -1,0 +1,113 @@
+BEGIN
+INSERT 0 4
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 10
+UPDATE 1
+UPDATE 1
+                               ok                                
+-----------------------------------------------------------------
+ ok 1 - coverage records exactly the two absent canonical worlds
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                       lives_ok                                        
+---------------------------------------------------------------------------------------
+ ok 2 - real scan with all children staying outside records legitimate arrival rewards
+(1 row)
+
+UPDATE 1
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 3 - one permanent missing-world award per present child at first candy arrival
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 4 - bonus collection creates no extra physical visits
+(1 row)
+
+                            lives_ok                            
+----------------------------------------------------------------
+ ok 5 - duplicate scanner retry returns original command result
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 6 - duplicate scan does not draw a second random world
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ settle_child_worlds 
+---------------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+                             is                              
+-------------------------------------------------------------
+ ok 7 - future accepted candy stop defers the final fallback
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                              is                                              
+----------------------------------------------------------------------------------------------
+ ok 8 - removing the last accepted future candy stop settles at the latest proven own arrival
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 9 - route settlement references one actual house and invents no arrival
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 10 - route settlement preserves physical progress
+(1 row)
+
+UPDATE 1
+                                 is                                 
+--------------------------------------------------------------------
+ ok 11 - late theme addition retains every earned collection record
+(1 row)
+
+UPDATE 1
+ refresh_world_coverage 
+------------------------
+                     11
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 12 - temporary pause does not change the proposed coverage revision
+(1 row)
+
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 13 - the original closed policy remains active until explicit review
+(1 row)
+
+ finish 
+--------
+ 1..13
+(1 row)
+
+ROLLBACK

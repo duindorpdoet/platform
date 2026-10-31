@@ -1,0 +1,174 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                          ok                          
+------------------------------------------------------
+ ok 1 - anonymous users cannot read product analytics
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 2 - signed-in users cannot read actor analytics directly
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 3 - anonymous visitors cannot forge authenticated product activity
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 4 - signed-in users can record their own product activity
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 5 - anonymous visitors cannot read organization analytics
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 6 - the admin analytics contract is callable and capability-guarded
+(1 row)
+
+                    ok                    
+------------------------------------------
+ ok 7 - identity projection stays private
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    lives_ok                     
+-------------------------------------------------
+ ok 8 - a participant records a successful login
+(1 row)
+
+               lives_ok               
+--------------------------------------
+ ok 9 - a retried event is idempotent
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 10 - the retried login is stored once
+(1 row)
+
+                  lives_ok                  
+--------------------------------------------
+ ok 11 - an environment session is recorded
+(1 row)
+
+                      lives_ok                       
+-----------------------------------------------------
+ ok 12 - a browser-confirmed PWA install is recorded
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 13 - a standalone app session is recorded
+(1 row)
+
+                       throws_ok                        
+--------------------------------------------------------
+ ok 14 - unexpected fingerprinting metadata is rejected
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 15 - unknown product activity is rejected
+(1 row)
+
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 16 - a participant cannot read the organization dashboard
+(1 row)
+
+   set_config    
+-----------------
+ {"role":"anon"}
+(1 row)
+
+                             lives_ok                             
+------------------------------------------------------------------
+ ok 17 - a completed native share is accepted as a distinct event
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       lives_ok                       
+------------------------------------------------------
+ ok 18 - an event admin reads the statistics snapshot
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 19 - unsupported reporting periods are rejected
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 20 - the snapshot counts browser-confirmed installs
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 21 - the snapshot counts standalone use separately
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 22 - the snapshot counts completed native shares
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 23 - the snapshot counts successful child logins
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 24 - Supabase audit logs provide the successful adult login count
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 25 - login destinations show an idempotent participant login
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 26 - recent adult activity is attributable to the signed-in account
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 27 - recent child activity uses a privacy-minimized identity
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 28 - no child first name appears in the analytics projection
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 29 - template metrics contain the completed share
+(1 row)
+
+ finish 
+--------
+ 1..29
+(1 row)
+
+ROLLBACK

@@ -1,0 +1,151 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..22
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 1 - new authenticated parent starts without implicit household or elevated role
+(1 row)
+
+UPDATE 1
+SET
+                                               set_config                                               
+--------------------------------------------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated","user_metadata":{"role":"admin"}}
+(1 row)
+
+                                               lives_ok                                                
+-------------------------------------------------------------------------------------------------------
+ ok 2 - ordinary authenticated parent can persist a valid multi-child draft while registration is open
+(1 row)
+
+SET
+UPDATE 1
+                                           ok                                           
+----------------------------------------------------------------------------------------
+ ok 3 - draft creation establishes only an owned household for the authenticated parent
+(1 row)
+
+                                    matches                                     
+--------------------------------------------------------------------------------
+ ok 4 - the server assigns a neutral household label without asking the visitor
+(1 row)
+
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 5 - visitor-authored household labels are not retained in the private draft
+(1 row)
+
+                                              is                                               
+-----------------------------------------------------------------------------------------------
+ ok 6 - a legacy free-text together preference is discarded instead of retaining a person name
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                              lives_ok                                               
+-----------------------------------------------------------------------------------------------------
+ ok 7 - ordinary parent can submit the open registration without receiving an operational capability
+(1 row)
+
+UPDATE 1
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 8 - server computes two children times the authoritative 250-cent event price
+(1 row)
+
+SET
+                            is                             
+-----------------------------------------------------------
+ ok 9 - submission creates exactly one active registration
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 10 - submission copies the soft start preference from the private draft
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 11 - submission copies an organizer-offered earlier stop moment
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 12 - both submitted children are persisted
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 13 - known UUID supplied by the client cannot attach another household child
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 14 - every persisted child is owned by the submitting household
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 15 - one payment request carries the server-derived amount
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 16 - one durable registration receipt is queued
+(1 row)
+
+                                           ok                                           
+----------------------------------------------------------------------------------------
+ ok 17 - consent versions and timestamp are stored while marketing remains opt-in false
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 18 - same idempotency key returns the stored logical result
+(1 row)
+
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 19 - a separately keyed retry also resolves to the existing registration
+(1 row)
+
+SET
+                                          ok                                          
+--------------------------------------------------------------------------------------
+ ok 20 - all retries leave one registration, one payment request and one receipt task
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 21 - registration never grants admin, leader or operational capabilities
+(1 row)
+
+SET
+UPDATE 1
+                                           throws_ok                                            
+------------------------------------------------------------------------------------------------
+ ok 22 - a direct crafted submission cannot select a stop moment the organization did not offer
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

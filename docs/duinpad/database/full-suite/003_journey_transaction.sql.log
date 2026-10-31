@@ -1,0 +1,82 @@
+BEGIN
+INSERT 0 4
+CREATE EXTENSION
+ plan 
+------
+ 1..9
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+SET
+UPDATE 1
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                 lives_ok                 
+------------------------------------------
+ ok 1 - a parent can skip their own child
+(1 row)
+
+               throws_ok               
+---------------------------------------
+ ok 2 - a parent cannot record a visit
+(1 row)
+
+                           lives_ok                           
+--------------------------------------------------------------
+ ok 3 - a parent can undo their own skip while stop is active
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+               throws_ok               
+---------------------------------------
+ ok 4 - visited requires scan evidence
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 5 - leader can record valid scan evidence
+(1 row)
+
+                    lives_ok                    
+------------------------------------------------
+ ok 6 - leader records a visit after valid scan
+(1 row)
+
+                     lives_ok                      
+---------------------------------------------------
+ ok 7 - resolved scanned stop completes atomically
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 8 - retry returns the stored completion result
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 9 - a stale second device cannot complete again
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

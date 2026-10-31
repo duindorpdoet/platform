@@ -1,0 +1,213 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..31
+(1 row)
+
+SET
+                                                               set_config                                                               
+----------------------------------------------------------------------------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated","user_metadata":{"role":"admin"},"app_metadata":{"role":"admin"}}
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 1 - editable JWT metadata does not grant a database capability
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 2 - forged admin metadata cannot read the admin projection
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                    matches                                     
+--------------------------------------------------------------------------------
+ ok 3 - a participant receives only a four-character non-personal together code
+(1 row)
+
+SET
+                             ok                             
+------------------------------------------------------------
+ ok 4 - together codes are unique across every registration
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 5 - the old post-registration together snapshot is retired
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 6 - visitors can no longer create a free-text together group
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 7 - visitors can no longer replace the code chosen during signup
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 8 - visitors can no longer silently leave a planned code group
+(1 row)
+
+                           ok                            
+---------------------------------------------------------
+ ok 9 - planner parties retain no visitor-authored names
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 10 - ordinary parent cannot mutate another resident portal
+(1 row)
+
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 11 - participating parent can resolve their own group realtime topic
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 12 - participating parent cannot resolve another group realtime topic
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 13 - portal owner can resolve their own portal realtime topic
+(1 row)
+
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 14 - portal applicant can resolve their own private application object path
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 15 - portal owner can resolve their own QR document path
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 16 - ordinary parent cannot resolve a resident realtime topic
+(1 row)
+
+                                      ok                                      
+------------------------------------------------------------------------------
+ ok 17 - ordinary parent cannot resolve another applicant private object path
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 18 - ordinary parent cannot resolve another resident QR document path
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                              ok                                              
+----------------------------------------------------------------------------------------------
+ ok 19 - portal reviewer can open an applicant private image through a short-lived signed URL
+(1 row)
+
+SET
+                                                is                                                 
+---------------------------------------------------------------------------------------------------
+ ok 20 - browsers cannot bypass server-side image signature validation with a direct storage write
+(1 row)
+
+SET
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 21 - five contact submissions in one durable subject bucket are accepted
+(1 row)
+
+SET
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 22 - accepted contact submissions each create one durable notification
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 23 - public contact sender input can never select the outbox recipient
+(1 row)
+
+SET
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 24 - sixth contact submission in the same durable bucket is rejected
+(1 row)
+
+                                   lives_ok                                   
+------------------------------------------------------------------------------
+ ok 25 - three sponsor submissions in one durable subject bucket are accepted
+(1 row)
+
+SET
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 26 - accepted sponsor submissions each create one durable notification
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 27 - public sponsor sender input can never select the outbox recipient
+(1 row)
+
+SET
+                                throws_ok                                 
+--------------------------------------------------------------------------
+ ok 28 - fourth sponsor submission in the same durable bucket is rejected
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 29 - five household invitations in the durable actor bucket are accepted
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 30 - sixth household invitation in the durable actor bucket is rejected
+(1 row)
+
+SET
+                                   is                                   
+------------------------------------------------------------------------
+ ok 31 - rate-limited household invitations create no sixth outbox task
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

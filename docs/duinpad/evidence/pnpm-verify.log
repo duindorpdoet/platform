@@ -1,0 +1,126 @@
+$ pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:artifacts
+$ eslint . --max-warnings=0
+$ tsc --noEmit
+$ vitest run
+
+ RUN  v5.0.0 /home/codex/repos/duindorphalloween-duinpad
+
+
+ Test Files  125 passed | 1 skipped (126)
+      Tests  1194 passed | 1 skipped (1195)
+   Start at  16:12:37
+   Duration  19.56s (tests 61%, transform 21%, import 16%, worker 1%)
+
+    Isolate  126 workers spawned · ~122ms startup each (spawn + environment, per file)
+             at least ~1.28s faster with isolate: false — reuses workers across files instead of one per file
+
+$ node scripts/copy-maplibre-worker.mjs
+$ next build
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 27ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.0s
+  Running TypeScript ...
+  Finished TypeScript in 15.5s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/39) ...
+  Generating static pages using 11 workers (9/39) 
+  Generating static pages using 11 workers (19/39) 
+  Generating static pages using 11 workers (29/39) 
+✓ Generating static pages using 11 workers (39/39) in 487ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ƒ /admin/poortkamer/[id]
+├ ƒ /api/account
+├ ƒ /api/actors
+├ ƒ /api/actors/admin
+├ ƒ /api/actors/claim
+├ ƒ /api/actors/command
+├ ƒ /api/actors/finale-recovery
+├ ƒ /api/actors/receipts/[id]
+├ ƒ /api/admin/routes/policy
+├ ƒ /api/admin/routes/proposal
+├ ƒ /api/analytics/events
+├ ƒ /api/deelstudio/context
+├ ƒ /api/deelstudio/events
+├ ƒ /api/deelstudio/generate
+├ ƒ /api/deelstudio/public/[id]/image
+├ ƒ /api/duinpad/[action]
+├ ƒ /api/editorial/admin
+├ ƒ /api/editorial/media
+├ ƒ /api/editorial/media/[id]/[variant]
+├ ƒ /api/editorial/news
+├ ƒ /api/editorial/preferences
+├ ƒ /api/editorial/unsubscribe
+├ ƒ /api/health
+├ ƒ /api/jobs/mail
+├ ƒ /api/mail/settings
+├ ƒ /api/poortenboek/[action]
+├ ƒ /api/poortkamer/invitation
+├ ƒ /api/poortkamer/push-test
+├ ƒ /api/portal-assets
+├ ƒ /api/public/contact
+├ ƒ /api/public/portal-registration
+├ ƒ /api/public/sponsor
+├ ƒ /api/push/subscription
+├ ƒ /api/push/test
+├ ƒ /api/redesign/[action]
+├ ƒ /api/webhooks/resend
+├ ƒ /api/webhooks/sendgrid
+├ ƒ /app
+├ ○ /app/hulp
+├ ƒ /app/meldingen
+├ ƒ /auth/callback
+├ ○ /contact
+├ ○ /deel-de-magie
+├ ƒ /delen/[id]
+├ ○ /faq
+├ ƒ /huis-aanmelden
+├ ƒ /inloggen
+├ ○ /kaart
+├ ƒ /meelopen
+├ ƒ /mijn-groep
+├ ƒ /mijn-huis
+├ ƒ /mijn-inschrijving
+├ ƒ /nachtpost/afmelden
+├ ƒ /nieuws
+├ ƒ /nieuws/[slug]
+├ ƒ /omgeving/[[...view]]
+├ ƒ /omgeving/acteur
+├ ƒ /omgeving/communicatie
+├ ƒ /omgeving/kiezen
+├ ƒ /omgeving/nieuws/[[...path]]
+├ ○ /ontdek
+├ ƒ /poortenboek/[[...section]]
+├ ƒ /poortenboek/demo
+├ ƒ /poortenboek/inloggen
+├ ƒ /poortenboek/ouder
+├ ○ /privacy
+├ ○ /sponsoren
+├ ○ /toegankelijkheid
+├ ƒ /uitnodiging/acteur
+├ ƒ /uitnodiging/inschrijving/[token]
+├ ƒ /uitnodiging/poort/[token]
+├ ○ /verhaal
+├ ○ /voorwaarden
+├ ○ /werelden
+└   /werelden/[slug]
+  ├ ● /werelden/heksenrijk
+  ├ ● /werelden/dodenrijk
+  ├ ● /werelden/circuswereld
+  └ ● [+3 more paths]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+$ node scripts/acceptance/scan-client-artifacts.mjs
+{"status":"pass","checks":["PRIV-08"],"filesScanned":1465}
