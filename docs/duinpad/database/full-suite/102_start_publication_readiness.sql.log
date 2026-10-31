@@ -1,0 +1,172 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+SELECT 1
+UPDATE 1
+                                              ok                                               
+-----------------------------------------------------------------------------------------------
+ ok 1 - filled finale times do not confirm actual availability and identify the exact checkbox
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 2 - snapshot shares the same stored server readiness
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 3 - readiness never automatically enables finale availability
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 4 - checking readiness preserves already stored finale times
+(1 row)
+
+UPDATE 1
+                             ok                             
+------------------------------------------------------------
+ ok 5 - planner mode is a separate concrete readiness cause
+(1 row)
+
+UPDATE 1
+                                ok                                 
+-------------------------------------------------------------------
+ ok 6 - a missing finale is distinct from unconfirmed availability
+(1 row)
+
+UPDATE 1
+                             ok                             
+------------------------------------------------------------
+ ok 7 - missing saved times have a separate readiness cause
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                          ok                          
+------------------------------------------------------
+ ok 8 - a finale must actually be approved and active
+(1 row)
+
+UPDATE 1
+SELECT 1
+UPDATE 1
+                                           ok                                           
+----------------------------------------------------------------------------------------
+ ok 9 - safe availability checkbox cannot override an explicitly closed physical finale
+(1 row)
+
+UPDATE 1
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 10 - a paused finale has the same concrete operational availability blocker
+(1 row)
+
+UPDATE 1
+SELECT 1
+UPDATE 1
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 11 - an unusable physical finale position is named before publication
+(1 row)
+
+UPDATE 1
+SELECT 1
+DELETE 1
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 12 - configured finale times cannot replace a real physical opening
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+                                                                                                                                                                                   admin_startregie_confirm_point                                                                                                                                                                                   
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "0cc254e1-a8db-42a8-8bc3-8977afed55a7", "active": true, "version": 1, "confirmed": true, "readiness": {"location": {"valid": true, "reason": null, "source": "address", "latitude": 52.100000, "longitude": 4.270000}, "confirmed": true, "canConfirm": true, "routeReady": true, "confirmedAt": "2026-10-31T15:16:30.918684+00:00", "linkedPortalName": null, "confirmationReason": null}}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 13 - the saved exact appointment passes the shared timing and capacity rules
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 14 - the shown revision must still be the saved revision
+(1 row)
+
+                                     ok                                      
+-----------------------------------------------------------------------------
+ ok 15 - a stale settings confirmation is distinct from missing finale times
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 16 - readiness checks preserve groups, concepts, runs and communication
+(1 row)
+
+UPDATE 1
+                                   throws_ok                                   
+-------------------------------------------------------------------------------
+ ok 17 - direct API publication names the same exact unavailable-finale reason
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 18 - a blocked direct publication queues no participant message
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 19 - readiness does not increase the configured one-group finale capacity
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 20 - publication preflight is not an anonymous endpoint
+(1 row)
+
+                                     ok                                     
+----------------------------------------------------------------------------
+ ok 21 - the read-only internal assertion is not a direct authenticated API
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 22 - a participant cannot inspect admin publication readiness
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+SET
+                                       lives_ok                                        
+---------------------------------------------------------------------------------------
+ ok 23 - readiness preflight takes no write locks and works in a read-only transaction
+(1 row)
+
+ finish 
+--------
+ 1..23
+(1 row)
+
+ROLLBACK

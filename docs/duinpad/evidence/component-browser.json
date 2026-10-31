@@ -1,6 +1,6 @@
 {
-  "testedAt": "2026-10-31T15:00:41.187Z",
-  "revision": "c6288a8781c7896303bed1bdeabf0b8f87ae52af",
+  "testedAt": "2026-10-31T15:13:55.527Z",
+  "revision": "bfd44ba7d241f8035676a07812573a4ebb8cf5db",
   "environment": "local component browser with synthetic HTTP mocks; working tree changes",
   "hardware": "not tested",
   "auth": "synthetic Supabase auth-state callbacks only; provider/OTP/Google authentication not tested",
@@ -35,6 +35,16 @@
       "name": "actor 320px receipt never retries",
       "pass": true,
       "evidence": "GET receipt emits no POST command"
+    },
+    {
+      "name": "actor 320px shared finale receipt readable while GO blocked",
+      "pass": true,
+      "evidence": "separate read-only recovery does not require an enabled execution control or original actor receipt"
+    },
+    {
+      "name": "actor 320px shared finale recovery is GET without browser group",
+      "pass": true,
+      "evidence": "group derived by authenticated backend; no execution POST from recovery"
     },
     {
       "name": "actor 320px revocation removes controls",
@@ -160,6 +170,16 @@
       "name": "actor 390px receipt never retries",
       "pass": true,
       "evidence": "GET receipt emits no POST command"
+    },
+    {
+      "name": "actor 390px shared finale receipt readable while GO blocked",
+      "pass": true,
+      "evidence": "separate read-only recovery does not require an enabled execution control or original actor receipt"
+    },
+    {
+      "name": "actor 390px shared finale recovery is GET without browser group",
+      "pass": true,
+      "evidence": "group derived by authenticated backend; no execution POST from recovery"
     },
     {
       "name": "actor 390px revocation removes controls",

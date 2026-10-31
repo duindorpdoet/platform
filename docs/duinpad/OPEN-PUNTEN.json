@@ -1,7 +1,7 @@
 {
   "status": "software_getest_reviewbaar_niet_productie_uitgerold",
-  "tested_app_commit": "c6288a8781c7896303bed1bdeabf0b8f87ae52af",
-  "bridge_patch_sha256": "a2e7fd599c88e796852577c8a002847de7e11ef99d6219d3da46c77b38048dcb",
+  "tested_app_commit": "b0e5e7e6127f930d2d0c645d4a299595dab0993e",
+  "bridge_patch_sha256": "332d2cbc26f0d8257d7e6cf61d5cddb44f5a35a8be73f02cc1aad08dd8a0a26b",
   "production_baseline_commit_verified": "db5e9fee4fe86aecddbb05b9f0fe6ad3840c66f8",
   "new_production_deployment": false,
   "event_id": "0e48b75c-ae67-4934-8898-409dd127c871",
@@ -23,8 +23,8 @@
   "simulation_evidence": [
     "TESTRESULTATEN.md",
     "evidence/pnpm-verify.log",
-    "database/summary.json",
-    "database/concurrency.json",
+    "database/full-suite/summary.json",
+    "database/full-suite/concurrency.json",
     "evidence/component-browser.json",
     "bridge/TESTRAPPORT-ACTOR-V1.json"
   ],
@@ -43,5 +43,6 @@
     "null betekent niet geverifieerd; geen gemeten offline- of configuratieclaim.",
     "Geen database- of inschrijvingsreset, herplanning, openingstijdwijziging of keyrotatie uitgevoerd.",
     "Code en simulatie zijn af; ontbrekende locatie/configuratie blokkeren uitsluitend activering."
-  ]
+  ],
+  "review_pull_request": "https://github.com/duindorpdoet/platform/pull/66"
 }

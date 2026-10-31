@@ -1,0 +1,249 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+              set_config              
+--------------------------------------
+ 11764532-5892-4f7e-87e6-a5522b6eebb5
+(1 row)
+
+INSERT 0 1
+                                                                                                                                                                                                                                                                               set_config                                                                                                                                                                                                                                                                               
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"internalName":"Testmail behouden","subject":"De poorten gaan open","preheader":"Nieuws voor de wijk","eyebrow":"NACHTPOST","article":{"title":"De nacht komt dichterbij","intro":"Een veilige introductie","heroId":"b8400000-0000-0000-0000-000000000001","heroAlt":"Een poort","heroCaption":"","author":"Organisatie","categoryId":null,"body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Samen maken we de nacht."}]}]},"cta":null},"newsVersionIds":[],"closing":"Tot tussen de poorten","senderName":"Duindorpse Poorten"}
+(1 row)
+
+UPDATE 0
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                                                  editorial_preferences_set                                                                                  
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"email": true, "source": "communication_preferences", "devices": [], "housesPush": false, "consentedAt": "2026-10-31T15:16:07.257911+00:00", "parentsPush": false, "unsubscribedAt": null}
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                     set_config                                                     
+--------------------------------------------------------------------------------------------------------------------
+ {"id": "3a639262-cc82-4ed4-97ec-48f96f115446", "revision": 1, "versionId": "f6124e73-42e5-439f-bc05-d0a5c336a3de"}
+(1 row)
+
+              set_config              
+--------------------------------------
+ 3a639262-cc82-4ed4-97ec-48f96f115446
+(1 row)
+
+              set_config              
+--------------------------------------
+ f6124e73-42e5-439f-bc05-d0a5c336a3de
+(1 row)
+
+RESET
+CREATE FUNCTION
+                 ok                 
+------------------------------------
+ ok 1 - test evidence is not public
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 2 - clients cannot look up private test evidence
+(1 row)
+
+SET
+                 is                  
+-------------------------------------
+ ok 3 - untested campaign is blocked
+(1 row)
+
+                 throws_ok                 
+-------------------------------------------
+ ok 4 - server requires a real test result
+(1 row)
+
+              set_config              
+--------------------------------------
+ e53a00b7-c312-4d04-a597-cf6258889e58
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 5 - snapshot explains pending test
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 6 - queued mail cannot unlock sending
+(1 row)
+
+RESET
+UPDATE 1
+SET
+                    is                     
+-------------------------------------------
+ ok 7 - provider acceptance unlocks review
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 8 - unchanged save retains exact version and revision
+(1 row)
+
+RESET
+                              is                               
+---------------------------------------------------------------
+ ok 9 - unchanged save does not create a misleading edit audit
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+UPDATE 1
+              set_config              
+--------------------------------------
+ b19b2fee-4ada-4374-8c61-99ab2d47af37
+(1 row)
+
+SET
+                               is                                
+-----------------------------------------------------------------
+ ok 10 - received test remains valid after an old redundant save
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 11 - received status is retained
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 12 - snapshot identifies the equivalent tested version
+(1 row)
+
+                        throws_ok                         
+----------------------------------------------------------
+ ok 13 - even unchanged saves preserve optimistic locking
+(1 row)
+
+                                                     set_config                                                     
+--------------------------------------------------------------------------------------------------------------------
+ {"id": "1ad1e9e1-2e54-4709-a140-75db81f3d3f0", "revision": 1, "versionId": "de782a88-6996-4500-a10d-8d1504fce60b"}
+(1 row)
+
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 14 - identical content in another campaign cannot borrow a test
+(1 row)
+
+                                                     set_config                                                     
+--------------------------------------------------------------------------------------------------------------------
+ {"id": "3a639262-cc82-4ed4-97ec-48f96f115446", "revision": 3, "versionId": "4950c5dc-a099-4775-88dd-16429a63c16b"}
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 15 - real content change invalidates the earlier test
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 16 - changed mail cannot be sent using old proof
+(1 row)
+
+              set_config              
+--------------------------------------
+ 42e67917-73f8-486a-872c-96414b97838f
+(1 row)
+
+RESET
+UPDATE 1
+SET
+                     is                     
+--------------------------------------------
+ ok 17 - failed test has an explicit status
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 18 - failed test cannot unlock sending
+(1 row)
+
+RESET
+UPDATE 1
+SET
+                        is                        
+--------------------------------------------------
+ ok 19 - uncertain delivery cannot unlock sending
+(1 row)
+
+                                                     set_config                                                     
+--------------------------------------------------------------------------------------------------------------------
+ {"id": "3a639262-cc82-4ed4-97ec-48f96f115446", "revision": 4, "versionId": "ad167763-db3e-4b45-9430-de5cfe6ff89d"}
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 20 - restoring exactly the tested mail restores its proof
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 21 - recipient count must still be reviewed
+(1 row)
+
+                      lives_ok                       
+-----------------------------------------------------
+ ok 22 - received equivalent test permits scheduling
+(1 row)
+
+                 lives_ok                  
+-------------------------------------------
+ ok 23 - schedule retry remains idempotent
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 24 - freezing the derived news cards retains test evidence
+(1 row)
+
+RESET
+                   is                    
+-----------------------------------------
+ ok 25 - exactly one recipient is frozen
+(1 row)
+
+                 is                 
+------------------------------------
+ ok 26 - exactly one schedule audit
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    throws_ok                     
+--------------------------------------------------
+ ok 27 - ordinary parent cannot inspect campaigns
+(1 row)
+
+                        throws_ok                         
+----------------------------------------------------------
+ ok 28 - ordinary parent cannot schedule even tested mail
+(1 row)
+
+ finish 
+--------
+ 1..28
+(1 row)
+
+ROLLBACK

@@ -1,0 +1,262 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+CREATE TABLE
+CREATE FUNCTION
+ completion_fixture | completion_fixture | completion_fixture | completion_fixture 
+--------------------+--------------------+--------------------+--------------------
+                    |                    |                    | 
+(1 row)
+
+GRANT
+                         is                          
+-----------------------------------------------------
+ ok 1 - one server policy defaults to thirty minutes
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 2 - browser receives exactly the server policy
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 3 - timing helper is not an anonymous endpoint
+(1 row)
+
+SET
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 4 - direct authenticated API accepts completion exactly at 21:30
+(1 row)
+
+                    throws_ok                     
+--------------------------------------------------
+ ok 5 - direct API rejects completion at 21:30:01
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 6 - arrival 21:25 does not fit a ten-minute show before 21:30
+(1 row)
+
+                           lives_ok                           
+--------------------------------------------------------------
+ ok 7 - 20:30 desired end permits completion exactly at 21:00
+(1 row)
+
+                        throws_ok                        
+---------------------------------------------------------
+ ok 8 - 20:30 desired end rejects completion at 21:00:01
+(1 row)
+
+SET
+                         is                          
+-----------------------------------------------------
+ ok 9 - snapshot completion includes the entire show
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 10 - physical occupancy includes turnover independently
+(1 row)
+
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 11 - an extra show second cannot cross the group boundary
+(1 row)
+
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 12 - an extra turnover second cannot cross definitive physical closure
+(1 row)
+
+                                         lives_ok                                         
+------------------------------------------------------------------------------------------
+ ok 13 - turnover may extend past group completion if separate physical closure allows it
+(1 row)
+
+UPDATE 1
+CREATE FUNCTION
+                          lives_ok                          
+------------------------------------------------------------
+ ok 14 - valid overrun survives explicit server publication
+(1 row)
+
+                 is                 
+------------------------------------
+ ok 15 - valid overrun is published
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 16 - participant snapshot exposes published completion consistently
+(1 row)
+
+UPDATE 1
+                              is                               
+---------------------------------------------------------------
+ ok 17 - metadata cannot override the server overrun allowance
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 18 - metadata cannot forge expected show completion
+(1 row)
+
+                            throws_ok                            
+-----------------------------------------------------------------
+ ok 19 - direct schedule writes cannot bypass the temporal guard
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+SELECT 1
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 20 - live policy uses published target plus thirty minutes minus show
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 21 - live dispatch refuses one second beyond published group deadline
+(1 row)
+
+SET
+UPDATE 1
+SET
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 22 - historical metadata cannot bypass the same majority-based group ceiling
+(1 row)
+
+                                            is                                            
+------------------------------------------------------------------------------------------
+ ok 23 - live reservation also rejects excess overrun for a historical published snapshot
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                     ok                                      
+-----------------------------------------------------------------------------
+ ok 24 - live reservation at exact boundary succeeds after old strict target
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 25 - repeated live reservation returns the same reservation
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 26 - live retries keep exactly one physical reservation
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 27 - reservation checking does not rewrite a started route
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 28 - started group cannot be rewritten by a new schedule
+(1 row)
+
+ completion_fixture | completion_fixture 
+--------------------+--------------------
+                    | 
+(1 row)
+
+SELECT 1
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 29 - bulk redistribution persists a valid fifteen-minute overrun
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 30 - bulk overrun retry returns its existing receipt
+(1 row)
+
+UPDATE 1
+SELECT 1
+                                                lives_ok                                                 
+---------------------------------------------------------------------------------------------------------
+ ok 31 - new-group bulk proposal persists a valid five-minute overrun after the minimum arrival interval
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 32 - new-group overrun retry returns its receipt
+(1 row)
+
+                                   lives_ok                                    
+-------------------------------------------------------------------------------
+ ok 33 - published and live reservation of one group do not consume two places
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 34 - another physical group still consumes finale capacity
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 35 - finale allowance never extends ordinary closure
+(1 row)
+
+                                   throws_ok                                   
+-------------------------------------------------------------------------------
+ ok 36 - ordinary visit beyond closure is rejected even during allowed overrun
+(1 row)
+
+ withdraw_group_appointment 
+----------------------------
+ 
+(1 row)
+
+UPDATE 1
+ completion_fixture 
+--------------------
+ 
+(1 row)
+
+UPDATE 1
+                        lives_ok                        
+--------------------------------------------------------
+ ok 37 - new ordinary extension is explicitly published
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+                                                    is                                                    
+----------------------------------------------------------------------------------------------------------
+ ok 38 - live dispatch after desired 20:30 still visits an ordinary gate under the published 20:40 cutoff
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 39 - live dispatch retains the reviewed published ordinary cutoff
+(1 row)
+
+UPDATE 1
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 40 - a shorter physical finale window is an explicit conflict
+(1 row)
+
+ finish 
+--------
+ 1..40
+(1 row)
+
+ROLLBACK

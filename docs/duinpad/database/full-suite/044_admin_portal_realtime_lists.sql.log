@@ -1,0 +1,128 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..16
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 1 - anonymous visitors cannot read the organizer portal projection
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 2 - a parent cannot read house contact and address details
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         throws_ok                         
+-----------------------------------------------------------
+ ok 3 - a resident cannot read the details of other houses
+(1 row)
+
+RESET
+SET
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 4 - a step-one house intake can be stored before OTP is used
+(1 row)
+
+RESET
+                             matches                              
+------------------------------------------------------------------
+ ok 5 - the intake receives its permanent portal code immediately
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                             lives_ok                             
+------------------------------------------------------------------
+ ok 6 - an event administrator can read the management projection
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 7 - an unclaimed concept appears with the waiting-for-OTP status
+(1 row)
+
+                   is                   
+----------------------------------------
+ ok 8 - the intake appears exactly once
+(1 row)
+
+RESET
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                               lives_ok                               
+----------------------------------------------------------------------
+ ok 9 - the resident can activate the intake after email verification
+(1 row)
+
+RESET
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 10 - the activated application preserves the code assigned at step one
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 11 - the same row changes to activated with details still incomplete
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 12 - the linked intake and application remain one row
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 13 - the activation milestone uses the unambiguous resident wording
+(1 row)
+
+SELECT 1
+RESET
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 14 - an approved registration falls back to its verified private address
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 15 - the active tab contains exactly the approved portal records
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 16 - every active row is backed by a real portal record
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

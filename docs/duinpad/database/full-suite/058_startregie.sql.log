@@ -1,0 +1,133 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                                         ok                                         
+------------------------------------------------------------------------------------
+ ok 1 - location history is never directly readable through an authenticated client
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 2 - planning versions are exposed only through capability-checked RPCs
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 3 - anonymous visitors cannot open Startregie
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 4 - authenticated users can reach the capability-checked Startregie contract
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 5 - a participant cannot inspect private planning locations
+(1 row)
+
+SET
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 6 - an event administrator can load the operational Startregie snapshot
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 7 - Startregie returns actionable warnings as a stable array
+(1 row)
+
+UPDATE 1
+SET
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 8 - a standalone gathering point can be created without an official address
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 9 - the nearest verified walking node is calculated when the marker is saved
+(1 row)
+
+SET
+                             lives_ok                             
+------------------------------------------------------------------
+ ok 10 - an authorized organizer can move only the routing marker
+(1 row)
+
+SET
+                             is                              
+-------------------------------------------------------------
+ ok 11 - moving a marker never rewrites the official address
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 12 - marker changes are retained in the private audit history
+(1 row)
+
+SET
+UPDATE 1
+                                is                                
+------------------------------------------------------------------
+ ok 13 - an unused manual concept portal is permanently removable
+(1 row)
+
+UPDATE 1
+SET
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 14 - a manual portal retains its origin independently of future ownership
+(1 row)
+
+UPDATE 1
+SET
+                                is                                
+------------------------------------------------------------------
+ ok 15 - a non-concept portal is archived instead of hard deleted
+(1 row)
+
+SET
+UPDATE 1
+UPDATE 1
+SET
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 16 - the final portal cannot be removed without choosing a replacement
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 17 - RLS-style capability checks block unauthorized location mutations
+(1 row)
+
+ finish 
+--------
+ 1..17
+(1 row)
+
+ROLLBACK

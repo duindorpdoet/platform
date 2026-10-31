@@ -1,0 +1,470 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+UPDATE 1
+INSERT 0 1
+SELECT 1
+GRANT
+UPDATE 1
+UPDATE 1
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 1 - paid-child fixture includes actual immutable payment evidence
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 2 - anonymous cannot inspect private registration management
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 3 - anonymous cannot use admin change commands
+(1 row)
+
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 4 - authenticated clients cannot manufacture a confirmed-composition exception
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 5 - private command scope cannot be forged with table access
+(1 row)
+
+ set_config 
+------------
+ true
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 6 - a forged client GUC does not bypass the confirmed composition guard
+(1 row)
+
+SAVEPOINT
+INSERT 0 1
+UPDATE 1
+                                  is                                  
+----------------------------------------------------------------------
+ ok 7 - composition-only confirmation remains separately recognizable
+(1 row)
+
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 8 - an internally checked unpublished appointment stays recognizable as checked
+(1 row)
+
+                                                   is                                                    
+---------------------------------------------------------------------------------------------------------
+ ok 9 - an internally checked unpublished appointment is never presented as a definite participant start
+(1 row)
+
+ROLLBACK
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 10 - being the parent does not grant organizer capability
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 11 - direct unauthorized admin move is rejected
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                            is                                            
+------------------------------------------------------------------------------------------
+ ok 12 - preview separates a genuinely confirmed start from composition-only confirmation
+(1 row)
+
+                             throws_ok                             
+-------------------------------------------------------------------
+ ok 13 - missing children array cannot cancel the entire household
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 14 - a JSON null payload is never an empty participation edit
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 15 - last-child removal requires an explicit participation cancellation
+(1 row)
+
+UPDATE 1
+                                   lives_ok                                    
+-------------------------------------------------------------------------------
+ ok 16 - organizer can edit and add a child inside a confirmed published group
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 17 - exact edit retry returns the same durable receipt
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 18 - same command key cannot authorize a different edit
+(1 row)
+
+RESET
+                         is                          
+-----------------------------------------------------
+ ok 19 - added children reserve capacity immediately
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 20 - name correction retains stable child and passport identity
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 21 - correction updates the existing child profile
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 22 - editing keeps the whole household in its current group
+(1 row)
+
+                                              is                                              
+----------------------------------------------------------------------------------------------
+ ok 23 - registration amount uses existing price snapshots plus the event price for additions
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 24 - editing preserves every previously recorded payment entry
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 25 - adding a child preserves the historically paid request URL
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 26 - child edit keeps the original start confirmation current
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 27 - confirmed and published schedule rows remain byte-for-byte unchanged
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 28 - immutable publications are never rewritten by a child edit
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                        lives_ok                                        
+----------------------------------------------------------------------------------------
+ ok 29 - organizer may remove paid participation without deleting its financial history
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 30 - removal is a participation cancellation, not an identity deletion
+(1 row)
+
+                                           ok                                            
+-----------------------------------------------------------------------------------------
+ ok 31 - removed child identity remains available for its historical passport and visits
+(1 row)
+
+                                                 is                                                 
+----------------------------------------------------------------------------------------------------
+ ok 32 - paid participation removal preserves the actual earlier earned passport seal byte-for-byte
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 33 - paid child removal retains the exact ledger
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 34 - removed children no longer reserve future participation capacity
+(1 row)
+
+SAVEPOINT
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+                                  throws_ok                                   
+------------------------------------------------------------------------------
+ ok 35 - adding children cannot bypass an accepted ordinary house child limit
+(1 row)
+
+ROLLBACK
+INSERT 0 2
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+                            is                             
+-----------------------------------------------------------
+ ok 36 - preview makes the related household split visible
+(1 row)
+
+SAVEPOINT
+UPDATE 1
+                                throws_ok                                 
+--------------------------------------------------------------------------
+ ok 37 - full target departure/gathering capacity rejects the entire move
+(1 row)
+
+ROLLBACK
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 38 - one whole household moves between two confirmed published groups
+(1 row)
+
+UPDATE 1
+                                is                                 
+-------------------------------------------------------------------
+ ok 39 - retry does not create a second assignment or move message
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 40 - one active household group membership after move
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 41 - all active children now inherit the target household assignment
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 42 - the other household in the old together party never moves
+(1 row)
+
+                                  isnt                                  
+------------------------------------------------------------------------
+ ok 43 - the moved household receives its own coherent preference party
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 44 - every other recipient outbox row remains byte-for-byte unchanged
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 45 - exactly one targeted household change message is queued
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 46 - only the actual moved primary parent receives the change email
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 47 - old pending source confirmation for the moved parent is suppressed
+(1 row)
+
+                                                ok                                                 
+---------------------------------------------------------------------------------------------------
+ ok 48 - earlier authorized target composition message remains current through the scoped revision
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 49 - moving a family preserves every immutable start publication
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 50 - source and target start schedule rows, times and confirmations remain unchanged
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 51 - target start remains confirmed for existing and moved families
+(1 row)
+
+                                         ok                                         
+------------------------------------------------------------------------------------
+ ok 52 - source start also remains confirmed after the supported composition change
+(1 row)
+
+                                                  is                                                   
+-------------------------------------------------------------------------------------------------------
+ ok 53 - live finale deadline follows the supported new majority instead of the old frozen desired end
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 54 - no reusable bypass scope survives the command
+(1 row)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 55 - worker resolves the current target group rather than the old family group
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 56 - pre-release targeted email does not expose the start address
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                     lives_ok                                     
+----------------------------------------------------------------------------------
+ ok 57 - child correction after a move preserves the move notification generation
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 58 - mandatory change email is not silently lost after a child edit
+(1 row)
+
+                                              is                                              
+----------------------------------------------------------------------------------------------
+ ok 59 - name-only correction preserves the complete existing payment aggregate byte-for-byte
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 60 - same-group selection is a no-op even with an older preview
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 61 - same-group no-op never queues or supersedes the existing move mail
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 62 - stale real move cannot overwrite current membership
+(1 row)
+
+                           lives_ok                            
+---------------------------------------------------------------
+ ok 63 - a later real second move is its own supported command
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 64 - two real moves have exactly two historical mail events
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 65 - only the stale earlier pending move confirmation is superseded
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 66 - worker cannot send the stale first move after a later move
+(1 row)
+
+SAVEPOINT
+INSERT 0 1
+INSERT 0 1
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 67 - a prepared run without actual departure or arrival is not a begun group
+(1 row)
+
+UPDATE 1
+                                    lives_ok                                     
+---------------------------------------------------------------------------------
+ ok 68 - child editing remains supported before a prepared group actually starts
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 69 - prepared future roster includes the added child under its existing registration
+(1 row)
+
+                                          is                                          
+--------------------------------------------------------------------------------------
+ ok 70 - the added child is reserved but is not automatically marked actually present
+(1 row)
+
+                                      lives_ok                                      
+------------------------------------------------------------------------------------
+ ok 71 - an unstarted prepared roster does not generically block the household move
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 72 - the old prepared group no longer counts moved children as present
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 73 - administrator changes never start the prepared group
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+INSERT 0 1
+                                    throws_ok                                    
+---------------------------------------------------------------------------------
+ ok 74 - moving a sole source leader requires the existing replacement procedure
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+INSERT 0 1
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 75 - a begun group requires an explicit supported transfer procedure
+(1 row)
+
+ROLLBACK
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 76 - rejected begun-group scenario leaves both current groups unstarted
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 77 - all earlier journey evidence survives edits and both moves unchanged
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 78 - admin edits and moves never reopen public participation
+(1 row)
+
+ finish 
+--------
+ 1..78
+(1 row)
+
+ROLLBACK

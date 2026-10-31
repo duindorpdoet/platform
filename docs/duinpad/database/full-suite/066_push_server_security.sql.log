@@ -1,0 +1,199 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+GRANT
+                               ok                                
+-----------------------------------------------------------------
+ ok 1 - anonymous callers cannot debit or obtain account permits
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 2 - participants cannot retrieve worker target keys
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 3 - device admission cannot bypass the RPC guard
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 4 - database verifies the real P-256 curve equation
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 5 - an off-curve point of the correct length is rejected
+(1 row)
+
+                 ok                  
+-------------------------------------
+ ok 6 - Google exact origin admitted
+(1 row)
+
+                  ok                  
+--------------------------------------
+ ok 7 - Mozilla exact origin admitted
+(1 row)
+
+                 ok                 
+------------------------------------
+ ok 8 - Apple exact origin admitted
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 9 - unsafe endpoint blocked at storage: http
+ ok 10 - unsafe endpoint blocked at storage: private IP
+ ok 11 - unsafe endpoint blocked at storage: IPv6
+ ok 12 - unsafe endpoint blocked at storage: lookalike
+ ok 13 - unsafe endpoint blocked at storage: credentials
+ ok 14 - unsafe endpoint blocked at storage: port
+ ok 15 - unsafe endpoint blocked at storage: query
+ ok 16 - unsafe endpoint blocked at storage: fragment
+ ok 17 - unsafe endpoint blocked at storage: no device path
+ ok 18 - unsafe endpoint blocked at storage: backslash
+ ok 19 - unsafe endpoint blocked at storage: control
+ ok 20 - unsafe endpoint blocked at storage: encoded backslash
+(12 rows)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 21 - invalid direct RPC consumes an attempt and returns a safe failure
+ ok 22 - invalid direct RPC consumes an attempt and returns a safe failure
+ ok 23 - invalid direct RPC consumes an attempt and returns a safe failure
+ ok 24 - invalid direct RPC consumes an attempt and returns a safe failure
+ ok 25 - invalid direct RPC consumes an attempt and returns a safe failure
+ ok 26 - invalid direct RPC consumes an attempt and returns a safe failure
+ ok 27 - invalid direct RPC consumes an attempt and returns a safe failure
+ ok 28 - invalid direct RPC consumes an attempt and returns a safe failure
+ ok 29 - invalid direct RPC consumes an attempt and returns a safe failure
+ ok 30 - invalid direct RPC consumes an attempt and returns a safe failure
+(10 rows)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 31 - the eleventh write is denied even after ten invalid payloads
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 32 - rate quota belongs to the authenticated account
+(1 row)
+
+SET
+                               is                                
+-----------------------------------------------------------------
+ ok 33 - invalid RPC debits persist instead of being rolled back
+(1 row)
+
+DELETE 10
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+             is             
+----------------------------
+ ok 34 - admit own device 1
+ ok 35 - admit own device 2
+ ok 36 - admit own device 3
+ ok 37 - admit own device 4
+ ok 38 - admit own device 5
+(5 rows)
+
+                         is                          
+-----------------------------------------------------
+ ok 39 - a sixth active device is refused atomically
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 40 - refreshing an existing device works at the five-device limit
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 41 - metadata contains no endpoint paths, keys or target fingerprints
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 42 - one account cannot take over another account endpoint
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 43 - deletion is scoped to the authenticated account
+(1 row)
+
+SET
+SELECT 1
+GRANT
+SET
+                          ok                           
+-------------------------------------------------------
+ ok 44 - a target from another account is not released
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 45 - a current own test device can pass revalidation
+(1 row)
+
+SET
+UPDATE 1
+SET
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 46 - keys changed after claim cannot be sent with an old fingerprint
+(1 row)
+
+SET
+UPDATE 1
+SET
+                       ok                       
+------------------------------------------------
+ ok 47 - revoked current preference never sends
+(1 row)
+
+SET
+ALTER TABLE
+INSERT 0 1
+ALTER TABLE
+INSERT 0 1
+SET
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 48 - old unsafe destinations are quarantined before a send can be authorized
+(1 row)
+
+SET
+                             is                              
+-------------------------------------------------------------
+ ok 49 - unsafe legacy record is inactive after revalidation
+(1 row)
+
+ finish 
+--------
+ 1..49
+(1 row)
+
+ROLLBACK

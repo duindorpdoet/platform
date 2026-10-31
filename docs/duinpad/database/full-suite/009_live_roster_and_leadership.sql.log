@@ -1,0 +1,263 @@
+BEGIN
+INSERT 0 4
+CREATE EXTENSION
+ plan  
+-------
+ 1..30
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 1 - parent cannot start their assigned group
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 2 - groups manager assigns a new leader with an audited revision
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 3 - old leader immediately loses mutation rights
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                        lives_ok                         
+---------------------------------------------------------
+ ok 4 - new leader can start using the new group version
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 5 - portal owner rotates the active credential before scan tests
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 6 - revoked previous QR token creates no evidence
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   throws_ok                                   
+-------------------------------------------------------------------------------
+ ok 7 - arbitrary QR text is treated only as an opaque credential and rejected
+(1 row)
+
+SET
+                     is                      
+---------------------------------------------
+ ok 8 - rejected QR creates no scan evidence
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+             throws_ok              
+------------------------------------
+ ok 9 - parent cannot scan a portal
+(1 row)
+
+               throws_ok               
+---------------------------------------
+ ok 10 - parent cannot complete a stop
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 11 - leader starts three present participants for mixed outcome
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                        lives_ok                        
+--------------------------------------------------------
+ ok 12 - leader scans before recording mixed attendance
+(1 row)
+
+                    lives_ok                    
+------------------------------------------------
+ ok 13 - leader records one visited participant
+(1 row)
+
+                                lives_ok                                
+------------------------------------------------------------------------
+ ok 14 - bulk command skips only the two remaining pending participants
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 15 - bulk result reports only changed pending rows
+(1 row)
+
+SET
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 16 - bulk skip preserves visited and changes only pending statuses
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 17 - bulk skip retry returns one stored logical result
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 18 - visited and skipped participants complete with mixed outcome
+(1 row)
+
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 19 - leader starts two participants for completeness and departure tests
+(1 row)
+
+SET
+UPDATE 1
+DELETE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                     lives_ok                                      
+-----------------------------------------------------------------------------------
+ ok 20 - existing pending status can be resolved without fabricating a missing row
+(1 row)
+
+                               run_scan                               
+----------------------------------------------------------------------
+ {"stopId": "e5f741ea-b710-4b8c-8cfe-803b1bf64a1b", "accepted": true}
+(1 row)
+
+                                    throws_ok                                    
+---------------------------------------------------------------------------------
+ ok 21 - missing participant status row blocks completion at the table invariant
+(1 row)
+
+SET
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 22 - one departing child updates roster while run stays active
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 23 - last departing child stops rather than successfully completes the group
+(1 row)
+
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 24 - leader starts two participants for departed-visited history test
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      lives_ok                       
+-----------------------------------------------------
+ ok 25 - leader scans before a visited child departs
+(1 row)
+
+                  lives_ok                   
+---------------------------------------------
+ ok 26 - first child receives visited status
+(1 row)
+
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 27 - visited child can depart without erasing visit evidence
+(1 row)
+
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 28 - remaining child can be skipped after roster version change
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 29 - departed visited child plus remaining skipped child preserves mixed outcome
+(1 row)
+
+SET
+                                         ok                                          
+-------------------------------------------------------------------------------------
+ ok 30 - departure excludes completion requirement without rewriting visited history
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

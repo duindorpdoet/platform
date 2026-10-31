@@ -1,0 +1,128 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..15
+(1 row)
+
+                                     ok                                     
+----------------------------------------------------------------------------
+ ok 1 - legacy unversioned payment confirmation is not callable by browsers
+(1 row)
+
+                                         ok                                         
+------------------------------------------------------------------------------------
+ ok 2 - authenticated actors can call the capability-checked versioned confirmation
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 3 - payment management projection is not public
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+UPDATE 1
+DELETE 0
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000010","role":"authenticated"}
+(1 row)
+
+                               lives_ok                               
+----------------------------------------------------------------------
+ ok 4 - parent can report an awaiting payment for their own household
+(1 row)
+
+SET
+                            is                            
+----------------------------------------------------------
+ ok 5 - parent report never promotes payment to confirmed
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000007","role":"authenticated"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 6 - ordinary parent cannot enumerate payment administration
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 7 - payments manager can read the bounded payment projection
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000007","role":"authenticated"}
+(1 row)
+
+                        throws_ok                        
+---------------------------------------------------------
+ ok 8 - ordinary parent cannot confirm their own payment
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                          lives_ok                           
+-------------------------------------------------------------
+ ok 9 - payments manager records a versioned partial payment
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 10 - partial ledger balance derives partial status
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 11 - same confirmation key replays without a duplicate ledger entry
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 12 - second versioned entry completes the exact server-side amount
+(1 row)
+
+SET
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 13 - append-only payment ledger equals the requested amount without duplicates
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 14 - stale concurrent confirmation cannot append another payment
+(1 row)
+
+                                        ok                                        
+----------------------------------------------------------------------------------
+ ok 15 - management projection derives the confirmed status and net ledger amount
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

@@ -1,0 +1,279 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+SELECT 30
+SELECT 1
+UPDATE 30
+UPDATE 1
+SELECT 3
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+UPDATE 1
+UPDATE 1
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 1 - saved official position can be confirmed without a manual override or graph
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 2 - fresh server snapshot retains the successful confirmation
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 3 - saved address position is not reported as a missing marker
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 4 - no walking network is required for the house-sequence flow
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 5 - point confirmation assigns no groups
+(1 row)
+
+SET
+                                      ok                                       
+-------------------------------------------------------------------------------
+ ok 6 - saved confirmed destination is usable without inventing a street route
+(1 row)
+
+UPDATE 1
+UPDATE 1
+SET
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 7 - missing saved position cannot return a false confirmation
+(1 row)
+
+SET
+                             is                              
+-------------------------------------------------------------
+ ok 8 - official coordinates require no manual override flag
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 9 - an incomplete manual override never borrows half of the address
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 10 - historical complete address coordinates remain usable
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 11 - non-finite numeric values are rejected
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 12 - out-of-range latitude is rejected
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 13 - absence stays absent; no map-center fallback
+(1 row)
+
+UPDATE 1
+UPDATE 1
+SET
+UPDATE 1
+                       is                       
+------------------------------------------------
+ ok 14 - write returns the actual manual source
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 15 - write returns the stored latitude with its precision
+(1 row)
+
+                    throws_ok                     
+--------------------------------------------------
+ ok 16 - old editor cannot confirm a newer marker
+(1 row)
+
+UPDATE 1
+                                    throws_ok                                    
+---------------------------------------------------------------------------------
+ ok 17 - null coordinate write is rejected rather than succeeding with zero rows
+(1 row)
+
+                         throws_ok                         
+-----------------------------------------------------------
+ ok 18 - invalid write cannot replace the saved manual pin
+(1 row)
+
+                        throws_ok                         
+----------------------------------------------------------
+ ok 19 - stale editor cannot replace the newer manual pin
+(1 row)
+
+UPDATE 1
+SET
+                           is                           
+--------------------------------------------------------
+ ok 20 - failed writes leave the existing marker intact
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 21 - manual marker does not rewrite the official address
+(1 row)
+
+UPDATE 1
+SET
+                        lives_ok                         
+---------------------------------------------------------
+ ok 22 - double confirmation at the same version is safe
+(1 row)
+
+UPDATE 1
+                                is                                
+------------------------------------------------------------------
+ ok 23 - fresh server projection reads the saved manual longitude
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 24 - manual confirmation remains visible after a fresh read
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 25 - private location helper is not a public cross-event lookup
+(1 row)
+
+SET
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 26 - idempotent confirmation creates no duplicate confirmation history
+(1 row)
+
+UPDATE 1
+                                 is                                  
+---------------------------------------------------------------------
+ ok 27 - background address update retains effective manual position
+(1 row)
+
+                                      ok                                       
+-------------------------------------------------------------------------------
+ ok 28 - unrelated address geocode does not erase manual position confirmation
+(1 row)
+
+CREATE TABLE
+GRANT
+INSERT 0 1
+SET
+UPDATE 1
+UPDATE 1
+                          lives_ok                           
+-------------------------------------------------------------
+ ok 29 - real portal edit preserves explicit manual position
+(1 row)
+
+SET
+                               is                               
+----------------------------------------------------------------
+ ok 30 - portal address edit cannot overwrite the manual marker
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 31 - portal address edit cannot move the graph away from the manual marker
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+SET
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 32 - required first-house position gives a targeted failure
+(1 row)
+
+SET
+UPDATE 1
+UPDATE 1
+SET
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 33 - unrelated invalid house cannot block a valid start location
+(1 row)
+
+                 throws_ok                 
+-------------------------------------------
+ ok 34 - wrong record identity is rejected
+(1 row)
+
+            throws_ok            
+---------------------------------
+ ok 35 - wrong event is rejected
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 36 - participant cannot mutate the marker
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 37 - participant cannot confirm a start location
+(1 row)
+
+SET
+UPDATE 30
+UPDATE 1
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 38 - valid own graph remains usable when an unrelated portal has no position
+(1 row)
+
+UPDATE 1
+                                                    ok                                                    
+----------------------------------------------------------------------------------------------------------
+ ok 39 - required invalid first-house position blocks planning even when own position and graph are valid
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 40 - location repair preserves all existing published starts
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 41 - location repair preserves QR credentials
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 42 - location repair preserves children and group membership
+(1 row)
+
+ finish 
+--------
+ 1..42
+(1 row)
+
+ROLLBACK

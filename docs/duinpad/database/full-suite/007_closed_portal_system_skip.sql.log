@@ -1,0 +1,207 @@
+BEGIN
+INSERT 0 4
+CREATE EXTENSION
+ plan  
+-------
+ 1..21
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 1 - authenticated actors can call the capability-checked system-skip command
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 2 - leader starts the first fixture group
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                lives_ok                                 
+-------------------------------------------------------------------------
+ ok 3 - portal owner closes the active portal with optimistic versioning
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    throws_ok                     
+--------------------------------------------------
+ ok 4 - closed portal rejects a new physical scan
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 5 - support override can preserve separately audited emergency evidence
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                        throws_ok                                        
+-----------------------------------------------------------------------------------------
+ ok 6 - closed portal invariant blocks a new visit even after an emergency scan override
+(1 row)
+
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 7 - leader can explicitly system-skip the closed current portal
+(1 row)
+
+SET
+                             is                             
+------------------------------------------------------------
+ ok 8 - closed portal has a distinct system-skipped outcome
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 9 - system skip atomically unlocks exactly the next stop
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 10 - system skip replay returns the stored result without advancing twice
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                     lives_ok                      
+---------------------------------------------------
+ ok 11 - portal owner reopens with the new version
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 12 - leader starts a second group for pause and recorded-visit checks
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 13 - open portal accepts the valid physical credential
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                lives_ok                
+----------------------------------------
+ ok 14 - portal owner pauses the portal
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                          lives_ok                                           
+---------------------------------------------------------------------------------------------
+ ok 15 - a group already received at the portal can finish safely during pause-after-current
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                   lives_ok                    
+-----------------------------------------------
+ ok 16 - versioned reopen permits visits again
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 17 - the recorded visit remains intact after the portal reopens
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                          lives_ok                           
+-------------------------------------------------------------
+ ok 18 - portal can close after a visit was already recorded
+(1 row)
+
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 19 - a delayed pause command cannot overwrite the newer closed state
+(1 row)
+
+SET
+                             is                              
+-------------------------------------------------------------
+ ok 20 - the portal remains closed after the stale pause job
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 21 - system skip never overwrites an already recorded visit
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

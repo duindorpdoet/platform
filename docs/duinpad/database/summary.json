@@ -236,5 +236,7 @@
   ],
   "testedCommit": "c6288a8781c7896303bed1bdeabf0b8f87ae52af",
   "concurrencyFunctionDefinitions": "747:86608c6e8ec9d83a3092553744ba958c",
-  "concurrencyRestorationLimit": "The separate race database restored app/API objects and synthetic fixtures; unrelated local Supabase extension grant warnings do not constitute a full restore proof. All app/API function definitions were compared to the clean migration database and match."
+  "concurrencyRestorationLimit": "The separate race database restored app/API objects and synthetic fixtures; unrelated local Supabase extension grant warnings do not constitute a full restore proof. All app/API function definitions were compared to the clean migration database and match.",
+  "historical": true,
+  "supersededBy": "full-suite/summary.json"
 }

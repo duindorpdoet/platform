@@ -1,0 +1,312 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+                                                lives_ok                                                 
+---------------------------------------------------------------------------------------------------------
+ ok 1 - four relative appointments include the 23:50 departure and selectable completion-day preferences
+(1 row)
+
+                                               lives_ok                                                
+-------------------------------------------------------------------------------------------------------
+ ok 2 - four relative appointments crossing midnight retain valid absolute windows and end preferences
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+CREATE FUNCTION
+                          ok                          
+------------------------------------------------------
+ ok 3 - anonymous cannot read private planning inputs
+(1 row)
+
+                       ok                       
+------------------------------------------------
+ ok 4 - anonymous cannot apply a route proposal
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 5 - a browser cannot manufacture accepted versions
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 6 - Postgres shares the exact TypeScript UTF-8 digest vector
+(1 row)
+
+GRANT
+SET
+                                                 set_config                                                 
+------------------------------------------------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated","user_metadata":{"event_admin":true}}
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 7 - participant metadata cannot authorize private planning
+(1 row)
+
+                 throws_ok                 
+-------------------------------------------
+ ok 8 - direct participant apply is denied
+(1 row)
+
+RESET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                   is                                   
+------------------------------------------------------------------------
+ ok 9 - fresh input never seeds, publishes, changes data or queues mail
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 10 - all four stored synthetic start appointments share one planning input
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 11 - synthetic start capacities and hard availability are valid
+(1 row)
+
+                                      ok                                      
+------------------------------------------------------------------------------
+ ok 12 - input contains no participant email, free notes or private addresses
+(1 row)
+
+                                               is                                                
+-------------------------------------------------------------------------------------------------
+ ok 13 - ordinary deadline comes from real hard boundaries rather than a derived transfer cutoff
+(1 row)
+
+UPDATE 1
+                                         lives_ok                                         
+------------------------------------------------------------------------------------------
+ ok 14 - a jointly spaced complete physical calendar passes independent server validation
+(1 row)
+
+SAVEPOINT
+UPDATE 1
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 15 - zero early tolerance is enforced through direct apply
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 16 - headway +4:59 is rejected even with overlap capacity twenty
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 17 - forged proposal hash cannot authorize a different plan
+(1 row)
+
+ROLLBACK
+                throws_ok                
+-----------------------------------------
+ ok 18 - review confirmation is required
+(1 row)
+
+UPDATE 1
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 19 - valid proposal is atomically accepted without publishing or mail
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 20 - same command retry returns the exact durable result
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 21 - repeated apply creates one immutable accepted version
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 22 - all planned ordinary visits are stored exactly once
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 23 - each group retains exactly its reserved finale
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 24 - stored board and every accepted group plan have the same times
+(1 row)
+
+                                                 is                                                  
+-----------------------------------------------------------------------------------------------------
+ ok 25 - fresh baseline carries the same authoritative incoming walks as the accepted physical route
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 26 - acceptance preserves every confirmed publication
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 27 - acceptance queues no participant messages
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 28 - acceptance preserves financial state
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 29 - accepted history cannot be overwritten
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 30 - an idempotency key cannot be reused for changed intent
+(1 row)
+
+UPDATE 1
+                             lives_ok                              
+-------------------------------------------------------------------
+ ok 31 - the existing explicit confirmation flow remains available
+(1 row)
+
+                                         lives_ok                                          
+-------------------------------------------------------------------------------------------
+ ok 32 - publishing the checked third appointment preserves the accepted physical calendar
+(1 row)
+
+                                              is                                               
+-----------------------------------------------------------------------------------------------
+ ok 33 - draft to published with identical point/time/finale has the same semantic source hash
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 34 - same-appointment publication keeps its accepted route current
+(1 row)
+
+SAVEPOINT
+INSERT 0 1
+UPDATE 1
+                                                     is                                                     
+------------------------------------------------------------------------------------------------------------
+ ok 35 - an alternative draft cannot combine a frozen published start with its different unconfirmed finale
+(1 row)
+
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 36 - unconfirmed alternative revision does not silently replace the active appointment
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+                               isnt                                
+-------------------------------------------------------------------
+ ok 37 - actual portal capacity changes invalidate the source hash
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 38 - accepted route is visibly stale after a physical capacity change
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 39 - direct API refuses stale physical settings
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+                            isnt                            
+------------------------------------------------------------
+ ok 40 - per-portal headway changes invalidate route source
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+                              isnt                              
+----------------------------------------------------------------
+ ok 41 - stored entrance marker changes invalidate route source
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 42 - editable board rows are separate from static planning requirements
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 43 - a changed board time is detected even when its schedule ID is identical
+(1 row)
+
+ROLLBACK
+SELECT 1
+                        throws_ok                        
+---------------------------------------------------------
+ ok 44 - admin cannot smuggle string accessibility flags
+(1 row)
+
+                                           lives_ok                                            
+-----------------------------------------------------------------------------------------------
+ ok 45 - closed-channel admin intake supports explicit false, true and unreviewed declarations
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 46 - only the explicitly required child is declared step-free
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 47 - unknown non-empty note remains review-needed
+(1 row)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 48 - unassigned late intake does not invalidate other families accepted routes
+(1 row)
+
+SAVEPOINT
+INSERT 0 1
+UPDATE 1
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 49 - even refreshed hashes cannot rewrite a started group
+(1 row)
+
+ finish 
+--------
+ 1..49
+(1 row)
+
+ROLLBACK

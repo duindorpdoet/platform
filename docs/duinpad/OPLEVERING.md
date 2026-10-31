@@ -1,6 +1,6 @@
 # Duinpad, Acteurskamer en finale-afsluiting
 
-Geteste codecommit: `c6288a8781c7896303bed1bdeabf0b8f87ae52af`.
+Geteste codecommit: `b0e5e7e6127f930d2d0c645d4a299595dab0993e`.
 
 Gebouwd in de bestaande `duindorpdoet/platform`-app, in branch `codex/duinpad-actors-finale-20261031`. Basis: de op 31 oktober 2026 opnieuw bij GitHub geverifieerde actuele main/production `db5e9fee4fe86aecddbb05b9f0fe6ad3840c66f8`. De oorspronkelijke werkmap op initialisatiecommit en de daar aanwezige gebruikersbestanden zijn behouden. Een aparte worktree voorkomt vermenging met andere herstelbranches. Geen package- of frameworkupgrade.
 
@@ -32,7 +32,7 @@ De technische relaygroep is de bestaande **run-UUID**, bij QR1, QR2, statusherst
 
 Een zakelijke scan gebruikt de actieve stabiele together-party, anders het geauthenticeerde account. Account-/partijclaims, actuele en historische samenlooplidmaatschappen en bewaarde deelnemers verhinderen dat uittreden, herindelen, een tweede tab of een ander apparaat het scanrecht vernieuwt. Zonder samenloop hebben twee gerechtigde volwassen accounts ieder hun eigen account-unit; een household vervangt geen account- of party-identiteit.
 
-De eerste geaccepteerde finale-aankomst bewaart onder databasevergrendeling de echte finalestop, eerste servertijd en exact `+ interval '2 hours'`. Dezelfde transactie bevriest het cohort: gerechtigde volwassen accounts van actieve, aanwezige runkinderen en hun geaccepteerde huishoudleden. Eerder vrijwillig vertrokken deelnemers worden niet opnieuw actief. Latere herindelingen verschuiven de deadline niet. Ook cohortleden zonder eigen scan delen de eindtijd.
+De eerste geaccepteerde finale-aankomst bewaart onder databasevergrendeling de echte finalestop, eerste servertijd en exact `+ interval '2 hours'`. Dezelfde transactie bevriest het cohort: gerechtigde volwassen accounts van actieve, aanwezige runkinderen en hun geaccepteerde huishoudleden. Eerder vrijwillig vertrokken deelnemers worden niet opnieuw actief. Latere herindelingen verschuiven de deadline niet. Later geaccepteerde volwassenen worden niet met terugwerkende kracht aan het mailcohort toegevoegd en kunnen een verlopen run niet heropenen. Ook cohortleden zonder eigen scan delen de eindtijd.
 
 Finale-aankomsten blijven twee stappen: credential controleren, daarna expliciet aanwezigheid/keuzes bevestigen. Ieder aanwezig kind krijgt een echte aankomstzegel, ook bij overslaan. Alleen de beperkte eigen account/partijscope is via de nieuwe finale-RPC toegestaan; gewone routehandelingen blijven groepsleider-only. De fysieke route en poortbezetting worden direct afgerond. Overige gerechtigde accounts kunnen daarna de bewaarde finalestop gebruiken. Historisch routeherstel verwerkt uitsluitend zakelijke aankomsten; SQL roept nooit de relay aan.
 
@@ -47,7 +47,7 @@ De app legt de exacte payload/hash en poging vast vóór de directe HTTP-aanroep
 - Expliciet blocked: lokale reden tonen; een nieuwe bewuste handeling kan later opnieuw aanvragen.
 - 503/offline: niets voor later bewaren; begeleider inschakelen.
 - Unknown/interrupted/recovery_required: geen nieuw event-ID of replay; eerst de bestaande ontvangst alleen-lezen controleren.
-- Herstelpad app: `GET /api/duinpad/receipt`; geautoriseerde eigen poging, oorspronkelijke payloadhash en groep worden gecontroleerd via `GET /api/integration/receipts/<id>`. Een ontbrekende receipt is geen bewijs van niet uitgevoerd.
+- Herstelpad app: `GET /api/duinpad/receipt`; QR1 leest `GET /api/integration/receipts/<id>`, QR2 leest het aparte gefilterde `GET /api/integration/finale-receipts/<id>` met exact dezelfde poging, eventscope, groep en payloadhash. Dit werkt ook voor een gedeelde acteurspoging nadat de oorspronkelijke acteur is ingetrokken. Een ontbrekende receipt is geen bewijs van niet uitgevoerd. Een huidige finaleacteur kan de lokaal geselecteerde groep controleren via `GET /api/actors/finale-recovery`.
 - Het lokale regieherstel voor ondubbelzinnig niet uitgevoerde finales staat in de bridgehandleiding. Een bewezen start kan niet door `reset_groups` een tweede appgestuurde finale krijgen.
 
 Heks GO blijft een bewuste lokale/bevoegde acteursdruk. QR1 start geen licht, audio, tijdlijn of avondklok. De bestaande voorbereiding blijft intact. Alleen de lokale controller geeft na beide finale-ACKs de volgende Heks GO vrij; geen extra vrijgave-QR/API.

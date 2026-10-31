@@ -43,7 +43,8 @@ Het geïmplementeerde command gebruikt `duinpad.actor.v1`, de envelope `duinpad.
 - `POST /api/integration/actor-command`: een actuele, concrete uitvoeringspoging.
 - `GET /api/integration/actor-status`: uitsluitend eigen controls en hun lokale redenen.
 - `POST /api/integration/actor-access`: uitsluitend revision/intrekkingsstatus, geen showactie.
-- `GET /api/integration/receipts/<id>?kind=actor&payload_hash=<sha256>[&group_id=<id>]`: immutable ontvangst, zonder uitvoering.
+- `GET /api/integration/receipts/<id>?kind=actor&payload_hash=<sha256>[&group_id=<id>]`: immutable eigen actorontvangst, zonder uitvoering.
+- `GET /api/integration/finale-receipts/<id>?group_id=<run>&payload_hash=<sha256>&event_scope_id=<event>`: strikt gefilterd bewijs voor het gedeelde finale-slot, achter de backend-bearer. Dit is geen uitvoeringspad en vereist geen herstel van een ingetrokken oorspronkelijk acteursrecht.
 
 De bridge bewaart de hoogste revision duurzaam, controleert grant/revision opnieuw onder de controller- en capabilitylock en verwerkt intrekkingen ook terwijl een opdracht op de controllerlock wacht. Een positieve intrekkings-ACK volgt pas na de duurzame lokale update. De backend meldt een mislukte synchronisatie niet als lokaal bevestigde intrekking. Nieuwe browser-POSTs verliezen direct hun DB-recht; een reeds uitgegeven grant kan bij onbereikbare push maximaal vijf seconden blijven gelden. Dit is de expliciete grens van het netwerkprotocol: er wordt geen onmiddellijke gedistribueerde intrekking geclaimd wanneer de bridge geen bevestiging kon leveren. Een reeds lopende cue wordt alleen met een afzonderlijk stoprecht of lokale regieprocedure gestopt.
 
@@ -52,6 +53,8 @@ De status gebruikt een veld-whitelist. Geen deelnemers, andere actorrechten, DMX
 ## Herstel
 
 Bij unknown eerst de bestaande ontvangst ophalen. Een receiptmiss is geen bewijs van niet-uitvoering en maakt geen nieuw command vrij. Na een lokale herstart blijft interrupted/recovery_required geblokkeerd. Controleer lokaal de regie, QLC en audio volgens de bridgehandleiding; hervat geen tijdlijn.
+
+Een andere momenteel bevoegde finaleacteur kan **Gedeelde finale-ontvangst controleren** kiezen, ook als Finale GO lokaal geblokkeerd is en de oorspronkelijke acteur is ingetrokken. De app controleert de huidige actieve koppeling en `finale.go`, haalt de actuele lokaal geselecteerde groep op en vraagt uitsluitend het gedeelde QR2-slot op. De browser levert geen groep, poging-ID of payloadhash. Het antwoord bevat alleen de veilige fysieke status; de privéopdracht, identiteit en rechten van de oorspronkelijke acteur blijven afgeschermd. Deze GET herstelt geen ingetrokken rechten en verstuurt geen opdracht. Als de lokale groep na een bevestigde start al is doorgeschoven, kan een bevoegde evenementbeheerder de bewaarde poging-ID uit de audit gebruiken met `GET /api/duinpad/receipt?id=<poging-UUID>&stage=qr2`. De backend controleert ook daar de evenementbevoegdheid en exact gebonden finale-receipt; een ontbrekende huidige lokale selectie of receipt wordt nooit als niet-uitgevoerd behandeld.
 
 Voor een onzekere finale bevat de lokale regie een afzonderlijke `resolve_finale_not_executed`-afhandeling met de exacte poging-ID, expliciete bevestiging van gecontroleerde niet-uitvoering en reden. Deze levert een duurzaam geaudit ontvangstbewijs op. De app haalt dat uitsluitend via het receiptpad op en reconcilieert daarmee zowel de eigen actorontvangst als het gedeelde groepsslot. Een historisch gestarte finale wordt nooit met deze handeling vrijgemaakt. Groepsreset, opnieuw inloggen, partijwissel en uitnodigingsrotatie leveren geen tweede groepsshow op.
 

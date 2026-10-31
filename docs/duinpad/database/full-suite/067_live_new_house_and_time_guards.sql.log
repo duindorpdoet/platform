@@ -1,0 +1,191 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+GRANT
+                          is                           
+-------------------------------------------------------
+ ok 1 - server parses an explicit Amsterdam event time
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 2 - server rejects a spring-gap wall time
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 3 - server rejects the ambiguous autumn hour
+(1 row)
+
+                               throws_ok                               
+-----------------------------------------------------------------------
+ ok 4 - server JSON commands require an explicit UTC instant or offset
+(1 row)
+
+UPDATE 30
+UPDATE 1
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+DO
+UPDATE 1
+DO
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+SET
+UPDATE 1
+UPDATE 1
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 5 - the original first destination is actually released before the new house exists
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 6 - starting a route fabricates no arrivals
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                      ok                                       
+-------------------------------------------------------------------------------
+ ok 7 - coordinates and approval alone do not approve a new walking connection
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 8 - the real manual-input command does not auto-verify a walking node
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 9 - creating a new house preserves the entire already-released stop
+(1 row)
+
+SET
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 10 - a new walking edge cannot be approved without the safety checkbox
+(1 row)
+
+                                            lives_ok                                            
+------------------------------------------------------------------------------------------------
+ ok 11 - explicit authorized verification connects the house to an actual approved fixture edge
+(1 row)
+
+SET
+                            ok                            
+----------------------------------------------------------
+ ok 12 - verified new house is now a safe route candidate
+(1 row)
+
+                                                   is                                                   
+--------------------------------------------------------------------------------------------------------
+ ok 13 - verification creates one reviewed connection rather than synthetic proof for the whole network
+(1 row)
+
+                                              is                                              
+----------------------------------------------------------------------------------------------
+ ok 14 - new-house approval still does not replace the current destination or pending arrival
+(1 row)
+
+                                              ok                                              
+----------------------------------------------------------------------------------------------
+ ok 15 - a house opening later is included when the estimated arrival falls within its window
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                           ok                            
+---------------------------------------------------------
+ ok 16 - a portal closing exactly at arrival is excluded
+(1 row)
+
+UPDATE 1
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 17 - recalculating previews and windows keeps the current released stop fixed
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE FUNCTION
+SET
+ALTER FUNCTION
+GRANT
+SET
+                                           lives_ok                                           
+----------------------------------------------------------------------------------------------
+ ok 18 - the existing current arrival completes without being rewritten by new-house planning
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 19 - the newly verified manual house can become the next actual destination
+(1 row)
+
+SET
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 20 - the outside child receives exactly one real arrival at the first house
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 21 - new-house planning preserves completed stop history
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+SET
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 22 - the second outside arrival uses the actual new portal credential
+(1 row)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 23 - the selected two-house maximum includes physically reached outside visits
+(1 row)
+
+SET
+                             is                             
+------------------------------------------------------------
+ ok 24 - new dispatch does not manufacture a finale arrival
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 25 - only the two genuinely reached houses grant seals
+(1 row)
+
+ finish 
+--------
+ 1..25
+(1 row)
+
+ROLLBACK

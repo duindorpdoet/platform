@@ -1,0 +1,193 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+GRANT
+UPDATE 30
+UPDATE 31
+UPDATE 1
+UPDATE 30
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+DO
+UPDATE 1
+DO
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                          is                          
+------------------------------------------------------
+ ok 1 - fixture starts two genuinely present children
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 2 - real run automatically releases its first house without any graph
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 3 - only one destination is actually released
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 4 - dispatch does not fabricate arrivals
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 5 - dispatch does not fabricate child seals
+(1 row)
+
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                                     ok                                      
+-----------------------------------------------------------------------------
+ ok 6 - new approved valid house is a candidate without a graph verification
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 7 - optional graph data is not falsely marked verified
+(1 row)
+
+                                  isnt                                   
+-------------------------------------------------------------------------
+ ok 8 - new suitable house visibly changes the private sequence revision
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 9 - new house preserves every field of the already released stop
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 10 - new candidate does not silently republish the appointment
+(1 row)
+
+UPDATE 28
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                      is                      
+----------------------------------------------
+ ok 11 - real credential confirms one arrival
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 12 - both present children receive a seal even when they stay outside
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 13 - successful arrival automatically releases precisely one next stop
+(1 row)
+
+                             isnt                              
+---------------------------------------------------------------
+ ok 14 - next destination changes only after confirmed arrival
+(1 row)
+
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 15 - retry with the original stop, version and key returns the original receipt
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 16 - retry creates no duplicate visit
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 17 - retry creates no duplicate seals
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 18 - retry creates no additional next destination
+(1 row)
+
+                                           ok                                            
+-----------------------------------------------------------------------------------------
+ ok 19 - private future sequence remains absent from the authorized participant response
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 20 - arrival and advancement require no new network approval
+(1 row)
+
+                                        ok                                        
+----------------------------------------------------------------------------------
+ ok 21 - scan completion retains physical occupancy after next marker is released
+(1 row)
+
+                                         ok                                         
+------------------------------------------------------------------------------------
+ ok 22 - canonical group visit is recorded independently of current run destination
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 23 - one canonical visit for all present children and duplicate scans
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 24 - unpaid run and scan preserve the real financial state
+(1 row)
+
+                                              is                                               
+-----------------------------------------------------------------------------------------------
+ ok 25 - a newly suitable available house is automatically dispatched at the next valid choice
+(1 row)
+
+UPDATE 1
+DELETE 1
+                                                ok                                                 
+---------------------------------------------------------------------------------------------------
+ ok 26 - legacy stop relations still resolve a truly visited canonical house without the new index
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 27 - new run identity preserves earlier canonical visit exclusion
+(1 row)
+
+ finish 
+--------
+ 1..27
+(1 row)
+
+ROLLBACK

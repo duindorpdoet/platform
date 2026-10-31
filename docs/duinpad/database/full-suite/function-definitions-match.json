@@ -1,0 +1,16 @@
+{
+  "codeCommit": "b0e5e7e6127f930d2d0c645d4a299595dab0993e",
+  "matches": true,
+  "environments": [
+    {
+      "container": "duinpad-finale-clean",
+      "database": "postgres",
+      "appApiFunctions": "747:a8cdd6673c07ae113608cbb699149156"
+    },
+    {
+      "container": "supabase_db_codex_joint_browser_20261030",
+      "database": "duinpad_finale_verified_b0",
+      "appApiFunctions": "747:a8cdd6673c07ae113608cbb699149156"
+    }
+  ]
+}

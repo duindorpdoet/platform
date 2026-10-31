@@ -1,0 +1,170 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                         is                          
+-----------------------------------------------------
+ ok 1 - creation queues exactly one instruction mail
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 2 - invitation grants its actual coadmin role rather than claiming ownership
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 3 - contact address alone creates no account access
+(1 row)
+
+                                            ok                                            
+------------------------------------------------------------------------------------------
+ ok 4 - draft instructions have a usable worker payload instead of INVITATION_UNAVAILABLE
+(1 row)
+
+                    matches                    
+-----------------------------------------------
+ ok 5 - draft mail explains pending activation
+(1 row)
+
+                                  matches                                  
+---------------------------------------------------------------------------
+ ok 6 - draft instructions use the same verified personal invitation entry
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 7 - double save uses original receipt
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 8 - double save does not create a second portal
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 9 - same key cannot authorize different creation content
+(1 row)
+
+                                          admin_manual_portal_save                                          
+------------------------------------------------------------------------------------------------------------
+ {"id": "0d6ceebe-554a-4d16-8682-ef8b2b9c80af", "code": "P-31", "version": 2, "lifecycleStatus": "concept"}
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 10 - ordinary edit queues no welcome duplicate
+(1 row)
+
+                           lives_ok                            
+---------------------------------------------------------------
+ ok 11 - deliberate resend queues a separately audited message
+(1 row)
+
+              lives_ok              
+------------------------------------
+ ok 12 - resend retry is idempotent
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 13 - one creation and one deliberate resend
+(1 row)
+
+UPDATE 1
+                                  is                                  
+----------------------------------------------------------------------
+ ok 14 - expired invitation cannot materialize into a misleading mail
+(1 row)
+
+                     throws_ok                     
+---------------------------------------------------
+ ok 15 - invalid email is rejected before creation
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 16 - only trusted worker can materialize personal invitation links
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                  matches                                  
+---------------------------------------------------------------------------
+ ok 17 - active mail uses the existing personally verified invitation flow
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 18 - another verified account cannot take this invitation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                                      lives_ok                                      
+------------------------------------------------------------------------------------
+ ok 19 - only the matching verified account obtains the actual initial-owner access
+(1 row)
+
+                                          is                                           
+---------------------------------------------------------------------------------------
+ ok 20 - existing initial-owner rule makes the first verified recipient the true owner
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 21 - invalid token cannot create concept membership
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 22 - verified recipient cannot approve their own concept
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                         admin_manual_portal_save                                          
+-----------------------------------------------------------------------------------------------------------
+ {"id": "0d6ceebe-554a-4d16-8682-ef8b2b9c80af", "code": "P-31", "version": 3, "lifecycleStatus": "active"}
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 23 - genuine parent and portal membership coexist
+(1 row)
+
+ finish 
+--------
+ 1..23
+(1 row)
+
+ROLLBACK

@@ -1,0 +1,53 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+INSERT 0 1
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 1 - completed scan still physically occupies its 6+2 reception interval
+(1 row)
+
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 2 - freed later gap is available automatically to the common dispatcher check
+(1 row)
+
+UPDATE 1
+                                                         is                                                          
+---------------------------------------------------------------------------------------------------------------------
+ ok 3 - two allowed groups can overlap after the minimum arrival interval: per-visit children are not a combined cap
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 4 - physical per-visit child cap remains binding
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 5 - whole reception interval must fit opening window
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 6 - half-open intervals release capacity at the precise end
+(1 row)
+
+UPDATE 1
+                                                  is                                                  
+------------------------------------------------------------------------------------------------------
+ ok 7 - a separately configured total child quota remains distinct from simultaneous per-visit limits
+(1 row)
+
+ finish 
+--------
+ 1..7
+(1 row)
+
+ROLLBACK
