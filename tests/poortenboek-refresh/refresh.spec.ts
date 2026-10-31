@@ -232,4 +232,3 @@ test("two tabs keep independent serial queues and each retain their normal polli
   expect((await stats(page)).maxReadActive).toBe(1);
   expect((await stats(second)).maxReadActive).toBe(1);
 });
-
