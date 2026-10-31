@@ -93,7 +93,8 @@ describe("explicit release read transport workflow contract", () => {
     const preflight = read("scripts/deploy/redesign-preflight.mjs");
     expect(preflight).toContain("path==='/database/query' && enabledSessionReads(process.env)");
     expect(preflight).toContain("PREFLIGHT_NATIVE_READ_ONLY_REQUIRED");
-    expect(read("scripts/deploy/redesign-postmigration.mjs")).toContain("preservationManagementRequest(before.catalog,before.worldPolicyInitialization)");
+    expect(preflight).toContain("preservationManagementRequest(catalog,before?.worldPolicyInitialization)");
+    expect(read("scripts/deploy/redesign-postmigration.mjs")).toContain("await readReleaseState(before.catalog,before)");
     expect(read("scripts/deploy/redesign-postmigration.mjs")).toContain("EXISTING_DATA_CHANGED_REQUIRES_RECONCILIATION");
   });
 

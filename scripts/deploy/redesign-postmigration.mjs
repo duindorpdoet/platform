@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { backupKey, management, openBackup, sealBackup } from './redesign-preflight.mjs';
-import { compareFingerprints, preservationManagementRequest } from './redesign-backup.mjs';
-import { reconcileReleaseMetadata, releaseMetadataQuery } from './redesign-reconciliation.mjs';
+import { backupKey, openBackup, readReleaseState, sealBackup } from './redesign-preflight.mjs';
+import { compareFingerprints } from './redesign-backup.mjs';
+import { reconcileReleaseMetadata } from './redesign-reconciliation.mjs';
 import { reconcileWorldPolicyInitialization } from './world-policy-reconciliation.mjs';
 import { reconcileJointRoutePolicyRelease } from './joint-route-policy-reconciliation.mjs';
 import { reconcileJointRouteSettingsInitialization } from './joint-route-settings-reconciliation.mjs';
@@ -12,10 +12,7 @@ try {
   const context=`duindorp-release:${process.env.APP_ENVIRONMENT}:${process.env.GITHUB_SHA}:${process.env.GITHUB_RUN_ID}`;
   if(!process.env.RELEASE_PRIVATE_BASELINE_FILE)throw new Error('PRE_MIGRATION_BASELINE_REQUIRED');
   const before=JSON.parse(openBackup(await readFile(process.env.RELEASE_PRIVATE_BASELINE_FILE),key,context+':migration-baseline').toString());
-  const [response,metadata]=await Promise.all([
-    management('/database/query',preservationManagementRequest(before.catalog,before.worldPolicyInitialization)),
-    management('/database/query',{read_only:true,query:releaseMetadataQuery(before)}),
-  ]);
+  const {preservation:response,metadata}=await readReleaseState(before.catalog,before);
   const after={rows:response[0].preservation.rows,...metadata[0].metadata},reconciliation=reconcileReleaseMetadata(before,after,before.expectedMigrationVersions);
   const coverageReconciliation=reconcileWorldPolicyInitialization(before.worldPolicyInitialization,response[0].preservation.worldPolicyInitialization,before.expectedMigrationVersions);
   const jointRoutePolicyReconciliation=reconcileJointRoutePolicyRelease(before.jointRoutePolicyRelease,response[0].preservation.jointRoutePolicyRelease,before.expectedMigrationVersions);

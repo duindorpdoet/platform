@@ -44,6 +44,14 @@ export async function management(path,body) {
   }
   return response.json();
 }
+export async function readReleaseState(catalog,before,request=management) {
+  // Metadata has its own scheduler boundary. Fail before starting the heavier
+  // domain read if it is unavailable; these reads never shared a SQL snapshot.
+  const metadata=await request('/database/query',{read_only:true,query:releaseMetadataQuery(before)});
+  const {preservationManagementRequest}=await import('./redesign-backup.mjs');
+  const preservation=await request('/database/query',preservationManagementRequest(catalog,before?.worldPolicyInitialization));
+  return {preservation,metadata};
+}
 async function main() {
   const environment=process.env.APP_ENVIRONMENT,revision=process.env.GITHUB_SHA;
   if(!['staging','production'].includes(environment)||!/^[a-f0-9]{40}$/.test(revision??'')||!process.env.GITHUB_RUN_ID)throw new Error('DEPLOYMENT_CONTEXT_REQUIRED');
@@ -86,7 +94,7 @@ async function main() {
   if(!proof.jointRoutePolicyReconciliation||proof.jointRoutePolicyReconciliation.failures?.length!==0)throw new Error('JOINT_ROUTE_POLICY_RESTORE_NOT_PROVEN');
   if(!proof.jointRouteSettingsReconciliation||proof.jointRouteSettingsReconciliation.failures?.length!==0)throw new Error('JOINT_ROUTE_SETTINGS_RESTORE_NOT_PROVEN');
   if(!proof.p12RoutePolicyReconciliation||proof.p12RoutePolicyReconciliation.failures?.length!==0)throw new Error('P12_ROUTE_POLICY_RESTORE_NOT_PROVEN');
-  const {verifyBackupFile,preservationManagementRequest}=await import('./redesign-backup.mjs');
+  const {verifyBackupFile}=await import('./redesign-backup.mjs');
   for(const migration of proof.migrations) {
     const wasApplied=proof.appliedMigrations.includes(migration.file.split('_')[0]);
     if(migration.execution!==(wasApplied?'already-applied':'dry-run'))throw new Error('MIGRATION_EXECUTION_PROOF_MISMATCH');
@@ -105,10 +113,7 @@ async function main() {
   // Domain fingerprints use one statement/snapshot. Scheduler and migration
   // history are compared separately as complete rows, so ongoing cron activity
   // cannot make a cross-query metadata hash look like lost participant data.
-  const [current,metadata]=await Promise.all([
-    management('/database/query',preservationManagementRequest(catalog)),
-    management('/database/query',{read_only:true,query:releaseMetadataQuery()}),
-  ]);
+  const {preservation:current,metadata}=await readReleaseState(catalog);
   const baseline=join(directory,'migration-baseline.aes');
   await writeFile(baseline,sealBackup(Buffer.from(JSON.stringify({catalog,rows:current[0].preservation.rows,...metadata[0].metadata,worldPolicyInitialization:current[0].preservation.worldPolicyInitialization,jointRoutePolicyRelease:current[0].preservation.jointRoutePolicyRelease,jointRouteSettingsInitialization:current[0].preservation.jointRouteSettingsInitialization,p12RoutePolicy:current[0].preservation.p12RoutePolicy,expectedMigrationVersions:proof.migrations.map(migration=>migration.file.split('_')[0])})),key,context+':migration-baseline'),{flag:'wx',mode:0o600});
   await writeFile(process.env.GITHUB_ENV,`RELEASE_PRIVATE_BASELINE_FILE=${baseline}\n`,{flag:'a'});
