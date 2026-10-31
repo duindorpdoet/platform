@@ -8,6 +8,14 @@ on:
         type: boolean
         required: true
         default: false
+      connection_path:
+        description: Explicit connection path; direct-vps uses the existing dedicated production VPS runner
+        type: choice
+        required: true
+        default: session-pooler
+        options:
+          - session-pooler
+          - direct-vps
 
 permissions:
   contents: read
@@ -22,13 +30,23 @@ jobs:
     environment:
       name: production
       deployment: false
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(inputs.connection_path == 'direct-vps' && '["self-hosted","Linux","X64","dg-sites","production","duindorphalloweenprod"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ github.sha }}
+          clean: false
+      - name: Verify dedicated direct VPS runner boundary
+        if: inputs.connection_path == 'direct-vps'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -un)" = "duindorphalloweenprod"
+          test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenprod-01"
+          [[ "${GITHUB_WORKSPACE}" == /srv/sites/duindorphalloweenprod/actions-runner/_work/* ]]
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -39,6 +57,7 @@ jobs:
       - name: Diagnose five fixed native history reads without writes
         env:
           HISTORY_DIAGNOSTICS_REQUESTED: ${{ inputs.run_history_diagnosis }}
+          HISTORY_CONNECTION_PATH: ${{ inputs.connection_path }}
           APP_ENVIRONMENT: production
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

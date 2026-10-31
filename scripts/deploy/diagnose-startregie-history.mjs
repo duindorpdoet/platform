@@ -102,7 +102,7 @@ function safeSample(answer) {
   return { targetSeen: targets.length > 0, inference: "NO_REACHABILITY_INFERENCE_FROM_ABSENCE", observedAtMs: finite(row.observedAtMs), targets, otherActive };
 }
 
-export const CAPACITY_SQL = `select jsonb_build_object('maxConnections',current_setting('max_connections'),'reservedConnections',current_setting('reserved_connections',true),'superuserReservedConnections',current_setting('superuser_reserved_connections',true),'databaseConnectionLimit',(select datconnlimit from pg_database where datname=current_database()),'roleConnectionLimit',(select rolconnlimit from pg_roles where rolname=current_user),'totalBackends',count(*),'activeBackends',count(*) filter(where state='active'),'idleBackends',count(*) filter(where state='idle'),'idleInTransactionBackends',count(*) filter(where state like 'idle in transaction%')) diagnostic_capacity from pg_stat_activity;`;
+export const CAPACITY_SQL = `select jsonb_build_object('maxConnections',current_setting('max_connections'),'reservedConnections',current_setting('reserved_connections',true),'superuserReservedConnections',current_setting('superuser_reserved_connections',true),'databaseConnectionLimit',(select datconnlimit from pg_database where datname=current_database()),'roleConnectionLimit',(select rolconnlimit from pg_roles where rolname=current_user),'databaseSizeBytes',pg_database_size(current_database()),'totalBackends',count(*),'activeBackends',count(*) filter(where state='active'),'idleBackends',count(*) filter(where state='idle'),'idleInTransactionBackends',count(*) filter(where state like 'idle in transaction%'),'clientBackends',count(*) filter(where backend_type='client backend'),'clientBackendsCurrentDatabase',count(*) filter(where backend_type='client backend' and datname=current_database()),'clientBackendsCurrentRole',count(*) filter(where backend_type='client backend' and usename=current_user),'clientBackendsActive',count(*) filter(where backend_type='client backend' and state='active'),'clientBackendsIdle',count(*) filter(where backend_type='client backend' and state='idle'),'clientBackendsIdleInTransaction',count(*) filter(where backend_type='client backend' and state like 'idle in transaction%'),'walSenderBackends',count(*) filter(where backend_type='walsender'),'otherBackendProcesses',count(*) filter(where backend_type is distinct from 'client backend' and backend_type is distinct from 'walsender')) diagnostic_capacity from pg_stat_activity;`;
 
 /** Fixed, read-only diagnosis only. No retries, repairs or deployments. */
 export async function runHistoryDiagnosis(env = process.env, request = fetch, ClientOverride) {
@@ -132,6 +132,14 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
     if (env.GITHUB_EVENT_NAME !== "workflow_dispatch" || env.GITHUB_REPOSITORY !== "duindorpdoet/platform" || env.GITHUB_REF !== "refs/heads/production"
       || env.APP_ENVIRONMENT !== "production" || env.SUPABASE_PROJECT_REF !== "dtubngvxfbupgvgfrjko" || !/^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? "")
       || !env.SUPABASE_ACCESS_TOKEN || !env.SUPABASE_DB_PASSWORD) fail("PRODUCTION_BOUNDARY");
+    const connectionPath = env.HISTORY_CONNECTION_PATH ?? "session-pooler";
+    if (!["session-pooler", "direct-vps"].includes(connectionPath)) fail("INVALID_CONNECTION_PATH");
+    const direct = connectionPath === "direct-vps";
+    if (direct && (env.RUNNER_NAME !== "dg-sites-vps-01-duindorphalloweenprod-01"
+      || !env.GITHUB_WORKSPACE?.startsWith("/srv/sites/duindorphalloweenprod/actions-runner/_work/"))) fail("DIRECT_VPS_BOUNDARY");
+    report.connectionPath = connectionPath;
+    report.originalSessionPoolerReproduction = !direct;
+    report.capacityInterpretation = "COUNTS_ONLY_NO_EXHAUSTION_INFERENCE";
     if (createHash("sha256").update(hotfixProofQuery).digest("hex") !== originalHistorySha256) fail("ORIGINAL_QUERY_CHANGED");
     report.originalHelperSha256 = createHash("sha256").update(readFileSync(new URL("./production-read-query.mjs", import.meta.url))).digest("hex");
     async function metadata(path) {
@@ -157,7 +165,10 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
     report.poolerLimits = poolers.map(row => Object.fromEntries(["pool_size", "default_pool_size", "max_client_conn"].filter(key => /^\d+$/.test(String(row[key] ?? "")) && Number.isSafeInteger(Number(row[key]))).map(key => [key, Number(row[key])]))).filter(row => Object.keys(row).length);
     const Client = ClientOverride ?? (await import("@supabase/pg")).Client;
     ensureBudget();
-    const configuration = { host: plan.PGHOST, port: 5432, database: "postgres", user: plan.PGUSER, password: env.SUPABASE_DB_PASSWORD,
+    // Both metadata responses still pass the unchanged production plan checks.
+    // The explicit direct path changes only the connection endpoint and owner.
+    const endpoint = direct ? { host: project.database.host, port: 5432, user: "postgres" } : { host: plan.PGHOST, port: 5432, user: plan.PGUSER };
+    const configuration = { ...endpoint, database: "postgres", password: env.SUPABASE_DB_PASSWORD,
       ssl: { rejectUnauthorized: true, ca: [...rootCertificates, readFileSync(new URL("./supabase-root-2021.crt", import.meta.url), "utf8")] },
       connectionTimeoutMillis: 10000 };
     reader = new Client({ ...configuration, application_name: "duindorp-release-history-diagnosis" });
@@ -202,7 +213,7 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
       ensureBudget();
       capacityCompleted = true;
       const capacity = rowsOf(capacityAnswer).flatMap(result => result.rows).find(row => row.diagnostic_capacity)?.diagnostic_capacity;
-      const keys = ["maxConnections", "reservedConnections", "superuserReservedConnections", "databaseConnectionLimit", "roleConnectionLimit", "totalBackends", "activeBackends", "idleBackends", "idleInTransactionBackends"];
+      const keys = ["maxConnections", "reservedConnections", "superuserReservedConnections", "databaseConnectionLimit", "roleConnectionLimit", "databaseSizeBytes", "totalBackends", "activeBackends", "idleBackends", "idleInTransactionBackends", "clientBackends", "clientBackendsCurrentDatabase", "clientBackendsCurrentRole", "clientBackendsActive", "clientBackendsIdle", "clientBackendsIdleInTransaction", "walSenderBackends", "otherBackendProcesses"];
       if (!capacity || keys.some(key => capacity[key] !== null && (!/^-?\d+$/.test(String(capacity[key])) || !Number.isSafeInteger(Number(capacity[key]))))) fail("CAPACITY_INVALID_RESULT");
       report.capacity = Object.fromEntries(keys.map(key => [key, capacity[key] === null ? null : Number(capacity[key])]));
     } catch (error) {
@@ -278,6 +289,7 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
       await reader.query({ text: "rollback;reset all", query_timeout: 7000 });
       await close(reader); reader = null;
       const phase = { name: "combined_original", status: "failed", stage: "metadata", samples: [], originalSqlInvocations: 0,
+        connectionPath, originalSessionPoolerReproduction: !direct, connectionOverrides: direct ? ["host", "port", "user"] : [],
         originalBodySha256: originalHistorySha256, configuredStatementMs: 60000, configuredClientMs: 70000,
         serverMs: null, serverTiming: "OBSERVATION_ONLY_TO_PRESERVE_ORIGINAL_SQL", serverStopProven: false,
         wallStartedAt: new Date().toISOString(), proofBackendPid: null };
@@ -300,7 +312,9 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
       }
       class OriginalClient {
         constructor(config) {
-          ensureOriginalReady(); reproduction = new Client(config); phase.beforeDriverMs = Math.round(performance.now() - began);
+          // Preserve the old helper, SQL, policy and timeouts. Direct VPS is
+          // explicitly a transport variant, not an unchanged pooler reproduction.
+          ensureOriginalReady(); reproduction = new Client(direct ? { ...config, ...endpoint } : config); phase.beforeDriverMs = Math.round(performance.now() - began);
           phase.connection = { configuredDriverConnectMs: config.connectionTimeoutMillis }; traceConnection(reproduction, phase.connection);
         }
         on(...args) { reproduction.on(...args); return this; }

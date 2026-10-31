@@ -10,6 +10,8 @@ const ref = "dtubngvxfbupgvgfrjko";
 const env = { HISTORY_DIAGNOSTICS_REQUESTED: "true", APP_ENVIRONMENT: "production", GITHUB_EVENT_NAME: "workflow_dispatch",
   GITHUB_REPOSITORY: "duindorpdoet/platform", GITHUB_REF: "refs/heads/production", GITHUB_SHA: "a".repeat(40),
   SUPABASE_PROJECT_REF: ref, SUPABASE_ACCESS_TOKEN: "PRIVATE_TOKEN", SUPABASE_DB_PASSWORD: "PRIVATE_PASSWORD" };
+const directEnv = { ...env, HISTORY_CONNECTION_PATH: "direct-vps", RUNNER_NAME: "dg-sites-vps-01-duindorphalloweenprod-01",
+  GITHUB_WORKSPACE: "/srv/sites/duindorphalloweenprod/actions-runner/_work/platform/platform" };
 const project = { id: ref, region: "eu-west-2", database: { host: `db.${ref}.supabase.co`, version: "17.6.1.167" } };
 const pooler = { pool_mode: "transaction", db_host: "aws-1-eu-west-2.pooler.supabase.com", db_user: "postgres", db_name: "postgres", pool_size: 15, max_client_conn: "200", private: "PRIVATE_METADATA" };
 const proof = { save_hash: "b173e2e2a2fe8341cb6e146e62be8b99", save_functions: {
@@ -19,7 +21,7 @@ versions: ["20261027033940"], wrapper_versions: [] };
 type Result = { rows: Record<string, unknown>[]; fields?: {name: string}[] };
 const result = (row?: Record<string, unknown>): Result => ({ rows: row ? [row] : [] });
 function fixture(options: { splitError?: { name: string; code?: string; message?: string }; connectFailure?: string; observerFailure?: boolean;
-  emptyObserver?: boolean; nullServerTime?: boolean; nullBackendTime?: boolean; originalError?: Error; originalDelayMs?: number; capacityFailure?: boolean; capacityClientFailure?: boolean; metadataStatus?: number } = {}) {
+  emptyObserver?: boolean; nullServerTime?: boolean; nullBackendTime?: boolean; originalError?: Error; originalDelayMs?: number; capacityFailure?: boolean; capacityClientFailure?: boolean; capacitySize?: unknown; metadataStatus?: number } = {}) {
   const clients: FakeClient[] = [];
   const queries: { client: string; text: string; query_timeout: number }[] = [];
   let queryPhase = "", tick = 1_800_000_000_000;
@@ -34,7 +36,7 @@ function fixture(options: { splitError?: { name: string; code?: string; message?
       if (input.text === CAPACITY_SQL) {
         if (options.capacityClientFailure) throw new Error("Query read timeout PRIVATE");
         if (options.capacityFailure) throw Object.assign(new Error("PRIVATE_CAPACITY_ERROR"), { code: "42501" });
-        return result({ diagnostic_capacity: { maxConnections: "60", reservedConnections: "3", superuserReservedConnections: "3", databaseConnectionLimit: -1, roleConnectionLimit: -1, totalBackends: 8, activeBackends: 2, idleBackends: 4, idleInTransactionBackends: 2 } });
+        return result({ diagnostic_capacity: { maxConnections: "60", reservedConnections: "3", superuserReservedConnections: "3", databaseConnectionLimit: -1, roleConnectionLimit: -1, databaseSizeBytes: options.capacitySize ?? "104857600", totalBackends: 8, activeBackends: 2, idleBackends: 3, idleInTransactionBackends: 1, clientBackends: 6, clientBackendsCurrentDatabase: 5, clientBackendsCurrentRole: 2, clientBackendsActive: 2, clientBackendsIdle: 3, clientBackendsIdleInTransaction: 1, walSenderBackends: 1, otherBackendProcesses: 1, private: "PRIVATE_CAPACITY" } });
       }
       if (input.text.startsWith("select pg_stat_clear_snapshot()")) {
         if (options.observerFailure) throw new Error("PRIVATE_OBSERVER_ERROR");
@@ -81,6 +83,8 @@ describe("focused native history diagnosis", () => {
     expect(f.clients).toHaveLength(3);
     expect(f.clients.every(client => client.config.connectionTimeoutMillis === 10_000)).toBe(true);
     expect(report.limits).toMatchObject({ configuredDriverConnectMs: 10000 });
+    expect(report).toMatchObject({ connectionPath: "session-pooler", originalSessionPoolerReproduction: true });
+    expect(f.clients.every(client => client.config.host === pooler.db_host && client.config.user === `postgres.${ref}` && client.config.port === 5432)).toBe(true);
     expect(f.clients.every(client => client.end.mock.calls.length === 1)).toBe(true);
     const firstComponent = f.queries.findIndex(query => query.text.startsWith("savepoint"));
     expect(f.queries.slice(0, firstComponent).filter(query => query.text.includes("as diagnostic_pid"))).toHaveLength(2);
@@ -93,7 +97,60 @@ describe("focused native history diagnosis", () => {
     for (const client of f.clients) expect(client.config.ssl).toMatchObject({ rejectUnauthorized: true });
     const printed = JSON.stringify(report);
     for (const value of ["PRIVATE", proof.save_hash, "save_definitions", env.SUPABASE_DB_PASSWORD, env.SUPABASE_ACCESS_TOKEN]) expect(printed).not.toContain(value);
-    expect(report.phases.at(-1)).toMatchObject({ originalSqlInvocations: 1, proofBackendPid: 103, configuredStatementMs: 60000, configuredClientMs: 70000 });
+    expect(report.phases.at(-1)).toMatchObject({ originalSqlInvocations: 1, proofBackendPid: 103, configuredStatementMs: 60000, configuredClientMs: 70000, connectionPath: "session-pooler", originalSessionPoolerReproduction: true, connectionOverrides: [] });
+  });
+  it("uses only the three explicit direct endpoint overrides for both split clients and the old-helper client", async () => {
+    const pooled = fixture(), direct = fixture();
+    const pooledReport = await runHistoryDiagnosis({ ...env, HISTORY_CONNECTION_PATH: "session-pooler" }, pooled.request, pooled.Client);
+    const directReport = await runHistoryDiagnosis(directEnv, direct.request, direct.Client);
+    expect(pooledReport.status).toBe("passed"); expect(directReport.status).toBe("passed");
+    expect(directReport).toMatchObject({ connectionPath: "direct-vps", originalSessionPoolerReproduction: false });
+    expect(directReport.phases.at(-1)).toMatchObject({ connectionPath: "direct-vps", originalSessionPoolerReproduction: false,
+      connectionOverrides: ["host", "port", "user"], originalBodySha256: originalHistorySha256, originalSqlInvocations: 1,
+      configuredStatementMs: 60000, configuredClientMs: 70000 });
+    expect(direct.clients).toHaveLength(3);
+    for (const [index, client] of direct.clients.entries()) {
+      expect(client.config).toEqual({ ...pooled.clients[index].config, host: project.database.host, port: 5432, user: "postgres" });
+      expect(client.config).toMatchObject({ connectionTimeoutMillis: 10000, ssl: { rejectUnauthorized: true } });
+    }
+    expect(direct.queries).toEqual(pooled.queries);
+    expect(direct.request.mock.calls.map(call => call[0])).toEqual(pooled.request.mock.calls.map(call => call[0]));
+    expect(direct.request).toHaveBeenCalledTimes(4);
+  });
+  it("rejects unknown paths and a direct path outside the dedicated VPS before any metadata or SQL", async () => {
+    for (const changes of [{ HISTORY_CONNECTION_PATH: "direct" }, { HISTORY_CONNECTION_PATH: "" },
+      { HISTORY_CONNECTION_PATH: "direct-vps", RUNNER_NAME: "other-runner" },
+      { HISTORY_CONNECTION_PATH: "direct-vps", GITHUB_WORKSPACE: "/tmp/platform" }]) {
+      const f = fixture(); const report = await runHistoryDiagnosis({ ...directEnv, ...changes }, f.request, f.Client);
+      expect(report.status).toBe("failed"); expect(report.errorClass).toMatch(/INVALID_CONNECTION_PATH|DIRECT_VPS_BOUNDARY/);
+      expect(f.request).not.toHaveBeenCalled(); expect(f.clients).toHaveLength(0); expect(f.queries).toHaveLength(0);
+    }
+  });
+  it.each(["project", "pooler"])("keeps original %s metadata validation on the direct path", async kind => {
+    const f = fixture(); const request = vi.fn<typeof fetch>(async url => Response.json(String(url).endsWith("/pooler")
+      ? [{ ...pooler, ...(kind === "pooler" ? { db_host: "PRIVATE_UNTRUSTED_HOST" } : {}) }]
+      : { ...project, ...(kind === "project" ? { database: { ...project.database, host: "PRIVATE_UNTRUSTED_HOST" } } : {}) }));
+    const report = await runHistoryDiagnosis(directEnv, request, f.Client);
+    expect(report.status).toBe("failed"); expect(report.errorClass).toBe("CLIENT_ERROR");
+    expect(f.clients).toHaveLength(0); expect(JSON.stringify(report)).not.toContain("PRIVATE_UNTRUSTED_HOST");
+  });
+  it("separates client, WAL sender and background counts without inferring connection exhaustion", async () => {
+    const f = fixture(); const report = await runHistoryDiagnosis(directEnv, f.request, f.Client);
+    expect(report.capacityInterpretation).toBe("COUNTS_ONLY_NO_EXHAUSTION_INFERENCE");
+    expect(report.capacity).toMatchObject({ databaseSizeBytes: 104857600, totalBackends: 8, clientBackends: 6,
+      clientBackendsCurrentDatabase: 5, clientBackendsCurrentRole: 2, clientBackendsActive: 2, clientBackendsIdle: 3,
+      clientBackendsIdleInTransaction: 1, walSenderBackends: 1, otherBackendProcesses: 1 });
+    expect(f.queries.filter(query => query.text === CAPACITY_SQL)).toHaveLength(1);
+    expect(CAPACITY_SQL.match(/pg_database_size\(current_database\(\)\)/g)).toHaveLength(1);
+    expect(CAPACITY_SQL).toContain("'clientBackends',count(*) filter(where backend_type='client backend')");
+    expect(CAPACITY_SQL).toContain("'walSenderBackends',count(*) filter(where backend_type='walsender')");
+    expect(CAPACITY_SQL).toContain("backend_type is distinct from 'client backend' and backend_type is distinct from 'walsender'");
+    expect(JSON.stringify(report)).not.toContain("PRIVATE_CAPACITY");
+  });
+  it.each(["PRIVATE_DATABASE_SIZE", "9007199254740992"])("does not expose malformed or unsafe capacity values: %s", async capacitySize => {
+    const f = fixture({ capacitySize }); const report = await runHistoryDiagnosis(directEnv, f.request, f.Client);
+    expect(report.capacity).toEqual({ unavailable: "HISTORY_DIAGNOSIS_CAPACITY_INVALID_RESULT" });
+    expect(JSON.stringify(report)).not.toContain(capacitySize);
   });
   it.each(["57014", "55P03"])("recovers an aborted component with SQLSTATE %s without replaying it or attempting the fifth phase", async code => {
     const f = fixture({ splitError: { name: "trigger_definition", code } });
@@ -183,6 +240,14 @@ describe("focused native history diagnosis", () => {
     expect(workflow).toContain("github.ref == 'refs/heads/production'");
     expect(workflow).toContain("github.repository == 'duindorpdoet/platform'");
     expect(workflow).toContain("name: production"); expect(workflow).toContain("deployment: false");
+    expect(workflow).toContain("default: session-pooler"); expect(workflow).toContain("type: choice");
+    expect(workflow).toContain("inputs.connection_path == 'direct-vps'");
+    expect(workflow).toContain('["self-hosted","Linux","X64","dg-sites","production","duindorphalloweenprod"]');
+    expect(workflow).toContain("|| '[\"ubuntu-latest\"]'"); expect(workflow).toContain("clean: false");
+    expect(workflow).toContain("HISTORY_CONNECTION_PATH: ${{ inputs.connection_path }}");
+    for (const guard of ['test "$(id -un)" = "duindorphalloweenprod"', 'test "${RUNNER_NAME}" = "dg-sites-vps-01-duindorphalloweenprod-01"',
+      '[[ "${GITHUB_WORKSPACE}" == /srv/sites/duindorphalloweenprod/actions-runner/_work/* ]]', 'test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"']) expect(workflow).toContain(guard);
+    expect(workflow.indexOf("Verify dedicated direct VPS runner boundary")).toBeLessThan(workflow.indexOf("Install pinned native driver"));
     expect(workflow).toContain("pnpm install --frozen-lockfile --ignore-scripts");
     expect(workflow).not.toMatch(/supabase (?:db push|migration|functions)|dg-site-deploy|restart/);
   });
