@@ -25,7 +25,7 @@ function environment(root:string) {
 it('passes an exact isolated environment through both actual native spawn and capture without remerging ambient libpq, service or TLS overrides',async()=>{
   poison();const root=await mkdtemp(join(tmpdir(),'duindorp-native-env-'));
   try {
-    const environments:Array<NodeJS.ProcessEnv>=[],homes:string[]=[];
+    const environments:Array<Record<string,string|undefined>>=[],homes:string[]=[];
     mocks.spawn.mockImplementation((command:string,_args:string[],options:SpawnOptions)=>{
       expect(command).toBe('/trusted/bin/psql');const env={...options.env};environments.push(env);homes.push(env.HOME!);
       expect(readdirSync(env.HOME!)).toEqual(['roots.crt']);
