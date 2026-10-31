@@ -59,6 +59,23 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      - name: Record read-only VPS release capabilities
+        if: inputs.diagnostic_mode == 'resources-only' || inputs.diagnostic_mode == 'resources-with-history' || inputs.connection_path == 'direct-vps'
+        run: |
+          node --input-type=module <<'NODE'
+          import { statfs } from 'node:fs/promises';
+          import { execFile } from 'node:child_process';
+          let workspaceAvailableBytes = null;
+          try {
+            const stats = await statfs(process.env.GITHUB_WORKSPACE, { bigint: true });
+            const bytes = stats.bavail * stats.bsize;
+            if (bytes >= 0n && bytes <= BigInt(Number.MAX_SAFE_INTEGER)) workspaceAvailableBytes = Number(bytes);
+          } catch { /* Only a numeric value or null leaves this step. */ }
+          const dockerServerReachable = await new Promise(resolve => {
+            execFile('docker', ['version', '--format', '{{.Server.Version}}'], { timeout: 5000, maxBuffer: 4096 }, error => resolve(error === null));
+          });
+          console.log(JSON.stringify({ diagnostic: 'vps-release-capabilities', workspaceAvailableBytes, dockerServerReachable }));
+          NODE
       - name: Install pinned native driver from frozen dependencies
         if: inputs.diagnostic_mode != 'resources-only'
         run: |
