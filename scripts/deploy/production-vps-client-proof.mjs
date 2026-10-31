@@ -50,7 +50,7 @@ export async function runVpsClientProof(env = process.env, request = fetch, run 
       const started = performance.now();
       const environment = { PATH: process.env.PATH, HOME: home, LANG: "C", LC_ALL: "C", PGHOST: plan.host, PGPORT: String(plan.port),
         PGUSER: plan.user, PGDATABASE: "postgres", PGPASSWORD: plan.password, PGCONNECT_TIMEOUT: "15", PGSSLMODE: "verify-full", PGSSLROOTCERT: ca,
-        PGGSSENCMODE: "disable", PGSERVICE: "", PGSERVICEFILE: "", PGPASSFILE: "", PGHOSTADDR: "", PGSSLCERT: "", PGSSLKEY: "", PGSSLPASSWORD: "",
+        PGGSSENCMODE: "disable",
         PGAPPNAME: "duindorp-vps-client-proof", PGOPTIONS: "-c default_transaction_read_only=on -c statement_timeout=5000 -c lock_timeout=1000 -c jit=off" };
       let result;
       try { result = await run(tools.psql, ["-X", "-qAt", "-w", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose", "--command", SQL], environment); }

@@ -39,11 +39,16 @@ it('passes an exact isolated environment through both actual native spawn and ca
     expect(mocks.spawn).toHaveBeenCalledTimes(2);expect(request).toHaveBeenCalledOnce();
     for(const env of environments) {
       expect(env).toMatchObject({PGHOST:project.database.host,PGPORT:'5432',PGDATABASE:'postgres',PGUSER:'postgres',PGPASSWORD:'PRIVATE_PASSWORD',PGCONNECT_TIMEOUT:'30',PGSSLMODE:'verify-full',PGGSSENCMODE:'disable',
-        LANG:'C',LC_ALL:'C',PGSERVICE:'',PGSERVICEFILE:'',PGPASSFILE:'',PGHOSTADDR:'',PGSSLCERT:'',PGSSLKEY:'',PGSSLPASSWORD:''});
+        LANG:'C',LC_ALL:'C'});
+      // Empty service paths cause libpq to fail before connecting. Optional
+      // settings must be absent in this non-inheriting private environment.
+      for(const name of ['PGSERVICE','PGSERVICEFILE','PGPASSFILE','PGHOSTADDR','PGSSLCERT','PGSSLKEY','PGSSLPASSWORD']) {
+        expect(env[name]).toBeUndefined();expect(env).not.toHaveProperty(name);
+      }
       expect(env.PGSSLROOTCERT).toBe(join(env.HOME!,'roots.crt'));
       expect(env.PGOPTIONS).toBe('-c statement_timeout=300000 -c lock_timeout=3000 -c jit=off');
       expect(JSON.stringify(env)).not.toContain('PRIVATE_AMBIENT_');
-      expect(Object.keys(env).sort()).toEqual(['HOME','LANG','LC_ALL','PATH','PGCONNECT_TIMEOUT','PGDATABASE','PGGSSENCMODE','PGHOST','PGHOSTADDR','PGOPTIONS','PGPASSFILE','PGPASSWORD','PGPORT','PGSERVICE','PGSERVICEFILE','PGSSLCERT','PGSSLKEY','PGSSLMODE','PGSSLPASSWORD','PGSSLROOTCERT','PGUSER'].sort());
+      expect(Object.keys(env).sort()).toEqual(['HOME','LANG','LC_ALL','PATH','PGCONNECT_TIMEOUT','PGDATABASE','PGGSSENCMODE','PGHOST','PGOPTIONS','PGPASSWORD','PGPORT','PGSSLMODE','PGSSLROOTCERT','PGUSER'].sort());
     }
     expect(new Set(homes).size).toBe(1);expect((await readdir(root)).filter(n=>n.startsWith('duindorp-source-client-ca-'))).toEqual([]);
   }finally{await rm(root,{recursive:true,force:true});}

@@ -99,19 +99,21 @@ describe("production direct migration", () => {
       expect(readFileSync(ca, "utf8")).toBe(publicReleaseCaBundle());
       expect(options).toMatchObject({ detached: true, stdio: ["ignore", "pipe", "pipe"], env: {
         PGHOST: project.database.host, PGPORT: "5432", PGDATABASE: "postgres", PGUSER: "postgres", PGPASSWORD: env.SUPABASE_DB_PASSWORD,
-        PGCONNECT_TIMEOUT: "30", PGSSLMODE: "verify-full", PGSSLROOTCERT: ca, PGOPTIONS: "-c lock_timeout=5000 -c statement_timeout=300000",
+        PGCONNECT_TIMEOUT: "30", PGSSLMODE: "verify-full", PGSSLROOTCERT: ca, PGGSSENCMODE: "disable", PGOPTIONS: "-c lock_timeout=5000 -c statement_timeout=300000",
         SUPABASE_ACCESS_TOKEN: env.SUPABASE_ACCESS_TOKEN, NODE_TLS_REJECT_UNAUTHORIZED: "1",
       } });
       for (const key of ["PGSERVICE", "PGSERVICEFILE", "PGPASSFILE", "PGHOSTADDR", "PGSSLCERT", "PGSSLKEY", "PGSSLPASSWORD"])
-        expect(options.env).toHaveProperty(key, "");
-      for (const key of ["DATABASE_URL", "SUPABASE_DB_URL", "SSL_CERT_FILE", "SUPABASE_CLI_BINARY_OVERRIDE"])
+        expect(options.env).not.toHaveProperty(key);
+      for (const key of ["DATABASE_URL", "SUPABASE_DB_URL", "SSL_CERT_FILE", "SSL_CERT_DIR", "SUPABASE_CLI_BINARY_OVERRIDE", "PGTARGETSESSIONATTRS", "PGSSLSNI"])
         expect(options.env).not.toHaveProperty(key);
       queueMicrotask(() => { f.child.stdout.emit("data", Buffer.from(`Applying migration ${migrationName}\n`)); f.child.emit("close", 0, null); });
       return f.child;
     });
     const result = await f.run({ ...env, PGHOST: "wrong", PGHOSTADDR: "127.0.0.1", PGPORT: "6543", PGUSER: "supabase_admin",
-      PGSERVICE: "wrong", PGSERVICEFILE: "/wrong", PGPASSFILE: "/wrong", PGSSLCERT: "/wrong", PGSSLKEY: "/wrong", PGSSLMODE: "disable", PGOPTIONS: "-c statement_timeout=0",
-      DATABASE_URL: "wrong", SUPABASE_DB_URL: "wrong", SSL_CERT_FILE: "/wrong", NODE_TLS_REJECT_UNAUTHORIZED: "0" });
+      PGSERVICE: "wrong", PGSERVICEFILE: "/wrong", PGPASSFILE: "/wrong", PGSSLCERT: "/wrong", PGSSLKEY: "/wrong", PGSSLPASSWORD: "wrong",
+      PGGSSENCMODE: "require", PGTARGETSESSIONATTRS: "read-write", PGSSLSNI: "0", PGSSLMODE: "disable", PGOPTIONS: "-c statement_timeout=0",
+      DATABASE_URL: "wrong", SUPABASE_DB_URL: "wrong", SSL_CERT_FILE: "/wrong", SSL_CERT_DIR: "/wrong", SUPABASE_CLI_BINARY_OVERRIDE: "/wrong",
+      NODE_TLS_REJECT_UNAUTHORIZED: "0" });
     expect(result).toEqual({ status: "SUCCESS", sqlStates: [], migrations: [migrationName], activationReport: "COMPLETED", activationReportRows: 1 });
     expect(sessionReadQuery).toHaveBeenCalledExactlyOnceWith(report, expect.objectContaining(env), f.request);
     expect(f.request).toHaveBeenCalledOnce(); expect(f.spawnProcess).toHaveBeenCalledOnce();

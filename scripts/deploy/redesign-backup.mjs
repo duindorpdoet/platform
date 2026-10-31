@@ -289,8 +289,10 @@ async function exportSource({env,key,context,directory,save,request,captureComma
       // Native libpq must never merge ambient endpoint/service/TLS settings.
       // A private empty HOME also prevents default client certificates or
       // service files in the runner account from changing this fixed plan.
+      // Omit optional libpq settings: an empty PGSERVICEFILE is a real path,
+      // not a request to disable service configuration.
       sourceEnv={PATH:process.env.PATH,LANG:'C',LC_ALL:'C',HOME:caDirectory,
-        PGSERVICE:'',PGSERVICEFILE:'',PGPASSFILE:'',PGHOSTADDR:'',PGSSLCERT:'',PGSSLKEY:'',PGSSLPASSWORD:'',PGGSSENCMODE:'disable',
+        PGGSSENCMODE:'disable',
         PGHOST:config.host,PGPORT:String(config.port),PGDATABASE:config.database,PGUSER:config.user,PGPASSWORD:config.password,
         PGSSLMODE:'verify-full',PGSSLROOTCERT:ca,PGCONNECT_TIMEOUT:'30',PGOPTIONS:'-c statement_timeout=300000 -c lock_timeout=3000 -c jit=off'};
       sourceClient=tool=>({command:tool==='psql'?tools.psql:tools.pgDump,args:[]});

@@ -40,9 +40,9 @@ function migrationEnvironment(env, plan, caFile) {
   for (const key of ["DATABASE_URL", "SUPABASE_DB_URL", "SSL_CERT_FILE", "SSL_CERT_DIR", "SUPABASE_CLI_BINARY_OVERRIDE"]) delete childEnv[key];
   return { ...childEnv, PGHOST: plan.host, PGPORT: String(plan.port), PGDATABASE: plan.database,
     PGUSER: plan.user, PGPASSWORD: plan.password, SUPABASE_DB_PASSWORD: plan.password,
-    // Shell-set empty values also prevent project .env files from injecting
-    // service settings during the CLI's legacyLayeredParseEnv resolution.
-    PGSERVICE: "", PGSERVICEFILE: "", PGPASSFILE: "", PGHOSTADDR: "", PGSSLCERT: "", PGSSLKEY: "", PGSSLPASSWORD: "",
+    // Optional libpq overrides must be absent, rather than empty: an empty
+    // PGSERVICEFILE is itself a filename and can fail before connecting.
+    PGGSSENCMODE: "disable",
     PGCONNECT_TIMEOUT: "30", PGSSLMODE: "verify-full",
     PGSSLROOTCERT: caFile, PGAPPNAME: "duindorp-production-migrate",
     PGOPTIONS: "-c lock_timeout=5000 -c statement_timeout=300000", NODE_TLS_REJECT_UNAUTHORIZED: "1" };
