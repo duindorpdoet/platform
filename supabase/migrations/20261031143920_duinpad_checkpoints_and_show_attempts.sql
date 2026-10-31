@@ -118,6 +118,7 @@ create function api.duinpad_show_receipt(_actor uuid,_event_slug text,_id uuid d
 returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare e uuid:=app_private.current_event_id(_event_slug);r uuid;p app_private.duinpad_show_attempts;
 begin
+ if _actor is null then raise exception 'NOT_AUTHORIZED'using errcode='42501';end if;
  r:=app_private.duinpad_run_for_actor(e,_actor);
  -- Only a current finale operator may inspect a server-selected shared slot.
  -- The HTTP adapter derives this run from fresh, filtered local control status.
@@ -127,7 +128,7 @@ begin
  end if;
  select *into p from app_private.duinpad_show_attempts where event_id=e and(_stage is null or stage=_stage)and(id=_id or(_id is null and run_id=r))order by attempt_order desc limit 1;
  if p.id is null then return null;end if;
- if not(p.run_id=r or(p.actor_id=_actor and app_private.duinpad_actor_can(e,_actor,'finale.go'))or app_private.has_capability(e,'event_admin',_actor))then raise exception 'NOT_AUTHORIZED'using errcode='42501';end if;
+ if not coalesce(p.run_id=r or(p.actor_id=_actor and app_private.duinpad_actor_can(e,_actor,'finale.go'))or app_private.has_capability(e,'event_admin',_actor),false)then raise exception 'NOT_AUTHORIZED'using errcode='42501';end if;
  return jsonb_build_object('attemptId',p.id,'eventId',e,'runId',p.run_id,'stage',p.stage,'source',p.source,'status',case when p.status='requested'and p.created_at<clock_timestamp()-interval '15 seconds'then 'unknown'else p.status end,'result',p.result,'payload',p.payload,'payloadHash',p.payload_hash);
 end $$;
 revoke all on function api.duinpad_show_reserve(uuid,uuid,uuid,text,uuid,text,text,text,bigint)from public,anon,authenticated;

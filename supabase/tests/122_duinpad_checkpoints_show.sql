@@ -61,6 +61,8 @@ select throws_ok($$select api.duinpad_show_receipt('d1000000-0000-0000-0000-0000
 select throws_ok($$select api.duinpad_show_receipt('d1000000-0000-0000-0000-000000000004','duindorp-halloween-2026',null,'qr2','d8000000-0000-0000-0000-000000000001')$$,'42501','NOT_AUTHORIZED','participant cannot choose a recovery run with an operator-only argument');
 update app_private.duinpad_actor_access set status='revoked'where user_id='d1000000-0000-0000-0000-000000000005';
 select throws_ok($$select api.duinpad_show_receipt('d1000000-0000-0000-0000-000000000005','duindorp-halloween-2026',null,'qr2','d8000000-0000-0000-0000-000000000001')$$,'42501','NOT_AUTHORIZED','revoked replacement actor immediately loses shared recovery access');
+select throws_ok($$select api.duinpad_show_receipt('d1000000-0000-0000-0000-000000000005','duindorp-halloween-2026',(select attempt from duinpad_qr_state),'qr2')$$,'42501','NOT_AUTHORIZED','an outsider with no route cannot inspect a known foreign attempt ID through SQL null authorization');
+select throws_ok($$select api.duinpad_show_receipt(null,'duindorp-halloween-2026',(select attempt from duinpad_qr_state),'qr2')$$,'42501','NOT_AUTHORIZED','a missing authenticated account never authorizes a recovery read');
 select ok(not has_function_privilege('authenticated','api.duinpad_show_receipt(uuid,text,uuid,text,uuid)','execute'),'raw recovery payloads remain service-only');
 select api.duinpad_show_finish((select attempt from duinpad_qr_state),'blocked','{"ok":false}');
 select is((select status from app_private.duinpad_show_attempts where id=(select attempt from duinpad_qr_state)),'unknown','ordinary failure cannot erase an unknown execution');
