@@ -1,0 +1,33 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select no_plan();
+\ir fixtures/duinpad-finalists.inc
+insert into app_private.group_leaders(group_id,user_id,active_from,revision,assigned_by)
+values('d7000000-0000-0000-0000-000000000001','d1000000-0000-0000-0000-000000000001',now()-interval '1 minute',1,'f0000000-0000-0000-0000-000000000001');
+create temp table legacy_f(first_receipt uuid,result jsonb);
+insert into legacy_f values(null,null);
+grant all on legacy_f to authenticated;
+select set_config('request.jwt.claims','{"sub":"d1000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+select is(api.run_scan('d8000000-0000-0000-0000-000000000001','db000000-0000-0000-0000-000000000001',1,'DUINPAD-SIM-FINALE-TOKEN','qr')->>'accepted','true','pre-release leader can still validate its own real final arrival');
+set local role postgres;
+select is((select count(*)from app_private.duinpad_finale_receipts),0::bigint,'old validation consumes no business scan right');
+select is((select count(*)from app_private.duinpad_evenings),0::bigint,'old validation starts no clock');
+update app_private.stop_participant_statuses set status='skipped',decided_at=now()where run_stop_id='db000000-0000-0000-0000-000000000001';
+set local role authenticated;
+update legacy_f set result=api.run_complete_stop('d8000000-0000-0000-0000-000000000001','db000000-0000-0000-0000-000000000001',1,true,'legacy-final-complete','legacy-final-complete');
+select is((select result->>'accepted'from legacy_f),'true','legacy completion returns the arrival-recovery accepted field');
+select is((select result->>'completedStopId'from legacy_f),'db000000-0000-0000-0000-000000000001','legacy recovery recognizes its completed stop');
+select is((select result->>'duplicate'from legacy_f),'false','legacy completion uses the same first business scan');
+select is(api.run_arrive_and_advance('d8000000-0000-0000-0000-000000000001','db000000-0000-0000-0000-000000000001',1,'expired-code-not-rechecked-on-receipt','{"d9000000-0000-0000-0000-000000000001":"skipped","d9000000-0000-0000-0000-000000000002":"skipped","d9000000-0000-0000-0000-000000000003":"skipped"}','legacy-recovered-queue')->>'duplicate','true','an old queued arrival recovers the immutable business receipt');
+set local role postgres;
+select is((select count(*)from app_private.run_stop_arrivals where run_id='d8000000-0000-0000-0000-000000000001'),2::bigint,'old group choices are narrowed to the current own party');
+select is((select count(*)from app_private.duinpad_evenings),1::bigint,'old final completion creates exactly one shared deadline');
+select is((select count(*)from app_private.duinpad_show_attempts),0::bigint,'legacy arrival recovery never creates a show-start attempt');
+select ok(not has_function_privilege('authenticated','api.run_complete_stop_before_duinpad(uuid,uuid,integer,boolean,text,text)','execute'),'old broad completion implementation cannot be called directly');
+select set_config('request.jwt.claims','{"sub":"d1000000-0000-0000-0000-000000000003","role":"authenticated"}',true);
+set local role authenticated;
+select throws_ok($$select api.run_arrive_and_advance('d8000000-0000-0000-0000-000000000001','db000000-0000-0000-0000-000000000001',1,'DUINPAD-SIM-FINALE-TOKEN','{"d9000000-0000-0000-0000-000000000003":"visited"}','not-general-leader')$$,'42501','NOT_AUTHORIZED','legacy route arrival stays leader-only for ordinary and finale');
+select is(api.duinpad_finale_confirm('duindorp-halloween-2026','DUINPAD-SIM-FINALE-TOKEN','{"d9000000-0000-0000-0000-000000000003":"visited"}','scoped-final-arrival')->>'accepted','true','same non-leader retains only the new own-final authorization');
+select *from finish();
+rollback;

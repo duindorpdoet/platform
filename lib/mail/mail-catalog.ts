@@ -7,6 +7,7 @@ export const MAIL_MESSAGE_TYPES = [
   "auth_otp",
   "auth_email_change",
   "auth_email_change_new",
+  "actor_invitation",
   "registration_received",
   "registration_activation",
   "registration_group_changed",
@@ -28,6 +29,7 @@ export const MAIL_MESSAGE_TYPES = [
   "stops_request_admin",
   "stops_request_resolved",
   "event_reminder",
+  "duinpad_evening_thanks",
   "urgent_group_notice",
   "portal_registered",
   "portal_received",
@@ -70,6 +72,16 @@ type CatalogDefinition = Omit<PremiumMailContent, "paragraphs" | "primaryAction"
 };
 
 const CATALOG: Record<MailMessageType, CatalogDefinition> = {
+  actor_invitation: {
+    kind: "confirmation", subject: "Jouw uitnodiging voor de Acteurskamer", preheader: "Activeer zelf je toegewezen bediening voor De Duindorpse Poorten.", eyebrow: "Samen maken we de nacht", title: "Jouw plek achter de poorten.", hero: true,
+    paragraphs: payload => [
+      "De organisatie nodigt je uit voor de Acteurskamer van Duindorp Halloween. Je maakt met jouw toegewezen bediening deel uit van de show.",
+      `Log in met precies het uitgenodigde e-mailadres${typeof payload.invitedEmail === "string" ? `: ${payload.invitedEmail}` : ""}, via een e-mailcode of Google. Controleer het adres en druk daarna zelf op ‘Activeer mijn acteursomgeving’. Alleen de link openen activeert niets.`,
+      Array.isArray(payload.permissions) && payload.permissions.length ? `Toegewezen bediening: ${payload.permissions.filter(value => typeof value === "string").join(", ")}. De organisatie kan deze rechten later aanpassen of intrekken.` : "Er zijn nog geen showknoppen toegewezen. Je begint zonder bedienrechten; de organisatie wijst iedere knop expliciet toe.",
+      `Deze persoonlijke uitnodiging verloopt${typeof payload.expiresAt === "string" ? ` op ${eventDateTime(payload.expiresAt)}` : " na zeven dagen"}. Is de link verlopen of vervangen? Vraag de organisatie om een nieuwe uitnodiging.`,
+    ],
+    action: { label: "Activeer mijn acteursomgeving", path: "/uitnodiging/acteur" }, footerReason: "Je ontvangt deze persoonlijke uitnodiging omdat de evenementorganisatie je als acteur heeft uitgenodigd.",
+  },
   mail_provider_test: {
     kind: "confirmation", subject: "De Poorten · gecontroleerde testmail", preheader: "Bewuste controle van de mailkoppeling.", eyebrow: "Mailkoppeling", title: "Een test van De Poorten.",
     paragraphs: () => ["Dit is een bewust verstuurde testmail van De Duindorpse Poorten.", "Provideracceptatie is nog geen aflevering. Alleen een bijbehorende geldige afleverwebhook bevestigt ontvangst bij de mailserver."],
@@ -219,6 +231,11 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     kind: "group", subject: "Besluit over jullie extra poorten", preheader: "Bekijk het actuele besluit en de toelichting.", eyebrow: "Aanvraag beoordeeld", title: "Er is een besluit.",
     paragraphs: (payload) => [`De aanvraag van ${groupName(payload)} is ${decision(payload)}. ${explanation(payload)}`],
     action: { label: "Bekijk jullie groep", path: "/omgeving/meeloper/groep" }, footerReason: "Je ontvangt dit bericht omdat de organisatie jullie aanvraag heeft beoordeeld.",
+  },
+  duinpad_evening_thanks: {
+    kind: "confirmation", subject: "Bedankt voor het samen griezelen in Duindorp", preheader: "Jullie Halloweenavond is afgerond. Bewaar de herinneringen en bedank jullie bezochte poorten.", eyebrow: "Samen maakten we de nacht", title: "Bedankt, dappere Duindorpers!", hero: true,
+    paragraphs: () => ["Wat fijn dat jullie samen met ons hebben gegriezeld. Dank aan alle deelnemers, bewoners, acteurs, vrijwilligers en sponsors die deze Halloweenavond mogelijk maakten.", "Jullie avond is afgerond. In jullie eigen omgeving kunnen jullie terugkijken op de verdiende zegels en de poorten die jullie echt hebben bereikt bedanken.", "Hopelijk maken we het volgend jaar samen nóg grootser. Neem de mooie herinneringen mee naar huis!"],
+    action: { label: "Bekijk onze herinneringen en bedankjes", path: "/omgeving/meeloper" }, footerReason: "Je ontvangt dit eenmalige afsluitbericht vanwege je deelname aan deze Halloweenavond. Het is geen nieuwsbrief.",
   },
   event_reminder: {
     kind: "reminder", subject: "Jullie Halloweenavond komt dichterbij", preheader: "Bekijk het startpunt en de praktische informatie.", eyebrow: "Bijna zover", title: "De wijk wacht op jullie.", hero: true,
@@ -465,7 +482,7 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
   const codeValue = text(payload, ["code", "token"]);
   const paymentUrl = messageType === "payment_link_ready" ? validatedPaymentUrl(payload.externalUrl) : undefined;
   const action = paymentUrl ? { label: "Open de betaallink", url: paymentUrl } : definition.action
-    ? { label: messageType === "registration_group_changed" && payload.activationPending === true ? "Log in en activeer jullie inschrijving" : definition.action.label, url: new URL(actionPath(payload, definition.action.path), brand.homeUrl).toString() }
+    ? { label: messageType === "registration_group_changed" && payload.activationPending === true ? "Log in en activeer jullie inschrijving" : definition.action.label, url: new URL(messageType === "actor_invitation" && typeof payload.claimToken === "string" && /^[A-Za-z0-9_-]{43}$/.test(payload.claimToken) ? `/uitnodiging/acteur#token=${payload.claimToken}` : actionPath(payload, definition.action.path), brand.homeUrl).toString() }
     : undefined;
   const code = definition.kind === "otp"
     ? { value: codeValue, expiresText: text(payload, ["expiresText", "verlooptijd"], "De code verloopt over 10 minuten.") }

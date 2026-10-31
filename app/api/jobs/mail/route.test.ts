@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
-const state=vi.hoisted(()=>({rpc:vi.fn(),send:vi.fn(),env:{APP_ENVIRONMENT:"staging",CRON_SECRET:"local-cron",MAIL_MODE:"sandbox",NEWSLETTER_SENDING_ENABLED:"false"}}));
+const state=vi.hoisted(()=>({rpc:vi.fn(),send:vi.fn(),env:{APP_ENVIRONMENT:"staging",CRON_SECRET:"local-cron",MAIL_MODE:"sandbox",NEWSLETTER_SENDING_ENABLED:"false",DUINPAD_ACTOR_INVITE_SECRET:"synthetic-actor-invite-key-32-bytes-local"}}));
 vi.mock("@/lib/config/server-env",()=>({serverEnv:()=>state.env,mailAllowlist:()=>new Set(["test@example.invalid"])}));
 vi.mock("@/lib/supabase/privileged",()=>({createPrivilegedClient:()=>({schema:()=>({rpc:state.rpc})})}));
 vi.mock("@/lib/editorial/worker",()=>({editorialTick:async()=>{}}));
@@ -8,6 +8,7 @@ vi.mock("@/lib/pwa/portal-push",()=>({deliverPortalPushBatch:async()=>{}}));
 vi.mock("@/lib/social-share/cleanup",()=>({cleanupSocialShareAssets:async()=>{}}));
 vi.mock("@/lib/mail/gateway",async importOriginal=>({...await importOriginal<typeof import("@/lib/mail/gateway")>(),sendMailViaGateway:state.send}));
 import { POST } from "./route";
+import { invitationToken, payloadHash } from "@/lib/duinpad/actor-protocol";
 import { ApiError } from "@/lib/http/api";
 import { MailGatewayError } from "@/lib/mail/gateway";
 const row={id:"e07af2b0-ad41-4b87-81f1-6f633c83e87f",message_type:"registration_received",recipient_email:"test@example.invalid",payload:{reference:"LOCAL-TEST"},attempts:1};
@@ -17,6 +18,21 @@ beforeEach(()=>{
  state.rpc.mockReset().mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[row]:null,error:null}));state.send.mockReset();
 });
 describe("outbox worker acceptance and uncertainty contract",()=>{
+ it("suppresses a superseded actor invitation before rendering or sending",async()=>{
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:"actor_invitation"}]:null,error:null}));
+  const response=await POST(request());expect(response.status).toBe(200);expect(state.send).not.toHaveBeenCalled();
+  expect(state.rpc).toHaveBeenCalledWith("worker_duinpad_actor_invitation",{_outbox_id:row.id});
+  expect(state.rpc).toHaveBeenCalledWith("worker_update_outbox_v2",expect.objectContaining({_status:"suppressed",_error_code:"ACTOR_INVITATION_SUPERSEDED"}));
+ });
+ it("regenerates actor claim token only in memory from current invitation material",async()=>{
+  const material={invitationId:"00000000-0000-4000-8000-000000000001",eventId:"00000000-0000-4000-8000-000000000002",invitedEmail:"test@example.invalid",permissions:["heks.go"],expiresAt:"2026-11-07T20:00:00Z"};
+  const token=invitationToken(material.invitationId,material.eventId,material.invitedEmail,state.env.DUINPAD_ACTOR_INVITE_SECRET);
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:"actor_invitation",payload:{invitationId:material.invitationId}}]:name==="worker_duinpad_actor_invitation"?{...material,tokenHash:payloadHash(token)}:null,error:null}));
+  state.send.mockResolvedValue({accepted:false,validated:true,provider:"resend",providerId:null});
+  expect(await (await POST(request())).json()).toMatchObject({validated:1});
+  expect(state.send).toHaveBeenCalledWith(expect.objectContaining({messageType:"actor_invitation",html:expect.stringContaining(`#token=${token}`),text:expect.stringContaining("test@example.invalid")}));
+  expect(state.send.mock.calls[0][0].text).not.toContain(payloadHash(token));
+ });
  it.each(["registration_activation","registration_group_changed"])("revalidates %s before rendering and suppresses obsolete events",async(messageType)=>{
   state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:messageType}]:null,error:null}));
   const response=await POST(request());expect(response.status).toBe(200);expect(state.send).not.toHaveBeenCalled();

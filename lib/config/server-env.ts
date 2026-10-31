@@ -3,6 +3,8 @@ import { z } from "zod";
 
 const optionalUrl = z.string().url().optional().or(z.literal(""));
 
+const optionalDuinpadSecret = z.preprocess(value => value === "" ? undefined : value, z.string().min(32).optional());
+
 const schema = z.object({
   APP_ENVIRONMENT: z.enum(["development", "test", "staging", "production"]).default("development"),
   APP_REVISION: z.string().regex(/^[a-f0-9]{40}$/).optional(),
@@ -33,6 +35,11 @@ const schema = z.object({
   SENDGRID_EVENT_MAX_AGE_SECONDS: z.coerce.number().int().positive().default(90_000),
   SENDGRID_EVENT_MAX_FUTURE_SKEW_SECONDS: z.coerce.number().int().nonnegative().default(300),
   CRON_SECRET: z.string().optional(),
+  DUINPAD_SHOW_API_BASE_URL: optionalUrl,
+  DUINPAD_SHOW_API_TOKEN: optionalDuinpadSecret,
+  DUINPAD_ACTOR_AUTH_SECRET: optionalDuinpadSecret,
+  DUINPAD_ACTOR_INVITE_SECRET: optionalDuinpadSecret,
+  DUINPAD_EVENT_SCOPE_ID: z.preprocess(value => value === "" ? undefined : value, z.uuid().optional()),
   PORTAL_CODE_PEPPER: z.string().optional(),
   ABUSE_HASH_SECRET: z.string().optional(),
   CHILD_CODE_PEPPER: z.string().optional(),

@@ -7,7 +7,7 @@ import type { AccountSnapshot, AccountTarget } from "@/lib/account/model";
 import { SignOutButton } from "@/components/auth/account-actions";
 import { EntryHeader } from "@/components/auth/account-login";
 
-const icons = { parent: Users, house: DoorOpen, viewer: Eye, admin: ShieldCheck };
+const icons = { parent: Users, house: DoorOpen, viewer: Eye, admin: ShieldCheck, actor: Sparkles };
 export function EnvironmentChooser({ initial }: { initial: AccountSnapshot }) {
   const [childId, setChildId] = useState("");
   const [notice, setNotice] = useState("");
