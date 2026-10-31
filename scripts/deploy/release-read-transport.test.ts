@@ -20,6 +20,20 @@ function ordered(source: string, ...checks: string[]) {
 }
 
 describe("explicit release read transport workflow contract", () => {
+  it.each(["staging", "production"])("uses only job-available contexts before the %s runner exists", environment => {
+    for (const [name, body] of jobs(read(`.github/workflows/deploy-${environment}.yml`))) {
+      const jobEnvironment = body.match(/^    env:\n(?: {6,}.*\n)*/m)?.[0] ?? "";
+      expect(jobEnvironment, `${name} job environment uses GitHub's allowed contexts`)
+        .not.toMatch(/\$\{\{\s*(?:runner|steps|env|job)\./);
+    }
+    if (environment === "production") {
+      const source = jobs(read(".github/workflows/deploy-production.yml")).get("backup-export")!;
+      for (const step of ["Verify every pinned client and library before execution", "Export one coherent snapshot and encrypt all source backup files"]) {
+        expect(source).toContain(`- name: ${step}\n        env:\n          RELEASE_PG_CLIENT_DIRECTORY: \${{ runner.temp }}/duindorp-pg-clients\n`);
+      }
+    }
+  });
+
   it("pins the reviewed native driver in both the manifest and frozen lockfile", () => {
     const manifest = JSON.parse(read("package.json"));
     expect(manifest.devDependencies["@supabase/pg"]).toBe("8.21.1");
