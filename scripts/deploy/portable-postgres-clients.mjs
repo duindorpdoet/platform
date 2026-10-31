@@ -210,7 +210,14 @@ export async function validatePortablePostgresClient(directory) {
 function command(args) {
   return new Promise((resolve, reject) => {
     execFile("docker", args, { timeout: args[0] === "pull" ? 180000 : 30000, killSignal: "SIGKILL", maxBuffer: 4096 },
-      (error, stdout) => error ? reject(new Error("PORTABLE_PG_DOCKER_FAILED")) : resolve(stdout.trim()));
+      (error, stdout) => {
+        if (!error) { resolve(stdout.trim()); return; }
+        // Expose only the fixed phase/class, never Docker's stderr or argv.
+        const phase = new Set(["pull", "create", "cp", "rm"]).has(args[0]) ? args[0].toUpperCase() : "COMMAND";
+        const reason = error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" ? "OUTPUT_LIMIT"
+          : error.killed ? "TIMEOUT" : error.code === "ENOENT" ? "UNAVAILABLE" : "FAILED";
+        reject(new Error(`PORTABLE_PG_DOCKER_${phase}_${reason}`));
+      });
   });
 }
 
@@ -222,7 +229,9 @@ export async function buildPortablePostgresClient(directory, execute = command) 
   try {
     await mkdir(directory, { mode: 0o700 }); created = true;
     for (const subdir of ["bin", "elf", "lib"]) await mkdir(join(directory, subdir), { mode: 0o700 });
-    await execute(["pull", "--platform", "linux/amd64", CLIENT_IMAGE]);
+    // A cold pull emits progress for every layer. Keep that progress out of
+    // the bounded metadata response; the immutable image digest is unchanged.
+    await execute(["pull", "--quiet", "--platform", "linux/amd64", CLIENT_IMAGE]);
     container = await execute(["create", "--platform", "linux/amd64", "--network", "none", "--entrypoint", "sh", CLIENT_IMAGE, "-c", "exit 0"]);
     if (typeof container !== "string" || !/^[a-f0-9]{64}$/.test(container)) fail("CONTAINER_ID_REQUIRED");
     for (const row of SOURCE_FILES) await execute(["cp", "-L", `${container}:${row.source}`, join(directory, row.file)]);

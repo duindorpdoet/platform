@@ -1,9 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
-import { mkdtemp, mkdir, writeFile, rm, symlink, chmod, link, lstat } from "node:fs/promises";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { mkdtemp, mkdir, readFile, writeFile, rm, symlink, chmod, link, lstat } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { execFile } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CLIENT_IMAGE, CLIENT_VERSION, portableClientManifest, buildPortablePostgresClient, validatePortablePostgresClient } from "./portable-postgres-clients.mjs";
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("pinned user-space PostgreSQL17 clients", () => {
   it("pins the official image, exactly three wrappers and the complete independent ELF/loader/library hashes", () => {
@@ -39,7 +42,7 @@ describe("pinned user-space PostgreSQL17 clients", () => {
     const execute = vi.fn(async () => { throw new Error("PRIVATE_REGISTRY_PASSWORD"); });
     try {
       await expect(buildPortablePostgresClient(directory, execute)).rejects.toThrow(/^PORTABLE_PG_BUILD_FAILED$/);
-      expect(execute).toHaveBeenCalledExactlyOnceWith(["pull", "--platform", "linux/amd64", CLIENT_IMAGE]);
+      expect(execute).toHaveBeenCalledExactlyOnceWith(["pull", "--quiet", "--platform", "linux/amd64", CLIENT_IMAGE]);
       expect(existsSync(directory)).toBe(false);
     } finally { await rm(parent, { recursive: true, force: true }); }
   });
@@ -78,6 +81,39 @@ describe("pinned user-space PostgreSQL17 clients", () => {
       await link(other, join(directory, "manifest.json"));
       await expect(validatePortablePostgresClient(directory)).rejects.toThrow("UNSAFE_FILESYSTEM");
       expect((await lstat(other)).mode & 0o777).toBe(before);
+    } finally { await rm(parent, { recursive: true, force: true }); }
+  });
+
+  it("uses the actual command runner with quiet pull so cold-layer progress cannot overflow its 4KB metadata bound", async () => {
+    const parent = await mkdtemp(join(tmpdir(), "pg17-command-")), directory = join(parent, "client"), log = join(parent, "calls");
+    try {
+      await writeFile(join(parent, "docker"), `#!/bin/sh\nprintf '%s\\n' "$*" >> "$PG17_TEST_CALLS"\nif [ "$1" = pull ]; then\n  if [ "$2" = --quiet ]; then printf '%s\\n' 'sha256:fixture'; else head -c 8192 /dev/zero | tr '\\000' x; fi\n  exit 0\nfi\nprintf '%s\\n' invalid-container\n`, { mode: 0o700 });
+      vi.stubEnv("PATH", parent + ":" + process.env.PATH); vi.stubEnv("PG17_TEST_CALLS", log);
+      // The old runner's real execFile options fail on simulated cold-pull
+      // progress even though this process would otherwise exit successfully.
+      const oldFailure = await new Promise(resolve => execFile("docker", ["pull", "--platform", "linux/amd64", CLIENT_IMAGE],
+        { timeout: 180000, killSignal: "SIGKILL", maxBuffer: 4096 }, error => resolve(error?.code)));
+      expect(oldFailure).toBe("ERR_CHILD_PROCESS_STDIO_MAXBUFFER");
+      // Reaching CREATE proves the real execFile pull completed rather than
+      // failing at its output bound. Invalid ID stops before any copy/execute.
+      await expect(buildPortablePostgresClient(directory)).rejects.toThrow(/^PORTABLE_PG_CONTAINER_ID_REQUIRED$/);
+      expect((await readFile(log, "utf8")).trim().split("\n")).toEqual([
+        `pull --platform linux/amd64 ${CLIENT_IMAGE}`,
+        `pull --quiet --platform linux/amd64 ${CLIENT_IMAGE}`,
+        `create --platform linux/amd64 --network none --entrypoint sh ${CLIENT_IMAGE} -c exit 0`,
+      ]);
+      expect(existsSync(directory)).toBe(false);
+    } finally { await rm(parent, { recursive: true, force: true }); }
+  });
+
+  it.each(["overflow", "exit"])("reports the fixed pull failure class for actual command-runner %s without raw output or replay", async kind => {
+    const parent = await mkdtemp(join(tmpdir(), "pg17-command-fail-")), directory = join(parent, "client"), log = join(parent, "calls");
+    try {
+      await writeFile(join(parent, "docker"), `#!/bin/sh\nprintf '%s\\n' "$1" >> "$PG17_TEST_CALLS"\n${kind === "overflow" ? "head -c 8192 /dev/zero | tr '\\000' x >&2; sleep 1" : "printf '%s\\n' PRIVATE_REGISTRY_CREDENTIAL_ERROR >&2; exit 17"}\n`, { mode: 0o700 });
+      vi.stubEnv("PATH", parent + ":" + process.env.PATH); vi.stubEnv("PG17_TEST_CALLS", log);
+      await expect(buildPortablePostgresClient(directory)).rejects.toThrow(new RegExp(`^PORTABLE_PG_DOCKER_PULL_${kind === "overflow" ? "OUTPUT_LIMIT" : "FAILED"}$`));
+      expect(await readFile(log, "utf8")).toBe("pull\n");
+      expect(existsSync(directory)).toBe(false);
     } finally { await rm(parent, { recursive: true, force: true }); }
   });
 });
