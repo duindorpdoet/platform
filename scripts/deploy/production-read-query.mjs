@@ -63,6 +63,21 @@ function safeErrorCode(error) {
   return "QUERY_FAILED";
 }
 
+function readBatch(sql, statementMs) {
+  // Put the effective policy in the same wire message and transaction as the
+  // read. SET (without LOCAL) also protects any command after an inner COMMIT.
+  const policy = `set default_transaction_read_only=on;set local statement_timeout='${statementMs}ms';set local lock_timeout='3s';set local jit=off;
+do $release_read_policy$begin
+if current_setting('transaction_read_only')<>'on' or current_setting('default_transaction_read_only')<>'on'
+ or current_setting('statement_timeout')<>'${statementMs === 300_000 ? "5min" : "1min"}'
+ or current_setting('lock_timeout')<>'3s' or current_setting('jit')<>'off'
+then raise exception 'RELEASE_READ_POLICY_REQUIRED';end if;end $release_read_policy$;`;
+  // The fixed owner wrappers keep their own BEGIN/COMMIT, original SQL body and
+  // narrower 15s/500ms or administrative 5min/3s settings after this prefix.
+  const begin = /^begin read only;/i.exec(sql)?.[0];
+  return begin ? begin + policy + sql.slice(begin.length) : `begin read only;${policy}${sql}\n;commit;`;
+}
+
 /** Explicit native SQL transport: SQL is never retried or replayed. */
 export async function sessionReadQuery(sql, env = process.env, request = fetch, ClientOverride) {
   if (!enabledSessionReads(env)) fail("TRANSPORT_NOT_ENABLED");
@@ -91,20 +106,23 @@ export async function sessionReadQuery(sql, env = process.env, request = fetch, 
   const project = await metadata("");
   const poolers = await metadata("/config/database/pooler");
   const plan = clientPlan(env, project, poolers);
-  const Client = ClientOverride ?? (await import("@supabase/pg")).Client;
-  const client = new Client(plan);
   // Preservation already has a bounded administrative five-minute wrapper.
   const longRead = sql.startsWith(preservationPrefix);
   const statementMs = longRead ? 300_000 : 60_000;
   const clientMs = statementMs + 10_000;
   let clientError = null;
   let safelyIdle = false;
+  let client;
+  let phase = "CONNECT";
   // An idle network failure must not become an unhandled EventEmitter error.
   const onError = error => { clientError = error; };
-  client.on("error", onError);
   try {
+    const Client = ClientOverride ?? (await import("@supabase/pg")).Client;
+    client = new Client(plan);
+    client.on("error", onError);
     await client.connect();
     safelyIdle = true;
+    phase = "POLICY";
     // SET is executed on this actual session: Supavisor can ignore startup GUCs.
     // A session default survives COMMIT in the existing owner-only SQL wrappers.
     async function query(text, timeoutMs) {
@@ -125,25 +143,31 @@ export async function sessionReadQuery(sql, env = process.env, request = fetch, 
     const proof = await query("select current_setting('default_transaction_read_only') as read_only,current_setting('statement_timeout') as statement_timeout,current_setting('lock_timeout') as lock_timeout,current_setting('jit') as jit", 10_000);
     const settings = proof.rows?.[0];
     if (settings?.read_only !== "on" || settings.jit !== "off"
-      || settings.lock_timeout !== "3s" || settings.statement_timeout !== (longRead ? "5min" : "1min")) fail("SESSION_POLICY_NOT_CONFIRMED");
-    const answer = await query(sql, clientMs);
+      || settings.lock_timeout !== "3s" || settings.statement_timeout !== (longRead ? "5min" : "1min")) fail("POLICY_NOT_CONFIRMED");
+    phase = "ORIGINAL";
+    const answer = await query(readBatch(sql, statementMs), clientMs);
     if (clientError) throw clientError;
     const results = Array.isArray(answer) ? answer : [answer];
-    if (results.some(result => !Array.isArray(result?.rows))) fail("RESULT_REQUIRED");
+    if (results.some(result => !Array.isArray(result?.rows))) fail("ORIGINAL_RESULT_REQUIRED");
     // Match postgres-meta's multi-statement response contract exactly. Setup
     // and proof queries above are separate, so they can never become data.
     return results.reverse().find(result => result.rows.length !== 0)?.rows ?? [];
   } catch (error) {
-    if (/^RELEASE_READ_[A-Z0-9_]+$/.test(error?.message ?? "")) throw error;
-    fail(safeErrorCode(error));
+    if (!isSqlState(error?.code) && /^RELEASE_READ_[A-Z0-9_]+$/.test(error?.message ?? "")) throw error;
+    if (error?.message === "RELEASE_READ_POLICY_REQUIRED") phase = "POLICY";
+    fail(`${phase}_${safeErrorCode(error)}`);
   } finally {
-    if (safelyIdle && !clientError) {
+    if (client && safelyIdle && !clientError) {
       // Restore the borrowed session only when its command has completed.
-      try { await client.query({ text: "rollback;reset all", query_timeout: 10_000 }); } catch { /* Close on any cleanup failure. */ }
+      try { await client.query({ text: "rollback;reset all", query_timeout: 10_000 }); }
+      catch (error) { console.error(`RELEASE_READ_CLEANUP_${safeErrorCode(error)}`); }
     }
     // query_timeout does not cancel pg's active server query. end() destroys an
     // active connection; do not queue ROLLBACK behind the timed-out operation.
-    try { await client.end(); } catch { /* No private driver errors escape. */ }
+    if (client) {
+      try { await client.end(); }
+      catch (error) { console.error(`RELEASE_READ_CLEANUP_CLOSE_${safeErrorCode(error)}`); }
+    }
   }
 }
 

@@ -15,11 +15,12 @@ const project = { id: ref, region: "eu-west-2", database: { host: `db.${ref}.sup
 const pooler = { pool_mode: "transaction", db_port: 6543, db_host: "aws-1-eu-west-2.pooler.supabase.com", db_user: "postgres", db_name: "postgres" };
 type Result = { command: string; fields: unknown[]; rows: Record<string, unknown>[] };
 const result = (rows: Record<string, unknown>[] = [], command = "SELECT"): Result => ({ command, fields: command === "SELECT" ? [{}] : [], rows });
-function fixture(options: { project?: unknown; poolers?: unknown; answer?: Result | Result[]; error?: Error; proof?: Record<string, unknown> } = {}) {
+function fixture(options: { project?: unknown; poolers?: unknown; answer?: Result | Result[]; error?: Error; proof?: Record<string, unknown>;
+  connectError?: Error; policyError?: Error; cleanupError?: Error; closeError?: Error } = {}) {
   const queries: { text: string; query_timeout: number }[] = [];
   let configuration: Record<string, unknown> = {};
-  const end = vi.fn(async () => {});
-  const connect = vi.fn(async () => {});
+  const end = vi.fn(async () => { if (options.closeError) throw options.closeError; });
+  const connect = vi.fn(async () => { if (options.connectError) throw options.connectError; });
   class Client {
     constructor(config: Record<string, unknown>) { configuration = config; }
     on() { return this; }
@@ -27,6 +28,11 @@ function fixture(options: { project?: unknown; poolers?: unknown; answer?: Resul
     end = end;
     async query(input: { text: string; query_timeout: number }): Promise<Result | Result[]> {
       queries.push(input);
+      if (input.text === "rollback;reset all") {
+        if (options.cleanupError) throw options.cleanupError;
+        return result([], "RESET");
+      }
+      if (queries.length <= 2 && options.policyError) throw options.policyError;
       if (input.text.startsWith("select current_setting")) return result([options.proof ?? { read_only: "on", statement_timeout: queries[1].text.includes("300000ms") ? "5min" : "1min", lock_timeout: "3s", jit: "off" }]);
       if (queries.length <= 2) return result([], "SET");
       if (options.error) throw options.error;
@@ -35,6 +41,15 @@ function fixture(options: { project?: unknown; poolers?: unknown; answer?: Resul
   }
   const request = vi.fn<typeof fetch>(async input => new Response(JSON.stringify(String(input).endsWith("/pooler") ? options.poolers ?? [pooler] : options.project ?? project)));
   return { request, Client, queries, end, connect, configuration: () => configuration };
+}
+function expectOriginalBody(batch: string, sql: string) {
+  const begin = /^begin read only;/i.exec(sql)?.[0];
+  expect(batch).toMatch(/^begin read only;set default_transaction_read_only=on;/);
+  expect(batch).toContain("set local jit=off;");
+  expect(batch).toContain("do $release_read_policy$begin");
+  expect(batch.split("end $release_read_policy$;")[0]).not.toMatch(/select current_setting/);
+  expect(batch.endsWith(begin ? sql.slice(begin.length) : `${sql}\n;commit;`)).toBe(true);
+  expect(batch.match(/begin read only;/gi)).toHaveLength(1);
 }
 
 describe("explicit release session reads", () => {
@@ -52,13 +67,13 @@ describe("explicit release session reads", () => {
     const f = fixture({ answer: [result([], "BEGIN"), result([{ previous: true }]), result([]), result([], "COMMIT")] });
     const sql = "begin read only;select 1;select 2 where false;commit;";
     expect(await sessionReadQuery(sql, env, f.request, f.Client)).toEqual([{ previous: true }]);
-    expect(f.queries.map(query => query.text)).toEqual([
+    expect(f.queries.slice(0, 3).map(query => query.text)).toEqual([
       "set default_transaction_read_only=on",
       "set statement_timeout='60000ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='70000ms'",
       "select current_setting('default_transaction_read_only') as read_only,current_setting('statement_timeout') as statement_timeout,current_setting('lock_timeout') as lock_timeout,current_setting('jit') as jit",
-      sql,
-      "rollback;reset all",
     ]);
+    expectOriginalBody(f.queries[3].text, sql);
+    expect(f.queries.at(-1)?.text).toBe("rollback;reset all");
     expect(f.queries.at(-2)?.query_timeout).toBe(70_000);
     expect(f.end).toHaveBeenCalledOnce();
     expect(f.request.mock.calls.map(([url, opts]) => [url, opts?.method])).toEqual([
@@ -96,7 +111,7 @@ describe("explicit release session reads", () => {
     const f = fixture();
     const sql = "begin read only;do $proof$begin perform set_config('request.jwt.claims','{}',true);perform set_config('app.readiness_joint_input','{}',true);end $proof$;select 1;commit;";
     await sessionReadQuery(sql, env, f.request, f.Client);
-    expect(f.queries.at(-2)?.text).toBe(sql);
+    expectOriginalBody(f.queries.at(-2)?.text ?? "", sql);
   });
   it("preserves every actual fixed release inspection and owner preservation wrapper through the SQL guard", async () => {
     const catalog = [{ schema: "app_private", name: "events", columns: ["id", "settings"] }];
@@ -104,7 +119,12 @@ describe("explicit release session reads", () => {
       releaseMetadataQuery(), preservationManagementRequest(catalog, { auditBoundary: "42" }).query]) {
       const f = fixture();
       await sessionReadQuery(sql, env, f.request, f.Client);
-      expect(f.queries.at(-2)?.text).toBe(sql);
+      const batch = f.queries.at(-2)?.text ?? "";
+      expectOriginalBody(batch, sql);
+      if (sql === PREVIEW_AUDIT_QUERY || sql === JOINT_PROPOSAL_INPUT_QUERY) {
+        expect(batch.indexOf("set local statement_timeout='15000ms'")).toBeGreaterThan(batch.indexOf("set local statement_timeout='60000ms'"));
+        expect(batch.indexOf("set local lock_timeout='500ms'")).toBeGreaterThan(batch.indexOf("set local lock_timeout='3s'"));
+      }
       expect(f.end).toHaveBeenCalledOnce();
     }
   });
@@ -117,12 +137,12 @@ describe("explicit release session reads", () => {
   });
   it("aborts on an unproven policy and closes directly on errors without leaking query, credentials or row data", async () => {
     const bad = fixture({ proof: { read_only: "off", statement_timeout: "1min", lock_timeout: "3s", jit: "off" } });
-    await expect(sessionReadQuery("select 'private-query'", env, bad.request, bad.Client)).rejects.toThrow("SESSION_POLICY_NOT_CONFIRMED");
+    await expect(sessionReadQuery("select 'private-query'", env, bad.request, bad.Client)).rejects.toThrow("POLICY_NOT_CONFIRMED");
     expect(bad.queries).toHaveLength(4);
     expect(bad.end).toHaveBeenCalledOnce();
     for (const error of [Object.assign(new Error("private-query fixture-password fixture-row"), { code: "25006" }), new Error("Query read timeout private-query")]) {
       const f = fixture({ error });
-      await expect(sessionReadQuery("select 'private-query'", env, f.request, f.Client)).rejects.toThrow(/^RELEASE_READ_(SQLSTATE_25006|CLIENT_TIMEOUT)$/);
+      await expect(sessionReadQuery("select 'private-query'", env, f.request, f.Client)).rejects.toThrow(/^RELEASE_READ_ORIGINAL_(SQLSTATE_25006|CLIENT_TIMEOUT)$/);
       expect(f.end).toHaveBeenCalledOnce();
       expect(f.queries).toHaveLength(error.message.includes("timeout") ? 4 : 5);
       expect(f.queries.some(query => /^rollback/i.test(query.text))).toBe(!error.message.includes("timeout"));
@@ -169,7 +189,7 @@ describe("explicit release session reads", () => {
       expect(await pending).toEqual([{ connectivity: 1 }]);
       expect(request).toHaveBeenCalledTimes(5);
       expect(f.connect).toHaveBeenCalledOnce();
-      expect(f.queries.filter(query => query.text === sql)).toHaveLength(1);
+      expect(f.queries.filter(query => query.text.includes(sql))).toHaveLength(1);
       for (const [url, options] of request.mock.calls) {
         expect(options?.method).toBe("GET");
         expect([`https://api.supabase.com/v1/projects/${ref}`, `https://api.supabase.com/v1/projects/${ref}/config/database/pooler`]).toContain(String(url));
@@ -208,7 +228,7 @@ describe("explicit release session reads", () => {
       await pending;
       expect(request).toHaveBeenCalledTimes(3);
       expect(f.connect).toHaveBeenCalledOnce();
-      expect(f.queries.filter(query => query.text === sql)).toHaveLength(1);
+      expect(f.queries.filter(query => query.text.includes(sql))).toHaveLength(1);
     } finally { vi.useRealTimers(); }
   });
   it("does not retry invalid metadata JSON or any native SQL error", async () => {
@@ -218,9 +238,34 @@ describe("explicit release session reads", () => {
     expect(request).toHaveBeenCalledOnce();
     const broken = fixture({ error: Object.assign(new Error("private-sql-body"), { code: "57014" }) });
     const sql = "select 'single-failing-native-execution'";
-    await expect(sessionReadQuery(sql, env, broken.request, broken.Client)).rejects.toThrow(/^RELEASE_READ_SQLSTATE_57014$/);
+    await expect(sessionReadQuery(sql, env, broken.request, broken.Client)).rejects.toThrow(/^RELEASE_READ_ORIGINAL_SQLSTATE_57014$/);
     expect(broken.request).toHaveBeenCalledTimes(2);
     expect(broken.connect).toHaveBeenCalledOnce();
-    expect(broken.queries.filter(query => query.text === sql)).toHaveLength(1);
+    expect(broken.queries.filter(query => query.text.includes(sql))).toHaveLength(1);
+  });
+  it("never substitutes policy assertion rows for an empty original result", async () => {
+    const f = fixture({ answer: [result([], "BEGIN"), result([], "SET"), result([], "DO"), result([]), result([], "COMMIT")] });
+    expect(await sessionReadQuery("select 1 where false", env, f.request, f.Client)).toEqual([]);
+  });
+  it("labels connection, session policy and in-batch policy failures without private errors", async () => {
+    for (const [options, expected] of [
+      [{ connectError: new Error("private-client timeout") }, "RELEASE_READ_CONNECT_CLIENT_TIMEOUT"],
+      [{ policyError: Object.assign(new Error("private-policy"), { code: "42501" }) }, "RELEASE_READ_POLICY_SQLSTATE_42501"],
+      [{ error: Object.assign(new Error("RELEASE_READ_POLICY_REQUIRED"), { code: "P0001" }) }, "RELEASE_READ_POLICY_SQLSTATE_P0001"],
+    ] as const) {
+      const f = fixture(options);
+      await expect(sessionReadQuery("select 1", env, f.request, f.Client)).rejects.toThrow(expected);
+      expect(f.end).toHaveBeenCalledOnce();
+    }
+  });
+  it("reports cleanup failure classes while preserving the result and always closing", async () => {
+    const report = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const f = fixture({ cleanupError: Object.assign(new Error("private-query fixture-password private-row"), { code: "42501" }),
+        closeError: new Error("private-TLS-certificate fixture-password") });
+      expect(await sessionReadQuery("select 1", env, f.request, f.Client)).toEqual([{ connectivity: 1 }]);
+      expect(f.end).toHaveBeenCalledOnce();
+      expect(report.mock.calls).toEqual([["RELEASE_READ_CLEANUP_SQLSTATE_42501"], ["RELEASE_READ_CLEANUP_CLOSE_TLS"]]);
+    } finally { report.mockRestore(); }
   });
 });
