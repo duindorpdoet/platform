@@ -10,8 +10,8 @@ const env = { GITHUB_EVENT_NAME: "workflow_dispatch", GITHUB_REF: "refs/heads/pr
   SUPABASE_ACCESS_TOKEN: "fixture-private-token", SUPABASE_DB_PASSWORD: "fixture-private-password",
   DATABASE_RECOVERY_REQUESTED: "true", DATABASE_RECOVERY_REASON: "Fixture confirmed triple connection outage only" };
 
-function fixture(options: { managementStatus?: number; dataStatus?: number; dataCode?: string; poolerConnected?: boolean;
-  poolerClass?: ConnectionErrorClass; restartFailure?: boolean; postRestartUnavailable?: boolean } = {}) {
+function fixture(options: { managementStatus?: number; managementMessage?: string; dataStatus?: number; dataCode?: string; poolerConnected?: boolean;
+  poolerClass?: ConnectionErrorClass; restartFailure?: boolean; postRestartUnavailable?: boolean; postRestartPayload?: unknown; postRestartRaw?: string } = {}) {
   let restarted = false, clock = 0;
   const request = vi.fn<typeof fetch>(async (input, init) => {
     const url = String(input);
@@ -23,7 +23,9 @@ function fixture(options: { managementStatus?: number; dataStatus?: number; data
     if (url === base + "/database/query" && init?.method === "POST") {
       expect(JSON.parse(String(init.body))).toEqual({ read_only: true, query: MANAGEMENT_PROBE_SQL });
       const status = restarted ? options.postRestartUnavailable ? 544 : 200 : options.managementStatus ?? 544;
-      return Response.json(status === 200 ? [{ connectivity: 1 }] : { message: "fixture private provider timeout" }, { status });
+      if (restarted && status === 200 && options.postRestartRaw !== undefined) return new Response(options.postRestartRaw, { status });
+      return Response.json(status === 200 ? restarted && "postRestartPayload" in options ? options.postRestartPayload : [{ connectivity: 1 }]
+        : { message: options.managementMessage ?? "Connection terminated due to connection timeout", detail: "fixture private provider timeout" }, { status });
     }
     if (url === `https://${ref}.supabase.co/rest/v1/rpc/admin_startregie_snapshot` && init?.method === "POST") {
       expect(new Headers(init.headers).get("content-profile")).toBe("api");
@@ -91,6 +93,28 @@ describe("explicit protected production database recovery", () => {
     const ambiguous = fixture({ restartFailure: true });
     await expect(ambiguous.run()).rejects.toThrow("RESTART_REQUEST_UNCONFIRMED_NO_RETRY");
     expect(ambiguous.restartRequests()).toHaveLength(1);
+  });
+  it.each([
+    { managementStatus: 544, managementMessage: "permission denied" },
+    { managementStatus: 504, managementMessage: "SSL certificate verification failed" },
+    { managementStatus: 544, managementMessage: "canceling statement due to statement timeout" },
+    { managementStatus: 504, managementMessage: "unrelated gateway failure" },
+    { managementStatus: 544, managementMessage: "password authentication failed; timeout expired" },
+  ])("does not treat gateway status alone as connection-timeout proof: %j", async options => {
+    const check = fixture(options);
+    await expect(check.run()).rejects.toThrow("MANAGEMENT_RESTART_VETO");
+    expect(check.restartRequests()).toEqual([]);
+  });
+  it.each([{ payload: {} }, { payload: [] }, { payload: [{ connectivity: "1" }] }, { payload: [{ connectivity: 1, unexpected: true }] }])("requires the exact SELECT1 result after restart: %j", async ({ payload: postRestartPayload }) => {
+    const check = fixture({ postRestartPayload });
+    await expect(check.run()).rejects.toThrow("POST_RESTART_READ_UNCONFIRMED_NO_RETRY");
+    expect(check.elapsed()).toBe(300_000);
+    expect(check.restartRequests()).toHaveLength(1);
+  });
+  it("does not report HTTP200 HTML as restored SQL connectivity", async () => {
+    const check = fixture({ postRestartRaw: "<html>unrelated success</html>" });
+    await expect(check.run()).rejects.toThrow("POST_RESTART_READ_UNCONFIRMED_NO_RETRY");
+    expect(check.restartRequests()).toHaveLength(1);
   });
   it("bounds post-restart reads to five minutes without another restart or deployment", async () => {
     const check = fixture({ postRestartUnavailable: true });

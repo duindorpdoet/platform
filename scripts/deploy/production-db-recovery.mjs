@@ -40,12 +40,21 @@ export async function recoverProductionDatabase(env = process.env, request = fet
     } catch (error) {
       return { reachable: false, errorClass: ["TimeoutError", "AbortError"].includes(error?.name) ? "CONNECTION_TIMEOUT" : classifyConnectionError(String(error?.message ?? "")), status: null };
     }
-    // Any successful SQL response vetoes restart, including unexpected JSON.
-    if (response.ok) return { reachable: true, errorClass: null, status: response.status };
+    if (response.ok) {
+      let rows;
+      try { rows = await response.json(); } catch { /* An HTTP success alone cannot prove SQL recovery. */ }
+      const confirmed = Array.isArray(rows) && rows.length === 1 && rows[0] !== null
+        && typeof rows[0] === "object" && Object.keys(rows[0]).length === 1 && rows[0].connectivity === 1;
+      // Invalid successful responses also veto restart through OTHER, and can
+      // never satisfy the post-restart SQL confirmation.
+      return { reachable: confirmed, errorClass: confirmed ? null : "OTHER", status: response.status };
+    }
     if ([401, 403].includes(response.status)) return { reachable: false, errorClass: "AUTH_FAILED", status: response.status };
     let body = "";
     try { body = await response.text(); } catch { /* Unknown responses fail closed. */ }
-    return { reachable: false, errorClass: [544, 504].includes(response.status) ? "CONNECTION_TIMEOUT" : classifyConnectionError(body), status: response.status };
+    // A gateway status alone is insufficient evidence. Only the known
+    // connection-timeout wording qualifies; a SQL statement timeout does not.
+    return { reachable: false, errorClass: /statement timeout|canceling statement/i.test(body) ? "OTHER" : classifyConnectionError(body), status: response.status };
   }
   async function anonymousReadProbe() {
     let response;
