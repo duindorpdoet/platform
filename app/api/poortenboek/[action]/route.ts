@@ -71,7 +71,7 @@ async function parentActor() {
   if (!result?.data.user || result.error) throw new Error("NOT_AUTHORIZED");
   return result.data.user.id;
 }
-export async function GET(_request: Request, context: Context) {
+export async function GET(request: Request, context: Context) {
   const { action } = await context.params;
   try {
     if (action === "parent")
@@ -92,7 +92,7 @@ export async function GET(_request: Request, context: Context) {
       );
     if (!["snapshot", "entry"].includes(action))
       return errorResponse("Niet gevonden", 404);
-    const snapshot = await childSnapshot();
+    const snapshot = await childSnapshot(request.signal);
     if (action === "entry")
       return response({ authenticated: Boolean(snapshot) });
     return snapshot

@@ -39,12 +39,12 @@ function initialTour(snapshot: TutorialSnapshot, childId: string): Session {
   return { active: !complete, mandatory: !complete, index: resumable ? Math.max(0, Math.min(steps.length - 1, snapshot.tutorial?.lastStep ?? 0)) : 0, returnHash: session?.active?session.returnHash:currentHash(), completed: complete };
 }
 
-export function KidGuide({ snapshot, section, onComplete }: { snapshot: TutorialSnapshot; section: BookSection; onComplete?: () => void | Promise<void> }) {
+export function KidGuide({ snapshot, section, requestSnapshot, onComplete }: { snapshot: TutorialSnapshot; section: BookSection; requestSnapshot: () => Promise<BookSnapshot | null>; onComplete?: () => void | Promise<void> }) {
   const childId = snapshot.childId || `child-${snapshot.medallion}`;
-  return <ChildGuide key={childId} snapshot={snapshot} section={section} childId={childId} onComplete={onComplete}/>;
+  return <ChildGuide key={childId} snapshot={snapshot} section={section} childId={childId} requestSnapshot={requestSnapshot} onComplete={onComplete}/>;
 }
 
-function ChildGuide({ snapshot, section, childId, onComplete }: { snapshot: TutorialSnapshot; section: BookSection; childId: string; onComplete?: () => void | Promise<void> }) {
+function ChildGuide({ snapshot, section, childId, requestSnapshot, onComplete }: { snapshot: TutorialSnapshot; section: BookSection; childId: string; requestSnapshot: () => Promise<BookSnapshot | null>; onComplete?: () => void | Promise<void> }) {
   const router=useRouter();
   const pathname=usePathname();
   const go=useCallback((path:string)=>{if(currentHash().split("?")[0]!==path)router.push(path);},[router]);
@@ -55,24 +55,35 @@ function ChildGuide({ snapshot, section, childId, onComplete }: { snapshot: Tuto
   const [error, setError] = useState("");
   const [targetVisible, setTargetVisible] = useState(false);
   const title = useRef<HTMLHeadingElement>(null);
+  const mountSnapshot = useRef(snapshot);
+  const awaitingSnapshot = useRef(true);
   const step = steps[tour.index];
   const waiting = busy || loading || (tour.active && pathname !== step.path);
+  const acceptSnapshot = useCallback((fresh: TutorialSnapshot) => {
+    if ((fresh.childId || `child-${fresh.medallion}`) !== childId) return false;
+    awaitingSnapshot.current = false;
+    setTour(initialTour(fresh, childId)); setError(""); setLoading(false);
+    return true;
+  }, [childId]);
   // Route prefetches can contain progress from before the previous POST.
-  // Read the current session before enabling the next step after a remount.
+  // Revalidate through the book's shared queue before enabling another step.
   useEffect(() => {
-    const controller=new AbortController();
-    const deadline=window.setTimeout(()=>controller.abort(),10000);
     let active=true;
-    void fetch('/api/poortenboek/snapshot',{cache:'no-store',signal:controller.signal})
-      .then(async response=>{
-        if(!response.ok)throw new Error('guide');
-        const fresh=await response.json() as TutorialSnapshot;
-        if((fresh.childId||`child-${fresh.medallion}`)!==childId)throw new Error('identity');
-        if(active){setTour(initialTour(fresh,childId));setError('');setLoading(false);}
-      }).catch(()=>{if(active)setError('De actuele uitleg kon niet worden opgehaald. Probeer opnieuw.');})
-      .finally(()=>window.clearTimeout(deadline));
-    return ()=>{active=false;controller.abort();window.clearTimeout(deadline);};
-  },[childId,reload]);
+    const unavailable=()=>{if(active&&awaitingSnapshot.current)setError('De uitleg wacht op een actuele verbinding. Probeer opnieuw.');};
+    void requestSnapshot().then(fresh=>{
+      if(!active||!awaitingSnapshot.current)return;
+      if(!fresh||!acceptSnapshot(fresh))unavailable();
+    }).catch(unavailable);
+    // This subscriber must never abort a read shared by other book triggers.
+    return ()=>{active=false;};
+  },[requestSnapshot,acceptSnapshot,reload]);
+  useEffect(() => {
+    if(snapshot===mountSnapshot.current)return;
+    let active=true;
+    // A later authorized book refresh also recovers a failed/paused guide read.
+    queueMicrotask(()=>{if(active&&awaitingSnapshot.current)acceptSnapshot(snapshot);});
+    return ()=>{active=false;};
+  },[snapshot,acceptSnapshot]);
   useEffect(() => { storeSession(childId, tour); }, [childId, tour]);
   useEffect(() => {
     if (!tour.active) return;
