@@ -50,7 +50,7 @@ describe("explicit release read transport workflow contract", () => {
     for (const name of enabled) {
       const body = entries.get(name)!;
       if (environment === "production") {
-        expect(body).toContain("RELEASE_READ_TRANSPORT: direct");
+        expect(body).toContain("RELEASE_READ_TRANSPORT: session-pooler");
         expect(body).toContain("!inputs.database_connection_diagnostics");
         expect(body).toContain("!inputs.database_connection_recovery");
       } else {
@@ -88,7 +88,7 @@ describe("explicit release read transport workflow contract", () => {
       "run: node scripts/deploy/inspect-finale-planning.mjs",
       "run: pnpm verify",
       "run: node scripts/deploy/redesign-preflight.mjs",
-      environment === "production" ? "Migrate production database through the verified direct endpoint" : `Link and migrate ${environment} database`,
+      environment === "production" ? "Migrate production database through the verified session pooler" : `Link and migrate ${environment} database`,
       "run: node scripts/deploy/redesign-postmigration.mjs",
       "/usr/local/bin/dg-site-deploy",
       "run: node scripts/deploy/check-security-advisors.mjs",

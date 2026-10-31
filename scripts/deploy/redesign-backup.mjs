@@ -274,12 +274,14 @@ async function exportSource({env,key,context,directory,save,request,captureComma
   const version=project.database?.version;
   if(!/^\d+\.\d+\.\d+\.\d+$/.test(version??''))throw new Error('POSTGRES_IMAGE_VERSION_REQUIRED');
   const image='supabase/postgres:'+version;
+  const nativeSource=env.RELEASE_READ_TRANSPORT==='direct'||env.RELEASE_READ_CLIENT==='libpq';
   let sourceEnv,sourceClient,caDirectory;
   try {
-    if(env.RELEASE_READ_TRANSPORT==='direct') {
+    if(nativeSource) {
       const {adminDatabasePlan,publicReleaseCaBundle}=await import('./production-read-query.mjs');
       const {validatePortablePostgresClient}=await import('./portable-postgres-clients.mjs');
-      const config=await adminDatabasePlan(env,project);
+      const poolers=env.RELEASE_READ_TRANSPORT==='session-pooler'?await apiCall('/config/database/pooler'):undefined;
+      const config=await adminDatabasePlan(env,project,poolers);
       if(!env.RELEASE_PG_CLIENT_DIRECTORY)throw new Error('PORTABLE_POSTGRES_CLIENT_DIRECTORY_REQUIRED');
       const tools=await validatePortablePostgresClient(env.RELEASE_PG_CLIENT_DIRECTORY);
       if(tools.version!==version.split('.').slice(0,2).join('.'))throw new Error('PORTABLE_POSTGRES_CLIENT_VERSION_MISMATCH');
@@ -306,7 +308,7 @@ async function exportSource({env,key,context,directory,save,request,captureComma
       const clientArgs=['run','--rm','-i','--network','host',...Object.keys(sourceEnv).flatMap(name=>['--env',name]),image];
       sourceClient=tool=>({command:'docker',args:[...clientArgs,tool]});
     }
-    const psql=sourceClient('psql'),dumpClient=sourceClient('pg_dump'),inheritSourceEnvironment=env.RELEASE_READ_TRANSPORT!=='direct';
+    const psql=sourceClient('psql'),dumpClient=sourceClient('pg_dump'),inheritSourceEnvironment=!nativeSource;
   const sourceQuery=(phase,sql,snapshot)=>withSourceReadPhase(phase,()=>
     captureCommand(psql.command,[...psql.args,'-X','-qAt','-v','ON_ERROR_STOP=1'],sourceReadPrefix(snapshot)+sql+';commit;',sourceEnv,inheritSourceEnvironment));
   const holder=spawnCommand(psql.command,[...psql.args,'-X','-qAt','-v','ON_ERROR_STOP=1'],sourceEnv,inheritSourceEnvironment);

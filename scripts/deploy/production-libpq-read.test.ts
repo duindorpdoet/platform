@@ -86,6 +86,36 @@ describe("explicit production portable libpq read", () => {
     await libpqReadQuery("fixed-batch", env, plan, "PUBLIC", 300_000, run, async () => tools);
     expect(run).toHaveBeenCalledOnce();
   });
+  it("uses the trusted production session-pooler plan with project-qualified owner, full client TLS and port 5432", async () => {
+    const sessionEnv = { ...env, RELEASE_READ_TRANSPORT: "session-pooler" };
+    const sessionPlan = adminDatabasePlan(sessionEnv, { id: ref, region: "eu-west-2", database: { host: `db.${ref}.supabase.co` } },
+      [{ pool_mode: "session", db_host: "aws-1-eu-west-2.pooler.supabase.com", db_user: "postgres", db_name: "postgres" }]);
+    expect(enabledSessionReads(sessionEnv)).toBe(true);
+    const run = vi.fn(async (_command: string, args: string[], environment: Record<string, string | undefined>) => {
+      expect(args[5]).toBe("ON_ERROR_STOP=0"); expect(args.slice(-2)).toEqual(["--command", "rollback;reset all"]);
+      expect(args.filter(value => value === "fixed-batch")).toHaveLength(0);
+      expect(args[11].endsWith("fixed-batch")).toBe(true);
+      expect(environment).toMatchObject({ PGHOST: "aws-1-eu-west-2.pooler.supabase.com", PGPORT: "5432", PGUSER: `postgres.${ref}`,
+        PGSSLMODE: "verify-full", PGCONNECT_TIMEOUT: "30", PGGSSENCMODE: "disable" });
+      return { error: null, stdout: "audit\n{}\n", stderr: "" };
+    });
+    expect(await libpqReadQuery("fixed-batch", sessionEnv, sessionPlan, "PUBLIC-CA", 60_000, run, async () => tools)).toEqual([{ audit: {} }]);
+    expect(run).toHaveBeenCalledOnce();
+    for (const changes of [{ port: 6543 }, { user: "postgres" }, { user: "postgres.nocteiuvohesvqbowchw" },
+      { host: "aws-1-eu-west-1.pooler.supabase.com" }, { host: "aws-1-eu-west-2.pooler.supabase.com.private.invalid" },
+      { host: `db.${ref}.supabase.co` }, { ssl: { rejectUnauthorized: false } }]) {
+      await expect(libpqReadQuery("batch", sessionEnv, { ...sessionPlan, ...changes } as typeof sessionPlan,
+        "CA", 60_000, run, async () => tools)).rejects.toThrow("RELEASE_READ_LIBPQ_ENVIRONMENT_BOUNDARY");
+    }
+    expect(run).toHaveBeenCalledOnce();
+  });
+  it.each(["ERROR:  57014: private original SQL error", "ERROR:  42501: private cleanup error", "FATAL:  08006: private connection error", "ERROR: private unclassified server error"])("vetoes a server failure even after successful session cleanup exit zero: %s", async stderr => {
+    const sessionEnv = { ...env, RELEASE_READ_TRANSPORT: "session-pooler" };
+    const sessionPlan = { ...plan, host: "aws-1-eu-west-2.pooler.supabase.com", user: `postgres.${ref}` };
+    const run = vi.fn(async () => ({ error: null, stdout: "audit\n{}\n", stderr }));
+    await expect(libpqReadQuery("fixed-batch", sessionEnv, sessionPlan, "CA", 60_000, run, async () => tools)).rejects.toThrow(/^RELEASE_READ_/);
+    expect(run).toHaveBeenCalledOnce();
+  });
   it("rejects client, environment and endpoint changes before validation or processes", async () => {
     const run = vi.fn(), validate = vi.fn();
     for (const change of [{ RELEASE_READ_CLIENT: "node" }, { RELEASE_READ_TRANSPORT: "session-pooler" }, { APP_ENVIRONMENT: "staging" },
@@ -95,7 +125,7 @@ describe("explicit production portable libpq read", () => {
     await expect(libpqReadQuery("batch", env, { ...plan, host: "wrong" }, "CA", 60_000, run, validate)).rejects.toThrow("RELEASE_READ_LIBPQ_ENVIRONMENT_BOUNDARY");
     expect(run).not.toHaveBeenCalled(); expect(validate).not.toHaveBeenCalled();
     expect(() => enabledSessionReads({ ...env, APP_ENVIRONMENT: "staging" })).toThrow("RELEASE_READ_CLIENT_ENVIRONMENT_BOUNDARY");
-    expect(() => enabledSessionReads({ ...env, RELEASE_READ_TRANSPORT: "session-pooler" })).toThrow("RELEASE_READ_CLIENT_ENVIRONMENT_BOUNDARY");
+    expect(() => enabledSessionReads({ ...env, RELEASE_READ_TRANSPORT: "transaction-pooler" })).toThrow("RELEASE_READ_CLIENT_ENVIRONMENT_BOUNDARY");
     expect(() => enabledSessionReads({ ...env, RELEASE_PG_CLIENT_DIRECTORY: "" })).toThrow("RELEASE_READ_CLIENT_ENVIRONMENT_BOUNDARY");
   });
   it.each([

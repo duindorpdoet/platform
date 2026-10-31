@@ -55,7 +55,7 @@ function configured(env) {
 }
 
 export function enabledSessionReads(env = process.env) {
-  if (env.RELEASE_READ_CLIENT && (env.RELEASE_READ_CLIENT !== "libpq" || env.RELEASE_READ_TRANSPORT !== "direct"
+  if (env.RELEASE_READ_CLIENT && (env.RELEASE_READ_CLIENT !== "libpq" || !["direct", "session-pooler"].includes(env.RELEASE_READ_TRANSPORT)
     || env.APP_ENVIRONMENT !== "production" || !env.RELEASE_PG_CLIENT_DIRECTORY)) fail("CLIENT_ENVIRONMENT_BOUNDARY");
   if (!env.RELEASE_READ_TRANSPORT) return false;
   if (!["session-pooler", "direct"].includes(env.RELEASE_READ_TRANSPORT)) fail("TRANSPORT_NOT_ENABLED");

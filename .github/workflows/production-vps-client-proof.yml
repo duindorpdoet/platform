@@ -47,7 +47,7 @@ jobs:
       - name: Prove unchanged canonical checks and migration CLI without applying migrations
         env:
           APP_ENVIRONMENT: production
-          RELEASE_READ_TRANSPORT: direct
+          RELEASE_READ_TRANSPORT: session-pooler
           RELEASE_READ_CLIENT: libpq
           RELEASE_PG_CLIENT_DIRECTORY: ${{ runner.temp }}/duindorp-vps-proof-clients
           MIGRATION_CONNECT_PROOF: 'true'

@@ -22,7 +22,7 @@ function environment(root:string) {
   return {APP_ENVIRONMENT:'production',GITHUB_SHA:'a'.repeat(40),GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1',GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/production',GITHUB_REPOSITORY:'duindorpdoet/platform',
     SUPABASE_PROJECT_REF:ref,SUPABASE_ACCESS_TOKEN:'PRIVATE_TOKEN',SUPABASE_DB_PASSWORD:'PRIVATE_PASSWORD',SUPABASE_SERVICE_ROLE_KEY:'PRIVATE_SERVICE',CHILD_CODE_ENCRYPTION_KEY:Buffer.alloc(32,17).toString('base64'),RUNNER_TEMP:root,RELEASE_BACKUP_MODE:'export',RELEASE_READ_TRANSPORT:'direct',RELEASE_PG_CLIENT_DIRECTORY:'/trusted'};
 }
-it('passes an exact isolated environment through both actual native spawn and capture without remerging ambient libpq, service or TLS overrides',async()=>{
+it.each(['direct','session-pooler'])('passes an exact isolated %s environment through actual native spawn and capture without ambient overrides',async transport=>{
   poison();const root=await mkdtemp(join(tmpdir(),'duindorp-native-env-'));
   try {
     const environments:Array<Record<string,string|undefined>>=[],homes:string[]=[];
@@ -34,11 +34,12 @@ it('passes an exact isolated environment through both actual native spawn and ca
       stdin.on('data',bytes=>{if(String(bytes).includes('pg_export_snapshot'))stdout.write('00000001-00000002-1\n');});
       return Object.assign(child,{stdin,stdout,stderr,kill:()=>{stdin.end();child.emit('close',0);return true;}}) as unknown as ChildProcessWithoutNullStreams;
     });
-    const request=vi.fn<typeof fetch>(async()=>Response.json(project));
-    await expect(runReleaseBackup(environment(root),{request})).rejects.toThrow('NATIVE_CAPTURE_STOP');
-    expect(mocks.spawn).toHaveBeenCalledTimes(2);expect(request).toHaveBeenCalledOnce();
+    const request=vi.fn<typeof fetch>(async input=>Response.json(String(input).endsWith('/pooler')?
+      [{pool_mode:'transaction',db_host:'aws-1-eu-west-2.pooler.supabase.com',db_user:'postgres',db_name:'postgres',db_port:6543}]:project));
+    await expect(runReleaseBackup({...environment(root),RELEASE_READ_TRANSPORT:transport,...(transport==='session-pooler'?{RELEASE_READ_CLIENT:'libpq'}:{})},{request})).rejects.toThrow('NATIVE_CAPTURE_STOP');
+    expect(mocks.spawn).toHaveBeenCalledTimes(2);expect(request).toHaveBeenCalledTimes(transport==='session-pooler'?2:1);
     for(const env of environments) {
-      expect(env).toMatchObject({PGHOST:project.database.host,PGPORT:'5432',PGDATABASE:'postgres',PGUSER:'postgres',PGPASSWORD:'PRIVATE_PASSWORD',PGCONNECT_TIMEOUT:'30',PGSSLMODE:'verify-full',PGGSSENCMODE:'disable',
+      expect(env).toMatchObject({PGHOST:transport==='session-pooler'?'aws-1-eu-west-2.pooler.supabase.com':project.database.host,PGPORT:'5432',PGDATABASE:'postgres',PGUSER:transport==='session-pooler'?`postgres.${ref}`:'postgres',PGPASSWORD:'PRIVATE_PASSWORD',PGCONNECT_TIMEOUT:'30',PGSSLMODE:'verify-full',PGGSSENCMODE:'disable',
         LANG:'C',LC_ALL:'C'});
       // Empty service paths cause libpq to fail before connecting. Optional
       // settings must be absent in this non-inheriting private environment.
@@ -62,5 +63,17 @@ it('preserves the original ambient environment merge for the default Docker path
     const request=vi.fn<typeof fetch>(async input=>Response.json(String(input).endsWith('/pooler')?[{pool_mode:'session',db_host:'aws-1-eu-west-2.pooler.supabase.com',db_user:'postgres',db_name:'postgres'}]:project));
     await expect(runReleaseBackup({...environment(root),RELEASE_READ_TRANSPORT:undefined},{request})).rejects.toThrow('DEFAULT_DOCKER_STOP');
     expect(mocks.spawn).toHaveBeenCalledOnce();expect(request).toHaveBeenCalledTimes(2);
+  }finally{await rm(root,{recursive:true,force:true});}
+});
+it.each([
+  {db_host:'untrusted.example'}, {db_user:'supabase_admin'}, {db_name:'another_database'},
+])('rejects untrusted native session-pooler metadata before any client process: %j',async changed=>{
+  const root=await mkdtemp(join(tmpdir(),'duindorp-session-boundary-'));
+  try {
+    const request=vi.fn<typeof fetch>(async input=>Response.json(String(input).endsWith('/pooler')?
+      [{pool_mode:'session',db_host:'aws-1-eu-west-2.pooler.supabase.com',db_user:'postgres',db_name:'postgres',...changed}]:project));
+    await expect(runReleaseBackup({...environment(root),RELEASE_READ_TRANSPORT:'session-pooler',RELEASE_READ_CLIENT:'libpq'},{request}))
+      .rejects.toThrow('TRUSTED_SESSION_POOLER_REQUIRED');
+    expect(request).toHaveBeenCalledTimes(2);expect(mocks.spawn).not.toHaveBeenCalled();
   }finally{await rm(root,{recursive:true,force:true});}
 });

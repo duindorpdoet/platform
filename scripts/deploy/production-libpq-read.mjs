@@ -81,10 +81,16 @@ function execute(command, args, environment, timeout) {
 
 /** One verified portable psql process; no query retry, fallback or output logs. */
 export async function libpqReadQuery(batch, env, plan, caBundle, statementMs, run = execute, validate = validatePortablePostgresClient) {
-  if (env.RELEASE_READ_CLIENT !== "libpq" || env.RELEASE_READ_TRANSPORT !== "direct" || env.APP_ENVIRONMENT !== "production"
+  const direct = env.RELEASE_READ_TRANSPORT === "direct" && plan.host === "db.dtubngvxfbupgvgfrjko.supabase.co" && plan.user === "postgres";
+  // The caller also validates this host against the trusted project's region
+  // and pooler metadata. This boundary independently pins production's region,
+  // project-qualified owner and session port; transaction port 6543 is excluded.
+  const session = env.RELEASE_READ_TRANSPORT === "session-pooler" && /^aws-[0-9]+-eu-west-2\.pooler\.supabase\.com$/.test(plan.host)
+    && plan.user === "postgres.dtubngvxfbupgvgfrjko";
+  if (env.RELEASE_READ_CLIENT !== "libpq" || (!direct && !session) || env.APP_ENVIRONMENT !== "production"
     || typeof env.RELEASE_PG_CLIENT_DIRECTORY !== "string" || !env.RELEASE_PG_CLIENT_DIRECTORY
-    || env.SUPABASE_PROJECT_REF !== "dtubngvxfbupgvgfrjko" || plan.host !== "db.dtubngvxfbupgvgfrjko.supabase.co"
-    || plan.port !== 5432 || plan.database !== "postgres" || plan.user !== "postgres" || plan.ssl?.rejectUnauthorized !== true) fail("ENVIRONMENT_BOUNDARY");
+    || env.SUPABASE_PROJECT_REF !== "dtubngvxfbupgvgfrjko"
+    || plan.port !== 5432 || plan.database !== "postgres" || plan.ssl?.rejectUnauthorized !== true) fail("ENVIRONMENT_BOUNDARY");
   const tools = await validate(env.RELEASE_PG_CLIENT_DIRECTORY);
   const directory = await mkdtemp(join(tmpdir(), "duindorp-libpq-read-"));
   try {
@@ -100,20 +106,31 @@ export async function libpqReadQuery(batch, env, plan, caBundle, statementMs, ru
     // Same actual-session setup and unmodified readBatch, sent together. The DO
     // guard runs before the original SQL; a session default protects inner COMMIT.
     const sql = `set default_transaction_read_only=on;set statement_timeout='${statementMs}ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='${clientMs}ms';${batch}`;
+    const args = ["-X", "-q", "--csv", "-w", "-v", `ON_ERROR_STOP=${session ? "0" : "1"}`, "-v", "VERBOSITY=verbose", "--pset", `null=${nullMarker}`, "--command", sql];
+    // A session-pooler backend is borrowed. Restore its session settings after
+    // either a completed read or a PostgreSQL ErrorResponse, on this connection.
+    // Each -c is one wire batch: an error aborts the rest of the read batch.
+    // Noninteractive psql exits on lost connections and never reconnects; a
+    // client deadline kills this process rather than queuing cleanup afterward.
+    if (session) args.push("--command", "rollback;reset all");
     let result;
-    try { result = await run(tools.psql, ["-X", "-q", "--csv", "-w", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose", "--pset", `null=${nullMarker}`, "--command", sql], environment, 30_000 + clientMs); }
+    try { result = await run(tools.psql, args, environment, 30_000 + clientMs); }
     catch { fail("PROCESS_FAILED"); }
+    // With ON_ERROR_STOP=0 a successful cleanup can give exit 0 after the read
+    // failed. Every server error still vetoes all partial or apparently valid
+    // stdout, including errors in cleanup itself. No query is replayed.
+    const message = result.stderr ?? "";
+    const state = /\b(?:ERROR|FATAL):\s*([0-9A-Z]{5}):/.exec(message)?.[1];
+    if (result.error?.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") fail("OUTPUT_LIMIT");
+    if (result.error?.killed) fail("CLIENT_TIMEOUT");
+    if (state && /[0-9]/.test(state)) {
+      const phase = state === "P0001" && message.includes("RELEASE_READ_POLICY_REQUIRED") ? "POLICY" : /\bFATAL:/.test(message) ? "CONNECT" : "ORIGINAL";
+      throw new Error(`RELEASE_READ_${phase}_SQLSTATE_${state}`);
+    }
+    if (/\b(?:ERROR|FATAL):/.test(message)) fail("SERVER_ERROR");
     if (result.error) {
       const error = result.error;
-      if (error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") fail("OUTPUT_LIMIT");
-      if (error.killed) fail("CLIENT_TIMEOUT");
       if (error.code === "ENOENT") fail("CLIENT_UNAVAILABLE");
-      const message = result.stderr ?? "";
-      const state = /\b(?:ERROR|FATAL):\s*([0-9A-Z]{5}):/.exec(message)?.[1];
-      if (state && /[0-9]/.test(state)) {
-        const phase = state === "P0001" && message.includes("RELEASE_READ_POLICY_REQUIRED") ? "POLICY" : /\bFATAL:/.test(message) ? "CONNECT" : "ORIGINAL";
-        throw new Error(`RELEASE_READ_${phase}_SQLSTATE_${state}`);
-      }
       if (/certificate|SSL|TLS/i.test(message)) fail("CONNECT_TLS");
       if (/timeout/i.test(message)) fail("CONNECT_CLIENT_TIMEOUT");
       fail("CONNECT_FAILED");

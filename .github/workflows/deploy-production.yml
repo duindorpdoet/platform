@@ -318,7 +318,7 @@ jobs:
     timeout-minutes: 35
     env:
       APP_ENVIRONMENT: production
-      RELEASE_READ_TRANSPORT: direct
+      RELEASE_READ_TRANSPORT: session-pooler
       RELEASE_BACKUP_MODE: export
       SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -457,7 +457,7 @@ jobs:
     timeout-minutes: 40
     env:
       APP_ENVIRONMENT: production
-      RELEASE_READ_TRANSPORT: direct
+      RELEASE_READ_TRANSPORT: session-pooler
       APP_REVISION: ${{ github.sha }}
       APP_URL: https://halloween.duindorpdoet.nl
       NEXT_PUBLIC_SITE_URL: https://halloween.duindorpdoet.nl
@@ -581,7 +581,7 @@ jobs:
         env:
           RELEASE_BACKUP_DIRECTORY: ${{ runner.temp }}/duindorp-release-backup
         run: node scripts/deploy/redesign-preflight.mjs
-      - name: Migrate production database through the verified direct endpoint
+      - name: Migrate production database through the verified session pooler
         env:
           PGOPTIONS: '-c lock_timeout=5000 -c statement_timeout=300000'
         run: |

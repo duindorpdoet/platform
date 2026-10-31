@@ -14,7 +14,7 @@ const FAILURE_CODES = new Set(["ENVIRONMENT_BOUNDARY", "METADATA_REQUEST_FAILED"
 const fail = code => { throw new Error(`PRODUCTION_DIRECT_MIGRATION_${code}`); };
 
 function requireContext(env) {
-  if (env.RELEASE_READ_TRANSPORT !== "direct" || env.APP_ENVIRONMENT !== "production") fail("ENVIRONMENT_BOUNDARY");
+  if (!["direct", "session-pooler"].includes(env.RELEASE_READ_TRANSPORT) || env.APP_ENVIRONMENT !== "production") fail("ENVIRONMENT_BOUNDARY");
   try { if (!enabledSessionReads(env)) fail("ENVIRONMENT_BOUNDARY"); }
   catch { fail("ENVIRONMENT_BOUNDARY"); }
 }
@@ -101,8 +101,9 @@ async function runMigration(env, request, spawnProcess, dryRun) {
   requireContext(env); // Before metadata, private files, child processes or SQL.
   let directory;
   try {
+    async function metadata(path) {
     let response;
-    try { response = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}`, {
+    try { response = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}${path}`, {
       method: "GET", redirect: "error", headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}` },
       signal: AbortSignal.timeout(15_000),
     }); } catch { fail("METADATA_REQUEST_FAILED"); }
@@ -110,16 +111,19 @@ async function runMigration(env, request, spawnProcess, dryRun) {
       try { await response.body?.cancel(); } catch { /* Never expose provider response data. */ }
       fail("METADATA_HTTP_FAILED");
     }
-    let project, plan;
-    try { project = await response.json(); } catch { fail("METADATA_INVALID_JSON"); }
-    try { plan = adminDatabasePlan(env, project); } catch { fail("METADATA_BOUNDARY"); }
+    try { return await response.json(); } catch { fail("METADATA_INVALID_JSON"); }
+    }
+    const project = await metadata("");
+    const poolers = env.RELEASE_READ_TRANSPORT === "session-pooler" ? await metadata("/config/database/pooler") : undefined;
+    let plan;
+    try { plan = adminDatabasePlan(env, project, poolers); } catch { fail("METADATA_BOUNDARY"); }
     // Read the checked-out allowlist before the only mutating command.
     const filenames = await readdir(MIGRATIONS_DIRECTORY);
     directory = await mkdtemp(join(tmpdir(), "duindorp-direct-migrate-"));
     await chmod(directory, 0o700);
     const caFile = join(directory, "root.crt");
     await writeFile(caFile, publicReleaseCaBundle(), { mode: 0o600, flag: "wx" });
-    const url = new URL(`postgresql://postgres@${plan.host}:5432/postgres`);
+    const url = new URL(`postgresql://${encodeURIComponent(plan.user)}@${plan.host}:${plan.port}/${plan.database}`);
     url.searchParams.set("sslmode", "verify-full"); url.searchParams.set("sslrootcert", caFile);
     const migration = await pushDatabase(url.href, plan.password, migrationEnvironment(env, plan, caFile), filenames, spawnProcess, dryRun);
     if (migration.status !== "SUCCESS") {
@@ -148,7 +152,7 @@ async function runMigration(env, request, spawnProcess, dryRun) {
   }
 }
 
-/** Production-only direct migration; no link, retry, replay or history repair. */
+/** Production migration through its explicit verified plan; no retry or repair. */
 export async function runProductionDirectMigration(env = process.env, request = fetch, spawnProcess = spawn) {
   return runMigration(env, request, spawnProcess, false);
 }

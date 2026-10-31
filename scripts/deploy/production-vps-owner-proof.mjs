@@ -14,7 +14,7 @@ export async function proveProductionOwnerReads(env = process.env) {
   if (env.GITHUB_EVENT_NAME !== "workflow_dispatch" || env.GITHUB_WORKFLOW !== "Read-only production VPS client proof"
     || env.GITHUB_REF !== "refs/heads/production" || env.APP_ENVIRONMENT !== "production"
     || env.RUNNER_NAME !== "dg-sites-vps-01-duindorphalloweenprod-01" || env.RELEASE_READ_CLIENT !== "libpq"
-    || env.RELEASE_READ_TRANSPORT !== "direct" || env.MIGRATION_CONNECT_PROOF !== "true"
+    || env.RELEASE_READ_TRANSPORT !== "session-pooler" || env.MIGRATION_CONNECT_PROOF !== "true"
     || !env.RUNNER_TEMP || !enabledSessionReads(env)) fail("ENVIRONMENT_BOUNDARY");
   const report = { diagnostic: "production-vps-owner-read-and-migration-dry-run", revision: env.GITHUB_SHA,
     status: "running", readOnly: true, changedRows: 0, messagesSent: 0, phases: [] };

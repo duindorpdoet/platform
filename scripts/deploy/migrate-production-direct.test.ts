@@ -14,6 +14,7 @@ const env = { RELEASE_READ_TRANSPORT: "direct", GITHUB_EVENT_NAME: "workflow_dis
   SUPABASE_PROJECT_REF: ref, GITHUB_SHA: "a".repeat(40), APP_REVISION: "a".repeat(40),
   SUPABASE_ACCESS_TOKEN: "fixture-private-token", SUPABASE_DB_PASSWORD: "fixture-private-password" };
 const project = { id: ref, region: "eu-west-2", database: { host: `db.${ref}.supabase.co` } };
+const pooler = { pool_mode: "transaction", db_host: "aws-1-eu-west-2.pooler.supabase.com", db_user: "postgres", db_name: "postgres", db_port: 6543 };
 const migrationName = "20261030231652_bound_startregie_snapshot_reads.sql";
 const report = readFileSync(new URL("./nachtpost-activation-report.sql", import.meta.url), "utf8");
 const stdout = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -21,10 +22,11 @@ const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
 
 afterEach(() => { vi.useRealTimers(); vi.mocked(sessionReadQuery).mockReset(); stdout.mockClear(); stderr.mockClear(); });
 
-function fixture(options: { status?: number; metadata?: unknown; requestError?: Error; exit?: number; signal?: string;
+function fixture(options: { status?: number; metadata?: unknown; poolers?: unknown; poolerStatus?: number; requestError?: Error; exit?: number; signal?: string;
   output?: string; error?: Error; pending?: boolean; startError?: Error; onSpawn?: (args: readonly string[], options: Record<string, unknown>) => void } = {}) {
-  const request = vi.fn<typeof fetch>(async () => {
+  const request = vi.fn<typeof fetch>(async input => {
     if (options.requestError) throw options.requestError;
+    if (String(input).endsWith("/pooler")) return new Response(JSON.stringify(options.poolers ?? [pooler]), { status: options.poolerStatus ?? 200 });
     return new Response(JSON.stringify(options.metadata ?? project), { status: options.status ?? 200 });
   });
   const child = Object.assign(new EventEmitter(), { stdout: new EventEmitter(), stderr: new EventEmitter(),
@@ -53,6 +55,36 @@ function fixture(options: { status?: number; metadata?: unknown; requestError?: 
 function observedOutput() { return [...stdout.mock.calls, ...stderr.mock.calls].flat().join("\n"); }
 
 describe("production direct migration", () => {
+  it.each(["apply", "dry-run"])("uses one verified session-pooler owner connection on 5432 for %s", async mode => {
+    const context = { ...env, RELEASE_READ_TRANSPORT: "session-pooler", RELEASE_READ_CLIENT: "libpq", RELEASE_PG_CLIENT_DIRECTORY: "/fixed", MIGRATION_CONNECT_PROOF: "true" };
+    const f = fixture({ onSpawn: (args, options) => {
+      const url = new URL(args[5]);
+      expect(url.hostname).toBe(pooler.db_host); expect(url.port).toBe("5432"); expect(url.username).toBe(`postgres.${ref}`);
+      expect(url.password).toBe(""); expect(url.searchParams.get("sslmode")).toBe("verify-full");
+      expect(args.includes("--dry-run")).toBe(mode === "dry-run");
+      expect(args.join(" ")).not.toContain(env.SUPABASE_DB_PASSWORD);
+      expect(options).toMatchObject({ env: { PGHOST: pooler.db_host, PGPORT: "5432", PGUSER: `postgres.${ref}`,
+        PGSSLMODE: "verify-full", PGPASSWORD: env.SUPABASE_DB_PASSWORD } });
+    } });
+    const result = await (mode === "dry-run" ? f.runDry(context) : f.run(context));
+    expect(result.status).toBe("SUCCESS"); expect(f.spawnProcess).toHaveBeenCalledOnce();
+    expect(f.request.mock.calls.map(call => call[0])).toEqual([
+      `https://api.supabase.com/v1/projects/${ref}`, `https://api.supabase.com/v1/projects/${ref}/config/database/pooler`,
+    ]);
+    expect(sessionReadQuery).toHaveBeenCalledTimes(mode === "dry-run" ? 0 : 1); expect(existsSync(f.caFile())).toBe(false);
+  });
+  it.each([{ db_host: "untrusted.example" }, { db_user: "supabase_admin" }, { db_name: "another_database" }])("rejects untrusted session-pooler metadata %j before CLI or SQL", async changed => {
+    const f = fixture({ poolers: [{ ...pooler, ...changed }] });
+    await expect(f.run({ ...env, RELEASE_READ_TRANSPORT: "session-pooler", RELEASE_READ_CLIENT: "libpq", RELEASE_PG_CLIENT_DIRECTORY: "/fixed" }))
+      .rejects.toThrow(/^PRODUCTION_DIRECT_MIGRATION_METADATA_BOUNDARY$/);
+    expect(f.request).toHaveBeenCalledTimes(2); expect(f.spawnProcess).not.toHaveBeenCalled(); expect(sessionReadQuery).not.toHaveBeenCalled();
+  });
+  it.each([401, 503])("never retries session-pooler metadata HTTP %s or starts CLI", async status => {
+    const f = fixture({ poolerStatus: status });
+    await expect(f.run({ ...env, RELEASE_READ_TRANSPORT: "session-pooler", RELEASE_READ_CLIENT: "libpq", RELEASE_PG_CLIENT_DIRECTORY: "/fixed" }))
+      .rejects.toThrow(/^PRODUCTION_DIRECT_MIGRATION_METADATA_HTTP_FAILED$/);
+    expect(f.request).toHaveBeenCalledTimes(2); expect(f.spawnProcess).not.toHaveBeenCalled(); expect(sessionReadQuery).not.toHaveBeenCalled();
+  });
   it("requires explicit manual dry-run proof before any metadata, command or report", async () => {
     for (const changes of [{ MIGRATION_CONNECT_PROOF: undefined }, { MIGRATION_CONNECT_PROOF: "false" }, { GITHUB_EVENT_NAME: "push" },
       { GITHUB_REF: "refs/heads/main" }, { GITHUB_REPOSITORY: "other/platform" }, { SUPABASE_PROJECT_REF: "nocteiuvohesvqbowchw" }]) {
@@ -88,7 +120,7 @@ describe("production direct migration", () => {
     expect(observedOutput()).not.toContain(env.SUPABASE_DB_PASSWORD); expect(observedOutput()).not.toContain(env.SUPABASE_ACCESS_TOKEN);
   });
   it("rejects every foreign release boundary before metadata, CLI or report SQL", async () => {
-    for (const changes of [{ RELEASE_READ_TRANSPORT: "session-pooler" }, { RELEASE_READ_TRANSPORT: "" },
+    for (const changes of [{ RELEASE_READ_TRANSPORT: "transaction-pooler" }, { RELEASE_READ_TRANSPORT: "" },
       { APP_ENVIRONMENT: "staging", GITHUB_REF: "refs/heads/staging", SUPABASE_PROJECT_REF: "nocteiuvohesvqbowchw" },
       { GITHUB_REPOSITORY: "other/platform" }, { GITHUB_REF: "refs/heads/main" }, { GITHUB_EVENT_NAME: "pull_request" },
       { GITHUB_SHA: "invalid" }, { APP_REVISION: "b".repeat(40) }, { SUPABASE_ACCESS_TOKEN: "" }, { SUPABASE_DB_PASSWORD: "" }]) {
