@@ -23,6 +23,50 @@ export function diagnosticError(error) {
   if (["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "EAI_AGAIN"].includes(error?.code)) return "CONNECTION_FAILED";
   return /^(?:HISTORY_DIAGNOSIS|RELEASE_READ)_[A-Z0-9_]+$/.test(error?.message ?? "") ? error.message : "CLIENT_ERROR";
 }
+const connectionErrorCode = error => ["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "EAI_AGAIN", "EHOSTUNREACH", "ENETUNREACH", "EPIPE",
+  "CERT_HAS_EXPIRED", "DEPTH_ZERO_SELF_SIGNED_CERT", "SELF_SIGNED_CERT_IN_CHAIN", "UNABLE_TO_VERIFY_LEAF_SIGNATURE", "UNABLE_TO_GET_ISSUER_CERT_LOCALLY", "ERR_TLS_CERT_ALTNAME_INVALID", "ERR_SSL_WRONG_VERSION_NUMBER"].includes(error?.code)
+  ? error.code : diagnosticError(error);
+/** Observe pg8.21.1 lifecycle events without retaining protocol payloads. */
+export function traceConnection(client, entry) {
+  entry.events = [];
+  const connection = client.connection;
+  entry.eventsAvailable = Boolean(connection?.once && connection?.stream?.once);
+  if (!entry.eventsAvailable) return;
+  const began = performance.now(), seen = new Set(), streams = new WeakSet();
+  const record = (event, error) => {
+    if (seen.has(event)) return;
+    seen.add(event);
+    const value = { event, elapsedMs: Math.round((performance.now() - began) * 1000) / 1000 };
+    if (error) value.errorCode = connectionErrorCode(error);
+    entry.events.push(value);
+  };
+  function attachStream(stream, secure) {
+    if (!stream?.once || streams.has(stream)) return;
+    streams.add(stream);
+    if (secure) stream.once("secureConnect", () => record(stream.authorized === true ? "TLS_ESTABLISHED_VERIFIED" : "TLS_ESTABLISHED_UNVERIFIED"));
+    else {
+      stream.once("lookup", error => record(error ? "DNS_LOOKUP_FAILED" : "DNS_LOOKUP_COMPLETED", error));
+      stream.once("connect", () => record("TCP_CONNECTED"));
+    }
+    const kind = secure ? "TLS" : "TCP";
+    stream.once("error", error => record(`${kind}_STREAM_ERROR`, error));
+    stream.once("end", () => record(`${kind}_STREAM_END`));
+    stream.once("close", () => record(`${kind}_STREAM_CLOSE`));
+  }
+  attachStream(connection.stream, false);
+  // pg emits sslconnect after creating the TLSSocket, before its handshake.
+  connection.once("sslconnect", () => { record("TLS_SOCKET_CREATED"); attachStream(connection.stream, true); });
+  // Successful method return proves local queueing, never remote receipt.
+  for (const [method, event] of [["requestSsl", "POSTGRES_SSL_REQUEST_QUEUED"], ["startup", "POSTGRES_STARTUP_QUEUED"]]) {
+    const original = connection[method];
+    if (typeof original === "function") connection[method] = function (...args) { const answer = Reflect.apply(original, this, args); record(event); return answer; };
+  }
+  for (const [event, fixed] of [["authenticationCleartextPassword", "AUTH_CLEARTEXT_CHALLENGE"], ["authenticationMD5Password", "AUTH_MD5_CHALLENGE"],
+    ["authenticationSASL", "AUTH_SASL_CHALLENGE"], ["authenticationSASLContinue", "AUTH_SASL_CONTINUE"], ["authenticationSASLFinal", "AUTH_SASL_FINAL_RECEIVED"],
+    ["authenticationOk", "AUTH_OK_RECEIVED"], ["backendKeyData", "BACKEND_KEY_RECEIVED"], ["readyForQuery", "READY_FOR_QUERY"], ["end", "CONNECTION_END"]]) connection.once(event, () => record(fixed));
+  connection.once("error", error => record("CONNECTION_ERROR", error));
+  connection.once("errorMessage", error => record("POSTGRES_ERROR", error));
+}
 export const PHASE_BODIES = Object.freeze({ ...componentBodies });
 const finite = value => (typeof value === "number" || (typeof value === "string" && /^-?\d+(?:\.\d+)?$/.test(value))) && Number.isFinite(Number(value)) ? Number(value) : null;
 const rowsOf = answer => (Array.isArray(answer) ? answer : [answer]).filter(row => Array.isArray(row?.rows));
@@ -64,7 +108,7 @@ export const CAPACITY_SQL = `select jsonb_build_object('maxConnections',current_
 export async function runHistoryDiagnosis(env = process.env, request = fetch, ClientOverride) {
   const report = { diagnostic: "startregie-history", revision: /^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? "") ? env.GITHUB_SHA : null, readOnly: true, changedRows: 0,
     status: "failed", limits: { statementMs: 5000, lockMs: 500, readerClientMs: 7000, observerStatementMs: 2000,
-      observerClientMs: 3000, samplesPerSplitPhase: 4, samplesOriginalMaximum: 36, originalSampleIntervalMs: 5000, totalMs: 180000, normalReleaseConfiguredStatementMs: 60000, normalReleaseConfiguredClientMs: 70000 },
+      observerClientMs: 3000, configuredDriverConnectMs: 10000, samplesPerSplitPhase: 4, samplesOriginalMaximum: 36, originalSampleIntervalMs: 5000, totalMs: 180000, normalReleaseConfiguredStatementMs: 60000, normalReleaseConfiguredClientMs: 70000 },
     connections: {}, phases: [], observerAvailable: false, checks: { splitCanonical: null, combinedCanonical: null, combinedMatchesSplit: null } };
   let reader, observer, reproduction, unsafeReader = false, unsafeObserver = false, totalExpired = false;
   const started = performance.now();
@@ -115,14 +159,15 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
     ensureBudget();
     const configuration = { host: plan.PGHOST, port: 5432, database: "postgres", user: plan.PGUSER, password: env.SUPABASE_DB_PASSWORD,
       ssl: { rejectUnauthorized: true, ca: [...rootCertificates, readFileSync(new URL("./supabase-root-2021.crt", import.meta.url), "utf8")] },
-      connectionTimeoutMillis: 5000 };
+      connectionTimeoutMillis: 10000 };
     reader = new Client({ ...configuration, application_name: "duindorp-release-history-diagnosis" });
     observer = new Client({ ...configuration, application_name: "duindorp-release-history-observer" });
     reader.on("error", () => { unsafeReader = true; });
     observer.on("error", () => { unsafeObserver = true; });
     async function establish(client, name, isReader) {
-      const entry = { stage: "driver_connect", status: "failed", driverConnectMs: null, backendProofMs: null, backendPid: null };
+      const entry = { stage: "driver_connect", status: "failed", configuredDriverConnectMs: configuration.connectionTimeoutMillis, driverConnectMs: null, backendProofMs: null, backendPid: null };
       report.connections[name] = entry;
+      traceConnection(client, entry);
       let began = performance.now();
       try {
         ensureBudget();
@@ -254,7 +299,10 @@ export async function runHistoryDiagnosis(env = process.env, request = fetch, Cl
         } finally { entry.wallMs = Math.round(performance.now() - time); }
       }
       class OriginalClient {
-        constructor(config) { ensureOriginalReady(); reproduction = new Client(config); phase.beforeDriverMs = Math.round(performance.now() - began); }
+        constructor(config) {
+          ensureOriginalReady(); reproduction = new Client(config); phase.beforeDriverMs = Math.round(performance.now() - began);
+          phase.connection = { configuredDriverConnectMs: config.connectionTimeoutMillis }; traceConnection(reproduction, phase.connection);
+        }
         on(...args) { reproduction.on(...args); return this; }
         async connect() {
           ensureOriginalReady();

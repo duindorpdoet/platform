@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { CAPACITY_SQL, diagnosticError, observerSql, phaseSql, PHASE_BODIES, runHistoryDiagnosis } from "./diagnose-startregie-history.mjs";
+import { EventEmitter } from "node:events";
+import { CAPACITY_SQL, diagnosticError, observerSql, phaseSql, PHASE_BODIES, runHistoryDiagnosis, traceConnection } from "./diagnose-startregie-history.mjs";
 import { hotfixProofQuery } from "./repair-portal-hotfix-history.mjs";
 import { originalHistorySha256 } from "./startregie-history-components.mjs";
 
@@ -78,6 +79,8 @@ describe("focused native history diagnosis", () => {
     expect(report.phases.map(phase => phase.name)).toEqual([...Object.keys(PHASE_BODIES), "combined_original"]);
     expect(report.checks).toEqual({ splitCanonical: true, combinedCanonical: true, combinedMatchesSplit: true });
     expect(f.clients).toHaveLength(3);
+    expect(f.clients.every(client => client.config.connectionTimeoutMillis === 10_000)).toBe(true);
+    expect(report.limits).toMatchObject({ configuredDriverConnectMs: 10000 });
     expect(f.clients.every(client => client.end.mock.calls.length === 1)).toBe(true);
     const firstComponent = f.queries.findIndex(query => query.text.startsWith("savepoint"));
     expect(f.queries.slice(0, firstComponent).filter(query => query.text.includes("as diagnostic_pid"))).toHaveLength(2);
@@ -237,5 +240,53 @@ describe("focused native history diagnosis", () => {
       expect(Math.max(...times) - Math.min(...times)).toBeGreaterThanOrEqual(10_000);
       expect(f.queries.filter(query => query.text === hotfixProofQuery)).toHaveLength(1);
     } finally { vi.useRealTimers(); }
+  });
+});
+
+describe("native connection lifecycle timing", () => {
+  it("follows the SSL stream replacement without confusing socket creation, handshake or backend-key payloads", () => {
+    const raw = new EventEmitter(), secure = Object.assign(new EventEmitter(), { authorized: true });
+    const requestSsl = vi.fn(), startup = vi.fn();
+    const connection = Object.assign(new EventEmitter(), { stream: raw, requestSsl, startup });
+    const entry: Record<string, unknown> = {};
+    traceConnection({ connection }, entry);
+    raw.emit("lookup", null, "PRIVATE_IP_ADDRESS", 4, "PRIVATE_HOST");
+    raw.emit("connect");
+    connection.requestSsl("PRIVATE_SSL_ARGUMENT");
+    connection.stream = secure;
+    connection.emit("sslconnect");
+    const events = () => entry.events as Array<{event: string;elapsedMs: number}>;
+    expect(events().map(row => row.event)).toEqual(["DNS_LOOKUP_COMPLETED", "TCP_CONNECTED", "POSTGRES_SSL_REQUEST_QUEUED", "TLS_SOCKET_CREATED"]);
+    secure.emit("secureConnect");
+    connection.startup("PRIVATE_STARTUP_ARGUMENT");
+    for (const name of ["authenticationSASL", "authenticationSASLContinue", "authenticationSASLFinal", "authenticationOk", "backendKeyData", "readyForQuery", "readyForQuery"]) connection.emit(name, { secretKey: "PRIVATE_CANCEL_SECRET", data: "PRIVATE_SCRAM_DATA", processID: 777 });
+    secure.emit("end"); secure.emit("close"); raw.emit("close"); connection.emit("end");
+    expect(events().map(row => row.event)).toEqual(["DNS_LOOKUP_COMPLETED", "TCP_CONNECTED", "POSTGRES_SSL_REQUEST_QUEUED", "TLS_SOCKET_CREATED", "TLS_ESTABLISHED_VERIFIED", "POSTGRES_STARTUP_QUEUED", "AUTH_SASL_CHALLENGE", "AUTH_SASL_CONTINUE", "AUTH_SASL_FINAL_RECEIVED", "AUTH_OK_RECEIVED", "BACKEND_KEY_RECEIVED", "READY_FOR_QUERY", "TLS_STREAM_END", "TLS_STREAM_CLOSE", "TCP_STREAM_CLOSE", "CONNECTION_END"]);
+    expect(events().every(row => Number.isFinite(row.elapsedMs) && row.elapsedMs >= 0)).toBe(true);
+    expect(requestSsl).toHaveBeenCalledExactlyOnceWith("PRIVATE_SSL_ARGUMENT");
+    expect(startup).toHaveBeenCalledExactlyOnceWith("PRIVATE_STARTUP_ARGUMENT");
+    expect(JSON.stringify(entry)).not.toContain("PRIVATE");
+    expect(JSON.stringify(entry)).not.toContain("777");
+  });
+  it("records only fixed connection error codes and never claims unverified TLS as verified", () => {
+    const raw = new EventEmitter(), secure = Object.assign(new EventEmitter(), { authorized: false });
+    const connection = Object.assign(new EventEmitter(), { stream: raw });
+    const entry: Record<string, unknown> = {};
+    traceConnection({ connection }, entry);
+    raw.emit("lookup", Object.assign(new Error("PRIVATE_DNS_ERROR"), { code: "ENOTFOUND" }), "PRIVATE_IP", 4, "PRIVATE_HOST");
+    connection.stream = secure; connection.emit("sslconnect"); secure.emit("secureConnect");
+    raw.emit("error", Object.assign(new Error("PRIVATE_RAW_ERROR"), { code: "PRIVATE_ARBITRARY_CODE" }));
+    secure.emit("error", Object.assign(new Error("PRIVATE_TLS_ERROR"), { code: "SELF_SIGNED_CERT_IN_CHAIN" }));
+    connection.emit("error", Object.assign(new Error("PRIVATE_CONNECT_ERROR"), { code: "ENETUNREACH" }));
+    connection.emit("errorMessage", Object.assign(new Error("PRIVATE_AUTH_ERROR"), { code: "28P01" }));
+    expect(entry.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({ event: "DNS_LOOKUP_FAILED", errorCode: "ENOTFOUND" }),
+      expect.objectContaining({ event: "TLS_ESTABLISHED_UNVERIFIED" }),
+      expect.objectContaining({ event: "TCP_STREAM_ERROR", errorCode: "CLIENT_ERROR" }),
+      expect.objectContaining({ event: "TLS_STREAM_ERROR", errorCode: "SELF_SIGNED_CERT_IN_CHAIN" }),
+      expect.objectContaining({ event: "CONNECTION_ERROR", errorCode: "ENETUNREACH" }),
+      expect.objectContaining({ event: "POSTGRES_ERROR", errorCode: "SQLSTATE_28P01" }),
+    ]));
+    expect(JSON.stringify(entry)).not.toMatch(/PRIVATE|TLS_ESTABLISHED_VERIFIED/);
   });
 });

@@ -3,6 +3,7 @@ export const CAPACITY_SQL: string;
 export function phaseSql(name: string): string;
 export function observerSql(pid: number | null, original?: boolean): string;
 export function diagnosticError(error: unknown): string;
+export function traceConnection(client: {connection?: unknown}, entry: Record<string, unknown>): void;
 export type Report = {
   status: string; observerAvailable: boolean; errorClass?: string; totalMs: number; totalExpired: boolean;
   connections: Record<string, Record<string, unknown>>;
