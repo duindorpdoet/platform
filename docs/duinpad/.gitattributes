@@ -1,6 +1,8 @@
 # Preserve exact unified-patch context and captured psql/progress-log bytes.
 bridge/*.patch -text -whitespace
-database/*.log -text -whitespace
-database/full-suite/*.log -text -whitespace
-evidence/*.txt -text -whitespace
-evidence/*.log -text -whitespace
+database/*.log -text -whitespace linguist-generated=true
+database/full-suite/*.log -text -whitespace linguist-generated=true
+database/full-suite/*.json linguist-generated=true
+evidence/*.txt -text -whitespace linguist-generated=true
+evidence/*.log -text -whitespace linguist-generated=true
+bridge/*.log linguist-generated=true
