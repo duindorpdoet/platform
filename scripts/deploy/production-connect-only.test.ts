@@ -176,7 +176,7 @@ describe("manual native and libpq connections without SQL", () => {
     await expect(runDiagnostics({ ...env, GITHUB_REF: "refs/heads/main" }, request, execute, connectOnly)).rejects.toThrow("PRODUCTION_BOUNDARY");
     expect(connectOnly).toHaveBeenCalledOnce();
   });
-  it("changes only the existing protected diagnostic job and retains the actual release helper byte-for-byte", () => {
+  it("keeps connection-only diagnostics isolated and retains the actual read-only SQL guards byte-for-byte", () => {
     const workflow = readFileSync(new URL("../../.github/workflows/deploy-production.yml", import.meta.url), "utf8");
     const job = (name: string) => workflow.split(`\n  ${name}:\n`)[1]?.split(/\n  [a-z][a-z-]+:\n/)[0] ?? "";
     const diagnostic = job("database-connection-diagnostics");
@@ -186,8 +186,17 @@ describe("manual native and libpq connections without SQL", () => {
     expect(diagnostic).toContain("github.event_name == 'workflow_dispatch'");
     expect(readFileSync(new URL("./production-db-diagnostics.mjs", import.meta.url), "utf8")).toContain("/^POOLER_(?:DIAGNOSTICS|CONNECT_ONLY)_[A-Z0-9_]+$/");
     for (const name of ["backup-restore", "deploy", "database-connection-recovery", "readonly-baseline", "mail-worker-diagnostics"]) expect(job(name)).not.toContain("DIAGNOSTIC_NATIVE_CONNECT_ONLY");
-    expect(createHash("sha256").update(readFileSync(new URL("./production-read-query.mjs", import.meta.url))).digest("hex"))
-      .toBe("c5c26eb00908b5ae741006dfbb60afbecb39d281d3b13fe88b7736ae276d9c51");
+    // Direct release transport intentionally changes endpoint selection. The
+    // original SQL rejection and same-message database policy remain unchanged.
+    const source = readFileSync(new URL("./production-read-query.mjs", import.meta.url), "utf8");
+    for (const [name, digest] of [
+      ["validateReadSql", "bbc43738e3b2084cf0ef9475ef938462dd69d00a26d80a935e5dbd2aaf1ca225"],
+      ["readBatch", "81368c8b0874ff5500b5d2a49b8bfce8cb4bceb519157d7bd94583cfa1eff3c0"],
+    ]) {
+      const body = source.match(new RegExp(`^function ${name}\\([\\s\\S]*?^}`, "m"))?.[0];
+      expect(body).toBeDefined();
+      expect(createHash("sha256").update(body!).digest("hex")).toBe(digest);
+    }
   });
   it("opens only the explicitly authorized direct project endpoint and fetches only its project metadata", async () => {
     const directEnv = { ...env, DIAGNOSTIC_DIRECT_CAPABILITY: "true" };
