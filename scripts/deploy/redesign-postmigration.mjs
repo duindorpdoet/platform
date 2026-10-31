@@ -9,7 +9,14 @@ import { reconcileP12RoutePolicy,jointRouteSettingsBeforeP12Policy } from './p12
 
 try {
   const key=backupKey(process.env.CHILD_CODE_ENCRYPTION_KEY);
-  const context=`duindorp-release:${process.env.APP_ENVIRONMENT}:${process.env.GITHUB_SHA}:${process.env.GITHUB_RUN_ID}`;
+  // A bounded release recovery may finish the original preservation check
+  // after its SQL transport was repaired. Keep that authenticated baseline's
+  // context while all database reads retain the current checked-out context.
+  const baselineRevision=process.env.RELEASE_BASELINE_REVISION??process.env.GITHUB_SHA;
+  const baselineRunId=process.env.RELEASE_BASELINE_RUN_ID??process.env.GITHUB_RUN_ID;
+  if(!/^[a-f0-9]{40}$/.test(baselineRevision??'')||!/^\d+$/.test(baselineRunId??''))throw new Error('BASELINE_CONTEXT_REQUIRED');
+  if(Boolean(process.env.RELEASE_BASELINE_REVISION)!==Boolean(process.env.RELEASE_BASELINE_RUN_ID))throw new Error('BASELINE_CONTEXT_REQUIRED');
+  const context=`duindorp-release:${process.env.APP_ENVIRONMENT}:${baselineRevision}:${baselineRunId}`;
   if(!process.env.RELEASE_PRIVATE_BASELINE_FILE)throw new Error('PRE_MIGRATION_BASELINE_REQUIRED');
   const before=JSON.parse(openBackup(await readFile(process.env.RELEASE_PRIVATE_BASELINE_FILE),key,context+':migration-baseline').toString());
   const {preservation:response,metadata}=await readReleaseState(before.catalog,before);
@@ -23,5 +30,5 @@ try {
   const changed=[...new Set([...compareFingerprints(before.rows,after.rows).filter(table=>!metadataTables.has(table)),...reconciliation.failures,...coverageReconciliation.failures,...jointRoutePolicyReconciliation.failures,...jointRouteSettingsReconciliation.failures,...p12RoutePolicyReconciliation.failures])];
   await writeFile(process.env.RELEASE_PRIVATE_BASELINE_FILE+'.after',sealBackup(Buffer.from(JSON.stringify({after,changed,reconciliation,worldPolicyInitialization:response[0].preservation.worldPolicyInitialization,coverageReconciliation,jointRoutePolicyRelease:response[0].preservation.jointRoutePolicyRelease,jointRoutePolicyReconciliation,jointRouteSettingsInitialization:response[0].preservation.jointRouteSettingsInitialization,jointRouteSettingsReconciliation,p12RoutePolicy:response[0].preservation.p12RoutePolicy,p12RoutePolicyReconciliation})),key,context+':post-migration'),{flag:'wx',mode:0o600});
   if(changed.length)throw new Error('EXISTING_DATA_CHANGED_REQUIRES_RECONCILIATION: '+changed.join(','));
-  console.log(JSON.stringify({environment:process.env.APP_ENVIRONMENT,revision:process.env.GITHUB_SHA,existingDataPreserved:true,tablesCompared:before.catalog.length,reconciliation,coverageReconciliation,jointRoutePolicyReconciliation,jointRouteSettingsReconciliation,p12RoutePolicyReconciliation}));
+  console.log(JSON.stringify({environment:process.env.APP_ENVIRONMENT,revision:process.env.GITHUB_SHA,baselineRevision,baselineRunId,existingDataPreserved:true,tablesCompared:before.catalog.length,reconciliation,coverageReconciliation,jointRoutePolicyReconciliation,jointRouteSettingsReconciliation,p12RoutePolicyReconciliation}));
 } catch(error) {console.error(error.message);process.exitCode=1;}

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { libpqReadQuery, parseReleaseCsv as parse } from "./production-libpq-read.mjs";
 import { adminDatabasePlan, enabledSessionReads } from "./production-read-query.mjs";
+import { releaseMetadataQuery } from "./redesign-reconciliation.mjs";
 
 const ref = "dtubngvxfbupgvgfrjko";
 const env = { RELEASE_READ_TRANSPORT: "direct", RELEASE_READ_CLIENT: "libpq", RELEASE_PG_CLIENT_DIRECTORY: "/fixed/public-clients",
@@ -13,6 +14,15 @@ const tools = { psql: "/fixed/public-clients/bin/psql" };
 const nullMarker = "__duindorp_null_" + "a".repeat(64) + "__";
 const parseReleaseCsv = (source: string) => parse(source, nullMarker);
 const csv = (fields: unknown[]) => fields.map(value => value === null ? nullMarker : `"${String(value).replaceAll('"', '""')}"`).join(",") + "\n";
+function commandBody(args: string[]) {
+  expect(args[10]).toBe("--file");
+  const file = args[11], source = readFileSync(file, "utf8");
+  expect(statSync(file).mode & 0o777).toBe(0o600);
+  const matched = /^SELECT (\$duindorp_read_[a-f0-9]{64}\$)([\s\S]*)\1\n\\gexec\n$/.exec(source);
+  expect(matched).not.toBeNull();
+  expect(matched![2]).not.toContain(matched![1]);
+  return matched![2];
+}
 
 describe("fixed release CSV result contract", () => {
   it.each(["audit", "joint_input", "metadata", "preservation", "diagnostic", "nachtpost_activation", "manual_portals", "fingerprint"])("decodes the fixed %s JSON result with native JSON semantics", header => {
@@ -63,8 +73,8 @@ describe("explicit production portable libpq read", () => {
       expect(validate).toHaveBeenCalledExactlyOnceWith(env.RELEASE_PG_CLIENT_DIRECTORY);
       expect(command).toBe(tools.psql); expect(timeout).toBe(100_000);
       expect(args.slice(0, 9)).toEqual(["-X", "-q", "--csv", "-w", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose", "--pset"]);
-      expect(args[9]).toMatch(/^null=__duindorp_null_[a-f0-9]{64}__$/); expect(args[10]).toBe("--command");
-      expect(args[11]).toBe("set default_transaction_read_only=on;set statement_timeout='60000ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='70000ms';" + batch);
+      expect(args[9]).toMatch(/^null=__duindorp_null_[a-f0-9]{64}__$/);
+      expect(commandBody(args)).toBe("set default_transaction_read_only=on;set statement_timeout='60000ms';set lock_timeout='3s';set jit=off;set idle_in_transaction_session_timeout='70000ms';" + batch);
       expect(args.join(" ")).not.toContain(env.SUPABASE_DB_PASSWORD);
       ca = environment.PGSSLROOTCERT!; home = environment.HOME!;
       expect(statSync(ca).mode & 0o777).toBe(0o600); expect(statSync(home).mode & 0o777).toBe(0o700);
@@ -94,7 +104,7 @@ describe("explicit production portable libpq read", () => {
     const run = vi.fn(async (_command: string, args: string[], environment: Record<string, string | undefined>) => {
       expect(args[5]).toBe("ON_ERROR_STOP=0"); expect(args.slice(-2)).toEqual(["--command", "rollback;reset all"]);
       expect(args.filter(value => value === "fixed-batch")).toHaveLength(0);
-      expect(args[11].endsWith("fixed-batch")).toBe(true);
+      expect(commandBody(args).endsWith("fixed-batch")).toBe(true);
       expect(environment).toMatchObject({ PGHOST: "aws-1-eu-west-2.pooler.supabase.com", PGPORT: "5432", PGUSER: `postgres.${ref}`,
         PGSSLMODE: "verify-full", PGCONNECT_TIMEOUT: "30", PGGSSENCMODE: "disable" });
       return { error: null, stdout: "audit\n{}\n", stderr: "" };
@@ -128,6 +138,33 @@ describe("explicit production portable libpq read", () => {
     expect(() => enabledSessionReads({ ...env, RELEASE_READ_TRANSPORT: "transaction-pooler" })).toThrow("RELEASE_READ_CLIENT_ENVIRONMENT_BOUNDARY");
     expect(() => enabledSessionReads({ ...env, RELEASE_PG_CLIENT_DIRECTORY: "" })).toThrow("RELEASE_READ_CLIENT_ENVIRONMENT_BOUNDARY");
   });
+  it("keeps a real post-migration metadata body above 128KiB out of argv and in one private gexec value", async () => {
+    const query = releaseMetadataQuery({ cronBoundary: "0", cronHistory: [], migrationHistory: [], cronJobs: [],
+      cronTerminal: { rows: 0, sha256: "a".repeat(64) }, mailEventOriginal: { rows: 5000, sha256: "a".repeat(64) },
+      addedMailEvents: 0, invalidAddedMailEvents: 0, mailEventIds: Array.from({ length: 5000 }, (_, index) =>
+        `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`) });
+    const batch = "begin read only;" + query + ";commit;";
+    expect(Buffer.byteLength(batch)).toBeGreaterThan(128 * 1024);
+    let file = "";
+    const run = vi.fn(async (_command: string, args: string[]) => {
+      file = args[11];
+      expect(args.every(value => Buffer.byteLength(value) < 4096)).toBe(true);
+      expect(args.join(" ")).not.toContain("original_mail_ids");
+      expect(commandBody(args).endsWith(batch)).toBe(true);
+      return { error: null, stdout: "metadata\n{}\n", stderr: "" };
+    });
+    expect(await libpqReadQuery(batch, env, plan, "CA", 60_000, run, async () => tools)).toEqual([{ metadata: {} }]);
+    expect(run).toHaveBeenCalledOnce(); expect(existsSync(file)).toBe(false);
+  });
+  it("sanitizes a synchronous E2BIG process failure and removes its private command file without replay", async () => {
+    let file = "";
+    const run = vi.fn(async (_command: string, args: string[]) => {
+      file = args[11]; commandBody(args);
+      throw Object.assign(new Error("PRIVATE_SQL_AND_PROCESS_DATA"), { code: "E2BIG" });
+    });
+    await expect(libpqReadQuery("fixed-batch", env, plan, "CA", 60_000, run, async () => tools)).rejects.toThrow(/^RELEASE_READ_LIBPQ_ARGUMENT_LIMIT$/);
+    expect(run).toHaveBeenCalledOnce(); expect(existsSync(file)).toBe(false);
+  });
   it.each([
     [{ code: 1 }, "ERROR:  57014: canceling statement due to statement timeout private-data", "RELEASE_READ_ORIGINAL_SQLSTATE_57014"],
     [{ code: 1 }, "ERROR:  P0001: RELEASE_READ_POLICY_REQUIRED private-data", "RELEASE_READ_POLICY_SQLSTATE_P0001"],
@@ -135,6 +172,7 @@ describe("explicit production portable libpq read", () => {
     [{ killed: true }, "private-data", "RELEASE_READ_LIBPQ_CLIENT_TIMEOUT"],
     [{ code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" }, "private-data", "RELEASE_READ_LIBPQ_OUTPUT_LIMIT"],
     [{ code: "ENOENT" }, "private-data", "RELEASE_READ_LIBPQ_CLIENT_UNAVAILABLE"],
+    [{ code: "E2BIG" }, "private-data", "RELEASE_READ_LIBPQ_ARGUMENT_LIMIT"],
     [{ code: 1 }, "TLS certificate private-data", "RELEASE_READ_LIBPQ_CONNECT_TLS"],
     [{ code: 1 }, "private-data", "RELEASE_READ_LIBPQ_CONNECT_FAILED"],
   ] as const)("returns only fixed sanitized failures and never retries %j", async (error, stderr, expected) => {

@@ -575,6 +575,13 @@ jobs:
         run: pnpm verify
       - name: Diagnose worker result RPC before migration (no delivery)
         run: node scripts/deploy/diagnose-mail-worker.mjs
+      - name: Complete the original hotfix preservation check before a new baseline
+        if: github.sha == vars.STARTREGIE_RECOVERY_BASELINE_SHA
+        env:
+          RELEASE_BASELINE_REVISION: '55d8958e68c2845976221a3ffec4490adec23ccd'
+          RELEASE_BASELINE_RUN_ID: '41178976342'
+          RELEASE_PRIVATE_BASELINE_FILE: /srv/sites/duindorphalloweenprod/.local/share/duindorp-release-backups/production/41178976342-1/migration-baseline.aes
+        run: node scripts/deploy/redesign-postmigration.mjs
       # Capture the strict preservation baseline after read-only application
       # checks, immediately before migration, to limit concurrent-user drift.
       - name: Protect redesign migrations with private preflight and restore gate
