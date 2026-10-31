@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { enabledSessionReads, sessionReadQuery } from "./production-read-query.mjs";
+import { rootCertificates } from "node:tls";
+import { X509Certificate } from "node:crypto";
+import { adminDatabasePlan, enabledSessionReads, publicReleaseCaBundle, sessionReadQuery } from "./production-read-query.mjs";
 import { AUDIT_QUERY, PREVIEW_AUDIT_QUERY, JOINT_PROPOSAL_INPUT_QUERY } from "./evening-readiness-audit.mjs";
 import { hotfixProofQuery } from "./repair-portal-hotfix-history.mjs";
 import { ACTOR_QUERY } from "./check-startregie-reads.mjs";
@@ -11,6 +13,7 @@ const ref = "dtubngvxfbupgvgfrjko";
 const env = { RELEASE_READ_TRANSPORT: "session-pooler", GITHUB_EVENT_NAME: "workflow_dispatch",
   GITHUB_REF: "refs/heads/production", GITHUB_REPOSITORY: "duindorpdoet/platform", APP_ENVIRONMENT: "production",
   SUPABASE_PROJECT_REF: ref, GITHUB_SHA: "a".repeat(40), SUPABASE_ACCESS_TOKEN: "fixture-token", SUPABASE_DB_PASSWORD: "fixture-password" };
+const directEnv = { ...env, RELEASE_READ_TRANSPORT: "direct" };
 const project = { id: ref, region: "eu-west-2", database: { host: `db.${ref}.supabase.co` } };
 const pooler = { pool_mode: "transaction", db_port: 6543, db_host: "aws-1-eu-west-2.pooler.supabase.com", db_user: "postgres", db_name: "postgres" };
 type Result = { command: string; fields: unknown[]; rows: Record<string, unknown>[] };
@@ -65,6 +68,93 @@ describe("explicit release session reads", () => {
       { GITHUB_EVENT_NAME: "pull_request" }, { SUPABASE_DB_PASSWORD: "" }, { APP_REVISION: "b".repeat(40) }])
       expect(() => enabledSessionReads({ ...env, ...change })).toThrow("ENVIRONMENT_BOUNDARY");
     expect(enabledSessionReads({ ...env, APP_REVISION: env.GITHUB_SHA })).toBe(true);
+  });
+  it("enables direct reads only in the exact production release context and fails closed on unknown transports", () => {
+    expect(enabledSessionReads(directEnv)).toBe(true);
+    expect(enabledSessionReads({ ...directEnv, GITHUB_EVENT_NAME: "push", APP_REVISION: env.GITHUB_SHA })).toBe(true);
+    expect(enabledSessionReads({ ...directEnv, RELEASE_READ_TRANSPORT: "" })).toBe(false);
+    for (const change of [{ APP_ENVIRONMENT: "staging", GITHUB_REF: "refs/heads/staging", SUPABASE_PROJECT_REF: "nocteiuvohesvqbowchw" },
+      { GITHUB_REPOSITORY: "other/platform" }, { GITHUB_REF: "refs/heads/main" }, { APP_REVISION: "b".repeat(40) },
+      { GITHUB_SHA: "invalid" }, { GITHUB_EVENT_NAME: "pull_request" }, { SUPABASE_ACCESS_TOKEN: "" }, { SUPABASE_DB_PASSWORD: "" }]) {
+      expect(() => enabledSessionReads({ ...directEnv, ...change })).toThrow("ENVIRONMENT_BOUNDARY");
+      expect(() => adminDatabasePlan({ ...directEnv, ...change }, project)).toThrow("ENVIRONMENT_BOUNDARY");
+    }
+    expect(() => enabledSessionReads({ ...env, RELEASE_READ_TRANSPORT: "direct-vps" })).toThrow("TRANSPORT_NOT_ENABLED");
+    expect(() => adminDatabasePlan({ ...directEnv, RELEASE_READ_TRANSPORT: "" }, project)).toThrow("TRANSPORT_NOT_ENABLED");
+  });
+  it("exports one verified production direct plan and the same public CA certificates without using pooler or environment overrides", () => {
+    const plan = adminDatabasePlan({ ...directEnv, PGHOST: "private-host", PGPORT: "6543", PGUSER: "supabase_admin", NODE_TLS_REJECT_UNAUTHORIZED: "0" }, project, [{ db_host: "private-pooler" }]);
+    expect(plan).toMatchObject({ host: project.database.host, port: 5432, database: "postgres", user: "postgres", password: env.SUPABASE_DB_PASSWORD,
+      ssl: { rejectUnauthorized: true }, connectionTimeoutMillis: 30000, application_name: "duindorp-release-readonly" });
+    expect(plan.ssl.ca).toEqual([...rootCertificates, readFileSync(new URL("./supabase-root-2021.crt", import.meta.url), "utf8")]);
+    const bundle = publicReleaseCaBundle();
+    const certificates = bundle.match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g) ?? [];
+    expect(certificates).toHaveLength(plan.ssl.ca.length);
+    expect(certificates.map(certificate => new X509Certificate(certificate).fingerprint256))
+      .toEqual(plan.ssl.ca.map(certificate => new X509Certificate(certificate).fingerprint256));
+    for (const privateValue of [env.SUPABASE_DB_PASSWORD, env.SUPABASE_ACCESS_TOKEN, "private-host", "private-pooler"]) expect(bundle).not.toContain(privateValue);
+  });
+  it("uses only one project metadata GET for direct reads and preserves every original SQL policy command", async () => {
+    const pooled = fixture(), direct = fixture(); const sql = "begin read only;select 'original-body';commit;";
+    expect(await sessionReadQuery(sql, directEnv, direct.request, direct.Client)).toEqual([{ connectivity: 1 }]);
+    await sessionReadQuery(sql, env, pooled.request, pooled.Client);
+    expect(direct.request.mock.calls.map(([url, options]) => [url, options?.method])).toEqual([[`https://api.supabase.com/v1/projects/${ref}`, "GET"]]);
+    expect(direct.configuration()).toEqual({ ...pooled.configuration(), host: project.database.host, user: "postgres" });
+    expect(direct.queries).toEqual(pooled.queries);
+    expectOriginalBody(direct.queries[2].text, sql);
+  });
+  it("rejects malformed or foreign direct metadata before opening a native connection", async () => {
+    for (const invalid of [{ ...project, id: "nocteiuvohesvqbowchw" }, { ...project, region: "private-region" },
+      { ...project, database: { host: `${project.database.host}.private.invalid` } },
+      { ...project, database: { host: pooler.db_host } }, { ...project, database: { host: `db.nocteiuvohesvqbowchw.supabase.co` } }, {}]) {
+      const f = fixture({ project: invalid });
+      await expect(sessionReadQuery("select 1", directEnv, f.request, f.Client)).rejects.toThrow("PROJECT_METADATA_BOUNDARY");
+      expect(f.request).toHaveBeenCalledOnce(); expect(f.connect).not.toHaveBeenCalled(); expect(f.queries).toHaveLength(0);
+    }
+  });
+  it("makes no request for invalid direct contexts even if the same request function has valid cached metadata", async () => {
+    const f = fixture(); await sessionReadQuery("select 1", directEnv, f.request, f.Client);
+    for (const context of [{ ...directEnv, GITHUB_REF: "refs/heads/main" }, { ...directEnv, APP_ENVIRONMENT: "staging", GITHUB_REF: "refs/heads/staging", SUPABASE_PROJECT_REF: "nocteiuvohesvqbowchw" }])
+      await expect(sessionReadQuery("select 2", context, f.request, f.Client)).rejects.toThrow("ENVIRONMENT_BOUNDARY");
+    expect(f.request).toHaveBeenCalledOnce(); expect(f.connect).toHaveBeenCalledOnce();
+  });
+  it("isolates direct metadata from pooler metadata while every read still opens a fresh native session", async () => {
+    const pooled = fixture(), direct = fixture(); const request = pooled.request;
+    await sessionReadQuery("select 'pooled-first'", env, request, pooled.Client);
+    expect(request).toHaveBeenCalledTimes(2);
+    await sessionReadQuery("select 'direct-first'", directEnv, request, direct.Client);
+    expect(request).toHaveBeenCalledTimes(3);
+    await sessionReadQuery("select 'direct-fresh'", directEnv, request, direct.Client);
+    await sessionReadQuery("select 'pooled-fresh'", env, request, pooled.Client);
+    expect(request).toHaveBeenCalledTimes(3); expect(direct.connect).toHaveBeenCalledTimes(2); expect(pooled.connect).toHaveBeenCalledTimes(2);
+    expect(direct.configuration().host).toBe(project.database.host); expect(pooled.configuration().host).toBe(pooler.db_host);
+  });
+  it.each([502, 503, 504, 544])("does not retry or fall back after direct project metadata HTTP %i", async status => {
+    const f = fixture(); const request = vi.fn<typeof fetch>(async () => new Response("private-provider-body", { status }));
+    await expect(sessionReadQuery("select 1", directEnv, request, f.Client)).rejects.toThrow(`RELEASE_READ_METADATA_HTTP_${status}`);
+    expect(request).toHaveBeenCalledOnce(); expect(f.connect).not.toHaveBeenCalled(); expect(f.queries).toHaveLength(0);
+  });
+  it("does not retry failed direct metadata or cache its failure for a later deliberate invocation", async () => {
+    const f = fixture(); const request = vi.fn<typeof fetch>().mockRejectedValueOnce(new Error("private-token transport")) .mockImplementation(f.request);
+    await expect(sessionReadQuery("select 1", directEnv, request, f.Client)).rejects.toThrow("RELEASE_READ_METADATA_REQUEST_FAILED");
+    expect(request).toHaveBeenCalledOnce(); expect(f.connect).not.toHaveBeenCalled();
+    await sessionReadQuery("select 2", directEnv, request, f.Client);
+    expect(request).toHaveBeenCalledTimes(2); expect(f.connect).toHaveBeenCalledOnce(); expect(f.configuration().host).toBe(project.database.host);
+  });
+  it("never falls back to the pooler or replays direct native SQL after connection, policy or query failures", async () => {
+    for (const [options, error] of [
+      [{ connectError: new Error("private-connect timeout") }, "RELEASE_READ_CONNECT_CLIENT_TIMEOUT"],
+      [{ policyError: Object.assign(new Error("private-policy"), { code: "42501" }) }, "RELEASE_READ_POLICY_SQLSTATE_42501"],
+      [{ error: Object.assign(new Error("private-sql"), { code: "57014" }) }, "RELEASE_READ_ORIGINAL_SQLSTATE_57014"],
+      [{ error: new Error("private-sql timeout") }, "RELEASE_READ_ORIGINAL_CLIENT_TIMEOUT"],
+    ] as const) {
+      const f = fixture(options); const sql = "select 'single-direct-read'";
+      await expect(sessionReadQuery(sql, directEnv, f.request, f.Client)).rejects.toThrow(error);
+      expect(f.request).toHaveBeenCalledOnce(); expect(f.connect).toHaveBeenCalledOnce(); expect(f.end).toHaveBeenCalledOnce();
+      expect(f.configuration().host).toBe(project.database.host);
+      expect(f.queries.filter(query => query.text.includes(sql)).length).toBe("connectError" in options || "policyError" in options ? 0 : 1);
+      if (error.endsWith("ORIGINAL_CLIENT_TIMEOUT")) expect(f.queries.some(query => query.text === "rollback;reset all")).toBe(false);
+    }
   });
   it("sets session policy and proves it inside the original SQL batch without a separate proof round trip", async () => {
     const f = fixture({ answer: [result([], "BEGIN"), result([{ previous: true }]), result([]), result([], "COMMIT")] });

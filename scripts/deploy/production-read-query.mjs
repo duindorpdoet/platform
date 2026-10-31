@@ -11,6 +11,10 @@ const preservationPrefix = "begin read only;set local statement_timeout='5min';s
 const metadataByRequest = new WeakMap();
 const metadataTtlMs = 5 * 60_000;
 
+export function publicReleaseCaBundle() {
+  return [...rootCertificates, supabaseCA].map(certificate => certificate.trimEnd()).join("\n") + "\n";
+}
+
 async function validatedMetadata(env, request, load) {
   let entries = metadataByRequest.get(request);
   if (!entries) { entries = new Map(); metadataByRequest.set(request, entries); }
@@ -18,7 +22,7 @@ async function validatedMetadata(env, request, load) {
   // validates its environment on every call and opens a new SQL connection.
   const context = JSON.stringify([env.GITHUB_REPOSITORY, env.GITHUB_REF, env.GITHUB_EVENT_NAME,
     env.GITHUB_SHA, env.APP_ENVIRONMENT, env.APP_REVISION, env.SUPABASE_PROJECT_REF,
-    env.SUPABASE_ACCESS_TOKEN, env.SUPABASE_DB_PASSWORD]);
+    env.SUPABASE_ACCESS_TOKEN, env.SUPABASE_DB_PASSWORD, env.RELEASE_READ_TRANSPORT]);
   const now = performance.now();
   for (const [key, entry] of entries) if (now < entry.createdAt || now >= entry.expiresAt) entries.delete(key);
   const cached = entries.get(context);
@@ -26,8 +30,8 @@ async function validatedMetadata(env, request, load) {
   const entry = { createdAt: now, expiresAt: now + metadataTtlMs, promise: null };
   entry.promise = (async () => {
     const project = await load("");
-    const poolers = await load("/config/database/pooler");
-    clientPlan(env, project, poolers); // Never retain invalid metadata.
+    const poolers = env.RELEASE_READ_TRANSPORT === "direct" ? undefined : await load("/config/database/pooler");
+    adminDatabasePlan(env, project, poolers); // Never retain invalid metadata.
     entry.expiresAt = performance.now() + metadataTtlMs;
     return { project, poolers };
   })().catch(error => {
@@ -50,8 +54,9 @@ function configured(env) {
 }
 
 export function enabledSessionReads(env = process.env) {
-  if (env.RELEASE_READ_TRANSPORT !== "session-pooler") return false;
-  if (!configured(env)) fail("ENVIRONMENT_BOUNDARY");
+  if (!env.RELEASE_READ_TRANSPORT) return false;
+  if (!["session-pooler", "direct"].includes(env.RELEASE_READ_TRANSPORT)) fail("TRANSPORT_NOT_ENABLED");
+  if (!configured(env) || (env.RELEASE_READ_TRANSPORT === "direct" && env.APP_ENVIRONMENT !== "production")) fail("ENVIRONMENT_BOUNDARY");
   return true;
 }
 
@@ -69,17 +74,22 @@ function validateReadSql(sql) {
   }
 }
 
-function clientPlan(env, project, poolers) {
+export function adminDatabasePlan(env, project, poolers) {
+  if (!enabledSessionReads(env)) fail("TRANSPORT_NOT_ENABLED");
   const ref = env.SUPABASE_PROJECT_REF;
   if (project?.id !== ref || !/^[a-z]{2}-[a-z]+-\d$/.test(project?.region ?? "")
     || project.database?.host !== `db.${ref}.supabase.co`) fail("PROJECT_METADATA_BOUNDARY");
-  if (!Array.isArray(poolers)) fail("POOLER_METADATA_REQUIRED");
-  const host = new RegExp(`^aws-[0-9]+-${project.region}\\.pooler\\.supabase\\.com$`);
-  const trusted = poolers.filter(row => host.test(row?.db_host ?? "")
-    && ["postgres", `postgres.${ref}`].includes(row.db_user) && row.db_name === "postgres");
-  const pooler = trusted.find(row => row.pool_mode === "session") ?? trusted.find(row => row.pool_mode === "transaction");
-  if (!pooler) fail("TRUSTED_SESSION_POOLER_REQUIRED");
-  return { host: pooler.db_host, port: 5432, database: "postgres", user: `postgres.${ref}`,
+  let host = project.database.host, user = "postgres";
+  if (env.RELEASE_READ_TRANSPORT === "session-pooler") {
+    if (!Array.isArray(poolers)) fail("POOLER_METADATA_REQUIRED");
+    const allowedHost = new RegExp(`^aws-[0-9]+-${project.region}\\.pooler\\.supabase\\.com$`);
+    const trusted = poolers.filter(row => allowedHost.test(row?.db_host ?? "")
+      && ["postgres", `postgres.${ref}`].includes(row.db_user) && row.db_name === "postgres");
+    const pooler = trusted.find(row => row.pool_mode === "session") ?? trusted.find(row => row.pool_mode === "transaction");
+    if (!pooler) fail("TRUSTED_SESSION_POOLER_REQUIRED");
+    host = pooler.db_host; user = `postgres.${ref}`;
+  }
+  return { host, port: 5432, database: "postgres", user,
     password: env.SUPABASE_DB_PASSWORD, ssl: { rejectUnauthorized: true, ca: [...rootCertificates, supabaseCA] },
     connectionTimeoutMillis: 30_000, application_name: "duindorp-release-readonly" };
 }
@@ -112,14 +122,15 @@ export async function sessionReadQuery(sql, env = process.env, request = fetch, 
   if (!enabledSessionReads(env)) fail("TRANSPORT_NOT_ENABLED");
   validateReadSql(sql);
   async function metadata(path) {
-    // Only these two fixed idempotent metadata GETs tolerate transient provider
-    // transport failures. Never replay database SQL, RPCs or authentication.
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    // The existing pooler metadata GETs retain bounded transient retries.
+    // Direct mode reads project metadata once. SQL is never retried or replayed.
+    const maximumAttempts = env.RELEASE_READ_TRANSPORT === "direct" ? 1 : 3;
+    for (let attempt = 1; attempt <= maximumAttempts; attempt++) {
       let response;
       try { response = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}${path}`, {
         method: "GET", headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}` }, signal: AbortSignal.timeout(15_000),
       }); } catch {
-        if (attempt === 3) fail("METADATA_REQUEST_FAILED");
+        if (attempt === maximumAttempts) fail("METADATA_REQUEST_FAILED");
       }
       if (response?.ok) {
         try { return await response.json(); } catch { fail("METADATA_INVALID_JSON"); }
@@ -127,13 +138,13 @@ export async function sessionReadQuery(sql, env = process.env, request = fetch, 
       if (response) {
         const retryable = [502, 503, 504, 544].includes(response.status);
         try { await response.body?.cancel(); } catch { /* Do not expose response data. */ }
-        if (!retryable || attempt === 3) fail(`METADATA_HTTP_${response.status}`);
+        if (!retryable || attempt === maximumAttempts) fail(`METADATA_HTTP_${response.status}`);
       }
       await new Promise(resolve => setTimeout(resolve, attempt * 250));
     }
   }
   const { project, poolers } = await validatedMetadata(env, request, metadata);
-  const plan = clientPlan(env, project, poolers);
+  const plan = adminDatabasePlan(env, project, poolers);
   // Preservation already has a bounded administrative five-minute wrapper.
   const longRead = sql.startsWith(preservationPrefix);
   const statementMs = longRead ? 300_000 : 60_000;
