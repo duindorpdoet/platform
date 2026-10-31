@@ -105,6 +105,8 @@ describe("production Startregie HTTP read acceptance", () => {
   it.each(["snapshot", "readiness"] as const)("fails closed on an unsuccessful %s read without printing returned private details", async failure => {
     const { request, clock } = fixture({ failure });
     await expect(checkStartregieReads(env, request, clock)).rejects.toThrow(failure === "snapshot" ? "STARTREGIE_READ_CHECK_SNAPSHOT_HTTP_500" : "STARTREGIE_READ_CHECK_READINESS_HTTP_503");
+    expect(request.mock.calls.filter(([url]) => String(url).endsWith("/rpc/admin_startregie_snapshot"))).toHaveLength(1);
+    expect(request.mock.calls.filter(([url]) => String(url).endsWith("/rpc/admin_startregie_publication_readiness"))).toHaveLength(failure === "readiness" ? 1 : 0);
   });
 
   it("redacts network errors and invalid JSON responses", async () => {

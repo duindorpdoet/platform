@@ -128,12 +128,99 @@ describe("explicit release session reads", () => {
       expect(f.queries.some(query => /^rollback/i.test(query.text))).toBe(!error.message.includes("timeout"));
     }
   });
-  it("sanitizes metadata errors and performs no retry or native connection on invalid context", async () => {
+  it("sanitizes bounded metadata network failures and never connects on invalid context", async () => {
+    vi.useFakeTimers();
     const request = vi.fn<typeof fetch>(async () => { throw new Error("private-token provider-body"); });
-    await expect(sessionReadQuery("select 1", env, request)).rejects.toThrow(/^RELEASE_READ_METADATA_REQUEST_FAILED$/);
+    try {
+      const rejection = expect(sessionReadQuery("select 1", env, request)).rejects.toThrow(/^RELEASE_READ_METADATA_REQUEST_FAILED$/);
+      await vi.runAllTimersAsync();
+      await rejection;
+      expect(request).toHaveBeenCalledTimes(3);
+      request.mockClear();
+      await expect(sessionReadQuery("select 1", { ...env, RELEASE_READ_TRANSPORT: "" }, request)).rejects.toThrow("TRANSPORT_NOT_ENABLED");
+      expect(request).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
+  it("retries only fixed metadata GETs with 250/500ms backoff, then executes the original SQL once", async () => {
+    vi.useFakeTimers();
+    try {
+      const f = fixture();
+      const attempts = new Map<string, number>();
+      const request = vi.fn<typeof fetch>(async (url, options) => {
+        const key = String(url), attempt = (attempts.get(key) ?? 0) + 1;
+        attempts.set(key, attempt);
+        if (attempt === 1) return new Response("private-provider-body", { status: 502 });
+        if (attempt === 2 && key.endsWith("/pooler")) return new Response("private-provider-body", { status: 503 });
+        return f.request(url, options);
+      });
+      const sql = "select 'original-release-inspection'";
+      const pending = sessionReadQuery(sql, env, request, f.Client);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(request).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(249);
+      expect(request).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(request).toHaveBeenCalledTimes(3);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(request).toHaveBeenCalledTimes(4);
+      await vi.advanceTimersByTimeAsync(499);
+      expect(request).toHaveBeenCalledTimes(4);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await pending).toEqual([{ connectivity: 1 }]);
+      expect(request).toHaveBeenCalledTimes(5);
+      expect(f.connect).toHaveBeenCalledOnce();
+      expect(f.queries.filter(query => query.text === sql)).toHaveLength(1);
+      for (const [url, options] of request.mock.calls) {
+        expect(options?.method).toBe("GET");
+        expect([`https://api.supabase.com/v1/projects/${ref}`, `https://api.supabase.com/v1/projects/${ref}/config/database/pooler`]).toContain(String(url));
+      }
+    } finally { vi.useRealTimers(); }
+  });
+  it.each([502, 503, 504, 544])("bounds repeated metadata HTTP %i failures without connecting or exposing the body", async status => {
+    vi.useFakeTimers();
+    try {
+      const f = fixture();
+      const request = vi.fn<typeof fetch>(async () => new Response("private-token private-query private-row", { status }));
+      const rejection = expect(sessionReadQuery("select 1", env, request, f.Client)).rejects.toThrow(new RegExp(`^RELEASE_READ_METADATA_HTTP_${status}$`));
+      await vi.runAllTimersAsync();
+      await rejection;
+      expect(request).toHaveBeenCalledTimes(3);
+      expect(f.connect).not.toHaveBeenCalled();
+      expect(f.queries).toHaveLength(0);
+    } finally { vi.useRealTimers(); }
+  });
+  it.each([400, 401, 403, 404, 429, 500])("never retries non-allowlisted metadata HTTP %i", async status => {
+    const f = fixture();
+    const request = vi.fn<typeof fetch>(async () => new Response("private-token provider-body", { status }));
+    await expect(sessionReadQuery("select 1", env, request, f.Client)).rejects.toThrow(new RegExp(`^RELEASE_READ_METADATA_HTTP_${status}$`));
     expect(request).toHaveBeenCalledOnce();
-    request.mockClear();
-    await expect(sessionReadQuery("select 1", { ...env, RELEASE_READ_TRANSPORT: "" }, request)).rejects.toThrow("TRANSPORT_NOT_ENABLED");
-    expect(request).not.toHaveBeenCalled();
+    expect(f.connect).not.toHaveBeenCalled();
+  });
+  it("recovers from a transient metadata network failure without replaying SQL", async () => {
+    vi.useFakeTimers();
+    try {
+      const f = fixture();
+      const request = vi.fn<typeof fetch>().mockRejectedValueOnce(new TypeError("private-network-error"))
+        .mockImplementation(f.request);
+      const sql = "select 'single-native-execution'";
+      const pending = sessionReadQuery(sql, env, request, f.Client);
+      await vi.runAllTimersAsync();
+      await pending;
+      expect(request).toHaveBeenCalledTimes(3);
+      expect(f.connect).toHaveBeenCalledOnce();
+      expect(f.queries.filter(query => query.text === sql)).toHaveLength(1);
+    } finally { vi.useRealTimers(); }
+  });
+  it("does not retry invalid metadata JSON or any native SQL error", async () => {
+    const f = fixture();
+    const request = vi.fn<typeof fetch>(async () => new Response("private-invalid-json"));
+    await expect(sessionReadQuery("select 1", env, request, f.Client)).rejects.toThrow(/^RELEASE_READ_METADATA_INVALID_JSON$/);
+    expect(request).toHaveBeenCalledOnce();
+    const broken = fixture({ error: Object.assign(new Error("private-sql-body"), { code: "57014" }) });
+    const sql = "select 'single-failing-native-execution'";
+    await expect(sessionReadQuery(sql, env, broken.request, broken.Client)).rejects.toThrow(/^RELEASE_READ_SQLSTATE_57014$/);
+    expect(broken.request).toHaveBeenCalledTimes(2);
+    expect(broken.connect).toHaveBeenCalledOnce();
+    expect(broken.queries.filter(query => query.text === sql)).toHaveLength(1);
   });
 });

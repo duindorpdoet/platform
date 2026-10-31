@@ -63,17 +63,30 @@ function safeErrorCode(error) {
   return "QUERY_FAILED";
 }
 
-/** Explicit native transport for the known release read queries; no retry/fallback. */
+/** Explicit native SQL transport: SQL is never retried or replayed. */
 export async function sessionReadQuery(sql, env = process.env, request = fetch, ClientOverride) {
   if (!enabledSessionReads(env)) fail("TRANSPORT_NOT_ENABLED");
   validateReadSql(sql);
   async function metadata(path) {
-    let response;
-    try { response = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}${path}`, {
-      method: "GET", headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}` }, signal: AbortSignal.timeout(15_000),
-    }); } catch { fail("METADATA_REQUEST_FAILED"); }
-    if (!response.ok) fail(`METADATA_HTTP_${response.status}`);
-    try { return await response.json(); } catch { fail("METADATA_INVALID_JSON"); }
+    // Only these two fixed idempotent metadata GETs tolerate transient provider
+    // transport failures. Never replay database SQL, RPCs or authentication.
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      let response;
+      try { response = await request(`https://api.supabase.com/v1/projects/${env.SUPABASE_PROJECT_REF}${path}`, {
+        method: "GET", headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}` }, signal: AbortSignal.timeout(15_000),
+      }); } catch {
+        if (attempt === 3) fail("METADATA_REQUEST_FAILED");
+      }
+      if (response?.ok) {
+        try { return await response.json(); } catch { fail("METADATA_INVALID_JSON"); }
+      }
+      if (response) {
+        const retryable = [502, 503, 504, 544].includes(response.status);
+        try { await response.body?.cancel(); } catch { /* Do not expose response data. */ }
+        if (!retryable || attempt === 3) fail(`METADATA_HTTP_${response.status}`);
+      }
+      await new Promise(resolve => setTimeout(resolve, attempt * 250));
+    }
   }
   const project = await metadata("");
   const poolers = await metadata("/config/database/pooler");
