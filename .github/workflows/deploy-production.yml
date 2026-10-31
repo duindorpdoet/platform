@@ -291,7 +291,14 @@ jobs:
       - name: Require exact successful staging revision before preparing tools
         run: node scripts/deploy/require-staging-success.mjs
       - name: Prepare only pinned public PostgreSQL client binaries and libraries
-        run: node scripts/deploy/portable-postgres-clients.mjs build "${RUNNER_TEMP}/duindorp-pg-clients"
+        run: |
+          set -euo pipefail
+          PUBLIC_POSTGRES_CLIENT_IMAGE="$(node --input-type=module -e 'import { CLIENT_IMAGE } from "./scripts/deploy/portable-postgres-clients.mjs"; process.stdout.write(CLIENT_IMAGE)')"
+          docker pull --quiet --platform linux/amd64 "${PUBLIC_POSTGRES_CLIENT_IMAGE}"
+          node scripts/deploy/portable-postgres-clients.mjs build "${RUNNER_TEMP}/duindorp-pg-clients"
+          "${RUNNER_TEMP}/duindorp-pg-clients/bin/psql" --version
+          "${RUNNER_TEMP}/duindorp-pg-clients/bin/pg_dump" --version
+          "${RUNNER_TEMP}/duindorp-pg-clients/bin/pg_restore" --version
       - name: Retain public tools bound to their complete fixed file hashes
         id: artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f

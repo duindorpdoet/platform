@@ -105,7 +105,7 @@ describe("explicit release read transport workflow contract", () => {
   it("restores only authenticated encrypted source exports without production database credentials", () => {
     const entries = jobs(read(".github/workflows/deploy-production.yml"));
     const prepare = entries.get("prepare-database-client")!, source = entries.get("backup-export")!, restore = entries.get("backup-restore")!;
-    ordered(prepare, "require-staging-success.mjs", "portable-postgres-clients.mjs build", "actions/upload-artifact@");
+    ordered(prepare, "require-staging-success.mjs", 'docker pull --quiet --platform linux/amd64 "${PUBLIC_POSTGRES_CLIENT_IMAGE}"', "portable-postgres-clients.mjs build", 'duindorp-pg-clients/bin/psql" --version', 'duindorp-pg-clients/bin/pg_dump" --version', 'duindorp-pg-clients/bin/pg_restore" --version', "actions/upload-artifact@");
     expect(source).toContain("needs: [prepare-database-client, release-policy]");
     expect(source).toContain("RELEASE_BACKUP_MODE: export");
     expect(source).toContain("needs.prepare-database-client.outputs.artifact");
