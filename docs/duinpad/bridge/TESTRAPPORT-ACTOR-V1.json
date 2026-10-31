@@ -1,20 +1,20 @@
 {
   "report_type": "Isolated bridge/relay software simulation. No physical output or production execution.",
-  "generated_at_utc": "2026-10-31T14:49:45.400218+00:00",
+  "generated_at_utc": "2026-10-31T15:13:19.469221+00:00",
   "app_checkout_base_commit": "db5e9fee4fe86aecddbb05b9f0fe6ad3840c66f8",
   "baseline_zip": "Duinpad-Showpakket-2.0.0.zip",
   "baseline_zip_sha256": "e3dc2a5d47c0376484fc60391ffe81cabbeb624d159850ae3d1644179d761622",
   "bridge_protocol": "duinpad.actor.v1",
   "python": "3.12.3",
   "command": "python -m unittest discover -s tests -v",
-  "tests_run": 104,
-  "passed": 104,
+  "tests_run": 112,
+  "passed": 112,
   "failures": 0,
   "errors": 0,
   "skipped": 0,
-  "duration_seconds": 9.739,
+  "duration_seconds": 9.83,
   "baseline_existing_tests": 72,
-  "new_tests": 32,
+  "new_tests": 40,
   "tests": [
     {
       "name": "test_actor_finale_uses_existing_limited_finale_role (test_actor_protocol.ActorCase.test_actor_finale_uses_existing_limited_finale_role)",
@@ -65,7 +65,15 @@
       "result": "ok"
     },
     {
+      "name": "test_operation_column_migration_preserves_legacy_ledger_without_seeds (test_actor_protocol.ActorCase.test_operation_column_migration_preserves_legacy_ledger_without_seeds)",
+      "result": "ok"
+    },
+    {
       "name": "test_pending_attempt_is_unknown_without_reexecution (test_actor_protocol.ActorCase.test_pending_attempt_is_unknown_without_reexecution)",
+      "result": "ok"
+    },
+    {
+      "name": "test_precolumn_finale_receipt_uses_exact_existing_local_event_payload_readonly (test_actor_protocol.ActorCase.test_precolumn_finale_receipt_uses_exact_existing_local_event_payload_readonly)",
       "result": "ok"
     },
     {
@@ -97,6 +105,18 @@
       "result": "ok"
     },
     {
+      "name": "test_shared_finale_proof_remains_readonly_after_original_actor_is_revoked (test_actor_protocol.ActorCase.test_shared_finale_proof_remains_readonly_after_original_actor_is_revoked)",
+      "result": "ok"
+    },
+    {
+      "name": "test_shared_finale_proof_supports_visitor_and_rejects_wrong_bindings_and_other_actions (test_actor_protocol.ActorCase.test_shared_finale_proof_supports_visitor_and_rejects_wrong_bindings_and_other_actions)",
+      "result": "ok"
+    },
+    {
+      "name": "test_shared_receipt_never_uses_current_group_or_untyped_pending_as_nonexecution_proof (test_actor_protocol.ActorCase.test_shared_receipt_never_uses_current_group_or_untyped_pending_as_nonexecution_proof)",
+      "result": "ok"
+    },
+    {
       "name": "test_static_contract_fixture_cases (test_actor_protocol.ActorCase.test_static_contract_fixture_cases)",
       "result": "ok"
     },
@@ -113,6 +133,10 @@
       "result": "ok"
     },
     {
+      "name": "test_unknown_group_remains_recovery_target_after_restart_and_new_round_without_heks_release (test_actor_protocol.ActorCase.test_unknown_group_remains_recovery_target_after_restart_and_new_round_without_heks_release)",
+      "result": "ok"
+    },
+    {
       "name": "test_unknown_resolution_requires_explicit_local_regie_and_preserves_history (test_actor_protocol.ActorCase.test_unknown_resolution_requires_explicit_local_regie_and_preserves_history)",
       "result": "ok"
     },
@@ -122,6 +146,14 @@
     },
     {
       "name": "test_actor_protocol_requires_auth_fresh_scope_and_negotiation (test_actor_relay.ActorRelayCase.test_actor_protocol_requires_auth_fresh_scope_and_negotiation)",
+      "result": "ok"
+    },
+    {
+      "name": "test_backend_finale_proof_after_revocation_is_readonly_and_has_no_actor_data (test_actor_relay.ActorRelayCase.test_backend_finale_proof_after_revocation_is_readonly_and_has_no_actor_data)",
+      "result": "ok"
+    },
+    {
+      "name": "test_backend_finale_proof_requires_exact_binding_and_negotiation (test_actor_relay.ActorRelayCase.test_backend_finale_proof_requires_exact_binding_and_negotiation)",
       "result": "ok"
     },
     {
@@ -455,7 +487,7 @@
     "F01 (protocol only)",
     "F02 (status whitelist only)",
     "F06 (bridge only)",
-    "G02",
+    "G02 (includes exact backend-only shared finale proof after original actor revocation)",
     "G03",
     "G05 (adapter only)",
     "G06 (bridge reset/restart only)"

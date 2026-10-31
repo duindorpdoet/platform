@@ -2,7 +2,7 @@
 
 Deze wijzigingsset hoort bij de bestaande Halloween-app en Showpakket 2.0.0. Er is geen nieuwe productieapp. De uitgaande WSS-verbinding `/engine` blijft de enige internetverbinding naar de showcomputer. QLC+, audio, Art-Net, rook en de showtijdlijn blijven lokaal. De normale voorbereiding, cue-timing, audiokanalen, finaleprioriteit en rookstandaard zijn niet gewijzigd.
 
-De extra SQLite-tabellen worden met `CREATE TABLE IF NOT EXISTS` toegevoegd bij openen van de bestaande database: `actor_access`, `remote_attempts`, `finale_slots`, `finale_resolutions`. Bestaande events, controllerstaat en logboek blijven staan. Maak voor een bevoegde uitrol een kopie van de bestaande SQLite-database inclusief WAL/SHM volgens de lokale beheerprocedure; wis geen groepen, events of productiegegevens voor installatie.
+De extra SQLite-tabellen worden met `CREATE TABLE IF NOT EXISTS` toegevoegd bij openen van de bestaande database: `actor_access`, `remote_attempts`, `finale_slots`, `finale_resolutions`. Een bestaande `remote_attempts` krijgt additief een nullable `operation`-kolom; elke nieuwe poging bewaart de gevalideerde actie daarin onveranderlijk vóór uitvoering. Bestaande events, controllerstaat en logboek blijven staan. Maak voor een bevoegde uitrol een kopie van de bestaande SQLite-database inclusief WAL/SHM volgens de lokale beheerprocedure; wis geen groepen, events of productiegegevens voor installatie.
 
 ## Configuratie en compatibiliteit
 
@@ -10,7 +10,7 @@ Op app-backend, relay en showcomputer zijn dezelfde **afzonderlijke** `DUINPAD_A
 
 App-backend gebruikt `DUINPAD_SHOW_API_BASE_URL` (bestaande echte HTTPS-relayorigin) en `DUINPAD_SHOW_API_TOKEN` (bestaande relaysecret). De showcomputer gebruikt de bestaande `DUINPAD_RELAY_URL` (echte WSS `/engine`-URL) en `DUINPAD_RELAY_SECRET`. Geen sleutel of ondertekende grant gaat naar de browser, QR-poster, `NEXT_PUBLIC_`, URL-query, foutmelding of auditlog.
 
-De nieuwe showcomputer meldt na verbinden `type:capabilities`, `versions:['duinpad.actor.v1']`, `event_scope_id`, `observed_at`, `actor_status_max_age:5`, `zone_stops:[2,3,4]`. Zonder passende onderhandelde mogelijkheden zijn alle nieuwe actor/status/receiptpaden 503 en wordt niets bewaard voor later. De bestaande QR1/QR2-wirevorm blijft terugwaarts compatibel. Een oude relay of oude bridge ondersteunt de nieuwe acteurbediening niet.
+De nieuwe showcomputer meldt na verbinden `type:capabilities`, `versions:['duinpad.actor.v1']`, `event_scope_id`, `observed_at`, `actor_status_max_age:5`, `zone_stops:[2,3,4]`, `finale_receipts:1`. Zonder passende onderhandelde mogelijkheden zijn alle nieuwe actor/status/receiptpaden 503 en wordt niets bewaard voor later. Het gedeelde finaleherstelpad vereist expliciet `finale_receipts:1`. De bestaande QR1/QR2-wirevorm blijft terugwaarts compatibel. Een oude relay of oude bridge ondersteunt de nieuwe acteurbediening niet.
 
 Controleer vóór livegebruik kloksynchronisatie op VPS, relay en showcomputer. Actorgrants zijn maximaal vijf seconden geldig; toekomstige en verstreken grants worden geweigerd. Een klokafwijking blokkeert zo veilig. Status wordt live opgevraagd en bij meer dan vijf seconden ouderdom afgewezen. Een geldige QR-poster en een verbonden showcomputer zijn afzonderlijke feiten.
 
@@ -37,9 +37,10 @@ Een verse accessgrant gebruikt dezelfde envelope met payload `{version:'duinpad.
 | `POST /api/integration/actor-command` | Command-envelope body plus dezelfde grantheader. Eerst live grant-sync, daarna hoogstens één directe uitvoering. |
 | `GET /api/integration/receipts/<id>?kind=actor&payload_hash=<sha256>[&group_id=<id>]` | Verse eigen grantheader. Hash = SHA256 van exacte gedecodeerde command-JSON-bytes. Leest uitsluitend. Laat `group_id` weg voor null. |
 | `GET /api/integration/receipts/<id>?kind=qr&group_id=<id>&payload_hash=<sha256>` | Geen actorgrant. Vertrouwde backend bewijst in de app de eigen groepsautorisatie. Hash volgens onderstaande QR-normalisatie. |
+| `GET /api/integration/finale-receipts/<id>?group_id=<id>&payload_hash=<sha256>&event_scope_id=<event>` | Uitsluitend backend-Bearer; de app verifieert eerst de eigen deelnemer-/evenementbeheerautorisatie. Exact gebonden bewijs van alleen QR2 of actor `finale.go`, ook als de oorspronkelijke acteur is ingetrokken. Geen actorgrant of uitvoeringsrecht. |
 | `GET /api/integration/group-status?group_id=<id>` | Beperkte status van uitsluitend die groep; backend autoriseert de browser. Geen volledige groepenlijst. |
 
-De relay stuurt uitsluitend vaste packetkinds `actor.access`, `actor.status`, `actor.command`, `receipt`, `group.status` en het bestaande `qr` over WSS. Er is geen generieke regieproxy of willekeurige interne actie-/zoneparameter.
+De relay stuurt uitsluitend vaste packetkinds `actor.access`, `actor.status`, `actor.command`, `receipt`, `finale.receipt`, `group.status` en het bestaande `qr` over WSS. Er is geen generieke regieproxy of willekeurige interne actie-/zoneparameter.
 
 QR-hash gebruikt exact compact JSON met vaste keyvolgorde `{stage,group_id,event_id,issued_at,label}`; ontbrekend label wordt `''`. De app gebruikt gehele Unixseconden. Een receiptquery verandert nooit `issued_at`, maakt geen event en roept geen start aan. Een oude POST opnieuw sturen is nadrukkelijk geen statusquery.
 
@@ -48,6 +49,10 @@ Statusbody: `{version:'duinpad.actor-status.v1',compatible:true,connected,observ
 Command-ACK: `{ok,message?,duplicate?,unknown?,error?,outcome,command_id,meaning?,confirmation?}`. `meaning` is `scene_started`, `finale_started`, `ready_updated`, `zone_stopped` of `all_stopped`. Alleen finale-ACK bevat `confirmation:{qlc_started:true,audio_started:true}` en pas nadat beide lokale motoren hebben bevestigd. Dit bewijst geen fysieke zicht-/hoorbaarheid of showvoltooiing. `ok:false` met `outcome:'blocked'` is een expliciete weigering; timeout/verbroken verbinding is `unknown`. Een niet verstuurd command geeft 503/`not_dispatched`. Geen automatische retry.
 
 Receiptwrapper: `{found,command_id,group_id,payload_hash,result,group?}`. Alleen bij exact ID, hash, soort, groep, event en eigen actor is `found:true` mogelijk. Een miss blijft `found:false,result:{ok:false,unknown:true,outcome:'unknown'}`; ontbrekend bewijs is geen bewijs van niet uitgevoerd. De receipt-handler schrijft geen capability, receipt of controllerstaat. Hij kan een eerdere unknown teruglezen als gestart als het duurzame **zelfde poging-ID** beide start-ACKs bewijst, of als expliciet niet uitgevoerd na de lokale regiehandeling hieronder.
+
+Het aparte gedeelde finaleherstelpad voegt `event_scope_id` toe aan deze wrapper en is begrensd op het fysieke finaleslot. Het vergelijkt exact het oorspronkelijke poging-ID, de opgeslagen payloadhash, groep en evenement en eist de onveranderlijke operatie `qr2` (bron qr) of `finale.go` (bron actor). Een actorclaim of huidige acteursrechten zijn daarvoor niet nodig: de vertrouwde backend autoriseert de deelnemer/evenementbeheerder tegen diens eigen groepscontext en opgeslagen poging. Het antwoord bevat geen oorspronkelijke acteuridentiteit, permissions, claim, lokale auditreden of volledige regiestatus. Dit leest alleen bewijs en geeft nooit een commandobevoegdheid.
+
+Bij oudere rijen zonder `operation` wordt uitsluitend read-only de bij **hetzelfde poging-ID** opgeslagen lokale eventpayload gecontroleerd op de exacte gebonden finaleactie. Zonder dat bewijs wordt niet gegokt dat een ongetypeerde pending rij een finale was. Een ontbrekende rij, lege groepenlijst, intrekking, huidige ready-status of momenteel stilstaand effect is nooit niet-uitvoeringbewijs. Na intrekking van acteur A kan een bevoegde andere deelnemer/beheerder zo het gedeelde slot pas herstellen als dezelfde duurzame ACK of expliciete lokale regiebeslissing dat rechtvaardigt.
 
 ## Rechten en races
 
@@ -71,6 +76,8 @@ De app controleert actuele DB-rechten vlak vóór iedere dispatch en pusht intre
 QR2, internet-`finale.go` en lokale handmatige Finale GO delen dezelfde controllerlock en duurzame `finale_slots`-rij. Reservering gebeurt direct vóór de lokale motorstart. Alleen na QLC- én audio-ACK wordt de rij `started` en Heks GO voor de volgende groep vrijgegeven. Geen automatische Heks GO. Een fout vóór beide ACKs houdt het slot unknown en de volgende heks geblokkeerd. Een reset van de lokale groepenlijst wist dit slot niet.
 
 Bij een herstart worden geen cues hervat; actieve groepen worden interrupted en regieherstel blijft nodig. Een receipt van een historische bevestigde start kan tegelijk `group.recovery_required:true` melden. Toon dit als herstelcontrole; het historische ACK-bewijs geeft geen nieuwe startmogelijkheid.
+
+Een bestaande onzekere finalegroep blijft na herstart en **Nieuwe ronde** de lokale finaleselectie voor herstel. Bij Nieuwe ronde met één aantoonbare bestaande onzekere groep blijft die exacte binding bewaard; de interrupted-groep is uitsluitend een hersteldoel. Het duurzame unknown-slot blijft GO weigeren en opnieuw starten van het programma geeft geen volgende-Heks-vrijgave zolang een unknown bestaat. Een lokale reeds bevestigde start heeft daarentegen terecht geen awaiting-selectie meer: gebruik voor historisch gedeeld ontvangstherstel de exacte geautoriseerde app-DB-poging en routegroep, zonder een huidige lokale selectie als vervangend bewijs te behandelen.
 
 Bij unknown:
 

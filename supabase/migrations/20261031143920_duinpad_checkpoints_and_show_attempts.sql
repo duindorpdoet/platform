@@ -68,13 +68,13 @@ revoke all on function api.duinpad_checkpoint_validate(text,text,uuid)from publi
 grant execute on function api.duinpad_checkpoint_validate(text,text,uuid)to authenticated;
 
 create table app_private.duinpad_show_attempts(
- id uuid primary key, event_id uuid not null references app_private.events(id),run_id uuid not null references app_private.group_runs(id),
+ id uuid primary key, attempt_order bigint generated always as identity unique, event_id uuid not null references app_private.events(id),run_id uuid not null references app_private.group_runs(id),
  stage text not null check(stage in('qr1','qr2')),actor_id uuid not null references auth.users(id),
  source text not null check(source in('visitor','actor')),payload text not null check(octet_length(payload)<=4096),payload_hash text not null check(payload_hash~'^[a-f0-9]{64}$'),
  status text not null check(status in('requested','started','registered','blocked','not_dispatched','unknown','interrupted','recovery_required')),
- issued_at bigint not null,created_at timestamptz not null default now(),finished_at timestamptz,result jsonb
+ issued_at bigint not null,created_at timestamptz not null default clock_timestamp(),finished_at timestamptz,result jsonb
 );
-create index duinpad_show_group_history on app_private.duinpad_show_attempts(run_id,stage,created_at desc);
+create index duinpad_show_group_history on app_private.duinpad_show_attempts(run_id,stage,attempt_order desc);
 alter table app_private.duinpad_show_attempts enable row level security;
 revoke all on app_private.duinpad_show_attempts from public,anon,authenticated;
 create function api.duinpad_show_reserve(_actor uuid,_event uuid,_run uuid,_stage text,_id uuid,_source text,_payload text,_hash text,_issued_at bigint)
@@ -95,7 +95,7 @@ begin
   or (_source='actor'and((_payload::jsonb->>'command_id')is distinct from _id::text or (_payload::jsonb->>'action')is distinct from 'finale.go' or (_payload::jsonb->>'event_scope_id')is distinct from _event::text or (_payload::jsonb->>'actor_subject')is distinct from _actor::text))then raise exception 'PAYLOAD_MISMATCH';end if;
  -- One shared physical slot covers actor finale.go and all visitor scan units.
  perform pg_advisory_xact_lock(hashtextextended('duinpad:'||_run::text||':'||_stage,0));
- select *into p from app_private.duinpad_show_attempts where run_id=_run and stage=_stage and status in('requested','unknown','started','registered','interrupted','recovery_required')order by created_at desc limit 1;
+ select *into p from app_private.duinpad_show_attempts where run_id=_run and stage=_stage and status in('requested','unknown','started','registered','interrupted','recovery_required')order by attempt_order desc limit 1;
  if p.id is not null then return jsonb_build_object('dispatch',false,'attemptId',p.id,'status',case when p.status='requested'and p.created_at<clock_timestamp()-interval '15 seconds'then 'unknown'else p.status end);end if;
  if exists(select 1 from app_private.duinpad_show_attempts where id=_id)then raise exception 'ATTEMPT_ALREADY_USED';end if;
  insert into app_private.duinpad_show_attempts(id,event_id,run_id,stage,actor_id,source,payload,payload_hash,status,issued_at)values(_id,_event,_run,_stage,_actor,_source,_payload,_hash,'requested',_issued_at);
@@ -125,7 +125,7 @@ begin
   if _stage is distinct from 'qr2' or not(app_private.duinpad_actor_can(e,_actor,'finale.go')or app_private.has_capability(e,'event_admin',_actor))then raise exception 'NOT_AUTHORIZED'using errcode='42501';end if;
   r:=_run;
  end if;
- select *into p from app_private.duinpad_show_attempts where event_id=e and(_stage is null or stage=_stage)and(id=_id or(_id is null and run_id=r))order by created_at desc limit 1;
+ select *into p from app_private.duinpad_show_attempts where event_id=e and(_stage is null or stage=_stage)and(id=_id or(_id is null and run_id=r))order by attempt_order desc limit 1;
  if p.id is null then return null;end if;
  if not(p.run_id=r or(p.actor_id=_actor and app_private.duinpad_actor_can(e,_actor,'finale.go'))or app_private.has_capability(e,'event_admin',_actor))then raise exception 'NOT_AUTHORIZED'using errcode='42501';end if;
  return jsonb_build_object('attemptId',p.id,'eventId',e,'runId',p.run_id,'stage',p.stage,'source',p.source,'status',case when p.status='requested'and p.created_at<clock_timestamp()-interval '15 seconds'then 'unknown'else p.status end,'result',p.result,'payload',p.payload,'payloadHash',p.payload_hash);

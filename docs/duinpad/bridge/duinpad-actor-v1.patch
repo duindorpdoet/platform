@@ -5,7 +5,7 @@ diff --git a/INHOUD-SHA256.json b/INHOUD-SHA256.json
    "Start-QLC-Windows.cmd": "2ad9fcc86e867d22c7f0bfb299f3aa2fe5b63c1af1b3c97997a3f3e798772a8f",
    "Start-Simulatie-Mac.command": "506fdd90f9f9478b8cefb852994ec36391fac959d58f568127fc68e2f3d835ba",
    "Start-Simulatie-Windows.cmd": "f815637f65e038f08f340a9bb27969fb518e69222098529231d9459fccdd020a",
-+  "TESTRAPPORT-ACTOR-V1.json": "ecbb8234a36f5894f3f91e298faf1467b588b03b972fea99649feb5cd5d07aa8",
++  "TESTRAPPORT-ACTOR-V1.json": "933a733140ef7b5d930ff5261aea0af2f603fe0495d74e3d3639e11c84590c7a",
    "TESTRAPPORT.json": "61fe19df11e6867982870de6d76790a675a50defc03291cc1cebc9b0dc91e293",
    "audio/LEESMIJ.txt": "4bf991d9c33a3e71adb253a4fad1a573ad130a011cc8c7373fe2a65fec6b9a5a",
    "audio/MEDIA-ANALYSE.json": "6f342a62983d385b2a9c6d27f02e4af3f2e393cde5fe33b19ebb2b2056fa0b59",
@@ -13,19 +13,19 @@ diff --git a/INHOUD-SHA256.json b/INHOUD-SHA256.json
    "audio/zone3-alarm.wav": "a7164310e4dd3c488b845621a185d30e15b695c1120d2e2e05c1954ea08f3ffc",
    "bridge/__init__.py": "393b1b0a66be3fbfaca5080db268ddde5d2283e84a5801c57634542a78f4295b",
    "bridge/__main__.py": "e3da231473221541f3027a9a4433832707bd4ba31394aa8ffbe1809bcdd8a7f3",
-+  "bridge/actor_adapter.py": "81c3104b06f0faf37b1bdb959d942a0fdfea5eb1add5de969aa580846acc09d7",
++  "bridge/actor_adapter.py": "15f40b4a9f2b65fd12e82e6fb1a922127bc9282ab9b5a20edc150f72f8290182",
 +  "bridge/actor_protocol.py": "819c4429abe8da05ba0a05212296075f5c68bfbf74720ea499ba4b465e81d0a3",
    "bridge/audio.py": "bd753980581738c98db4644b934ceef6d387345ac60bf424cceb69a1fead65d9",
    "bridge/auth.py": "b500d7a180d9ba9e4acaf04828677c41af00ddbcf47bc414f1e31f90f146e47b",
    "bridge/config.py": "e538f9e4cd8d51e5312167d0189cfe12dc4fd4d9cf17f5a717e9008ca764655e",
 -  "bridge/controller.py": "c3ac0430eadf73d05899b40f91fac93586545550c39787a9fc02ed67e8604e28",
-+  "bridge/controller.py": "2f18f3319854ef55324b9d253719a4ea95a33f6f62f207c0b5e3d1ea4192465a",
++  "bridge/controller.py": "d80aaeb40ce89749599649b05720644c596a6583aaa6b8986bfa31680af31af9",
    "bridge/qlc.py": "16427403ed21d3809bf18891747b3b07cc9d4ba833ab77617a8b376de72e849a",
 -  "bridge/relay_client.py": "1aa7500ff0bb77029da26894137798c9c3272f7f07a2841591a96de15300bbd8",
-+  "bridge/relay_client.py": "9ca6f162d1c157d1d077a40079fd9c4a598240298a1a4b71e914efa5d5b4a812",
++  "bridge/relay_client.py": "fe6c2184e02ea4872c89e53aff1a7fe682fe152e4853239d66fd29ad13f11e0b",
    "bridge/server.py": "14dabfd3a489573ca04ab1f0d47cd4066aabd834cd84e4183f5853ac50e38abe",
 -  "bridge/store.py": "51cf4375c1ba4e2c8c8d0b5641dba73d30ab6647cd592965da6f273f33de9e34",
-+  "bridge/store.py": "755403ae493b06c6d1246290c01e1d5d4022b4c1432dfe03e7d95b4b4ed50ac5",
++  "bridge/store.py": "57c12d14cb851c245a071b2550a54e5fcad6a98625c6461ba13ce711a708af27",
    "bridge/visitor.py": "9a1f644633987b546c63b96efa9a38b55c2639ad040ed0742d179301a2d23ddb",
    "config/show.json": "2f23de60ad797c1d0dfa41ea50dc077161d9f2023882777622a93cefa074a090",
 -  "deploy/.env.example": "0821a14c162e324f57d1d586a9992f1397bc37771d6b0f3b246d05ba3e12a653",
@@ -38,9 +38,9 @@ diff --git a/INHOUD-SHA256.json b/INHOUD-SHA256.json
    "deploy/PROMPT-HALLOWEEN-APP.txt": "438cabea402e7e32cc8764d37481ec15b3cb4c706651d39a828c153905a39edf",
    "deploy/compose.yaml": "44a9b24e80b142a9cefe4b8fe943cb550f82dbe9dfb694fb99ac492423d5365f",
 -  "deploy/relay_app.py": "e447043ea667815d76c15e8aacf5a5f81d89e066e75e9dc4f314c32c1103039e",
-+  "deploy/relay_app.py": "572b208b2cb0ad5344f186c3cc87c92ec0103bb1f7cca29e9830c5f1d74e7050",
++  "deploy/relay_app.py": "e31716856ee08625188c104fbab67d6eb59e2041bb0ceb7473249aaa2dc4e761",
    "deploy/requirements.txt": "34833497f8f0f124622fd93a1c252f7a66d3252ce74ed268deabd79141323cfb",
-+  "docs/ACTOR-ADAPTER-V1.md": "88afafcaee7d51f9c3237cc0cc36dc2f013b6c3ad4cf5f59810961f1db98f47c",
++  "docs/ACTOR-ADAPTER-V1.md": "171a99dcf078cc0c147c2f5c046a37bf20a86fe7ed6d787027be4a0eda5c03fc",
    "docs/BEKABELING.md": "eb4df7baccbde7ef5cbd97f078aa2b6175d2c64636b545c426c7d2ff624c8bb4",
    "docs/Duinpad-Showpakket-2.0-Startgids.pdf": "e6d7d722efecfee25f400a20370d49991f803ea16e2355ea1dfc0d1e081614ff",
    "package.json": "7577c5e9b16b36c93f28b0decf338ec6d817b5e10011c78aeb14e824b3da85c6",
@@ -49,8 +49,8 @@ diff --git a/INHOUD-SHA256.json b/INHOUD-SHA256.json
    "requirements-dev.txt": "b6dc8c3d290a017b04a26c6a9f730a97e860ef760deb103b73586ea32a541817",
    "requirements.txt": "e313a65895fa4aac6f85b73d8994b79f7e66403792ac055ed8284f35ea9a598a",
 +  "tests/fixtures/actor-v1-fixtures.json": "e82a97daac299a1a26b78e5308bbabd4e5eb542d9804e337e8f5471c010759d8",
-+  "tests/test_actor_protocol.py": "cd90920897b08519978bc2a33efbca8a45b5550c1a8405183d6ad08400e1edfd",
-+  "tests/test_actor_relay.py": "76883c134f03fcbfa358e4cd464f44d5bc66b50aff1788c852ff347348eaa27f",
++  "tests/test_actor_protocol.py": "c39cdc6981871998abac615fa36ca3ee1ae5f02e0d4897fe4f4c68e84911754a",
++  "tests/test_actor_relay.py": "d90f2801fc072693b9197523f9bcb56a25234aba1b464ca955e207b923bae7dc",
    "tests/test_relay.py": "57b9af2417f746a0beefb140aeadbddd09e6c6d0a8776de5904756148e491d66",
    "tests/test_show.py": "49b0c85921ee71931977ad56e52ccbe2bd1363c4c628506de6de128a86ef6013",
    "tools/build_manual.py": "d9420ddac0d57b0cdc7dc56f7c2da684abf0f35b294e3c7a7bf23b1e7b9df3e5",
@@ -71,24 +71,24 @@ diff --git a/TESTRAPPORT-ACTOR-V1.json b/TESTRAPPORT-ACTOR-V1.json
 new file mode 100644
 --- /dev/null
 +++ b/TESTRAPPORT-ACTOR-V1.json
-@@ -0,0 +1,481 @@
+@@ -0,0 +1,513 @@
 +{
 +  "report_type": "Isolated bridge/relay software simulation. No physical output or production execution.",
-+  "generated_at_utc": "2026-10-31T14:49:45.400218+00:00",
++  "generated_at_utc": "2026-10-31T15:13:19.469221+00:00",
 +  "app_checkout_base_commit": "db5e9fee4fe86aecddbb05b9f0fe6ad3840c66f8",
 +  "baseline_zip": "Duinpad-Showpakket-2.0.0.zip",
 +  "baseline_zip_sha256": "e3dc2a5d47c0376484fc60391ffe81cabbeb624d159850ae3d1644179d761622",
 +  "bridge_protocol": "duinpad.actor.v1",
 +  "python": "3.12.3",
 +  "command": "python -m unittest discover -s tests -v",
-+  "tests_run": 104,
-+  "passed": 104,
++  "tests_run": 112,
++  "passed": 112,
 +  "failures": 0,
 +  "errors": 0,
 +  "skipped": 0,
-+  "duration_seconds": 9.739,
++  "duration_seconds": 9.83,
 +  "baseline_existing_tests": 72,
-+  "new_tests": 32,
++  "new_tests": 40,
 +  "tests": [
 +    {
 +      "name": "test_actor_finale_uses_existing_limited_finale_role (test_actor_protocol.ActorCase.test_actor_finale_uses_existing_limited_finale_role)",
@@ -139,7 +139,15 @@ new file mode 100644
 +      "result": "ok"
 +    },
 +    {
++      "name": "test_operation_column_migration_preserves_legacy_ledger_without_seeds (test_actor_protocol.ActorCase.test_operation_column_migration_preserves_legacy_ledger_without_seeds)",
++      "result": "ok"
++    },
++    {
 +      "name": "test_pending_attempt_is_unknown_without_reexecution (test_actor_protocol.ActorCase.test_pending_attempt_is_unknown_without_reexecution)",
++      "result": "ok"
++    },
++    {
++      "name": "test_precolumn_finale_receipt_uses_exact_existing_local_event_payload_readonly (test_actor_protocol.ActorCase.test_precolumn_finale_receipt_uses_exact_existing_local_event_payload_readonly)",
 +      "result": "ok"
 +    },
 +    {
@@ -171,6 +179,18 @@ new file mode 100644
 +      "result": "ok"
 +    },
 +    {
++      "name": "test_shared_finale_proof_remains_readonly_after_original_actor_is_revoked (test_actor_protocol.ActorCase.test_shared_finale_proof_remains_readonly_after_original_actor_is_revoked)",
++      "result": "ok"
++    },
++    {
++      "name": "test_shared_finale_proof_supports_visitor_and_rejects_wrong_bindings_and_other_actions (test_actor_protocol.ActorCase.test_shared_finale_proof_supports_visitor_and_rejects_wrong_bindings_and_other_actions)",
++      "result": "ok"
++    },
++    {
++      "name": "test_shared_receipt_never_uses_current_group_or_untyped_pending_as_nonexecution_proof (test_actor_protocol.ActorCase.test_shared_receipt_never_uses_current_group_or_untyped_pending_as_nonexecution_proof)",
++      "result": "ok"
++    },
++    {
 +      "name": "test_static_contract_fixture_cases (test_actor_protocol.ActorCase.test_static_contract_fixture_cases)",
 +      "result": "ok"
 +    },
@@ -187,6 +207,10 @@ new file mode 100644
 +      "result": "ok"
 +    },
 +    {
++      "name": "test_unknown_group_remains_recovery_target_after_restart_and_new_round_without_heks_release (test_actor_protocol.ActorCase.test_unknown_group_remains_recovery_target_after_restart_and_new_round_without_heks_release)",
++      "result": "ok"
++    },
++    {
 +      "name": "test_unknown_resolution_requires_explicit_local_regie_and_preserves_history (test_actor_protocol.ActorCase.test_unknown_resolution_requires_explicit_local_regie_and_preserves_history)",
 +      "result": "ok"
 +    },
@@ -196,6 +220,14 @@ new file mode 100644
 +    },
 +    {
 +      "name": "test_actor_protocol_requires_auth_fresh_scope_and_negotiation (test_actor_relay.ActorRelayCase.test_actor_protocol_requires_auth_fresh_scope_and_negotiation)",
++      "result": "ok"
++    },
++    {
++      "name": "test_backend_finale_proof_after_revocation_is_readonly_and_has_no_actor_data (test_actor_relay.ActorRelayCase.test_backend_finale_proof_after_revocation_is_readonly_and_has_no_actor_data)",
++      "result": "ok"
++    },
++    {
++      "name": "test_backend_finale_proof_requires_exact_binding_and_negotiation (test_actor_relay.ActorRelayCase.test_backend_finale_proof_requires_exact_binding_and_negotiation)",
 +      "result": "ok"
 +    },
 +    {
@@ -529,7 +561,7 @@ new file mode 100644
 +    "F01 (protocol only)",
 +    "F02 (status whitelist only)",
 +    "F06 (bridge only)",
-+    "G02",
++    "G02 (includes exact backend-only shared finale proof after original actor revocation)",
 +    "G03",
 +    "G05 (adapter only)",
 +    "G06 (bridge reset/restart only)"
@@ -557,9 +589,10 @@ diff --git a/bridge/actor_adapter.py b/bridge/actor_adapter.py
 new file mode 100644
 --- /dev/null
 +++ b/bridge/actor_adapter.py
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,234 @@
 +"""Internet commands are translated here, never forwarded as arbitrary local actions."""
 +import os
++import json
 +import re
 +import threading
 +from .actor_protocol import ACTIONS, MAX_STALE, STATUS, digest, qr_payload, validate, verify
@@ -657,7 +690,7 @@ new file mode 100644
 +                slot = c.store.finale_slot(data['group_id']) if zone == 5 else None
 +                if (not slot or slot['status']=='not_executed') and (not current_group or current_group['id'] != data['group_id']):
 +                    raise PermissionError('Groep is niet meer de actuele groep')
-+            c.store.reserve_remote(data['command_id'], 'actor', self.event_scope_id, data['actor_subject'], data['group_id'], payload_hash)
++            c.store.reserve_remote(data['command_id'], 'actor', self.event_scope_id, data['actor_subject'], data['group_id'], payload_hash,data['action'])
 +            args = {} if zone is None else {'zone': zone}
 +            if local == 'ready': args['ready'] = data['args']['ready']
 +            # The existing narrow finale role uses the same bound start function
@@ -686,7 +719,7 @@ new file mode 100644
 +            if previous:
 +                self._match(previous, 'qr', gid, payload_hash, None)
 +                return {**previous['result'], 'duplicate': True}
-+            c.store.reserve_remote(ident, 'qr', self.event_scope_id, None, gid, payload_hash)
++            c.store.reserve_remote(ident, 'qr', self.event_scope_id, None, gid, payload_hash,stage)
 +            args = {'group_id': gid}
 +            if stage == 'qr1': args['label'] = event.get('label', '')
 +            result = self._execute_local('group_add' if stage == 'qr1' else 'qr2_start', args, 'regie', ident, event['issued_at'])
@@ -728,6 +761,9 @@ new file mode 100644
 +            return {'found':False,'command_id':ident,'group_id':gid,'payload_hash':payload_hash,
 +                    'result':{'ok': False, 'unknown': True, 'outcome': 'unknown', 'error': 'Geen lokale ontvangst gevonden; controleer de regie'}}
 +        self._match(row, kind, gid, payload_hash, subject)
++        return self._receipt_payload(ident,kind,gid,payload_hash,row)
++
++    def _receipt_payload(self,ident,kind,gid,payload_hash,row):
 +        result = dict(row['result'])
 +        group = self.group_status(gid) if gid else None
 +        # A crash can occur after both ACKs were durably recorded but before the
@@ -740,6 +776,42 @@ new file mode 100644
 +            result={'ok':False,'outcome':'blocked','message':'Regie heeft lokaal gecontroleerd en bevestigd: de finale is niet uitgevoerd.'}
 +        if kind=='actor':result['command_id']=ident
 +        return {'found':True,'command_id':ident,'group_id':gid,'payload_hash':payload_hash,'result':result,'group':group}
++
++    def _finale_operation(self,ident,row,gid):
++        operation=row.get('operation')
++        if operation is not None:
++            return (row['kind']=='qr' and operation=='qr2') or (row['kind']=='actor' and operation=='finale.go')
++        # Read-only compatibility for a pre-column ledger. A group slot or an
++        # untyped pending row alone must never be mistaken for a finale command.
++        event=self.controller.store.get_event(ident)
++        if not event:return False
++        try:payload=json.loads(event[0])
++        except (TypeError,ValueError):return False
++        if not isinstance(payload,dict):return False
++        args=payload.get('args',{})
++        if not isinstance(args,dict) or args.get('group_id')!=gid:return False
++        if payload.get('action')=='qr2_start' and payload.get('role')=='regie' and set(args)=={'group_id'}:
++            return row['kind'] in ('qr','actor')  # earlier adapter used this exact bound action
++        return row['kind']=='actor' and payload.get('action')=='go' and payload.get('role')=='finale' and args.get('zone')==5 and set(args)=={'zone','group_id'}
++
++    def finale_receipt(self,ident,gid,payload_hash,event_scope_id):
++        """Backend-only proof for the shared finale slot, with no actor grant.
++
++        The trusted app must authorize its participant/event administrator first.
++        This method can neither execute, change rights nor resolve an unknown.
++        """
++        if event_scope_id!=self.event_scope_id or not event_scope_id:
++            raise PermissionError('Ontvangst hoort niet bij dit evenement')
++        row=self.controller.store.remote(ident)
++        if row is None:
++            result={'found':False,'command_id':ident,'group_id':gid,'payload_hash':payload_hash,
++                    'result':{'ok':False,'unknown':True,'outcome':'unknown','error':'Geen finaleontvangst gevonden; controleer de regie'}}
++        else:
++            self._match(row,row['kind'],gid,payload_hash,row['actor_subject'])
++            if row['kind'] not in ('qr','actor') or not self._finale_operation(ident,row,gid):
++                raise PermissionError('Geen exact gebonden finalepoging')
++            result=self._receipt_payload(ident,row['kind'],gid,payload_hash,row)
++        return {**result,'event_scope_id':event_scope_id}
 +
 +    def group_status(self, gid):
 +        c = self.controller
@@ -905,7 +977,21 @@ new file mode 100644
 diff --git a/bridge/controller.py b/bridge/controller.py
 --- a/bridge/controller.py
 +++ b/bridge/controller.py
-@@ -65,6 +65,15 @@
+@@ -39,7 +39,12 @@
+         return next((g for g in waiting if g['id']==self.selected),waiting[0] if waiting else None)
+ 
+     def _next_finale(self):
+-        return next((g for g in self.groups if g['id']==self.awaiting and g['status']=='route'),None)
++        group=next((g for g in self.groups if g['id']==self.awaiting),None)
++        if group and group['status']=='route':return group
++        # Retain an exact unknown attempt as a recovery target after Nieuwe
++        # ronde; this is not execution eligibility. The durable slot still blocks GO.
++        slot=self.store.finale_slot(group['id']) if group and group['status']=='interrupted' else None
++        return group if slot and slot['status']=='unknown' else None
+ 
+     def _intro_reason(self):
+         if not self.program:return 'Start eerst het programma'
+@@ -65,6 +70,15 @@
          return None
  
      def _start_finale(self,group_id=None):
@@ -921,7 +1007,7 @@ diff --git a/bridge/controller.py b/bridge/controller.py
          group=self._group(group_id) if group_id is not None else None
          if group:
              # A repeated scan must never start a second show or release another permit.
-@@ -74,9 +83,11 @@
+@@ -74,9 +88,11 @@
          reason=self._finale_reason()
          if reason:raise ValueError(reason)
          group=group or self._next_finale()
@@ -933,7 +1019,7 @@ diff --git a/bridge/controller.py b/bridge/controller.py
          return 'Finale lokaal gestart; volgende Heks GO vrijgegeven'
  
      def public(self,role='regie'):
-@@ -94,6 +105,7 @@
+@@ -94,6 +110,7 @@
                  data['zones']=[z for z in zones if z['key']==role]
                  data['groups']=[g for g in self.groups if (role=='heks' and g['status']=='waiting') or (role=='finale' and g['status']=='route')]
                  data['logs']=[]
@@ -941,7 +1027,7 @@ diff --git a/bridge/controller.py b/bridge/controller.py
              return data
  
      def preflight(self):
-@@ -119,6 +131,8 @@
+@@ -119,6 +136,8 @@
  
      def _scene(self,z,kind,group=None):
          if z in self.active:raise ValueError('Zone speelt al')
@@ -950,7 +1036,7 @@ diff --git a/bridge/controller.py b/bridge/controller.py
          duration=self.config['timing']['heks_duration_s' if z==1 else 'finale_duration_s'] if z in [1,5] else self.config['media'][f'z{z}_cue'].get('duration_s',self.config['timing'].get(f'zone{z}_duration_s',self.config['timing']['passage_duration_s']))
          function='Z1_SHOW' if z==1 else 'FINALE_SHOW' if z==5 else f'Z{z}_PASSAGE'
          if z==1:
-@@ -145,7 +159,9 @@
+@@ -145,7 +164,9 @@
                  self.audio.start(key,tag,duration=duration)
          except Exception:
              self.audio.stop(tag);self.qlc.stop(function)
@@ -961,7 +1047,7 @@ diff --git a/bridge/controller.py b/bridge/controller.py
          self.active[z]={'kind':kind,'group':group,'function':function,'tag':tag if has_audio else None,'started':self.clock(),'duration':duration,'light_duration':self.config['timing'].get('finale_gold_start_s',42.3) if z==5 else duration}
          self.states[z]='SPEELT';self.ready[z]=False
          if z==1:
-@@ -199,16 +215,17 @@
+@@ -199,16 +220,17 @@
              if previous:
                  if previous[0]!=payload:raise ValueError('Event-ID is al gebruikt voor een andere opdracht')
                  pending=previous[1].get('in_progress',False)
@@ -981,16 +1067,16 @@ diff --git a/bridge/controller.py b/bridge/controller.py
              self.store.finish(event_id,response,self.snapshot(),self.wall(),action+': '+message)
              return {**response,'state':self.public(role)}
  
-@@ -222,7 +239,7 @@
+@@ -222,7 +244,7 @@
              issues=self.preflight()
              if issues:raise ValueError('; '.join(issues))
              if not self.connected:self.connect()
 -            self.program=True;self.paused=False;self.pad_on=False;self.intro_permit=True;self.error=None
-+            self.program=True;self.paused=False;self.pad_on=False;self.intro_permit=not bool(self.awaiting);self.error=None
++            self.program=True;self.paused=False;self.pad_on=False;self.intro_permit=not bool(self.awaiting or self.store.unresolved_finales());self.error=None
              self.qlc.start('Z1_BASE');self.qlc.start('Z5_BASE');self._pad_restore()
              self.qlc.start('DIRECTION_DARK')
              return 'Programma klaar; eerste Heks GO kan na gereedmelding'
-@@ -257,7 +274,7 @@
+@@ -257,7 +279,7 @@
                  group=self._next_intro();self._scene(1,'heks',group['id'])
                  group['status']='intro';self.awaiting=group['id'];self.intro_permit=False
              elif z==5:
@@ -999,7 +1085,24 @@ diff --git a/bridge/controller.py b/bridge/controller.py
              elif z in [2,3,4]:
                  status=next(x for x in self.public()['zones'] if x['zone']==z)
                  if not status['go_enabled']:raise ValueError(status['blocked'])
-@@ -293,6 +310,20 @@
+@@ -280,11 +302,15 @@
+         if action=='new_round':
+             if self.active:raise ValueError('Stop eerst de actieve scènes')
+             if not a.get('confirmed'):raise ValueError('Bevestig dat route en acteurs gecontroleerd zijn')
++            unresolved={row['group_id'] for row in self.store.unresolved_finales()}
++            recovery_group=next((g for g in self.groups if g['id']==self.awaiting and g['id'] in unresolved),None)
++            if not recovery_group and len(unresolved)==1:
++                recovery_group=next((g for g in self.groups if g['id'] in unresolved),None)
+             self.audio.stop_all();self.scheduled.clear();self.background=None;self.gold_until=0.;self.direction_on=False
+             if self.qlc.connected:self.qlc.stop_all()
+             for group in self.groups:
+                 if group['status'] not in ['done','waiting']:group['status']='interrupted'
+-            self.program=False;self.paused=False;self.recovery=False;self.pad_on=False;self.intro_permit=False;self.awaiting=None;self.error=None
++            self.program=False;self.paused=False;self.recovery=False;self.pad_on=False;self.intro_permit=False;self.awaiting=recovery_group['id'] if recovery_group else None;self.error=None
+             self.ready={z:False for z in range(1,6)};self.states={z:'GEREED' for z in range(1,6)}
+             return 'Nieuwe ronde voorbereid; meld acteurs gereed en start het programma'
+         if action=='reset_groups':
+@@ -293,6 +319,20 @@
              self.groups=[];self.selected=None;self.awaiting=None;self.released.clear();self.intro_permit=False
              self.scheduled.clear();self.background=None
              return 'Groepenlijst geleegd; logboek en bescherming tegen dubbele QR-opdrachten bewaard'
@@ -1023,7 +1126,7 @@ diff --git a/bridge/controller.py b/bridge/controller.py
 diff --git a/bridge/relay_client.py b/bridge/relay_client.py
 --- a/bridge/relay_client.py
 +++ b/bridge/relay_client.py
-@@ -1,62 +1,137 @@
+@@ -1,62 +1,140 @@
 -"""Optional outbound VPS connection. No local port forwarding and no event queue."""
 +"""Outbound WSS only. Commands are never retained across disconnects."""
  import json
@@ -1079,6 +1182,9 @@ diff --git a/bridge/relay_client.py b/bridge/relay_client.py
 +            if kind == 'receipt':
 +                q = body['query']
 +                return self.adapter.receipt(q['command_id'], q['kind'], q.get('group_id'), q['payload_hash'], body.get('grant'))
++            if kind=='finale.receipt':
++                q=body['query']
++                return self.adapter.finale_receipt(q['command_id'],q['group_id'],q['payload_hash'],q['event_scope_id'])
 +            if kind == 'group.status': return self.adapter.group_status(body['group_id'])
 +            if kind == 'actor.command': return self.adapter.execute(body['command'], body['grant'], live)
 +            if kind != 'qr': raise ValueError('Onbekend relayprotocol')
@@ -1137,7 +1243,7 @@ diff --git a/bridge/relay_client.py b/bridge/relay_client.py
 +                if self.adapter.compatible:
 +                    socket.send(json.dumps({'type': 'capabilities', 'versions': ['duinpad.actor.v1'],
 +                                            'event_scope_id': self.adapter.event_scope_id, 'observed_at': time.time(),
-+                                            'actor_status_max_age': 5, 'zone_stops': [2, 3, 4]}))
++                                            'actor_status_max_age': 5, 'zone_stops': [2, 3, 4], 'finale_receipts':1}))
                  while not self.stop.is_set():
 -                    try:raw=self.ws.recv()
 +                    try: raw = socket.recv()
@@ -1202,7 +1308,7 @@ diff --git a/bridge/relay_client.py b/bridge/relay_client.py
 diff --git a/bridge/store.py b/bridge/store.py
 --- a/bridge/store.py
 +++ b/bridge/store.py
-@@ -9,6 +9,16 @@
+@@ -9,6 +9,18 @@
          self.lock=threading.RLock();self.db=sqlite3.connect(path,check_same_thread=False)
          self.db.execute('PRAGMA journal_mode=WAL')
          self.db.executescript('CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,payload TEXT NOT NULL,response TEXT NOT NULL); CREATE TABLE IF NOT EXISTS state(id INTEGER PRIMARY KEY CHECK(id=1),value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS log(id INTEGER PRIMARY KEY AUTOINCREMENT,at REAL,kind TEXT,message TEXT);')
@@ -1216,10 +1322,12 @@ diff --git a/bridge/store.py b/bridge/store.py
 +            CREATE TABLE IF NOT EXISTS finale_resolutions(event_id TEXT PRIMARY KEY,group_id TEXT NOT NULL,
 +                resolved_at REAL NOT NULL,reason TEXT NOT NULL);
 +        ''')
++        if 'operation' not in {row[1] for row in self.db.execute('PRAGMA table_info(remote_attempts)')}:
++            self.db.execute('ALTER TABLE remote_attempts ADD COLUMN operation TEXT')
          self.db.commit()
      def get_event(self,eid):
          with self.lock:
-@@ -38,3 +48,74 @@
+@@ -38,3 +50,74 @@
          with self.lock,self.db:self.db.execute('INSERT INTO log(at,kind,message) VALUES(?,?,?)',(at,kind,message))
      def logs(self,limit=50):
          with self.lock:return [{'at':r[0],'kind':r[1],'message':r[2]} for r in self.db.execute('SELECT at,kind,message FROM log ORDER BY id DESC LIMIT ?',(limit,))]
@@ -1245,14 +1353,14 @@ diff --git a/bridge/store.py b/bridge/store.py
 +
 +    def remote(self,ident):
 +        with self.lock:
-+            row=self.db.execute('SELECT kind,scope_id,subject,group_id,payload_hash,response FROM remote_attempts WHERE id=?',(ident,)).fetchone()
-+            return dict(zip(('kind','event_scope_id','actor_subject','group_id','payload_hash','result'),
-+                (*row[:5],json.loads(row[5])))) if row else None
++            row=self.db.execute('SELECT kind,scope_id,subject,group_id,payload_hash,response,operation FROM remote_attempts WHERE id=?',(ident,)).fetchone()
++            return dict(zip(('kind','event_scope_id','actor_subject','group_id','payload_hash','result','operation'),
++                (*row[:5],json.loads(row[5]),row[6]))) if row else None
 +
-+    def reserve_remote(self,ident,kind,scope_id,subject,group_id,payload_hash):
++    def reserve_remote(self,ident,kind,scope_id,subject,group_id,payload_hash,operation=None):
 +        with self.lock,self.db:
-+            self.db.execute('INSERT INTO remote_attempts VALUES(?,?,?,?,?,?,?)',
-+                (ident,kind,scope_id,subject,group_id,payload_hash,json.dumps({'ok':False,'unknown':True,'outcome':'unknown'})))
++            self.db.execute('INSERT INTO remote_attempts(id,kind,scope_id,subject,group_id,payload_hash,response,operation) VALUES(?,?,?,?,?,?,?,?)',
++                (ident,kind,scope_id,subject,group_id,payload_hash,json.dumps({'ok':False,'unknown':True,'outcome':'unknown'}),operation))
 +
 +    def finish_remote(self,ident,result):
 +        with self.lock,self.db:
@@ -1370,7 +1478,7 @@ diff --git a/deploy/relay_app.py b/deploy/relay_app.py
      if not hmac.compare_digest(ws.headers.get('authorization',''),'Bearer '+secret):
          await ws.close(code=1008);return
      if engine is not None:
-@@ -118,13 +124,180 @@
+@@ -118,13 +124,202 @@
      try:
          while True:
              raw=await ws.receive_text()
@@ -1431,8 +1539,8 @@ diff --git a/deploy/relay_app.py b/deploy/relay_app.py
 +        if type(result.get('observed_at')) not in (int,float) or not 0<=time.time()-result['observed_at']<=5:
 +            raise ValueError('Verouderde lokale status')
 +        return {k: result[k] for k in ('group_id', 'observed_at', 'connected', 'registered', 'finale_started', 'released', 'outcome', 'recovery_required', 'group_status') if k in result}
-+    if kind == 'receipt':
-+        return {**{k: result[k] for k in ('found', 'command_id', 'group_id', 'payload_hash') if k in result},
++    if kind in ('receipt','finale.receipt'):
++        return {**{k: result[k] for k in ('found', 'command_id', 'group_id', 'payload_hash','event_scope_id') if k in result},
 +                'result': filtered('actor.command', result.get('result', {})),
 +                'group': filtered('group.status', result['group']) if result.get('group') else None}
 +    safe = {k: result[k] for k in ('ok', 'message', 'duplicate', 'unknown', 'error', 'outcome', 'command_id', 'meaning') if k in result}
@@ -1462,7 +1570,7 @@ diff --git a/deploy/relay_app.py b/deploy/relay_app.py
 +            return filtered(kind, result), 504
 +        if result.get('outcome')=='not_dispatched':
 +            return filtered(kind,result),503
-+        if result.get('ok') is False and kind in ('actor.status', 'receipt', 'group.status'):
++        if result.get('ok') is False and kind in ('actor.status', 'receipt', 'finale.receipt', 'group.status'):
 +            return public_result(result), 409
 +        return filtered(kind, result), 200
 +    except (asyncio.TimeoutError, ConnectionError, WebSocketDisconnect, RuntimeError, ValueError, KeyError):
@@ -1484,6 +1592,28 @@ diff --git a/deploy/relay_app.py b/deploy/relay_app.py
 +        return JSONResponse({'ok': False, 'error': 'Ongeldige of verlopen actorautorisatie'}, 409)
 +    result, status = await forward_protocol('actor.access', {'grant': envelope}, uuid.uuid4().hex, timeout=2)
 +    return JSONResponse(result, status)
++
++
++@app.get('/api/integration/finale-receipts/{command_id}')
++async def finale_receipt(request:Request,command_id:str):
++    try:
++        integration_auth(request)
++        q=request.query_params
++        if set(q)!={'group_id','payload_hash','event_scope_id'} or any(len(q.getlist(key))!=1 for key in q):
++            raise ValueError('Exacte finalebinding vereist')
++        gid=q['group_id'];payload_hash=q['payload_hash'];scope_id=q['event_scope_id']
++        if not 8<=len(command_id)<=100 or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}',gid) or not re.fullmatch(r'[a-f0-9]{64}',payload_hash):
++            raise ValueError('Ongeldige finaleontvangst')
++        if not scope_id or scope_id!=event_scope_id:raise PermissionError('Verkeerd evenement')
++    except PermissionError:
++        return JSONResponse({'ok':False,'error':'Ongeldige finaleautorisatie'},403)
++    except (ValueError,KeyError,TypeError):
++        return JSONResponse({'ok':False,'error':'Ongeldige finaleontvangstaanvraag'},409)
++    if not actor_compatible() or capabilities.get('finale_receipts')!=1:
++        return JSONResponse({'ok':False,'error':'Showcomputer ondersteunt gedeeld finaleherstel niet'},503)
++    result,status=await forward_protocol('finale.receipt',{'query':{'command_id':command_id,'group_id':gid,
++        'payload_hash':payload_hash,'event_scope_id':scope_id}},command_id,timeout=4)
++    return JSONResponse(result,status)
 +
 +
 +@app.post('/api/integration/actor-command')
@@ -1558,12 +1688,12 @@ diff --git a/docs/ACTOR-ADAPTER-V1.md b/docs/ACTOR-ADAPTER-V1.md
 new file mode 100644
 --- /dev/null
 +++ b/docs/ACTOR-ADAPTER-V1.md
-@@ -0,0 +1,91 @@
+@@ -0,0 +1,98 @@
 +# Duinpad actoradapter v1 en ontvangstherstel
 +
 +Deze wijzigingsset hoort bij de bestaande Halloween-app en Showpakket 2.0.0. Er is geen nieuwe productieapp. De uitgaande WSS-verbinding `/engine` blijft de enige internetverbinding naar de showcomputer. QLC+, audio, Art-Net, rook en de showtijdlijn blijven lokaal. De normale voorbereiding, cue-timing, audiokanalen, finaleprioriteit en rookstandaard zijn niet gewijzigd.
 +
-+De extra SQLite-tabellen worden met `CREATE TABLE IF NOT EXISTS` toegevoegd bij openen van de bestaande database: `actor_access`, `remote_attempts`, `finale_slots`, `finale_resolutions`. Bestaande events, controllerstaat en logboek blijven staan. Maak voor een bevoegde uitrol een kopie van de bestaande SQLite-database inclusief WAL/SHM volgens de lokale beheerprocedure; wis geen groepen, events of productiegegevens voor installatie.
++De extra SQLite-tabellen worden met `CREATE TABLE IF NOT EXISTS` toegevoegd bij openen van de bestaande database: `actor_access`, `remote_attempts`, `finale_slots`, `finale_resolutions`. Een bestaande `remote_attempts` krijgt additief een nullable `operation`-kolom; elke nieuwe poging bewaart de gevalideerde actie daarin onveranderlijk vóór uitvoering. Bestaande events, controllerstaat en logboek blijven staan. Maak voor een bevoegde uitrol een kopie van de bestaande SQLite-database inclusief WAL/SHM volgens de lokale beheerprocedure; wis geen groepen, events of productiegegevens voor installatie.
 +
 +## Configuratie en compatibiliteit
 +
@@ -1571,7 +1701,7 @@ new file mode 100644
 +
 +App-backend gebruikt `DUINPAD_SHOW_API_BASE_URL` (bestaande echte HTTPS-relayorigin) en `DUINPAD_SHOW_API_TOKEN` (bestaande relaysecret). De showcomputer gebruikt de bestaande `DUINPAD_RELAY_URL` (echte WSS `/engine`-URL) en `DUINPAD_RELAY_SECRET`. Geen sleutel of ondertekende grant gaat naar de browser, QR-poster, `NEXT_PUBLIC_`, URL-query, foutmelding of auditlog.
 +
-+De nieuwe showcomputer meldt na verbinden `type:capabilities`, `versions:['duinpad.actor.v1']`, `event_scope_id`, `observed_at`, `actor_status_max_age:5`, `zone_stops:[2,3,4]`. Zonder passende onderhandelde mogelijkheden zijn alle nieuwe actor/status/receiptpaden 503 en wordt niets bewaard voor later. De bestaande QR1/QR2-wirevorm blijft terugwaarts compatibel. Een oude relay of oude bridge ondersteunt de nieuwe acteurbediening niet.
++De nieuwe showcomputer meldt na verbinden `type:capabilities`, `versions:['duinpad.actor.v1']`, `event_scope_id`, `observed_at`, `actor_status_max_age:5`, `zone_stops:[2,3,4]`, `finale_receipts:1`. Zonder passende onderhandelde mogelijkheden zijn alle nieuwe actor/status/receiptpaden 503 en wordt niets bewaard voor later. Het gedeelde finaleherstelpad vereist expliciet `finale_receipts:1`. De bestaande QR1/QR2-wirevorm blijft terugwaarts compatibel. Een oude relay of oude bridge ondersteunt de nieuwe acteurbediening niet.
 +
 +Controleer vóór livegebruik kloksynchronisatie op VPS, relay en showcomputer. Actorgrants zijn maximaal vijf seconden geldig; toekomstige en verstreken grants worden geweigerd. Een klokafwijking blokkeert zo veilig. Status wordt live opgevraagd en bij meer dan vijf seconden ouderdom afgewezen. Een geldige QR-poster en een verbonden showcomputer zijn afzonderlijke feiten.
 +
@@ -1598,9 +1728,10 @@ new file mode 100644
 +| `POST /api/integration/actor-command` | Command-envelope body plus dezelfde grantheader. Eerst live grant-sync, daarna hoogstens één directe uitvoering. |
 +| `GET /api/integration/receipts/<id>?kind=actor&payload_hash=<sha256>[&group_id=<id>]` | Verse eigen grantheader. Hash = SHA256 van exacte gedecodeerde command-JSON-bytes. Leest uitsluitend. Laat `group_id` weg voor null. |
 +| `GET /api/integration/receipts/<id>?kind=qr&group_id=<id>&payload_hash=<sha256>` | Geen actorgrant. Vertrouwde backend bewijst in de app de eigen groepsautorisatie. Hash volgens onderstaande QR-normalisatie. |
++| `GET /api/integration/finale-receipts/<id>?group_id=<id>&payload_hash=<sha256>&event_scope_id=<event>` | Uitsluitend backend-Bearer; de app verifieert eerst de eigen deelnemer-/evenementbeheerautorisatie. Exact gebonden bewijs van alleen QR2 of actor `finale.go`, ook als de oorspronkelijke acteur is ingetrokken. Geen actorgrant of uitvoeringsrecht. |
 +| `GET /api/integration/group-status?group_id=<id>` | Beperkte status van uitsluitend die groep; backend autoriseert de browser. Geen volledige groepenlijst. |
 +
-+De relay stuurt uitsluitend vaste packetkinds `actor.access`, `actor.status`, `actor.command`, `receipt`, `group.status` en het bestaande `qr` over WSS. Er is geen generieke regieproxy of willekeurige interne actie-/zoneparameter.
++De relay stuurt uitsluitend vaste packetkinds `actor.access`, `actor.status`, `actor.command`, `receipt`, `finale.receipt`, `group.status` en het bestaande `qr` over WSS. Er is geen generieke regieproxy of willekeurige interne actie-/zoneparameter.
 +
 +QR-hash gebruikt exact compact JSON met vaste keyvolgorde `{stage,group_id,event_id,issued_at,label}`; ontbrekend label wordt `''`. De app gebruikt gehele Unixseconden. Een receiptquery verandert nooit `issued_at`, maakt geen event en roept geen start aan. Een oude POST opnieuw sturen is nadrukkelijk geen statusquery.
 +
@@ -1609,6 +1740,10 @@ new file mode 100644
 +Command-ACK: `{ok,message?,duplicate?,unknown?,error?,outcome,command_id,meaning?,confirmation?}`. `meaning` is `scene_started`, `finale_started`, `ready_updated`, `zone_stopped` of `all_stopped`. Alleen finale-ACK bevat `confirmation:{qlc_started:true,audio_started:true}` en pas nadat beide lokale motoren hebben bevestigd. Dit bewijst geen fysieke zicht-/hoorbaarheid of showvoltooiing. `ok:false` met `outcome:'blocked'` is een expliciete weigering; timeout/verbroken verbinding is `unknown`. Een niet verstuurd command geeft 503/`not_dispatched`. Geen automatische retry.
 +
 +Receiptwrapper: `{found,command_id,group_id,payload_hash,result,group?}`. Alleen bij exact ID, hash, soort, groep, event en eigen actor is `found:true` mogelijk. Een miss blijft `found:false,result:{ok:false,unknown:true,outcome:'unknown'}`; ontbrekend bewijs is geen bewijs van niet uitgevoerd. De receipt-handler schrijft geen capability, receipt of controllerstaat. Hij kan een eerdere unknown teruglezen als gestart als het duurzame **zelfde poging-ID** beide start-ACKs bewijst, of als expliciet niet uitgevoerd na de lokale regiehandeling hieronder.
++
++Het aparte gedeelde finaleherstelpad voegt `event_scope_id` toe aan deze wrapper en is begrensd op het fysieke finaleslot. Het vergelijkt exact het oorspronkelijke poging-ID, de opgeslagen payloadhash, groep en evenement en eist de onveranderlijke operatie `qr2` (bron qr) of `finale.go` (bron actor). Een actorclaim of huidige acteursrechten zijn daarvoor niet nodig: de vertrouwde backend autoriseert de deelnemer/evenementbeheerder tegen diens eigen groepscontext en opgeslagen poging. Het antwoord bevat geen oorspronkelijke acteuridentiteit, permissions, claim, lokale auditreden of volledige regiestatus. Dit leest alleen bewijs en geeft nooit een commandobevoegdheid.
++
++Bij oudere rijen zonder `operation` wordt uitsluitend read-only de bij **hetzelfde poging-ID** opgeslagen lokale eventpayload gecontroleerd op de exacte gebonden finaleactie. Zonder dat bewijs wordt niet gegokt dat een ongetypeerde pending rij een finale was. Een ontbrekende rij, lege groepenlijst, intrekking, huidige ready-status of momenteel stilstaand effect is nooit niet-uitvoeringbewijs. Na intrekking van acteur A kan een bevoegde andere deelnemer/beheerder zo het gedeelde slot pas herstellen als dezelfde duurzame ACK of expliciete lokale regiebeslissing dat rechtvaardigt.
 +
 +## Rechten en races
 +
@@ -1632,6 +1767,8 @@ new file mode 100644
 +QR2, internet-`finale.go` en lokale handmatige Finale GO delen dezelfde controllerlock en duurzame `finale_slots`-rij. Reservering gebeurt direct vóór de lokale motorstart. Alleen na QLC- én audio-ACK wordt de rij `started` en Heks GO voor de volgende groep vrijgegeven. Geen automatische Heks GO. Een fout vóór beide ACKs houdt het slot unknown en de volgende heks geblokkeerd. Een reset van de lokale groepenlijst wist dit slot niet.
 +
 +Bij een herstart worden geen cues hervat; actieve groepen worden interrupted en regieherstel blijft nodig. Een receipt van een historische bevestigde start kan tegelijk `group.recovery_required:true` melden. Toon dit als herstelcontrole; het historische ACK-bewijs geeft geen nieuwe startmogelijkheid.
++
++Een bestaande onzekere finalegroep blijft na herstart en **Nieuwe ronde** de lokale finaleselectie voor herstel. Bij Nieuwe ronde met één aantoonbare bestaande onzekere groep blijft die exacte binding bewaard; de interrupted-groep is uitsluitend een hersteldoel. Het duurzame unknown-slot blijft GO weigeren en opnieuw starten van het programma geeft geen volgende-Heks-vrijgave zolang een unknown bestaat. Een lokale reeds bevestigde start heeft daarentegen terecht geen awaiting-selectie meer: gebruik voor historisch gedeeld ontvangstherstel de exacte geautoriseerde app-DB-poging en routegroep, zonder een huidige lokale selectie als vervangend bewijs te behandelen.
 +
 +Bij unknown:
 +
@@ -1845,13 +1982,14 @@ diff --git a/tests/test_actor_protocol.py b/tests/test_actor_protocol.py
 new file mode 100644
 --- /dev/null
 +++ b/tests/test_actor_protocol.py
-@@ -0,0 +1,323 @@
+@@ -0,0 +1,399 @@
 +"""Isolated software protocol proof. All QLC and audio engines use SIMULATION."""
 +import copy
 +import json
 +import os
 +from pathlib import Path
 +import queue
++import sqlite3
 +import tempfile
 +import threading
 +import time
@@ -2167,13 +2305,88 @@ new file mode 100644
 +            self.act('resolve_finale_not_executed',{'group_id':'A','attempt_id':command['command_id'],'physical_not_started':True,'reason':'Geen geldige reden voor wissen van ACK'})
 +        self.assertEqual(self.store.finale_slot('A')['status'],'started')
 +
++    def test_shared_finale_proof_remains_readonly_after_original_actor_is_revoked(self):
++        self.route();command=self.command('finale.go','A')
++        with patch.object(self.c.audio,'start',side_effect=RuntimeError('simulation no output ACK')):
++            self.execute(command)
++        self.adapter.grant(self.grant([],revision=2,active=False))
++        with self.assertRaises(PermissionError):
++            self.adapter.receipt(command['command_id'],'actor','A',digest(compact(command)),self.grant(['finale.go']))
++        before=self.store.db.total_changes;audio_count=self.c.audio.start_count
++        proof=self.adapter.finale_receipt(command['command_id'],'A',digest(compact(command)),EVENT)
++        self.assertTrue(proof['found']);self.assertTrue(proof['result']['unknown'])
++        self.assertEqual(self.store.db.total_changes,before);self.assertEqual(self.c.audio.start_count,audio_count)
++        self.act('new_round',{'confirmed':True})
++        self.act('resolve_finale_not_executed',{'group_id':'A','attempt_id':command['command_id'],
++            'physical_not_started':True,'reason':'Simulatie: fysieke niet-uitvoering lokaal geverifieerd'})
++        before=self.store.db.total_changes
++        proof=self.adapter.finale_receipt(command['command_id'],'A',digest(compact(command)),EVENT)
++        self.assertTrue(proof['found']);self.assertEqual(proof['result']['outcome'],'blocked')
++        self.assertFalse(proof['result']['ok']);self.assertEqual(proof['event_scope_id'],EVENT)
++        self.assertEqual(self.store.db.total_changes,before)
++        for field in ('actor_subject','operation','permissions','scope_id','reason'):
++            self.assertNotIn('"'+field+'":',json.dumps(proof))
++
++    def test_shared_finale_proof_supports_visitor_and_rejects_wrong_bindings_and_other_actions(self):
++        self.route();event={'stage':'qr2','group_id':'A','event_id':uuid.uuid4().hex,'issued_at':self.now,'label':''}
++        self.adapter.qr(event,self.now+8)
++        proof=self.adapter.finale_receipt(event['event_id'],'A',digest(qr_payload(event)),EVENT)
++        self.assertTrue(proof['found']);self.assertTrue(proof['result']['ok'])
++        for gid,hash_value,scope in [('B',digest(qr_payload(event)),EVENT),('A','0'*64,EVENT),('A',digest(qr_payload(event)),'wrong-event')]:
++            with self.assertRaises(PermissionError):self.adapter.finale_receipt(event['event_id'],gid,hash_value,scope)
++        for operation,kind in [('heks.go','actor'),('zone1.trigger','actor'),('qr1','qr')]:
++            ident=uuid.uuid4().hex;self.store.reserve_remote(ident,kind,EVENT,'actor-A' if kind=='actor' else None,'A','a'*64,operation)
++            with self.assertRaises(PermissionError):self.adapter.finale_receipt(ident,'A','a'*64,EVENT)
++        missing=self.adapter.finale_receipt('missing-attempt','A','a'*64,EVENT)
++        self.assertFalse(missing['found']);self.assertTrue(missing['result']['unknown'])
++
++    def test_shared_receipt_never_uses_current_group_or_untyped_pending_as_nonexecution_proof(self):
++        ident=uuid.uuid4().hex
++        self.store.reserve_remote(ident,'actor',EVENT,'actor-A','A','a'*64)
++        self.c.groups=[];self.c.recovery=False
++        before=self.store.db.total_changes
++        with self.assertRaises(PermissionError):self.adapter.finale_receipt(ident,'A','a'*64,EVENT)
++        self.assertEqual(self.store.db.total_changes,before)
++
++    def test_precolumn_finale_receipt_uses_exact_existing_local_event_payload_readonly(self):
++        self.route();command=self.command('finale.go','A');self.execute(command)
++        self.store.db.execute('UPDATE remote_attempts SET operation=NULL WHERE id=?',(command['command_id'],));self.store.db.commit()
++        before=self.store.db.total_changes
++        proof=self.adapter.finale_receipt(command['command_id'],'A',digest(compact(command)),EVENT)
++        self.assertTrue(proof['found']);self.assertTrue(proof['result']['ok']);self.assertEqual(self.store.db.total_changes,before)
++
++    def test_operation_column_migration_preserves_legacy_ledger_without_seeds(self):
++        path=Path(self.tmp.name)/'precolumn.db';db=sqlite3.connect(path)
++        db.execute('CREATE TABLE remote_attempts(id TEXT PRIMARY KEY,kind TEXT NOT NULL,scope_id TEXT NOT NULL,subject TEXT,group_id TEXT,payload_hash TEXT NOT NULL,response TEXT NOT NULL)')
++        db.execute('INSERT INTO remote_attempts VALUES(?,?,?,?,?,?,?)',('old-attempt','actor',EVENT,'old-actor','A','a'*64,'{"ok":false,"unknown":true}'))
++        db.commit();db.close()
++        migrated=Store(path);self.addCleanup(migrated.db.close)
++        self.assertEqual(migrated.remote('old-attempt')['payload_hash'],'a'*64)
++        self.assertIsNone(migrated.remote('old-attempt')['operation']);self.assertTrue(migrated.remote('old-attempt')['result']['unknown'])
++
++    def test_unknown_group_remains_recovery_target_after_restart_and_new_round_without_heks_release(self):
++        self.route();command=self.command('finale.go','A')
++        with patch.object(self.c.audio,'start',side_effect=RuntimeError('simulation no ACK')):
++            self.execute(command)
++        self.assertEqual(self.c._next_finale()['id'],'A')
++        restored=Controller(self.cfg,QLC(self.cfg,True),AudioEngine(self.cfg,True),self.store,True)
++        self.assertEqual(restored._next_finale()['id'],'A');self.assertTrue(restored.recovery);self.assertFalse(restored.active)
++        self.act('new_round',{'confirmed':True})
++        self.assertEqual(self.c._next_finale()['id'],'A');self.assertEqual(self.c._group('A')['status'],'interrupted')
++        status=self.adapter.status(self.grant(['finale.go']))
++        self.assertEqual(status['controls'][0]['group_id'],'A');self.assertFalse(status['controls'][0]['enabled'])
++        self.act('program_start');self.assertFalse(self.c.intro_permit)
++        self.act('group_add',{'group_id':'B'});self.act('ready',{'zone':1})
++        with self.assertRaisesRegex(ValueError,'finalestart'):self.act('go',{'zone':1})
++        self.assertTrue(self.execute(self.command('finale.go','A'))['unknown'])
++
 +
 +if __name__ == '__main__': unittest.main()
 diff --git a/tests/test_actor_relay.py b/tests/test_actor_relay.py
 new file mode 100644
 --- /dev/null
 +++ b/tests/test_actor_relay.py
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,190 @@
 +"""ASGI + WSS transport integration; software simulation, no network or hardware."""
 +import importlib.util
 +import json
@@ -2234,7 +2447,7 @@ new file mode 100644
 +
 +    def hello(self, ws, **changes):
 +        ws.send_json({'type': 'capabilities', 'versions': [COMMAND], 'event_scope_id': self.env['DUINPAD_EVENT_SCOPE_ID'],
-+                      'actor_status_max_age': 5, 'zone_stops': [2, 3, 4], **changes})
++                      'actor_status_max_age': 5, 'zone_stops': [2, 3, 4], 'finale_receipts':1, **changes})
 +
 +    def request(self, method, url, **kwargs):
 +        results = queue.Queue()
@@ -2328,6 +2541,39 @@ new file mode 100644
 +            result = responses.get(timeout=1)
 +            self.assertEqual(result.status_code, 504); self.assertTrue(result.json()['unknown'])
 +        self.assertFalse(self.c.ready[1]); self.assertFalse(self.relay.pending)
++
++    def test_backend_finale_proof_requires_exact_binding_and_negotiation(self):
++        query='?group_id=A&payload_hash='+'a'*64+'&event_scope_id='+self.env['DUINPAD_EVENT_SCOPE_ID']
++        url='/api/integration/finale-receipts/missing-attempt'+query
++        self.assertEqual(self.client.get(url).status_code,403)
++        self.assertEqual(self.client.get(url+'&action=stop-all',headers=self.auth).status_code,409)
++        self.assertEqual(self.client.get(url.replace('event-simulation','other-event'),headers=self.auth).status_code,403)
++        with self.client.websocket_connect('/engine',headers=self.auth) as ws:
++            self.hello(ws,finale_receipts=0)
++            self.assertEqual(self.client.get(url,headers=self.auth).status_code,503)
++        with self.client.websocket_connect('/engine',headers=self.auth) as ws:
++            self.hello(ws)
++            response,packets=self.pump(ws,self.request('GET',url,headers=self.auth))
++            self.assertEqual(packets[0]['kind'],'finale.receipt');self.assertFalse(response.json()['found'])
++            self.assertTrue(response.json()['result']['unknown'])
++
++    def test_backend_finale_proof_after_revocation_is_readonly_and_has_no_actor_data(self):
++        command_id=uuid.uuid4().hex;scope=self.env['DUINPAD_EVENT_SCOPE_ID'];payload_hash='b'*64
++        self.store.reserve_remote(command_id,'actor',scope,'revoked-actor','A',payload_hash,'finale.go')
++        self.store.reserve_finale('A',command_id,time.time())
++        self.store.set_access({'version':ACCESS,'event_scope_id':scope,'actor_subject':'revoked-actor','permissions_revision':2,
++            'active':False,'permissions':[],'issued_at':time.time(),'expires_at':time.time()+5})
++        self.store.resolve_finale('A',command_id,time.time(),'Simulation: local regie verified no physical start')
++        query='?group_id=A&payload_hash='+payload_hash+'&event_scope_id='+scope
++        before=self.store.db.total_changes
++        with self.client.websocket_connect('/engine',headers=self.auth) as ws:
++            self.hello(ws)
++            response,_=self.pump(ws,self.request('GET','/api/integration/finale-receipts/'+command_id+query,headers=self.auth))
++            body=response.json();self.assertEqual(response.status_code,200);self.assertTrue(body['found'])
++            self.assertEqual(body['event_scope_id'],scope);self.assertEqual(body['result']['outcome'],'blocked')
++            self.assertEqual(set(body),{'found','command_id','group_id','payload_hash','event_scope_id','result','group'})
++            self.assertNotIn('revoked-actor',response.text);self.assertNotIn('reason',response.text)
++            self.assertEqual(self.store.db.total_changes,before);self.assertFalse(self.c.active)
 +
 +
 +if __name__ == '__main__': unittest.main()
