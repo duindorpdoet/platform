@@ -1,0 +1,54 @@
+name: Diagnose canonical Startregie history (read only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_history_diagnosis:
+        description: Explicitly run one bounded read-only native history diagnosis; no deployment
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-duindorphalloween
+  cancel-in-progress: false
+
+jobs:
+  history-diagnosis:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_history_diagnosis == true && github.ref == 'refs/heads/production' && github.repository == 'duindorpdoet/platform'
+    environment:
+      name: production
+      deployment: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pinned native driver from frozen dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile --ignore-scripts
+      - name: Diagnose five fixed native history reads without writes
+        env:
+          HISTORY_DIAGNOSTICS_REQUESTED: ${{ inputs.run_history_diagnosis }}
+          APP_ENVIRONMENT: production
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: node scripts/deploy/diagnose-startregie-history.mjs
+      - name: Retain only the small sanitized diagnosis
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: startregie-history-diagnosis-${{ github.sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/startregie-history-diagnosis/report.json
+          retention-days: 7
+          if-no-files-found: ignore
