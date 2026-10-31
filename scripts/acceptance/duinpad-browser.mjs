@@ -43,7 +43,7 @@ const browser = await chromium.launch({ headless: true });
 const checks = [], failures = [];
 function check(name, pass, evidence) { checks.push({ name, pass, evidence }); if (!pass) failures.push(name); }
 const permissions = ['heks.ready', 'heks.go', 'zone1.trigger', 'zone1.stop', 'finale.go'];
-let actorDenied = false, actorUnknown = false, actorStale = false, ended = false;
+let actorDenied = false, actorUnknown = false, actorStale = false, actorFinaleBlocked = false, ended = false;
 const calls = [];
 const snapshot = () => ({ eligible: true, recorded: false, eveningEnded: ended, children: [{ id: 'synthetic-child', name: 'Synthetisch Kind' }], location: { name: 'Synthetische Finalepoort', address: 'ALLEEN LOKALE FIXTURE', instruction: 'Volg de synthetische ingangsinstructie.' } });
 try {
@@ -91,8 +91,9 @@ try {
     let payload, status = 200;
     if (url.pathname === '/api/actors') {
       status = actorDenied ? 403 : 200;
-      payload = actorDenied ? { error: { message: 'Je toegang is ingetrokken.' } } : { data: { name: 'Synthetische Acteur', revision: 1, permissions, connected: true, compatible: true, observedAt: Date.now()/1000 - (actorStale ? 9 : 0), controls: permissions.map(action => ({ action, enabled: true, blocked_reason: null, group_id: ['heks.go', 'finale.go'].includes(action) ? 'synthetic-run' : null, effect: null })), receipts: actorUnknown ? [{ commandId: '0c470ea3-3e9a-4b36-8d84-0f59dc4ee8c3', action: 'heks.go', status: 'unknown', result: { message: 'Geen startbevestiging ontvangen.' } }] : [] } };
+      payload = actorDenied ? { error: { message: 'Je toegang is ingetrokken.' } } : { data: { name: 'Synthetische Acteur', revision: 1, permissions, connected: true, compatible: true, observedAt: Date.now()/1000 - (actorStale ? 9 : 0), controls: permissions.map(action => ({ action, enabled: !(actorFinaleBlocked && action === 'finale.go'), blocked_reason: actorFinaleBlocked && action === 'finale.go' ? 'Finale-uitkomst onbekend; controleer de regie' : null, group_id: ['heks.go', 'finale.go'].includes(action) ? 'synthetic-run' : null, effect: null })), receipts: actorUnknown ? [{ commandId: '0c470ea3-3e9a-4b36-8d84-0f59dc4ee8c3', action: 'heks.go', status: 'unknown', result: { message: 'Geen startbevestiging ontvangen.' } }] : [] } };
     } else if (url.pathname === '/api/actors/command') { actorUnknown = true; payload = { data: { status: 'unknown', message: 'Geen startbevestiging ontvangen. Vraag de regie.' } }; }
+    else if (url.pathname === '/api/actors/finale-recovery') payload = { data: { status: 'blocked', message: 'Gedeelde finale: de regie heeft niet-uitvoering bevestigd.' } };
     else if (url.pathname.startsWith('/api/actors/receipts/')) payload = { data: { status: 'unknown', result: { message: 'Nog geen betrouwbare uitvoeringsuitslag.' } } };
     else if (url.pathname === '/api/actors/admin') payload = { data: { actors: [{ id: 'synthetic-actor', name: 'Synthetische Acteur', email: 'acteur@example.invalid', status: 'pending', permissions: [], revision: 1, lastSeenAt: null, activatedAt: null, expiresAt: '2026-11-07T20:00:00Z', mailStatus: 'accepted' }] } };
     else if (url.pathname === '/api/duinpad/snapshot') payload = authFixture ? { ...snapshot(), runId: `synthetic-run-${authFixture.owner}`, recorded: true, eveningEnded: false, children: [], location: { name: `Synthetische Finalepoort account ${authFixture.owner}`, address: 'ALLEEN LOKALE AUTH-STATE FIXTURE' }, show: authFixture.show } : snapshot();
@@ -104,7 +105,7 @@ try {
     else payload = {};
     await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
   });
-  actorDenied = false; actorUnknown = false; actorStale = false; ended = false;
+  actorDenied = false; actorUnknown = false; actorStale = false; actorFinaleBlocked = false; ended = false;
   await page.goto(`${origin}/?screen=actor`);
   await page.getByRole('heading', { name: 'Acteurskamer', exact: true }).waitFor();
   check(`actor ${width}px no horizontal overflow`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'document.scrollWidth <= viewport');
@@ -120,10 +121,19 @@ try {
   await page.getByRole('button', { name: 'Ontvangst controleren', exact: true }).click();
   await page.getByText('Nog geen betrouwbare uitvoeringsuitslag.', { exact: true }).waitFor();
   check(`actor ${width}px receipt never retries`, calls.filter(c => c.path === '/api/actors/command').length === commandsBefore, 'GET receipt emits no POST command');
+  actorUnknown = false; actorFinaleBlocked = true;
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await page.waitForFunction(() => [...document.querySelectorAll('.actor-controls button')].some(button => button.textContent === 'Finale GO' && button.disabled));
+  check(`actor ${width}px shared finale receipt readable while GO blocked`, await page.getByRole('button', { name: 'Gedeelde finale-ontvangst controleren', exact: true }).isEnabled() && await page.locator('.actor-receipt').count() === 0, 'separate read-only recovery does not require an enabled execution control or original actor receipt');
+  const beforeSharedRead = calls.filter(call => call.path === '/api/actors/command').length;
+  await page.getByRole('button', { name: 'Gedeelde finale-ontvangst controleren', exact: true }).click();
+  await page.getByText('Gedeelde finale: de regie heeft niet-uitvoering bevestigd.', { exact: true }).waitFor();
+  const sharedRead = calls.findLast(call => call.path === '/api/actors/finale-recovery');
+  check(`actor ${width}px shared finale recovery is GET without browser group`, sharedRead.method === 'GET' && sharedRead.search === '' && calls.filter(call => call.path === '/api/actors/command').length === beforeSharedRead, 'group derived by authenticated backend; no execution POST from recovery');
   actorDenied = true; await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await page.getByText('Toegang gewijzigd', { exact: true }).waitFor();
   check(`actor ${width}px revocation removes controls`, await page.locator('.actor-controls button').count() === 0, '403 focus refresh removes controls');
-  actorDenied = false; actorUnknown = false; actorStale = true;
+  actorDenied = false; actorUnknown = false; actorStale = true; actorFinaleBlocked = false;
   await page.goto(`${origin}/?screen=actor`); await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await page.getByText('Geen actuele verbinding met de showcomputer', { exact: true }).waitFor();
   check(`actor ${width}px stale blocks all actions`, await page.locator('.actor-controls button').evaluateAll(buttons => buttons.every(button => button.disabled)), '9s old local status rejected');

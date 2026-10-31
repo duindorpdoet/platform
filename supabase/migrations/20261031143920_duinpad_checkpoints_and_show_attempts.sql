@@ -114,11 +114,17 @@ begin
  update app_private.duinpad_show_attempts set status=_status,result=_result,finished_at=clock_timestamp()where id=_id;
  insert into app_private.audit_events(event_id,actor_id,action,resource_type,resource_id,minimal_change)values(p.event_id,p.actor_id,'duinpad.show.'||_status,'duinpad',_id,jsonb_build_object('stage',p.stage,'reconciled',_reconciled));
 end $$;
-create function api.duinpad_show_receipt(_actor uuid,_event_slug text,_id uuid default null,_stage text default null)
+create function api.duinpad_show_receipt(_actor uuid,_event_slug text,_id uuid default null,_stage text default null,_run uuid default null)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare e uuid:=app_private.current_event_id(_event_slug);r uuid;p app_private.duinpad_show_attempts;
 begin
  r:=app_private.duinpad_run_for_actor(e,_actor);
+ -- Only a current finale operator may inspect a server-selected shared slot.
+ -- The HTTP adapter derives this run from fresh, filtered local control status.
+ if _run is not null then
+  if _stage is distinct from 'qr2' or not(app_private.duinpad_actor_can(e,_actor,'finale.go')or app_private.has_capability(e,'event_admin',_actor))then raise exception 'NOT_AUTHORIZED'using errcode='42501';end if;
+  r:=_run;
+ end if;
  select *into p from app_private.duinpad_show_attempts where event_id=e and(_stage is null or stage=_stage)and(id=_id or(_id is null and run_id=r))order by created_at desc limit 1;
  if p.id is null then return null;end if;
  if not(p.run_id=r or(p.actor_id=_actor and app_private.duinpad_actor_can(e,_actor,'finale.go'))or app_private.has_capability(e,'event_admin',_actor))then raise exception 'NOT_AUTHORIZED'using errcode='42501';end if;
@@ -126,5 +132,5 @@ begin
 end $$;
 revoke all on function api.duinpad_show_reserve(uuid,uuid,uuid,text,uuid,text,text,text,bigint)from public,anon,authenticated;
 revoke all on function api.duinpad_show_finish(uuid,text,jsonb,boolean)from public,anon,authenticated;
-revoke all on function api.duinpad_show_receipt(uuid,text,uuid,text)from public,anon,authenticated;
-grant execute on function api.duinpad_show_reserve(uuid,uuid,uuid,text,uuid,text,text,text,bigint),api.duinpad_show_finish(uuid,text,jsonb,boolean),api.duinpad_show_receipt(uuid,text,uuid,text)to service_role;
+revoke all on function api.duinpad_show_receipt(uuid,text,uuid,text,uuid)from public,anon,authenticated;
+grant execute on function api.duinpad_show_reserve(uuid,uuid,uuid,text,uuid,text,text,text,bigint),api.duinpad_show_finish(uuid,text,jsonb,boolean),api.duinpad_show_receipt(uuid,text,uuid,text,uuid)to service_role;

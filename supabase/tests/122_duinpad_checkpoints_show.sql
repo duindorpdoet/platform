@@ -50,6 +50,15 @@ select is(pg_temp.reserve('qr2','visitor','d1000000-0000-0000-0000-000000000001'
 select api.duinpad_show_finish((select attempt from duinpad_qr_state),'unknown','{"ok":false,"unknown":true}');
 select is(pg_temp.reserve('qr2','actor','d1000000-0000-0000-0000-000000000001',gen_random_uuid())->>'dispatch','false','actor and visitor share an unknown physical slot');
 select is(api.duinpad_show_receipt('d1000000-0000-0000-0000-000000000001','duindorp-halloween-2026',(select attempt from duinpad_qr_state))->>'status','unknown','receipt recovery is read only and does not repost an execution payload');
+insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)values('d1000000-0000-0000-0000-000000000005','duinpad-operator@example.invalid',now(),'{}','{}');
+insert into app_private.duinpad_actor_access(event_id,user_id,email,display_name,status,permissions,created_by)
+select id,'d1000000-0000-0000-0000-000000000005','duinpad-operator@example.invalid','Replacement operator','active',array['finale.go'],'f0000000-0000-0000-0000-000000000001'from app_private.events where slug='duindorp-halloween-2026';
+select is(api.duinpad_show_receipt('d1000000-0000-0000-0000-000000000005','duindorp-halloween-2026',null,'qr2','d8000000-0000-0000-0000-000000000001')->>'status','unknown','current replacement finale actor can read only the shared physical slot without original actor rights');
+select throws_ok($$select api.duinpad_show_receipt('d1000000-0000-0000-0000-000000000005','duindorp-halloween-2026',null,'qr1','d8000000-0000-0000-0000-000000000001')$$,'42501','NOT_AUTHORIZED','replacement actor scope cannot read QR1 registration through shared finale recovery');
+select throws_ok($$select api.duinpad_show_receipt('d1000000-0000-0000-0000-000000000004','duindorp-halloween-2026',null,'qr2','d8000000-0000-0000-0000-000000000001')$$,'42501','NOT_AUTHORIZED','participant cannot choose a recovery run with an operator-only argument');
+update app_private.duinpad_actor_access set status='revoked'where user_id='d1000000-0000-0000-0000-000000000005';
+select throws_ok($$select api.duinpad_show_receipt('d1000000-0000-0000-0000-000000000005','duindorp-halloween-2026',null,'qr2','d8000000-0000-0000-0000-000000000001')$$,'42501','NOT_AUTHORIZED','revoked replacement actor immediately loses shared recovery access');
+select ok(not has_function_privilege('authenticated','api.duinpad_show_receipt(uuid,text,uuid,text,uuid)','execute'),'raw recovery payloads remain service-only');
 select api.duinpad_show_finish((select attempt from duinpad_qr_state),'blocked','{"ok":false}');
 select is((select status from app_private.duinpad_show_attempts where id=(select attempt from duinpad_qr_state)),'unknown','ordinary failure cannot erase an unknown execution');
 select api.duinpad_show_finish((select attempt from duinpad_qr_state),'not_dispatched','{"ok":false,"verified_not_executed":true}',true);

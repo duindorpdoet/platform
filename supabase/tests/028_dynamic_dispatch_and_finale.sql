@@ -215,7 +215,7 @@ select throws_ok(
     (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,version}')::integer,
     true, 'finale-skip-denied', 'finale-skip-denied-hash'
   ) $$,
-  '23514', 'SCAN_REQUIRED', 'even an all-skip finale requires confirmed physical arrival'
+  '42501', 'NOT_AUTHORIZED', 'a non-participating leader cannot consume a visitor finale scan right'
 );
 
 set local role postgres;
@@ -246,14 +246,16 @@ select lives_ok(
   ) $$,
   'the leader records the final show after the finale scan'
 );
+-- The dedicated finale authorization belongs to an actual participating
+-- account. The ordinary leader RPC is deliberately not broadened for this.
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select lives_ok(
-  $$ select api.run_complete_stop(
-    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,id}')::uuid,
-    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,currentStop,id}')::uuid,
-    (api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,version}')::integer,
-    false, 'finale-complete', 'finale-complete-hash'
+  $$ select api.duinpad_finale_confirm(
+    'duindorp-halloween-2026', 'TEST-30',
+    (select jsonb_object_agg(child->>'id','visited') from jsonb_array_elements(api.duinpad_finale_snapshot('duindorp-halloween-2026')->'children') child),
+    'finale-complete',null,'short_code'
   ) $$,
-  'completing the visited finale finishes the route'
+  'the participating parent confirms the visited finale and finishes the route'
 );
 select is(
   api.group_snapshot('23000000-0000-0000-0000-000000000001') #>> '{run,status}',

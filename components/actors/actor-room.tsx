@@ -52,6 +52,18 @@ export function ActorRoom({ initial }: { initial: ActorSnapshot }) {
     } catch { setNotice('De ontvangst kon niet worden opgehaald. Er wordt geen nieuwe start verstuurd.'); }
     finally { setBusy(false); }
   }
+  async function recoverSharedFinale() {
+    if (busy || denied || !fresh || !snapshot.permissions.includes('finale.go')) return;
+    setBusy(true);
+    try {
+      const response = await fetch('/api/actors/finale-recovery', { cache: 'no-store' });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message || 'De gedeelde finale-ontvangst kon niet worden gecontroleerd.');
+      setNotice(body.data?.message || 'Voor de lokaal geselecteerde groep is nog geen finaleaanvraag vastgelegd.');
+      await refresh();
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'De ontvangst kon niet worden opgehaald. Vraag de regie.'); }
+    finally { setBusy(false); }
+  }
   return <div className="actor-page"><header className="actor-header"><Link href="/omgeving/kiezen"><img src="/images/logo.webp" alt="De Duindorpse Poorten van Halloween" /></Link><Link href="/omgeving/kiezen" className="btn outline">Mijn omgevingen</Link></header><main className="actor-main">
     <p className="eyebrow">Jouw toegewezen bediening</p><h1>Acteurskamer</h1><p>Welkom {snapshot.name}. Wacht na iedere druk op de bevestiging van de showcomputer.</p>
     <p className={`actor-connection ${fresh && !denied ? 'is-connected' : ''}`} role="status">{denied ? 'Toegang gewijzigd' : fresh ? 'Showcomputer verbonden · actuele lokale status' : 'Geen actuele verbinding met de showcomputer'}</p>
@@ -66,6 +78,7 @@ export function ActorRoom({ initial }: { initial: ActorSnapshot }) {
           : <button className="btn" disabled={disabled} onClick={() => void command(control.action)}>{ACTOR_LABELS[control.action]}</button>}
       </article>;
     })}</section>}
+    {!denied && snapshot.permissions.includes('finale.go') && <section className="actor-card"><h2>Finale-ontvangst van de huidige groep</h2><p>Controleer alleen de bestaande ontvangst van de groep die lokaal bij de finale is geselecteerd. Dit vraagt geen nieuwe start aan en toont geen gegevens van andere acteurs.</p><button className="btn outline" disabled={busy || !fresh || !snapshot.controls.some(control => control.action === 'finale.go' && control.group_id)} onClick={() => void recoverSharedFinale()}>Gedeelde finale-ontvangst controleren</button></section>}
     {!denied && snapshot.receipts.some(receipt => ['requested', 'unknown', 'interrupted', 'recovery_required'].includes(receipt.status)) && <section className="actor-card"><h2>Controle bij de regie nodig</h2><p>Er is geen betrouwbare startbevestiging. Een ontvangst ophalen stuurt geen nieuwe start.</p>{snapshot.receipts.filter(receipt => ['requested', 'unknown', 'interrupted', 'recovery_required'].includes(receipt.status)).map(receipt => <div className="actor-receipt" key={receipt.commandId}><strong>{ACTOR_LABELS[receipt.action]}</strong><p>{receipt.result?.message || 'Geen startbevestiging ontvangen.'}</p><button className="btn outline" disabled={busy} onClick={() => void recover(receipt)}>Ontvangst controleren</button></div>)}</section>}
   </main></div>;
 }

@@ -45,16 +45,18 @@ export async function requestVisitorShow(input:{actorId:string;eventId:string;ru
  await finish(slot.attemptId,result.status as Exclude<ShowStatus,'requested'>,{ok:['started','registered'].includes(result.status),message:result.message});
  return {...result,attemptId:slot.attemptId};
 }
-export async function showReceipt(actorId:string,eventSlug:string,id?:string,reconcile=false,stage?:'qr1'|'qr2'):Promise<SafeShow|null>{
- const {data,error}=await db().rpc('duinpad_show_receipt',{_actor:actorId,_event_slug:eventSlug,_id:id??null,_stage:stage??null});
+export async function showReceipt(actorId:string,eventSlug:string,id?:string,reconcile=false,stage?:'qr1'|'qr2',runId?:string):Promise<SafeShow|null>{
+ const {data,error}=await db().rpc('duinpad_show_receipt',{_actor:actorId,_event_slug:eventSlug,_id:id??null,_stage:stage??null,_run:runId??null});
  if(error)throw new ApiError(403,'RECEIPT_UNAVAILABLE','Deze ontvangst is niet beschikbaar voor jouw account.');if(!data)return null;
- const row=data as {attemptId:string;runId:string;stage:'qr1'|'qr2';source:'visitor'|'actor';status:ShowStatus;payloadHash:string};
- // Actor receipts require their own current scoped grant; the actor module handles those.
- const cfg=config();if(reconcile&&cfg&&row.source==='visitor'&&['unknown','requested','interrupted','recovery_required'].includes(row.status)){
-  const url=new URL('/api/integration/receipts/'+encodeURIComponent(row.attemptId),cfg.origin);url.search=new URLSearchParams({group_id:row.runId,payload_hash:row.payloadHash,kind:'qr'}).toString();
+ const row=data as {attemptId:string;eventId:string;runId:string;stage:'qr1'|'qr2';source:'visitor'|'actor';status:ShowStatus;payloadHash:string};
+ // A finale belongs to the group, including when its original operator is revoked.
+ // The dedicated read-only endpoint accepts only exact durable finale evidence.
+ const cfg=config();if(reconcile&&cfg&&['unknown','requested','interrupted','recovery_required'].includes(row.status)){
+  const finale=row.stage==='qr2';
+  const url=new URL((finale?'/api/integration/finale-receipts/':'/api/integration/receipts/')+encodeURIComponent(row.attemptId),cfg.origin);url.search=new URLSearchParams({group_id:row.runId,payload_hash:row.payloadHash,...(finale?{event_scope_id:row.eventId}:{kind:'qr'})}).toString();
   try{const response=await fetch(url,{headers:{Authorization:`Bearer ${cfg.token}`},signal:AbortSignal.timeout(5_000),cache:'no-store',redirect:'error'});const body=await response.json();
    // Only a durable matching receipt proves an outcome; 404/offline never proves nonexecution.
-   if(response.ok&&body.command_id===row.attemptId&&body.group_id===row.runId&&body.payload_hash===row.payloadHash&&body.found===true){
+   if(response.ok&&body.command_id===row.attemptId&&body.group_id===row.runId&&body.payload_hash===row.payloadHash&&(!finale||body.event_scope_id===row.eventId)&&body.found===true){
     const localGroup=body.group&&typeof body.group==='object'?body.group:{};
     const result=localGroup.recovery_required===true||localGroup.group_status==='interrupted'?{status:'recovery_required' as const,message:messages.recovery_required}:interpretRelay(200,body.result,row.stage);if(result.status!=='unknown'){await finish(row.attemptId,result.status as Exclude<ShowStatus,'requested'>,{ok:['started','registered'].includes(result.status),message:result.message},true);return {...result,attemptId:row.attemptId};}
    }
