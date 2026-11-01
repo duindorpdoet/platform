@@ -94,6 +94,9 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261101220535_portal_actual_impact.sql',
   '20261101220654_house_thanks_custom_owner_mail.sql',
   '20261101221956_portal_certificate_team_campaign.sql',
+  // Certificate registration totals are a read-only planning projection;
+  // existing routes, arrivals, campaigns and mail remain unchanged.
+  '20261101230529_portal_registered_certificate_impact.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

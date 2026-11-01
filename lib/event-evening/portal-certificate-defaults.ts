@@ -2,7 +2,7 @@ export const PORTAL_CERTIFICATE_SUBJECT = "Jullie certificaat staat klaar — be
 
 export const PORTAL_CERTIFICATE_BODY = `Beste poortwachters en crew,
 
-Jullie certificaat staat klaar in de Poortkamer! Daar zien jullie de aantallen groepen en kinderen die bij jullie poort zijn geregistreerd. Je kunt het certificaat downloaden en delen.
+Jullie certificaat staat klaar in de Poortkamer! Daar zien jullie de vooraf geregistreerde groepen en kids voor jullie poort, gebaseerd op de vastgelegde planning. Je kunt het certificaat downloaden en delen.
 
 Namens de organisatie: ontzettend bedankt voor jullie inzet, creativiteit en gastvrijheid. Met jullie lichtjes, decor, ontvangst en enthousiasme hebben jullie de Halloweenavond in Duindorp bijzonder gemaakt.
 

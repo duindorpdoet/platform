@@ -2,19 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Download, Share2 } from "lucide-react";
-import { actualPortalImpact, type PortalRoom } from "@/lib/domain/poortkamer";
+import { registeredPortalImpact, type PortalRoom } from "@/lib/domain/poortkamer";
 import { downloadPortalCertificate, portalCertificateDetails, preparePortalCertificate, sharePortalCertificate } from "./portal-certificate";
 import s from "./poortkamer.module.css";
 
-export function PortalImpactCounts({ room }: { room: Pick<PortalRoom, "impact"> }) {
-  const impact = actualPortalImpact(room);
-  return <div className={s.impactCounts} aria-label="Werkelijk langsgekomen">
-    <div className={s.metric}><strong>{impact?.actualGroups ?? "—"}</strong><span>Groepen langsgekomen</span></div>
-    <div className={s.metric}><strong>{impact?.actualChildren ?? "—"}</strong><span>Kinderen langsgekomen</span></div>
+export function PortalRegisteredCounts({ room }: { room: Pick<PortalRoom, "registeredImpact"> }) {
+  const impact = registeredPortalImpact(room);
+  return <div className={s.impactCounts} aria-label="Vooraf geregistreerd">
+    <div className={s.metric}><strong>{impact?.registeredGroups ?? "—"}</strong><span>Geregistreerde groepen</span></div>
+    <div className={s.metric}><strong>{impact?.registeredChildren ?? "—"}</strong><span>Geregistreerde kids</span></div>
   </div>;
 }
 
-export function PortalCertificate({ room }: { room: Pick<PortalRoom, "userId" | "eventId" | "portal" | "eventDate" | "impact"> }) {
+export function PortalCertificate({ room }: { room: Pick<PortalRoom, "userId" | "eventId" | "portal" | "eventDate" | "registeredImpact"> }) {
   const details = portalCertificateDetails(room);
   const key = JSON.stringify([room.userId, room.eventId, room.portal.id, details]);
   const [prepared, setPrepared] = useState<{ key: string; file: File } | null>(null);
@@ -49,15 +49,15 @@ export function PortalCertificate({ room }: { room: Pick<PortalRoom, "userId" | 
     <div className={s.certificate}>
       <img src="/images/poortkamer-v2/certificates/gate-certificate-background.webp" alt=""/>
       <div><span>Digitaal certificaat</span><strong>Officiële Poort van {details?.year ?? room.eventDate.slice(0, 4)}</strong><small>{room.portal.name} · {room.portal.code}</small>
-        <PortalImpactCounts room={room}/>
+        <PortalRegisteredCounts room={room}/>
       </div>
     </div>
-    <p className={s.muted}>Bevestigde fysieke aankomsten bij jullie poort. Ook kinderen die de beleving oversloegen tellen mee; cadeauzegels tellen niet mee.</p>
+    <p className={s.muted}>Vooraf geregistreerde groepen en kids voor jullie poort, gebaseerd op de vastgelegde planning.</p>
     <div className={`${s.actions} ${s.certificateActions}`}>
       <button type="button" className={`${s.button} ${s.primary}`} disabled={!file || busy} onClick={() => void share()}><Share2 size={17}/>{busy ? "Delen…" : "Certificaat delen"}</button>
       <button type="button" className={s.button} disabled={!file || busy} onClick={() => { if (file) { downloadPortalCertificate(file); setStatus({ key, text: "Het certificaat is als PNG gedownload." }); } }}><Download size={17}/>Download PNG</button>
     </div>
-    {!details && <p className={s.muted}>De bevestigde bezoekcijfers zijn nog niet beschikbaar.</p>}
+    {!details && <p className={s.muted}>De geregistreerde aantallen zijn nog niet beschikbaar. Herlaad de pagina om ze op te halen.</p>}
     {status?.key === key && <p role="status">{status.text}</p>}
   </section>;
 }

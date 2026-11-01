@@ -17,21 +17,37 @@ test.beforeEach(async ({ page }) => {
   });
   await page.goto("/"); await page.waitForFunction(() => Boolean(window.portalImpact));
 });
-test("actual arrivals remain separate from gifts and planned/legacy recap counts; certificate contains only public fields", async ({ page }) => {
+test("certificate uses explicit registered totals, separate from physical arrivals and gifts, and contains only public fields", async ({ page }) => {
   await page.evaluate(() => window.portalImpact.mount());
-  await expect(page.getByTestId("overview-counts")).toHaveText("3Groepen langsgekomen8Kinderen langsgekomen");
+  await expect(page.getByTestId("overview-counts")).toHaveText("12Geregistreerde groepen47Geregistreerde kids");
   await expect(page.getByRole("button", { name: "Certificaat delen" })).toBeEnabled();
   const text = await page.evaluate(() => window.certificateTexts.join("\n"));
   expect(text).toContain("De warme pompoen"); expect(text).toContain("P-42"); expect(text).toContain("2026"); expect(text).not.toContain("PRIVATE"); expect(text).not.toContain("999");
+  const texts = await page.evaluate(() => window.certificateTexts);
+  expect(texts).toContain("12"); expect(texts).toContain("47"); expect(texts).not.toContain("3"); expect(texts).not.toContain("8");
+  expect(texts).toContain("Geregistreerde groepen"); expect(texts).toContain("Geregistreerde kids"); expect(text).not.toMatch(/langsgekomen|fysieke aankomsten/);
   expect(await page.evaluate(() => ({ shares: window.shareCalls.length, downloads: window.downloads.length }))).toEqual({ shares: 0, downloads: 0 });
   await page.getByRole("button", { name: "Certificaat delen" }).click();
   await expect(page.getByRole("status")).toHaveText("De deelactie is voltooid.");
   const calls = await page.evaluate(() => window.shareCalls); expect(calls).toHaveLength(1); expect(calls[0]).toMatchObject({ name: "certificaat-P-42-2026.png", type: "image/png", active: true }); expect(calls[0].size).toBeGreaterThan(1000);
 });
-test("missing physical totals never export legacy counts or gift seals", async ({ page }) => {
-  await page.evaluate(() => window.portalImpact.mount({ impact: undefined }));
-  await expect(page.getByTestId("overview-counts")).toHaveText("—Groepen langsgekomen—Kinderen langsgekomen");
-  await expect(page.getByRole("button", { name: "Certificaat delen" })).toBeDisabled(); await expect(page.getByText("De bevestigde bezoekcijfers zijn nog niet beschikbaar.")).toBeVisible();
+test("missing registered totals never export actual arrivals, legacy recap counts or gift seals", async ({ page }) => {
+  await page.evaluate(() => window.portalImpact.mount({ registeredImpact: undefined }));
+  await expect(page.getByTestId("overview-counts")).toHaveText("—Geregistreerde groepen—Geregistreerde kids");
+  await expect(page.getByRole("button", { name: "Certificaat delen" })).toBeDisabled(); await expect(page.getByText("De geregistreerde aantallen zijn nog niet beschikbaar. Herlaad de pagina om ze op te halen.")).toBeVisible();
+});
+test("explicit zero registered totals remain valid independently of actual arrivals", async ({ page }) => {
+  await page.evaluate(() => window.portalImpact.mount({ registeredImpact: { registeredGroups: 0, registeredChildren: 0 } }));
+  await expect(page.getByTestId("overview-counts")).toHaveText("0Geregistreerde groepen0Geregistreerde kids");
+  await expect(page.getByRole("button", { name: "Certificaat delen" })).toBeEnabled();
+  expect(await page.evaluate(() => window.certificateTexts)).not.toContain("3");
+});
+test("a new snapshot without registered totals invalidates a previously prepared certificate", async ({ page }) => {
+  await page.evaluate(() => window.portalImpact.mount()); await expect(page.getByRole("button", { name: "Certificaat delen" })).toBeEnabled();
+  await page.evaluate(() => window.portalImpact.mount({ registeredImpact: undefined }));
+  await expect(page.getByRole("button", { name: "Certificaat delen" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Download PNG" })).toBeDisabled();
+  expect(await page.evaluate(() => ({ shares: window.shareCalls.length, downloads: window.downloads.length }))).toEqual({ shares: 0, downloads: 0 });
 });
 test("unsupported file sharing downloads one PNG on the explicit click", async ({ page }) => {
   await page.evaluate(() => { Object.defineProperty(navigator, "canShare", { value: () => false }); window.portalImpact.mount(); });

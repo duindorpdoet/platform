@@ -11,6 +11,8 @@ describe("fixed event closure and individual resident mail", () => {
     const mail = renderTransactionalMail({ messageType: "portal_certificate_ready", payload: { subject: PORTAL_CERTIFICATE_SUBJECT, body, actionPath: "/mijn-huis?claim=secret" } });
     expect(mail.subject).toBe(PORTAL_CERTIFICATE_SUBJECT);
     expect(mail.text).toContain(body);
+    expect(mail.text).toContain("vooraf geregistreerde groepen en kids");
+    expect(mail.html).toContain("vooraf geregistreerde groepen en kids");
     expect(mail.text).toContain("Duindorp FrightNight nog groter en nog succesvoller");
     expect(mail.text).toContain("https://app.example.invalid/mijn-huis");
     expect(mail.text).not.toContain("claim=secret");

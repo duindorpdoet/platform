@@ -103,6 +103,7 @@ export type NightRecap = {
   pauseMinutes: number;
 };
 export type PortalImpact = { actualGroups: number; actualChildren: number };
+export type PortalRegisteredImpact = { registeredGroups: number; registeredChildren: number };
 export type PortalRoom = {
   userId: string;
   eventId: string;
@@ -110,6 +111,8 @@ export type PortalRoom = {
   updatedAt: string;
   /** Confirmed physical arrivals only, independently of gift seals and planning. */
   impact?: PortalImpact;
+  /** Registered planning totals for the certificate, independently of arrivals. */
+  registeredImpact?: PortalRegisteredImpact;
   role: PortalRole;
   portalTopic: string;
   communityTopic: string;
@@ -190,6 +193,11 @@ export function actualPortalImpact(room: Pick<PortalRoom, "impact">): PortalImpa
   const impact = room.impact;
   return impact && Number.isSafeInteger(impact.actualGroups) && impact.actualGroups >= 0 &&
     Number.isSafeInteger(impact.actualChildren) && impact.actualChildren >= 0 ? { actualGroups: impact.actualGroups, actualChildren: impact.actualChildren } : null;
+}
+export function registeredPortalImpact(room: Pick<PortalRoom, "registeredImpact">): PortalRegisteredImpact | null {
+  const impact = room.registeredImpact;
+  return impact && Number.isSafeInteger(impact.registeredGroups) && impact.registeredGroups >= 0 &&
+    Number.isSafeInteger(impact.registeredChildren) && impact.registeredChildren >= 0 ? { registeredGroups: impact.registeredGroups, registeredChildren: impact.registeredChildren } : null;
 }
 export type RoomMessage = {
   mentionUserId?: string | null;

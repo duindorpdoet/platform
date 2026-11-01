@@ -58,7 +58,7 @@ import { PoortkamerLiveV2, PoortkamerManagementV2 } from "./poortkamer-v2";
 import s from "./poortkamer.module.css";
 import { GatePoster } from "@/components/redesign/gate-poster";
 import { QrCode } from "lucide-react";
-import { PortalCertificate, PortalImpactCounts } from "./portal-impact";
+import { PortalCertificate, PortalRegisteredCounts } from "./portal-impact";
 
 type Tab = "night" | "visits" | "team" | "messages" | "more";
 const nav = [
@@ -472,7 +472,7 @@ export function Poortkamer({
         {tab === "night" && (
           <>
             <div className={s.metrics} data-guide="house-overview" aria-label="De avond in cijfers">
-              <PortalImpactCounts room={room}/>
+              <PortalRegisteredCounts room={room}/>
               <Metric value={metrics.remainingGroups} label="Groepen verwacht" />
               <Metric value={metrics.remainingChildren} label="Kinderen verwacht" />
             </div>

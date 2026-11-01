@@ -9,6 +9,8 @@ test("opening, editing, previewing and cancelling never sends a campaign", async
   const dialog = await open(page);
   await expect(dialog.getByLabel("Onderwerp", { exact: true })).toHaveValue("Jullie certificaat staat klaar — bedankt, poortwachters en crew! 🎃");
   await expect(dialog.getByLabel("Bericht", { exact: true })).toContainText("Duindorp FrightNight");
+  await expect(dialog.getByRole("region", { name: "Voorvertoning certificaatmail" })).toContainText("vooraf geregistreerde groepen en kids");
+  await expect(dialog.getByRole("region", { name: "Voorvertoning certificaatmail" })).not.toContainText("echte bezoekcijfers");
   await expect(dialog.getByText("2 teamaccount(s) zonder beschikbaar bevestigd contactadres.", { exact: false })).toBeVisible();
   const body = "Dank team!\n\nEigen uitnodiging voor volgend jaar.\n<script>window.campaignXss=true</script>";
   await dialog.getByLabel("Bericht", { exact: true }).fill(body);

@@ -1,8 +1,8 @@
-import { actualPortalImpact, type PortalRoom } from "@/lib/domain/poortkamer";
+import { registeredPortalImpact, type PortalRoom } from "@/lib/domain/poortkamer";
 
 /** This projection is the complete export allowlist. No account, address or child data. */
-export function portalCertificateDetails(room: Pick<PortalRoom, "portal" | "eventDate" | "impact">) {
-  const impact = actualPortalImpact(room);
+export function portalCertificateDetails(room: Pick<PortalRoom, "portal" | "eventDate" | "registeredImpact">) {
+  const impact = registeredPortalImpact(room);
   const year = /^\d{4}-\d{2}-\d{2}$/.test(room.eventDate) ? room.eventDate.slice(0, 4) : null;
   return impact && year ? { portalName: room.portal.name, portalCode: room.portal.code, year, ...impact } : null;
 }
@@ -41,13 +41,13 @@ export async function preparePortalCertificate(details: PortalCertificateDetails
   context.font = "48px Georgia, serif"; context.fillText(details.portalName, 800, 400, 1380);
   context.fillStyle = "#dfc89e"; context.font = "28px sans-serif"; context.fillText(details.portalCode, 800, 465, 1350);
   context.fillStyle = "#fff0ce"; context.font = "116px Georgia, serif";
-  context.fillText(String(details.actualGroups), 490, 655, 550); context.fillText(String(details.actualChildren), 1110, 655, 550);
+  context.fillText(String(details.registeredGroups), 490, 655, 550); context.fillText(String(details.registeredChildren), 1110, 655, 550);
   context.fillStyle = "#dfc89e"; context.font = "32px sans-serif";
-  context.fillText("groepen langsgekomen", 490, 720, 580); context.fillText("kinderen langsgekomen", 1110, 720, 580);
+  context.fillText("Geregistreerde groepen", 490, 720, 580); context.fillText("Geregistreerde kids", 1110, 720, 580);
   context.fillStyle = "#fff0ce"; context.font = "44px Georgia, serif";
   context.fillText("Dank je wel voor jullie licht in de wijk.", 800, 875, 1400);
   context.fillStyle = "#dfc89e"; context.font = "25px sans-serif";
-  context.fillText("Bevestigde fysieke aankomsten · Duindorp Halloween " + details.year, 800, 970, 1400);
+  context.fillText("Vooraf geregistreerd · Duindorp Halloween " + details.year, 800, 970, 1400);
   const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("CERTIFICATE_UNAVAILABLE")), "image/png"));
   signal.throwIfAborted();
   const safeCode = details.portalCode.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 60) || "poort";
