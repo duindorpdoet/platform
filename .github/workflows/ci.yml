@@ -72,6 +72,8 @@ jobs:
         run: pnpm exec playwright test --config playwright.event-evening.config.ts
       - name: Verify durable family and resident thank-you interfaces without deliveries
         run: pnpm exec playwright test --config playwright.event-thanks.config.ts
+      - name: Verify physical portal counts and certificate sharing without a database
+        run: pnpm exec playwright test --config playwright.portal-impact.config.ts
 
   database:
     name: Database migrations, contracts and lint

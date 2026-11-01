@@ -14,6 +14,9 @@ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_me
  ('e1000000-0000-0000-0000-000000000004','revoked-resident@example.invalid',now(),'{}','{}'),
  ('e1000000-0000-0000-0000-000000000005','suspended-resident@example.invalid',now(),'{}','{}');
 insert into app_private.portal_owners(portal_id,user_id,role)select '12000000-0000-0000-0000-000000000001',id,'crew'from auth.users where id::text like'e1000000-%';
+-- Only the primary owner is a mail recipient. Crew retain their inbox rights.
+update app_private.portal_owners set revoked_at=now()where portal_id='12000000-0000-0000-0000-000000000001'and role='owner';
+update app_private.portal_owners set role='owner'where user_id='e1000000-0000-0000-0000-000000000003';
 update app_private.portal_owners set revoked_at=now()where user_id='e1000000-0000-0000-0000-000000000004';
 update app_private.portal_owners set suspended_at=now()where user_id='e1000000-0000-0000-0000-000000000005';
 insert into app_private.portal_team_invites(portal_id,email,first_name,last_name,role,token_hash,invited_by)values('12000000-0000-0000-0000-000000000001','pending-resident@example.invalid','Pending','Synthetic','viewer',extensions.digest('not-a-real-invitation','sha256'),'f0000000-0000-0000-0000-000000000001');
@@ -73,7 +76,7 @@ select is((select count(*)from app_private.email_outbox where message_type='hous
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select throws_ok($$select api.portal_thanks_inbox('duindorp-halloween-2026','12000000-0000-0000-0000-000000000001')$$,'42501','NOT_AUTHORIZED','organization capability alone creates no resident inbox access');
 select set_config('request.jwt.claims','{"sub":"d1000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-select is((select count(*)from app_private.event_house_thanks_mail_recipients m join app_private.event_house_thanks_receipts r on r.id=m.receipt_id where r.portal_id='12000000-0000-0000-0000-000000000001'and m.recipient_email='resident@example.invalid'),2::bigint,'each general/personal receipt mails a normalized shared address once');
+select is((select count(*)from app_private.event_house_thanks_mail_recipients m join app_private.event_house_thanks_receipts r on r.id=m.receipt_id where r.portal_id='12000000-0000-0000-0000-000000000001'and m.recipient_email='resident@example.invalid'),0::bigint,'crew can read their inbox but receive no general or personal mail');
 select lives_ok($$select api.portal_thanks_closed_save('duindorp-halloween-2026','personal','12000000-0000-0000-0000-000000000001','treats','Aangepast <script>als tekst</script>','e3000000-0000-0000-0000-000000000005',(select id from app_private.event_house_thanks where kind='personal'and household_id='d2000000-0000-0000-0000-000000000001'))$$,'an explicit edit keeps message text editable');
 select api.worker_house_thanks_fanout(25);
 select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'),(select n from thanks_counts),'editing sends no new mail');

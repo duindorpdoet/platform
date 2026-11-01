@@ -3,7 +3,7 @@ import {readFileSync}from 'node:fs';
 import {afterAll,beforeAll,describe,expect,it,vi}from 'vitest';
 import {Webhook as HookVerifier}from 'standardwebhooks';
 vi.mock('server-only',()=>({}));
-const state=vi.hoisted(()=>({rpc:vi.fn(),recipients:new Set(['evening-family@example.invalid','owner@example.invalid']),env:{APP_ENVIRONMENT:'staging',EVENT_SLUG:'duindorp-halloween-2026',EVENT_EVENING_BATCH_SIZE:1,CRON_SECRET:'local-event-evening-cron',MAIL_MODE:'allowlist',NEWSLETTER_SENDING_ENABLED:'false',NEXT_PUBLIC_SUPABASE_URL:'https://fixture.supabase.co',SEND_EMAIL_HOOK_SECRET:`v1,whsec_${Buffer.alloc(32,3).toString('base64')}`,APP_URL:'https://evening.example.invalid',MAIL_IDENTITY_SECRET:'local-independent-evening-mail-identity-secret'}}));
+const state=vi.hoisted(()=>({rpc:vi.fn(),recipients:new Set(['evening-family@example.invalid','other-evening-family@example.invalid','owner@example.invalid']),env:{APP_ENVIRONMENT:'staging',EVENT_SLUG:'duindorp-halloween-2026',EVENT_EVENING_BATCH_SIZE:1,CRON_SECRET:'local-event-evening-cron',MAIL_MODE:'allowlist',NEWSLETTER_SENDING_ENABLED:'false',NEXT_PUBLIC_SUPABASE_URL:'https://fixture.supabase.co',SEND_EMAIL_HOOK_SECRET:`v1,whsec_${Buffer.alloc(32,3).toString('base64')}`,APP_URL:'https://evening.example.invalid',MAIL_IDENTITY_SECRET:'local-independent-evening-mail-identity-secret'}}));
 vi.mock('@/lib/config/server-env',()=>({serverEnv:()=>state.env,mailAllowlist:()=>state.recipients}));
 vi.mock('@/lib/supabase/privileged',()=>({createPrivilegedClient:()=>({schema:()=>({rpc:state.rpc})})}));
 vi.mock('@/lib/editorial/worker',()=>({editorialTick:async()=>{}}));
@@ -17,7 +17,7 @@ import type {ResendMessage}from '@/supabase/functions/send-email-hook/resend';
 // Deliberately fixed: no caller-provided connection string/container/database.
 // The container has --network none; the provider below is an in-process fake.
 const enabled=process.env.EVENT_EVENING_MAIL_INTEGRATION==='1';
-const container='supabase_db_duindorp_event_close_20261101',database='event_close_mail_integration';
+const container='supabase_db_duindorp_event_close_20261101',database='portal_impact_mail_integration';
 const literal=(value:unknown)=>value===null||value===undefined?'null':typeof value==='number'||typeof value==='boolean'?String(value):"'"+(typeof value==='string'?value:JSON.stringify(value)).replaceAll("'","''")+"'";
 function sql(query:string){
  if(!enabled)throw new Error('EXPLICIT_LOCAL_EVENT_EVENING_INTEGRATION_REQUIRED');
@@ -37,7 +37,7 @@ async function rpc(name:string,args:Record<string,unknown>){
  return JSON.parse(await sqlAsync(`begin;set local role service_role;${query}commit;`)||'null');
 }
 const actor=(id:string)=>`select set_config('request.jwt.claims',${literal(JSON.stringify({sub:id,role:'authenticated'}))},false);`;
-const admin='f0000000-0000-0000-0000-000000000001',family='f6100000-0000-4000-8000-000000000001',resident='e0000000-0000-0000-0000-000000000001';
+const admin='f0000000-0000-0000-0000-000000000001',family='f6100000-0000-4000-8000-000000000001',otherFamily='f6100000-0000-4000-8000-000000000002',resident='e0000000-0000-0000-0000-000000000001';
 const runWorker=()=>worker(new Request('https://evening.example.invalid/api/jobs/mail',{method:'POST',headers:{authorization:'Bearer local-event-evening-cron'},body:'{}'}));
 const json=<T>(query:string)=>JSON.parse(sql(query))as T;
 const lastJson=<T>(query:string)=>JSON.parse(sql(query).split('\n').at(-1)!)as T;
@@ -82,7 +82,7 @@ describe.skipIf(!enabled)('isolated PostgreSQL evening closure and house thanks 
  it('keeps definitive organization copy and stored house receipts through provider uncertainty without duplicate logical mail',async()=>{
   const subject='Lokaal aangepast organisatiebedankje 🎃',body='Beste Duindorpers,\n\nEen eigen organisatoralinea.\n<script>Dit blijft tekst</script>';
   const snapshot=lastJson<{counts:{participantAccounts:number;participatingHouses:number}}>(actor(admin)+`select api.event_closure_confirm('duindorp-halloween-2026',${literal(subject)},${literal(body)},'f6500000-0000-4000-8000-000000000001');`);
-  expect(snapshot.counts).toMatchObject({participantAccounts:1,participatingHouses:2});
+  expect(snapshot.counts).toMatchObject({participantAccounts:2,participatingHouses:2});
   expect(sql("select count(*)from app_private.email_outbox where message_type in('event_closure_thanks','house_thanks_received');")).toBe('0');
   const allMessage='Bedankt aan alle huizen!\n<b>Dit blijft ook tekst</b>';
   sql(actor(family)+`select api.portal_thanks_closed_save('duindorp-halloween-2026','all',null,null,${literal(allMessage)},'f6600000-0000-4000-8000-000000000001');`);
@@ -101,8 +101,8 @@ describe.skipIf(!enabled)('isolated PostgreSQL evening closure and house thanks 
   sql(`update app_private.email_outbox set next_attempt_at=clock_timestamp()where id=${literal(uncertain.id)};`);
   await runWorker();
   const retryCalls=calls.filter(item=>item.outboxId===uncertain.id);expect(retryCalls).toHaveLength(2);expect(retryCalls[0].key).toBe(retryCalls[1].key);expect(retryCalls[0].message).toEqual(retryCalls[1].message);
-  expect(providerRecords.size).toBe(3);expect(calls).toHaveLength(4);
-  expect(sql("select count(*)from app_private.email_outbox where message_type in('event_closure_thanks','house_thanks_received')and status='accepted';")).toBe('3');
+  expect(providerRecords.size).toBe(4);expect(calls).toHaveLength(5);
+  expect(sql("select count(*)from app_private.email_outbox where message_type in('event_closure_thanks','house_thanks_received')and status='accepted';")).toBe('4');
   const before=calls.length;await Promise.all([runWorker(),runWorker()]);expect(calls).toHaveLength(before);
   sql(actor(family)+`select api.portal_thanks_closed_save('duindorp-halloween-2026','all',null,null,${literal(allMessage)},'f6600000-0000-4000-8000-000000000001');`);
   await runWorker();expect(calls).toHaveLength(before);expect(sql('select count(*)from app_private.event_house_thanks_receipts;')).toBe('2');
@@ -136,7 +136,33 @@ describe.skipIf(!enabled)('isolated PostgreSQL evening closure and house thanks 
   await runWorker();
   const retries=calls.filter(item=>item.outboxId===failed.id);expect(retries).toHaveLength(2);expect(retries[0].key).toBe(retries[1].key);expect(retries[0].message).toEqual(retries[1].message);
   expect(sql(`select status from app_private.email_outbox where id=${literal(failed.id)};`)).toBe('accepted');expect(providerRecords.has(first.key)).toBe(true);
-  const attempts=calls.length;await runWorker();expect(calls).toHaveLength(attempts);expect(calls).toHaveLength(7);expect(providerRecords.size).toBe(5);
+  const attempts=calls.length;await runWorker();expect(calls).toHaveLength(attempts);expect(calls).toHaveLength(8);expect(providerRecords.size).toBe(6);
+ },30000);
+
+ it('keeps standard reactions as counters, rejects old default/team jobs and preserves an unknown outcome after an owner transfer',async()=>{
+  const before=calls.length,standard='Bedankt voor jullie inzet en de mooie Halloweenavond! Dankzij jullie hebben we samen kunnen griezelen in Duindorp. 🎃';
+  sql(actor(otherFamily)+`select api.portal_thanks_closed_save('duindorp-halloween-2026','all',null,null,${literal('\u00a0'+standard+'\ufeff')},'f6600000-0000-4000-8000-000000000004');select api.portal_thanks_closed_save('duindorp-halloween-2026','personal','12000000-0000-0000-0000-000000000001','treats',${literal('\u2003\n')},'f6600000-0000-4000-8000-000000000005');`);
+  await runWorker();await runWorker();await runWorker();expect(calls).toHaveLength(before);
+  const inbox=lastJson<{total:number;aggregateOnlyCount:number;customMessageCount:number;unread:number;messages:unknown[]}>(actor(resident)+"select api.portal_thanks_inbox('duindorp-halloween-2026','12000000-0000-0000-0000-000000000001');");
+  expect(inbox).toMatchObject({total:4,aggregateOnlyCount:2,customMessageCount:2,unread:2});expect(inbox.messages).toHaveLength(2);
+  expect(sql("select count(*)from app_private.email_outbox where message_type='house_thanks_received'and recipient_email='other-evening-family@example.invalid';")).toBe('0');
+  // These rows model pre-release queued standard/crew payloads. They never
+  // contact the fake provider, and retain their original immutable identity.
+  sql(`insert into app_private.email_outbox(id,dedupe_key,message_type,recipient_ref,recipient_email,payload)
+   select 'f6700000-0000-4000-8000-000000000001','synthetic-old-default-job','house_thanks_received',r.id::text,'owner@example.invalid',jsonb_build_object('receiptId',r.id,'eventId',r.event_id,'portalId',r.portal_id,'portalName','Synthetic house','kind',s.kind,'message',s.message,'senderLabel','Een gezin uit Duindorp','portalRoomPath','/mijn-huis')from app_private.event_house_thanks_receipts r join app_private.event_house_thanks s on s.id=r.submission_id where s.household_id='f6200000-0000-4000-8000-000000000002'and s.kind='all'and r.portal_id='12000000-0000-0000-0000-000000000001';
+   insert into app_private.event_house_thanks_mail_recipients(receipt_id,recipient_email,outbox_id)select recipient_ref::uuid,recipient_email,id from app_private.email_outbox where id='f6700000-0000-4000-8000-000000000001';
+   insert into app_private.email_outbox(id,dedupe_key,message_type,recipient_ref,recipient_email,payload)
+   select 'f6700000-0000-4000-8000-000000000002','synthetic-old-crew-job',message_type,recipient_ref,'other-evening-family@example.invalid',payload from app_private.email_outbox where message_type='house_thanks_received'and recipient_email='owner@example.invalid'and payload->>'kind'='all'and payload->>'portalId'='12000000-0000-0000-0000-000000000001'and dedupe_key<>'synthetic-old-default-job';
+   insert into app_private.event_house_thanks_mail_recipients(receipt_id,recipient_email,outbox_id)select recipient_ref::uuid,recipient_email,id from app_private.email_outbox where id='f6700000-0000-4000-8000-000000000002';`);
+  await runWorker();expect(calls).toHaveLength(before);
+  expect(sql("select count(*)from app_private.email_outbox where dedupe_key in('synthetic-old-default-job','synthetic-old-crew-job')and status='suppressed';")).toBe('2');
+  sql(actor(otherFamily)+"select api.portal_thanks_closed_save('duindorp-halloween-2026','all',null,null,'Later geschreven tekst','f6600000-0000-4000-8000-000000000006',(select id from app_private.event_house_thanks where household_id='f6200000-0000-4000-8000-000000000002'and kind='all'));select app_private.event_house_thanks_queue_mail(id)from app_private.event_house_thanks_receipts where submission_id=(select id from app_private.event_house_thanks where household_id='f6200000-0000-4000-8000-000000000002'and kind='all');");
+  await runWorker();expect(calls).toHaveLength(before);expect(sql("select count(*)from app_private.email_outbox where message_type='house_thanks_received';")).toBe('6');
+  // Transfer the primary role atomically; the former owner keeps room access.
+  sql(`begin;update app_private.portal_owners set role='coadmin'where portal_id='12000000-0000-0000-0000-000000000001'and user_id=${literal(resident)};update app_private.portal_owners set role='owner'where portal_id='12000000-0000-0000-0000-000000000001'and user_id=${literal(otherFamily)};commit;`);
+  await runWorker();expect(calls).toHaveLength(before);
+  expect(sql("select o.status||':'||e.status from app_private.email_outbox o join app_private.mail_envelopes e on e.outbox_id=o.id where o.message_type='house_thanks_received'and o.payload->>'kind'='personal'and o.payload->>'portalId'='12000000-0000-0000-0000-000000000001';")).toBe('unknown:reconcile');
+  expect(sql("select count(*)from app_private.email_outbox where message_type='event_closure_thanks'and status='accepted';")).toBe('2');
  },30000);
 
 });

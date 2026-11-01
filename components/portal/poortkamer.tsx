@@ -58,6 +58,7 @@ import { PoortkamerLiveV2, PoortkamerManagementV2 } from "./poortkamer-v2";
 import s from "./poortkamer.module.css";
 import { GatePoster } from "@/components/redesign/gate-poster";
 import { QrCode } from "lucide-react";
+import { PortalCertificate, PortalImpactCounts } from "./portal-impact";
 
 type Tab = "night" | "visits" | "team" | "messages" | "more";
 const nav = [
@@ -471,8 +472,7 @@ export function Poortkamer({
         {tab === "night" && (
           <>
             <div className={s.metrics} data-guide="house-overview" aria-label="De avond in cijfers">
-              <Metric value={room.visits.recap.groups} label="Groepen ontvangen" />
-              <Metric value={room.visits.recap.children} label="Kinderen ontvangen" />
+              <PortalImpactCounts room={room}/>
               <Metric value={metrics.remainingGroups} label="Groepen verwacht" />
               <Metric value={metrics.remainingChildren} label="Kinderen verwacht" />
             </div>
@@ -1210,7 +1210,6 @@ function Metric({ value, label }: { value: number | string; label: string }) {
   );
 }
 function NightRecap({ room }: { room: PortalRoom }) {
-  const event = useEventDetails();
   const recap = room.visits.recap;
   return (
     <section className={`${s.card} ${s.recap}`}>
@@ -1225,13 +1224,8 @@ function NightRecap({ room }: { room: PortalRoom }) {
       <p className={s.eyebrow}>Een stukje magie, dankzij jullie</p>
       <h2>Nachtverslag · {room.portal.code}</h2>
       <p>Dank je wel voor jullie licht in de wijk.</p>
-      <div className={s.certificate}>
-        <img src="/images/poortkamer-v2/certificates/gate-certificate-background.webp" alt="" />
-        <div><span>Digitaal certificaat</span><strong>Officiële Poort van {event.year}</strong><small>{room.portal.name} · {room.portal.code}</small></div>
-      </div>
+      <PortalCertificate key={`${room.userId}:${room.portal.id}`} room={room}/>
       <div className={s.metrics}>
-        <Metric value={recap.groups} label="Groepen ontvangen" />
-        <Metric value={recap.children} label="Kinderen ontvangen" />
         <Metric value={recap.pauses} label="Pauzes" />
         <Metric value={recap.pauseMinutes} label="Minuten pauze" />
       </div>

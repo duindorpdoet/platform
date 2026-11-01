@@ -776,6 +776,13 @@
 .certificate > div { position: relative; z-index: 1; display: grid; place-items: center; align-content: center; gap: 7px; min-height: 230px; padding: 22px; text-align: center; background: #08111b55; }
 .certificate span,.certificate small { text-transform: uppercase; letter-spacing: .14em; color: #dfc89e; font-size: .68rem; }
 .certificate strong { font: clamp(1.7rem,4vw,3rem) Georgia,serif; color: #fff0ce; }
+.impactCounts { display: contents; }
+.certificate .impactCounts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: min(100%,640px); gap: 12px; margin-top: 15px; }
+.certificate .impactCounts .metric { background: #08111b88; border: 1px solid #d8b87844; }
+.certificate .impactCounts strong { font-size: clamp(1.7rem,4vw,2.5rem); }
+.certificate .impactCounts span { letter-spacing: .06em; font-size: .65rem; }
+.certificateSection { min-width: 0; }
+.certificateActions { justify-content: center; flex-wrap: wrap; }
 @media (max-width: 760px) {
   .v2Live { grid-template-columns: 1fr; }
   .v2Live > img { min-height: 260px; max-height: 340px; }
