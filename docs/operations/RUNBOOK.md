@@ -49,6 +49,10 @@ De releasecontrole vergelijkt bestaande rijen en velden exact met de versleuteld
 - HTTP 202 betekent alleen provideracceptatie. `delivered`, `bounce`, `dropped` en `spamreport` komen via de signed Event Webhook.
 - Controleer bij problemen eerst jobconfig/schedule, leases, retrytijd, providerstatus en webhooksignature; verstuur geen bulkherhaling.
 
+## Avond centraal afsluiten
+
+Gebruik **Organisatie → Instellingen → Evenementinstellingen → Avond afsluiten…** voor de bewuste centrale afsluiting. Alleen de definitieve bevestiging sluit de avond en maakt de organisatiecampagne; uitrollen of de modal openen doet dat niet. Zie [bediening, mailherstel en gegevensbehoudende rollback](EVENT-AVOND-AFSLUITEN-20261101.md).
+
 ## Incident tijdens de tocht
 
 - Pauzeer een groep voordat een route- of rosterbesluit wordt genomen.

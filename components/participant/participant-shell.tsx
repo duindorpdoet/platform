@@ -53,6 +53,8 @@ import { PortalDashboard } from "@/components/portal/portal-dashboard";
 import { SupportWidget } from "@/components/support/support-widget";
 import { PwaInstallInvitation, PushNotificationSettings } from "@/components/pwa/pwa-experience";
 import { createClient } from "@/lib/supabase/client";
+import { EventEveningRecap, CompleteEveningNightPass } from "@/components/event-evening/closure-recap";
+import type { EveningClosure } from "@/lib/event-evening/types";
 
 export type ParticipantRoleKey = "walker" | "viewer" | "homeowner";
 type ParticipantRole = {
@@ -73,6 +75,7 @@ export type ParticipantContext = {
     paymentDeadline: string;
     supportEmail: string;
     supportPhone?: string | null;
+    eveningClosure?: EveningClosure | null;
   };
   roles: ParticipantRole[];
   preferences?: { reducedMotion: boolean; readableMode: boolean };
@@ -122,6 +125,8 @@ export function ParticipantShell({
   const router = useRouter();
   const [inviteNotice, setInviteNotice] = useState(inviteToken ? "Meekijkuitnodiging controleren…" : "");
   const [invalidContext, setInvalidContext] = useState<ParticipantContext | null>(null);
+  const [closureState, setClosureState] = useState<{ context: ParticipantContext; closure: EveningClosure | null }>({ context, closure: context.event.eveningClosure ?? null });
+  const eveningClosure = closureState.context === context ? closureState.closure : context.event.eveningClosure ?? null;
   const selectedRole = role ? context.roles.find((item) => item.key === role && (!accessReference || role !== "viewer" || (item.accessId ?? item.groupId) === accessReference)) : undefined;
   const items = selectedRole ? navigation[selectedRole.key] : [];
   const activeSection = items.some((item) => item.key === section) ? section! : items[0]?.key;
@@ -137,6 +142,8 @@ export function ParticipantShell({
       if (!active || identity.data.user?.id !== userId) return;
       const { data, error } = await client.schema("api").rpc("participant_context", { _event_slug: eventSlug }).abortSignal(AbortSignal.timeout(8_000));
       if (!active || error || !data || data.event?.id !== context.event.id || !Array.isArray(data.roles)) return;
+      const nextClosure = (data.event.eveningClosure ?? null) as EveningClosure | null;
+      setClosureState(current => current.context === context && JSON.stringify(current.closure) === JSON.stringify(nextClosure) ? current : { context, closure: nextClosure });
       if (participantAccessKey(data.roles) !== participantAccessKey(context.roles)) {
         replacing = true;
         clearPrivateSnapshots(); clearArrivalMemory(); setInvalidContext(context);
@@ -208,7 +215,7 @@ export function ParticipantShell({
       </header>
       {inviteNotice && <div className="participant-notice" role="status">{inviteNotice}</div>}
       <main className="participant-content" id="participant-content">
-        {selectedRole.key === "walker" && <WalkerSection key={`${userId}:${selectedRole.groupId ?? "unassigned"}`} context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
+        {selectedRole.key === "walker" && <WalkerSection key={`${userId}:${selectedRole.groupId ?? "unassigned"}`} context={context} eveningClosure={eveningClosure} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
         {selectedRole.key === "viewer" && <ViewerSection key={`${userId}:${selectedRole.accessId ?? selectedRole.groupId}`} context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
         {selectedRole.key === "homeowner" && <HomeownerSection context={context} eventSlug={eventSlug} userId={userId} role={selectedRole} section={activeSection} />}
       </main>
@@ -296,7 +303,7 @@ const paymentLabels: Record<string, string> = {
   waived: "Geen betaling nodig",
 };
 
-function WalkerSection({ context, eventSlug, userId, role, section }: { context: ParticipantContext; eventSlug: string; userId: string; role: ParticipantRole; section?: string }) {
+function WalkerSection({ context, eveningClosure, eventSlug, userId, role, section }: { context: ParticipantContext; eveningClosure?: EveningClosure | null; eventSlug: string; userId: string; role: ParticipantRole; section?: string }) {
   const needsOverview = section !== "route" || !role.groupId;
   const [registration, setRegistration] = useState<RegistrationSnapshot | null>(null);
   const [group, setGroup] = useState<GroupSnapshot | null>(null);
@@ -322,10 +329,11 @@ function WalkerSection({ context, eventSlug, userId, role, section }: { context:
     return () => window.clearTimeout(timer);
   }, [load, needsOverview]);
 
-  if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience key={role.groupId} groupId={role.groupId} userId={userId} /></ParticipantPageFrame>;
+  if (eveningClosure && (section === "nu" || section === "route" || !section)) return <EventEveningRecap key={eveningClosure.id} closure={eveningClosure} eventSlug={eventSlug}/>;
+  if (section === "route" && role.groupId) return <ParticipantPageFrame eyebrow="De route ontvouwt zich stap voor stap" title="Route door Duindorp" compact><GroupExperience key={role.groupId} groupId={role.groupId} userId={userId} eventSlug={eventSlug}/></ParticipantPageFrame>;
   if (loading) return <ParticipantLoading />;
   if (section === "groep") return <WalkerGroup group={group} registration={registration} preferences={preferences} groupId={role.groupId ?? undefined} reload={load} />;
-  if (section === "nachtpas") return <NightPass snapshot={registration} group={group} reload={load} />;
+  if (section === "nachtpas") return <NightPass snapshot={registration} group={group} reload={load} eveningClosure={eveningClosure} eventSlug={eventSlug} />;
   if (section === "meer" || section === "updates") return <MorePage context={context} eventSlug={eventSlug} userId={userId} role="walker" />;
   return <><DuinpadExperience key={userId} overview onSaved={load}/><WalkerNow context={context} registration={registration} group={group} reload={load} /><div className="member-news-section"><PortalNews channel="parents" compact /></div></>;
 }
@@ -407,14 +415,15 @@ function WalkerGroup({ group, registration, preferences, groupId, reload }: { gr
   </ParticipantPageFrame>;
 }
 
-function NightPass({ snapshot, group, reload }: { snapshot: RegistrationSnapshot | null; group: GroupSnapshot | null; reload: () => Promise<void> }) {
+function NightPass({ snapshot, group, reload, eveningClosure, eventSlug }: { snapshot: RegistrationSnapshot | null; group: GroupSnapshot | null; reload: () => Promise<void>; eveningClosure?: EveningClosure | null; eventSlug: string }) {
   const event=useEventDetails();
   const registration = snapshot?.registration;
-  if (!registration) return <ParticipantPageFrame eyebrow="Nachtpas" title="Nog geen inschrijving"><section className="participant-card"><p>Na je definitieve inschrijving verschijnt hier de Nachtpas voor je eigen kinderen.</p><Link className="btn" href="/meelopen">Schrijf je in</Link></section></ParticipantPageFrame>;
+  if (!registration) return eveningClosure ? <ParticipantPageFrame eyebrow="Een nacht om te bewaren" title="Jullie Nachtpas"><CompleteEveningNightPass key={eveningClosure.id} closure={eveningClosure} eventSlug={eventSlug} childProfiles={[]}/></ParticipantPageFrame> : <ParticipantPageFrame eyebrow="Nachtpas" title="Nog geen inschrijving"><section className="participant-card"><p>Na je definitieve inschrijving verschijnt hier de Nachtpas voor je eigen kinderen.</p><Link className="btn" href="/meelopen">Schrijf je in</Link></section></ParticipantPageFrame>;
   const activeChildren = registration.children.filter((child) => child.status === "active");
   const participating = registration.status === "submitted" && activeChildren.length > 0;
   const paid = activeChildren.length > 0 && activeChildren.every((child) => childPaymentState(child, childPaymentFor(child, registration.children, registration.payment)).paid);
   return <ParticipantPageFrame eyebrow="Alles voor deelname" title="Jullie Nachtpas">
+    {eveningClosure && <CompleteEveningNightPass key={eveningClosure.id} closure={eveningClosure} eventSlug={eventSlug} childProfiles={activeChildren}/>}
     <section className={`night-pass ${participating ? "active" : "locked"}`}>
       <div className="night-pass-top"><span><MoonStar />Duindorp {event.year}</span><strong>{participating ? "TOEGANG ACTIEF" : "DEELNAME NIET ACTIEF"}</strong></div>
       <h2>{registration.reference}</h2>
@@ -425,7 +434,7 @@ function NightPass({ snapshot, group, reload }: { snapshot: RegistrationSnapshot
     <section className="participant-card participant-children-card"><div className="section-title"><div><p className="participant-eyebrow">Per eigen kind</p><h2>Deelnamestatus</h2></div><TicketCheck aria-hidden="true" /></div>
       <ChildPaymentRows items={registration.children} registrationId={registration.id} legacyPayment={registration.payment} reload={reload} />
     </section>
-    <section className="participant-card practical"><p className="participant-eyebrow">Praktisch</p><h2>Zo gebruik je de Nachtpas</h2><ul><li>Meld je met de groepsleider bij de gepubliceerde startplek.</li><li>Kinderen blijven de hele avond bij hun eigen groep en verantwoordelijke volwassene.</li><li>Laat deze Nachtpas zien als de organisatie daarom vraagt.</li></ul></section>
+    {!eveningClosure && <section className="participant-card practical"><p className="participant-eyebrow">Praktisch</p><h2>Zo gebruik je de Nachtpas</h2><ul><li>Meld je met de groepsleider bij de gepubliceerde startplek.</li><li>Kinderen blijven de hele avond bij hun eigen groep en verantwoordelijke volwassene.</li><li>Laat deze Nachtpas zien als de organisatie daarom vraagt.</li></ul></section>}
   </ParticipantPageFrame>;
 }
 

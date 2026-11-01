@@ -6,9 +6,10 @@ import { ArrowRight, BookOpen, CheckCircle2, DoorOpen, Eye, ShieldCheck, Sparkle
 import type { AccountSnapshot, AccountTarget } from "@/lib/account/model";
 import { SignOutButton } from "@/components/auth/account-actions";
 import { EntryHeader } from "@/components/auth/account-login";
+import { EventEveningRecap } from "@/components/event-evening/closure-recap";
 
 const icons = { parent: Users, house: DoorOpen, viewer: Eye, admin: ShieldCheck, actor: Sparkles };
-export function EnvironmentChooser({ initial }: { initial: AccountSnapshot }) {
+export function EnvironmentChooser({ initial, eventSlug }: { initial: AccountSnapshot; eventSlug: string }) {
   const [childId, setChildId] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -33,6 +34,7 @@ export function EnvironmentChooser({ initial }: { initial: AccountSnapshot }) {
   return <div className="entry-page entry-choice-page"><EntryHeader /><main className="entry-choice-wrap">
     <div className="entry-choice-heading"><p className="entry-kicker"><span />Jouw persoonlijke toegang</p><h1>Welkom terug.<br /><em>Jouw avontuur wacht.</em></h1><p>Waar begint jouw avontuur vandaag?</p><div className="entry-account-tag"><span>{initial.email}</span><SignOutButton label="Wissel account" destination="/inloggen" /></div></div>
     {notice && <p className="entry-error" role="status">{notice}</p>}
+    {initial.eveningClosure && <EventEveningRecap closure={initial.eveningClosure} eventSlug={eventSlug} withThanks={false}/>}
     {(resumedChild || resumedEnvironment) && <button type="button" disabled={busy} className="entry-resume-card" onClick={() => void open(initial.resume!)}><CheckCircle2 /><span><strong>Ga verder waar je was</strong><small>{resumedChild ? `Het Poortenboek van ${resumedChild.firstName}` : resumedEnvironment?.label}</small></span><ArrowRight /></button>}
     <section className="entry-environments" aria-label="Kies jouw omgeving">{initial.environments.map(environment => {
       const Icon = icons[environment.kind];

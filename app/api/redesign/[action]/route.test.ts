@@ -25,3 +25,26 @@ it('does not block an authorized intake page with a nonexistent participant tour
  const response=await GET(new Request('https://fixture.invalid/api/redesign/guidance'),{params:Promise.resolve({action:'guidance'})});expect(response.status).toBe(204);expect(response.headers.get('cache-control')).toContain('no-store');expect(await response.text()).toBe('');
  expect((await POST(request(payload),{params:Promise.resolve({action:'guidance'})})).status).toBe(403);
 });
+
+const closedRequest=(value:unknown)=>new Request('https://fixture.invalid/api/redesign/thanks-closed',{method:'POST',headers:{origin:'https://fixture.invalid','content-type':'application/json'},body:JSON.stringify(value)});
+const closedPayload={kind:'all',message:'Bedankt!\nEen eigen toevoeging.',requestKey:'e1000000-0000-4000-8000-000000000001'};
+it('stores one server-resolved general thanks with a durable request key',async()=>{
+ const response=await POST(closedRequest(closedPayload),{params:Promise.resolve({action:'thanks-closed'})});expect(response.status).toBe(200);
+ expect(state.rpc).toHaveBeenCalledWith('portal_thanks_closed_save',{_event_slug:'duindorp-halloween-2026',_kind:'all',_portal_id:null,_choice:null,_message:closedPayload.message,_request_key:closedPayload.requestKey,_submission_id:null});
+});
+it.each([{...closedPayload,householdId:'e1000000-0000-4000-8000-000000000002'},{...closedPayload,message:'x'.repeat(501)},{...closedPayload,kind:'personal'},{...closedPayload,portalId:'e1000000-0000-4000-8000-000000000002'}])('rejects invalid or client-selected thanks identity before RPC',async value=>{
+ expect((await POST(closedRequest(value),{params:Promise.resolve({action:'thanks-closed'})})).status).toBe(422);expect(state.rpc).not.toHaveBeenCalled();
+});
+it('uses a bounded keyset page and never accepts a client mailbox',async()=>{
+ const before='e1000000-0000-4000-8000-000000000001',portal='e1000000-0000-4000-8000-000000000002';
+ expect((await GET(new Request(`https://fixture.invalid/api/redesign/thanks-inbox?portalId=${portal}&before=${before}&limit=9999`),{params:Promise.resolve({action:'thanks-inbox'})})).status).toBe(200);
+ expect(state.rpc).toHaveBeenCalledWith('portal_thanks_inbox',{_event_slug:'duindorp-halloween-2026',_portal_id:portal,_before:before,_limit:25});
+});
+it('keeps read-status writes origin-protected and authorization failures explicit',async()=>{
+ state.rpc.mockResolvedValue({data:null,error:{message:'NOT_AUTHORIZED',code:'42501'}});
+ expect((await POST(closedRequest(closedPayload),{params:Promise.resolve({action:'thanks-closed'})})).status).toBe(403);
+});
+it('does not turn an unknown mutation outcome into success or an automatic retry',async()=>{
+ state.rpc.mockResolvedValue({data:null,error:{message:'statement timeout',code:'57014'}});
+ const result=await POST(closedRequest(closedPayload),{params:Promise.resolve({action:'thanks-closed'})});expect(result.status).toBe(503);expect((await result.json()).error.code).toBe('THANKS_UNAVAILABLE');expect(state.rpc).toHaveBeenCalledTimes(1);
+});

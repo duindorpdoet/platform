@@ -18,6 +18,40 @@ beforeEach(()=>{
  state.rpc.mockReset().mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[row]:null,error:null}));state.send.mockReset();
 });
 describe("outbox worker acceptance and uncertainty contract",()=>{
+ it("keeps durable inbox fan-out working while external delivery is disabled",async()=>{
+  const previous=state.env.MAIL_MODE;
+  try{
+   state.env.MAIL_MODE="disabled";
+   expect(await(await POST(request())).json()).toMatchObject({claimed:0,reason:"mail-disabled"});
+   expect(state.rpc).toHaveBeenCalledWith("worker_event_closures",{_limit:10});
+   expect(state.rpc).toHaveBeenCalledWith("worker_house_thanks_fanout",{_limit:10});
+   expect(state.rpc).not.toHaveBeenCalledWith("worker_claim_outbox",expect.anything());
+   expect(state.send).not.toHaveBeenCalled();
+  }finally{state.env.MAIL_MODE=previous;}
+ });
+ it.each(["event_closure_thanks","house_thanks_received"])("renders only revalidated fixed %s material and uses the existing gateway",async(messageType)=>{
+  const material=messageType==="event_closure_thanks"?{subject:"De bevestigde organisatieversie",body:"Beste buren,\n\nExact toegevoegde alinea."}:{portalName:"De testpoort",kind:"personal",choice:"beautiful",message:"Heel erg bedankt!"};
+  const rpcName=messageType==="event_closure_thanks"?"worker_event_closure_mail":"worker_house_thanks_mail";
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:messageType,payload:{subject:"OBSOLETE",body:"OBSOLETE",message:"OBSOLETE"}}]:name===rpcName?material:null,error:null}));
+  state.send.mockResolvedValue({accepted:true,validated:false,provider:"resend",providerId:row.id});
+  const response=await POST(request());expect(await response.json()).toMatchObject({accepted:1});
+  expect(state.rpc).toHaveBeenCalledWith("worker_event_closures",{_limit:10});
+  expect(state.rpc).toHaveBeenCalledWith("worker_house_thanks_fanout",{_limit:10});
+  expect(state.rpc).toHaveBeenCalledWith(rpcName,{_outbox_id:row.id});
+  expect(state.send).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({outboxId:row.id,messageType}));
+  expect(state.send.mock.calls[0][0].text).not.toContain("OBSOLETE");
+  expect(state.send.mock.calls[0][0].text).toContain(messageType==="event_closure_thanks"?"Exact toegevoegde alinea.":"Heel erg bedankt!");
+ });
+ it.each(["event_closure_thanks","house_thanks_received"])("keeps unavailable %s private and never calls the provider",async(messageType)=>{
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:messageType}]:null,error:null}));
+  expect((await POST(request())).status).toBe(200);expect(state.send).not.toHaveBeenCalled();
+  expect(state.rpc).toHaveBeenCalledWith("worker_update_outbox_v2",expect.objectContaining({_status:"suppressed",_error_code:"EVENING_RECIPIENT_UNAVAILABLE"}));
+ });
+ it.each(["event_closure_thanks","house_thanks_received"])("defers a temporary %s material failure without treating it as an unknown send",async(messageType)=>{
+  const rpcName=messageType==="event_closure_thanks"?"worker_event_closure_mail":"worker_house_thanks_mail";
+  state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:messageType}]:null,error:name===rpcName?{code:"offline"}:null}));
+  expect(await(await POST(request())).json()).toMatchObject({deferred:1,unknown:0});expect(state.send).not.toHaveBeenCalled();
+ });
  it("suppresses a superseded actor invitation before rendering or sending",async()=>{
   state.rpc.mockImplementation(async(name:string)=>({data:name==="worker_claim_outbox"?[{...row,message_type:"actor_invitation"}]:null,error:null}));
   const response=await POST(request());expect(response.status).toBe(200);expect(state.send).not.toHaveBeenCalled();

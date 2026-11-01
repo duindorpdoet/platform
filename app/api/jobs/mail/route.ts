@@ -11,6 +11,7 @@ import { renderTransactionalMail, UnknownMailTemplateError } from "@/lib/mail/te
 import { MailGatewayError, sendMailViaGateway } from "@/lib/mail/gateway";
 import { nextRetry, summarizeMailWorkerResults, type MailWorkerResultState } from "@/lib/mail/status";
 import { cleanupSocialShareAssets } from "@/lib/social-share/cleanup";
+import { processEventEveningBatch } from "@/lib/event-evening/worker";
 
 export const runtime = "nodejs";
 
@@ -60,11 +61,13 @@ export async function POST(request: Request) {
   await editorialTick(pushBudget).catch(() => console.error("editorial_worker_failed", { code: "WORKER_UNAVAILABLE" }));
   await deliverPortalPushBatch(pushBudget).catch(() => console.error("portal_push_worker_failed", { code: "DELIVERY_UNAVAILABLE" }));
   await cleanupSocialShareAssets().catch(() => console.error("social_share_cleanup_failed", { code: "CLEANUP_UNAVAILABLE" }));
+  const supabase = createPrivilegedClient();
+  // Only deliberate closures/submissions create these durable targets.
+  // Both workers are empty on deployment and do no provider I/O themselves.
+  if (supabase) await processEventEveningBatch(supabase, env.EVENT_EVENING_BATCH_SIZE);
   if (env.MAIL_MODE === "disabled") {
     return NextResponse.json({ claimed: 0, reason: "mail-disabled" });
   }
-
-  const supabase = createPrivilegedClient();
   if (!supabase) {
     return NextResponse.json({ error: "service-not-configured" }, { status: 503 });
   }
@@ -100,6 +103,15 @@ export async function POST(request: Request) {
 
   for (const row of rows) {
     try {
+      if (row.message_type === "event_closure_thanks" || row.message_type === "house_thanks_received") {
+        const material = await supabase.schema("api").rpc(row.message_type === "event_closure_thanks" ? "worker_event_closure_mail" : "worker_house_thanks_mail", { _outbox_id: row.id });
+        if (material.error) throw new ApiError(503, "EVENING_MAIL_MATERIAL_UNAVAILABLE", "Het bericht kon niet veilig worden samengesteld.");
+        if (!material.data) {
+          await updateOutbox({ _id: row.id, _status: "suppressed", _provider_id: null, _error_code: "EVENING_RECIPIENT_UNAVAILABLE", _next_attempt_at: null });
+          continue;
+        }
+        row.payload = material.data;
+      }
       if (row.message_type === "actor_invitation") {
         const material = await supabase.schema("api").rpc("worker_duinpad_actor_invitation", { _outbox_id: row.id });
         if (material.error) throw new ApiError(503, "ACTOR_INVITATION_UNAVAILABLE", "De uitnodiging kon niet veilig worden samengesteld.");

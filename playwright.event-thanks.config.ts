@@ -1,0 +1,2 @@
+import {defineConfig,devices}from '@playwright/test';
+export default defineConfig({testDir:'./tests/event-thanks',testMatch:'*.spec.ts',outputDir:'test-results/event-thanks',fullyParallel:false,retries:0,reporter:'list',use:{baseURL:'http://127.0.0.1:3219',...devices['Desktop Chrome']},webServer:{command:'node tests/event-thanks/server.mjs',url:'http://127.0.0.1:3219',reuseExistingServer:!process.env.CI,timeout:30000}});

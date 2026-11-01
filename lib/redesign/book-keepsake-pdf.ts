@@ -33,7 +33,7 @@ export async function loadBookKeepsakeFonts(){
 function formattedDate(value:string){const date=new Date(/^\d{4}-\d{2}-\d{2}$/.test(value)?`${value}T12:00:00+01:00`:value);return Number.isFinite(date.getTime())?new Intl.DateTimeFormat('nl-NL',{day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Amsterdam'}).format(date):'Evenementdatum volgt';}
 function formattedTime(value:string){const date=new Date(value);return Number.isFinite(date.getTime())?new Intl.DateTimeFormat('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'}).format(date):'Tijd niet bekend';}
 
-/** Generates a personal, address-free PDF. Only snapshot.journey.seals supply visits. */
+/** Generates a personal, address-free PDF from physical and clearly marked gift seals. */
 export function createBookKeepsakePdf(snapshot: BookSnapshot): Uint8Array {
  if(!fonts)throw new Error('PDF_FONT_UNAVAILABLE');
  const selectedFonts=fonts,streams:string[]=[];let stream='';
@@ -68,7 +68,7 @@ export function createBookKeepsakePdf(snapshot: BookSnapshot): Uint8Array {
  const intro=ended?'Samen op pad in Duindorp. Dit is jouw persoonlijke herinnering aan een bijzondere avond.':'Deze bewaarkaart toont de zegels die jij al hebt verzameld. Je kunt later opnieuw een kaart downloaden.';
  const introLines=wrap(intro,W-146,11);introLines.forEach((l,i)=>center(l,310+i*17,11,muted));
  const count=seals.length,worldCount=new Set(seals.filter(s=>!s.finale).map(s=>s.presentation.world)).size,chapterCount=new Set(snapshot.journey.chapters.map(c=>c.chapter)).size;
- const stats=[{number:String(count),label:count===1?'poortzegel':'poortzegels'},{number:String(worldCount),label:worldCount===1?'wereld bereikt':'werelden bereikt'},{number:String(chapterCount),label:'hoofdstukken open'}];
+ const stats=[{number:String(count),label:count===1?'poortzegel':'poortzegels'},{number:String(worldCount),label:snapshot.eveningClosure?(worldCount===1?'wereld vrij':'werelden vrij'):(worldCount===1?'wereld bereikt':'werelden bereikt')},{number:String(chapterCount),label:'hoofdstukken open'}];
  stats.forEach((item,i)=>{const x=51+i*166;rect(x,365,159,78,[.947,.928,.895]);text(item.number,x+17,400,26,navy,true);text(item.label,x+17,423,9,muted);});
  text('JOUW TEAM',55,477,8,amber,true);paragraph(team,55,500,285,fit(team,285,15,true),19,navy,true);
  text('JOUW VERSCHIJNING',55,546,8,amber,true);paragraph(avatarOptions.find(a=>a.id===snapshot.identity.avatarId)?.label??'Avonturier',55,568,285,14,18,navy,true);
@@ -82,8 +82,8 @@ export function createBookKeepsakePdf(snapshot: BookSnapshot): Uint8Array {
  paragraph(ended?'Jouw avond is van jou. Samen op pad zijn telt. Jij hoort bij het verhaal van Duindorp.':'Je hoeft niet naar binnen als je dat spannend vindt. Bij aankomst bij de poort hoor jij er gewoon bij. Blijf samen met je volwassene.',55,733,W-110,9,14,muted);
  streams.push(stream);
  for(let p=0;p<listPages;p++){
-  stream='';frame(p+2,total);text('JOUW VERZAMELDE POORTZEGELS',55,152,9,amber,true);text(firstName,55,187,fit(firstName,W-110,28,true),navy,true);paragraph('Iedere zegel hieronder hoort bij een poort die jij met je groep hebt bereikt. Ook als je de spannende beleving liever overslaat, hoor jij erbij.',55,215,W-110,10,16,muted);
-  let rowY=270;visitPages[p].forEach(({seal,titles,height},i)=>{const y=rowY;rect(55,y,W-110,height,i%2?[.974,.964,.94]:[.944,.93,.9]);star(77,y+25,10,seal.finale?amber:(palette[seal.presentation.color]??amber));titles.forEach((l,j)=>text(l,99,y+18+j*14,11,navy,true));text(`${seal.finale?'Finalezegel':seal.presentation.world} - ${formattedTime(seal.earnedAt)}`,99,y+height-10,8.5,muted);rowY+=height+9;});
+  stream='';frame(p+2,total);text('JOUW VERZAMELDE POORTZEGELS',55,152,9,amber,true);text(firstName,55,187,fit(firstName,W-110,28,true),navy,true);paragraph(snapshot.eveningClosure?'De organisatie heeft alle poortzegels cadeau gegeven. Cadeauzegels staan apart herkenbaar vermeld; de tijden bij echte bezoeken blijven behouden.':'Iedere zegel hieronder hoort bij een poort die jij met je groep hebt bereikt. Ook als je de spannende beleving liever overslaat, hoor jij erbij.',55,215,W-110,10,16,muted);
+  let rowY=270;visitPages[p].forEach(({seal,titles,height},i)=>{const y=rowY;rect(55,y,W-110,height,i%2?[.974,.964,.94]:[.944,.93,.9]);star(77,y+25,10,seal.finale?amber:(palette[seal.presentation.color]??amber));titles.forEach((l,j)=>text(l,99,y+18+j*14,11,navy,true));text(`${seal.finale?'Finalezegel':seal.presentation.world} - ${seal.source==='event_closure'?'Cadeau van de organisatie':formattedTime(seal.earnedAt)}`,99,y+height-10,8.5,muted);rowY+=height+9;});
   streams.push(stream);
  }
  const objects:Array<string|Uint8Array>=[];const add=(obj:string|Uint8Array)=>{objects.push(obj);return objects.length;};

@@ -23,12 +23,15 @@ import { EarlyDeparture } from "@/components/redesign/early-departure";
 import { QrScanner } from "@/components/redesign/qr-scanner";
 import {DuinpadExperience} from "@/components/duinpad/experience";
 import { FamilyPortalThanks } from "@/components/redesign/portal-thanks";
+import { EventEveningRecap } from "@/components/event-evening/closure-recap";
+import type { EveningClosure } from "@/lib/event-evening/types";
 
 type Arrival = { credential: string; portalId?: string; stopId: string; runId: string; runVersion: number; method: string; portalName: string; finale: boolean; choices: Record<string, "visited" | "skipped">; participants: Participant[] };
 
 type RosterItem = { registrationChildId: string; firstName: string; householdLabel: string };
 type Participant = { id: string; childId: string; firstName: string; attendance: string; rosterVersion: number; isOwnChild: boolean; status: "pending" | "visited" | "skipped" | null; statusVersion: number | null; required: boolean | null };
 type Snapshot = {
+  eveningClosure?: EveningClosure | null;
   duinpadFinale?: {eveningEnded:boolean;eligible?:boolean;recorded?:boolean};
   eventId: string;
   group: {
@@ -79,7 +82,7 @@ function explain(error: { message?: string } | null) {
   return "Dat lukte nog niet. Controleer de poort en probeer opnieuw.";
 }
 
-export function GroupExperience({ groupId, userId }: { groupId: string; userId: string }) {
+export function GroupExperience({ groupId, userId, eventSlug }: { groupId: string; userId: string; eventSlug: string }) {
   const router = useRouter();
   const sync = useArrivalSync();
   const waitingForArrival = hasWaitingArrival();
@@ -119,6 +122,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
     }
     const next = data as Snapshot;
     setSnapshot(next); setOffline(!isArrivalConnected()); try { storePrivateSnapshot(userId, groupId, next); } catch { /* Route remains available; an arrival is only called saved after its own durable write. */ }
+    if (next.eveningClosure) return;
     try { await configureArrivalSync({accountId:userId,eventId:next.eventId,groupId}); } catch { setNotice("Een bewaarde aankomst vraagt herstelcontrole. Houd deze telefoon bij je en neem contact op met de organisatie."); }
     if (!next.run && next.access.leader) {
       const rosterResult = await client.schema("api").rpc("group_roster", { _group_id: groupId }).abortSignal(AbortSignal.timeout(8_000));
@@ -151,7 +155,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
   }, [snapshot?.run?.currentStop?.id]);
 
   async function command(name: string, args: Record<string, unknown>) {
-    const client = createClient(); if (!client || offline || waitingForArrival) return;
+    const client = createClient(); if (!client || offline || waitingForArrival || snapshot?.eveningClosure) return;
     setBusy(true); setNotice("");
     const { error } = await client.schema("api").rpc(name, args);
     setBusy(false);
@@ -162,7 +166,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
   const prepareArrival = useCallback(async (value: string, inputMethod: string) => {
     const method = inputMethod === "short_code" ? "short_code" : "qr";
     const activeRun = snapshot?.run, activeStop = activeRun?.currentStop;
-    if (!activeRun || !activeStop || !snapshot?.access.leader || offline || busy || waitingForArrival || activeRun.status !== "live" || activeStop.kind === "finale") return;
+    if (!activeRun || !activeStop || !snapshot?.access.leader || snapshot.eveningClosure || offline || busy || waitingForArrival || activeRun.status !== "live" || activeStop.kind === "finale") return;
     const client = createClient(); if (!client) return;
     setBusy(true); setNotice(""); setArrivalError("");
     try {
@@ -177,7 +181,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
   }, [snapshot, offline, busy, waitingForArrival, load]);
 
   async function confirmArrival(advance: boolean) {
-    if (!arrival || busy) return;
+    if (!arrival || busy || snapshot?.eveningClosure) return;
     setBusy(true); setArrivalError("");
     try {
       const receipt = await submitArrival(advance ? "run_arrive_and_advance" : "run_scan", {
@@ -223,6 +227,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
   }, [snapshot?.run?.currentStop, snapshot?.run?.version, snapshot?.access.leader, busy, offline, prepareArrival]);
 
   if (!snapshot) return <div className="panel loading-state" role="status"><RefreshCw className="spin" /><p>{notice || "Jullie groepsinformatie ophalen…"}</p></div>;
+  if (snapshot.eveningClosure) return <EventEveningRecap key={snapshot.eveningClosure.id} closure={snapshot.eveningClosure} eventSlug={eventSlug}/>;
   if(snapshot.duinpadFinale?.eveningEnded)return <div className="group-app group-premium route-workspace"><DuinpadExperience key={userId} onSaved={load}/></div>;
   const run = snapshot.run;
   const stop = run?.currentStop;

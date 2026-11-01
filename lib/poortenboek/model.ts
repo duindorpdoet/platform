@@ -60,6 +60,7 @@ export type BookSnapshot = {
   worldCoverage?: { status: "provisional" | "active"; policyVersion: number | null; missingWorlds: string[] };
   reading?: { readChapters: number[]; stories: import("./story-content").StoryChapterContent[] };
   childId?: string;
+  eveningClosure?: { id: string; closedAt: string } | null;
   farewell?: { endedAt: string; reason: 'early' | 'completed' } | null;
   tutorial?: { version: number; completedAt: string | null; lastStep: number };
   eventId?: string;
@@ -110,6 +111,8 @@ export type BookSnapshot = {
     chapters: Array<{ chapter: number; unlockedAt: string }>;
     seals: Array<{
       stopId?: string;
+      source?: "physical" | "event_closure";
+      closureId?: string;
       portalId: string;
       worldId: string;
       earnedAt: string;

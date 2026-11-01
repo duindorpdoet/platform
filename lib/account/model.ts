@@ -1,3 +1,5 @@
+import type { EveningClosure } from "@/lib/event-evening/types";
+
 export const WELCOME_VERSION = 1;
 export type AccountTarget = { kind: "adult" | "child"; id: string };
 export type AccountEnvironment = { id: string; kind: "parent" | "house" | "viewer" | "admin" | "actor"; label: string; description: string; path: string };
@@ -9,4 +11,5 @@ export type AccountSnapshot = {
   children: Array<{ id: string; firstName: string }>;
   resume: AccountTarget | null;
   welcomeVersion: number;
+  eveningClosure?: EveningClosure | null;
 };

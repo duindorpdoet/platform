@@ -68,6 +68,10 @@ jobs:
         run: pnpm test:e2e
       - name: Verify serialized Poortenboek refreshes without a database
         run: pnpm exec playwright test --config playwright.poortenboek-refresh.config.ts
+      - name: Verify deliberate event closure and retrospective without deliveries
+        run: pnpm exec playwright test --config playwright.event-evening.config.ts
+      - name: Verify durable family and resident thank-you interfaces without deliveries
+        run: pnpm exec playwright test --config playwright.event-thanks.config.ts
 
   database:
     name: Database migrations, contracts and lint

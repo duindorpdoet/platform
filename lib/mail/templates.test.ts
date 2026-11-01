@@ -41,6 +41,8 @@ const completePayload = {
   queueStatus: "in de wachtrij",
   title: "Een update voor vanavond",
   message: "Controleer de actuele informatie voordat jullie vertrekken.",
+  subject: "Definitief organisatiebericht",
+  body: "Beste deelnemers,\n\nBedankt voor jullie deelname.",
 };
 
 describe("premium transactional mail catalog", () => {

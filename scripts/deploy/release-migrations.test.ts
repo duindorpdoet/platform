@@ -15,13 +15,15 @@ describe("the signed restore proof covers the entire reviewed release",()=>{
     expect(migration).not.toMatch(/\b(?:insert|update|delete|truncate|alter\s+table)\b/i);
   });
   it("preserves the reviewed route fixes before the additive Duinpad release",()=>{
-    expect(REVIEWED_RELEASE_MIGRATIONS.slice(-6)).toEqual([
+    expect(REVIEWED_RELEASE_MIGRATIONS.slice(-8)).toEqual([
       "20261030182243_p12_hard_close_and_75_minute_routes.sql",
       "20261030231652_bound_startregie_snapshot_reads.sql",
       "20261030233039_materialize_route_source_contexts.sql",
       "20261031143846_duinpad_actor_access.sql",
       "20261031143910_duinpad_finale_evening.sql",
       "20261031143920_duinpad_checkpoints_and_show_attempts.sql",
+      "20261101191738_event_evening_central_closure.sql",
+      "20261101191801_event_closure_house_thanks.sql",
     ]);
   });
   it("rejects an incomplete, duplicated, reordered or unreviewed migration proof",()=>{

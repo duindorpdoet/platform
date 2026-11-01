@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { apiFailure, ApiError, assertTrustedOrigin, correlationId } from '@/lib/http/api';
 import { authenticatedClient, portalPrint } from '@/lib/redesign/server';
 import { serverEnv } from '@/lib/config/server-env';
+import {closedThanksRequest} from '@/lib/redesign/thanks-request';
 import {guidanceRequest} from '@/lib/redesign/guidance-request';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,7 @@ export async function GET(request: Request, context: Context) {
     const { client } = await authenticatedClient();
     let result;
     if (action === 'guidance') result = await client.schema('api').rpc('participant_guidance', { _event_slug: serverEnv().EVENT_SLUG });
+    else if(action==='thanks-inbox') result=await client.schema('api').rpc('portal_thanks_inbox',{_event_slug:serverEnv().EVENT_SLUG,_portal_id:params.has('portalId')?z.uuid().parse(params.get('portalId')):null,_before:params.has('before')?z.uuid().parse(params.get('before')):null,_limit:25});
     else if (action === 'thanks') result = await client.schema('api').rpc('portal_thanks_snapshot', { _event_slug: serverEnv().EVENT_SLUG, _scope: z.enum(['family', 'house', 'admin']).parse(params.get('scope') ?? 'family'), _portal_id: params.has('portalId') ? z.uuid().parse(params.get('portalId')) : null });
     else throw new ApiError(404, 'NOT_FOUND', 'Niet gevonden.');
     if (result.error) {
@@ -50,11 +52,25 @@ export async function POST(request: Request, context: Context) {
     } else if (action === 'guidance') {
       const data = guidanceRequest.parse(input);
       result = await client.schema('api').rpc('participant_guidance', { _event_slug: serverEnv().EVENT_SLUG, _action: data.action, _role: 'role' in data ? data.role : null, _payload: data });
+    } else if(action==='thanks-read'){
+      const data=z.object({receiptId:z.uuid()}).strict().parse(input);
+      result=await client.schema('api').rpc('portal_thanks_read',{_event_slug:serverEnv().EVENT_SLUG,_receipt_id:data.receiptId});
+    } else if(action==='thanks-closed'){
+      const data=closedThanksRequest.parse(input);
+      result=await client.schema('api').rpc('portal_thanks_closed_save',{_event_slug:serverEnv().EVENT_SLUG,_kind:data.kind,_portal_id:data.portalId,_choice:data.choice,_message:data.message,_request_key:data.requestKey,_submission_id:data.submissionId});
     } else if (action === 'thanks') {
       const data = z.object({ portalId: z.uuid(), choice: z.enum(['beautiful', 'welcome', 'treats']) }).parse(input);
       result = await client.schema('api').rpc('portal_thanks_save', { _event_slug: serverEnv().EVENT_SLUG, _portal_id: data.portalId, _choice: data.choice });
     } else throw new ApiError(404, 'NOT_FOUND', 'Niet gevonden.');
     if (result.error) {
+      if(action.startsWith('thanks')){
+        if(['PGRST301','PGRST303'].includes(result.error.code))throw new ApiError(401,'NOT_AUTHORIZED','Log opnieuw in.');
+        if(result.error.message==='NOT_AUTHORIZED'||result.error.code==='42501')throw new ApiError(403,'NOT_AUTHORIZED','Je hebt geen toegang tot deze bedankjes.');
+        if(result.error.message==='RATE_LIMITED')throw new ApiError(429,'RATE_LIMITED','Wacht even voordat je opnieuw probeert.');
+        if(result.error.message==='IDEMPOTENCY_CONFLICT')throw new ApiError(409,'IDEMPOTENCY_CONFLICT','Deze aanvraag is gewijzigd. Vernieuw eerst de opgeslagen bedankjes.');
+        if(result.error.message==='INVALID_INPUT')throw new ApiError(422,'INVALID_INPUT','Controleer je bedankje.');
+        throw new ApiError(503,'THANKS_UNAVAILABLE','Bewaren is niet bevestigd. Probeer dezelfde aanvraag opnieuw.');
+      }
       if(action==='guidance') {
         if(['PGRST301','PGRST303'].includes(result.error.code))throw new ApiError(401,'NOT_AUTHORIZED','Log opnieuw in.');
         const code=result.error.message;

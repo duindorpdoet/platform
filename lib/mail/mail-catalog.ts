@@ -30,6 +30,8 @@ export const MAIL_MESSAGE_TYPES = [
   "stops_request_resolved",
   "event_reminder",
   "duinpad_evening_thanks",
+  "event_closure_thanks",
+  "house_thanks_received",
   "urgent_group_notice",
   "portal_registered",
   "portal_received",
@@ -236,6 +238,18 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     kind: "confirmation", subject: "Bedankt voor het samen griezelen in Duindorp", preheader: "Jullie Halloweenavond is afgerond. Bewaar de herinneringen en bedank jullie bezochte poorten.", eyebrow: "Samen maakten we de nacht", title: "Bedankt, dappere Duindorpers!", hero: true,
     paragraphs: () => ["Wat fijn dat jullie samen met ons hebben gegriezeld. Dank aan alle deelnemers, bewoners, acteurs, vrijwilligers en sponsors die deze Halloweenavond mogelijk maakten.", "Jullie avond is afgerond. In jullie eigen omgeving kunnen jullie terugkijken op de verdiende zegels en de poorten die jullie echt hebben bereikt bedanken.", "Hopelijk maken we het volgend jaar samen nóg grootser. Neem de mooie herinneringen mee naar huis!"],
     action: { label: "Bekijk onze herinneringen en bedankjes", path: "/omgeving/meeloper" }, footerReason: "Je ontvangt dit eenmalige afsluitbericht vanwege je deelname aan deze Halloweenavond. Het is geen nieuwsbrief.",
+  },
+  event_closure_thanks: {
+    kind: "confirmation", subject: "Bericht van de organisatie", preheader: "De Halloweenavond is afgesloten. Jullie complete Nachtpas en terugblik staan klaar.", eyebrow: "Samen maakten we de nacht", title: "Bedankt, dappere Duindorpers!", hero: true,
+    paragraphs: () => [],
+    action: { label: "Bekijk de terugblik en bedank de huizen", path: "/omgeving/meeloper/nu" },
+    footerReason: "Je ontvangt dit eenmalige organisatiebericht vanwege je deelname aan dit evenement. Het staat los van je nieuwsbriefvoorkeur.",
+  },
+  house_thanks_received: {
+    kind: "host", subject: "Jullie poort heeft een bedankje ontvangen! 🎃", preheader: "Een gezin heeft jullie bedankt. Bekijk het bericht in jullie eigen Poortkamer.", eyebrow: "Bedankjes van deelnemers", title: "Jullie maakten de avond bijzonder.",
+    paragraphs: () => [],
+    action: { label: "Bekijk in jullie Poortkamer", path: "/mijn-huis" },
+    footerReason: "Je ontvangt dit bericht omdat je als bewoner aan deze poort bent gekoppeld. Alleen een nieuw bedankje verstuurt een e-mail; bewerken verstuurt niet opnieuw.",
   },
   event_reminder: {
     kind: "reminder", subject: "Jullie Halloweenavond komt dichterbij", preheader: "Bekijk het startpunt en de praktische informatie.", eyebrow: "Bijna zover", title: "De wijk wacht op jullie.", hero: true,
@@ -478,11 +492,22 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
   const childConfirmation = messageType === "payment_confirmed" && Array.isArray(payload.paymentChildren);
   const childReport = messageType === "payment_reported" && Array.isArray(payload.paymentChildren);
   const dynamicTitle = childConfirmation ? "De betaling voor deze kinderen is verwerkt." : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.title) : definition.title;
-  const dynamicSubject = ["group_schedule_published", "group_schedule_corrected"].includes(messageType) ? `${definition.subject}: ${eventDateTime(payload.startsAt)}` : childConfirmation ? "Betaling voor deze kinderen bevestigd" : childReport ? "Betaalmelding voor deze kinderen ontvangen" : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
+  const dynamicSubject = messageType === "event_closure_thanks" ? typeof payload.subject === "string" ? payload.subject : "" : ["group_schedule_published", "group_schedule_corrected"].includes(messageType) ? `${definition.subject}: ${eventDateTime(payload.startsAt)}` : childConfirmation ? "Betaling voor deze kinderen bevestigd" : childReport ? "Betaalmelding voor deze kinderen ontvangen" : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
+  const fixedBody = messageType === "event_closure_thanks"
+    ? typeof payload.body === "string" ? payload.body : ""
+    : messageType === "house_thanks_received"
+      ? [
+        "Voor " + text(payload, ["portalName"], "jullie poort") + ".",
+        payload.kind === "all" ? "Algemeen bedankje aan alle huizen" : "Een extra persoonlijk bedankje",
+        "Van: Een gezin uit Duindorp",
+        payload.choice === "beautiful" ? "Mooie poort" : payload.choice === "welcome" ? "Fijne ontvangst" : payload.choice === "treats" ? "Lekkers" : "",
+        text(payload, ["message"]),
+      ].filter(Boolean).join("\n\n")
+      : undefined;
   const codeValue = text(payload, ["code", "token"]);
   const paymentUrl = messageType === "payment_link_ready" ? validatedPaymentUrl(payload.externalUrl) : undefined;
   const action = paymentUrl ? { label: "Open de betaallink", url: paymentUrl } : definition.action
-    ? { label: messageType === "registration_group_changed" && payload.activationPending === true ? "Log in en activeer jullie inschrijving" : definition.action.label, url: new URL(messageType === "actor_invitation" && typeof payload.claimToken === "string" && /^[A-Za-z0-9_-]{43}$/.test(payload.claimToken) ? `/uitnodiging/acteur#token=${payload.claimToken}` : actionPath(payload, definition.action.path), brand.homeUrl).toString() }
+    ? { label: messageType === "registration_group_changed" && payload.activationPending === true ? "Log in en activeer jullie inschrijving" : definition.action.label, url: new URL(messageType === "actor_invitation" && typeof payload.claimToken === "string" && /^[A-Za-z0-9_-]{43}$/.test(payload.claimToken) ? `/uitnodiging/acteur#token=${payload.claimToken}` : ["event_closure_thanks", "house_thanks_received"].includes(messageType) ? definition.action.path : actionPath(payload, definition.action.path), brand.homeUrl).toString() }
     : undefined;
   const code = definition.kind === "otp"
     ? { value: codeValue, expiresText: text(payload, ["expiresText", "verlooptijd"], "De code verloopt over 10 minuten.") }
@@ -497,6 +522,7 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
     } : {}),
     preheader: childConfirmation ? "Deze bevestiging geldt voor de hieronder genoemde kinderen." : definition.preheader,
     paragraphs: definition.paragraphs(payload),
+    plainBody: fixedBody,
     details: details.length ? details : undefined,
     primaryAction: action,
     code,

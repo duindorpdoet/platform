@@ -404,13 +404,13 @@ export function JourneyBook({ snapshot }: { snapshot: BookSnapshot }) {
                 <h3>{seal.presentation.publicName}</h3>
                 <small>{seal.presentation.portalCode} · {seal.presentation.world}</small>
                 <p>{seal.presentation.shortDescription}</p>
-                <time>
+                {seal.source === "event_closure" ? <small>Cadeauzegel van de organisatie</small> : <time>
                   {new Intl.DateTimeFormat("nl-NL", {
                     hour: "2-digit",
                     minute: "2-digit",
                     timeZone: "Europe/Amsterdam",
                   }).format(new Date(seal.earnedAt))}
-                </time>
+                </time>}
               </article>
             ))}
           </div>

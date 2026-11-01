@@ -19,7 +19,7 @@ export function BookFarewell({ snapshot, home = false }: { snapshot: BookSnapsho
       <p className="pb-eyebrow"><Sparkles size={15}/>Jouw nacht om te bewaren</p>
       {home ? <h1 id="pb-farewell-title">{snapshot.firstName},<br/>jij bracht licht in Duindorp.</h1> : <h2 id="pb-farewell-title">{snapshot.firstName}, jij bracht licht in Duindorp.</h2>}
       <p>Jullie zijn voor vandaag klaar. Samen op pad zijn, verwonderen en je eigen keuzes maken: dat hoort allemaal bij jouw avontuur.</p>
-      <div className="pb-farewell-memory"><Star size={24}/><div><strong>{count ? `${count} ${count === 1 ? 'zegel' : 'zegels'} van jouw avond` : 'Een avond helemaal van jou'}</strong><span>{count ? 'Iedere zegel bewaart jullie aankomst. Ook als jij de beleving liever oversloeg.' : 'Ook de voorpret en samen op pad zijn horen bij jouw verhaal.'}</span></div></div>
+      <div className="pb-farewell-memory"><Star size={24}/><div><strong>{count ? `${count} ${count === 1 ? 'zegel' : 'zegels'} van jouw avond` : 'Een avond helemaal van jou'}</strong><span>{snapshot.eveningClosure ? 'De organisatie heeft alle zegels cadeau gegeven. Jouw Poortenboek is compleet, ook zonder alle poorten te bereiken.' : count ? 'Iedere zegel bewaart jullie aankomst. Ook als jij de beleving liever oversloeg.' : 'Ook de voorpret en samen op pad zijn horen bij jouw verhaal.'}</span></div></div>
       <p className="pb-farewell-kind"><Heart size={17}/>Je hoeft niet iedere poort te bereiken om een mooie herinnering te hebben. Jouw eigen avontuur telt.</p>
       {home && <a className="pb-button" href="/poortenboek/boek">Bekijk mijn herinneringen<ArrowRight size={17}/></a>}
     </div>

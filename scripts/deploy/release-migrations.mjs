@@ -85,6 +85,10 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261031143846_duinpad_actor_access.sql',
   '20261031143910_duinpad_finale_evening.sql',
   '20261031143920_duinpad_checkpoints_and_show_attempts.sql',
+  // Deliberate organization closure and durable house thanks; deploying creates
+  // no closure, campaign, thank, recipient or external delivery.
+  '20261101191738_event_evening_central_closure.sql',
+  '20261101191801_event_closure_house_thanks.sql',
 
 ]);
 

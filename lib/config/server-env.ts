@@ -35,6 +35,7 @@ const schema = z.object({
   SENDGRID_EVENT_MAX_AGE_SECONDS: z.coerce.number().int().positive().default(90_000),
   SENDGRID_EVENT_MAX_FUTURE_SKEW_SECONDS: z.coerce.number().int().nonnegative().default(300),
   CRON_SECRET: z.string().optional(),
+  EVENT_EVENING_BATCH_SIZE: z.coerce.number().int().min(1).max(25).default(10),
   DUINPAD_SHOW_API_BASE_URL: optionalUrl,
   DUINPAD_SHOW_API_TOKEN: optionalDuinpadSecret,
   DUINPAD_ACTOR_AUTH_SECRET: optionalDuinpadSecret,

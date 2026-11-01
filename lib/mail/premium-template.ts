@@ -13,6 +13,8 @@ export type PremiumMailContent = {
   eyebrow: string;
   title: string;
   paragraphs: string[];
+  /** Fixed organization copy, escaped as text with its original line breaks. */
+  plainBody?: string;
   hero?: boolean;
   heroAlt?: string;
   editorial?: { body: RichNode; mediaUrls: Record<string, string>; closing: string; unsubscribeUrl: string; preferencesUrl: string };
@@ -94,8 +96,12 @@ function validateContent(content: PremiumMailContent, brand: PremiumMailBrand) {
     footerReason: content.footerReason,
   })) required(value, field, field === "subject" ? 200 : 1_000);
   if (/\r|\n/.test(content.subject)) throw new InvalidMailTemplateError("Subject must be one line");
-  if (!Array.isArray(content.paragraphs) || content.paragraphs.length === 0 || content.paragraphs.length > 30) {
+  if (!Array.isArray(content.paragraphs) || (content.plainBody === undefined && content.paragraphs.length === 0) || content.paragraphs.length > 30) {
     throw new InvalidMailTemplateError("Invalid paragraphs");
+  }
+  if (content.plainBody !== undefined) {
+    required(content.plainBody, "plainBody", 20_000);
+    if (content.paragraphs.length) throw new InvalidMailTemplateError("Ambiguous message body");
   }
   content.paragraphs.forEach((item, index) => required(item, `paragraphs[${index}]`));
   content.details?.forEach((detail) => {
@@ -164,9 +170,10 @@ export function renderPremiumEmail(content: PremiumMailContent, brand: PremiumMa
   const notice = content.notice
     ? table(row(`<p style="margin:0 0 7px;font:700 14px/22px Arial,Helvetica,sans-serif;color:${COLORS.gold};">${escapeHtml(content.notice.title)}</p><p style="margin:0;font:14px/23px Arial,Helvetica,sans-serif;color:${COLORS.text};">${escapeHtml(content.notice.text)}</p>`, "padding:18px 20px;border-left:2px solid #e3b68e;"), 'bgcolor="#15202c" style="background:#15202c;margin:24px 0;"')
     : "";
+  const messageHtml = content.plainBody === undefined ? content.paragraphs.map(paragraph).join("") : '<p style="margin:0 0 16px;color:' + COLORS.text + ';font:16px/27px Arial,Helvetica,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;">' + escapeHtml(content.plainBody).replace(/\r\n|\r|\n/g, "<br>") + "</p>";
   const contentHtml = `<p style="margin:0 0 16px;font:700 10px/18px Arial,Helvetica,sans-serif;letter-spacing:2.8px;text-transform:uppercase;color:${COLORS.gold};">${escapeHtml(content.eyebrow)}</p>
 <h1 class="headline" style="margin:0 0 20px;font:400 ${otp ? 36 : 42}px/${otp ? 43 : 49}px Georgia,'Times New Roman',serif;letter-spacing:-1.2px;color:${COLORS.text};">${escapeHtml(content.title)}</h1>
-${content.paragraphs.map(paragraph).join("")}${content.editorial ? renderEmailBlocks(content.editorial.body, content.editorial.mediaUrls, brand.homeUrl) : ""}${codeBlock}${detailsBlock(content.details)}${notice}${actionBlock(content.primaryAction)}${content.editorial?.closing ? paragraph(content.editorial.closing) : ""}
+${messageHtml}${content.editorial ? renderEmailBlocks(content.editorial.body, content.editorial.mediaUrls, brand.homeUrl) : ""}${codeBlock}${detailsBlock(content.details)}${notice}${actionBlock(content.primaryAction)}${content.editorial?.closing ? paragraph(content.editorial.closing) : ""}
 ${content.primaryAction ? `<p style="margin:15px 0 0;font:11px/18px Arial,Helvetica,sans-serif;color:${COLORS.muted};word-break:break-all;overflow-wrap:anywhere;">Werkt de knop niet? Open deze link:<br><a href="${escapeHtml(content.primaryAction.url)}" style="color:${COLORS.muted};text-decoration:underline;">${escapeHtml(content.primaryAction.url)}</a></p>` : ""}
 <div style="border-top:1px solid ${COLORS.line};margin:30px 0 0;padding:25px 0 0;"><p style="margin:0 0 9px;font:15px/25px Arial,Helvetica,sans-serif;color:${COLORS.text};">${otp ? "Tot in de wijk," : "Tot tussen de poorten,"}</p><p style="margin:0;font:400 21px/28px Georgia,'Times New Roman',serif;color:${COLORS.gold};">Team Duindorpse Poorten</p></div>`;
 
@@ -190,7 +197,7 @@ ${content.primaryAction ? `<p style="margin:15px 0 0;font:11px/18px Arial,Helvet
     "",
     content.title,
     "",
-    ...content.paragraphs.flatMap((item) => [item, ""]),
+    ...(content.plainBody === undefined ? content.paragraphs.flatMap((item) => [item, ""]) : [content.plainBody, ""]),
     content.editorial ? richText(content.editorial.body) : "",
     content.editorial?.closing ?? "",
     content.editorial ? `Afmelden voor Nachtpost: ${content.editorial.unsubscribeUrl}\nCommunicatievoorkeuren: ${content.editorial.preferencesUrl}` : "",

@@ -18,6 +18,20 @@ function snapshot(count: number): BookSnapshot {
   } as unknown as BookSnapshot;
 }
 describe('real downloadable PDFs', () => {
+  it('marks administrative gift seals without inventing a visit time in the downloaded book', () => {
+    const book = snapshot(2);
+    book.eveningClosure = { id: 'closure-one', closedAt: '2026-11-01T20:00:00Z' };
+    book.journey.complete = true;
+    book.journey.seals[0].source = 'physical';
+    book.journey.seals[1].source = 'event_closure';
+    book.journey.seals[1].earnedAt = '2026-11-01T20:00:00Z';
+    const data = Buffer.from(createBookKeepsakePdf(book)).toString('latin1');
+    expect(data).toContain('Cadeau van de organisatie');
+    expect(data).toContain('Eigen wereld - 19:00');
+    expect(data).not.toContain('Eigen wereld - 21:00');
+    expect(data).not.toContain('Iedere zegel hieronder hoort bij een poort die jij met je groep hebt bereikt.');
+    expect(data).not.toContain('PRIVATE_ADDRESS');
+  });
   it.each([0, 2, 5, 40])('prints only the own %i seals and paginates long lists', (count) => {
     const bytes = createBookKeepsakePdf(snapshot(count)), data = Buffer.from(bytes).toString('latin1');
     expect(data.startsWith('%PDF-1.')).toBe(true); expect(data).toContain('/MediaBox [0 0 595.28 841.89]');
