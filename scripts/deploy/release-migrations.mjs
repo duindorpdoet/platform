@@ -89,10 +89,11 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // no closure, campaign, thank, recipient or external delivery.
   '20261101191738_event_evening_central_closure.sql',
   '20261101191801_event_closure_house_thanks.sql',
-  // Physical reception counters and custom-text-only owner mail. Existing
+  // Physical reception counters and custom-text-only team mail. Existing
   // visits, receipts, delivery history and closure records remain untouched.
   '20261101220535_portal_actual_impact.sql',
   '20261101220654_house_thanks_custom_owner_mail.sql',
+  '20261101221956_portal_certificate_team_campaign.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

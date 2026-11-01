@@ -103,8 +103,9 @@ export async function POST(request: Request) {
 
   for (const row of rows) {
     try {
-      if (row.message_type === "event_closure_thanks" || row.message_type === "house_thanks_received") {
-        const material = await supabase.schema("api").rpc(row.message_type === "event_closure_thanks" ? "worker_event_closure_mail" : "worker_house_thanks_mail", { _outbox_id: row.id });
+      if (row.message_type === "event_closure_thanks" || row.message_type === "house_thanks_received" || row.message_type === "portal_certificate_ready") {
+        const materialRpc = row.message_type === "event_closure_thanks" ? "worker_event_closure_mail" : row.message_type === "portal_certificate_ready" ? "worker_portal_certificate_mail" : "worker_house_thanks_mail";
+        const material = await supabase.schema("api").rpc(materialRpc, { _outbox_id: row.id });
         if (material.error) throw new ApiError(503, "EVENING_MAIL_MATERIAL_UNAVAILABLE", "Het bericht kon niet veilig worden samengesteld.");
         if (!material.data) {
           await updateOutbox({ _id: row.id, _status: "suppressed", _provider_id: null, _error_code: "EVENING_RECIPIENT_UNAVAILABLE", _next_attempt_at: null });

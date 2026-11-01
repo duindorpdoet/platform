@@ -2,9 +2,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { renderTransactionalMail } from "./templates";
 import { EVENING_CLOSURE_BODY, EVENING_CLOSURE_SUBJECT } from "@/lib/event-evening/defaults";
+import { PORTAL_CERTIFICATE_BODY, PORTAL_CERTIFICATE_SUBJECT } from "@/lib/event-evening/portal-certificate-defaults";
 beforeEach(() => vi.stubEnv("APP_URL", "https://app.example.invalid"));
 afterEach(() => vi.unstubAllEnvs());
 describe("fixed event closure and individual resident mail", () => {
+  it("renders the organization's certificate notice and FrightNight invitation with a fixed private-room link", () => {
+    const body = PORTAL_CERTIFICATE_BODY + '\n\nEigen aanvulling <script>alert("x")</script>.';
+    const mail = renderTransactionalMail({ messageType: "portal_certificate_ready", payload: { subject: PORTAL_CERTIFICATE_SUBJECT, body, actionPath: "/mijn-huis?claim=secret" } });
+    expect(mail.subject).toBe(PORTAL_CERTIFICATE_SUBJECT);
+    expect(mail.text).toContain(body);
+    expect(mail.text).toContain("Duindorp FrightNight nog groter en nog succesvoller");
+    expect(mail.text).toContain("https://app.example.invalid/mijn-huis");
+    expect(mail.text).not.toContain("claim=secret");
+    expect(mail.html).not.toContain("<script>");
+    expect(mail.html).toContain("&lt;script&gt;");
+    expect(() => renderTransactionalMail({ messageType: "portal_certificate_ready", payload: {} })).toThrow();
+    expect(() => renderTransactionalMail({ messageType: "portal_certificate_ready", payload: { subject: "bad\r\nBcc: x", body: "Hallo" } })).toThrow();
+  });
   it("renders the exact confirmed subject and full original/added paragraphs in both formats", () => {
     const body = "\n" + EVENING_CLOSURE_BODY + "\n\nEigen alinea.\nNog een regel.\n";
     const subject = "  Een persoonlijk slotbericht 🎃 ";

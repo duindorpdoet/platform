@@ -8,9 +8,10 @@ describe("bounded durable evening fan-out tick", () => {
     const rpc = vi.fn(async () => { active++; maximum = Math.max(maximum, active); await Promise.resolve(); active--; return { data: { pending: 1000 }, error: null }; });
     await processEventEveningBatch({ schema: () => ({ rpc }) } as unknown as SupabaseClient);
     expect(maximum).toBe(1);
-    expect(rpc.mock.calls).toHaveLength(2);
+    expect(rpc.mock.calls).toHaveLength(3);
     expect(rpc).toHaveBeenNthCalledWith(1, "worker_event_closures", { _limit: 10 });
     expect(rpc).toHaveBeenNthCalledWith(2, "worker_house_thanks_fanout", { _limit: 10 });
+    expect(rpc).toHaveBeenNthCalledWith(3, "worker_portal_certificates", { _limit: 10 });
   });
   it("keeps malformed configuration within the low 1..25 limit", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: {}, error: null });
@@ -27,7 +28,7 @@ describe("bounded durable evening fan-out tick", () => {
     try {
       const rpc = vi.fn().mockResolvedValueOnce({ error: { message: "PRIVATE ACCOUNT", code: "42501" } }).mockRejectedValueOnce(new Error("PRIVATE MAIL"));
       await processEventEveningBatch({ schema: () => ({ rpc }) } as unknown as SupabaseClient);
-      expect(rpc).toHaveBeenCalledTimes(2);
+      expect(rpc).toHaveBeenCalledTimes(3);
       expect(JSON.stringify(logged.mock.calls)).not.toContain("PRIVATE");
     } finally { logged.mockRestore(); }
   });

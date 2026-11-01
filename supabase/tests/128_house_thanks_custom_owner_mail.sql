@@ -34,7 +34,10 @@ update app_private.portals set operation_status='closed'where id in('12000000-00
 insert into app_private.portal_owners(portal_id,user_id,role)values
  ('12000000-0000-0000-0000-000000000001','d1000000-0000-0000-0000-000000000004','viewer'),
  ('12000000-0000-0000-0000-000000000002','d1000000-0000-0000-0000-000000000004','crew'),
- ('12000000-0000-0000-0000-000000000003','d1000000-0000-0000-0000-000000000004','actor');
+ ('12000000-0000-0000-0000-000000000003','d1000000-0000-0000-0000-000000000004','actor'),
+ ('12000000-0000-0000-0000-000000000014','d1000000-0000-0000-0000-000000000004','portal_manager'),
+ ('12000000-0000-0000-0000-000000000015','d1000000-0000-0000-0000-000000000004','reception'),
+ ('12000000-0000-0000-0000-000000000016','d1000000-0000-0000-0000-000000000004','tech');
 -- The legacy initial-owner trigger promotes the first insert when none exists.
 -- Explicitly set the role after insertion to exercise the intended negatives.
 update app_private.portal_owners set role='coadmin'where user_id='e8200000-0000-0000-0000-000000000007';
@@ -55,7 +58,10 @@ select is((select count(*)from app_private.event_house_thanks_receipts),(select 
 select is((select count(*)from app_private.email_outbox o join app_private.event_house_thanks_mail_recipients m on m.outbox_id=o.id join app_private.event_house_thanks_receipts r on r.id=m.receipt_id join app_private.event_house_thanks s on s.id=r.submission_id where not app_private.event_house_thanks_custom(s.kind,s.message)),0::bigint,'standard and empty personal reactions create no mail jobs');
 select is((select count(*)from app_private.event_house_thanks_receipts r join app_private.event_house_thanks s on s.id=r.submission_id where not app_private.event_house_thanks_custom(s.kind,s.message)and r.missing_contacts<>0),0::bigint,'aggregate reactions create no misleading missing-contact repair work');
 select is((select count(*)from app_private.event_house_thanks_mail_recipients m join app_private.event_house_thanks_receipts r on r.id=m.receipt_id where r.portal_id='12000000-0000-0000-0000-000000000001'),2::bigint,'a physically closed active house receives exactly its two custom messages');
-select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'and recipient_email in('owner2@example.invalid','owner3@example.invalid','owner4@example.invalid','owner5@example.invalid','owner6@example.invalid','owner7@example.invalid','owner8@example.invalid','owner9@example.invalid','owner10@example.invalid','pending-owner@example.invalid','duinpad-4@example.invalid')),0::bigint,'revoked/suspended/unverified/deleted/banned owners, team roles, inactive and test houses and pending invite addresses receive no mail');
+select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'and recipient_email in('owner2@example.invalid','owner3@example.invalid','owner4@example.invalid','owner5@example.invalid','owner6@example.invalid','owner8@example.invalid','owner9@example.invalid','owner10@example.invalid','pending-owner@example.invalid')),0::bigint,'revoked/suspended/unverified/deleted/banned accounts, inactive and test houses and pending invite addresses receive no mail');
+select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'and recipient_email='owner7@example.invalid'),1::bigint,'an active coadmin receives the custom message');
+select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'and recipient_email='duinpad-4@example.invalid'),5::bigint,'crew, actor, portal_manager, reception and tech each receive the custom message for their own house');
+select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'and recipient_email='duinpad-4@example.invalid'and payload->>'portalId'='12000000-0000-0000-0000-000000000001'),0::bigint,'viewer retains room access without receiving mail');
 select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'and recipient_email='owner11@example.invalid'),1::bigint,'the verified primary owner address is normalized');
 select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'and recipient_email='owner13@example.invalid'),1::bigint,'operation_status closed does not exclude an active primary owner');
 select is((select count(*)from app_private.event_house_thanks_receipts r join app_private.event_house_thanks s on s.id=r.submission_id where r.portal_id='12000000-0000-0000-0000-000000000012'and app_private.event_house_thanks_custom(s.kind,s.message)and r.missing_contacts=1),1::bigint,'an actual custom message records a missing primary-owner contact');
@@ -92,19 +98,19 @@ select api.portal_thanks_closed_save('duindorp-halloween-2026','personal','12000
 select ok(api.worker_house_thanks_mail((select id from pending_personal))is null,'removing written text blocks an already queued message before dispatch');
 select is((select o.payload from app_private.email_outbox o join pending_personal p on p.id=o.id),(select payload from pending_personal),'removing text never rewrites a durable provider payload');
 select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'),(select n from counts_before),'editing creates no extra jobs');
--- Simulate pre-release standard and crew jobs: material check must block both.
-create temp table stale_jobs as select o.id,row_number()over(order by o.created_at,o.id)n from app_private.email_outbox o where o.message_type='house_thanks_received'and api.worker_house_thanks_mail(o.id)is not null limit 3;
+-- Simulate pre-release standard and viewer jobs: material check must block both.
+create temp table stale_jobs as select o.id,row_number()over(order by o.created_at,o.id)n from app_private.email_outbox o where o.message_type='house_thanks_received'and api.worker_house_thanks_mail(o.id)is not null and o.payload->>'portalId'in('12000000-0000-0000-0000-000000000017','12000000-0000-0000-0000-000000000018','12000000-0000-0000-0000-000000000019')limit 3;
 update app_private.email_outbox set payload=jsonb_set(payload,'{message}',to_jsonb((select message from defaults)))where id=(select id from stale_jobs where n=1);
 select ok(api.worker_house_thanks_mail((select id from stale_jobs where n=1))is null,'a pre-release queued default payload cannot be dispatched even if current text is custom');
 create temp table owner_change as select o.id,r.portal_id from app_private.email_outbox o join app_private.event_house_thanks_mail_recipients m on m.outbox_id=o.id join app_private.event_house_thanks_receipts r on r.id=m.receipt_id where o.id=(select id from stale_jobs where n=2);
-update app_private.portal_owners set role='coadmin'where portal_id=(select portal_id from owner_change)and role='owner'and revoked_at is null;
-select ok(api.worker_house_thanks_mail((select id from owner_change))is null,'an owner becoming coadmin is rechecked before rendering or gateway dispatch');
+update app_private.portal_owners set role='viewer'where portal_id=(select portal_id from owner_change)and role in('owner','portal_manager','coadmin','crew','actor','reception','tech')and revoked_at is null;
+select ok(api.worker_house_thanks_mail((select id from owner_change))is null,'a working team becoming viewers is rechecked before rendering or gateway dispatch');
 insert into app_private.mail_config_versions(id,environment,version,provider,from_email,from_name,reply_to,config_hash)values('e8400000-0000-0000-0000-000000000001','test',9002,'resend','test@example.invalid','Synthetic','test@example.invalid','synthetic-custom-config');
 select is(api.worker_mail_prepare('test','synthetic-filtered-default','e8400000-0000-0000-0000-000000000001',(select id from stale_jobs where n=1),'transactional','house_thanks_received','owner@example.invalid','{}','hash','credential')->>'dispatch','false','the durable gateway independently rejects a queued standard payload');
 update app_private.email_outbox set status='failed'where id in(select id from stale_jobs where n in(1,2));
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select is(api.event_closure_admin_snapshot('duindorp-halloween-2026')#>>'{mail,houseFailed}','0','ineligible failures are not offered as recoverable house mail');
-select is(api.event_closure_retry_failed('duindorp-halloween-2026')->>'houseRequeued','0','operator recovery never requeues a standard or former-owner job');
+select is(api.event_closure_retry_failed('duindorp-halloween-2026')->>'houseRequeued','0','operator recovery never requeues a standard or viewer job');
 insert into app_private.mail_envelopes(environment,logical_key,config_id,provider,outbox_id,channel,message_type,recipient_hash,payload_hash,credential_hash,status)
 select 'test','synthetic-filtered-unknown','e8400000-0000-0000-0000-000000000001','resend',id,'transactional','house_thanks_received',extensions.digest('owner@example.invalid','sha256'),'frozen-hash','frozen-credential','unknown'from pending_personal;
 select api.worker_update_outbox_v2((select id from pending_personal),'suppressed',null,'HOUSE_THANKS_RECIPIENT_UNAVAILABLE',null);
@@ -136,6 +142,7 @@ select is(app_private.event_house_thanks_queue_mail((select id from app_private.
 select is((select o.payload->>'message'from app_private.email_outbox o join app_private.event_house_thanks_mail_recipients m on m.outbox_id=o.id join app_private.event_house_thanks_receipts r on r.id=m.receipt_id where r.submission_id='e8500000-0000-0000-0000-000000000002'),'De oorspronkelijke eigen tekst','a delayed first dispatch keeps the original authored text after an edit');
 select is(app_private.event_house_thanks_queue_mail((select id from app_private.event_house_thanks_receipts where submission_id='e8500000-0000-0000-0000-000000000002')),0,'rechecking the historical custom receipt creates no duplicate');
 select ok(not has_function_privilege('authenticated','app_private.event_house_thanks_custom(text,text)','execute'),'the custom predicate remains private');
+select ok(not has_function_privilege('authenticated','app_private.event_portal_mail_recipient(uuid,uuid,text)','execute'),'shared working-team eligibility remains a private invoker helper');
 select ok(not has_function_privilege('authenticated','api.worker_house_thanks_mail(uuid)','execute'),'the mail material lookup remains service only');
 select ok(not has_table_privilege('authenticated','app_private.event_house_thanks','select'),'the new initial text column grants no direct data access');
 select *from finish();

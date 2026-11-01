@@ -15,7 +15,7 @@ describe("the signed restore proof covers the entire reviewed release",()=>{
     expect(migration).not.toMatch(/\b(?:insert|update|delete|truncate|alter\s+table)\b/i);
   });
   it("preserves the reviewed route fixes before the additive Duinpad release",()=>{
-    expect(REVIEWED_RELEASE_MIGRATIONS.slice(-10)).toEqual([
+    expect(REVIEWED_RELEASE_MIGRATIONS.slice(-11)).toEqual([
       "20261030182243_p12_hard_close_and_75_minute_routes.sql",
       "20261030231652_bound_startregie_snapshot_reads.sql",
       "20261030233039_materialize_route_source_contexts.sql",
@@ -26,6 +26,7 @@ describe("the signed restore proof covers the entire reviewed release",()=>{
       "20261101191801_event_closure_house_thanks.sql",
       "20261101220535_portal_actual_impact.sql",
       "20261101220654_house_thanks_custom_owner_mail.sql",
+      "20261101221956_portal_certificate_team_campaign.sql",
     ]);
   });
   it("rejects an incomplete, duplicated, reordered or unreviewed migration proof",()=>{

@@ -62,6 +62,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AdminRegistrationActions, AdminRegistrationCreateButton, RegistrationAdministrationStatus } from "@/components/admin/admin-registration-management";
 import type { AdminRegistration } from "@/lib/domain/admin-registrations";
 import { EventEveningClosureAdmin } from "@/components/event-evening/closure-admin";
+import { PortalCertificateMailAdmin } from "@/components/event-evening/portal-certificate-admin";
 
 type Dashboard = {
   event: {
@@ -1210,6 +1211,7 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         {section === "settings" && (
           <SettingsTabs>
             <EventEveningClosureAdmin eventSlug={eventSlug} eventId={dashboard.event.id} eventTitle={dashboard.event.title} authorized={capabilities.includes("event_admin")} />
+            <PortalCertificateMailAdmin eventSlug={eventSlug} eventId={dashboard.event.id} eventTitle={dashboard.event.title} authorized={capabilities.includes("event_admin")} />
             <section className="panel registration-controls">
               <p className="kicker">Aanmeldingen beheren</p>
               <div className="row-between registration-controls-heading">

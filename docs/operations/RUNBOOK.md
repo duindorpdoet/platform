@@ -53,7 +53,7 @@ De releasecontrole vergelijkt bestaande rijen en velden exact met de versleuteld
 
 Gebruik **Organisatie → Instellingen → Evenementinstellingen → Avond afsluiten…** voor de bewuste centrale afsluiting. Alleen de definitieve bevestiging sluit de avond en maakt de organisatiecampagne; uitrollen of de modal openen doet dat niet. Zie [bediening, mailherstel en gegevensbehoudende rollback](EVENT-AVOND-AFSLUITEN-20261101.md).
 
-De Poortkamer toont echte bezoekcijfers op een deelbaar PNG-certificaat. Standaardbedankjes blijven tellers; alleen eigen geschreven berichten kunnen mail opleveren voor actieve primaire poorteigenaren. Zie [bezoekcijfers, certificaat, bedankjes en rollback](POORTKAMER-IMPACT-EN-BEDANKJES-20261101.md).
+De Poortkamer toont echte bezoekcijfers op een deelbaar PNG-certificaat. Standaardbedankjes blijven tellers; alleen eigen geschreven berichten kunnen mail opleveren voor actieve eigenaren en crew. Via de afzonderlijke organisatiekaart kan de organisatie bewust de certificaten aankondigen en de poortteams bedanken. Zie [bezoekcijfers, certificaat, bedankjes en rollback](POORTKAMER-IMPACT-EN-BEDANKJES-20261101.md).
 
 ## Incident tijdens de tocht
 

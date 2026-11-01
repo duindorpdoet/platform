@@ -32,6 +32,7 @@ export const MAIL_MESSAGE_TYPES = [
   "duinpad_evening_thanks",
   "event_closure_thanks",
   "house_thanks_received",
+  "portal_certificate_ready",
   "urgent_group_notice",
   "portal_registered",
   "portal_received",
@@ -249,7 +250,13 @@ const CATALOG: Record<MailMessageType, CatalogDefinition> = {
     kind: "host", subject: "Jullie poort heeft een bedankje ontvangen! 🎃", preheader: "Een gezin heeft jullie bedankt. Bekijk het bericht in jullie eigen Poortkamer.", eyebrow: "Bedankjes van deelnemers", title: "Jullie maakten de avond bijzonder.",
     paragraphs: () => [],
     action: { label: "Bekijk in jullie Poortkamer", path: "/mijn-huis" },
-    footerReason: "Je ontvangt dit bericht omdat je als bewoner aan deze poort bent gekoppeld. Alleen een nieuw bedankje verstuurt een e-mail; bewerken verstuurt niet opnieuw.",
+    footerReason: "Je ontvangt dit bericht omdat je actief deel uitmaakt van dit poortteam. Alleen een nieuw bedankje met eigen tekst kan een e-mail versturen; bewerken verstuurt niet opnieuw.",
+  },
+  portal_certificate_ready: {
+    kind: "host", subject: "Jullie poortcertificaat staat klaar! 🎃", preheader: "Bedankt, poortwachters en crew. Download en deel jullie certificaat in de Poortkamer.", eyebrow: "Een bedankje van de organisatie", title: "Jullie certificaat staat klaar.",
+    paragraphs: () => [],
+    action: { label: "Bekijk en deel jullie certificaat", path: "/mijn-huis" },
+    footerReason: "Je ontvangt dit eenmalige organisatiebericht omdat je actief bij een deelnemende poort hoort. Het staat los van je nieuwsbriefvoorkeur.",
   },
   event_reminder: {
     kind: "reminder", subject: "Jullie Halloweenavond komt dichterbij", preheader: "Bekijk het startpunt en de praktische informatie.", eyebrow: "Bijna zover", title: "De wijk wacht op jullie.", hero: true,
@@ -492,8 +499,8 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
   const childConfirmation = messageType === "payment_confirmed" && Array.isArray(payload.paymentChildren);
   const childReport = messageType === "payment_reported" && Array.isArray(payload.paymentChildren);
   const dynamicTitle = childConfirmation ? "De betaling voor deze kinderen is verwerkt." : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.title) : definition.title;
-  const dynamicSubject = messageType === "event_closure_thanks" ? typeof payload.subject === "string" ? payload.subject : "" : ["group_schedule_published", "group_schedule_corrected"].includes(messageType) ? `${definition.subject}: ${eventDateTime(payload.startsAt)}` : childConfirmation ? "Betaling voor deze kinderen bevestigd" : childReport ? "Betaalmelding voor deze kinderen ontvangen" : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
-  const fixedBody = messageType === "event_closure_thanks"
+  const dynamicSubject = ["event_closure_thanks", "portal_certificate_ready"].includes(messageType) ? typeof payload.subject === "string" ? payload.subject : "" : ["group_schedule_published", "group_schedule_corrected"].includes(messageType) ? `${definition.subject}: ${eventDateTime(payload.startsAt)}` : childConfirmation ? "Betaling voor deze kinderen bevestigd" : childReport ? "Betaalmelding voor deze kinderen ontvangen" : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.subject) : definition.subject;
+  const fixedBody = ["event_closure_thanks", "portal_certificate_ready"].includes(messageType)
     ? typeof payload.body === "string" ? payload.body : ""
     : messageType === "house_thanks_received"
       ? [
@@ -507,7 +514,7 @@ export function contentForMessage(messageType: string, payload: Payload, brand: 
   const codeValue = text(payload, ["code", "token"]);
   const paymentUrl = messageType === "payment_link_ready" ? validatedPaymentUrl(payload.externalUrl) : undefined;
   const action = paymentUrl ? { label: "Open de betaallink", url: paymentUrl } : definition.action
-    ? { label: messageType === "registration_group_changed" && payload.activationPending === true ? "Log in en activeer jullie inschrijving" : definition.action.label, url: new URL(messageType === "actor_invitation" && typeof payload.claimToken === "string" && /^[A-Za-z0-9_-]{43}$/.test(payload.claimToken) ? `/uitnodiging/acteur#token=${payload.claimToken}` : ["event_closure_thanks", "house_thanks_received"].includes(messageType) ? definition.action.path : actionPath(payload, definition.action.path), brand.homeUrl).toString() }
+    ? { label: messageType === "registration_group_changed" && payload.activationPending === true ? "Log in en activeer jullie inschrijving" : definition.action.label, url: new URL(messageType === "actor_invitation" && typeof payload.claimToken === "string" && /^[A-Za-z0-9_-]{43}$/.test(payload.claimToken) ? `/uitnodiging/acteur#token=${payload.claimToken}` : ["event_closure_thanks", "house_thanks_received", "portal_certificate_ready"].includes(messageType) ? definition.action.path : actionPath(payload, definition.action.path), brand.homeUrl).toString() }
     : undefined;
   const code = definition.kind === "otp"
     ? { value: codeValue, expiresText: text(payload, ["expiresText", "verlooptijd"], "De code verloopt over 10 minuten.") }

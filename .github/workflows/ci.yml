@@ -74,6 +74,8 @@ jobs:
         run: pnpm exec playwright test --config playwright.event-thanks.config.ts
       - name: Verify physical portal counts and certificate sharing without a database
         run: pnpm exec playwright test --config playwright.portal-impact.config.ts
+      - name: Verify deliberate certificate announcements to portal teams without deliveries
+        run: pnpm exec playwright test --config playwright.portal-certificate-mail.config.ts
 
   database:
     name: Database migrations, contracts and lint

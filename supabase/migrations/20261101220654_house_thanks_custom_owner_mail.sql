@@ -1,5 +1,5 @@
 -- Standard reactions remain durable counts. Only an original, genuinely written
--- message may notify the current active primary owner. This migration dispatches
+-- message may notify the current active working portal team. This migration dispatches
 -- no mail and rewrites no receipts, payloads, provider outcomes or historical text.
 set lock_timeout='5s';
 alter table app_private.event_house_thanks add column initial_message text;
@@ -32,6 +32,18 @@ language sql stable set search_path='' as $$
  and not exists(select 1 from app_private.portal_flags f where f.portal_id=p.id and f.flag_key='fixture' and f.value))
  -- operation_status='closed' is normal after the evening and remains eligible.
 $$;
+-- Shared with the separately confirmed organization certificate campaign.
+-- Reading a room (viewer) alone does not make an account a mail recipient.
+create function app_private.event_portal_mail_recipient(_portal uuid,_account uuid,_email text default null) returns boolean
+language sql stable security invoker set search_path='' as $$
+ select app_private.event_house_thanks_active_portal(_portal)and exists(
+ select 1 from app_private.portal_owners o join auth.users u on u.id=o.user_id
+ where o.portal_id=_portal and o.user_id=_account and o.role in('owner','portal_manager','coadmin','crew','actor','reception','tech')
+ and o.revoked_at is null and o.suspended_at is null and o.accepted_at is not null
+ and u.deleted_at is null and(u.banned_until is null or u.banned_until<=statement_timestamp())and u.email_confirmed_at is not null
+ and coalesce(u.email,'')~'^[^[:space:]@<>]+@[^[:space:]@<>]+\.[^[:space:]@<>]+$'
+ and(_email is null or lower(trim(u.email))=lower(trim(_email))))
+$$;
 create or replace function app_private.event_house_thanks_queue_mail(_receipt uuid) returns integer
 language plpgsql security definer set search_path='' as $$
 declare r app_private.event_house_thanks_receipts;s app_private.event_house_thanks;recipient record;oid uuid;queued integer:=0;payload jsonb;begin
@@ -47,9 +59,7 @@ declare r app_private.event_house_thanks_receipts;s app_private.event_house_than
  payload:=jsonb_build_object('receiptId',r.id,'eventId',r.event_id,'portalId',r.portal_id,'portalName',(select portal_name from app_private.event_closure_portals where event_id=r.event_id and portal_id=r.portal_id),
  'kind',s.kind,'choice',s.choice,'message',coalesce(s.initial_message,s.message),'senderLabel','Een gezin uit Duindorp','portalRoomPath','/mijn-huis');
  for recipient in select distinct lower(trim(u.email))email from app_private.portal_owners o join auth.users u on u.id=o.user_id
- where o.portal_id=r.portal_id and o.role='owner' and o.revoked_at is null and o.suspended_at is null and o.accepted_at is not null
- and u.deleted_at is null and(u.banned_until is null or u.banned_until<=statement_timestamp())and u.email_confirmed_at is not null
- and coalesce(u.email,'')~'^[^[:space:]@<>]+@[^[:space:]@<>]+\.[^[:space:]@<>]+$' loop
+ where o.portal_id=r.portal_id and app_private.event_portal_mail_recipient(r.portal_id,o.user_id)loop
   if not exists(select 1 from app_private.event_house_thanks_mail_recipients m where m.receipt_id=r.id and m.recipient_email=recipient.email)then
    oid:=null;
    insert into app_private.email_outbox(dedupe_key,message_type,recipient_ref,recipient_email,payload)
@@ -60,9 +70,9 @@ declare r app_private.event_house_thanks_receipts;s app_private.event_house_than
    queued:=queued+1;
   end if;
  end loop;
- update app_private.event_house_thanks_receipts set contacts_checked_at=clock_timestamp(),missing_contacts=(select case when count(*)=0 then 1 else count(*)filter(where u.id is null or u.email_confirmed_at is null or coalesce(u.email,'')!~'^[^[:space:]@<>]+@[^[:space:]@<>]+\.[^[:space:]@<>]+$')end
- from app_private.portal_owners o left join auth.users u on u.id=o.user_id and u.deleted_at is null and(u.banned_until is null or u.banned_until<=statement_timestamp())
- where o.portal_id=r.portal_id and o.role='owner' and o.revoked_at is null and o.suspended_at is null and o.accepted_at is not null)where id=r.id;
+ update app_private.event_house_thanks_receipts set contacts_checked_at=clock_timestamp(),missing_contacts=(select case when count(*)=0 then 1 else count(*)filter(where not app_private.event_portal_mail_recipient(r.portal_id,o.user_id))end
+ from app_private.portal_owners o where o.portal_id=r.portal_id and o.role in('owner','portal_manager','coadmin','crew','actor','reception','tech')
+ and o.revoked_at is null and o.suspended_at is null and o.accepted_at is not null)where id=r.id;
  return queued;
 end $$;
 
@@ -77,9 +87,7 @@ language sql stable security definer set search_path='' as $$
  and app_private.event_house_thanks_custom(s.kind,coalesce(s.initial_message,s.message))
  and app_private.event_house_thanks_custom(s.kind,s.message)
  and o.payload->>'kind'=s.kind and app_private.event_house_thanks_custom(o.payload->>'kind',o.payload->>'message')
- and exists(select 1 from app_private.portal_owners p join auth.users u on u.id=p.user_id where p.portal_id=r.portal_id and p.role='owner'
- and p.revoked_at is null and p.suspended_at is null and p.accepted_at is not null and u.deleted_at is null
- and(u.banned_until is null or u.banned_until<=statement_timestamp())and u.email_confirmed_at is not null and lower(trim(u.email))=m.recipient_email)
+ and exists(select 1 from app_private.portal_owners p where p.portal_id=r.portal_id and app_private.event_portal_mail_recipient(r.portal_id,p.user_id,m.recipient_email))
 $$;
 
 create or replace function api.portal_thanks_inbox(_event_slug text,_portal_id uuid default null,_before uuid default null,_limit integer default 25) returns jsonb
@@ -130,6 +138,6 @@ declare result jsonb:=api.event_closure_retry_failed_before_house_thanks(_event_
  if n>0 then insert into app_private.audit_events(event_id,actor_id,action,resource_type,minimal_change)values(eid,auth.uid(),'event_house_thanks.retry_failed','event_closure',jsonb_build_object('requeued',n));end if;
  return api.event_closure_admin_snapshot(_event_slug)||jsonb_build_object('requeued',coalesce((result->>'requeued')::integer,0)+n,'houseRequeued',n);
 end $$;
-revoke all on function app_private.event_house_thanks_normalize(text),app_private.event_house_thanks_custom(text,text),app_private.event_house_thanks_preserve_initial(),app_private.event_house_thanks_active_portal(uuid)from public,anon,authenticated,service_role;
+revoke all on function app_private.event_house_thanks_normalize(text),app_private.event_house_thanks_custom(text,text),app_private.event_house_thanks_preserve_initial(),app_private.event_house_thanks_active_portal(uuid),app_private.event_portal_mail_recipient(uuid,uuid,text)from public,anon,authenticated,service_role;
 -- CREATE OR REPLACE retains each existing RPC's exact grants and owner.
 notify pgrst,'reload schema';

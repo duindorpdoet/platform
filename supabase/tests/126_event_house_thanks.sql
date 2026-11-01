@@ -14,9 +14,6 @@ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_me
  ('e1000000-0000-0000-0000-000000000004','revoked-resident@example.invalid',now(),'{}','{}'),
  ('e1000000-0000-0000-0000-000000000005','suspended-resident@example.invalid',now(),'{}','{}');
 insert into app_private.portal_owners(portal_id,user_id,role)select '12000000-0000-0000-0000-000000000001',id,'crew'from auth.users where id::text like'e1000000-%';
--- Only the primary owner is a mail recipient. Crew retain their inbox rights.
-update app_private.portal_owners set revoked_at=now()where portal_id='12000000-0000-0000-0000-000000000001'and role='owner';
-update app_private.portal_owners set role='owner'where user_id='e1000000-0000-0000-0000-000000000003';
 update app_private.portal_owners set revoked_at=now()where user_id='e1000000-0000-0000-0000-000000000004';
 update app_private.portal_owners set suspended_at=now()where user_id='e1000000-0000-0000-0000-000000000005';
 insert into app_private.portal_team_invites(portal_id,email,first_name,last_name,role,token_hash,invited_by)values('12000000-0000-0000-0000-000000000001','pending-resident@example.invalid','Pending','Synthetic','viewer',extensions.digest('not-a-real-invitation','sha256'),'f0000000-0000-0000-0000-000000000001');
@@ -76,7 +73,7 @@ select is((select count(*)from app_private.email_outbox where message_type='hous
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select throws_ok($$select api.portal_thanks_inbox('duindorp-halloween-2026','12000000-0000-0000-0000-000000000001')$$,'42501','NOT_AUTHORIZED','organization capability alone creates no resident inbox access');
 select set_config('request.jwt.claims','{"sub":"d1000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
-select is((select count(*)from app_private.event_house_thanks_mail_recipients m join app_private.event_house_thanks_receipts r on r.id=m.receipt_id where r.portal_id='12000000-0000-0000-0000-000000000001'and m.recipient_email='resident@example.invalid'),0::bigint,'crew can read their inbox but receive no general or personal mail');
+select is((select count(*)from app_private.event_house_thanks_mail_recipients m join app_private.event_house_thanks_receipts r on r.id=m.receipt_id where r.portal_id='12000000-0000-0000-0000-000000000001'and m.recipient_email='resident@example.invalid'),2::bigint,'active crew receives each custom general/personal receipt at its shared normalized address once');
 select lives_ok($$select api.portal_thanks_closed_save('duindorp-halloween-2026','personal','12000000-0000-0000-0000-000000000001','treats','Aangepast <script>als tekst</script>','e3000000-0000-0000-0000-000000000005',(select id from app_private.event_house_thanks where kind='personal'and household_id='d2000000-0000-0000-0000-000000000001'))$$,'an explicit edit keeps message text editable');
 select api.worker_house_thanks_fanout(25);
 select is((select count(*)from app_private.email_outbox where message_type='house_thanks_received'),(select n from thanks_counts),'editing sends no new mail');
@@ -131,7 +128,7 @@ insert into app_private.mail_envelopes(environment,logical_key,config_id,provide
 select is(api.worker_mail_prepare('test','synthetic-old-generic','e4000000-0000-0000-0000-000000000001','e5000000-0000-0000-0000-000000000001','transactional','duinpad_evening_thanks','synthetic@example.invalid','{}','fixed-payload','fixed-credential')->>'dispatch','false','central closure blocks even an uncertain old generic mail retry');
 select is((select status from app_private.mail_envelopes where logical_key='synthetic-old-generic'),'unknown','blocking a stale generic retry preserves its unknown envelope history');
 -- The same organizer recovery action also covers conclusive house-mail failures.
-create temp table house_retry_candidates as select id,row_number()over(order by created_at,id)n from(select id,created_at from app_private.email_outbox where message_type='house_thanks_received'and status='pending'order by created_at,id limit 4)selected;
+create temp table house_retry_candidates as select id,row_number()over(order by created_at,id)n from(select id,created_at from app_private.email_outbox where message_type='house_thanks_received'and status='pending'and api.worker_house_thanks_mail(id)is not null order by created_at,id limit 4)selected;
 update app_private.email_outbox set status=case when n=4 then 'unknown'::app_private.outbox_status else 'failed'::app_private.outbox_status end,attempts=1 from house_retry_candidates t where email_outbox.id=t.id;
 insert into app_private.mail_envelopes(environment,logical_key,config_id,provider,outbox_id,channel,message_type,recipient_hash,payload_hash,credential_hash,status,first_attempt_at)
  select 'test','synthetic-house-retry-'||t.n,'e4000000-0000-0000-0000-000000000001','resend',o.id,'transactional','house_thanks_received',extensions.digest(o.recipient_email,'sha256'),'fixed-house-payload','fixed-house-credential',case when t.n=4 then 'unknown'else 'failed'end,case when t.n=3 then clock_timestamp()-interval '24 hours'else clock_timestamp()end from house_retry_candidates t join app_private.email_outbox o on o.id=t.id where t.n>1;
