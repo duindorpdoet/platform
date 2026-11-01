@@ -1,0 +1,254 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+INSERT 0 4
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+INSERT 0 3
+INSERT 0 1
+CREATE TABLE
+INSERT 0 1
+GRANT
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+SET
+                          is                           
+-------------------------------------------------------
+ ok 1 - own account can see the server released finale
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 2 - party scopes only its two present children
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 3 - validating the real final credential is allowed
+(1 row)
+
+SET
+                 is                 
+------------------------------------
+ ok 4 - validation consumes no scan
+(1 row)
+
+                is                 
+-----------------------------------
+ ok 5 - validation starts no clock
+(1 row)
+
+SET
+                     throws_ok                     
+---------------------------------------------------
+ ok 6 - a party cannot decide the standalone child
+(1 row)
+
+UPDATE 1
+                        is                        
+--------------------------------------------------
+ ok 7 - first confirmed arrival records the party
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 8 - duplicate returns own receipt even after currentStop is empty
+(1 row)
+
+SET
+UPDATE 1
+                                is                                
+------------------------------------------------------------------
+ ok 9 - deadline equals exactly first durable scan plus two hours
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 10 - physical route completes immediately
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 11 - final capacity completes immediately
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 12 - only the explicitly confirmed party has arrival proof
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 13 - present child skipping the experience still receives a seal
+(1 row)
+
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 14 - frozen cohort contains all four participating adults, including no-scan household
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+SET
+                              is                              
+--------------------------------------------------------------
+ ok 15 - second party account receives the same prior receipt
+(1 row)
+
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 16 - native finale endpoint does not open general leader permissions
+(1 row)
+
+SET
+UPDATE 1
+SET
+                             is                             
+------------------------------------------------------------
+ ok 17 - party departure does not reset the used scan right
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000003","role":"authenticated"}
+(1 row)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 18 - a later independent account can still scan the saved completed finalestop
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 19 - later standalone account gets its one scan
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000004","role":"authenticated"}
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 20 - without a party another adult retains its account-based scan unit
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 21 - route completion alone does not prematurely open the closing screen
+(1 row)
+
+SET
+                     is                      
+---------------------------------------------
+ ok 22 - later scans never move the deadline
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 23 - later accounts add no duplicate seals
+(1 row)
+
+            throws_ok            
+---------------------------------
+ ok 24 - deadlines are immutable
+(1 row)
+
+                       throws_ok                        
+--------------------------------------------------------
+ ok 25 - receipts cannot be erased by local group reset
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 26 - worker does not close an unexpired evening
+(1 row)
+
+CREATE FUNCTION
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 27 - one millisecond before the exact server deadline the evening remains open
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 28 - at the exact server deadline the evening is closed
+(1 row)
+
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 29 - one millisecond after the exact server deadline the evening remains closed
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000004","role":"authenticated"}
+(1 row)
+
+SET
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 30 - deadline is authoritative before worker polls, even at the exact boundary
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 31 - thanks uses the same deadline without an open browser
+(1 row)
+
+                               lives_ok                                
+-----------------------------------------------------------------------
+ ok 32 - confirmed final arrival permits only the own household thanks
+(1 row)
+
+SET
+                                   is                                   
+------------------------------------------------------------------------
+ ok 33 - deadline queues one transactional mail per participating adult
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 34 - concurrent/repeated worker is idempotent
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 35 - cohort mail dedupe remains durable per event/account
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 36 - processing time remains separate from logical due time
+(1 row)
+
+ finish 
+--------
+ 1..36
+(1 row)
+
+ROLLBACK

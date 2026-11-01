@@ -1,0 +1,456 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+               ok               
+--------------------------------
+ ok 1 - news tables are private
+(1 row)
+
+                   ok                   
+----------------------------------------
+ ok 2 - recipient snapshots are private
+(1 row)
+
+                   ok                   
+----------------------------------------
+ ok 3 - scheduling worker is privileged
+(1 row)
+
+                 ok                  
+-------------------------------------
+ ok 4 - anonymous publication denied
+(1 row)
+
+                  ok                   
+---------------------------------------
+ ok 5 - audience internals are private
+(1 row)
+
+             ok              
+-----------------------------
+ ok 6 - raw HTML is rejected
+(1 row)
+
+                 ok                  
+-------------------------------------
+ ok 7 - unsafe links rejected by SQL
+(1 row)
+
+              set_config              
+--------------------------------------
+ 11764532-5892-4f7e-87e6-a5522b6eebb5
+(1 row)
+
+                                                                                                                                                                                         set_config                                                                                                                                                                                          
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"title":"De nacht komt dichterbij","intro":"Een veilige introductie","heroId":"b8100000-0000-0000-0000-000000000001","heroAlt":"Een verlichte poort","heroCaption":"Onze wijk","author":"Organisatie","categoryId":null,"body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Samen maken we de nacht."}]}]},"cta":{"label":"Lees meer","url":"/verhaal"}}
+(1 row)
+
+INSERT 0 1
+UPDATE 0
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                                                     set_config                                                     
+--------------------------------------------------------------------------------------------------------------------
+ {"id": "af6fd85e-0614-4f81-b317-70bfbe506d42", "revision": 1, "versionId": "52947e98-3807-41cc-9fc2-f48e72e84153"}
+(1 row)
+
+              set_config              
+--------------------------------------
+ af6fd85e-0614-4f81-b317-70bfbe506d42
+(1 row)
+
+              set_config              
+--------------------------------------
+ 52947e98-3807-41cc-9fc2-f48e72e84153
+(1 row)
+
+             throws_ok              
+------------------------------------
+ ok 8 - draft editor cannot publish
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 9 - legacy content cannot expose editorial drafts
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 10 - legacy publisher cannot bypass news rights
+(1 row)
+
+SET
+   set_config    
+-----------------
+ {"role":"anon"}
+(1 row)
+
+             is              
+-----------------------------
+ ok 11 - draft is not public
+(1 row)
+
+               is               
+--------------------------------
+ ok 12 - draft image is private
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                  lives_ok                  
+--------------------------------------------
+ ok 13 - atomic publication on two channels
+(1 row)
+
+                lives_ok                 
+-----------------------------------------
+ ok 14 - publication retry is idempotent
+(1 row)
+
+                  lives_ok                   
+---------------------------------------------
+ ok 15 - bounded organizer snapshot executes
+(1 row)
+
+SET
+   set_config    
+-----------------
+ {"role":"anon"}
+(1 row)
+
+               is               
+--------------------------------
+ ok 16 - public article visible
+(1 row)
+
+                      ok                      
+----------------------------------------------
+ ok 17 - publicly used image can be displayed
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 18 - legacy public snapshot excludes editorial content
+(1 row)
+
+              throws_ok               
+--------------------------------------
+ ok 19 - anonymous portal feed denied
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 20 - parent reads parent publication
+(1 row)
+
+               throws_ok               
+---------------------------------------
+ ok 21 - parent cannot read house feed
+(1 row)
+
+            lives_ok             
+---------------------------------
+ ok 22 - parent records own read
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 23 - read status projected per account
+(1 row)
+
+                  lives_ok                  
+--------------------------------------------
+ ok 24 - explicit adult communication optin
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 25 - newsletter consent retained
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 26 - unselected house channel has no article
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 27 - house-only account cannot read parent news
+(1 row)
+
+SET
+                  throws_ok                  
+---------------------------------------------
+ ok 28 - published content cannot be changed
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 29 - one live placement per selected channel
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+              throws_ok               
+--------------------------------------
+ ok 30 - used image cannot be deleted
+(1 row)
+
+                                                     set_config                                                     
+--------------------------------------------------------------------------------------------------------------------
+ {"id": "af6fd85e-0614-4f81-b317-70bfbe506d42", "revision": 2, "versionId": "4af0798f-0bd2-4eb4-ad08-e4a87e4b559d"}
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 31 - new draft leaves live content unchanged
+(1 row)
+
+               lives_ok               
+--------------------------------------
+ ok 32 - future publication scheduled
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 33 - scheduled replacement leaves current live until deadline
+(1 row)
+
+SET
+UPDATE 1
+                             lives_ok                             
+------------------------------------------------------------------
+ ok 34 - publication worker advances due items with mail disabled
+(1 row)
+
+             lives_ok              
+-----------------------------------
+ ok 35 - repeated tick is harmless
+(1 row)
+
+SET
+                      is                       
+-----------------------------------------------
+ ok 36 - new version becomes public atomically
+(1 row)
+
+                     lives_ok                     
+--------------------------------------------------
+ ok 37 - audience uses existing roles and consent
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 38 - only explicit optin receives newsletter, overlapping roles deduped
+(1 row)
+
+                                                                                                                                                                                                                                                                                                                                                   set_config                                                                                                                                                                                                                                                                                                                                                   
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"article": {"cta": {"url": "/verhaal", "label": "Lees meer"}, "body": {"type": "doc", "content": [{"type": "paragraph", "content": [{"text": "Samen maken we de nacht.", "type": "text"}]}]}, "intro": "Een veilige introductie", "title": "De nacht komt dichterbij", "author": "Organisatie", "heroId": "b8100000-0000-0000-0000-000000000001", "heroAlt": "Een verlichte poort", "categoryId": null, "heroCaption": "Onze wijk"}, "closing": "Tot tussen de poorten", "eyebrow": "NACHTPOST", "subject": "De nacht komt dichterbij", "preheader": "Nieuws voor de wijk", "senderName": "Duindorpse Poorten", "internalName": "Nachtpost test", "newsVersionIds": ["4af0798f-0bd2-4eb4-ad08-e4a87e4b559d"]}
+(1 row)
+
+                                                     set_config                                                     
+--------------------------------------------------------------------------------------------------------------------
+ {"id": "ef23eb9e-dccf-400a-b1a9-1f8acbcba045", "revision": 1, "versionId": "990a6cdb-95fa-4bf1-a659-5badfbe1a214"}
+(1 row)
+
+              set_config              
+--------------------------------------
+ 990a6cdb-95fa-4bf1-a659-5badfbe1a214
+(1 row)
+
+                         throws_ok                         
+-----------------------------------------------------------
+ ok 39 - campaign requires successful test before schedule
+(1 row)
+
+              set_config              
+--------------------------------------
+ 04b71979-1fd4-45e2-b115-ec0070dd20d8
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 40 - testmail enqueue idempotent
+(1 row)
+
+SET
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 41 - worker hydrates testmail without secret token in outbox
+(1 row)
+
+UPDATE 1
+SET
+                          lives_ok                          
+------------------------------------------------------------
+ ok 42 - preview resolves immutable news cards and audience
+(1 row)
+
+                     lives_ok                      
+---------------------------------------------------
+ ok 43 - scheduling freezes content and recipients
+(1 row)
+
+                       lives_ok                       
+------------------------------------------------------
+ ok 44 - schedule retry does not duplicate recipients
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 45 - scheduled campaign content is immutable
+(1 row)
+
+SET
+                 lives_ok                  
+-------------------------------------------
+ ok 46 - mail job queues frozen recipients
+(1 row)
+
+                    lives_ok                    
+------------------------------------------------
+ ok 47 - repeated mail job queues no duplicates
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 48 - exactly one deduped recipient
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 49 - exactly one individual delivery
+(1 row)
+
+              set_config              
+--------------------------------------
+ 2ad5a50d-b0c0-40ee-8a2a-1e23bf2a4f13
+(1 row)
+
+              set_config              
+--------------------------------------
+ 457f1215-f798-4189-b5e8-faaacf00262d
+(1 row)
+
+UPDATE 1
+                          is                          
+------------------------------------------------------
+ ok 50 - existing SendGrid webhook records processing
+(1 row)
+
+                 is                 
+------------------------------------
+ ok 51 - provider deferral recorded
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 52 - provider deferral cannot cause accepted newsletter to resend
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 53 - delivery receipt advances status
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 54 - duplicate webhook is idempotent
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 55 - provider delivery kept distinct from acceptance
+(1 row)
+
+                           lives_ok                            
+---------------------------------------------------------------
+ ok 56 - purposebound unsubscribe updates editorial preference
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 57 - optout rechecked immediately before delivery
+(1 row)
+
+SET
+                    is                    
+------------------------------------------
+ ok 58 - optout excludes future snapshots
+(1 row)
+
+                             lives_ok                             
+------------------------------------------------------------------
+ ok 59 - history and campaign metrics remain bounded and readable
+(1 row)
+
+SET
+INSERT 0 1
+                             ok                             
+------------------------------------------------------------
+ ok 60 - newsletter optout does not block operational queue
+(1 row)
+
+UPDATE 1
+                               ok                                
+-----------------------------------------------------------------
+ ok 61 - expired editorial provider lease cannot replay dispatch
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 62 - uncertain provider acceptance held for review
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                      lives_ok                      
+----------------------------------------------------
+ ok 63 - event retention cleans individual evidence
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 64 - recipient email snapshots expire
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 65 - anonymous delivery totals survive retention
+(1 row)
+
+ finish 
+--------
+ 1..65
+(1 row)
+
+ROLLBACK

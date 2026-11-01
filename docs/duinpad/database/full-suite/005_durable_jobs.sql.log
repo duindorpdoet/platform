@@ -1,0 +1,50 @@
+BEGIN
+CREATE EXTENSION
+ plan 
+------
+ 1..6
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 1 - browser cannot configure worker schedule
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 2 - service role can configure worker schedule
+(1 row)
+
+SET
+                                    lives_ok                                     
+---------------------------------------------------------------------------------
+ ok 3 - durable mail worker can be configured without exposing its bearer secret
+(1 row)
+
+SET
+                      is                       
+-----------------------------------------------
+ ok 4 - exactly one one-minute schedule exists
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 5 - worker is active after explicit configuration
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 6 - admin can preview retention without deleting production data
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

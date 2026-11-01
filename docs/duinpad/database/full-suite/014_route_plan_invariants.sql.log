@@ -1,0 +1,201 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..27
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  throws_ok                                   
+------------------------------------------------------------------------------
+ ok 1 - legacy route publication cannot create an unconfirmed first departure
+(1 row)
+
+INSERT 0 1
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 2 - approved graph connects the verified start to a portal through real edges
+(1 row)
+
+UPDATE 1
+                                              throws_ok                                               
+------------------------------------------------------------------------------------------------------
+ ok 3 - overlapping intervals count against portal concurrency even with different arrival timestamps
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 4 - the server enforces a portal total-child limit across the proposal
+(1 row)
+
+UPDATE 1
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 5 - route-ready first stop within capacity is accepted
+(1 row)
+
+                        throws_ok                         
+----------------------------------------------------------
+ ok 6 - one route cannot silently repeat a physical house
+(1 row)
+
+UPDATE 1
+                                lives_ok                                
+------------------------------------------------------------------------
+ ok 7 - a closed optional graph edge does not block a valid destination
+(1 row)
+
+UPDATE 1
+                                      lives_ok                                      
+------------------------------------------------------------------------------------
+ ok 8 - existing valid stop can be revalidated independently of optional graph data
+(1 row)
+
+UPDATE 1
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 9 - publication revalidates the destination and rejects a closed house
+(1 row)
+
+SET
+CREATE TABLE
+GRANT
+                           is                            
+---------------------------------------------------------
+ ok 10 - failed revalidation leaves the plan unpublished
+(1 row)
+
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                lives_ok                                
+------------------------------------------------------------------------
+ ok 11 - currently valid route publishes after server-side revalidation
+(1 row)
+
+SET
+                    is                     
+-------------------------------------------
+ ok 12 - validated plan state is published
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 13 - validated group becomes ready only after publication
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 14 - successful publication creates an audit event
+(1 row)
+
+                        throws_ok                         
+----------------------------------------------------------
+ ok 15 - a published route stop cannot be edited in place
+(1 row)
+
+                               throws_ok                                
+------------------------------------------------------------------------
+ ok 16 - a published route version cannot be rolled back or overwritten
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                             lives_ok                                             
+--------------------------------------------------------------------------------------------------
+ ok 17 - an administrator can save a new concept revision instead of mutating the published route
+(1 row)
+
+SET
+INSERT 0 1
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 18 - creating a concept revision leaves every stop of the published route intact
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 19 - the previous published version remains published while the revision is reviewed
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 20 - the correction is a separate valid revision linked to its predecessor
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                               lives_ok                               
+----------------------------------------------------------------------
+ ok 21 - the reviewed correction publishes as a new immutable version
+(1 row)
+
+SET
+                           is                           
+--------------------------------------------------------
+ ok 22 - the corrected route is independently published
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 23 - publishing a correction never moves an already live group back to ready
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 24 - a run remains pinned to the exact route version with which it started
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 25 - historical run-stop foreign keys still reference the original route version
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 26 - publishing a later route revision preserves the recorded historical outcome
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 27 - publishing the revision does not rewrite or delete the original publication
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

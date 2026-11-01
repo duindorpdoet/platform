@@ -1,0 +1,446 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+SELECT 1
+UPDATE 1
+SELECT 2
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+                           is                           
+--------------------------------------------------------
+ ok 1 - confirmed parties derive exactly their children
+(1 row)
+
+SELECT 1
+SELECT 1
+                            is                             
+-----------------------------------------------------------
+ ok 2 - test uses a real event from an existing route plan
+(1 row)
+
+                            lives_ok                            
+----------------------------------------------------------------
+ ok 3 - future seals reference the existing route event journal
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 4 - same route event cannot award the same child seal twice
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 5 - a nonexistent route event cannot award a seal
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 6 - browser cannot assert another parent actor
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 7 - anonymous browser cannot access child RPC
+(1 row)
+
+               ok                
+---------------------------------
+ ok 8 - server may perform login
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 9 - encrypted codes are not exposed to authenticated clients
+(1 row)
+
+                   ok                   
+----------------------------------------
+ ok 10 - session hashes are not exposed
+(1 row)
+
+                 ok                 
+------------------------------------
+ ok 11 - every child table uses RLS
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 12 - first targeted view requests server provisioning
+(1 row)
+
+              lives_ok               
+-------------------------------------
+ ok 13 - owner provisions child code
+(1 row)
+
+             lives_ok              
+-----------------------------------
+ ok 14 - second child has own code
+(1 row)
+
+                 throws_ok                 
+-------------------------------------------
+ ok 15 - unrelated parent cannot read code
+(1 row)
+
+               throws_ok               
+---------------------------------------
+ ok 16 - unrelated parent cannot renew
+(1 row)
+
+                     ok                      
+---------------------------------------------
+ ok 17 - parent lists contain no credentials
+(1 row)
+
+                        throws_ok                        
+---------------------------------------------------------
+ ok 18 - digest uniqueness rejects collisions atomically
+(1 row)
+
+                 is                 
+------------------------------------
+ ok 19 - unknown code never logs in
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 20 - known code opens independent child session
+(1 row)
+
+               is                
+---------------------------------
+ ok 21 - second child can log in
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 22 - absolute expiry is exactly twelve hours
+(1 row)
+
+SELECT 1
+                      is                      
+----------------------------------------------
+ ok 23 - snapshot exposes confirmed microteam
+(1 row)
+
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 24 - child snapshot has no household private data beyond its own sync identity
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 25 - new session requires welcome
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 26 - welcome is acknowledged within this session
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 27 - activity does not extend expiry
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 28 - personal checklist persists
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 29 - checklist cannot change another child
+(1 row)
+
+             throws_ok              
+------------------------------------
+ ok 30 - missing checklist rejected
+(1 row)
+
+SELECT 1
+SELECT 20
+CREATE FUNCTION
+           throws_ok            
+--------------------------------
+ ok 31 - favourites must differ
+(1 row)
+
+               lives_ok                
+---------------------------------------
+ ok 32 - three favourites are accepted
+(1 row)
+
+                 lives_ok                 
+------------------------------------------
+ ok 33 - same command retry is idempotent
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 34 - retry stores exactly one ballot
+(1 row)
+
+                  throws_ok                  
+---------------------------------------------
+ ok 35 - same key cannot replace its payload
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 36 - every favourite has one equal vote
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 37 - second favourite has equal weight
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 38 - third favourite has equal weight
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 39 - other child cannot see individual votes
+(1 row)
+
+                   lives_ok                   
+----------------------------------------------
+ ok 40 - own choice editable while round open
+(1 row)
+
+                     lives_ok                     
+--------------------------------------------------
+ ok 41 - last eligible ballot closes the election
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 42 - all eligible favourite ballots determine the team name
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 43 - closed favourites round refuses writes
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 44 - equal favourite votes use deterministic event/team tie break
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 45 - tie is disclosed without exposing other votes
+(1 row)
+
+             throws_ok             
+-----------------------------------
+ ok 46 - used labels cannot change
+(1 row)
+
+              throws_ok               
+--------------------------------------
+ ok 47 - used option cannot disappear
+(1 row)
+
+                 throws_ok                 
+-------------------------------------------
+ ok 48 - used option cannot become invalid
+(1 row)
+
+                       lives_ok                        
+-------------------------------------------------------
+ ok 49 - owner resets team election before final close
+(1 row)
+
+                    ok                     
+-------------------------------------------
+ ok 50 - reset creates separate generation
+(1 row)
+
+          is           
+-----------------------
+ ok 51 - reset audited
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 52 - combined team identity reset audited
+(1 row)
+
+                 lives_ok                 
+------------------------------------------
+ ok 53 - renewal replaces code atomically
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 54 - renewed old code immediately invalid
+(1 row)
+
+              throws_ok              
+-------------------------------------
+ ok 55 - renewal revokes old session
+(1 row)
+
+            is             
+---------------------------
+ ok 56 - new code accepted
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 57 - renewal preserves personal progress
+(1 row)
+
+              lives_ok              
+------------------------------------
+ ok 58 - logout revokes own session
+(1 row)
+
+                 throws_ok                  
+--------------------------------------------
+ ok 59 - logged-out token cannot fetch data
+(1 row)
+
+              lives_ok              
+------------------------------------
+ ok 60 - owner revokes all sessions
+(1 row)
+
+                throws_ok                
+-----------------------------------------
+ ok 61 - revoked token cannot fetch data
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 62 - revoke leaves code usable for new login
+(1 row)
+
+UPDATE 1
+               throws_ok                
+----------------------------------------
+ ok 63 - expired session cannot be used
+(1 row)
+
+                  ok                   
+---------------------------------------
+ ok 64 - audits contain no credentials
+(1 row)
+
+SELECT 1
+INSERT 0 3
+                         is                          
+-----------------------------------------------------
+ ok 65 - same walking group never creates companions
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 66 - single child chooses directly
+(1 row)
+
+SELECT 1
+INSERT 0 1
+                       is                       
+------------------------------------------------
+ ok 67 - single ballot directly determines name
+(1 row)
+
+UPDATE 1
+SELECT 1
+                       is                        
+-------------------------------------------------
+ ok 68 - no ballots at deadline leaves name open
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+                              is                              
+--------------------------------------------------------------
+ ok 69 - deadline resolves equal favourites deterministically
+(1 row)
+
+UPDATE 1
+                       throws_ok                        
+--------------------------------------------------------
+ ok 70 - a parent can reset the team identity only once
+(1 row)
+
+UPDATE 1
+                   throws_ok                   
+-----------------------------------------------
+ ok 71 - parent cannot reset after final close
+(1 row)
+
+UPDATE 1
+                        is                         
+---------------------------------------------------
+ ok 72 - departed household disappears immediately
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 73 - membership change supersedes stale election
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 74 - membership change preserves personal progress
+(1 row)
+
+UPDATE 1
+                      is                       
+-----------------------------------------------
+ ok 75 - cancelled participation cannot log in
+(1 row)
+
+       poortenboek_login       
+-------------------------------
+ {"ok": false, "delayMs": 250}
+ {"ok": false, "delayMs": 250}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+ {"ok": false, "delayMs": 650}
+(13 rows)
+
+                          ok                           
+-------------------------------------------------------
+ ok 76 - repeated code guesses trigger temporary block
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 77 - device budget persists across failed attempts
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 78 - IP budget persists across failed attempts
+(1 row)
+
+ finish 
+--------
+ 1..78
+(1 row)
+
+ROLLBACK

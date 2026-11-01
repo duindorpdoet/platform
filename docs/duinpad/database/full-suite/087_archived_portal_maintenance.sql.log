@@ -1,0 +1,93 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 1 - approved portal is archived through reviewed domain command
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 2 - archive keeps the real record
+(1 row)
+
+                                          is                                          
+--------------------------------------------------------------------------------------
+ ok 3 - archiving revokes active portal access without deleting historical identities
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 4 - archiving revokes outstanding invitations
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 5 - organization maintenance includes archived records
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 6 - legacy active editor snapshot stays compatible
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                     is                     
+--------------------------------------------
+ ok 7 - archive contact correction persists
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 8 - metadata edit cannot reactivate archive
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 9 - uncertain retry returns the original archive receipt
+(1 row)
+
+                 throws_ok                  
+--------------------------------------------
+ ok 10 - archive edit rejects stale version
+(1 row)
+
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 11 - archive cannot silently reopen operation or change routing
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 12 - archived house role no longer forces an unusable homepage
+(1 row)
+
+                                  throws_ok                                  
+-----------------------------------------------------------------------------
+ ok 13 - ordinary parent cannot inspect organization archive contact details
+(1 row)
+
+ finish 
+--------
+ 1..13
+(1 row)
+
+ROLLBACK

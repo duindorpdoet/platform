@@ -1,0 +1,92 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..13
+(1 row)
+
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                       lives_ok                                       
+--------------------------------------------------------------------------------------
+ ok 1 - the organisation can approve with only contact details and a complete address
+(1 row)
+
+SET
+                     is                     
+--------------------------------------------
+ ok 2 - the minimum application is approved
+(1 row)
+
+                   is                   
+----------------------------------------
+ ok 3 - a safe display name is supplied
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 4 - the default opening time is 17:00
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 5 - the default closing time is 21:00
+(1 row)
+
+                is                 
+-----------------------------------
+ ok 6 - the postcode is normalized
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 7 - approval creates the house portal
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 8 - a missing category uses the sweets-only category
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 9 - the portal window starts at the safe default
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 10 - the portal window ends at the safe default
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 11 - the supplied address is retained privately
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 12 - approval does not pretend the address is physically verified
+(1 row)
+
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 13 - approval still requires a complete address
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

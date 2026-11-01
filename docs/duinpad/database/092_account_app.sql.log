@@ -1,0 +1,184 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+GRANT
+CREATE FUNCTION
+CREATE FUNCTION
+GRANT
+                          ok                          
+------------------------------------------------------
+ ok 1 - anonymous users cannot retrieve account links
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 2 - preferences are private behind verified account RPC
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 3 - legacy wrapper cannot bypass new read contract
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 4 - existing OTP user retains the existing parent environment
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 5 - only own registered child is listed
+(1 row)
+
+                    throws_ok                     
+--------------------------------------------------
+ ok 6 - client cannot invent an organization role
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 7 - other family child cannot be selected
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 8 - remember returns a server-owned path
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 9 - resume is a preference checked against current roles
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 10 - read confirmation is stored for the verified account and event
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 11 - reload keeps the welcome read
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 12 - unknown explanation versions cannot be acknowledged
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              is                              
+--------------------------------------------------------------
+ ok 13 - a different calendar day does not repeat the welcome
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 14 - child resume uses the existing protected child flow
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              is                              
+--------------------------------------------------------------
+ ok 15 - revoked child relationship removes the stored resume
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 16 - revoked child relationship removes the dropdown child
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    ok                    
+------------------------------------------
+ ok 17 - house owner sees their real gate
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 18 - house ownership grants no parent or organization role
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 19 - house owner does not receive arbitrary children
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000011","role":"authenticated"}
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 20 - unknown account has no fictional participation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 21 - organization environment requires actual capabilities
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 22 - organization-only users can read the same welcome
+(1 row)
+
+                                 lives_ok                                  
+---------------------------------------------------------------------------
+ ok 23 - real push subscription admission accepts a valid isolated fixture
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 24 - current device is active only after server registration
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 25 - another account cannot claim a previous device registration
+(1 row)
+
+ set_config 
+------------
+ {}
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 26 - a child cookie alone does not authenticate an adult account
+(1 row)
+
+ finish 
+--------
+ 1..26
+(1 row)
+
+ROLLBACK

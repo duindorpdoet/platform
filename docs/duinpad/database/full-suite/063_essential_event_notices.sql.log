@@ -1,0 +1,144 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..18
+(1 row)
+
+CREATE TABLE
+GRANT
+INSERT 0 1
+UPDATE 1
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                throws_ok                                 
+--------------------------------------------------------------------------
+ ok 1 - essential delivery does not give a participant publication rights
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+SET
+                             is                             
+------------------------------------------------------------
+ ok 2 - ordinary updates still respect the email preference
+(1 row)
+
+                                               is                                               
+------------------------------------------------------------------------------------------------
+ ok 3 - important update reaches an unsubscribed participant even when client requests no email
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 4 - urgent update reaches an unsubscribed participant
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 5 - the server records the necessary-event-notice purpose
+(1 row)
+
+                                            is                                            
+------------------------------------------------------------------------------------------
+ ok 6 - necessary notices use the transactional worker, independent of newsletter sending
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 7 - newsletter opt-out and the complete preference history remain unchanged
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 8 - publication reports that mandatory delivery was applied
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 9 - the organizer decision and delivery policy are audited
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 10 - role targeting still excludes unrelated homeowner accounts
+(1 row)
+
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+SET
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 11 - a new registration is included without an opt-in backfill or scheduled sync
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 12 - a pending house applicant also receives necessary event information
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 13 - a pending applicant is directed to their own available environment
+(1 row)
+
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 14 - new participants are not falsely recorded as newsletter opt-ins
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 15 - multiple participant roles never duplicate a notice
+(1 row)
+
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+SET
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 16 - a cancelled registration is no longer in the active event audience
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 17 - remaining participants stay eligible for the next notice
+(1 row)
+
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 18 - anonymous callers cannot publish or use the mandatory recipient policy
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

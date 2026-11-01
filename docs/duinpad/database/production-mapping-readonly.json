@@ -1,0 +1,17 @@
+{
+  "capturedAt": "2026-10-31T14:57:12.104632+00:00",
+  "source": "Supabase connected Duindorpdoet account, production project dtubngvxfbupgvgfrjko, SELECT only",
+  "eventId": "0e48b75c-ae67-4934-8898-409dd127c871",
+  "eventSlug": "duindorp-halloween-2026",
+  "qr2PortalId": "4fa3fc24-1510-4a0c-86e0-e5595c6b7522",
+  "qr2DisplayCode": "P-38",
+  "qr2DisplayName": "De laatste Poort!",
+  "qr2HasValidCredential": true,
+  "explicitDuinpadMappingInstalled": false,
+  "qr1PhysicalMapping": "unresolved: no authoritative event checkpoint mapping exists; organizer must explicitly create/link the true physical entrance",
+  "completedCanonicalFinaleStops": 0,
+  "latestMigration": "20261030233039",
+  "historicalBackfill": "not required for the measured zero completed finales; repeat read-only preflight before any later authorized deployment",
+  "secretsRead": false,
+  "productionWrites": false
+}

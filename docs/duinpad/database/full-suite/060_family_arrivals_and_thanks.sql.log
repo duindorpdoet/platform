@@ -1,0 +1,160 @@
+BEGIN
+INSERT 0 4
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+INSERT 0 1
+DO
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 1 - all present children receive an arrival when everyone stays outside
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 2 - six present children get six immutable arrival facts
+(1 row)
+
+SELECT 1
+DELETE 6
+DELETE 6
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 3 - old valid seals do not hide proven arrival facts from the reviewed preview
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 4 - reviewed legacy batch records proven arrivals alongside existing seals
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 5 - backfill preserves existing seal IDs, content and timestamps
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 6 - repeating the reviewed batch adds no arrivals
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 7 - reviewed arrival facts are not duplicated
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                      throws_ok                      
+-----------------------------------------------------
+ ok 8 - a parent cannot depart a different household
+(1 row)
+
+                  lives_ok                  
+--------------------------------------------
+ ok 9 - the own household can finish calmly
+(1 row)
+
+                   is                   
+----------------------------------------
+ ok 10 - another family keeps its route
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 11 - the own parent sees a personal farewell
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 12 - a departed household no longer receives future private addresses
+(1 row)
+
+                                    lives_ok                                     
+---------------------------------------------------------------------------------
+ ok 13 - an arrived family may thank the gate even if the experience was skipped
+(1 row)
+
+                      lives_ok                      
+----------------------------------------------------
+ ok 14 - a new message replaces the existing thanks
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 15 - editing does not count twice
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                    throws_ok                                     
+----------------------------------------------------------------------------------
+ ok 16 - a departed child cannot gain a later seal through an old status mutation
+(1 row)
+
+                        lives_ok                         
+---------------------------------------------------------
+ ok 17 - the remaining household may reach its next gate
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 18 - departed children retain only their first seal; the remaining child has two
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                            throws_ok                            
+-----------------------------------------------------------------
+ ok 19 - a family cannot thank gates reached after its departure
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 20 - a parent cannot read the gate team aggregate
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 21 - organizer totals count one family
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 22 - organizer thanks do not reveal family identifiers
+(1 row)
+
+ finish 
+--------
+ 1..22
+(1 row)
+
+ROLLBACK

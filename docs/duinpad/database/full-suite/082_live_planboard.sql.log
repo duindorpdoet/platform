@@ -1,0 +1,143 @@
+BEGIN
+CREATE FUNCTION
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 26
+UPDATE 1
+UPDATE 1
+                                                                                                                                                                                        admin_startregie_confirm_point                                                                                                                                                                                        
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "75d00d08-e6b9-4383-a4af-3d0acf1ce953", "active": true, "version": 1, "confirmed": true, "readiness": {"location": {"valid": true, "reason": null, "source": "address", "latitude": 52.100100, "longitude": 4.270100}, "confirmed": true, "canConfirm": true, "routeReady": true, "confirmedAt": "2026-10-31T15:16:19.518045+00:00", "linkedPortalName": "Testpoort 01", "confirmationReason": null}}
+(1 row)
+
+ withdraw_group_appointment 
+----------------------------
+ 
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                          ok                                           
+---------------------------------------------------------------------------------------
+ ok 1 - explicit fixture review stores a full durable route; snapshot only projects it
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 2 - read refresh keeps stable visit identities and versions
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 3 - passing a planned clock never creates arrival or completion
+(1 row)
+
+                       ok                       
+------------------------------------------------
+ ok 4 - durable route intentions remain private
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 5 - move-following preview identifies all future affected visits
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 6 - preview and cancellation do not queue mail
+(1 row)
+
+SAVEPOINT
+UPDATE 1
+UPDATE 1
+                                             ok                                             
+--------------------------------------------------------------------------------------------
+ ok 7 - a visit ending beyond the actual ordinary deadline is explicitly blocked in preview
+(1 row)
+
+                          throws_like                           
+----------------------------------------------------------------
+ ok 8 - apply independently refuses the real deadline violation
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 9 - rejected late move preserves the complete planboard
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 10 - rejected late move queues no mail
+(1 row)
+
+ROLLBACK
+                                    lives_ok                                    
+--------------------------------------------------------------------------------
+ ok 11 - unconfirmed concept can be applied without pretending it was published
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 12 - draft route shift queues no start-time mail
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 13 - all shifted stops retain their relative spacing
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 14 - uncertain retry is idempotent despite new current versions
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 15 - another admin cannot reuse a stale snapshot
+(1 row)
+
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 16 - undo uses original server receipt and revalidates current domain
+(1 row)
+
+                   lives_ok                    
+-----------------------------------------------
+ ok 17 - redo preserves the same domain checks
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 18 - server enforces ten-minute manual begin grid
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 19 - parent cannot read the complete private evening route
+(1 row)
+
+ finish 
+--------
+ 1..19
+(1 row)
+
+ROLLBACK

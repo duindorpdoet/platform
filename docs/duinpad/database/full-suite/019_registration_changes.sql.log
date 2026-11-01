@@ -1,0 +1,225 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..32
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+UPDATE 1
+INSERT 0 2
+                              ok                              
+--------------------------------------------------------------
+ ok 1 - anonymous visitors cannot submit registration changes
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 2 - anonymous visitors cannot inspect registration requests
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 3 - anonymous visitors cannot decide registration requests
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                             throws_ok                             
+-------------------------------------------------------------------
+ ok 4 - a different household cannot request a registration change
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 5 - the owning household can request a child removal after the deadline
+(1 row)
+
+SET
+                               ok                               
+----------------------------------------------------------------
+ ok 6 - the request records that the change deadline has passed
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 7 - requesting a change does not silently alter the registration
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                             throws_ok                             
+-------------------------------------------------------------------
+ ok 8 - an ordinary parent cannot inspect the private review queue
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 9 - registration management sees the structured child-removal request
+(1 row)
+
+                          lives_ok                          
+------------------------------------------------------------
+ ok 10 - an authorized reviewer can apply the child removal
+(1 row)
+
+SET
+                       is                       
+------------------------------------------------
+ ok 11 - exactly one requested child is removed
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 12 - the authoritative registration total is recalculated
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 13 - the revision preserves the amount before the change
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 14 - the revision records the corrected amount
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 15 - the payment request receives the corrected expected amount
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 16 - an overpayment becomes an explicit refund task
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 17 - the historical payment ledger is not rewritten
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 18 - the applied request is resolved
+(1 row)
+
+                  ok                   
+---------------------------------------
+ ok 19 - the applied change is audited
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000007","role":"authenticated"}
+(1 row)
+
+                     lives_ok                      
+---------------------------------------------------
+ ok 20 - a household can request full cancellation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                lives_ok                                 
+-------------------------------------------------------------------------
+ ok 21 - registration and payment management can apply full cancellation
+(1 row)
+
+SET
+                         is                          
+-----------------------------------------------------
+ ok 22 - the registration enters the cancelled state
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 23 - cancelled registration children are no longer active
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 24 - a cancelled registration has no remaining amount due
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 25 - a paid cancellation retains an explicit refund due status
+(1 row)
+
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 26 - cancellation removes the active group assignment without deleting history
+(1 row)
+
+                                     ok                                      
+-----------------------------------------------------------------------------
+ ok 27 - cancellation leaves the together party without deleting its history
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000010","role":"authenticated"}
+(1 row)
+
+                                    lives_ok                                    
+--------------------------------------------------------------------------------
+ ok 28 - a general correction becomes a review request instead of a silent edit
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 29 - a reviewer can close a manually completed correction with a reason
+(1 row)
+
+SET
+                                 is                                 
+--------------------------------------------------------------------
+ ok 30 - the correction retains an explicit resolved workflow state
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 31 - closing a correction does not silently cancel the registration
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 32 - manual correction resolution is audited
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

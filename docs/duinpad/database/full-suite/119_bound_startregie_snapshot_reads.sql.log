@@ -1,0 +1,105 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 1 - snapshot performs one event-wide source calculation, independent of group count
+(1 row)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 2 - group projection does not repeat the event-wide route revision calculation
+(1 row)
+
+                                              is                                               
+-----------------------------------------------------------------------------------------------
+ ok 3 - publication preflight materializes departure reservations once for all selected groups
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 4 - anonymous users cannot call the context-aware private route reader
+(1 row)
+
+                                     ok                                     
+----------------------------------------------------------------------------
+ ok 5 - authenticated users cannot supply a fabricated route source context
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 6 - publication timing with a supplied source hash stays private
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+SELECT 1
+                                is                                 
+-------------------------------------------------------------------
+ ok 7 - the bounded snapshot exposes the same fresh route revision
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 8 - all group cards share the revision from this one snapshot
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 9 - all expected routes share the revision from this one snapshot
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 10 - the snapshot retains the complete stored publication readiness
+(1 row)
+
+SELECT 2
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 11 - two seeded routes exercise the context-aware route projection
+(1 row)
+
+                                                  ok                                                  
+------------------------------------------------------------------------------------------------------
+ ok 12 - the direct context-aware projection matches the complete original JSON in the same statement
+(1 row)
+
+                                              ok                                              
+----------------------------------------------------------------------------------------------
+ ok 13 - the projection comparison includes real stored stops, start context and route totals
+(1 row)
+
+UPDATE 1
+                                    isnt                                    
+----------------------------------------------------------------------------
+ ok 14 - a later read in the same transaction observes changed route inputs
+(1 row)
+
+                                            is                                            
+------------------------------------------------------------------------------------------
+ ok 15 - snapshot reads do not publish starts, start runs or enqueue participant messages
+(1 row)
+
+   set_config    
+-----------------
+ {"role":"anon"}
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 16 - the existing admin authorization remains mandatory
+(1 row)
+
+ finish 
+--------
+ 1..16
+(1 row)
+
+ROLLBACK

@@ -854,7 +854,7 @@ export function Poortkamer({
         {tab === "more" && <nav className={`${s.tabs} ${s.moreTabs}`} aria-label="Meer in De Poortkamer">{[["preparation", "Voorbereiden"], ["qr", "QR & printen"], ["incident", "Hulp & contact"], ["settings", "Instellingen"], ["recap", "Terugblik"]].map(([key, label]) => <button type="button" key={key} className={s.button} aria-pressed={moreSection === key} onClick={() => setMoreSection(key)}>{label}</button>)}</nav>}
         {tab === "more" && (
           <div className={s.moreGrid} data-guide="house-more">
-            {moreSection === "qr" && <GatePoster key={room.portal.id} portal={room.portal} canRotate={canEdit} disabled={disabled} onRefresh={load}/> }
+            {moreSection === "qr" && <><GatePoster key={room.portal.id} portal={room.portal} canRotate={canEdit} disabled={disabled} onRefresh={load}/>{admin && <Link className="btn outline" href="/admin?view=duinpad">Duinpad: QR1 & QR2</Link>}</> }
             {moreSection === "preparation" && <nav className={`${s.tabs} ${s.subTabs}`} aria-label="Voorbereiden">{[["checklist", "Checklist"], ["presentation", "Presentatie"], ["simulation", "Oefenen"]].map(([key, label]) => <button type="button" key={key} className={s.button} aria-pressed={preparationSection === key} onClick={() => setPreparationSection(key)}>{label}</button>)}</nav>}
             {moreSection !== "qr" && <PoortkamerManagementV2
               section={moreSection === "preparation" ? preparationSection : moreSection}

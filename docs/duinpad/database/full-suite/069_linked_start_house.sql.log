@@ -1,0 +1,90 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+UPDATE 2
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+DO
+UPDATE 1
+DO
+                           is                            
+---------------------------------------------------------
+ ok 1 - publishing the linked start house grants no seal
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+DO
+UPDATE 1
+CREATE FUNCTION
+UPDATE 1
+DO
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 2 - the explicitly counted start house becomes the first actual released stop
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 3 - run_start at that house still grants no seal
+(1 row)
+
+                               lives_ok                                
+-----------------------------------------------------------------------
+ ok 4 - a real scan confirms arrival even when the child stays outside
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 5 - only that actual arrival grants the personal start-house seal
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                   isnt                                   
+--------------------------------------------------------------------------
+ ok 6 - opted-out start house is not reintroduced as a normal destination
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 7 - the other four registered children remain explicitly absent
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 8 - neither the present nor absent children gain a seal merely by starting
+(1 row)
+
+ finish 
+--------
+ 1..8
+(1 row)
+
+ROLLBACK

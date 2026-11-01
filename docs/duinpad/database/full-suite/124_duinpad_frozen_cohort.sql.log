@@ -1,0 +1,144 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+INSERT 0 4
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+INSERT 0 3
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 duinpad_finale_confirm                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"runId": "d8000000-0000-0000-0000-000000000001", "eventId": "11764532-5892-4f7e-87e6-a5522b6eebb5", "groupId": "d7000000-0000-0000-0000-000000000001", "accepted": true, "children": [{"id": "d9000000-0000-0000-0000-000000000001", "name": "Oefenkind 1", "status": "visited"}, {"id": "d9000000-0000-0000-0000-000000000002", "name": "Oefenkind 2", "status": "skipped"}], "eligible": false, "location": {"name": "Testpoort 30", "address": "NIET-BESTAAND TESTADRES 30", "instruction": null}, "portalId": "12000000-0000-0000-0000-000000000030", "recorded": true, "duplicate": false, "receiptId": "3626b145-42d7-418a-9855-e4c03a79c7d4", "runVersion": 2, "eveningEnded": false, "finaleStopId": "db000000-0000-0000-0000-000000000001", "relayGroupId": "d8000000-0000-0000-0000-000000000001", "eveningEndsAt": "2026-10-31T17:16:52.779329+00:00", "completedStopId": "db000000-0000-0000-0000-000000000001", "firstFinaleScanAt": "2026-10-31T15:16:52.779329+00:00"}
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000003","role":"authenticated"}
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 1 - a cohort member need not have an own scan
+(1 row)
+
+ALTER TABLE
+UPDATE 1
+ALTER TABLE
+                            is                            
+----------------------------------------------------------
+ ok 2 - the same deadline closes a non-scanning household
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 3 - worker lag cannot admit a new final scan
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 4 - a new household adult still sees the actual expired run deadline
+(1 row)
+
+                                  throws_ok                                   
+------------------------------------------------------------------------------
+ ok 5 - accepting a new adult after first scan cannot reopen the group finale
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 6 - frozen mail cohort receives no retroactive new adult
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 7 - late membership creates no extra scan receipt
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+SET
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 8 - reassigned current group still carries the personal closed evening
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 9 - deadline-specific UI flag also survives reassignment
+(1 row)
+
+                                               is                                               
+------------------------------------------------------------------------------------------------
+ ok 10 - new group receives only the personal closed boolean, no old private finale destination
+(1 row)
+
+                         throws_ok                         
+-----------------------------------------------------------
+ ok 11 - reassignment cannot open a new native route start
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 12 - old cohort cannot resume a fresh assigned run
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 13 - old cohort cannot use a new ordinary scan after deadline
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 14 - own receipt recovery remains available after closing and reassignment
+(1 row)
+
+SET
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 15 - all frozen adults receive one closing mail despite reassignment
+(1 row)
+
+ finish 
+--------
+ 1..15
+(1 row)
+
+ROLLBACK

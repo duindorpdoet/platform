@@ -1,0 +1,225 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+INSERT 0 4
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+INSERT 0 3
+INSERT 0 1
+CREATE TABLE
+INSERT 0 1
+                              ok                              
+--------------------------------------------------------------
+ ok 1 - browser role cannot impersonate a server show request
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 2 - show payloads and history remain private
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 3 - participant cannot read checkpoint credentials
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 4 - QR1 can never alias the true finalepoort
+(1 row)
+
+UPDATE 1
+                             is                             
+------------------------------------------------------------
+ ok 5 - QR2 uses the actual configured finalepoort identity
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 6 - creating a show checkpoint adds no ordinary route stop
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 7 - creating QR1 preserves all existing QR2 and portal credentials
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 8 - reading and downloading use the same persistent checkpoint material
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+SET
+                                 is                                 
+--------------------------------------------------------------------
+ ok 9 - server-validated QR1 identifies only the registration stage
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 10 - the persistent QR1 short code is case insensitive
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 11 - QR2 credential cannot be substituted for QR1
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 12 - QR1 cannot authorize a final arrival
+(1 row)
+
+SET
+CREATE FUNCTION
+UPDATE 1
+UPDATE 1
+                            is                             
+-----------------------------------------------------------
+ ok 13 - first QR1 registration gets one immediate attempt
+(1 row)
+
+ duinpad_show_finish 
+---------------------
+ 
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 14 - second account reuses the confirmed group registration
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 15 - no second group_add is produced
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 16 - QR1 never starts the evening clock
+(1 row)
+
+                                                  is                                                  
+------------------------------------------------------------------------------------------------------
+ ok 17 - a confirmed QR1 receipt never masquerades as a QR2 attempt after an interrupted browser flow
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+                                             is                                             
+--------------------------------------------------------------------------------------------
+ ok 18 - manual actor finale can request the shared slot without fabricating a visitor scan
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 19 - manual actor Finale GO starts no visitor deadline
+(1 row)
+
+ duinpad_show_finish 
+---------------------
+ 
+(1 row)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 duinpad_finale_confirm                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"runId": "d8000000-0000-0000-0000-000000000001", "eventId": "8fd7f0d2-fcf6-4809-a360-d14ec3d5b951", "groupId": "d7000000-0000-0000-0000-000000000001", "accepted": true, "children": [{"id": "d9000000-0000-0000-0000-000000000001", "name": "Oefenkind 1", "status": "visited"}, {"id": "d9000000-0000-0000-0000-000000000002", "name": "Oefenkind 2", "status": "skipped"}], "eligible": false, "location": {"name": "Testpoort 30", "address": "NIET-BESTAAND TESTADRES 30", "instruction": null}, "portalId": "12000000-0000-0000-0000-000000000030", "recorded": true, "duplicate": false, "receiptId": "da1741fb-0de6-4dc6-bf38-2777744e804a", "runVersion": 2, "eveningEnded": false, "finaleStopId": "db000000-0000-0000-0000-000000000001", "relayGroupId": "d8000000-0000-0000-0000-000000000001", "eveningEndsAt": "2026-10-31T16:59:44.960292+00:00", "completedStopId": "db000000-0000-0000-0000-000000000001", "firstFinaleScanAt": "2026-10-31T14:59:44.960292+00:00"}
+(1 row)
+
+UPDATE 1
+                                                is                                                 
+---------------------------------------------------------------------------------------------------
+ ok 20 - after an explicit block a new conscious visitor attempt can use the same business receipt
+(1 row)
+
+ duinpad_show_finish 
+---------------------
+ 
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 21 - actor and visitor share an unknown physical slot
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 22 - receipt recovery is read only and does not repost an execution payload
+(1 row)
+
+ duinpad_show_finish 
+---------------------
+ 
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 23 - ordinary failure cannot erase an unknown execution
+(1 row)
+
+ duinpad_show_finish 
+---------------------
+ 
+(1 row)
+
+UPDATE 1
+                               is                                
+-----------------------------------------------------------------
+ ok 24 - verified non-execution permits a deliberate new attempt
+(1 row)
+
+UPDATE 1
+                                 is                                  
+---------------------------------------------------------------------
+ ok 25 - stale requested execution becomes unknown and blocks replay
+(1 row)
+
+ duinpad_show_finish 
+---------------------
+ 
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 26 - a historical started group cannot be replayed
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 27 - physical retries never create another business scan
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 28 - a browser cannot submit only a guessed validated credential ID
+(1 row)
+
+ finish 
+--------
+ 1..28
+(1 row)
+
+ROLLBACK

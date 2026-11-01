@@ -1,0 +1,107 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+UPDATE 1
+INSERT 0 2
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1090000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                           registration_save_draft                                           
+-------------------------------------------------------------------------------------------------------------
+ {"id": "3b973c75-4ff8-44db-ab08-e1b7e5c00e3f", "savedAt": "2026-10-31T15:16:34.005242+00:00", "version": 1}
+(1 row)
+
+SELECT 1
+SELECT 3
+                              is                               
+---------------------------------------------------------------
+ ok 1 - three children retain distinct registration identities
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 2 - same name and age never merge distinct children
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 3 - public submit stores the explicit step-free requirement
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 4 - a free note does not override an explicit no
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 5 - an unclassified existing note remains a review case
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 6 - parent snapshot exposes the actual structured declaration
+(1 row)
+
+SELECT 1
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 7 - authorized parent add stores the field on the returned stable child ID
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 8 - adding a child preserves every pre-existing identity
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 9 - parent addition uses the existing contribution calculation
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1090000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 10 - the structured overload retains the parent ownership guard
+(1 row)
+
+                                           registration_save_draft                                           
+-------------------------------------------------------------------------------------------------------------
+ {"id": "a3c35a06-dce4-43e2-bc98-409ca997001b", "savedAt": "2026-10-31T15:16:34.005242+00:00", "version": 1}
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 11 - public API rejects non-boolean declarations
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 12 - invalid declaration rolls back the registration and children
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 13 - anonymous API cannot use structured parent additions
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 14 - existing five-argument clients remain compatible
+(1 row)
+
+ finish 
+--------
+ 1..14
+(1 row)
+
+ROLLBACK

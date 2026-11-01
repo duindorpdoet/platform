@@ -1,0 +1,192 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..23
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 1 - anonymous visitors cannot enumerate administrators
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 2 - anonymous visitors cannot change administrator capabilities
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 3 - authenticated users can reach the access snapshot authorization boundary
+(1 row)
+
+                                         ok                                          
+-------------------------------------------------------------------------------------
+ ok 4 - authenticated users can reach the capability mutation authorization boundary
+(1 row)
+
+SET
+                                               set_config                                               
+--------------------------------------------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated","user_metadata":{"role":"admin"}}
+(1 row)
+
+                               throws_ok                               
+-----------------------------------------------------------------------
+ ok 5 - an ordinary authenticated user cannot enumerate administrators
+(1 row)
+
+                            throws_ok                            
+-----------------------------------------------------------------
+ ok 6 - an ordinary authenticated user cannot grant capabilities
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                          is                                          
+--------------------------------------------------------------------------------------
+ ok 7 - the event administrator can see the seeded administrator and all capabilities
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 8 - capabilities can only be granted to a confirmed Auth user
+(1 row)
+
+SET
+UPDATE 1
+CREATE TABLE
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 9 - an event administrator can grant a least-privilege capability set
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 10 - the returned capability set is normalized and deterministic
+(1 row)
+
+SET
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 11 - only the selected capabilities are active for the target user
+(1 row)
+
+                                             ok                                             
+--------------------------------------------------------------------------------------------
+ ok 12 - the grant records the actor, target and minimal capability change in the audit log
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 13 - a stale administration screen cannot overwrite newer capabilities
+(1 row)
+
+                   throws_ok                   
+-----------------------------------------------
+ ok 14 - unknown capability names are rejected
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              throws_ok                               
+----------------------------------------------------------------------
+ ok 15 - a scoped operational manager cannot enumerate administrators
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 16 - a scoped operational manager cannot grant capabilities
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 lives_ok                                  
+---------------------------------------------------------------------------
+ ok 17 - an existing scoped manager can be promoted to event administrator
+(1 row)
+
+SET
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 18 - the event has two active event administrators after promotion
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                        lives_ok                                        
+----------------------------------------------------------------------------------------
+ ok 19 - an event administrator can be removed after another event administrator exists
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                          throws_ok                                           
+----------------------------------------------------------------------------------------------
+ ok 20 - the last active event administrator cannot remove their own administrator capability
+(1 row)
+
+SET
+                                 is                                  
+---------------------------------------------------------------------
+ ok 21 - all capabilities of the replaced administrator are inactive
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 22 - complete removal is recorded as one audited capability change
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 23 - the access snapshot lists only users with active capabilities
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

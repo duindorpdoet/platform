@@ -1,0 +1,229 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+                                                                                                                                                                                                                                                                                                                                                                                                                       joint_canonical_fixture                                                                                                                                                                                                                                                                                                                                                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"third": {"groupId": "23000000-0000-0000-0000-000000000003", "pointId": "2d4766e6-8bc2-4f37-bcb0-9bd94f996f8b", "startsAt": "2026-10-31T16:20:00+00:00", "scheduleId": "e397f994-3eaa-49fb-8292-ede26b152d21"}, "fourth": {"groupId": "23000000-0000-0000-0000-000000000004", "pointId": "f4882153-1d37-42e0-b69e-e083a41e7f83", "startsAt": "2026-10-31T16:30:00+00:00", "scheduleId": "0c0707e3-afbb-4d8b-ad2d-7cc0e129f848"}, "source": {"groupId": "23000000-0000-0000-0000-000000000001", "pointId": "bcd7e0ce-99fe-4bac-9a3a-b2d6b0d75ab1", "startsAt": "2026-10-31T16:00:00+00:00", "scheduleId": "966f7a7a-d136-4852-b472-ea295f40db04"}, "target": {"groupId": "23000000-0000-0000-0000-000000000002", "pointId": "fd163506-2829-4bf2-90e9-0ec3ed646316", "startsAt": "2026-10-31T16:10:00+00:00", "scheduleId": "fbccbc97-c6b5-4e1e-9f25-a1b39d7279d4"}}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+DO
+UPDATE 1
+                                                         is                                                          
+---------------------------------------------------------------------------------------------------------------------
+ ok 1 - migration preserves starts, schedules, history, participants, accepted routes, mail, ledger and other houses
+(1 row)
+
+                   is                   
+----------------------------------------
+ ok 2 - hard policy contract remains v3
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 3 - new plans receive75 minutes of actual walking including P38
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 4 - only the route-policy settings counter advances
+(1 row)
+
+                                 isnt                                 
+----------------------------------------------------------------------
+ ok 5 - real settings and P12 changes invalidate old cached proposals
+(1 row)
+
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 6 - confirmed-start version, updated_at and every unrelated settings field are preserved
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 7 - every unrelated P12 portal field is preserved
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 8 - P12 editor version advances once
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 9 - stored P12 close is exactly19:00 Amsterdam
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 10 - P12 has explicit zero-grace physical closing
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 11 - effective close cannot retain19:10 or old grace
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 12 - joint RPC exports the same actual hard end
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 13 - function owners and ACLs remain exact
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 14 - begun v3 route keeps its earlier65-minute approval
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 15 - migration never rewrites an accepted policy snapshot
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 16 - old cached proposals cannot apply under the new real policy
+(1 row)
+
+CREATE FUNCTION
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 17 - 18:53 plus5-minute visit and2-minute buffer finishes exactly19:00
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 18 - 18:53:01 cannot use one second of grace
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 19 - a five-minute visit cannot omit its actual buffer
+(1 row)
+
+ apply_portal_planning_policy 
+------------------------------
+ 
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 20 - raw server saves cannot restore grace while hard closing is enabled
+(1 row)
+
+SAVEPOINT
+UPDATE 1
+                                          ok                                           
+---------------------------------------------------------------------------------------
+ ok 21 - a real six-minute visit moves last arrival to18:52 with its two-minute buffer
+(1 row)
+
+                                              ok                                              
+----------------------------------------------------------------------------------------------
+ ok 22 - the boundary uses actual service rather than assuming every visit takes five minutes
+(1 row)
+
+ROLLBACK
+CREATE FUNCTION
+ p12_route 
+-----------
+ 
+(1 row)
+
+                          lives_ok                          
+------------------------------------------------------------
+ ok 23 - joint validator accepts exact19:00 physical finish
+(1 row)
+
+CREATE FUNCTION
+                                      ok                                      
+------------------------------------------------------------------------------
+ ok 24 - manual planboard preview accepts the same exact19:00 physical finish
+(1 row)
+
+ p12_route 
+-----------
+ 
+(1 row)
+
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 25 - joint validator rejects one second beyond hard close
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 26 - manual planboard preview blocks the same one-second overflow
+(1 row)
+
+ p12_route 
+-----------
+ 
+(1 row)
+
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 27 - exact4500 including a genuinely long final P38 leg is valid
+(1 row)
+
+ p12_route 
+-----------
+ 
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 28 - 4501 seconds fails the actual total walking budget
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 29 - legacy stored plan accepts exact service plus buffer finish
+(1 row)
+
+DELETE 1
+                         throws_ok                          
+------------------------------------------------------------
+ ok 30 - legacy storage cannot omit the final buffer second
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+                                             lives_ok                                              
+---------------------------------------------------------------------------------------------------
+ ok 31 - two different physical houses with the same world remain eligible in legacy route storage
+(1 row)
+
+                                    throws_ok                                    
+---------------------------------------------------------------------------------
+ ok 32 - the same physical house remains forbidden regardless of its world label
+(1 row)
+
+ finish 
+--------
+ 1..32
+(1 row)
+
+ROLLBACK

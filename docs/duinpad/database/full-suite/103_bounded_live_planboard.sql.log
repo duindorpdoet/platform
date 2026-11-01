@@ -1,0 +1,258 @@
+BEGIN
+CREATE EXTENSION
+CREATE FUNCTION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+INSERT 0 5
+CREATE TABLE
+INSERT 0 6
+INSERT 0 6
+INSERT 0 6
+INSERT 0 6
+INSERT 0 12
+UPDATE 6
+UPDATE 6
+INSERT 0 1
+SELECT 1
+UPDATE 1
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 1 - cold read records lightweight route metadata without independently planning groups
+(1 row)
+
+                                               is                                                
+-------------------------------------------------------------------------------------------------
+ ok 2 - lightweight metadata initialization does not queue hidden independent route calculations
+(1 row)
+
+                                      throws_ok                                       
+--------------------------------------------------------------------------------------
+ ok 3 - direct joint apply requires explicit review rather than promoting a cold read
+(1 row)
+
+                                          is                                          
+--------------------------------------------------------------------------------------
+ ok 4 - every unreviewed physical group is explicitly identified in snapshot warnings
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 5 - viewing saved legacy proposals creates no accepted joint version
+(1 row)
+
+UPDATE 1
+                            is                             
+-----------------------------------------------------------
+ ok 6 - a second read retains the same finite metadata set
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 7 - warm completeness reports stored metadata accurately
+(1 row)
+
+                                            is                                            
+------------------------------------------------------------------------------------------
+ ok 8 - cold and warm reads never copy independent legacy routes into physical intentions
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 9 - an initialized empty route remains intentionally empty
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+                     is                     
+--------------------------------------------
+ ok 10 - warm reads retain exact input hash
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 11 - warm reads preserve all intent identities, times and versions
+(1 row)
+
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 12 - ordinary refresh never increments any plan version, including an empty one
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 13 - initialization and warm refresh send no participant communication
+(1 row)
+
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 14 - viewing stored proposals creates no operational runs or physical arrivals
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 15 - one physical group appears once after historical run and active run coexist
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 16 - snapshot chooses the current active run after a run switch
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                    throws_ok                                    
+---------------------------------------------------------------------------------
+ ok 17 - faster snapshots retain server stale-hash enforcement for direct writes
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 18 - clients cannot bypass the authorized snapshot wrapper
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 19 - clients cannot invoke private initialization
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 20 - clients cannot submit their own authority snapshot
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 21 - clients cannot substitute fake occupancy
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 22 - full future route storage remains private
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 23 - ordinary parent cannot obtain the admin route snapshot
+(1 row)
+
+   set_config    
+-----------------
+ {"role":"anon"}
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 24 - unauthenticated direct calls remain rejected
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                         ok                         
+----------------------------------------------------
+ ok 25 - touching physical intervals do not overlap
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 26 - one second overlap still exceeds actual one-group capacity
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                                   ok                                                   
+--------------------------------------------------------------------------------------------------------
+ ok 27 - alternative reservations of the same physical group count once and own reservation is replaced
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 28 - deduplication does not bypass the total eight-child limit
+(1 row)
+
+                      ok                       
+-----------------------------------------------
+ ok 29 - per-visit child capacity remains hard
+(1 row)
+
+                     ok                     
+--------------------------------------------
+ ok 30 - zero-duration interval is rejected
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 31 - service ending at physical closing is valid
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 32 - physical closing cannot be exceeded by one second
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                      ok                                      
+------------------------------------------------------------------------------
+ ok 33 - later boundaries inside a requested interval remain capacity checked
+(1 row)
+
+UPDATE 1
+                                     ok                                      
+-----------------------------------------------------------------------------
+ ok 34 - proven historical children still count toward the all-evening total
+(1 row)
+
+INSERT 0 1
+                                ok                                 
+-------------------------------------------------------------------
+ ok 35 - dispatcher wrapper enforces real held reservation overlap
+(1 row)
+
+                                           ok                                            
+-----------------------------------------------------------------------------------------
+ ok 36 - dispatcher wrapper permits a real touching reservation within total-child limit
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+                                         ok                                          
+-------------------------------------------------------------------------------------
+ ok 37 - dispatcher deduplicates real alternative reservations of one physical group
+(1 row)
+
+INSERT 0 1
+                                               ok                                                
+-------------------------------------------------------------------------------------------------
+ ok 38 - dispatcher cannot bypass real total-child reception budget using a non-overlapping time
+(1 row)
+
+ finish 
+--------
+ 1..38
+(1 row)
+
+ROLLBACK

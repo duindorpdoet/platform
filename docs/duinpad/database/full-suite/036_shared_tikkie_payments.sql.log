@@ -1,0 +1,453 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+GRANT
+INSERT 0 1
+DELETE 0
+UPDATE 2
+INSERT 0 1
+UPDATE 1
+                              ok                               
+---------------------------------------------------------------
+ ok 1 - anonymous visitors cannot publish shared payment links
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 2 - participants cannot insert batches directly
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 3 - participants cannot add members directly
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 4 - anonymous visitors cannot enumerate private batch links
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                        throws_ok                        
+---------------------------------------------------------
+ ok 5 - a parent cannot publish a shared payment request
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                       throws_ok                        
+--------------------------------------------------------
+ ok 6 - a payment URL with user information is rejected
+(1 row)
+
+                       throws_ok                        
+--------------------------------------------------------
+ ok 7 - an explicit port in the payment URL is rejected
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 8 - duplicate request selections cannot inflate a batch total
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 9 - one stale selected payment rejects the entire batch
+(1 row)
+
+RESET
+                              is                               
+---------------------------------------------------------------
+ ok 10 - a failed batch leaves neither selected request linked
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 11 - a failed batch queues no payment e-mail
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 12 - the manager publishes one shared payment link for two households
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 13 - the batch amount is the sum of both original invoices
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 14 - the batch describes both linked households
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 15 - the first selected household is the default single payer
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 16 - replaying the publication command returns the original batch
+(1 row)
+
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 17 - the same publication key cannot silently change the payment URL
+(1 row)
+
+                                         ok                                         
+------------------------------------------------------------------------------------
+ ok 18 - admin payment cards identify the parent, household, group and shared batch
+(1 row)
+
+RESET
+                          is                           
+-------------------------------------------------------
+ ok 19 - the batch contains both invoices exactly once
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 20 - only the designated payer household receives the direct payment-link e-mail
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 21 - the designated payer receives the direct link, not every linked family
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 22 - the payment mail includes payer and batch revision metadata
+(1 row)
+
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 23 - every batch e-mail contains the full joint total and both names
+(1 row)
+
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                lives_ok                                
+------------------------------------------------------------------------
+ ok 24 - the same current members and URL can be submitted again safely
+(1 row)
+
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 25 - even an unchanged publication reserves its idempotency key
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 26 - an existing batch cannot be edited through only one family invoice
+(1 row)
+
+RESET
+                                   is                                   
+------------------------------------------------------------------------
+ ok 27 - resubmitting the unchanged batch does not queue duplicate mail
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 28 - a non-paying linked household does not receive the active payment link
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 29 - the linked non-payer has no active payment action
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 30 - the nested batch projection cannot leak the payer-only link
+(1 row)
+
+                              throws_ok                               
+----------------------------------------------------------------------
+ ok 31 - a linked non-payer cannot report payment for the whole batch
+(1 row)
+
+                            throws_ok                            
+-----------------------------------------------------------------
+ ok 32 - a linked parent cannot confirm their own shared payment
+(1 row)
+
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 33 - a linked parent cannot withdraw the shared payment for everyone
+(1 row)
+
+                                                      is                                                       
+---------------------------------------------------------------------------------------------------------------
+ ok 34 - the parent dashboard shows the joint amount instead of suggesting their individual share is the total
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 35 - the parent dashboard identifies both households paying together
+(1 row)
+
+                                          ok                                           
+---------------------------------------------------------------------------------------
+ ok 36 - the shared parent projection does not disclose other parents e-mail addresses
+(1 row)
+
+                                    throws_ok                                     
+----------------------------------------------------------------------------------
+ ok 37 - a different actor cannot exploit the manager publication idempotency key
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000007","role":"authenticated"}
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 38 - another household cannot see the private shared payment link
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 39 - another household cannot see the batch participant names
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 40 - individual link edits cannot replace a shared payment
+(1 row)
+
+                                throws_ok                                 
+--------------------------------------------------------------------------
+ ok 41 - individual confirmation cannot partially settle a shared payment
+(1 row)
+
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 42 - the joint batch cannot be confirmed using only one family share
+(1 row)
+
+                            throws_ok                            
+-----------------------------------------------------------------
+ ok 43 - a stale shared confirmation cannot write ledger entries
+(1 row)
+
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 44 - a null revision cannot bypass confirmation concurrency protection
+(1 row)
+
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 45 - a null revision cannot bypass cancellation concurrency protection
+(1 row)
+
+RESET
+DELETE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 46 - the designated payer receives the active payment URL
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 47 - the payer sees an active payment action
+(1 row)
+
+                              throws_ok                               
+----------------------------------------------------------------------
+ ok 48 - a null version cannot bypass the payer report revision guard
+(1 row)
+
+                       lives_ok                        
+-------------------------------------------------------
+ ok 49 - a household can report the one shared payment
+(1 row)
+
+RESET
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 50 - a shared report marks both requests reported without confirmation
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 51 - a household report never books money
+(1 row)
+
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                          lives_ok                           
+-------------------------------------------------------------
+ ok 52 - the manager confirms the received joint amount once
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 53 - confirmation retries replay the existing result
+(1 row)
+
+RESET
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 54 - the ledger receives the total once, distributed into family shares
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 55 - both selected household invoices become confirmed
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 56 - the one-child family ledger receives only its original share
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 57 - the five-child family ledger receives only its original share
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 58 - the parent cannot pay a settled joint request again
+(1 row)
+
+RESET
+DELETE 4
+UPDATE 2
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+RESET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                        lives_ok                        
+--------------------------------------------------------
+ ok 59 - the manager can withdraw a pending shared link
+(1 row)
+
+RESET
+                                   is                                   
+------------------------------------------------------------------------
+ ok 60 - cancellation detaches both invoices and clears their old links
+(1 row)
+
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+RESET
+UPDATE 1
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 61 - a changed underlying amount invalidates the shared payment link
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                                          ok                                           
+---------------------------------------------------------------------------------------
+ ok 62 - the other household no longer sees a stale payable URL after an amount change
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   throws_ok                                    
+--------------------------------------------------------------------------------
+ ok 63 - a changed family amount must be reviewed before any joint confirmation
+(1 row)
+
+RESET
+                                                 is                                                 
+----------------------------------------------------------------------------------------------------
+ ok 64 - the worker never claims a settled, corrected, cancelled or amount-invalidated payment link
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 65 - each obsolete queued payer e-mail is explicitly suppressed
+(1 row)
+
+ finish 
+--------
+ 1..65
+(1 row)
+
+ROLLBACK

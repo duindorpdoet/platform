@@ -1,0 +1,110 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                          ok                          
+------------------------------------------------------
+ ok 1 - worker still cannot name private schema types
+(1 row)
+
+                   ok                    
+-----------------------------------------
+ ok 2 - worker can execute text boundary
+(1 row)
+
+               ok               
+--------------------------------
+ ok 3 - anon cannot update mail
+(1 row)
+
+               ok                
+---------------------------------
+ ok 4 - users cannot update mail
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 5 - definer has a fixed empty search path
+(1 row)
+
+INSERT 0 1
+SET
+                        throws_ok                        
+---------------------------------------------------------
+ ok 6 - old argument conversion fails before the definer
+(1 row)
+
+          throws_ok          
+-----------------------------
+ ok 7 - null status rejected
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 8 - cannot reset an attempt with the result RPC
+(1 row)
+
+                throws_ok                
+-----------------------------------------
+ ok 9 - invalid text rejected internally
+(1 row)
+
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 10 - service role persists retry through text boundary
+(1 row)
+
+RESET
+               is                
+---------------------------------
+ ok 11 - retry outcome persisted
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 12 - status update preserves attempt counter
+(1 row)
+
+                      ok                      
+----------------------------------------------
+ ok 13 - retry time, code and lease preserved
+(1 row)
+
+SET
+                 lives_ok                  
+-------------------------------------------
+ ok 14 - text boundary persists acceptance
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 15 - late result cannot overwrite terminal acceptance
+(1 row)
+
+RESET
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 16 - accepted identity and terminal state survive a late update
+(1 row)
+
+UPDATE 1
+SET
+ worker_update_outbox_v2 
+-------------------------
+ 
+(1 row)
+
+RESET
+                       is                       
+------------------------------------------------
+ ok 17 - delivered mail never becomes claimable
+(1 row)
+
+ finish 
+--------
+ 1..17
+(1 row)
+
+ROLLBACK

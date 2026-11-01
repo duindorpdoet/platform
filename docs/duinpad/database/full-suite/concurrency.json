@@ -1,0 +1,20 @@
+{
+  "code": "DUINPAD_FINALE_CONCURRENCY_VERIFIED",
+  "environment": "dedicated local PostgreSQL, synthetic fixtures",
+  "concurrentScans": 3,
+  "uniqueReceipts": 2,
+  "oneUnchangedDeadline": true,
+  "lockWaitCrossingDeadlineRejected": true,
+  "lateAdultOutsideFrozenCohort": true,
+  "arrivals": 3,
+  "seals": 3,
+  "concurrentWorkers": 2,
+  "uniqueClosingMails": 4,
+  "realMail": false,
+  "relay": false,
+  "hardware": false,
+  "codeCommit": "b0e5e7e6127f930d2d0c645d4a299595dab0993e",
+  "scriptSha256": "f58bd998ada7d77647fd666b2f668cf802a60335a548c2df1c227785860f9fa4",
+  "functionDefinitionsMatch": true,
+  "evidence": "function-definitions-match.json"
+}

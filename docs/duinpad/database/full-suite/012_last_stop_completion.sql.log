@@ -1,0 +1,73 @@
+BEGIN
+INSERT 0 4
+CREATE EXTENSION
+ plan  
+-------
+ 1..10
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                     lives_ok                                                      
+-------------------------------------------------------------------------------------------------------------------
+ ok 1 - leader advances through all six published stops after confirmed arrival and explicit all-skip confirmation
+(1 row)
+
+                 is                 
+------------------------------------
+ ok 2 - last stop completes the run
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 3 - last stop reports no next destination
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 4 - completed snapshot exposes no current or recycled first stop
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 5 - completed snapshot retains all six historical stops
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 6 - retry of the final command returns the one stored completion result
+(1 row)
+
+SET
+                    is                    
+------------------------------------------
+ ok 7 - persisted run status is completed
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 8 - persisted walking group status is completed
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 9 - all and only the six route stops are completed
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 10 - each explicitly skipped stop has its own truthful skip seal
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

@@ -1,0 +1,279 @@
+BEGIN
+CREATE FUNCTION
+GRANT
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+              set_config              
+--------------------------------------
+ 11764532-5892-4f7e-87e6-a5522b6eebb5
+(1 row)
+
+                                                                                                                                                 set_config                                                                                                                                                  
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"title":"Beveiligd nieuws","intro":"Nieuws voor volwassenen","heroId":"b8200000-0000-0000-0000-000000000001","heroAlt":"Een poort","heroCaption":"","author":"","categoryId":null,"body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"De wijk ontwaakt"}]}]},"cta":null}
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                                                                                                                                                      editorial_preferences_set                                                                                                                                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"email": true, "source": "communication_preferences", "devices": [{"id": "b8200000-0000-0000-0000-000000000001", "label": "Browser", "active": true, "lastUsed": null}, {"id": "b8200000-0000-0000-0000-000000000002", "label": "Browser", "active": true, "lastUsed": null}], "housesPush": true, "consentedAt": "2026-10-31T15:16:06.799011+00:00", "parentsPush": true, "unsubscribedAt": null}
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                     set_config                                                     
+--------------------------------------------------------------------------------------------------------------------
+ {"id": "7cd8a119-13cc-4f38-903a-51eb79c39613", "revision": 1, "versionId": "0b16eca3-440a-4f6a-950b-bb5fcfe45677"}
+(1 row)
+
+              set_config              
+--------------------------------------
+ 0b16eca3-440a-4f6a-950b-bb5fcfe45677
+(1 row)
+
+           throws_ok            
+--------------------------------
+ ok 1 - duplicate slug rejected
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 2 - stale editor cannot overwrite another draft
+(1 row)
+
+                                         admin_news_publish                                          
+-----------------------------------------------------------------------------------------------------
+ {"id": "7cd8a119-13cc-4f38-903a-51eb79c39613", "versionId": "0b16eca3-440a-4f6a-950b-bb5fcfe45677"}
+(1 row)
+
+SET
+                              is                               
+---------------------------------------------------------------
+ ok 3 - draft planning remains stored with the content version
+(1 row)
+
+              throws_ok              
+-------------------------------------
+ ok 4 - published planning immutable
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 5 - overlapping parent and house roles produce one user notification
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 6 - both active devices snapshotted at publication despite delayed push
+(1 row)
+
+              set_config              
+--------------------------------------
+ 39cb1889-dda5-416c-a48d-4f342eaa682b
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 7 - planned push not claimed early
+(1 row)
+
+INSERT 0 1
+ worker_editorial_tick 
+-----------------------
+ {"published": 0}
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 8 - new device cannot change the frozen target snapshot
+(1 row)
+
+UPDATE 1
+                     is                      
+---------------------------------------------
+ ok 9 - empty staging allowlist fails closed
+(1 row)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                           set_config                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ [{"id": "39cb1889-dda5-416c-a48d-4f342eaa682b", "url": "/omgeving/nieuws/private-push-test", "targets": [{"auth": "AAAAAAAAAAAAAAAAAAAAAA", "p256dh": "BGsX0fLhLEJH-Lzm5WOkQPJ3A32BLeszoPShOUXYmMKWT-NC4v4af5uO5-tKfA-eFivOM1drMV7Oy7ZAaDe_UfU", "endpoint": "https://fcm.googleapis.com/fcm/send/editorial-1", "fingerprint": "4ae5a4ae4295ce01f3282af034c16a8310dc834d9e0439193e1c0635c65f5122", "subscriptionId": "b8200000-0000-0000-0000-000000000001"}, {"auth": "AAAAAAAAAAAAAAAAAAAAAA", "p256dh": "BGsX0fLhLEJH-Lzm5WOkQPJ3A32BLeszoPShOUXYmMKWT-NC4v4af5uO5-tKfA-eFivOM1drMV7Oy7ZAaDe_UfU", "endpoint": "https://fcm.googleapis.com/fcm/send/editorial-2", "fingerprint": "ae14552dfb72991b85f5216bf4dc927f2d6797c31ea496daad60297b67df5a76", "subscriptionId": "b8200000-0000-0000-0000-000000000002"}], "versionId": "0b16eca3-440a-4f6a-950b-bb5fcfe45677", "claimToken": "199e1cba-c788-49a2-840e-cb9deb019785"}]
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 10 - allowlisted test account claimed once
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 11 - claim uses immutable device snapshot
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 12 - lease prevents duplicate worker claim
+(1 row)
+
+              set_config              
+--------------------------------------
+ 199e1cba-c788-49a2-840e-cb9deb019785
+(1 row)
+
+              throws_ok              
+-------------------------------------
+ ok 13 - stale worker receipt denied
+(1 row)
+
+ worker_record_editorial_push 
+------------------------------
+ 
+(1 row)
+
+ worker_record_editorial_push 
+------------------------------
+ 
+(1 row)
+
+ worker_finish_editorial_push 
+------------------------------
+ 
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 14 - partial failure preserves accepted device
+(1 row)
+
+UPDATE 1
+                                                                                                                                                                                                                                                                                 set_config                                                                                                                                                                                                                                                                                 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ [{"id": "39cb1889-dda5-416c-a48d-4f342eaa682b", "url": "/omgeving/nieuws/private-push-test", "targets": [{"auth": "AAAAAAAAAAAAAAAAAAAAAA", "p256dh": "BGsX0fLhLEJH-Lzm5WOkQPJ3A32BLeszoPShOUXYmMKWT-NC4v4af5uO5-tKfA-eFivOM1drMV7Oy7ZAaDe_UfU", "endpoint": "https://fcm.googleapis.com/fcm/send/editorial-2", "fingerprint": "ae14552dfb72991b85f5216bf4dc927f2d6797c31ea496daad60297b67df5a76", "subscriptionId": "b8200000-0000-0000-0000-000000000002"}], "versionId": "0b16eca3-440a-4f6a-950b-bb5fcfe45677", "claimToken": "e47c1e54-cb14-42c5-90fc-6625e83d33e5"}]
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 15 - retry only targets failed device
+(1 row)
+
+              set_config              
+--------------------------------------
+ e47c1e54-cb14-42c5-90fc-6625e83d33e5
+(1 row)
+
+ worker_record_editorial_push 
+------------------------------
+ 
+(1 row)
+
+ worker_finish_editorial_push 
+------------------------------
+ 
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 16 - expired endpoint deactivated
+(1 row)
+
+                      ok                      
+----------------------------------------------
+ ok 17 - terminal devices finish notification
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+ news_push_clicked 
+-------------------
+ 
+(1 row)
+
+SET
+                     is                     
+--------------------------------------------
+ ok 18 - another account cannot forge click
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+ news_push_clicked 
+-------------------
+ 
+(1 row)
+
+SET
+                      is                       
+-----------------------------------------------
+ ok 19 - click counts only the selected device
+(1 row)
+
+                      ok                       
+-----------------------------------------------
+ ok 20 - subscription endpoints remain private
+(1 row)
+
+                       ok                       
+------------------------------------------------
+ ok 21 - anon cannot enumerate delivery targets
+(1 row)
+
+SET
+   set_config    
+-----------------
+ {"role":"anon"}
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 22 - portal-only article cannot leak through public API
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 23 - portal-only image is inaccessible anonymously
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 24 - ordinary parent cannot create bulk campaign
+(1 row)
+
+                     throws_ok                     
+---------------------------------------------------
+ ok 25 - ordinary parent cannot send bulk campaign
+(1 row)
+
+ finish 
+--------
+ 1..25
+(1 row)
+
+ROLLBACK

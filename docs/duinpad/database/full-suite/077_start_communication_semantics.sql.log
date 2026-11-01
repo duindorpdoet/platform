@@ -1,0 +1,160 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+ withdraw_group_appointment 
+----------------------------
+ 
+(1 row)
+
+ withdraw_group_appointment 
+----------------------------
+ 
+ 
+ 
+ 
+(4 rows)
+
+UPDATE 1
+                                                                                                                                                                                   admin_startregie_confirm_point                                                                                                                                                                                   
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "20000000-0000-0000-0000-000000000001", "active": true, "version": 1, "confirmed": true, "readiness": {"location": {"valid": true, "reason": null, "source": "address", "latitude": 52.100000, "longitude": 4.270000}, "confirmed": true, "canConfirm": true, "routeReady": true, "confirmedAt": "2026-10-31T15:16:17.936382+00:00", "linkedPortalName": null, "confirmationReason": null}}
+(1 row)
+
+DO
+UPDATE 1
+                 is                 
+------------------------------------
+ ok 1 - draft revisions do not mail
+(1 row)
+
+                                lives_ok                                 
+-------------------------------------------------------------------------
+ ok 2 - one explicit action confirms, publishes and queues unpaid starts
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 3 - combined confirmation is idempotent
+(1 row)
+
+UPDATE 1
+                               ok                                
+-----------------------------------------------------------------
+ ok 4 - internal revision three receives first time confirmation
+(1 row)
+
+UPDATE 1
+                           is                            
+---------------------------------------------------------
+ ok 5 - first actual communication uses initial template
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 6 - time mail payload never contains location, even after release
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                    lives_ok                    
+------------------------------------------------
+ ok 7 - location-only revision can be confirmed
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 8 - location-only revision preserves pending first time mail
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 9 - no extra mail for a location-only publication
+(1 row)
+
+UPDATE 1
+DO
+UPDATE 1
+UPDATE 1
+                           is                            
+---------------------------------------------------------
+ ok 10 - provider-known earlier time produces correction
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 11 - old time is the actually communicated time, not unsent intermediate
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 12 - only latest time is current
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 13 - intermediate pending time is suppressed
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 14 - first location remains secret before exact T-60
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 15 - own location released at exact T-60
+(1 row)
+
+ worker_update_outbox 
+----------------------
+ 
+(1 row)
+
+UPDATE 2
+UPDATE 2
+UPDATE 2
+ worker_store_email_event 
+--------------------------
+ t
+(1 row)
+
+ALTER TABLE
+UPDATE 1
+ALTER TABLE
+UPDATE 1
+UPDATE 1
+                                  admin_startregie_confirm_and_send                                  
+-----------------------------------------------------------------------------------------------------
+ {"published": 1, "planningVersion": 5, "planningVersionId": "341081fa-21af-461d-9e41-658c23998da3"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                              is                                              
+----------------------------------------------------------------------------------------------
+ ok 16 - late callback on an older mail never changes the last semantically communicated time
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 17 - the next correction retains the new published time
+(1 row)
+
+ finish 
+--------
+ 1..17
+(1 row)
+
+ROLLBACK

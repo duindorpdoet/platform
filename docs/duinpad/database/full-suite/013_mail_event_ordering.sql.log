@@ -1,0 +1,61 @@
+BEGIN
+CREATE EXTENSION
+ plan 
+------
+ 1..8
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+GRANT
+SET
+                  is                   
+---------------------------------------
+ ok 1 - first provider event is stored
+(1 row)
+
+SET
+                            is                             
+-----------------------------------------------------------
+ ok 2 - delivered provider event promotes the outbox state
+(1 row)
+
+SET
+                                   is                                   
+------------------------------------------------------------------------
+ ok 3 - duplicate provider event is acknowledged as an idempotent no-op
+(1 row)
+
+SET
+                           is                           
+--------------------------------------------------------
+ ok 4 - duplicate provider event has one durable record
+(1 row)
+
+SET
+                            is                            
+----------------------------------------------------------
+ ok 5 - distinct late processed event is durably recorded
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 6 - distinct late terminal event is durably recorded for audit
+(1 row)
+
+                                      lives_ok                                      
+------------------------------------------------------------------------------------
+ ok 7 - late worker acknowledgement is accepted without rewriting terminal delivery
+(1 row)
+
+SET
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 8 - out-of-order webhook and worker updates cannot regress delivered state
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

@@ -1,0 +1,287 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+ ?column? 
+----------
+ t
+(1 row)
+
+              set_config              
+--------------------------------------
+ 49d1ecb6-07b4-42c9-9b22-c90cc7665340
+(1 row)
+
+              set_config              
+--------------------------------------
+ 0a3b6914-0b64-4a23-bf09-5b6d34190021
+(1 row)
+
+                 lives_ok                  
+-------------------------------------------
+ ok 1 - new invitation for boundary checks
+(1 row)
+
+              set_config              
+--------------------------------------
+ 6e218085-8b50-442b-b599-1b052a7666d5
+(1 row)
+
+                            set_config                            
+------------------------------------------------------------------
+ 43fb00c9c035dfef929dd6c87906ba4fcaa99084272b378f9aed8937e1e352fb
+(1 row)
+
+                 ok                 
+------------------------------------
+ ok 2 - invitation email normalized
+(1 row)
+
+                      ok                      
+----------------------------------------------
+ ok 3 - preflight never accepts another email
+(1 row)
+
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                throws_ok                
+-----------------------------------------
+ ok 4 - unverified account cannot accept
+(1 row)
+
+UPDATE 1
+UPDATE 1
+            throws_ok             
+----------------------------------
+ ok 5 - expired key cannot accept
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+             lives_ok              
+-----------------------------------
+ ok 6 - resend expires the old key
+(1 row)
+
+                   ok                   
+----------------------------------------
+ ok 7 - old key is invalid after resend
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 8 - one pending invitation per email
+(1 row)
+
+              set_config              
+--------------------------------------
+ 13fbdacc-31ca-46f2-980b-214937355b7f
+(1 row)
+
+              portal_team_command               
+------------------------------------------------
+ {"id": "13fbdacc-31ca-46f2-980b-214937355b7f"}
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 9 - revoked invitation is suppressed at delivery time
+(1 row)
+
+             throws_ok              
+------------------------------------
+ ok 10 - cannot revoke sole primary
+(1 row)
+
+                throws_ok                
+-----------------------------------------
+ ok 11 - missing status version rejected
+(1 row)
+
+              throws_ok              
+-------------------------------------
+ ok 12 - 1000 character server limit
+(1 row)
+
+                       throws_ok                        
+--------------------------------------------------------
+ ok 13 - team channel cannot impersonate another portal
+(1 row)
+
+INSERT 0 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+ set_config 
+------------
+ 24
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 14 - community mention target is an active author identifier
+(1 row)
+
+                           ok                            
+---------------------------------------------------------
+ ok 15 - community mention projection never adds surname
+(1 row)
+
+ set_config 
+------------
+ 25
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 16 - community mention queues one notification for active recipient
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 17 - community cannot notify a non-member
+(1 row)
+
+INSERT 0 1
+ set_config 
+------------
+ 27
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 18 - community mention respects channel mute
+(1 row)
+
+          lives_ok          
+----------------------------
+ ok 19 - read marker stored
+(1 row)
+
+         lives_ok          
+---------------------------
+ ok 20 - member can report
+(1 row)
+
+              lives_ok              
+------------------------------------
+ ok 21 - report retry is idempotent
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 22 - one report per member and message
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    lives_ok                    
+------------------------------------------------
+ ok 23 - organization can mute community author
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+            throws_ok            
+---------------------------------
+ ok 24 - community mute enforced
+(1 row)
+
+                    lives_ok                    
+------------------------------------------------
+ ok 25 - community mute preserves own team chat
+(1 row)
+
+ portal_notification_preferences_set 
+-------------------------------------
+ {"mention": false}
+(1 row)
+
+          push_subscription_upsert           
+---------------------------------------------
+ {"error": {"code": "INVALID_SUBSCRIPTION"}}
+(1 row)
+
+ poortkamer_push 
+-----------------
+ 
+(1 row)
+
+              set_config              
+--------------------------------------
+ 06ff4830-e478-4854-bcb6-18c8fc57d5b1
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 26 - disabled category excluded at delivery
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 27 - clients cannot forge successful push delivery
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+             lives_ok              
+-----------------------------------
+ ok 28 - explicit stock help share
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 29 - help request remains visible to organizer
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 30 - stock help is published in the active public help room
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 31 - no community publication without confirmation
+(1 row)
+
+            lives_ok            
+--------------------------------
+ ok 32 - bounded burst accepted
+(1 row)
+
+                  throws_ok                  
+---------------------------------------------
+ ok 33 - server limits successful chat burst
+(1 row)
+
+ finish 
+--------
+ 1..33
+(1 row)
+
+ROLLBACK

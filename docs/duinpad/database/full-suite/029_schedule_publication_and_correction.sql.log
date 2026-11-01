@@ -1,0 +1,171 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..16
+(1 row)
+
+CREATE FUNCTION
+GRANT
+CREATE FUNCTION
+GRANT
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+DO
+CREATE TABLE
+INSERT 0 1
+GRANT
+UPDATE 1
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 1 - a household cannot retrieve a concept start through the direct group API
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                        lives_ok                                        
+----------------------------------------------------------------------------------------
+ ok 2 - unpaid applications can confirm a valid start without altering financial status
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+DO
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 3 - an authorized organizer explicitly publishes the paid group schedule
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 4 - time publication still withholds the private address before T minus 60
+(1 row)
+
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 5 - Mijn inschrijving exposes the exact confirmed start in an unambiguous timestamp
+(1 row)
+
+SET
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 6 - publishing one correction preserves every other legacy published departure
+(1 row)
+
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 7 - publication queues one confirmation message for each authorized adult and revision
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+DO
+                                      lives_ok                                      
+------------------------------------------------------------------------------------
+ ok 8 - a later correction creates a new draft revision for only the affected group
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 9 - an unconfirmed correction cannot expose a new participant address
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+DO
+                                             lives_ok                                             
+--------------------------------------------------------------------------------------------------
+ ok 10 - the organizer can publish the correction without double-counting its superseded schedule
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 11 - the corrected start time still respects the address release boundary
+(1 row)
+
+SET
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 12 - publishing a correction explicitly supersedes the prior revision
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 13 - a real time change keeps an auditable superseded event and one new notification
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 14 - an unsent earlier time is not presented as a recipient-known correction
+(1 row)
+
+                                              matches                                               
+----------------------------------------------------------------------------------------------------
+ ok 15 - schedule mail links to the private participant environment without future portal addresses
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 16 - the planning board can aggregate finale arrivals after schedule revisions exist
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

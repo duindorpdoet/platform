@@ -1,3 +1,4 @@
+import { invitationToken, payloadHash } from "@/lib/duinpad/actor-protocol";
 import { createPushBatchBudget } from "@/lib/pwa/push-security";
 import { editorialTick } from "@/lib/editorial/worker";
 import { renderNewsletter, type NewsletterMaterial } from "@/lib/editorial/mail";
@@ -99,6 +100,20 @@ export async function POST(request: Request) {
 
   for (const row of rows) {
     try {
+      if (row.message_type === "actor_invitation") {
+        const material = await supabase.schema("api").rpc("worker_duinpad_actor_invitation", { _outbox_id: row.id });
+        if (material.error) throw new ApiError(503, "ACTOR_INVITATION_UNAVAILABLE", "De uitnodiging kon niet veilig worden samengesteld.");
+        if (!material.data) {
+          await updateOutbox({ _id: row.id, _status: "suppressed", _provider_id: null, _error_code: "ACTOR_INVITATION_SUPERSEDED", _next_attempt_at: null });
+          continue;
+        }
+        if (!env.DUINPAD_ACTOR_INVITE_SECRET) throw new ApiError(503, "ACTOR_INVITE_NOT_CONFIGURED", "De uitnodigingskoppeling is nog niet ingesteld.");
+        const token = invitationToken(material.data.invitationId, material.data.eventId, material.data.invitedEmail, env.DUINPAD_ACTOR_INVITE_SECRET);
+        if (payloadHash(token) !== material.data.tokenHash) throw new ApiError(503, "ACTOR_INVITATION_KEY_MISMATCH", "De uitnodigingskoppeling moet worden gecontroleerd.");
+        const { tokenHash: _tokenHash, ...safeMaterial } = material.data;
+        void _tokenHash;
+        row.payload = { ...safeMaterial, claimToken: token };
+      }
       if (row.message_type === "registration_activation" || row.message_type === "registration_group_changed") {
         const invitation = row.message_type === "registration_activation";
         const material = await supabase.schema("api").rpc(invitation ? "worker_registration_activation_mail_payload" : "worker_registration_management_mail_payload", { _outbox_id: row.id });

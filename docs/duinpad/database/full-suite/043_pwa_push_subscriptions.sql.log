@@ -1,0 +1,93 @@
+BEGIN
+CREATE FUNCTION
+GRANT
+CREATE EXTENSION
+ plan  
+-------
+ 1..12
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 1 - anonymous visitors cannot inspect push preferences
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 2 - anonymous visitors cannot store a push endpoint
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 3 - browser users cannot enumerate push delivery targets
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 4 - browser users cannot forge push delivery state
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 5 - push is opt-in and starts disabled
+(1 row)
+
+                 lives_ok                 
+------------------------------------------
+ ok 6 - the account can explicitly opt in
+(1 row)
+
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 7 - the account can store its own browser subscription
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 8 - the active device is counted
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                           lives_ok                           
+--------------------------------------------------------------
+ ok 9 - another account receives no endpoint existence oracle
+(1 row)
+
+RESET
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 10 - another account cannot remove or claim the endpoint by deleting it
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                lives_ok                 
+-----------------------------------------
+ ok 11 - the account can switch push off
+(1 row)
+
+RESET
+                          is                          
+------------------------------------------------------
+ ok 12 - opting out deactivates account subscriptions
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

@@ -1,0 +1,268 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+CREATE FUNCTION
+             name_fixture             |             name_fixture             |             name_fixture             |             name_fixture             |             name_fixture             |             name_fixture             |             name_fixture             
+--------------------------------------+--------------------------------------+--------------------------------------+--------------------------------------+--------------------------------------+--------------------------------------+--------------------------------------
+ 40675afc-0ed6-438a-a4c1-538037150f26 | a3cb024d-0bc2-4f93-b0e8-23d95192d085 | 1e35335d-3d38-445c-8099-aa25cb366914 | a9c41126-4344-40ab-b3b8-f7aadbb9042b | 854150ba-3aa6-40df-a27e-eeba1c37dc81 | f70cab54-3115-429d-bc1d-32e06c31f739 | 6e292f92-fb4a-4f7f-84cd-fc397506d199
+(1 row)
+
+SELECT 1
+                                                      is                                                      
+--------------------------------------------------------------------------------------------------------------
+ ok 1 - inbox uses the specific person followed by the group context, including reported G-28/G-02/G-11 cases
+ ok 2 - inbox uses the specific person followed by the group context, including reported G-28/G-02/G-11 cases
+ ok 3 - inbox uses the specific person followed by the group context, including reported G-28/G-02/G-11 cases
+(3 rows)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 4 - existing persisted conversation resolves the full person name after reload
+(1 row)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 5 - message sender name uses its own account, preserving accents and particles
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 6 - a genuinely missing name remains absent rather than inferred from email
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 7 - missing person has a neutral label and separate group code
+(1 row)
+
+                                            is                                            
+------------------------------------------------------------------------------------------
+ ok 8 - an exact actual group identifier cannot mask an unambiguous original contact name
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 9 - read-time repair never rewrites stored account names
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 10 - same-named people retain distinct account identities
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 11 - same-named contacts retain their own conversations
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 12 - reading corrected names preserves message contents and sender links
+(1 row)
+
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 13 - reading corrected names preserves conversation subjects and access links
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 14 - reading corrected names preserves walking assignments
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 15 - reading corrected names preserves all account records
+(1 row)
+
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 16 - existing outbox status, recipients and payloads remain byte-for-byte unchanged
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 17 - historical conversation still resolves its participant after group reassignment
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 18 - historical conversation retains its original group subject
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 19 - name repair does not grant access to a former group
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 20 - historical group access stays enforced
+(1 row)
+
+                      ok                       
+-----------------------------------------------
+ ok 21 - raw identity resolver remains private
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 22 - corrected inbox remains organizer-scoped
+(1 row)
+
+                                set_config                                
+--------------------------------------------------------------------------
+ {"sub": "40675afc-0ed6-438a-a4c1-538037150f26", "role": "authenticated"}
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 23 - participant context uses own person identity in the new group
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 24 - registration overview exposes explicit person names
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 25 - group composition exposes each registration person independently
+(1 row)
+
+INSERT 0 2
+UPDATE 2
+INSERT 0 4
+CREATE TABLE
+INSERT 0 1
+                               lives_ok                               
+----------------------------------------------------------------------
+ ok 26 - real organizer approval merges original together memberships
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 27 - actual merge retains all four original registration identities
+(1 row)
+
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 28 - an existing conversation retains the actual participant name after together merge
+(1 row)
+
+                                            is                                            
+------------------------------------------------------------------------------------------
+ ok 29 - multi-household approval preserves one notification per original adult recipient
+(1 row)
+
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 30 - group code is not placed in a person-like head-group/name field
+(1 row)
+
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 31 - G-46 stays separate walking-group context in a together approval
+(1 row)
+
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 32 - each recipient gets its own name rather than another household contact
+(1 row)
+
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 33 - together administration exposes original household contacts separately
+(1 row)
+
+INSERT 0 1
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 34 - new group confirmation mail greets its recipient independently of the group label
+(1 row)
+
+UPDATE 1
+CREATE TABLE
+INSERT 0 1
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 35 - actual confirmation queues recipient-specific time notifications
+(1 row)
+
+UPDATE 1
+                                 is                                  
+---------------------------------------------------------------------
+ ok 36 - time notification is enqueued with its exact recipient name
+(1 row)
+
+UPDATE 1
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 37 - worker materialization preserves the recipient name up to final mail rendering
+(1 row)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 38 - worker persists the same safe named payload for future correction history
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 39 - email addresses are never treated as personal names
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 40 - control characters are rejected consistently with the frontend
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 41 - identifier-shaped labels are not person-name fallbacks
+(1 row)
+
+                                                 is                                                 
+----------------------------------------------------------------------------------------------------
+ ok 42 - name spelling, accents and particles are preserved while surrounding whitespace is trimmed
+(1 row)
+
+             name_fixture             
+--------------------------------------
+ 6838668a-a93b-4f39-a641-927ffbbeda98
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+                                                       is                                                       
+----------------------------------------------------------------------------------------------------------------
+ ok 43 - conflicting original contact names produce neutral identity rather than an arbitrary household contact
+(1 row)
+
+INSERT 0 1
+                                          is                                          
+--------------------------------------------------------------------------------------
+ ok 44 - an adult without a personal name cannot inherit another primary contact name
+(1 row)
+
+ finish 
+--------
+ 1..44
+(1 row)
+
+ROLLBACK

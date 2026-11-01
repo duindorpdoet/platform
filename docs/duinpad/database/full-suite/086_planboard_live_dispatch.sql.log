@@ -1,0 +1,102 @@
+BEGIN
+CREATE FUNCTION
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+GRANT
+UPDATE 30
+UPDATE 31
+UPDATE 1
+UPDATE 30
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+DO
+UPDATE 1
+DO
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                        lives_ok                                         
+-----------------------------------------------------------------------------------------
+ ok 1 - started group uses evening route intent rather than rewriting its original start
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 2 - manual future edit preserves every field of the current operational stop
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 3 - future route edit on a live group creates no historical time correction mail
+(1 row)
+
+                             throws_ok                             
+-------------------------------------------------------------------
+ ok 4 - original start regie remains protected for a started group
+(1 row)
+
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 5 - receiving portal sees the same accepted future route expectation
+(1 row)
+
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                                     ok                                     
+----------------------------------------------------------------------------
+ ok 6 - future manual appointment waits until its genuine dispatch interval
+(1 row)
+
+                                       lives_ok                                       
+--------------------------------------------------------------------------------------
+ ok 7 - dispatcher rechecks capacity and releases the manually intended gate when due
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 8 - actual dispatch respects the manually selected next portal
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 9 - authorized group receives its new actual current destination
+(1 row)
+
+ finish 
+--------
+ 1..9
+(1 row)
+
+ROLLBACK

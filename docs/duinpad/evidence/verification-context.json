@@ -1,0 +1,27 @@
+{
+  "recordedAt": "2026-10-31T15:14:17.172412+00:00",
+  "verifiedAppSourceCommit": "28415699ca5b8addad02fbddb4819461b22416d2",
+  "finalSourceCommit": "b0e5e7e6127f930d2d0c645d4a299595dab0993e",
+  "unchangedAppSourcesBetweenTheseCommits": true,
+  "laterChanges": [
+    "docs/duinpad/bridge/PROTOCOL-EN-HERSTEL.md",
+    "docs/duinpad/bridge/README.md",
+    "docs/duinpad/bridge/TESTRAPPORT-ACTOR-V1.json",
+    "docs/duinpad/bridge/duinpad-actor-v1.patch",
+    "docs/duinpad/bridge/patch-manifest.json",
+    "docs/duinpad/bridge/unittest-simulation.log",
+    "supabase/migrations/20261031143920_duinpad_checkpoints_and_show_attempts.sql",
+    "supabase/tests/122_duinpad_checkpoints_show.sql"
+  ],
+  "pnpmVerifyExitCode": 0,
+  "vitestPassed": 1194,
+  "vitestSkipped": 1,
+  "skipReason": "Existing optional resend-planboard integration requires MAIL_INTEGRATION_CONTAINER",
+  "clientArtifactFilesScanned": 1465,
+  "browserReport": "component-browser.json",
+  "databaseEvidence": "../database/full-suite/summary.json",
+  "hardware": "not executed",
+  "productionDeployment": "not executed",
+  "browserSourceCommit": "bfd44ba7d241f8035676a07812573a4ebb8cf5db",
+  "browserAppSourcesUnchangedAtFinalCommit": true
+}

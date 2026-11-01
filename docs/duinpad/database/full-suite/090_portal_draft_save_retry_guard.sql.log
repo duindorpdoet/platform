@@ -1,0 +1,29 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+DO
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 1 - active reservations remain protected after confirmation
+ ok 2 - authorization remains enforced
+ ok 3 - draft insert strips control metadata and preserves editable fields
+ ok 4 - draft update also strips control metadata
+ ok 5 - idempotency conflict remains enforced
+ ok 6 - idempotent creation replay is unchanged
+ ok 7 - nested stale record version returns final P0001
+ ok 8 - private trigger and API permissions remain restricted
+ ok 9 - protected portal still requires explicit confirmation
+ ok 10 - reopened draft with a sensitive change saves successfully
+ ok 11 - stale confirmation hash returns final P0001
+(11 rows)
+
+ finish 
+--------
+ 1..11
+(1 row)
+
+ROLLBACK

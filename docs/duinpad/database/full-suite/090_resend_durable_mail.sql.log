@@ -1,0 +1,387 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+ worker_mail_bootstrap 
+-----------------------
+ 
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+                           is                           
+--------------------------------------------------------
+ ok 1 - bootstrap retains the effective legacy provider
+(1 row)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                              mail_admin_command                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"draft": {"id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "version": 2, "provider": "resend", "reply_to": "reply@example.invalid", "from_name": "De Poorten", "created_at": "2026-10-31T15:16:25.894151+00:00", "from_email": "sender@example.invalid", "config_hash": "06d6e720c71a599f20731b89fdfc7818b5e86b8d1fbf2a1da01bf5243c58251b", "environment": "test"}, "active": {"id": "9ebbc00e-5225-4618-bb76-fec47dc16cbb", "version": 1, "provider": "sendgrid", "reply_to": "reply@example.invalid", "from_name": "De Poorten", "created_at": "2026-10-31T15:16:25.894151+00:00", "from_email": "sender@example.invalid", "config_hash": "c6dcf0a1a64b95a8519f21bd46b9d590228b3e88c8a901898b603d8ba00ccc24", "environment": "test"}, "events": [], "attempts": [], "lastTest": null, "revision": 1, "checkedAt": null, "checkedId": null, "checkResult": null, "lastWebhookAt": null, "draftTestVerified": false, "legacyReconciliation": 0, "suppressionsImportedAt": null}
+(1 row)
+
+UPDATE 1
+                            is                             
+-----------------------------------------------------------
+ ok 2 - saving a Resend draft leaves Auth on legacy config
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 3 - ordinary authenticated users cannot manage system mail
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 4 - stale drafts cannot overwrite a parallel edit
+(1 row)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  mail_admin_command                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"draft": {"id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "version": 2, "provider": "resend", "reply_to": "reply@example.invalid", "from_name": "De Poorten", "created_at": "2026-10-31T15:16:25.894151+00:00", "from_email": "sender@example.invalid", "config_hash": "06d6e720c71a599f20731b89fdfc7818b5e86b8d1fbf2a1da01bf5243c58251b", "environment": "test"}, "active": {"id": "9ebbc00e-5225-4618-bb76-fec47dc16cbb", "version": 1, "provider": "sendgrid", "reply_to": "reply@example.invalid", "from_name": "De Poorten", "created_at": "2026-10-31T15:16:25.894151+00:00", "from_email": "sender@example.invalid", "config_hash": "c6dcf0a1a64b95a8519f21bd46b9d590228b3e88c8a901898b603d8ba00ccc24", "environment": "test"}, "events": [], "attempts": [], "lastTest": null, "revision": 1, "checkedAt": "2026-10-31T15:16:25.95426+00:00", "checkedId": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "checkResult": {"ready": true, "configHash": "06d6e720c71a599f20731b89fdfc7818b5e86b8d1fbf2a1da01bf5243c58251b", "credentialHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "webhookKeyHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}, "lastWebhookAt": null, "draftTestVerified": false, "legacyReconciliation": 0, "suppressionsImportedAt": null}
+(1 row)
+
+                             throws_ok                             
+-------------------------------------------------------------------
+ ok 5 - activation requires the reviewed legacy suppression import
+(1 row)
+
+ worker_import_mail_suppressions 
+---------------------------------
+                               0
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 6 - present secrets/checks alone never disable working Auth
+(1 row)
+
+UPDATE 1
+                   is                    
+-----------------------------------------
+ ok 7 - two tabs share one test delivery
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 8 - HTTP retry reuses the durable command receipt
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 9 - first attempt durably owns the envelope before provider dispatch
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 10 - parallel dispatch cannot acquire a live envelope lease
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 11 - webhook before provider ID persistence is durably stored
+(1 row)
+
+                                     ok                                      
+-----------------------------------------------------------------------------
+ ok 12 - early event is unlinked; a tag cannot take control of an outbox row
+(1 row)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          worker_mail_finish                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "26058586-296c-4e12-adf0-d2eac23251fb", "status": "accepted", "channel": "test", "payload": {"text": "frozen body"}, "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "failed_at": null, "outbox_id": "541ff06c-e2ea-4b9d-97b4-fc30b4166b06", "bounced_at": null, "error_code": null, "accepted_at": "2026-10-31T15:16:25.964492+00:00", "claim_token": "a810f5a5-ca91-4b79-aee5-f2aa428db077", "environment": "test", "lease_until": null, "logical_key": "test-envelope", "provider_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f", "delivered_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "payload_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "complained_at": null, "suppressed_at": null, "recipient_hash": "\\x852e7b941ea2052143c1b0a0f7b007a06c49c056312aac64e2649dc35d13f994", "credential_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "delivery_status": "delivered", "first_attempt_at": "2026-10-31T15:16:25.961576+00:00", "retry_after_seconds": null}
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 13 - provider acknowledgement reconciles the early webhook once
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 14 - true provider ID and recipient establish the relation
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 15 - duplicate Svix delivery is an acknowledged no-op
+(1 row)
+
+ worker_store_resend_event 
+---------------------------
+ t
+(1 row)
+
+ worker_store_resend_event 
+---------------------------
+ t
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 16 - late sent or delayed events cannot regress delivery
+(1 row)
+
+ worker_store_resend_event 
+---------------------------
+ t
+(1 row)
+
+ worker_store_resend_event 
+---------------------------
+ t
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 17 - wrong environment/recipient events have no projection authority
+(1 row)
+
+UPDATE 1
+                               throws_ok                               
+-----------------------------------------------------------------------
+ ok 18 - an old successful test is not proof of current sending access
+(1 row)
+
+UPDATE 1
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      mail_admin_command                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"draft": null, "active": {"id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "version": 2, "provider": "resend", "reply_to": "reply@example.invalid", "from_name": "De Poorten", "created_at": "2026-10-31T15:16:25.894151+00:00", "from_email": "sender@example.invalid", "config_hash": "06d6e720c71a599f20731b89fdfc7818b5e86b8d1fbf2a1da01bf5243c58251b", "environment": "test"}, "events": [{"kind": "email.delivered", "channel": "test", "provider": "resend", "outbox_id": "541ff06c-e2ea-4b9d-97b4-fc30b4166b06", "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "provider_event_id": "msg-before-worker", "provider_message_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f"}, {"kind": "email.sent", "channel": "test", "provider": "resend", "outbox_id": "541ff06c-e2ea-4b9d-97b4-fc30b4166b06", "safe_code": null, "occurred_at": "2026-10-31T15:14:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "provider_event_id": "msg-late-sent", "provider_message_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f"}, {"kind": "email.delivery_delayed", "channel": "test", "provider": "resend", "outbox_id": "541ff06c-e2ea-4b9d-97b4-fc30b4166b06", "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "provider_event_id": "msg-late-delay", "provider_message_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f"}, {"kind": "email.failed", "channel": null, "provider": "resend", "outbox_id": null, "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": null, "provider_event_id": "msg-wrong-recipient", "provider_message_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f"}], "attempts": [{"id": "26058586-296c-4e12-adf0-d2eac23251fb", "status": "accepted", "channel": "test", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": null, "accepted_at": "2026-10-31T15:16:25.970342+00:00", "provider_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f", "delivered_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "complained_at": null, "delivery_status": "delivered", "first_attempt_at": "2026-10-31T15:16:25.961576+00:00"}], "lastTest": {"at": "2026-10-31T15:16:25.961576+00:00", "code": null, "status": "accepted", "configId": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "simulated": false, "providerId": "e07af2b0-ad41-4b87-81f1-6f633c83e87f", "deliveryStatus": "delivered"}, "revision": 2, "checkedAt": "2026-10-31T15:16:25.95426+00:00", "checkedId": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "checkResult": {"ready": true, "configHash": "06d6e720c71a599f20731b89fdfc7818b5e86b8d1fbf2a1da01bf5243c58251b", "credentialHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "webhookKeyHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}, "lastWebhookAt": "2026-10-31T15:16:25.894151+00:00", "draftTestVerified": false, "legacyReconciliation": 0, "suppressionsImportedAt": "2026-10-31T15:16:25.956358+00:00"}
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 19 - only checked, imported, webhook-confirmed configuration becomes active
+(1 row)
+
+ worker_store_resend_event 
+---------------------------
+ t
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 20 - complaint after delivery is retained separately
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 21 - complaint applies durable suppression without changing consent
+(1 row)
+
+ worker_update_outbox 
+----------------------
+ 
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 22 - late worker update cannot make accepted/delivered mail claimable
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 23 - legacy SendGrid callback cannot control a Resend row
+(1 row)
+
+UPDATE 1
+                                                                                                                                 worker_claim_outbox                                                                                                                                  
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ (cc06d116-e6da-4b24-bd47-bfd45073fb88,rolling-legacy-claim,registration_received,fixture,legacy-rollout@example.invalid,{},processing,1,"2026-10-31 15:16:25.894151+00","2026-10-31 15:16:35.894151+00",,,"2026-10-31 15:16:25.894151+00","2026-10-31 15:16:25.894151+00",sendgrid,)
+(1 row)
+
+                                          is                                          
+--------------------------------------------------------------------------------------
+ ok 24 - pre-envelope workers retain explicit legacy provider identity during rollout
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 25 - a begun legacy attempt is never retried across providers
+(1 row)
+
+CREATE TABLE
+INSERT 0 3
+UPDATE 3
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           worker_mail_finish                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "43af3975-4712-4677-9637-a1d5e06c9da2", "status": "accepted", "channel": "auth", "payload": null, "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "failed_at": null, "outbox_id": null, "bounced_at": null, "error_code": null, "accepted_at": "2026-10-31T15:16:25.982309+00:00", "claim_token": "6ec18049-2e1a-4264-870b-9774137063af", "environment": "test", "lease_until": null, "logical_key": "email.bounced", "provider_id": "28b286be-7e7e-4732-a986-6cabdeb57d78", "delivered_at": null, "message_type": "auth_otp", "payload_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "complained_at": null, "suppressed_at": null, "recipient_hash": "\\xf0277f31ce43eff2045f59b021a3e5f1509d66e3be55415555ca0d8187de04ab", "credential_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "delivery_status": "pending", "first_attempt_at": "2026-10-31T15:16:25.981248+00:00", "retry_after_seconds": null}
+ {"id": "d3555d1a-1d85-4941-8b91-3a0070f73e17", "status": "accepted", "channel": "auth", "payload": null, "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "failed_at": null, "outbox_id": null, "bounced_at": null, "error_code": null, "accepted_at": "2026-10-31T15:16:25.982621+00:00", "claim_token": "18e43e10-3d6a-4142-afe1-b23e8074a4e5", "environment": "test", "lease_until": null, "logical_key": "email.failed", "provider_id": "06785b8a-7ddd-45a9-ac14-bf727da3d5eb", "delivered_at": null, "message_type": "auth_otp", "payload_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "complained_at": null, "suppressed_at": null, "recipient_hash": "\\x410273821ec37f0c23420bf814c3405df3d62daa64116376cfd3c1a6f1f7a7ce", "credential_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "delivery_status": "pending", "first_attempt_at": "2026-10-31T15:16:25.981639+00:00", "retry_after_seconds": null}
+ {"id": "b9404faf-47a1-4337-a3b4-9b6b3106c2d8", "status": "accepted", "channel": "auth", "payload": null, "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "failed_at": null, "outbox_id": null, "bounced_at": null, "error_code": null, "accepted_at": "2026-10-31T15:16:25.98278+00:00", "claim_token": "011ceb8d-ce51-460d-8751-921ded61e6e3", "environment": "test", "lease_until": null, "logical_key": "email.suppressed", "provider_id": "099e7e1a-91dc-4c24-bbc7-06dbfb0cb59e", "delivered_at": null, "message_type": "auth_otp", "payload_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "complained_at": null, "suppressed_at": null, "recipient_hash": "\\xe4cd0ce7935159e88a085482dbdffacb9a64fbf7f079c26ebe4f68fa0282b144", "credential_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "delivery_status": "pending", "first_attempt_at": "2026-10-31T15:16:25.981958+00:00", "retry_after_seconds": null}
+(3 rows)
+
+ worker_store_resend_event 
+---------------------------
+ t
+ t
+ t
+(3 rows)
+
+                                is                                
+------------------------------------------------------------------
+ ok 26 - email.bounced has its own durable delivery projection
+ ok 27 - email.failed has its own durable delivery projection
+ ok 28 - email.suppressed has its own durable delivery projection
+(3 rows)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 29 - provider delivery failures do not relinquish transport acceptance
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             worker_mail_finish                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "bd4d17ee-4eea-443b-8300-2e2fc9a0fc55", "status": "accepted", "channel": "transactional", "payload": {"text": "frozen"}, "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "failed_at": null, "outbox_id": "4acb6477-474e-4e50-9030-50f878c901a5", "bounced_at": null, "error_code": null, "accepted_at": "2026-10-31T15:16:25.985492+00:00", "claim_token": "46cd7f53-897e-4157-8959-7e753bfc3fab", "environment": "test", "lease_until": null, "logical_key": "mail/delay/1", "provider_id": "9607af2b-ad41-4b87-81f1-6f633c83e87f", "delivered_at": null, "message_type": "registration_received", "payload_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "complained_at": null, "suppressed_at": null, "recipient_hash": "\\xe76635433c3678667e99bcd123ff3098a33c50685fe7f140ea18991968f6f086", "credential_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "delivery_status": "pending", "first_attempt_at": "2026-10-31T15:16:25.985103+00:00", "retry_after_seconds": null}
+(1 row)
+
+ worker_store_resend_event 
+---------------------------
+ t
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 30 - provider delay leaves an ordinary transactional outbox accepted
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 31 - provider retries never become new application attempts
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 32 - a legacy worker can never recover a Resend row through SendGrid
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 33 - worker crash inside the idempotency window recovers the existing Resend attempt
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 34 - lease recovery returns the original rendered body
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 35 - expired uncertain envelope cannot be reclaimed through deferred queue state
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 36 - expired dedupe window is visible for manual reconciliation
+(1 row)
+
+UPDATE 1
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            worker_mail_finish                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "f3374be1-2fea-4fc9-9852-0172f8b2e7c5", "status": "unknown", "channel": "auth", "payload": null, "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "failed_at": null, "outbox_id": null, "bounced_at": null, "error_code": "RESEND_NETWORK_UNCERTAIN", "accepted_at": null, "claim_token": "1f35b947-9a25-43e3-8a4f-82fed8113f7f", "environment": "test", "lease_until": null, "logical_key": "auth/stable-opaque-identity", "provider_id": null, "delivered_at": null, "message_type": "auth_otp", "payload_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "complained_at": null, "suppressed_at": null, "recipient_hash": "\\xfba31a0176e08cc2dd7dfee8eeae9646a62c24eb41962b5d4c8cfa909600a283", "credential_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "delivery_status": "pending", "first_attempt_at": "2026-10-31T15:16:25.992409+00:00", "retry_after_seconds": null}
+(1 row)
+
+UPDATE 1
+                                             is                                             
+--------------------------------------------------------------------------------------------
+ ok 37 - unknown Auth result is safely retried with the original identity inside the window
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 38 - no OTP body is stored in general envelope/event records
+(1 row)
+
+UPDATE 1
+                               is                                
+-----------------------------------------------------------------
+ ok 39 - unknown after the 24h guarantee is never blindly resent
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 40 - first Auth attempt claims stable credential context
+(1 row)
+
+UPDATE 1
+                                                 is                                                  
+-----------------------------------------------------------------------------------------------------
+ ok 41 - changed provider credentials cannot silently replay an uncertain request in another account
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 42 - browser cannot read Auth attempts or frozen payloads
+(1 row)
+
+                                ok                                
+------------------------------------------------------------------
+ ok 43 - browser cannot bypass runtime system-admin authorization
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 44 - anonymous callers cannot fake durable webhook receipts
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 45 - internal legacy claim wrapper is not independently callable
+(1 row)
+
+ worker_import_mail_suppressions 
+---------------------------------
+                               1
+(1 row)
+
+ worker_import_mail_suppressions 
+---------------------------------
+                               1
+(1 row)
+
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 46 - an unsubscribe import can never erase a hard bounce or complaint block
+(1 row)
+
+ worker_import_mail_suppressions 
+---------------------------------
+                               1
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 47 - a newsletter unsubscribe does not block a separately requested Auth OTP
+(1 row)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    mail_admin_rollback                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"draft": null, "active": {"id": "9ebbc00e-5225-4618-bb76-fec47dc16cbb", "version": 1, "provider": "sendgrid", "reply_to": "reply@example.invalid", "from_name": "De Poorten", "created_at": "2026-10-31T15:16:25.894151+00:00", "from_email": "sender@example.invalid", "config_hash": "c6dcf0a1a64b95a8519f21bd46b9d590228b3e88c8a901898b603d8ba00ccc24", "environment": "test"}, "events": [{"kind": "email.delivered", "channel": "test", "provider": "resend", "outbox_id": "541ff06c-e2ea-4b9d-97b4-fc30b4166b06", "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "provider_event_id": "msg-before-worker", "provider_message_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f"}, {"kind": "email.sent", "channel": "test", "provider": "resend", "outbox_id": "541ff06c-e2ea-4b9d-97b4-fc30b4166b06", "safe_code": null, "occurred_at": "2026-10-31T15:14:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "provider_event_id": "msg-late-sent", "provider_message_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f"}, {"kind": "email.delivery_delayed", "channel": "test", "provider": "resend", "outbox_id": "541ff06c-e2ea-4b9d-97b4-fc30b4166b06", "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "provider_event_id": "msg-late-delay", "provider_message_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f"}, {"kind": "email.failed", "channel": null, "provider": "resend", "outbox_id": null, "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": null, "provider_event_id": "msg-wrong-recipient", "provider_message_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f"}, {"kind": "email.complained", "channel": "test", "provider": "resend", "outbox_id": "541ff06c-e2ea-4b9d-97b4-fc30b4166b06", "safe_code": "RESEND_COMPLAINED", "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "provider_event_id": "msg-complaint-after-delivery", "provider_message_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f"}, {"kind": "email.bounced", "channel": "auth", "provider": "resend", "outbox_id": null, "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "auth_otp", "provider_event_id": "msg-email.bounced", "provider_message_id": "28b286be-7e7e-4732-a986-6cabdeb57d78"}, {"kind": "email.failed", "channel": "auth", "provider": "resend", "outbox_id": null, "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "auth_otp", "provider_event_id": "msg-email.failed", "provider_message_id": "06785b8a-7ddd-45a9-ac14-bf727da3d5eb"}, {"kind": "email.suppressed", "channel": "auth", "provider": "resend", "outbox_id": null, "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "auth_otp", "provider_event_id": "msg-email.suppressed", "provider_message_id": "099e7e1a-91dc-4c24-bbc7-06dbfb0cb59e"}, {"kind": "email.delivery_delayed", "channel": "transactional", "provider": "resend", "outbox_id": "4acb6477-474e-4e50-9030-50f878c901a5", "safe_code": null, "occurred_at": "2026-10-31T15:16:25.894151+00:00", "received_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "registration_received", "provider_event_id": "msg-delay-before-delivery", "provider_message_id": "9607af2b-ad41-4b87-81f1-6f633c83e87f"}], "attempts": [{"id": "75bde90b-3d03-4307-b46d-2c57cbc8babc", "status": "processing", "channel": "auth", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": null, "accepted_at": null, "provider_id": null, "delivered_at": null, "message_type": "auth_otp", "complained_at": null, "delivery_status": "pending", "first_attempt_at": "2026-10-31T15:16:25.997149+00:00"}, {"id": "2846da0f-726e-4548-b717-b3f58c36a300", "status": "reconcile", "channel": "auth", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": "PROVIDER_CREDENTIAL_CHANGED", "accepted_at": null, "provider_id": null, "delivered_at": null, "message_type": "auth_otp", "complained_at": null, "delivery_status": "pending", "first_attempt_at": "2026-10-31T15:16:25.994441+00:00"}, {"id": "bd4d17ee-4eea-443b-8300-2e2fc9a0fc55", "status": "accepted", "channel": "transactional", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": null, "accepted_at": "2026-10-31T15:16:25.985492+00:00", "provider_id": "9607af2b-ad41-4b87-81f1-6f633c83e87f", "delivered_at": null, "message_type": "registration_received", "complained_at": null, "delivery_status": "delayed", "first_attempt_at": "2026-10-31T15:16:25.985103+00:00"}, {"id": "b9404faf-47a1-4337-a3b4-9b6b3106c2d8", "status": "accepted", "channel": "auth", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": null, "accepted_at": "2026-10-31T15:16:25.98278+00:00", "provider_id": "099e7e1a-91dc-4c24-bbc7-06dbfb0cb59e", "delivered_at": null, "message_type": "auth_otp", "complained_at": null, "delivery_status": "suppressed", "first_attempt_at": "2026-10-31T15:16:25.981958+00:00"}, {"id": "d3555d1a-1d85-4941-8b91-3a0070f73e17", "status": "accepted", "channel": "auth", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": null, "accepted_at": "2026-10-31T15:16:25.982621+00:00", "provider_id": "06785b8a-7ddd-45a9-ac14-bf727da3d5eb", "delivered_at": null, "message_type": "auth_otp", "complained_at": null, "delivery_status": "failed", "first_attempt_at": "2026-10-31T15:16:25.981639+00:00"}, {"id": "43af3975-4712-4677-9637-a1d5e06c9da2", "status": "accepted", "channel": "auth", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": null, "accepted_at": "2026-10-31T15:16:25.982309+00:00", "provider_id": "28b286be-7e7e-4732-a986-6cabdeb57d78", "delivered_at": null, "message_type": "auth_otp", "complained_at": null, "delivery_status": "bounced", "first_attempt_at": "2026-10-31T15:16:25.981248+00:00"}, {"id": "26058586-296c-4e12-adf0-d2eac23251fb", "status": "accepted", "channel": "test", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": null, "accepted_at": "2026-10-31T15:16:25.970342+00:00", "provider_id": "e07af2b0-ad41-4b87-81f1-6f633c83e87f", "delivered_at": "2026-10-31T15:16:25.894151+00:00", "message_type": "mail_provider_test", "complained_at": "2026-10-31T15:16:25.894151+00:00", "delivery_status": "complained", "first_attempt_at": "2026-10-31T15:16:25.961576+00:00"}, {"id": "088d9a17-e751-429b-9638-71bad071700c", "status": "reconcile", "channel": "transactional", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": "IDEMPOTENCY_WINDOW_EXPIRED", "accepted_at": null, "provider_id": null, "delivered_at": null, "message_type": "registration_received", "complained_at": null, "delivery_status": "pending", "first_attempt_at": "2026-10-30T14:16:25.894151+00:00"}, {"id": "f3374be1-2fea-4fc9-9852-0172f8b2e7c5", "status": "reconcile", "channel": "auth", "provider": "resend", "config_id": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "error_code": "IDEMPOTENCY_WINDOW_EXPIRED", "accepted_at": null, "provider_id": null, "delivered_at": null, "message_type": "auth_otp", "complained_at": null, "delivery_status": "pending", "first_attempt_at": "2026-10-30T14:16:25.894151+00:00"}], "lastTest": {"at": "2026-10-31T15:16:25.961576+00:00", "code": null, "status": "accepted", "configId": "bbaf7bb8-74ca-44d1-85f1-01562365fab6", "simulated": false, "providerId": "e07af2b0-ad41-4b87-81f1-6f633c83e87f", "deliveryStatus": "complained"}, "revision": 3, "checkedAt": null, "checkedId": null, "checkResult": null, "lastWebhookAt": "2026-10-31T15:16:25.894151+00:00", "draftTestVerified": false, "legacyReconciliation": 1, "suppressionsImportedAt": "2026-10-31T15:16:25.956358+00:00"}
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 48 - explicit rollback chooses legacy only for new envelopes
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 49 - rollback never re-routes an earlier uncertain Resend attempt
+(1 row)
+
+ finish 
+--------
+ 1..49
+(1 row)
+
+ROLLBACK

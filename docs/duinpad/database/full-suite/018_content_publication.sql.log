@@ -1,0 +1,168 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..20
+(1 row)
+
+INSERT 0 1
+CREATE TABLE
+GRANT
+SET
+                                 is                                 
+--------------------------------------------------------------------
+ ok 1 - public content starts empty without an approved publication
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 2 - an unreviewed sponsor application is not public
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   throws_ok                                   
+-------------------------------------------------------------------------------
+ ok 3 - an ordinary parent cannot read private content and sponsor review data
+(1 row)
+
+                         throws_ok                         
+-----------------------------------------------------------
+ ok 4 - an ordinary parent cannot create a content version
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 5 - a content manager can save a new immutable draft version
+(1 row)
+
+SET
+INSERT 0 1
+SET
+                               ok                               
+----------------------------------------------------------------
+ ok 6 - a saved draft remains absent from the public projection
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                             lives_ok                             
+------------------------------------------------------------------
+ ok 7 - a content manager explicitly publishes the reviewed draft
+(1 row)
+
+SET
+                             is                             
+------------------------------------------------------------
+ ok 8 - only the published content version appears publicly
+(1 row)
+
+SET
+                  ok                   
+---------------------------------------
+ ok 9 - content publication is audited
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                    lives_ok                                    
+--------------------------------------------------------------------------------
+ ok 10 - a later edit creates another draft instead of mutating the publication
+(1 row)
+
+SET
+INSERT 0 1
+SET
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 11 - the first publication remains public while revision two is a draft
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           lives_ok                            
+---------------------------------------------------------------
+ ok 12 - the replacement requires its own explicit publication
+(1 row)
+
+SET
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 13 - publishing a replacement archives the previous public version
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 14 - the database permits exactly one published version per page and locale
+(1 row)
+
+SET
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 15 - the public projection switches atomically to the approved replacement
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 16 - an ordinary parent cannot approve a sponsor
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   lives_ok                                    
+-------------------------------------------------------------------------------
+ ok 17 - a content manager can publish only explicitly approved sponsor fields
+(1 row)
+
+SET
+                         is                         
+----------------------------------------------------
+ ok 18 - the approved sponsor name appears publicly
+(1 row)
+
+                                          ok                                           
+---------------------------------------------------------------------------------------
+ ok 19 - private sponsor contact details and message never enter the public projection
+(1 row)
+
+SET
+                   ok                   
+----------------------------------------
+ ok 20 - sponsor publication is audited
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

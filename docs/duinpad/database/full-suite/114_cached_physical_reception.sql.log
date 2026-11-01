@@ -1,0 +1,156 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+SET
+CREATE FUNCTION
+INSERT 0 1
+INSERT 0 2
+INSERT 0 2
+INSERT 0 1
+SELECT 2
+CREATE TABLE
+INSERT 0 7
+SELECT 1008
+INSERT 0 7
+SELECT 1015
+                                                    is                                                     
+-----------------------------------------------------------------------------------------------------------
+ ok 1 - independent original validator is exercised across a nonempty boundary/history/duplicate/null grid
+(1 row)
+
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 2 - fresh-policy wrapper exactly matches the complete original validator for every probe
+(1 row)
+
+                                        ok                                        
+----------------------------------------------------------------------------------
+ ok 3 - equivalence grid contains both genuinely available and rejected intervals
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 4 - cached statement context exactly matches the original physical predicate
+(1 row)
+
+CREATE FUNCTION
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 5 - ordinary arrival exactly at opening fits full service plus buffer
+(1 row)
+
+                      ok                      
+----------------------------------------------
+ ok 6 - one microsecond early remains invalid
+(1 row)
+
+                      ok                      
+----------------------------------------------
+ ok 7 - physical changeover cannot be omitted
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 8 - ordinary full physical visit may use explicit five-minute grace
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 9 - one microsecond beyond physical grace remains invalid
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 10 - ordinary arrival at receiving close is invalid
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 11 - finale show plus turnover ends exactly at its physical close
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 12 - finale physical closure retains microsecond precision
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 13 - finale turnover remains separate from show completion
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 14 - simultaneous finale-child maximum is retained
+(1 row)
+
+                                        ok                                        
+----------------------------------------------------------------------------------
+ ok 15 - overlapping finale fits only when both distinct-group and child caps fit
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 16 - null-time historical children count toward the exact cumulative maximum
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 17 - historical children cannot be erased by no current overlap
+(1 row)
+
+                                                 ok                                                 
+----------------------------------------------------------------------------------------------------
+ ok 18 - two other distinct groups exceed the group maximum even while child and headway limits fit
+(1 row)
+
+                                      ok                                      
+------------------------------------------------------------------------------
+ ok 19 - the second group ending exactly at arrival no longer occupies a lane
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 20 - NULL finale authority cannot be treated as approval
+(1 row)
+
+UPDATE 1
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 21 - each server call captures the actual disabled-finale policy
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 22 - disabled-finale behavior matches the original authority exactly
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 23 - disabled finale does not incorrectly close ordinary houses
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 24 - clients cannot forge a permissive reception context
+(1 row)
+
+                                ok                                 
+-------------------------------------------------------------------
+ ok 25 - anonymous clients cannot invoke cached physical authority
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 26 - the existing fresh-policy server validator remains private
+(1 row)
+
+ finish 
+--------
+ 1..26
+(1 row)
+
+ROLLBACK

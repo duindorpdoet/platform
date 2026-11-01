@@ -107,7 +107,7 @@ export async function handleMail(request: Request, deps: Dependencies): Promise<
       const envelope = await rpc<Envelope>("worker_mail_prepare", {
         _environment: environment, _key: key, _config_id: config.id, _outbox_id: transactional?.outboxId ?? null,
         _channel: channel, _message_type: transactional?.messageType ?? (transactional ? transactional.editorial ? "nachtpost" : "transactional" : delivery.template), _recipient: recipient,
-        _payload: channel === "auth" ? null : message, _payload_hash: fingerprint, _credential_hash: await mailFingerprint(env("MAIL_IDENTITY_SECRET")!, apiKey),
+        _payload: channel === "auth" || transactional?.messageType === "actor_invitation" ? null : message, _payload_hash: fingerprint, _credential_hash: await mailFingerprint(env("MAIL_IDENTITY_SECRET")!, apiKey),
       });
       if (!envelope.dispatch) {
         if (envelope.status === "accepted" && envelope.provider_id) return result(200, undefined, { "x-mail-status": "accepted", "x-mail-provider": envelope.provider, "x-provider-message-id": envelope.provider_id });

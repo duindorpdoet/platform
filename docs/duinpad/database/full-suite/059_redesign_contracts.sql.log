@@ -1,0 +1,263 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                         ok                          
+-----------------------------------------------------
+ ok 1 - anonymous visitors cannot confirm an arrival
+(1 row)
+
+                  ok                  
+--------------------------------------
+ ok 2 - print material is server-only
+(1 row)
+
+                       ok                       
+------------------------------------------------
+ ok 3 - backfill requires a controlled operator
+(1 row)
+
+                  ok                   
+---------------------------------------
+ ok 4 - clients cannot invent presence
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 5 - all seven new private tables have RLS
+(1 row)
+
+CREATE FUNCTION
+SELECT 1
+CREATE TABLE
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 12
+                  ok                   
+---------------------------------------
+ ok 6 - SQL rehearsal: start
+ ok 7 - SQL rehearsal: arrival
+ ok 8 - SQL rehearsal: inclusive
+ ok 9 - SQL rehearsal: wrong
+ ok 10 - SQL rehearsal: duplicate
+ ok 11 - SQL rehearsal: closed
+ ok 12 - SQL rehearsal: manual
+ ok 13 - SQL rehearsal: offline
+ ok 14 - SQL rehearsal: stale
+ ok 15 - SQL rehearsal: early
+ ok 16 - SQL rehearsal: part-departure
+ ok 17 - SQL rehearsal: finale
+(12 rows)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 18 - start: Start zonder aanwezigen weigeren
+ ok 19 - start: Aanwezigheid bevestigen
+ ok 20 - start: Twee aanwezige kinderen bereiken de poort
+ ok 21 - start: Afwezig kind krijgt geen zegel
+ ok 22 - arrival: Aanwezigheid bevestigen
+ ok 23 - arrival: Aankomst bij poort 1
+ ok 24 - arrival: Precies de volgende bestemming staat klaar
+ ok 25 - inclusive: Aanwezigheid bevestigen
+ ok 26 - inclusive: Aankomst bij poort 1
+ ok 27 - inclusive: Buiten blijven krijgt dezelfde aankomstzegel
+ ok 28 - wrong: Aanwezigheid bevestigen
+ ok 29 - wrong: Een verkeerde poortcode weigeren
+ ok 30 - duplicate: Aanwezigheid bevestigen
+ ok 31 - duplicate: Aankomst bij poort 1
+ ok 32 - duplicate: Dezelfde opdracht blijft eenmalig
+ ok 33 - closed: Aanwezigheid bevestigen
+ ok 34 - closed: Eigen oefenpoort sluiten
+ ok 35 - closed: Aankomst bij gesloten poort weigeren
+ ok 36 - closed: Expliciete systeemoverslag zonder zegel
+ ok 37 - manual: Aanwezigheid bevestigen
+ ok 38 - manual: Alle kinderen slaan de beleving over
+ ok 39 - manual: Zonder aankomst niet afronden
+ ok 40 - manual: Alleen code bevestigen zonder definitieve zegels
+ ok 41 - manual: Met aankomst iedereen een zegel geven
+ ok 42 - offline: Aanwezigheid bevestigen
+ ok 43 - offline: Verbinding weg: geen serveropdracht ontvangen
+ ok 44 - offline: Na herstel dezelfde aankomst bevestigen
+ ok 45 - offline: Herhaalde ontvangst maakt geen duplicaat
+ ok 46 - stale: Aanwezigheid bevestigen
+ ok 47 - stale: Oude routeversie weigeren
+ ok 48 - early: Aanwezigheid bevestigen
+ ok 49 - early: Aankomst bij poort 1
+ ok 50 - early: Aankomst bij poort 2
+ ok 51 - early: Eigen gezin sluit af zonder finale
+ ok 52 - part-departure: Aanwezigheid bevestigen
+ ok 53 - part-departure: Aankomst bij poort 1
+ ok 54 - part-departure: Een kind vertrekt; de groep loopt door
+ ok 55 - part-departure: Vertrokken kind krijgt geen volgende zegel
+ ok 56 - finale: Aanwezigheid bevestigen
+ ok 57 - finale: Aankomst bij poort 1
+ ok 58 - finale: Aankomst bij poort 2
+ ok 59 - finale: Aankomst bij poort 3
+ ok 60 - finale: Aankomst bij poort 4
+ ok 61 - finale: Finaleaankomst telt ook bij buiten blijven
+ ok 62 - finale: Ieder aanwezig kind heeft precies een finalezegel
+ ok 63 - finale: Geen dubbele finale of zesde zegel
+(46 rows)
+
+                            is                            
+----------------------------------------------------------
+ ok 64 - twelve scenarios execute 46 measured checkpoints
+(1 row)
+
+                                             is                                             
+--------------------------------------------------------------------------------------------
+ ok 65 - all private rows, IDs, relationships and histories survive the rehearsal unchanged
+(1 row)
+
+                 ok                 
+------------------------------------
+ ok 66 - no rehearsal event remains
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                        throws_ok                         
+----------------------------------------------------------
+ ok 67 - a participant cannot run the organizer rehearsal
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 68 - new account day requires acknowledgment
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 69 - daily acknowledgment uses Amsterdam time
+(1 row)
+
+                   lives_ok                    
+-----------------------------------------------
+ ok 70 - repeated acknowledgment is idempotent
+(1 row)
+
+                   is                   
+----------------------------------------
+ ok 71 - one daily account/event record
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 72 - a client cannot jump thirteen tutorial steps
+(1 row)
+
+                 throws_ok                  
+--------------------------------------------
+ ok 73 - a parent cannot claim a house role
+(1 row)
+
+DO
+                   lives_ok                    
+-----------------------------------------------
+ ok 74 - sequential 14-step tutorial completes
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 75 - tutorial completion is account-bound
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 76 - summer-time midnight uses the new local day
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 77 - winter-time midnight uses the new local day
+(1 row)
+
+SELECT 1
+INSERT 0 1
+INSERT 0 1
+                          lives_ok                          
+------------------------------------------------------------
+ ok 78 - an existing child session still opens its own book
+(1 row)
+
+                          throws_ok                           
+--------------------------------------------------------------
+ ok 79 - a direct request cannot mark a sleeping chapter read
+(1 row)
+
+                     throws_ok                     
+---------------------------------------------------
+ ok 80 - a child cannot forge nine completed steps
+(1 row)
+
+DO
+                   lives_ok                   
+----------------------------------------------
+ ok 81 - a nine-step child tutorial completes
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 82 - only this child is completed
+(1 row)
+
+                    lives_ok                    
+------------------------------------------------
+ ok 83 - an unlocked chapter can be marked read
+(1 row)
+
+            lives_ok             
+---------------------------------
+ ok 84 - rereading is idempotent
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 85 - one read record per child/chapter
+(1 row)
+
+UPDATE 1
+                           is                            
+---------------------------------------------------------
+ ok 86 - event closure does not invent a personal finale
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 87 - the final chapter is not fabricated by the event phase
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 88 - hash-only legacy print material is honestly reported
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 89 - reading a poster does not rotate credentials
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 90 - backfill defaults to a read-only preview
+(1 row)
+
+                           throws_ok                            
+----------------------------------------------------------------
+ ok 91 - backfill requires an explicitly reviewed bounded batch
+(1 row)
+
+ finish 
+--------
+ 1..91
+(1 row)
+
+ROLLBACK

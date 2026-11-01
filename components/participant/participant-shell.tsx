@@ -42,6 +42,7 @@ import type { LucideIcon } from "lucide-react";
 import { SignOutButton } from "@/components/auth/account-actions";
 import { ParticipantTogether } from "@/components/registration/participant-together";
 import { ParentPoortenboek } from "@/components/poortenboek/parent";
+import {DuinpadExperience} from "@/components/duinpad/experience";
 import {EarlyDeparture} from "@/components/redesign/early-departure";
 import {FamilyPortalThanks} from "@/components/redesign/portal-thanks";
 import { GroupExperience } from "@/components/group/group-experience";
@@ -255,6 +256,7 @@ type RegistrationPreferences = {
   editable?: boolean;
 };
 type GroupSnapshot = {
+  duinpadFinale?: {eveningEnded:boolean;eligible?:boolean;recorded?:boolean};
   group: {
     id: string;
     code: string;
@@ -272,6 +274,7 @@ type GroupSnapshot = {
     status: string;
     version: number;
     ownEveningFinished?: boolean;
+    duinpadEveningEnded?: boolean;
     farewells?: Record<string,{endedAt:string;reason:string}>;
     elapsedSeconds?: number;
     waitingInstruction?: boolean;
@@ -324,7 +327,7 @@ function WalkerSection({ context, eventSlug, userId, role, section }: { context:
   if (section === "groep") return <WalkerGroup group={group} registration={registration} preferences={preferences} groupId={role.groupId ?? undefined} reload={load} />;
   if (section === "nachtpas") return <NightPass snapshot={registration} group={group} reload={load} />;
   if (section === "meer" || section === "updates") return <MorePage context={context} eventSlug={eventSlug} userId={userId} role="walker" />;
-  return <><WalkerNow context={context} registration={registration} group={group} reload={load} /><div className="member-news-section"><PortalNews channel="parents" compact /></div></>;
+  return <><DuinpadExperience key={userId} overview onSaved={load}/><WalkerNow context={context} registration={registration} group={group} reload={load} /><div className="member-news-section"><PortalNews channel="parents" compact /></div></>;
 }
 
 function WalkerNow({ context, registration, group, reload }: { context: ParticipantContext; registration: RegistrationSnapshot | null; group: GroupSnapshot | null; reload: () => Promise<void> }) {
@@ -338,6 +341,7 @@ function WalkerNow({ context, registration, group, reload }: { context: Particip
   const groupName = group?.group.displayName || (group ? `Groep ${group.group.code}` : "Jullie groep");
   const completed = run?.history.length ?? 0;
   const completedVisits = run?.history.filter((item) => ["visited", "mixed", "all_skipped"].includes(item.outcome)).length ?? 0;
+  if(group?.duinpadFinale?.eveningEnded||group?.duinpadFinale?.recorded||group?.duinpadFinale?.eligible||run?.duinpadEveningEnded)return null;
   if(run?.ownEveningFinished)return <ParticipantPageFrame eyebrow="Jullie avontuur" title="Een nacht om te bewaren."><EarlyDeparture run={run} disabled={false} onSaved={reload}/><StampRail history={run.history}/><FamilyPortalThanks key={run.version}/></ParticipantPageFrame>;
   if (run?.status === "completed") return <ParticipantPageFrame eyebrow="Jullie avontuur" title="Een avond om te bewaren.">
     <section className="member-recap-hero"><img src="/images/04-home-iets-lekkers-steeg.webp" alt="Een verlichte Halloweenavond in Duindorp"/><div><span className="member-state-pill"><CheckCircle2 size={14}/>Route afgerond</span><h2>Samen door de nacht.</h2><p>Jullie bezochten {completed} poorten. De bezoekzegels en bonuswereldzegels vind je in het eigen Poortenboek.</p><Link href="/poortenboek/ouder" className="btn">Open het Poortenboek <ArrowUpRight size={17}/></Link></div></section>

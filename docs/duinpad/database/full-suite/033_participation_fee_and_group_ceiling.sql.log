@@ -1,0 +1,110 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..15
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 1 - new registrations use 250 cents per child
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 2 - event starts with the twenty-child group limit
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 3 - historical confirmed payment requests retain their original price
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 4 - the registration UI gets the current authoritative contribution
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 5 - an administrator must configure a positive whole group limit
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 6 - direct registration API calls cannot save a twenty-one-child signup
+(1 row)
+
+RESET
+                                        lives_ok                                         
+-----------------------------------------------------------------------------------------
+ ok 7 - exactly twenty children in a registration, party and assigned group are accepted
+(1 row)
+
+INSERT 0 1
+                        throws_ok                        
+---------------------------------------------------------
+ ok 8 - a twenty-first child is rejected in the database
+(1 row)
+
+                                 throws_ok                                 
+---------------------------------------------------------------------------
+ ok 9 - direct organizer assignment cannot create a twenty-one-child group
+(1 row)
+
+                                throws_ok                                 
+--------------------------------------------------------------------------
+ ok 10 - joining another household cannot bypass the twenty-child ceiling
+(1 row)
+
+CREATE TABLE
+GRANT
+INSERT 0 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                           lives_ok                                           
+----------------------------------------------------------------------------------------------
+ ok 11 - an explicit reviewed bundle is no longer subject to an absolute twenty-child ceiling
+(1 row)
+
+RESET
+                              is                              
+--------------------------------------------------------------
+ ok 12 - the explicit exception records the reviewed decision
+(1 row)
+
+                                               is                                               
+------------------------------------------------------------------------------------------------
+ ok 13 - the permission is limited to the exact twenty-one-child bundle and current transaction
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 14 - rejected changes leave the original group intact
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 15 - capacity guards are not exposed as participant RPCs
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

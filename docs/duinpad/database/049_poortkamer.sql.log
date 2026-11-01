@@ -1,0 +1,510 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+              ok              
+------------------------------
+ ok 1 - anonymous room denied
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 2 - invitation secret material is worker-only
+(1 row)
+
+                 ok                 
+------------------------------------
+ ok 3 - token derivation is private
+(1 row)
+
+               ok               
+--------------------------------
+ ok 4 - invite table is private
+(1 row)
+
+             ok              
+-----------------------------
+ ok 5 - chat is never public
+(1 row)
+
+              is              
+------------------------------
+ ok 6 - seed owner backfilled
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 7 - existing resident is primary
+(1 row)
+
+               ok               
+--------------------------------
+ ok 8 - versioned private topic
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 9 - four house rooms plus two public rooms and one announcement channel
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 10 - house rooms are private channels in their fixed order
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 11 - only Algemeen and Hulp gevraagd are public between houses
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 12 - Algemeen is the first Praatkamer channel
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 13 - database has exactly two active event-wide chat rooms
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 14 - house rooms have no active event-wide variants
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 15 - visit projection contains no household PII
+(1 row)
+
+                     set_config                     
+----------------------------------------------------
+ portal-room:12000000-0000-0000-0000-000000000001:2
+(1 row)
+
+              set_config              
+--------------------------------------
+ 7d6fb4ec-f3ad-4aa4-ad45-327f6fd1e791
+(1 row)
+
+              set_config              
+--------------------------------------
+ 43c7f13e-acfc-406a-95ad-b8bdfe8c0fd8
+(1 row)
+
+              set_config              
+--------------------------------------
+ 947f8a91-0b93-4bd0-b876-a0f71f58f3bf
+(1 row)
+
+              set_config              
+--------------------------------------
+ 2b275754-11c7-42cf-8b1c-6f559db3703e
+(1 row)
+
+ poortkamer_channels 
+---------------------
+ 
+(1 row)
+
+              set_config              
+--------------------------------------
+ a8e93635-6642-476e-a741-8f3ef52df97b
+(1 row)
+
+                               throws_ok                                
+------------------------------------------------------------------------
+ ok 16 - archived shared preparation rooms cannot be opened by known id
+(1 row)
+
+             lives_ok              
+-----------------------------------
+ ok 17 - owner shares a viewer key
+(1 row)
+
+              set_config              
+--------------------------------------
+ 3c21eb89-1d6c-423c-aa53-43cf613ce470
+(1 row)
+
+                            set_config                            
+------------------------------------------------------------------
+ 2ef00a2e036e14f797c29f70a14d33e6d457b48bcee11262ff9fbd17b960caf8
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 18 - only sha256 token digest persisted
+(1 row)
+
+                    ok                     
+-------------------------------------------
+ ok 19 - raw token never in durable outbox
+(1 row)
+
+              lives_ok               
+-------------------------------------
+ ok 20 - idempotent invitation retry
+(1 row)
+
+                 is                 
+------------------------------------
+ ok 21 - one invitation after retry
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 22 - another verified email cannot accept
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+               lives_ok               
+--------------------------------------
+ ok 23 - exact verified email accepts
+(1 row)
+
+            throws_ok             
+----------------------------------
+ ok 24 - invitation is single use
+(1 row)
+
+                is                 
+-----------------------------------
+ ok 25 - accepted viewer gets room
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 26 - a house cannot open another house preparation room
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 27 - old topic invalidated after membership change
+(1 row)
+
+              ok              
+------------------------------
+ ok 28 - new topic authorized
+(1 row)
+
+             throws_ok              
+------------------------------------
+ ok 29 - viewer cannot change stock
+(1 row)
+
+                  throws_ok                  
+---------------------------------------------
+ ok 30 - legacy state API also denies viewer
+(1 row)
+
+                  throws_ok                  
+---------------------------------------------
+ ok 31 - legacy credential API denies viewer
+(1 row)
+
+          throws_ok           
+------------------------------
+ ok 32 - viewer cannot invite
+(1 row)
+
+              lives_ok              
+------------------------------------
+ ok 33 - viewer can chat internally
+(1 row)
+
+             lives_ok             
+----------------------------------
+ ok 34 - chat retry is idempotent
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 35 - one chat message after retry
+(1 row)
+
+             lives_ok             
+----------------------------------
+ ok 36 - viewer can use community
+(1 row)
+
+                    ok                     
+-------------------------------------------
+ ok 37 - community does not expose surname
+(1 row)
+
+               ok                
+---------------------------------
+ ok 38 - own team sees full name
+(1 row)
+
+                  throws_ok                   
+----------------------------------------------
+ ok 39 - resident cannot publish announcement
+(1 row)
+
+              throws_ok              
+-------------------------------------
+ ok 40 - no access to another portal
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+            lives_ok            
+--------------------------------
+ ok 41 - owner can promote crew
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+           lives_ok            
+-------------------------------
+ ok 42 - crew can update stock
+(1 row)
+
+         lives_ok         
+--------------------------
+ ok 43 - crew can prepare
+(1 row)
+
+                 throws_ok                  
+--------------------------------------------
+ ok 44 - crew cannot edit permanent details
+(1 row)
+
+               throws_ok               
+---------------------------------------
+ ok 45 - crew cannot administer access
+(1 row)
+
+            lives_ok             
+---------------------------------
+ ok 46 - crew can schedule pause
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 47 - pause duration stored durably
+(1 row)
+
+UPDATE 1
+                  lives_ok                   
+---------------------------------------------
+ ok 48 - durable timer runs without a client
+(1 row)
+
+            is             
+---------------------------
+ ok 49 - due pause resumes
+(1 row)
+
+            lives_ok             
+---------------------------------
+ ok 50 - manual stop is accepted
+(1 row)
+
+ poortkamer_tick 
+-----------------
+ 
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 51 - timer never reopens manually stopped portal
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+         lives_ok          
+---------------------------
+ ok 52 - coadmin promotion
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                lives_ok                 
+-----------------------------------------
+ ok 53 - coadmin can edit permanent name
+(1 row)
+
+                 throws_ok                 
+-------------------------------------------
+ ok 54 - coadmin cannot transfer ownership
+(1 row)
+
+                     set_config                     
+----------------------------------------------------
+ portal-room:12000000-0000-0000-0000-000000000001:5
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+           lives_ok           
+------------------------------
+ ok 55 - owner revokes access
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                throws_ok                
+-----------------------------------------
+ ok 56 - revoked member cannot read room
+(1 row)
+
+                 throws_ok                  
+--------------------------------------------
+ ok 57 - revoked member cannot read history
+(1 row)
+
+                     ok                     
+--------------------------------------------
+ ok 58 - revoked topic no longer authorized
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 59 - revoked last membership loses community
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                   lives_ok                    
+-----------------------------------------------
+ ok 60 - admin can publish urgent announcement
+(1 row)
+
+             ok             
+----------------------------
+ ok 61 - urgent push queued
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 62 - low stock appears in organizer view
+(1 row)
+
+                 lives_ok                 
+------------------------------------------
+ ok 63 - admin can hide community message
+(1 row)
+
+                 ok                  
+-------------------------------------
+ ok 64 - hidden body is not returned
+(1 row)
+
+             ok             
+----------------------------
+ ok 65 - moderation audited
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+                 lives_ok                  
+-------------------------------------------
+ ok 66 - owner transfer reuses memberships
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 67 - exactly one primary after transfer
+(1 row)
+
+                  lives_ok                  
+--------------------------------------------
+ ok 68 - deferred ownership invariant holds
+(1 row)
+
+                   lives_ok                    
+-----------------------------------------------
+ ok 69 - notification preferences are per-user
+(1 row)
+
+                is                 
+-----------------------------------
+ ok 70 - mention preference stored
+(1 row)
+
+ poortkamer_push 
+-----------------
+ 
+(1 row)
+
+ poortkamer_push 
+-----------------
+ 
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 71 - one notification per active member despite duplicate enqueue
+(1 row)
+
+UPDATE 1
+ poortkamer_tick 
+-----------------
+ 
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 72 - one-month retention erases chat
+(1 row)
+
+                   ok                    
+-----------------------------------------
+ ok 73 - retention preserves memberships
+(1 row)
+
+                ok                 
+-----------------------------------
+ ok 74 - retention preserves audit
+(1 row)
+
+ finish 
+--------
+ 1..74
+(1 row)
+
+ROLLBACK

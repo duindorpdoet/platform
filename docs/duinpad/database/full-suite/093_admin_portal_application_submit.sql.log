@@ -1,0 +1,358 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+CREATE FUNCTION
+                       portal_registration_begin                        
+------------------------------------------------------------------------
+ {"accepted": true, "intakeId": "61719b9b-61b3-4f0a-8687-599f55ccd753"}
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+                                                    portal_application_save                                                     
+--------------------------------------------------------------------------------------------------------------------------------
+ {"id": "f30d97aa-ebbb-4607-9ded-60de844ca861", "status": "draft", "savedAt": "2026-10-31T15:16:26.581561+00:00", "version": 2}
+(1 row)
+
+UPDATE 1
+                            ok                             
+-----------------------------------------------------------
+ ok 1 - anonymous users cannot preview private submissions
+(1 row)
+
+                  ok                  
+--------------------------------------
+ ok 2 - anonymous users cannot submit
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 3 - private validator is not an exposed bypass
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 4 - ordinary applicant cannot use the admin path
+(1 row)
+
+                            throws_ok                            
+-----------------------------------------------------------------
+ ok 5 - ordinary applicant cannot apply the organization command
+(1 row)
+
+INSERT 0 1
+                       throws_ok                        
+--------------------------------------------------------
+ ok 6 - event_admin alone does not imply portals_manage
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 7 - preview and cancellation have zero domain, audit, outbox or identity writes
+(1 row)
+
+                                                is                                                
+--------------------------------------------------------------------------------------------------
+ ok 8 - relaxed submit accepts missing address, portal name, description and unconfirmed consents
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 9 - approval-only fields are not missing submit fields
+(1 row)
+
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 10 - only missing address is an additional requirement under the current approval policy
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 11 - canonical recipient comes from the actual verified applicant
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 12 - preview reports actual consent without inventing agreement
+(1 row)
+
+              ok               
+-------------------------------
+ ok 13 - preview is a safe DTO
+(1 row)
+
+              throws_ok               
+--------------------------------------
+ ok 14 - unknown event cannot be used
+(1 row)
+
+                               throws_ok                               
+-----------------------------------------------------------------------
+ ok 15 - a manual portal is not silently converted into an application
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+                                   throws_ok                                   
+-------------------------------------------------------------------------------
+ ok 16 - cross-event application lookup is rejected even with both permissions
+(1 row)
+
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 17 - cross-event apply is rejected even with both permissions
+(1 row)
+
+UPDATE 1
+                        throws_ok                         
+----------------------------------------------------------
+ ok 18 - changed draft/version cannot pass an old preview
+(1 row)
+
+UPDATE 1
+                             ok                             
+------------------------------------------------------------
+ ok 19 - missing telephone is a concrete repairable blocker
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 20 - current preview cannot override missing submit data
+(1 row)
+
+UPDATE 1
+CREATE TABLE
+INSERT 0 4
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 21 - invalid or non-increasing opening times are blocked: 99:00
+ ok 22 - invalid or non-increasing opening times are blocked: 
+ ok 23 - invalid or non-increasing opening times are blocked: 12:7
+ ok 24 - invalid or non-increasing opening times are blocked: 21:00
+(4 rows)
+
+UPDATE 1
+                             is                             
+------------------------------------------------------------
+ ok 25 - mismatched draft identity is not silently repaired
+(1 row)
+
+UPDATE 1
+SELECT 1
+UPDATE 1
+                            is                            
+----------------------------------------------------------
+ ok 26 - unconfirmed applicant must complete verification
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                  throws_ok                                   
+------------------------------------------------------------------------------
+ ok 27 - intake changes bind the preview independently of application version
+(1 row)
+
+UPDATE 1
+                   is                   
+----------------------------------------
+ ok 28 - withdrawn intake stays blocked
+(1 row)
+
+UPDATE 1
+                            is                            
+----------------------------------------------------------
+ ok 29 - intake claimed by another identity stays blocked
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                     is                     
+--------------------------------------------
+ ok 30 - rejected application stays blocked
+(1 row)
+
+UPDATE 1
+                     is                      
+---------------------------------------------
+ ok 31 - withdrawn application stays blocked
+(1 row)
+
+UPDATE 1
+                     is                     
+--------------------------------------------
+ ok 32 - approved application stays blocked
+(1 row)
+
+UPDATE 1
+SELECT 1
+UPDATE 1
+                               is                                
+-----------------------------------------------------------------
+ ok 33 - an archived linked operational portal blocks submission
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                throws_ok                                 
+--------------------------------------------------------------------------
+ ok 34 - linked portal version independently binds the submission preview
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                            is                             
+-----------------------------------------------------------
+ ok 35 - changes requested can be deliberately resubmitted
+(1 row)
+
+UPDATE 1
+UPDATE 1
+          throws_ok          
+-----------------------------
+ ok 36 - reason is mandatory
+(1 row)
+
+                  throws_ok                  
+---------------------------------------------
+ ok 37 - reason is limited to 500 characters
+(1 row)
+
+UPDATE 1
+                          is                          
+------------------------------------------------------
+ ok 38 - admin command only submits, without approval
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 39 - submission increments exactly one version
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 40 - submission sets the correct workflow metadata
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 41 - all draft and consent values are preserved exactly
+(1 row)
+
+                                                               is                                                               
+--------------------------------------------------------------------------------------------------------------------------------
+ ok 42 - all other domain tables, memberships, ownership, auth metadata, children, payments, routes and passports are unchanged
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 43 - applicant remains the actual resident
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 44 - submission creates no operational portal or ownership
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 45 - exactly one semantic receipt message is enqueued
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 46 - mail is addressed to the verified resident, never the actor
+(1 row)
+
+                               ok                                
+-----------------------------------------------------------------
+ ok 47 - dedicated audit preserves the actual manager and reason
+(1 row)
+
+                                      ok                                       
+-------------------------------------------------------------------------------
+ ok 48 - timeline distinguishes organization submission from a resident action
+(1 row)
+
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 49 - exact retry returns the original receipt before stale version rejection
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 50 - same key with different payload is a conflict
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 51 - another command cannot submit the old version again
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 52 - replays and rejected commands do not duplicate mail
+(1 row)
+
+                   is                   
+----------------------------------------
+ ok 53 - replays do not duplicate audit
+(1 row)
+
+UPDATE 1
+                                  throws_ok                                  
+-----------------------------------------------------------------------------
+ ok 54 - receipt replay still rechecks the current verified resident context
+(1 row)
+
+UPDATE 1
+                                   throws_ok                                   
+-------------------------------------------------------------------------------
+ ok 55 - approval still requires the complete address that submission may omit
+(1 row)
+
+UPDATE 1
+                       throws_ok                       
+-------------------------------------------------------
+ ok 56 - revoked permission also blocks receipt replay
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                                   lives_ok                                   
+------------------------------------------------------------------------------
+ ok 57 - legitimate resident resubmission retains the same relaxed validation
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 58 - resident submission is not mislabeled as organization activity
+(1 row)
+
+ finish 
+--------
+ 1..58
+(1 row)
+
+ROLLBACK

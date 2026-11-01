@@ -1,0 +1,146 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+SELECT 4
+                      ok                      
+----------------------------------------------
+ ok 1 - anonymous has no composition commands
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                              is                              
+--------------------------------------------------------------
+ ok 2 - payment-only update preserves composition fingerprint
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 3 - payment-only update preserves planning fingerprint
+(1 row)
+
+UPDATE 1
+                  lives_ok                   
+---------------------------------------------
+ ok 4 - unpaid group can confirm composition
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 5 - exact confirmation retry returns original receipt
+(1 row)
+
+               is                
+---------------------------------
+ ok 6 - one composition revision
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 7 - composition confirmation enqueues personal adult notifications
+(1 row)
+
+                        throws_ok                         
+----------------------------------------------------------
+ ok 8 - confirmed published composition remains protected
+(1 row)
+
+UPDATE 1
+             lives_ok             
+----------------------------------
+ ok 9 - one atomic reviewed reset
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 10 - reset replay is safe after data changed
+(1 row)
+
+                  is                  
+--------------------------------------
+ ok 11 - no active groups after reset
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 12 - retired groups absent from kanban
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 13 - retired groups absent from start planning
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 14 - dashboard counts only current groups after reset
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 15 - live cockpit excludes explicitly retired groups
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 16 - all current memberships ended
+(1 row)
+
+                   is                    
+-----------------------------------------
+ ok 17 - immutable publications retained
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 18 - withdrawn participant instructions are not valid
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 19 - obsolete pending confirmations suppressed
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 20 - children and child financial links retained
+(1 row)
+
+                   is                   
+----------------------------------------
+ ok 21 - true party identities retained
+(1 row)
+
+UPDATE 1
+                     lives_ok                      
+---------------------------------------------------
+ ok 22 - intact groups can be formed without slots
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 23 - every submitted registration assigned exactly once
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 24 - old impact cannot reset a changed composition
+(1 row)
+
+ finish 
+--------
+ 1..24
+(1 row)
+
+ROLLBACK

@@ -20,6 +20,15 @@ const rpc:Rpc=async <T>(name:string,args:Record<string,unknown>)=>{
 const request=()=>new Request("https://edge.example.com",{method:"POST",body:"verified in dependency"});
 beforeEach(()=>{calls=[];envelopes.clear();env.AUTH_MAIL_MODE="live";env.MAIL_MODE="allowlist";env.AUTH_SITE_URL="https://staging.example.com";});
 describe("shared durable Auth and outbox dispatch",()=>{
+ it("does not persist actor claim links in durable gateway envelopes",async()=>{
+  const fetcher=vi.fn().mockResolvedValue(Response.json({id}));
+  const token="test-token-in-memory-only";
+  const message={kind:"transactional",message:{to:"old@example.com",subject:"Acteursuitnodiging",text:`Open https://staging.example.com/uitnodiging/acteur#token=${token}`,html:`<a href="https://staging.example.com/uitnodiging/acteur#token=${token}">Activeer</a>`,outboxId:id,messageType:"actor_invitation"}};
+  const response=await handleMail(request(),{env:key=>env[key],rpc,verify:()=>message,fetcher});expect(response.status).toBe(200);
+  expect(calls.find(call=>call[0]==="worker_mail_prepare")![1]._payload).toBeNull();
+  expect(JSON.stringify(calls)).not.toContain(token);
+  expect(JSON.parse(fetcher.mock.calls[0][1].body).text).toContain(token);
+ });
  it.each(["registration_activation","registration_group_changed"])("carries the database binding through signed %s gateway preparation",async(messageType)=>{
   const fetcher=vi.fn().mockResolvedValue(Response.json({id}));
   const message={kind:"transactional",message:{to:"old@example.com",subject:"Synthetisch gezinsbericht",text:"Testtekst",html:"<p>Testtekst</p>",outboxId:id,messageType,registrationBindingHash:"a".repeat(64)}};

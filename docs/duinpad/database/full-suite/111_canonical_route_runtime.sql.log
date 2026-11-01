@@ -1,0 +1,270 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+DO
+                              lives_ok                              
+--------------------------------------------------------------------
+ ok 1 - runtime fixture accepts the same complete physical calendar
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 2 - background dispatch remains service-only
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 3 - accepting a route does not start a journey
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 4 - expected preview uses the accepted first ordinary door
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 5 - expected preview uses exactly the accepted reserved finale time
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 6 - accepted ordinary visit may follow the former derived cutoff
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+INSERT 0 7
+UPDATE 1
+                                    lives_ok                                    
+--------------------------------------------------------------------------------
+ ok 7 - new live dispatch follows its accepted first visit after the old cutoff
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 8 - the old derived ordinary cutoff does not force an early finale
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 9 - run and board bind the same immutable accepted version
+(1 row)
+
+                             is                              
+-------------------------------------------------------------
+ ok 10 - first dispatch holds exactly one finale reservation
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 11 - held finale is not pulled forward to an independently greedy arrival
+(1 row)
+
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 12 - finale physical reservation includes six-minute show and two-minute changeover
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 13 - authorized live timing uses the actual hard ordinary boundary
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 14 - live timing and held finale use the same arrival
+(1 row)
+
+CREATE FUNCTION
+UPDATE 1
+                                 lives_ok                                 
+--------------------------------------------------------------------------
+ ok 15 - background pulse accepts the bound route after its former cutoff
+(1 row)
+
+                                          is                                           
+---------------------------------------------------------------------------------------
+ ok 16 - background pulse does not skip the real ordinary visit at the obsolete cutoff
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 17 - no obsolete cutoff redirection is recorded
+(1 row)
+
+                                      ok                                      
+------------------------------------------------------------------------------
+ ok 18 - obsolete derived cutoff does not create a misleading hard-stop alert
+(1 row)
+
+SAVEPOINT
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 19 - begun group remaining ordinary appointment stays fixed for a new proposal
+(1 row)
+
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 20 - another group cannot book over the begun group remaining ordinary arrival
+(1 row)
+
+                                      ok                                      
+------------------------------------------------------------------------------
+ ok 21 - begun group future finale remains fixed occupancy for a new proposal
+(1 row)
+
+                                                   is                                                   
+--------------------------------------------------------------------------------------------------------
+ ok 22 - begun future finale counts the one actually present child rather than the full assigned family
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+INSERT 0 1
+INSERT 0 10
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+                                  lives_ok                                  
+----------------------------------------------------------------------------
+ ok 23 - refreshing the board never replans an already begun legacy journey
+(1 row)
+
+                                               is                                               
+------------------------------------------------------------------------------------------------
+ ok 24 - existing begun run, current destination and reservation remain byte-for-byte unchanged
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 25 - old begun journey is not silently bound to a new plan version
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+INSERT 0 1
+INSERT 0 10
+UPDATE 1
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 26 - new route cannot start from an unaccepted durable intention
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 27 - blocked new start creates no operational reservation
+(1 row)
+
+UPDATE 2
+                                 throws_ok                                  
+----------------------------------------------------------------------------
+ ok 28 - a cold empty dynamic board cannot bypass explicit route acceptance
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 29 - empty unaccepted dynamic route also creates no reservation
+(1 row)
+
+ROLLBACK
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 30 - rolled-back legacy and blocked-start probes leave no extra journey
+(1 row)
+
+SAVEPOINT
+SAVEPOINT
+UPDATE 1
+                                      ok                                       
+-------------------------------------------------------------------------------
+ ok 31 - retired nonempty future group reserves neither a door nor a departure
+(1 row)
+
+ROLLBACK
+DO
+UPDATE 1
+                              ok                               
+---------------------------------------------------------------
+ ok 32 - empty unbegun source reserves no future ordinary door
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 33 - empty unbegun source reserves no future finale
+(1 row)
+
+                                                ok                                                
+--------------------------------------------------------------------------------------------------
+ ok 34 - empty source keeps historical appointment without consuming departure/gathering capacity
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 35 - empty source creates no false fixed calendar visit
+(1 row)
+
+                                               ok                                               
+------------------------------------------------------------------------------------------------
+ ok 36 - empty source intention creates no false headway/capacity block for the populated group
+(1 row)
+
+                                     ok                                      
+-----------------------------------------------------------------------------
+ ok 37 - capacity projection preserves empty group historical intention rows
+(1 row)
+
+INSERT 0 1
+                                                   ok                                                    
+---------------------------------------------------------------------------------------------------------
+ ok 38 - an actual begun departure remains reserved even after logical assigned membership becomes empty
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+                                      ok                                       
+-------------------------------------------------------------------------------
+ ok 39 - empty membership never discards a real completed physical reservation
+(1 row)
+
+                                               ok                                                
+-------------------------------------------------------------------------------------------------
+ ok 40 - real completed buffer still blocks another group after logical membership becomes empty
+(1 row)
+
+ROLLBACK
+UPDATE 1
+                                          is                                          
+--------------------------------------------------------------------------------------
+ ok 41 - legacy start-slot proposal receives the configurable physical finale headway
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 42 - effective finale metadata preserves the configured editable opening
+(1 row)
+
+ finish 
+--------
+ 1..42
+(1 row)
+
+ROLLBACK

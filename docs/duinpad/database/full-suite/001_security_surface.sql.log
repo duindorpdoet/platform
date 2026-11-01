@@ -1,0 +1,82 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..14
+(1 row)
+
+                  ok                   
+---------------------------------------
+ ok 1 - anon cannot use private schema
+(1 row)
+
+                                       ok                                       
+--------------------------------------------------------------------------------
+ ok 2 - authenticated can resolve narrowly granted storage and realtime helpers
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 3 - browser cannot select registrations directly
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 4 - browser cannot select route stops directly
+(1 row)
+
+                        ok                         
+---------------------------------------------------
+ ok 5 - browser cannot mutate route stops directly
+(1 row)
+
+                       ok                       
+------------------------------------------------
+ ok 6 - public snapshot is callable anonymously
+(1 row)
+
+                   ok                   
+----------------------------------------
+ ok 7 - group snapshot is not anonymous
+(1 row)
+
+                           ok                            
+---------------------------------------------------------
+ ok 8 - authenticated role can invoke protected snapshot
+(1 row)
+
+                      ok                       
+-----------------------------------------------
+ ok 9 - mail worker is unavailable to browsers
+(1 row)
+
+                        ok                        
+--------------------------------------------------
+ ok 10 - mail worker is available to service role
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 11 - local seed opens registration only for tests
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 12 - local fixtures provide thirty test portals
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 13 - all configured storage buckets are private
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 14 - RLS is enabled on every private table
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

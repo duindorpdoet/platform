@@ -1,0 +1,118 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+INSERT 0 4
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 3
+UPDATE 1
+UPDATE 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 1
+INSERT 0 3
+INSERT 0 1
+INSERT 0 1
+CREATE TABLE
+INSERT 0 1
+GRANT
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+SET
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 1 - pre-release leader can still validate its own real final arrival
+(1 row)
+
+SET
+                          is                           
+-------------------------------------------------------
+ ok 2 - old validation consumes no business scan right
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 3 - old validation starts no clock
+(1 row)
+
+UPDATE 3
+SET
+UPDATE 1
+                                  is                                  
+----------------------------------------------------------------------
+ ok 4 - legacy completion returns the arrival-recovery accepted field
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 5 - legacy recovery recognizes its completed stop
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 6 - legacy completion uses the same first business scan
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 7 - an old queued arrival recovers the immutable business receipt
+(1 row)
+
+SET
+                               is                               
+----------------------------------------------------------------
+ ok 8 - old group choices are narrowed to the current own party
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 9 - old final completion creates exactly one shared deadline
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 10 - legacy arrival recovery never creates a show-start attempt
+(1 row)
+
+                                  ok                                   
+-----------------------------------------------------------------------
+ ok 11 - old broad completion implementation cannot be called directly
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"d1000000-0000-0000-0000-000000000003","role":"authenticated"}
+(1 row)
+
+SET
+                               throws_ok                                
+------------------------------------------------------------------------
+ ok 12 - legacy route arrival stays leader-only for ordinary and finale
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 13 - same non-leader retains only the new own-final authorization
+(1 row)
+
+ finish 
+--------
+ 1..13
+(1 row)
+
+ROLLBACK

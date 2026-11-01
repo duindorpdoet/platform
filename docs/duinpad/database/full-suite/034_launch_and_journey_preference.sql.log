@@ -1,0 +1,99 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..13
+(1 row)
+
+                    ok                     
+-------------------------------------------
+ ok 1 - participants cannot open a release
+(1 row)
+
+                         ok                          
+-----------------------------------------------------
+ ok 2 - anonymous users cannot read group preference
+(1 row)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 3 - participants cannot bypass the preference dispatcher
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                             is                              
+-------------------------------------------------------------
+ ok 4 - explicit live release opens participant registration
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 5 - live opening preserves separate house-channel setting
+(1 row)
+
+UPDATE 1
+                           is                            
+---------------------------------------------------------
+ ok 6 - redeploy respects a subsequent organizer closure
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 7 - legacy routes cannot accept an unsupported visit limit
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 8 - only the leader can set the shared visit preference
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 9 - zero houses is not accepted as a numeric preference
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 10 - leader saves optional maximum
+(1 row)
+
+                        throws_ok                         
+----------------------------------------------------------
+ ok 11 - stale preference cannot overwrite another change
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 12 - leader can restore continuous route
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 13 - preference endpoint contains no start address
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

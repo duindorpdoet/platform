@@ -20,6 +20,8 @@ import { parseGateCredential } from "@/lib/redesign/gate-credentials";
 import { configureArrivalSync, clearArrivalMemory, hasWaitingArrival, isArrivalConnected, submitArrival } from "@/lib/redesign/arrival-sync";
 import { ArrivalSyncNotice, useArrivalSync } from "@/components/redesign/arrival-sync-ui";
 import { EarlyDeparture } from "@/components/redesign/early-departure";
+import { QrScanner } from "@/components/redesign/qr-scanner";
+import {DuinpadExperience} from "@/components/duinpad/experience";
 import { FamilyPortalThanks } from "@/components/redesign/portal-thanks";
 
 type Arrival = { credential: string; portalId?: string; stopId: string; runId: string; runVersion: number; method: string; portalName: string; finale: boolean; choices: Record<string, "visited" | "skipped">; participants: Participant[] };
@@ -27,6 +29,7 @@ type Arrival = { credential: string; portalId?: string; stopId: string; runId: s
 type RosterItem = { registrationChildId: string; firstName: string; householdLabel: string };
 type Participant = { id: string; childId: string; firstName: string; attendance: string; rosterVersion: number; isOwnChild: boolean; status: "pending" | "visited" | "skipped" | null; statusVersion: number | null; required: boolean | null };
 type Snapshot = {
+  duinpadFinale?: {eveningEnded:boolean;eligible?:boolean;recorded?:boolean};
   eventId: string;
   group: {
     id: string;
@@ -51,6 +54,7 @@ type Snapshot = {
     currentStop: null | { id: string; sequence: number; version: number; kind: "ordinary" | "finale"; openedAt: string; reservedArrivalAt: string | null; scanAccepted: boolean; portal: { id: string; systemCode?: string; name: string; description: string; intensity: number; operationStatus: string; world: string; address: string; postalCode: string; city?: string; publicEntranceInstructions?: string | null; locationSource?: string; coordinate: [number, number] | null } };
     participants: Participant[];
     ownEveningFinished?: boolean;
+    duinpadEveningEnded?: boolean;
     endedEarly?: boolean;
     farewells?: Record<string, {endedAt: string; reason: string}>;
     history: Array<{ sequence: number; kind?: "ordinary" | "finale"; outcome: string; completedAt: string; portalName: string; world: string; arrivalConfirmed?: boolean }>;
@@ -158,7 +162,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
   const prepareArrival = useCallback(async (value: string, inputMethod: string) => {
     const method = inputMethod === "short_code" ? "short_code" : "qr";
     const activeRun = snapshot?.run, activeStop = activeRun?.currentStop;
-    if (!activeRun || !activeStop || !snapshot?.access.leader || offline || busy || waitingForArrival || activeRun.status !== "live") return;
+    if (!activeRun || !activeStop || !snapshot?.access.leader || offline || busy || waitingForArrival || activeRun.status !== "live" || activeStop.kind === "finale") return;
     const client = createClient(); if (!client) return;
     setBusy(true); setNotice(""); setArrivalError("");
     try {
@@ -166,7 +170,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
       const { error } = await client.schema("api").rpc("run_scan_validate", { _run_id: activeRun.id, _expected_stop_id: activeStop.id, _expected_run_version: activeRun.version, _credential: parsed.credential, _portal_id: parsed.portalId ?? null, _method: method });
       if (error) { setNotice(explain(error)); await load(); return; }
       const participants = activeRun.participants.filter(p => p.attendance === "present");
-      setArrival({ ...parsed, stopId: activeStop.id, runId: activeRun.id, runVersion: activeRun.version, method, portalName: activeStop.portal.name, finale: activeStop.kind === "finale", participants, choices: Object.fromEntries(participants.map(p => [p.id, p.status === "skipped" || p.attendance !== "present" ? "skipped" : "visited"])) });
+      setArrival({ ...parsed, stopId: activeStop.id, runId: activeRun.id, runVersion: activeRun.version, method, portalName: activeStop.portal.name, finale: false, participants, choices: Object.fromEntries(participants.map(p => [p.id, p.status === "skipped" || p.attendance !== "present" ? "skipped" : "visited"])) });
       return true;
     } catch (error) { setNotice(explain({message:error instanceof Error ? error.message : "WRONG_PORTAL"})); }
     finally { setBusy(false); }
@@ -195,7 +199,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
       // Keep the QR query until guidance closes, then validate it once.
       if (document.documentElement.dataset.participantGuidanceActive === "true") return;
       const query = window.location.search.slice(1);
-      if (!query || !snapshot?.run?.currentStop || !snapshot.access.leader || busy || offline) return;
+      if (!query || !snapshot?.run?.currentStop || !snapshot.access.leader || snapshot.run.currentStop.kind === "finale" || busy || offline) return;
       const code = new URLSearchParams(query).get("code");
       if (!code || consumedLink.current === query) return;
       consumedLink.current = query;
@@ -219,6 +223,7 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
   }, [snapshot?.run?.currentStop, snapshot?.run?.version, snapshot?.access.leader, busy, offline, prepareArrival]);
 
   if (!snapshot) return <div className="panel loading-state" role="status"><RefreshCw className="spin" /><p>{notice || "Jullie groepsinformatie ophalen…"}</p></div>;
+  if(snapshot.duinpadFinale?.eveningEnded)return <div className="group-app group-premium route-workspace"><DuinpadExperience key={userId} onSaved={load}/></div>;
   const run = snapshot.run;
   const stop = run?.currentStop;
   const isFinale = stop?.kind === "finale";
@@ -226,25 +231,26 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
   const attendanceState = attendanceSummary(roster.map((item) => item.registrationChildId), attendance);
   const checkedParticipants = run?.participants.filter((item) => item.status === "visited" || item.status === "skipped").length ?? 0;
   const participantTotal = run?.participants.length ?? 0;
-  const canAct = !offline && !busy && !waitingForArrival && run?.status === "live";
+  const canAct = !offline && !busy && !waitingForArrival && !run?.ownEveningFinished && run?.status === "live";
 
   return <div className="group-app group-premium route-workspace">
     <header className="route-workspace-heading"><div><p className="kicker">Samen door Duindorp</p><h2>{!run ? "Bijna tijd voor jullie avontuur" : (run.status === "completed" || run.endedEarly || run.ownEveningFinished) ? "Een nacht om te bewaren" : "Eén poort tegelijk. Samen op pad."}</h2></div><span className="route-group-badge"><Users size={16}/>{snapshot.group.code}</span></header>
     <div className="group-route-context"><span className="group-route-code"><Footprints aria-hidden="true" />{snapshot.group.code}</span><span className={`group-route-phase ${run?.status === "live" && !offline ? "is-active" : ""}`}>{offline ? "Laatste opgeslagen opdracht" : !run ? "Voor de tocht" : run.status === "completed" ? "Tocht afgerond" : run.status === "stopped" ? run.endedEarly ? "Avond afgerond" : "Tocht beëindigd" : run.status === "paused" ? "Route gepauzeerd" : "De tocht is begonnen"}</span><button type="button" className="group-route-refresh" onClick={() => void load()} aria-label="Groepsinformatie vernieuwen"><RefreshCw aria-hidden="true" /><span>Vernieuwen</span></button></div>
-    {run && stop && !["completed", "stopped"].includes(run.status) && <nav className="route-steps" aria-label="Stappen van dit poortbezoek"><button type="button" onClick={() => scrollToRouteStep("route-destination")} className="is-done"><span><MapPin size={15}/></span><div><small>01 · Bestemming</small><strong>Loop naar de poort</strong></div></button><button type="button" onClick={() => scrollToRouteStep("route-scan")} className={stop.scanAccepted ? "is-done" : "is-current"}><span>{stop.scanAccepted ? <Check size={16}/> : <QrCode size={16}/>}</span><div><small>02 · Bevestigen</small><strong>{stop.scanAccepted ? "Poort gescand" : "Scan bij aankomst"}</strong></div></button><button type="button" onClick={() => scrollToRouteStep("route-children")} className={checkedParticipants === participantTotal ? "is-done" : stop.scanAccepted ? "is-current" : ""}><span><Users size={16}/></span><div><small>03 · Kinderen</small><strong>{checkedParticipants} van {participantTotal} verwerkt</strong></div></button><button type="button" onClick={() => scrollToRouteStep("route-next")} className={checkedParticipants === participantTotal ? "is-current" : ""}><span><ArrowRight size={16}/></span><div><small>04 · Verder</small><strong>{isFinale ? "Rond de avond af" : "Open de volgende poort"}</strong></div></button></nav>}
+    {run && stop && !isFinale && !["completed", "stopped"].includes(run.status) && <nav className="route-steps" aria-label="Stappen van dit poortbezoek"><button type="button" onClick={() => scrollToRouteStep("route-destination")} className="is-done"><span><MapPin size={15}/></span><div><small>01 · Bestemming</small><strong>Loop naar de poort</strong></div></button><button type="button" onClick={() => scrollToRouteStep("route-scan")} className={stop.scanAccepted ? "is-done" : "is-current"}><span>{stop.scanAccepted ? <Check size={16}/> : <QrCode size={16}/>}</span><div><small>02 · Bevestigen</small><strong>{stop.scanAccepted ? "Poort gescand" : "Scan bij aankomst"}</strong></div></button><button type="button" onClick={() => scrollToRouteStep("route-children")} className={checkedParticipants === participantTotal ? "is-done" : stop.scanAccepted ? "is-current" : ""}><span><Users size={16}/></span><div><small>03 · Kinderen</small><strong>{checkedParticipants} van {participantTotal} verwerkt</strong></div></button><button type="button" onClick={() => scrollToRouteStep("route-next")} className={checkedParticipants === participantTotal ? "is-current" : ""}><span><ArrowRight size={16}/></span><div><small>04 · Verder</small><strong>{isFinale ? "Rond de avond af" : "Open de volgende poort"}</strong></div></button></nav>}
     {offline && <div className="offline-banner" role="alert"><CloudOff size={18} />Geen verbinding. Je ziet de laatste route-informatie, bijgewerkt om {run ? new Date(run.lastServerConfirmation).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "een eerder moment"}. Wacht op verbinding voordat jullie verdergaan.</div>}
     <ArrivalSyncNotice/>
 
+    <DuinpadExperience key={userId} onSaved={load}/>
     {notice && <div className="form-warning" role="status">{notice}</div>}
     {!run && <GroupJourneyPreference groupId={groupId} onSaved={load} />}
     {!run && snapshot.group.start && snapshot.group.start.addressReleased !== false && snapshot.group.start.address && <section className="panel route-map-card group-start-destination"><div className="route-map-heading"><MapPin size={17}/><div><p className="kicker">Jullie vrijgegeven startpunt</p><h3>{snapshot.group.start.locationName}</h3></div></div><ReleasedDestination id={`start-${groupId}`} name={snapshot.group.start.locationName} address={snapshot.group.start.address} coordinate={snapshot.group.start.coordinate} instruction={[snapshot.group.start.arrivalInstructions, snapshot.group.start.safeApproach].filter(Boolean).join(" ")} locationSource={snapshot.group.start.locationSource} start/></section>}
     {!run && <div className="pre-event group-pre-event"><div className="pre-art"><img src="/images/avondloop-hero.webp" alt="Verlichte Duindorpse straat in de avond" /><div><p className="kicker">Route nog vergrendeld</p><h2>{snapshot.group.start ? new Date(snapshot.group.start.startsAt).toLocaleString("nl-NL", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Amsterdam" }) : "Starttijd volgt"}</h2><p>{snapshot.group.start?.addressReleased===false ? `Jullie eerste adres verschijnt ${snapshot.group.start.addressReleaseAt ? new Date(snapshot.group.start.addressReleaseAt).toLocaleString("nl-NL",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit",timeZone:"Europe/Amsterdam"}):"één uur vooraf"}. Dat is één uur voor jullie start.` : snapshot.group.start ? `${snapshot.group.start.locationName}${snapshot.group.start.address?` · ${snapshot.group.start.address}`:""}` : "De organisatie publiceert de startlocatie later."}</p></div></div><div className="panel group-check-in"><p className="kicker">Samen vertrekken</p><h2>Controleer aanwezigheid</h2>{snapshot.access.leader ? <>{roster.length === 0 ? <p>De actuele groepslijst wordt opgehaald.</p> : <><div className="attendance-progress" aria-live="polite"><strong>{attendanceState.checked} van {attendanceState.total} gecontroleerd</strong><span>{attendanceState.presentIds.length} aanwezig · {attendanceState.absent} afwezig</span></div>{roster.map((item) => <fieldset className="attendance-row" key={item.registrationChildId}><legend><strong>{item.firstName}</strong><small>{item.householdLabel}</small></legend><div><label className={attendance[item.registrationChildId] === "present" ? "selected present" : "present"}><input type="radio" name={`attendance-${item.registrationChildId}`} checked={attendance[item.registrationChildId] === "present"} onChange={() => setAttendance((current) => ({ ...current, [item.registrationChildId]: "present" }))} />Aanwezig</label><label className={attendance[item.registrationChildId] === "absent" ? "selected absent" : "absent"}><input type="radio" name={`attendance-${item.registrationChildId}`} checked={attendance[item.registrationChildId] === "absent"} onChange={() => setAttendance((current) => ({ ...current, [item.registrationChildId]: "absent" }))} />Afwezig</label></div></fieldset>)}</>}<button className="btn full" disabled={busy || offline || !attendanceState.canStart || snapshot.group.start?.canStart!==true} onClick={() => { if (!attendanceState.canStart || snapshot.group.start?.canStart!==true) return; const message = `Je start met ${attendanceState.presentIds.length} aanwezige ${attendanceState.presentIds.length === 1 ? "kind" : "kinderen"}. ${attendanceState.absent} ${attendanceState.absent === 1 ? "kind is" : "kinderen zijn"} afwezig. Klopt dit?`; if (window.confirm(message)) void command("run_start", { _group_id: groupId, _present_registration_child_ids: attendanceState.presentIds, _expected_group_version: snapshot.group.version, _idempotency_key: crypto.randomUUID(), _request_hash: attendanceState.presentIds.slice().sort().join(":") }); }}>Start groep met {attendanceState.presentIds.length} aanwezig</button>{attendanceState.complete && attendanceState.presentIds.length === 0 && <p className="form-warning" role="alert">Een groep kan niet starten zonder aanwezig kind.</p>}</> : <p>Jullie groepsleider start de tocht. Daarna verschijnt de eerste bestemming.</p>}</div></div>}
-    {run?.status === "completed" && <div className="finish-screen"><Check size={54} /><p className="kicker">De cirkel is rond</p><h2>Jullie zijn gefinisht.</h2><p>De bereikte poorten staan in jullie logboek. Ieder kind dat met de groep bij de poort aankwam, krijgt een zegel, ook als het de beleving oversloeg.</p></div>}
+    {run?.status === "completed" && !run.duinpadEveningEnded && !snapshot.duinpadFinale?.eligible && !snapshot.duinpadFinale?.recorded && <div className="finish-screen"><Check size={54} /><p className="kicker">De cirkel is rond</p><h2>Jullie zijn gefinisht.</h2><p>De bereikte poorten staan in jullie logboek. Ieder kind dat met de groep bij de poort aankwam, krijgt een zegel, ook als het de beleving oversloeg.</p></div>}
     {run?.status === "stopped" && !run.endedEarly && <div className="finish-screen"><LockKeyhole size={54} /><p className="kicker">Route beëindigd</p><h2>Volg de organisatie-instructie.</h2><p>{run.emergencyInstruction ?? "Er worden geen nieuwe poorten vrijgegeven. Blijf bij de verantwoordelijke volwassene en neem bij direct gevaar contact op met de hulpdiensten."}</p></div>}
-    {run && <EarlyDeparture run={run} disabled={offline || busy || waitingForArrival} onSaved={load}/>}
-    <FamilyPortalThanks key={run?.version??0}/>
+    {run && !run.duinpadEveningEnded && <EarlyDeparture run={run} disabled={offline || busy || waitingForArrival} onSaved={load}/>}
+    {!run?.duinpadEveningEnded&&<FamilyPortalThanks key={run?.version??0}/>}
     {run && !["completed", "stopped"].includes(run.status) && !run.ownEveningFinished && !stop && <div className="panel loading-state" aria-live="polite"><RefreshCw className="spin" /><div><h2>Wacht veilig bij de laatst bevestigde plek</h2><p>We zoeken de volgende poort waar jullie terechtkunnen. Blijf samen op een veilige plek tot de nieuwe aanwijzing verschijnt.</p></div></div>}
-    {run && !["completed", "stopped"].includes(run.status) && stop && <>
+    {run && !["completed", "stopped"].includes(run.status) && stop && stop.kind !== "finale" && <>
       <div className="live-topbar group-route-metrics"><span><Footprints size={15}/><strong>{isFinale ? "Laatste poort" : `Poort ${stop.sequence}`}</strong></span><span><Clock3 size={15}/>{elapsedMinutes} min onderweg</span><span className="route-stop-time">Gewone poorten tot {snapshot.group.effectiveOrdinaryStopAt ? new Date(snapshot.group.effectiveOrdinaryStopAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "de afgesproken grens"}</span><span className="route-finale-time">Finale rond {snapshot.group.expectedFinaleArrivalAt ? new Date(snapshot.group.expectedFinaleArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "wordt berekend"}</span><span className="route-update-time">Bijgewerkt {new Date(run.lastServerConfirmation).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}</span>{snapshot.access.leader && <button className="text-link" disabled={offline || busy} onClick={() => void command("run_set_state", { _run_id: run.id, _state: run.status === "paused" ? "live" : "paused", _expected_version: run.version, _reason: run.status === "paused" ? "Groepsleider hervat de route" : "Groepsleider pauzeert de route" })}>{run.status === "paused" ? "Route hervatten" : "Route pauzeren"}</button>}</div>
       {run.status === "paused" && <div className="offline-banner"><CloudOff size={18} />Jullie tocht staat even op pauze. De groepsleider kan hem hervatten zodra jullie klaarstaan.</div>}
       <div className="live-grid"><section id="route-destination" className="active-portal group-destination" aria-live="polite"><img src="/images/pluvierstraat.webp" alt="Sfeervol verlichte poort" /><div className="active-portal-copy"><p className="kicker">{isFinale ? "Laatste poort" : `Huidige poort · ${stop.portal.world}`}</p><h2 ref={portalHeading} tabIndex={-1}>{stop.portal.name}</h2><p>{stop.portal.description}</p><div className="portal-meta group-destination-details"><span><MapPin size={16} />{stop.portal.address}, {stop.portal.postalCode}</span><span>{stop.reservedArrivalAt ? `Aankomstvenster ${new Date(stop.reservedArrivalAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}` : `Spanning ${stop.portal.intensity}/4`}</span></div>{stop.portal.operationStatus !== "open" && <div className="form-warning">Deze poort is tijdelijk {stop.portal.operationStatus === "paused" ? "gepauzeerd" : "gesloten"}. Volg de instructie van de groepsleiding.</div>}</div></section><aside className="panel live-map-column participant-route-map route-map-card"><div className="route-map-heading"><MapPin size={17}/><div><p className="kicker">Jullie bestemming</p><h3>{isFinale ? "Naar de finale" : "De poort op de kaart"}</h3></div></div><ReleasedDestination id={stop.portal.id} name={stop.portal.name} address={[stop.portal.address, [stop.portal.postalCode, stop.portal.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")} coordinate={stop.portal.coordinate} instruction={stop.portal.publicEntranceInstructions} locationSource={stop.portal.locationSource}/><div className="route-instruction"><MapPin /><span><strong>Loop samen naar de vrijgegeven poort.</strong>Scan bij aankomst de QR-code of vul de korte code van de poort in.</span></div>{!isFinale && <div className="next-hidden"><LockKeyhole /><span><strong>De volgende stop blijft nog een verrassing.</strong>Rond dit bezoek samen af. Daarna ontdek je de volgende bestemming.</span></div>}</aside></div>
@@ -256,39 +262,4 @@ export function GroupExperience({ groupId, userId }: { groupId: string; userId: 
     <Dialog open={!!arrival} onOpenChange={open => { if (!open && !busy) setArrival(null); }}><DialogContent className="gate-arrival-dialog" showCloseButton={!busy} onEscapeKeyDown={e => { if (busy) e.preventDefault(); }} onInteractOutside={e => e.preventDefault()}><span className="gate-arrival-icon"><QrCode size={27}/></span><p className="kicker">Jullie zijn bij de juiste poort</p><DialogTitle>Aangekomen bij {arrival?.portalName}</DialogTitle><DialogDescription>Iedereen is bij de poort en krijgt een zegel. Geef alleen aan wie aan de beleving meedoet. Daarna verschijnt {arrival?.finale ? "de afronding van jullie avond" : "alleen de volgende bestemming"}. Blijf samen en neem de tijd bij de poort.</DialogDescription><div className="gate-arrival-children">{arrival?.participants.map(p => <label key={p.id}><span><strong>{p.firstName}</strong><small>{p.status === "skipped" ? "Beleving eerder overgeslagen · wel een zegel" : p.status === "visited" ? "Bezoek al vastgelegd" : "Bij jullie groep"}</small></span><span><input type="checkbox" checked={arrival.choices[p.id] === "visited"} disabled={busy || p.status === "skipped" || p.status === "visited"} onChange={e => setArrival(current => current ? {...current, choices:{...current.choices,[p.id]:e.target.checked ? "visited" : "skipped"}} : null)}/>{arrival.choices[p.id] === "visited" ? "Doet mee" : "Kijkt rustig mee"}</span></label>)}</div><p className="gate-arrival-note">Ieder aanwezig kind krijgt bij deze aankomst een zegel. Buiten blijven of de beleving overslaan is helemaal goed.</p>{arrivalError && <p className="form-warning" role="alert">{arrivalError}</p>}<button type="button" className="btn gate-arrival-confirm" disabled={busy} onClick={() => void confirmArrival(true)}>{busy ? "Aankomst vastleggen…" : arrival?.finale ? "Aankomst bevestigen & avond afronden" : "Aankomst bevestigen & volgende poort"}<ArrowRight size={17}/></button><button type="button" className="gate-arrival-separate" disabled={busy} onClick={() => void confirmArrival(false)}>Alleen code bevestigen, kinderen apart verwerken</button></DialogContent></Dialog>
     {run && run.history.length > 0 && <div className="panel timeline group-route-history"><p className="kicker">Logboek</p><h2>Afgeronde poorten</h2>{run.history.map((item) => <div className="summary-row" key={item.sequence}><span>{item.sequence}. {item.portalName} · {item.world}</span><strong>{item.outcome === "system_skipped" ? "Poort gesloten" : item.arrivalConfirmed || item.outcome === "visited" || item.outcome === "mixed" ? "Aangekomen" : "Poort overgeslagen"}</strong></div>)}</div>}
   </div>;
-}
-
-function QrScanner({ onResult, onCancel }: { onResult: (value: string) => void; onCancel: () => void }) {
-  const video = useRef<HTMLVideoElement>(null);
-  const resultHandler = useRef(onResult);
-  const [error, setError] = useState("");
-  useEffect(() => { resultHandler.current = onResult; }, [onResult]);
-  useEffect(() => {
-    let stopped = false;
-    let stream: MediaStream | undefined;
-    let controls: { stop: () => void } | undefined;
-    const preview = video.current;
-    function release() {
-      controls?.stop();
-      stream?.getTracks().forEach((track) => track.stop());
-      if (preview) preview.srcObject = null;
-    }
-    void (async () => {
-      try {
-        const { BrowserQRCodeReader } = await import("@zxing/browser");
-        if (stopped || !preview) return;
-        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" } } });
-        if (stopped) { release(); return; }
-        controls = await new BrowserQRCodeReader().decodeFromStream(stream, preview, (result) => {
-          if (result && !stopped) { stopped = true; release(); resultHandler.current(result.getText()); }
-        });
-        if (stopped) release();
-      } catch {
-        release();
-        if (!stopped) setError("Camera niet beschikbaar. Gebruik de korte code.");
-      }
-    })();
-    return () => { stopped = true; release(); };
-  }, []);
-  return <div className="scanner-overlay" role="dialog" aria-modal="true" aria-label="QR-scanner"><div className="panel scanner-dialog"><QrCode size={28} /><h2>Scan de huidige poort</h2><video ref={video} className="scanner-video" muted playsInline />{error && <p className="form-warning">{error}</p>}<button className="btn outline" onClick={onCancel}>Sluiten</button></div></div>;
 }

@@ -1,0 +1,133 @@
+BEGIN
+CREATE EXTENSION
+ plan  
+-------
+ 1..22
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 1 - the pre-OTP intake command is not callable by an anonymous browser
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 2 - only the trusted server may create a pre-OTP intake
+(1 row)
+
+                                      ok                                      
+------------------------------------------------------------------------------
+ ok 3 - anonymous visitors cannot read private contact or address intake rows
+(1 row)
+
+SET
+                                      lives_ok                                      
+------------------------------------------------------------------------------------
+ ok 4 - the trusted endpoint stores the minimum house details before sending an OTP
+(1 row)
+
+RESET
+                               is                               
+----------------------------------------------------------------
+ ok 5 - one private concept intake is keyed by normalized email
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 6 - contact-only registration stores an empty private address object
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 7 - an unclaimed concept never becomes a public or routable portal
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                                      lives_ok                                      
+------------------------------------------------------------------------------------
+ ok 8 - the account with the verified matching email can claim the intake after OTP
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 9 - claiming creates a valid private draft without the additional profile fields
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 10 - Mijn huis starts with optional address fields left empty
+(1 row)
+
+                                  lives_ok                                   
+-----------------------------------------------------------------------------
+ ok 11 - a contact-only house concept can be saved with server-side defaults
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 12 - the candy-only category is the default
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 13 - house availability starts at 17:00 by default
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 14 - house availability ends at 21:00 by default
+(1 row)
+
+                                    lives_ok                                     
+---------------------------------------------------------------------------------
+ ok 15 - only verified email, contact name and phone are required for submission
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 16 - the minimal house application reaches the review queue
+(1 row)
+
+                            lives_ok                            
+----------------------------------------------------------------
+ ok 17 - repeating the claim is idempotent for the same account
+(1 row)
+
+RESET
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 18 - repeated OTP or claim delivery cannot create a duplicate house application
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 19 - the incomplete draft remains absent from approved portal data
+(1 row)
+
+                                    throws_ok                                     
+----------------------------------------------------------------------------------
+ ok 20 - direct authenticated RPC calls cannot persist an oversized private draft
+(1 row)
+
+SET
+                                                 lives_ok                                                  
+-----------------------------------------------------------------------------------------------------------
+ ok 21 - a duplicate public submission for an already claimed email is acknowledged without a second house
+(1 row)
+
+RESET
+                                       is                                        
+---------------------------------------------------------------------------------
+ ok 22 - the unique email constraint remains intact after a duplicate submission
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

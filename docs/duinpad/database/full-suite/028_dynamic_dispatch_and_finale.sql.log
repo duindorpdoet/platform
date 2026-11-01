@@ -1,0 +1,192 @@
+BEGIN
+CREATE EXTENSION
+CREATE FUNCTION
+GRANT
+ plan  
+-------
+ 1..21
+(1 row)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+UPDATE 30
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+GRANT
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 1 - a draft schedule never exposes its exact start point through the participant RPC
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 2 - a dynamic group cannot start from a concept schedule
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                      isnt                                       
+---------------------------------------------------------------------------------
+ ok 3 - the exact assigned start becomes visible only after explicit publication
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 4 - presence cannot start a group before its exact assigned time
+(1 row)
+
+SET
+                                throws_ok                                
+-------------------------------------------------------------------------
+ ok 5 - a published departure cannot be moved by editing its shared slot
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                 lives_ok                                  
+---------------------------------------------------------------------------
+ ok 6 - an already-begun historical group retains one server-selected stop
+(1 row)
+
+SET
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 7 - the first live assignment is an ordinary portal rather than the terminal portal
+(1 row)
+
+SET
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 8 - the dispatcher exposes and reserves exactly one ordinary portal at a time
+(1 row)
+
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 9 - the dispatcher reserves a feasible finale window before releasing an ordinary portal
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+DO
+SET
+                                     cmp_ok                                     
+--------------------------------------------------------------------------------
+ ok 10 - the continuous route proceeds beyond the former fixed six-stop ceiling
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 11 - the dispatcher never gives the same ordinary house to one group twice
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                                   lives_ok                                                    
+---------------------------------------------------------------------------------------------------------------
+ ok 12 - an audited organization action can send a group to the finale through the same reservation dispatcher
+(1 row)
+
+                                        is                                         
+-----------------------------------------------------------------------------------
+ ok 13 - the currently published destination is now the designated terminal portal
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   throws_ok                                   
+-------------------------------------------------------------------------------
+ ok 14 - a non-participating leader cannot consume a visitor finale scan right
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                   lives_ok                                    
+-------------------------------------------------------------------------------
+ ok 15 - the designated finale credential confirms arrival at the final portal
+(1 row)
+
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 16 - the leader records the final show after the finale scan
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                      lives_ok                                       
+-------------------------------------------------------------------------------------
+ ok 17 - the participating parent confirms the visited finale and finishes the route
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 18 - the group is complete only after the final portal is visited
+(1 row)
+
+SET
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 19 - a normal dynamic route has exactly one completed terminal finale stop
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 20 - the designated final portal is never selected as an ordinary house
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 21 - finishing the finale leaves no active capacity claim for the group
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

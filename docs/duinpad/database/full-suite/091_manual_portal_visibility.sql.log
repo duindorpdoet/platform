@@ -1,0 +1,102 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+GRANT
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+UPDATE 1
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 1 - manual concepts appear without a resident intake or application
+(1 row)
+
+                                            ok                                            
+------------------------------------------------------------------------------------------
+ ok 2 - the designated final portal keeps its final-portal identity while still a concept
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 3 - the concept is counted exactly once
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 4 - the editor exposes the actual unknown instruction-mail status
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 5 - visibility grants no membership before invitation acceptance
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 6 - visibility does not approve or activate the concept
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 7 - anonymous callers cannot inspect organization concepts
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 8 - the internal projection remains inaccessible directly
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 9 - an ordinary participant cannot inspect organization concepts
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                        lives_ok                         
+---------------------------------------------------------
+ ok 10 - authorized organization can inspect the concept
+(1 row)
+
+RESET
+UPDATE 1
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 11 - a registered manual concept remains visible before approval
+(1 row)
+
+UPDATE 1
+                               ok                               
+----------------------------------------------------------------
+ ok 12 - approved records no longer inflate the concept counter
+(1 row)
+
+UPDATE 1
+                          ok                           
+-------------------------------------------------------
+ ok 13 - archived records stay out of the concept list
+(1 row)
+
+ finish 
+--------
+ 1..13
+(1 row)
+
+ROLLBACK

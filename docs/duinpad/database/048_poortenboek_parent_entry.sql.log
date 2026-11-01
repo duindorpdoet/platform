@@ -1,0 +1,205 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+                   ok                   
+----------------------------------------
+ ok 1 - anon cannot invoke parent login
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 2 - ordinary clients cannot assert parent identity
+(1 row)
+
+                       ok                       
+------------------------------------------------
+ ok 3 - verified server can invoke parent login
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 4 - first opening asks server to provision a code
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 5 - provisioning preview creates no session
+(1 row)
+
+SELECT 1
+                             is                             
+------------------------------------------------------------
+ ok 6 - owner opens own registered child without code login
+(1 row)
+
+                      ok                       
+-----------------------------------------------
+ ok 7 - no credential in parent login response
+(1 row)
+
+                      is                       
+-----------------------------------------------
+ ok 8 - parent entry uses exactly twelve hours
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 9 - parent entry gets its own welcome scene
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 10 - opening is audited with the verified parent and child IDs
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 11 - audit has no code, token or personal payload
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 12 - another household cannot open the child
+(1 row)
+
+                throws_ok                 
+------------------------------------------
+ ok 13 - missing parent identity rejected
+(1 row)
+
+                throws_ok                 
+------------------------------------------
+ ok 14 - another event cannot be selected
+(1 row)
+
+          throws_ok          
+-----------------------------
+ ok 15 - raw tokens rejected
+(1 row)
+
+                        lives_ok                         
+---------------------------------------------------------
+ ok 16 - failed selection leaves previous session usable
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 17 - another device may open the same child
+(1 row)
+
+                  lives_ok                   
+---------------------------------------------
+ ok 18 - first child keeps personal progress
+(1 row)
+
+                        is                        
+--------------------------------------------------
+ ok 19 - parent switches directly to second child
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 20 - switch revokes previous browser child session
+(1 row)
+
+                      lives_ok                       
+-----------------------------------------------------
+ ok 21 - switch leaves another device session intact
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 22 - second child does not inherit first child progress
+(1 row)
+
+                    is                    
+------------------------------------------
+ ok 23 - parent can return to first child
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 24 - first child progress survives switching
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 25 - opening reuses existing codes without renewal
+(1 row)
+
+                  is                   
+---------------------------------------
+ ok 26 - original code stays unchanged
+(1 row)
+
+UPDATE 1
+                throws_ok                
+-----------------------------------------
+ ok 27 - revoked owner cannot open child
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                throws_ok                 
+------------------------------------------
+ ok 28 - cancelled child cannot be opened
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                    throws_ok                    
+-------------------------------------------------
+ ok 29 - cancelled registration cannot be opened
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                throws_ok                
+-----------------------------------------
+ ok 30 - archived child cannot be opened
+(1 row)
+
+UPDATE 1
+                         lives_ok                          
+-----------------------------------------------------------
+ ok 31 - code renewal remains available after parent entry
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 32 - code renewal revokes parent-opened session
+(1 row)
+
+                    throws_ok                    
+-------------------------------------------------
+ ok 33 - code renewal also revokes other devices
+(1 row)
+
+                    is                     
+-------------------------------------------
+ ok 34 - owner can open after code renewal
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 35 - parent-opened child session can log out normally
+(1 row)
+
+                    throws_ok                     
+--------------------------------------------------
+ ok 36 - logout invalidates parent-opened session
+(1 row)
+
+ finish 
+--------
+ 1..36
+(1 row)
+
+ROLLBACK

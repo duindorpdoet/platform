@@ -1,0 +1,300 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 1
+                                ok                                 
+-------------------------------------------------------------------
+ ok 1 - synthetic seed contains the proven physical alias identity
+(1 row)
+
+                               ok                               
+----------------------------------------------------------------
+ ok 2 - both compared routes have actual participating children
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+UPDATE 2
+UPDATE 2
+UPDATE 2
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+                                           ok                                            
+-----------------------------------------------------------------------------------------
+ ok 3 - batched warnings exactly match all original warning objects for nonempty aliases
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 4 - ten-minute physical alias headway rejects one microsecond early
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 5 - exact headway boundary retains complete original warning semantics
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 6 - exact ten-minute alias headway is accepted
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 7 - valid distinct physical groups fit without extra capacity
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 8 - one microsecond after the boundary remains equivalent
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 9 - negative arrival separation preserves absolute-headway behavior
+(1 row)
+
+SELECT 1
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 10 - manual preview changes are evaluated before the cached headway comparison
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 11 - preview cannot evade a physical alias conflict
+(1 row)
+
+UPDATE 1
+                                         ok                                         
+------------------------------------------------------------------------------------
+ ok 12 - inactive physical aliases retain the exact original maximum-headway policy
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 13 - inactive alias stricter policy still controls the shared physical door
+(1 row)
+
+UPDATE 1
+SELECT 1
+                                         ok                                          
+-------------------------------------------------------------------------------------
+ ok 14 - duplicate aliases in one group retain all original duplicate-route warnings
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 15 - physical aliases remain a duplicate visit for one family group
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 16 - alternative entries of the same physical group do not count as two arrivals
+(1 row)
+
+UPDATE 2
+UPDATE 1
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 17 - cached unresolved accessibility retains complete original notices
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 18 - legacy free text remains a review flag for an unverified physical gate
+(1 row)
+
+UPDATE 1
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 19 - cached explicit accessibility retains complete original notices
+(1 row)
+
+                                       is                                       
+--------------------------------------------------------------------------------
+ ok 20 - explicit drempelvrij requirement continues to block an unverified gate
+(1 row)
+
+UPDATE 2
+                                         ok                                         
+------------------------------------------------------------------------------------
+ ok 21 - mixed explicit and unresolved assigned needs retain both original warnings
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 22 - mixed group keeps explicit need warning
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 23 - mixed group separately keeps unresolved note warning
+(1 row)
+
+UPDATE 2
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 24 - explicit false wins over old free text exactly as in the original checker
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 25 - explicit false clears unresolved status without interpreting the note
+(1 row)
+
+UPDATE 2
+                          ok                           
+-------------------------------------------------------
+ ok 26 - undeclared empty notes remain effective false
+(1 row)
+
+UPDATE 2
+                                      ok                                       
+-------------------------------------------------------------------------------
+ ok 27 - verified physical accessibility suppresses the same notices as before
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 28 - verified step-free physical visit meets the declared need
+(1 row)
+
+SELECT 1
+                                        ok                                        
+----------------------------------------------------------------------------------
+ ok 29 - cached adjacency keeps duplicate sequence combinations and numeric holes
+(1 row)
+
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 30 - each duplicate preceding row retains its own insufficient-travel warning
+(1 row)
+
+UPDATE 1
+                                             ok                                              
+---------------------------------------------------------------------------------------------
+ ok 31 - administrative start still measures from the frozen start position and start moment
+(1 row)
+
+UPDATE 2
+                                     ok                                     
+----------------------------------------------------------------------------
+ ok 32 - ordinary physical end at exact hard close retains original windows
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 33 - complete ordinary visit may end exactly at its hard close
+(1 row)
+
+SELECT 1
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 34 - cached ordinary physical close keeps microsecond precision
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 35 - one microsecond past physical hard close remains invalid
+(1 row)
+
+UPDATE 2
+UPDATE 1
+UPDATE 1
+SELECT 1
+                                      ok                                       
+-------------------------------------------------------------------------------
+ ok 36 - cached finale window keeps the exact physical/configured intersection
+(1 row)
+
+                                  is                                   
+-----------------------------------------------------------------------
+ ok 37 - show and turnover can finish exactly at physical finale close
+(1 row)
+
+UPDATE 1
+                                   ok                                    
+-------------------------------------------------------------------------
+ ok 38 - cached finale window keeps microsecond physical-close rejection
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 39 - finale receives no extra ordinary grace for one microsecond
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+SELECT 1
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 40 - begun fixture has zero actual present children rather than an empty unbegun route
+(1 row)
+
+                                          ok                                          
+--------------------------------------------------------------------------------------
+ ok 41 - actual zero-child completed occupancy preserves all original warning objects
+(1 row)
+
+                                           is                                           
+----------------------------------------------------------------------------------------
+ ok 42 - completed reservation buffer still blocks another group until its physical end
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 43 - completed visits are excluded from planned arrival-pair warnings
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 44 - zero-child future rows do not introduce fictitious arrival demand
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 45 - zero-child planned filtering stays equivalent
+(1 row)
+
+INSERT 0 1
+UPDATE 2
+                                             ok                                              
+---------------------------------------------------------------------------------------------
+ ok 46 - duplicate reservation revisions preserve distinct physical-group capacity semantics
+(1 row)
+
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 47 - two revisions of the same physical group do not consume two capacity slots
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 48 - optimized authority remains private to the canonical wrapper
+(1 row)
+
+                                     ok                                     
+----------------------------------------------------------------------------
+ ok 49 - anonymous clients cannot invoke the private cached snapshot checks
+(1 row)
+
+ finish 
+--------
+ 1..49
+(1 row)
+
+ROLLBACK

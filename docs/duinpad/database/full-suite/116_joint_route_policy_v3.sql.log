@@ -1,0 +1,344 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+                                                                                                                                                                                                                                                                                                                                                                                                                       joint_canonical_fixture                                                                                                                                                                                                                                                                                                                                                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"third": {"groupId": "23000000-0000-0000-0000-000000000003", "pointId": "f681b80b-84c9-483a-9bfa-ff3ae12f6b0f", "startsAt": "2026-10-31T16:20:00+00:00", "scheduleId": "a4e85bb5-273a-4b55-934d-0334db1cb8b7"}, "fourth": {"groupId": "23000000-0000-0000-0000-000000000004", "pointId": "a21fea4c-7425-449b-a9ee-c78167725d23", "startsAt": "2026-10-31T16:30:00+00:00", "scheduleId": "026451e1-7c38-4cfd-9d39-ce21301dbb7a"}, "source": {"groupId": "23000000-0000-0000-0000-000000000001", "pointId": "23bf8bf9-a93c-40e9-b2be-92fa263afb7f", "startsAt": "2026-10-31T16:00:00+00:00", "scheduleId": "49b9ce36-4def-416c-b05c-213a17ffb38c"}, "target": {"groupId": "23000000-0000-0000-0000-000000000002", "pointId": "1610ff34-065e-4a11-a4eb-20123aceb121", "startsAt": "2026-10-31T16:10:00+00:00", "scheduleId": "571f109b-071e-48aa-b276-51832e80420c"}}
+(1 row)
+
+UPDATE 1
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+CREATE FUNCTION
+ v3_finish 
+-----------
+ 
+(1 row)
+
+UPDATE 1
+            is            
+--------------------------
+ ok 1 - server exposes v3
+(1 row)
+
+                         is                          
+-----------------------------------------------------
+ ok 2 - default budget is65 minutes including finale
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 3 - proposed early tolerance is30 minutes
+(1 row)
+
+                     is                     
+--------------------------------------------
+ ok 4 - ordinary leg limit remains separate
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 5 - server derives earliest show completion from desired end
+(1 row)
+
+                          is                          
+------------------------------------------------------
+ ok 6 - existing overrun remains separately30 minutes
+(1 row)
+
+                          lives_ok                           
+-------------------------------------------------------------
+ ok 7 - show END exactly at desired minus30 minutes is valid
+(1 row)
+
+ v3_finish 
+-----------
+ 
+(1 row)
+
+                        throws_ok                         
+----------------------------------------------------------
+ ok 8 - one second too early is a hard show-end violation
+(1 row)
+
+SAVEPOINT
+UPDATE 1
+ v3_finish 
+-----------
+ 
+(1 row)
+
+                           lives_ok                           
+--------------------------------------------------------------
+ ok 9 - show END exactly at existing upper tolerance is valid
+(1 row)
+
+ v3_finish 
+-----------
+ 
+(1 row)
+
+                       throws_ok                        
+--------------------------------------------------------
+ ok 10 - show end beyond existing overrun stays invalid
+(1 row)
+
+ROLLBACK
+UPDATE 1
+SAVEPOINT
+UPDATE 1
+ v3_finish 
+-----------
+ 
+(1 row)
+
+                                   lives_ok                                   
+------------------------------------------------------------------------------
+ ok 11 - without desired end no artificial lower completion bound is invented
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+CREATE FUNCTION
+ v3_walk 
+---------
+ 
+(1 row)
+
+                              lives_ok                               
+---------------------------------------------------------------------
+ ok 12 - exact3900-second actual total including longfinale is valid
+(1 row)
+
+ v3_walk 
+---------
+ 
+(1 row)
+
+                              throws_ok                              
+---------------------------------------------------------------------
+ ok 13 - 3901 seconds fails total budget rather than a final-leg cap
+(1 row)
+
+ROLLBACK
+CREATE FUNCTION
+SAVEPOINT
+ v3_finish 
+-----------
+ 
+(1 row)
+
+                                         ok                                         
+------------------------------------------------------------------------------------
+ ok 14 - manual planboard preview exposes the same hard early-completion constraint
+(1 row)
+
+ROLLBACK
+SAVEPOINT
+UPDATE 1
+                             throws_ok                              
+--------------------------------------------------------------------
+ ok 15 - missing v3 settings version cannot silently use old policy
+(1 row)
+
+ROLLBACK
+                          ok                           
+-------------------------------------------------------
+ ok 16 - anonymous users cannot inspect private policy
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 17 - clients cannot bypass trusted runtime policy
+(1 row)
+
+                     is                      
+---------------------------------------------
+ ok 18 - policy has separate initial counter
+(1 row)
+
+                         ok                         
+----------------------------------------------------
+ ok 19 - policy UI receives physical portal choices
+(1 row)
+
+                throws_ok                
+-----------------------------------------
+ ok 20 - walking budget must be positive
+(1 row)
+
+                 throws_ok                  
+--------------------------------------------
+ ok 21 - early tolerance cannot be negative
+(1 row)
+
+             throws_ok              
+------------------------------------
+ ok 22 - early tolerance is bounded
+(1 row)
+
+                      throws_ok                      
+-----------------------------------------------------
+ ok 23 - finale cannot become ordinary coverage goal
+(1 row)
+
+                   throws_ok                    
+------------------------------------------------
+ ok 24 - duplicate organizer goals are rejected
+(1 row)
+
+SAVEPOINT
+CREATE TABLE
+INSERT 0 1
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 25 - runtime permits a long finale leg at exactly the real total budget
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 26 - runtime counts the actual finale walk in total
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 27 - runtime independently protects ordinary900-second limit
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 28 - runtime checks actual show end rather than arrival alone
+(1 row)
+
+ v3_finish 
+-----------
+ 
+(1 row)
+
+                                            ok                                            
+------------------------------------------------------------------------------------------
+ ok 29 - manual future edits of a begun v3 route also enforce its approved show-end limit
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                               ok                                               
+------------------------------------------------------------------------------------------------
+ ok 30 - begun v3 manual checks retain approved limits rather than newly changed event settings
+(1 row)
+
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 31 - a begun run retains its approved limits after policy settings change
+(1 row)
+
+INSERT 0 1
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 32 - actual prior dispatch walking plus finale exactly3900 is allowed
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 33 - recorded prior walking is included in the runtime budget
+(1 row)
+
+UPDATE 1
+                                      ok                                       
+-------------------------------------------------------------------------------
+ ok 34 - manual future edits include recorded actual walking of a begun v3 run
+(1 row)
+
+UPDATE 1
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 35 - an already begun earlier policy run does not inherit new v3 restrictions
+(1 row)
+
+                                 ok                                  
+---------------------------------------------------------------------
+ ok 36 - begun v2 manual edits retain their existing reviewed policy
+(1 row)
+
+ROLLBACK
+SELECT 1
+UPDATE 1
+                          is                           
+-------------------------------------------------------
+ ok 37 - changed policy increments only policy counter
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 38 - physical organizer goals retain explicit priority order
+(1 row)
+
+                           isnt                           
+----------------------------------------------------------
+ ok 39 - policy changes invalidate existing source hashes
+(1 row)
+
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 40 - all previous settings fields including start version and timestamp remain unchanged
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 41 - idempotent retry returns original receipt after version changed
+(1 row)
+
+                 throws_ok                  
+--------------------------------------------
+ ok 42 - stale edit cannot overwrite policy
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 43 - policy save never changes agreed starts or finale reservations
+(1 row)
+
+                           is                            
+---------------------------------------------------------
+ ok 44 - policy save does not republish confirmed starts
+(1 row)
+
+                       is                       
+------------------------------------------------
+ ok 45 - policy save queues no participant mail
+(1 row)
+
+                      is                      
+----------------------------------------------
+ ok 46 - policy save does not apply any route
+(1 row)
+
+                                 is                                 
+--------------------------------------------------------------------
+ ok 47 - policy save preserves existing current start confirmations
+(1 row)
+
+                                                  is                                                  
+------------------------------------------------------------------------------------------------------
+ ok 48 - start publication readiness and its source versions remain current after a route policy edit
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 49 - old proposals are stale after changing policy
+(1 row)
+
+ finish 
+--------
+ 1..49
+(1 row)
+
+ROLLBACK

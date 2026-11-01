@@ -1,0 +1,356 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+CREATE FUNCTION
+UPDATE 1
+          departure_fixture           |          departure_fixture           |          departure_fixture           |          departure_fixture           |          departure_fixture           
+--------------------------------------+--------------------------------------+--------------------------------------+--------------------------------------+--------------------------------------
+ d8919669-14fe-414c-b5ae-60b608289780 | 4505939e-ceae-4dd8-a9cd-0523d9a1b1f0 | cf657b96-b1fb-4024-a062-79f4574c39a1 | e0e97181-f31e-4ca8-9860-a5d2beb67fd5 | afedc878-6680-40f9-9dc1-b9fdee749328
+(1 row)
+
+INSERT 0 9
+INSERT 0 9
+UPDATE 1
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 1 - start majority counts one vote per original family, not children
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 2 - end majority survives an earlier minority with more children
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 3 - duplicate registration references do not add votes
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 4 - shuffled original families produce the same start majority
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 5 - shuffled original families produce the same end majority
+(1 row)
+
+UPDATE 1
+                         is                          
+-----------------------------------------------------
+ ok 6 - all neutral start preferences remain neutral
+(1 row)
+
+                        is                         
+---------------------------------------------------
+ ok 7 - all neutral end preferences remain neutral
+(1 row)
+
+                is                 
+-----------------------------------
+ ok 8 - empty votes remain neutral
+(1 row)
+
+UPDATE 3
+                              is                              
+--------------------------------------------------------------
+ ok 9 - equal votes use the smallest total absolute deviation
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 10 - equal absolute deviation uses the earlier time
+(1 row)
+
+UPDATE 3
+                          ok                           
+-------------------------------------------------------
+ ok 11 - Amsterdam whole ten-minute instants are valid
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 12 - off-grid minute and second values are invalid
+(1 row)
+
+                          throws_ok                          
+-------------------------------------------------------------
+ ok 13 - slot preparation rejects off-grid input server-side
+(1 row)
+
+SELECT 2
+INSERT 0 2
+                  lives_ok                   
+---------------------------------------------
+ ok 14 - valid ten-minute slots are prepared
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 15 - prepared departure capacity is one even with gathering capacity ten
+(1 row)
+
+UPDATE 5
+UPDATE 5
+UPDATE 1
+SELECT 1
+UPDATE 5
+SELECT 1
+                                               lives_ok                                                
+-------------------------------------------------------------------------------------------------------
+ ok 16 - three intact groups receive 17:00, 17:10 and 17:20 concepts including a confirmed composition
+(1 row)
+
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 17 - exact repeated distribution returns its receipt without creating revisions
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 18 - exact retry creates only one revision per selected group
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 19 - saving preserves original group membership and together blocks
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 20 - calculating and saving a concept queues no participant mail
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 21 - saved snapshot exposes the server-computed dominant end
+(1 row)
+
+                                  throws_ok                                  
+-----------------------------------------------------------------------------
+ ok 22 - existing occupancy blocks a second group despite gathering capacity
+(1 row)
+
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 23 - distinct physical start points can start simultaneously
+(1 row)
+
+                      throws_ok                       
+------------------------------------------------------
+ ok 24 - insufficient departure slots fail atomically
+(1 row)
+
+UPDATE 1
+                            throws_ok                            
+-----------------------------------------------------------------
+ ok 25 - a genuinely dominant infeasible end is a clear conflict
+(1 row)
+
+SELECT 3
+                                 lives_ok                                  
+---------------------------------------------------------------------------
+ ok 26 - two existing draft appointments can swap slots in one transaction
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 27 - swapped appointments retain superseded schedule identity
+(1 row)
+
+                                             lives_ok                                             
+--------------------------------------------------------------------------------------------------
+ ok 28 - three existing concepts can be reassigned together without transient occupancy conflicts
+(1 row)
+
+SELECT 1
+                                     throws_ok                                     
+-----------------------------------------------------------------------------------
+ ok 29 - a real occupancy conflict after a valid first row rejects the whole batch
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 30 - failed batch restores every old group pointer and version
+(1 row)
+
+                                      is                                       
+-------------------------------------------------------------------------------
+ ok 31 - failed batch leaves no partial revision or changed supersedes history
+(1 row)
+
+                              is                              
+--------------------------------------------------------------
+ ok 32 - failed distribution also creates no participant mail
+(1 row)
+
+UPDATE 3
+                            throws_ok                             
+------------------------------------------------------------------
+ ok 33 - automatic distribution preserves a confirmed appointment
+(1 row)
+
+                                              ok                                              
+----------------------------------------------------------------------------------------------
+ ok 34 - snapshot marks even a stale raw confirmation as protected for automatic distribution
+(1 row)
+
+                                         ok                                          
+-------------------------------------------------------------------------------------
+ ok 35 - occupancy snapshot exposes authoritative departure times and physical gates
+(1 row)
+
+          departure_fixture           
+--------------------------------------
+ 0bf03986-2645-4606-8fea-04bde27051fb
+(1 row)
+
+                                        lives_ok                                         
+-----------------------------------------------------------------------------------------
+ ok 36 - real participant preference RPC saves each original household end independently
+ ok 37 - real participant preference RPC saves each original household end independently
+ ok 38 - real participant preference RPC saves each original household end independently
+(3 rows)
+
+                             ok                              
+-------------------------------------------------------------
+ ok 39 - exact end RPC creates no derived ordinary-stop veto
+(1 row)
+
+UPDATE 1
+                                              lives_ok                                               
+-----------------------------------------------------------------------------------------------------
+ ok 40 - first manual appointment honors real RPC majority and ignores a legacy derived minority end
+(1 row)
+
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 41 - manual first appointment computes its finale from dominant end, not global stop
+(1 row)
+
+UPDATE 1
+                             lives_ok                              
+-------------------------------------------------------------------
+ ok 42 - a separate explicit ordinary-stop preference is respected
+(1 row)
+
+                                is                                
+------------------------------------------------------------------
+ ok 43 - saved ordinary stop keeps the explicit ordinary boundary
+(1 row)
+
+UPDATE 1
+                                     lives_ok                                     
+----------------------------------------------------------------------------------
+ ok 44 - editing an old derived preference clears only its derived ordinary value
+(1 row)
+
+                                         is                                          
+-------------------------------------------------------------------------------------
+ ok 45 - old derived ordinary value is cleared only on an authorized preference edit
+(1 row)
+
+          departure_fixture           
+--------------------------------------
+ 3cc9ba1f-8a1e-48b7-a4f5-ed65d6e7cd84
+(1 row)
+
+UPDATE 1
+                                            lives_ok                                            
+------------------------------------------------------------------------------------------------
+ ok 46 - new-group plan persists a deliberately earlier ordinary stop for a feasible finale gap
+(1 row)
+
+                                 is                                  
+---------------------------------------------------------------------
+ ok 47 - new-group storage retains the planned earlier ordinary stop
+(1 row)
+
+                               throws_ok                                
+------------------------------------------------------------------------
+ ok 48 - ten-minute times outside the allowed start window are rejected
+(1 row)
+
+                 ok                  
+-------------------------------------
+ ok 49 - anonymous cannot distribute
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 50 - legacy operation implementation stays private
+(1 row)
+
+SELECT 1
+DO
+INSERT 0 1
+INSERT 0 1
+INSERT 0 3
+                                           is                                            
+-----------------------------------------------------------------------------------------
+ ok 51 - portal aliases share the same physical departure key even without a first visit
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 52 - an unlinked gathering point retains its independent identity
+(1 row)
+
+          departure_fixture           |          departure_fixture           |          departure_fixture           
+--------------------------------------+--------------------------------------+--------------------------------------
+ 758bd6dc-aa23-427e-8b19-faa206404ade | 966c1509-c0e2-41c4-b7ff-c7baec161755 | 20855d1a-db07-4836-b9e0-a3f8c9853d79
+(1 row)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     admin_startregie_slots_prepare                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"starts": [{"id": "242f06a0-6352-4be8-8f4d-0292126f9dd1", "startsAt": "2026-10-31T16:00:00+00:00", "maxGroups": 1, "maxChildren": 100, "startPointId": "20000000-0000-0000-0000-000000000001"}, {"id": "6aa4ee88-e9ea-4604-bb82-86fd8b506ada", "startsAt": "2026-10-31T16:00:00+00:00", "maxGroups": 1, "maxChildren": 100, "startPointId": "2e8e90ac-9c69-4bfa-a4a6-de1891d95f80"}, {"id": "efc2c364-1c81-4e35-be0c-52adbcb59578", "startsAt": "2026-10-31T16:00:00+00:00", "maxGroups": 1, "maxChildren": 10, "startPointId": "5e9fe9d4-b968-4fc5-904d-aae4b1cf2f7b"}, {"id": "790287d1-441c-4234-be8e-e7f150778ae8", "startsAt": "2026-10-31T16:00:00+00:00", "maxGroups": 1, "maxChildren": 20, "startPointId": "849f438f-ce30-4dc9-8a8e-bc98490a328f"}, {"id": "9fd1468b-827c-49af-9148-380726e420d4", "startsAt": "2026-10-31T16:00:00+00:00", "maxGroups": 1, "maxChildren": 100, "startPointId": "d2792195-b651-4df5-9c38-ccee09b13593"}, {"id": "52432fe1-86ac-4e41-abe8-5d6b46f2b08e", "startsAt": "2026-10-31T16:00:00+00:00", "maxGroups": 1, "maxChildren": 30, "startPointId": "ffec04de-527a-49f2-8905-f9f5c1f7bf26"}]}
+(1 row)
+
+                     lives_ok                      
+---------------------------------------------------
+ ok 53 - the first physical departure can be saved
+(1 row)
+
+                                   throws_ok                                    
+--------------------------------------------------------------------------------
+ ok 54 - direct saving cannot reserve a second departure through a portal alias
+(1 row)
+
+                                 lives_ok                                  
+---------------------------------------------------------------------------
+ ok 55 - a different gathering point can use the same ten-minute departure
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+                                                is                                                
+--------------------------------------------------------------------------------------------------
+ ok 56 - published reservations canonicalize the frozen portal rather than the changed live point
+(1 row)
+
+                                        is                                        
+----------------------------------------------------------------------------------
+ ok 57 - canonical departure identity leaves the actual gathering capacity intact
+(1 row)
+
+                                                       is                                                        
+-----------------------------------------------------------------------------------------------------------------
+ ok 58 - start proposals receive the canonical departure key separately from actual point and gathering capacity
+(1 row)
+
+ finish 
+--------
+ 1..58
+(1 row)
+
+ROLLBACK

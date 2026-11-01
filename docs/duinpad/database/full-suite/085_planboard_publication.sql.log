@@ -1,0 +1,148 @@
+BEGIN
+CREATE FUNCTION
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 26
+UPDATE 1
+UPDATE 1
+                                                                                                                                                                                        admin_startregie_confirm_point                                                                                                                                                                                        
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "a8741dd7-339d-4ae1-8fa1-1ba38e6557b6", "active": true, "version": 1, "confirmed": true, "readiness": {"location": {"valid": true, "reason": null, "source": "address", "latitude": 52.100100, "longitude": 4.270100}, "confirmed": true, "canConfirm": true, "routeReady": true, "confirmedAt": "2026-10-31T15:16:21.124558+00:00", "linkedPortalName": "Testpoort 01", "confirmationReason": null}}
+(1 row)
+
+ withdraw_group_appointment 
+----------------------------
+ 
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                  admin_startregie_confirm_and_send                                  
+-----------------------------------------------------------------------------------------------------
+ {"published": 1, "planningVersion": 1, "planningVersionId": "aabbdfd5-4bf6-4b84-8ef3-297e979d4bb4"}
+(1 row)
+
+SELECT 1
+                                                                                                                                                                                   worker_group_schedule_mail_payload                                                                                                                                                                                   
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"groupId": "23000000-0000-0000-0000-000000000002", "startsAt": "2026-10-31T17:00:00+00:00", "groupCode": "G-02", "groupName": "G-02", "actionPath": "/omgeving/meeloper/groep", "personName": null, "messageType": "group_schedule_published", "oldStartsAt": null, "timeEventId": "0d92ea6d-d25d-4e92-9150-f65cbb0566a5", "addressReleased": false, "addressReleaseAt": "2026-10-31T16:00:00+00:00"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+                                          is                                           
+---------------------------------------------------------------------------------------
+ ok 1 - published first stop requires explicit confirmation before even saving a draft
+(1 row)
+
+                         is                         
+----------------------------------------------------
+ ok 2 - preview/cancel preserves the published time
+(1 row)
+
+                 is                  
+-------------------------------------
+ ok 3 - preview/cancel sends no mail
+(1 row)
+
+SAVEPOINT
+UPDATE 1
+                                       throws_ok                                       
+---------------------------------------------------------------------------------------
+ ok 4 - start correction preview validates gathering availability at the proposed time
+(1 row)
+
+ROLLBACK
+                 throws_ok                  
+--------------------------------------------
+ ok 5 - server refuses missing confirmation
+(1 row)
+
+                      lives_ok                       
+-----------------------------------------------------
+ ok 6 - explicitly reviewed change creates a concept
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 7 - old publication remains authoritative while the concept is edited
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 8 - confirmed concept save still creates no time mail
+(1 row)
+
+UPDATE 1
+SELECT 1
+                                 lives_ok                                  
+---------------------------------------------------------------------------
+ ok 9 - publication reuses the existing atomic confirmation/outbox command
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 10 - replacement publication becomes authoritative
+(1 row)
+
+                                         ok                                          
+-------------------------------------------------------------------------------------
+ ok 11 - explicitly publishing a replacement start requires a new joint route review
+(1 row)
+
+                                                              is                                                              
+------------------------------------------------------------------------------------------------------------------------------
+ ok 12 - replacement publication preserves the existing physical intentions and accepted history until explicit recomputation
+(1 row)
+
+                                            is                                            
+------------------------------------------------------------------------------------------
+ ok 13 - publication creates exactly one semantic correction per intended adult recipient
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 14 - only the individual intended recipients have pending corrections
+(1 row)
+
+                                                                                                                                                                                              worker_group_schedule_mail_payload                                                                                                                                                                                               
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"groupId": "23000000-0000-0000-0000-000000000002", "startsAt": "2026-10-31T17:10:00+00:00", "groupCode": "G-02", "groupName": "G-02", "actionPath": "/omgeving/meeloper/groep", "personName": null, "messageType": "group_schedule_corrected", "oldStartsAt": "2026-10-31T17:00:00+00:00", "timeEventId": "a21272ef-a1bf-4b5e-b03e-9451b9b8cf9f", "addressReleased": false, "addressReleaseAt": "2026-10-31T16:10:00+00:00"}
+(1 row)
+
+                                        ok                                         
+-----------------------------------------------------------------------------------
+ ok 15 - earlier SendGrid acceptance produces the exact old/new correction content
+(1 row)
+
+                                     lives_ok                                     
+----------------------------------------------------------------------------------
+ ok 16 - same publication retry returns its original receipt despite changed hash
+(1 row)
+
+UPDATE 1
+                                          is                                           
+---------------------------------------------------------------------------------------
+ ok 17 - undo after publication requires a new reviewed draft and explicit publication
+(1 row)
+
+ finish 
+--------
+ 1..17
+(1 row)
+
+ROLLBACK

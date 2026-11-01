@@ -1,0 +1,76 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 1 - anonymous clients cannot repair split together parties
+(1 row)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+CREATE TABLE
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+GRANT
+GRANT
+INSERT 0 3
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                           throws_ok                           
+---------------------------------------------------------------
+ ok 2 - participants cannot repair organizer group assignments
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+INSERT 0 1
+RESET
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 3 - the server selects the group containing the most party registrations
+(1 row)
+
+                            is                             
+-----------------------------------------------------------
+ ok 4 - the correction reports the complete together party
+(1 row)
+
+                               is                                
+-----------------------------------------------------------------
+ ok 5 - the together party has one active group after correction
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 6 - assigned and unassigned party members all land in the majority group
+(1 row)
+
+SET
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                       throws_ok                                       
+---------------------------------------------------------------------------------------
+ ok 7 - an already repaired party cannot be moved again through the correction command
+(1 row)
+
+ finish 
+--------
+ 1..7
+(1 row)
+
+ROLLBACK

@@ -1,4 +1,6 @@
 "use client";
+import { ActorManagement } from "@/components/admin/actor-management";
+import { DuinpadAdmin } from "@/components/duinpad/admin";
 import { SettingsTabs } from "./email-settings";
 import {useEventDetails} from "@/components/redesign/event-details";
 import {VirtualRehearsal} from "@/components/redesign/virtual-rehearsal";
@@ -209,6 +211,8 @@ const labels: Record<string, string> = {
   openTickets: "Open gesprekken",
 };
 const sectionMeta = {
+  actors: { kicker: "Organisatie · showbediening", title: "Acteurs & showbediening", description: "Uitnodigingen, activatie en expliciet toegewezen knoppen." },
+  duinpad: { kicker: "De avond · checkpoints", title: "Duinpad: QR1 & QR2", description: "Koppel de echte Duinpad-checkpoints en download beide QR-posters." },
   security: {kicker:"Beheer · apparaatmeldingen",title:"Push & beveiliging",description:"Apparaten en grenzen voor beveiligde pushmeldingen."},
   praatkamer: { kicker: "Poorten · samen praten", title: "Praatkamer", description: "Tips en overleg met de poortteams." },
   overview: { kicker: "De avond · voorbereiding", title: "Jouw evenement, helder in beeld.", description: "De voorbereidingen, je deelnemers en de volgende stap. Allemaal op één plek." },
@@ -263,10 +267,12 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const sectionAllowed=useCallback((key:string)=>{
     const can=(...items:string[])=>capabilities.includes('event_admin')||items.some(item=>capabilities.includes(item));
-    const allowed:Record<string,boolean>={overview:can('registration_manage','portals_manage','groups_manage','live_support'),registrations:can('registration_manage'),together:can('registration_manage','groups_manage'),groups:can('groups_manage'),payments:can('payments_manage'),poortenboek:can('groups_manage'),portals:can('portals_manage'),planner:can('groups_manage'),tickets:can('groups_manage','live_support'),updates:can('content_manage','live_support'),praatkamer:can('portals_manage','live_support'),editorial:editorialEnabled&&can('content_manage','content_publish','communications_manage','communications_send'),share:can('communications_manage'),content:can('content_manage','content_publish'),live:can('live_support'),simulation:can('live_support'),thanks:can('live_support'),settings:can(),security:can(),access:can(),imports:can('registration_manage','portals_manage','groups_manage'),statistics:can()};
+    const allowed:Record<string,boolean>={actors:can(),duinpad:can("portals_manage"),overview:can('registration_manage','portals_manage','groups_manage','live_support'),registrations:can('registration_manage'),together:can('registration_manage','groups_manage'),groups:can('groups_manage'),payments:can('payments_manage'),poortenboek:can('groups_manage'),portals:can('portals_manage'),planner:can('groups_manage'),tickets:can('groups_manage','live_support'),updates:can('content_manage','live_support'),praatkamer:can('portals_manage','live_support'),editorial:editorialEnabled&&can('content_manage','content_publish','communications_manage','communications_send'),share:can('communications_manage'),content:can('content_manage','content_publish'),live:can('live_support'),simulation:can('live_support'),thanks:can('live_support'),settings:can(),security:can(),access:can(),imports:can('registration_manage','portals_manage','groups_manage'),statistics:can()};
     return allowed[key]??false;
   }, [capabilities, editorialEnabled]);
   const [section, setSection] = useState<
+    | "actors"
+    | "duinpad"
     | "praatkamer"
     | "overview"
     | "statistics"
@@ -1120,8 +1126,8 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
     {key:"portals",label:"Poorten",icon:DoorOpen,sections:["portals"]},
     {key:"planning",label:"Startregie",icon:CalendarClock,sections:["planner"]},
     {key:"communications",label:"Communicatie",icon:MessageSquare,sections:["tickets","updates","praatkamer",...(editorialEnabled?["editorial"]:[]),"share","content"]},
-    {key:"evening",label:"De avond",icon:LifeBuoy,sections:["live","simulation","thanks"]},
-    {key:"management",label:"Beheer",icon:SlidersHorizontal,sections:["settings","security","access","imports","statistics"]}
+    {key:"evening",label:"De avond",icon:LifeBuoy,sections:["live","duinpad","simulation","thanks"]},
+    {key:"management",label:"Beheer",icon:SlidersHorizontal,sections:["settings","security","access","actors","imports","statistics"]}
   ];
   const permittedNavGroups=navGroups.map(item=>({...item,sections:item.sections.filter(sectionAllowed)})).filter(item=>item.sections.length>0);
   const activeGroup=permittedNavGroups.find(item=>item.sections.includes(section))??permittedNavGroups[0]??navGroups[0];
@@ -1610,6 +1616,8 @@ export function AdminConsole({ eventSlug, capabilities, editorialEnabled = false
         {section === "statistics" && canViewStatistics && <StatisticsDashboard eventSlug={eventSlug} />}
         {section === "content" && <ContentManagement eventSlug={eventSlug} />}
         {section === "access" && <AdminAccessManagement eventSlug={eventSlug} />}
+        {section === "actors" && <ActorManagement />}
+        {section === "duinpad" && <DuinpadAdmin />}
         {section === "together" && canManageTogether && <TogetherManagement eventSlug={eventSlug} />}
         {section === "poortenboek" && canManageGroups && <PoortenboekAdmin />}
         {section === "groups" && (capabilities.includes("event_admin") || capabilities.includes("groups_manage")) && <GroupCompositionBoard onOpenStarts={()=>openSection("planner")} eventSlug={eventSlug} />}

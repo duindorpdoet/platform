@@ -1,0 +1,145 @@
+BEGIN
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 30
+UPDATE 31
+UPDATE 1
+UPDATE 30
+UPDATE 1
+DO
+                                         ok                                         
+------------------------------------------------------------------------------------
+ ok 1 - confirmed saved start is usable for group assignment without nodes or edges
+(1 row)
+
+                                       lives_ok                                       
+--------------------------------------------------------------------------------------
+ ok 2 - real group assignment accepts a confirmed destination without a walking graph
+(1 row)
+
+                                               cmp_ok                                                
+-----------------------------------------------------------------------------------------------------
+ ok 3 - valid stored approved houses remain automatic sequence candidates without street connections
+(1 row)
+
+                                    ok                                     
+---------------------------------------------------------------------------
+ ok 4 - the fresh server snapshot has no inapplicable walking-network task
+(1 row)
+
+                         lives_ok                         
+----------------------------------------------------------
+ ok 5 - group appointment confirms without street routing
+(1 row)
+
+                                        ok                                        
+----------------------------------------------------------------------------------
+ ok 6 - confirmed appointment automatically has a private proposed house sequence
+(1 row)
+
+                           is                           
+--------------------------------------------------------
+ ok 7 - distance is explicitly a straight-line estimate
+(1 row)
+
+                              ok                               
+---------------------------------------------------------------
+ ok 8 - estimated transfers never silently become zero minutes
+(1 row)
+
+                             lives_ok                              
+-------------------------------------------------------------------
+ ok 9 - explicit publication still succeeds without a street graph
+(1 row)
+
+                             is                             
+------------------------------------------------------------
+ ok 10 - planning and publication create no graph approvals
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 11 - planning and publication manufacture no verified nodes
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 12 - missing source position is not a successful zero-time estimate
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 13 - invalid destination is not a successful estimate
+(1 row)
+
+                               cmp_ok                                
+---------------------------------------------------------------------
+ ok 14 - even coincident markers retain a nonzero planning allowance
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                                    is                                    
+--------------------------------------------------------------------------
+ ok 15 - authorized leader receives no first address before T minus sixty
+(1 row)
+
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 16 - authorized leader receives no first marker before T minus sixty
+(1 row)
+
+                           ok                           
+--------------------------------------------------------
+ ok 17 - published own start time is visible beforehand
+(1 row)
+
+                                       ok                                        
+---------------------------------------------------------------------------------
+ ok 18 - private sequence and candidate pool never enter the participant payload
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+                                   is                                    
+-------------------------------------------------------------------------
+ ok 19 - a missing real address remains an actionable confirmation error
+(1 row)
+
+                               throws_ok                                
+------------------------------------------------------------------------
+ ok 20 - a map position alone cannot confirm an addressless destination
+(1 row)
+
+UPDATE 1
+                                                     ok                                                     
+------------------------------------------------------------------------------------------------------------
+ ok 21 - an invalid stored finale is preserved for review rather than automatically replaced by a new route
+(1 row)
+
+                                 ok                                 
+--------------------------------------------------------------------
+ ok 22 - invalid finale explains which destination must be repaired
+(1 row)
+
+ finish 
+--------
+ 1..22
+(1 row)
+
+ROLLBACK

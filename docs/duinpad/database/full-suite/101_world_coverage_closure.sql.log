@@ -1,0 +1,313 @@
+BEGIN
+INSERT 0 4
+CREATE EXTENSION
+ no_plan 
+---------
+(0 rows)
+
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+UPDATE 15
+UPDATE 1
+                         is                         
+----------------------------------------------------
+ ok 1 - open house channel has provisional coverage
+(1 row)
+
+                                   ok                                   
+------------------------------------------------------------------------
+ ok 2 - canonical world identities include Geestenrijk as geestenwereld
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 3 - open houses do not activate compensation
+(1 row)
+
+UPDATE 1
+                                 is                                  
+---------------------------------------------------------------------
+ ok 4 - closing participant channel does not finalize house coverage
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                                   lives_ok                                    
+-------------------------------------------------------------------------------
+ ok 5 - a real Anders arrival remains usable while compensation is provisional
+(1 row)
+
+UPDATE 1
+                        is                         
+---------------------------------------------------
+ ok 6 - no missing-world draw before house closure
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                           is                            
+---------------------------------------------------------
+ ok 7 - house closure activates exactly one final policy
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 8 - closure freezes the precise missing-world set
+(1 row)
+
+UPDATE 1
+ refresh_world_coverage 
+------------------------
+                     10
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 9 - repeated close and refresh preserve one active version
+(1 row)
+
+SELECT 1
+UPDATE 1
+ award_missing_worlds 
+----------------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+ settle_child_worlds 
+---------------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+                                               is                                                
+-------------------------------------------------------------------------------------------------
+ ok 10 - configured Anders finale is never an ordinary compensation source, including settlement
+(1 row)
+
+UPDATE 1
+UPDATE 1
+ award_missing_worlds 
+----------------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 11 - a child who is absent cannot receive a compensation award
+(1 row)
+
+UPDATE 1
+ award_missing_worlds 
+----------------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+                                              is                                              
+----------------------------------------------------------------------------------------------
+ ok 12 - one permanent random missing world for each present child at proven ordinary arrival
+(1 row)
+
+SELECT 5
+ award_missing_worlds 
+----------------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+                   is                   
+----------------------------------------
+ ok 13 - same arrival never draws again
+(1 row)
+
+                              ok                              
+--------------------------------------------------------------
+ ok 14 - refresh and replay preserve the actual random result
+(1 row)
+
+ settle_child_worlds 
+---------------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+                                            is                                             
+-------------------------------------------------------------------------------------------
+ ok 15 - one real Anders arrival suffices to settle all three worlds at legitimate own end
+(1 row)
+
+                            is                            
+----------------------------------------------------------
+ ok 16 - bonus worlds use the one actual physical arrival
+(1 row)
+
+                  ok                   
+---------------------------------------
+ ok 17 - absent children get no awards
+(1 row)
+
+UPDATE 1
+                               is                                
+-----------------------------------------------------------------
+ ok 18 - late house change cannot silently replace active policy
+(1 row)
+
+                          ok                           
+-------------------------------------------------------
+ ok 19 - late change exposes a pending policy revision
+(1 row)
+
+UPDATE 1
+UPDATE 1
+ refresh_world_coverage 
+------------------------
+                     11
+(1 row)
+
+                                     is                                      
+-----------------------------------------------------------------------------
+ ok 20 - temporary pause does not alter coverage or create another candidate
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"a0000000-0000-0000-0000-000000000005","role":"authenticated"}
+(1 row)
+
+                     throws_ok                      
+----------------------------------------------------
+ ok 21 - a parent cannot change compensation policy
+(1 row)
+
+                              set_config                               
+-----------------------------------------------------------------------
+ {"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}
+(1 row)
+
+                         throws_ok                          
+------------------------------------------------------------
+ ok 22 - outdated revision or fingerprint cannot be applied
+(1 row)
+
+                       throws_ok                       
+-------------------------------------------------------
+ ok 23 - null revision cannot retire the active policy
+(1 row)
+
+UPDATE 1
+UPDATE 1
+                            lives_ok                             
+-----------------------------------------------------------------
+ ok 24 - authorized review activates the exact visible candidate
+(1 row)
+
+                             ok                             
+------------------------------------------------------------
+ ok 25 - reviewed policy now reflects the late themed house
+(1 row)
+
+                                              is                                              
+----------------------------------------------------------------------------------------------
+ ok 26 - accepting collection coverage preserves theme-independent route choices and revision
+(1 row)
+
+                                             is                                              
+---------------------------------------------------------------------------------------------
+ ok 27 - collection coverage review does not stale an otherwise unchanged physical planboard
+(1 row)
+
+                                         is                                         
+------------------------------------------------------------------------------------
+ ok 28 - coverage review preserves unrelated event settings and start confirmations
+(1 row)
+
+UPDATE 1
+                     lives_ok                     
+--------------------------------------------------
+ ok 29 - identical acceptance retry is idempotent
+(1 row)
+
+                               is                               
+----------------------------------------------------------------
+ ok 30 - exact repeated acceptance preserves the route revision
+(1 row)
+
+                                  is                                  
+----------------------------------------------------------------------
+ ok 31 - exact repeated acceptance preserves the planboard input hash
+(1 row)
+
+                              is                               
+---------------------------------------------------------------
+ ok 32 - all previously earned awards survive a changed policy
+(1 row)
+
+                          ok                          
+------------------------------------------------------
+ ok 33 - direct API clients cannot forge compensation
+(1 row)
+
+                     ok                      
+---------------------------------------------
+ ok 34 - clients cannot bypass policy review
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 35 - clients cannot bypass policy-aware route revision
+(1 row)
+
+UPDATE 1
+ refresh_world_coverage 
+------------------------
+                     12
+(1 row)
+
+                                    is                                     
+---------------------------------------------------------------------------
+ ok 36 - already-closed event is initialized without toggling registration
+(1 row)
+
+                          is                           
+-------------------------------------------------------
+ ok 37 - initialization preserves closed house setting
+(1 row)
+
+UPDATE 1
+                                              ok                                               
+-----------------------------------------------------------------------------------------------
+ ok 38 - a themed house opening after actual ordinary closing cannot cover that ordinary world
+(1 row)
+
+ finish 
+--------
+ 1..38
+(1 row)
+
+ROLLBACK

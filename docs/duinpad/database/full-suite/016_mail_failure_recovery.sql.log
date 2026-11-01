@@ -1,0 +1,59 @@
+BEGIN
+CREATE EXTENSION
+ plan 
+------
+ 1..8
+(1 row)
+
+SET
+                                   lives_ok                                   
+------------------------------------------------------------------------------
+ ok 1 - a public contact request is durably accepted before provider delivery
+(1 row)
+
+SET
+                                 is                                  
+---------------------------------------------------------------------
+ ok 2 - the contact message is stored independently of mail delivery
+(1 row)
+
+                                is                                 
+-------------------------------------------------------------------
+ ok 3 - the notification remains fixed to the organization mailbox
+(1 row)
+
+SET
+                                      is                                      
+------------------------------------------------------------------------------
+ ok 4 - the receipt and organization notification can be leased by one worker
+(1 row)
+
+SET
+UPDATE 1
+SET
+                              is                              
+--------------------------------------------------------------
+ ok 5 - an expired processing lease is not blindly sent again
+(1 row)
+
+SET
+                                          is                                          
+--------------------------------------------------------------------------------------
+ ok 6 - a possible post-acceptance worker crash becomes explicit reconciliation state
+(1 row)
+
+                                     is                                     
+----------------------------------------------------------------------------
+ ok 7 - reconciliation does not silently increment another provider attempt
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 8 - provider uncertainty never deletes the original contact message
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

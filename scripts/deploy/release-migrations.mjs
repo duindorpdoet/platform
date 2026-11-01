@@ -80,6 +80,11 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Function-only bounded Startregie reads; normal isolated restore gate remains required.
   '20261030231652_bound_startregie_snapshot_reads.sql',
   '20261030233039_materialize_route_source_contexts.sql',
+  // Additive Duinpad/actors/finale; isolated SQL and concurrency evidence: docs/duinpad.
+  // Environment-specific backup/restore and staging gates remain mandatory.
+  '20261031143846_duinpad_actor_access.sql',
+  '20261031143910_duinpad_finale_evening.sql',
+  '20261031143920_duinpad_checkpoints_and_show_attempts.sql',
 
 ]);
 
