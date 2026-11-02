@@ -269,19 +269,26 @@ export function Poortkamer({
     ),
   );
   const unreadMessages = room.channels.reduce((total, channel) => total + channel.unread, 0);
-  const ended = Date.parse(`${room.eventDate}T23:59:59+01:00`) < now;
+  const eventClosed = room.eventClosed === true;
+  const receptionState = eventClosed ? "closed" : room.portal.state;
+  const ended = eventClosed || Date.parse(`${room.eventDate}T23:59:59+01:00`) < now;
   const disabled = offline || busy;
   const statusAction = (
     state: "open" | "paused" | "closed",
     minutes?: number,
     reason = "Poort gereed voor ontvangst",
-  ) =>
-    command("status", {
+  ) => {
+    if (eventClosed) {
+      setNotice("De avond is centraal afgesloten. De poort blijft gesloten.");
+      return Promise.resolve(false);
+    }
+    return command("status", {
       state,
       minutes: minutes ?? null,
       version: room.portal.version,
       reason,
     });
+  };
   return (
     <div className={`${s.room} ${tab === "messages" ? s.chatMode : ""}`} data-workspace="poortkamer" data-current-tab={tab}>
       <div className={s.shell} data-poortkamer-shell>
@@ -299,7 +306,7 @@ export function Poortkamer({
               <small>Duindorp · {event.dateLong}</small>
             </div>
           </Link>
-          <div className={s.gateIdentity}><span className={s.gateIcon}><DoorOpen size={22} /></span><div><small>{room.portal.code} · {room.portal.world}</small><strong>{room.portal.name}</strong><span className={s.gateStatus} data-state={room.portal.state}><i />{portalStates[room.portal.state]}</span></div></div>
+          <div className={s.gateIdentity}><span className={s.gateIcon}><DoorOpen size={22} /></span><div><small>{room.portal.code} · {room.portal.world}</small><strong>{room.portal.name}</strong><span className={s.gateStatus} data-state={receptionState}><i />{eventClosed ? "Gesloten · Avond afgesloten" : portalStates[receptionState]}</span></div></div>
           <p className={s.sidebarLabel}>Jullie werkruimte</p>
           <nav className={s.nav} aria-label="Poortkamer navigatie">
             {nav.map(({ key, label, icon: Icon }) => (
@@ -326,7 +333,7 @@ export function Poortkamer({
               <strong>
                 {room.portal.name}
               </strong>
-              <small>{portalRoles[room.role]}{room.portal.pauseUntil ? ` · Hervat rond ${portalTime(room.portal.pauseUntil)}` : ""}</small>
+              <small>{portalRoles[room.role]}{eventClosed ? " · Gesloten · Avond afgesloten" : room.portal.pauseUntil ? ` · Hervat rond ${portalTime(room.portal.pauseUntil)}` : ""}</small>
             </div>
             <div className={`${s.actions} ${s.receptionControls}`} aria-label="Ontvangststatus" data-guide="house-status">
               {canLive && (
@@ -334,8 +341,8 @@ export function Poortkamer({
                   <button
                     className={s.button}
                     data-state="open"
-                    aria-pressed={room.portal.state === "open"}
-                    disabled={disabled}
+                    aria-pressed={receptionState === "open"}
+                    disabled={disabled || eventClosed}
                     onClick={() => void statusAction("open")}
                   >
                     <DoorOpen size={17} />
@@ -344,8 +351,8 @@ export function Poortkamer({
                   <button
                     className={s.button}
                     data-state="paused"
-                    aria-pressed={room.portal.state === "paused"}
-                    disabled={disabled}
+                    aria-pressed={receptionState === "paused"}
+                    disabled={disabled || eventClosed}
                     onClick={() => setDialog("pause")}
                   >
                     <Pause size={17} />
@@ -354,11 +361,11 @@ export function Poortkamer({
                   <button
                     className={s.button}
                     data-state="closed"
-                    aria-pressed={room.portal.state === "closed"}
-                    disabled={disabled}
+                    aria-pressed={receptionState === "closed"}
+                    disabled={disabled || eventClosed}
                     onClick={() => setDialog("stop")}
                   >
-                    Gestopt
+                    {eventClosed ? "Gesloten" : "Gestopt"}
                   </button>
                 </>
               )}
@@ -371,6 +378,7 @@ export function Poortkamer({
             className={`${s.scrollPane} ${tab === "messages" ? s.chatScroll : ""}`}
             tabIndex={-1}
           >
+      {tab === "night" && <div className={s.thanksFirst} data-testid="house-thanks-first"><HousePortalThanks key={`${room.userId}:${room.eventId}:${room.portal.id}`} portalId={room.portal.id}/></div>}
       {tab === "night" && (
         <section className={s.hero}>
           <Image
@@ -504,7 +512,7 @@ export function Poortkamer({
             <section className={s.shareStrip}><div><p className={s.eyebrow}>Deel de magie</p><strong>Laat jullie poort stralen.</strong><p>Een mooie deelkaart, zonder adres of contactgegevens.</p></div><Link className={s.button} href="/deel-de-magie?from=poortkamer">Maak een deelkaart <ArrowRight size={16} /></Link></section>
           </>
         )}
-        {tab === "night" && <><HousePortalThanks key={room.portal.id} portalId={room.portal.id}/><PortalNews channel="houses" compact /></>}
+        {tab === "night" && <PortalNews channel="houses" compact />}
         {tab === "visits" && (
           <section className={s.card} data-guide="house-visits">
             <p className={s.eyebrow}>Voetstappen door jullie poort</p>
@@ -1186,7 +1194,7 @@ export function Poortkamer({
               <button
                 type="submit"
                 className={`${s.button} ${s.primary}`}
-                disabled={disabled}
+                disabled={disabled || (eventClosed && (dialog === "pause" || dialog === "stop"))}
               >
                 {busy
                   ? "Opslaan…"

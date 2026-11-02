@@ -55,6 +55,8 @@ Gebruik **Organisatie → Instellingen → Evenementinstellingen → Avond afslu
 
 De Poortkamer toont vooraf geregistreerde groepen en kids uit de vastgelegde planning op een deelbaar PNG-certificaat. De bezoekhistorie blijft uitsluitend bevestigde fysieke aankomsten tonen. Standaardbedankjes blijven tellers; alleen eigen geschreven berichten kunnen mail opleveren voor actieve eigenaren en crew. Via de afzonderlijke organisatiekaart kan de organisatie bewust de certificaten aankondigen en de poortteams bedanken. Zie [registratiecijfers, certificaat, bedankjes en rollback](POORTKAMER-IMPACT-EN-BEDANKJES-20261101.md).
 
+Na centrale afsluiting toont iedere Poortkamer **Gesloten · Avond afgesloten**, ook als een historische ruwe poortstatus nog open of gepland was. De database blokkeert heropenen en automatisch hervatten. Bedankjes staan als één kaart bovenaan en zijn ook voor de bestaande organisatie- en supportrechten leesbaar. Een fout bij ophalen is geen nulstand. Na de hotfix van 2 november bestaande tabbladen eenmaal herladen; wis geen globale caches.
+
 ## Incident tijdens de tocht
 
 - Pauzeer een groep voordat een route- of rosterbesluit wordt genomen.

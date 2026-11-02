@@ -3,6 +3,7 @@ import {
   canEditPortal,
   canManageTeam,
   roomMetrics,
+  roomError,
   type PortalRoom,
 } from "./poortkamer";
 describe("Poortkamer presentation contracts", () => {
@@ -43,5 +44,12 @@ describe("Poortkamer presentation contracts", () => {
     expect(canEditPortal("viewer")).toBe(false);
     expect(canManageTeam("owner")).toBe(true);
     expect(canManageTeam("admin")).toBe(true);
+  });
+  it("explains central closure without suggesting a network retry or blocking the rest of the room", () => {
+    for (const code of ["EVENING_ENDED", "EVENING_CLOSING"]) {
+      expect(roomError(code)).toContain("centraal afgesloten");
+      expect(roomError(code)).toContain("bedankjes, berichten en het certificaat blijven beschikbaar");
+      expect(roomError(code)).not.toContain("verbinding");
+    }
   });
 });

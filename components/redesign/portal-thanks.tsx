@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, CheckCircle2, Heart, House, MessageCircleHeart, Pencil, Send, Sparkles } from 'lucide-react';
 import { useCallback } from 'react';
+import {parseHouseInbox,parseLegacyHouseThanks,type HouseInbox,type LegacyHouseThank}from '@/lib/redesign/thanks-inbox';
 type ThankChoice='beautiful'|'welcome'|'treats';
 type ArrivalPortal={id:string;name:string;world:string};
 type PortalThank={id?:string;portalId:string;portalName:string;world:string;choice:ThankChoice};
@@ -12,8 +13,6 @@ const thankChoices:[{id:ThankChoice;message:string;hint:string},{id:ThankChoice;
 ];
 const thankMessage=(choice:ThankChoice)=>thankChoices.find(item=>item.id===choice)?.message;
 type ClosedSubmission={id:string;kind:'all'|'personal';portalId:string|null;choice:ThankChoice|null;message:string;createdAt:string;targetCount:number;processedCount:number};
-type InboxMessage={id:string;kind:'all'|'personal';choice:ThankChoice|null;message:string;senderLabel:string;receivedAt:string;read:boolean;missingContacts:number;mailCounts:Record<string,number>};
-type HouseInbox={portalId:string;messages:InboxMessage[];total:number;unread:number;nextCursor:string|null;portalName:string;counters?:{general:number;personal:number;beautiful:number;welcome:number;treats:number};aggregateOnlyCount?:number;customMessageCount?:number};
 type ThanksSnapshot={closed?:boolean;submissions?:ClosedSubmission[];finished?:boolean;portals?:ArrivalPortal[];saved?:PortalThank[];thanks?:PortalThank[];familyCount?:number};
 import '../../modern/portal-thanks.css';
 
@@ -62,14 +61,6 @@ export function FamilyPortalThanks({}: {eventSlug?:string}={}) {
     <header className="portal-thanks-heading"><span className="portal-thanks-heading-icon"><MessageCircleHeart size={25}/></span><div><p>Een warm gebaar</p><h2 id="family-thanks-title">Bedank de poortbewoners</h2><span>De lichtjes, de ontvangst en iets lekkers: jullie buren maakten de avond bijzonder. Kies samen een bedankje voor de poorten die jullie bereikten.</span></div></header>
     {portals.length ? <><p className="portal-thanks-family-note"><Heart size={15}/>Een bedankje van jullie gezin, ook als een kind de beleving liever oversloeg. Bedanken is helemaal vrijwillig.</p><div className="portal-thanks-grid">{portals.map(portal => <ThankGate key={portal.id} portal={portal} saved={saved.find(item => item.portalId === portal.id)} onSaved={load}/>)}</div></> : <div className="portal-thanks-empty"><Sparkles size={23}/><div><strong>Fijn dat jullie erbij waren.</strong><p>Er staan nog geen bevestigde aankomsten in jullie route. Zodra een bereikte poort is bevestigd, kun je hier een bedankje bewaren.</p></div></div>}
     <p className="portal-thanks-local">Jullie bedankje wordt veilig in het portaal bewaard. Het verstuurt geen WhatsApp-bericht, e-mail of pushmelding.</p>
-  </section>;
-}
-function LegacyHousePortalThanks({ portalId }: { portalId?: string }) {
-  const { thanks,error,load } = useThanks('house',portalId), rows=thanks, portalName=rows[0]?.portalName;
-  if(error)return <p className="form-warning" role="alert">{error}<button onClick={()=>void load()}>Opnieuw proberen</button></p>;
-  return <section className="portal-thanks portal-thanks-house" aria-label="Bedankjes voor jullie poort"><header className="portal-thanks-heading"><span className="portal-thanks-heading-icon"><Heart size={25}/></span><div><p>Van de gezinnen</p><h2>Bedankt voor jullie poort</h2><span>{portalName ? `${portalName} · ` : ''}Een kleine terugblik op wat jullie ontvangst betekende.</span></div></header>
-    {rows.length ? <><div className="portal-thanks-house-summary"><Heart size={22}/><p><strong>{rows.length} {rows.length === 1 ? 'gezin heeft' : 'gezinnen hebben'} jullie bedankt.</strong><span>Jullie maakten samen de wijk een beetje magischer.</span></p></div><div className="portal-thanks-received">{thankChoices.map(choice => { const count = rows.filter(row => row.choice === choice.id).length; return count > 0 ? <div key={choice.id}><MessageCircleHeart size={18}/><p>{choice.message}</p><span>{count} {count === 1 ? 'gezin' : 'gezinnen'}</span></div> : null; })}</div></> : <div className="portal-thanks-empty"><MessageCircleHeart size={24}/><div><strong>De eerste bedankjes mogen nog komen.</strong><p>Na hun tocht kunnen gezinnen een vrijwillig bedankje achterlaten. Hier verschijnen alleen de bedankjes voor jullie eigen poort.</p></div></div>}
-    <p className="portal-thanks-local">Alleen bedankjes voor jullie eigen poort. Gezinnen en kinderen worden hier niet bij naam getoond.</p>
   </section>;
 }
 export function AdminPortalThanks() {
@@ -133,24 +124,58 @@ function ClosedFamilyThanks({portals,submissions,legacy,onSaved}:{portals:Arriva
 }
 const mailStatusLabels:Record<string,string>={pending:'In wachtrij',processing:'In verwerking',deferred:'Uitgesteld',accepted:'Provider geaccepteerd',delivered:'Bezorgd',failed:'Mislukt',suppressed:'Geblokkeerd',unknown:'Uitkomst onbekend',validated:'Test gecontroleerd'};
 export function HousePortalThanks({portalId}:{portalId?:string}){
- const [inbox,setInbox]=useState<HouseInbox|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
- const generation=useRef(0),active=useRef<number|null>(null);
- const load=useCallback(async(before?:string)=>{
-  const current=generation.current;if(active.current===current)return;active.current=current;setBusy(true);
-  try{const query=new URLSearchParams({...portalId?{portalId}:{},...before?{before}:{}});const response=await fetch('/api/redesign/thanks-inbox?'+query,{cache:'no-store'});
-   if(response.status===401||response.status===403){if(current===generation.current)setInbox(null);return;}
-   if(!response.ok)throw new Error();const data:HouseInbox=await response.json();if(current===generation.current){setInbox(prior=>before&&prior?{...data,messages:[...prior.messages,...data.messages]}:data);setError('');}
-  }catch{if(current===generation.current)setError('De ontvangen bedankjes konden niet worden opgehaald.');}finally{if(active.current===current)active.current=null;if(current===generation.current)setBusy(false);}
+ const [snapshot,setSnapshot]=useState<{inbox:HouseInbox;legacy:LegacyHouseThank[]}|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[denied,setDenied]=useState(false);
+ const generation=useRef(0),refresh=useRef<(before?:string)=>Promise<void>>(async()=>{}),revoke=useRef<()=>void>(()=>{}),reads=useRef(new Set<string>());
+ const load=useCallback((before?:string)=>refresh.current(before),[]);
+ useEffect(()=>{
+  let disposed=false,active=false,pending=false,accessDenied=false,controller:AbortController|undefined;
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  generation.current+=1;
+  const available=()=>!disposed&&!accessDenied&&document.visibilityState!=='hidden'&&navigator.onLine!==false;
+  const clear=()=>{generation.current+=1;pending=false;controller?.abort();setSnapshot(null);setError('');setBusy(false);};
+  const deny=()=>{clear();accessDenied=true;setDenied(true);setError('Je toegang tot deze bedankjes kon niet worden bevestigd. Open je Poortkamer opnieuw.');};
+  const run=async(before?:string)=>{
+   if(!available())return;if(active){pending=true;return;}
+   active=true;pending=false;setBusy(true);const current=generation.current;controller=new AbortController();const signal=controller.signal;
+   const timeout=setTimeout(()=>controller?.abort(),8000);
+   try{
+    const query=new URLSearchParams({...portalId?{portalId}:{},...before?{before}:{}});
+    const response=await fetch('/api/redesign/thanks-inbox?'+query,{cache:'no-store',signal});
+    if(current!==generation.current||disposed)return;
+    if(response.status===401||response.status===403){deny();return;}
+    if(!response.ok)throw new Error();const inbox=parseHouseInbox(await response.json(),portalId);
+    if(current!==generation.current||disposed)return;if(signal.aborted)throw new Error();
+    const legacyQuery=new URLSearchParams({scope:'house',portalId:inbox.portalId});
+    const legacyResponse=await fetch('/api/redesign/thanks?'+legacyQuery,{cache:'no-store',signal});
+    if(current!==generation.current||disposed)return;
+    if(legacyResponse.status===401||legacyResponse.status===403){deny();return;}
+    if(!legacyResponse.ok)throw new Error();const legacy=parseLegacyHouseThanks(await legacyResponse.json(),inbox.portalId);
+    if(signal.aborted)throw new Error();
+    if(current===generation.current&&!disposed){setSnapshot(prior=>({inbox:before&&prior?.inbox.portalId===inbox.portalId?{...inbox,messages:[...prior.inbox.messages,...inbox.messages.filter(item=>!prior.inbox.messages.some(old=>old.id===item.id))]}:inbox,legacy}));setError('');setDenied(false);}
+   }catch{if(current===generation.current&&!disposed)setError('De ontvangen bedankjes konden niet worden opgehaald. Probeer opnieuw.');}
+   finally{clearTimeout(timeout);active=false;if(current===generation.current&&!disposed)setBusy(false);if(pending&&available()){pending=false;timer=setTimeout(()=>void run(),0);}}
+  };
+  const resume=()=>{if(document.visibilityState==='hidden'){clear();return;}if(available())void run();};
+  refresh.current=run;revoke.current=deny;timer=setTimeout(()=>void run(),0);
+  document.addEventListener('visibilitychange',resume);window.addEventListener('online',resume);
+  return()=>{disposed=true;generation.current+=1;clearTimeout(timer);controller?.abort();refresh.current=async()=>{};revoke.current=()=>{};document.removeEventListener('visibilitychange',resume);window.removeEventListener('online',resume);};
  },[portalId]);
- useEffect(()=>{const current=generation.current+1;generation.current=current;const timer=setTimeout(()=>void load(),0);return()=>{generation.current=current+1;clearTimeout(timer);};},[load]);
- const visibleInbox=inbox&&(!portalId||inbox.portalId===portalId)?inbox:null;
- async function markRead(id:string){const current=generation.current;try{const response=await fetch('/api/redesign/thanks-read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({receiptId:id})});if(!response.ok)throw new Error();if(current!==generation.current)return;setInbox(prior=>prior?{...prior,unread:Math.max(0,prior.unread-(prior.messages.some(item=>item.id===id&&!item.read)?1:0)),messages:prior.messages.map(item=>item.id===id?{...item,read:true}:item)}:prior);}catch{setError('Gelezen-status kon niet worden bewaard.');}}
- return <><section className="portal-thanks portal-thanks-house" aria-labelledby="house-received-thanks"><header className="portal-thanks-heading"><span className="portal-thanks-heading-icon"><Heart size={25}/></span><div><p>Van de gezinnen</p><h2 id="house-received-thanks">Bedankjes van deelnemers</h2><span>{visibleInbox?.portalName} · {visibleInbox?.total??0} bedankjes · {visibleInbox?.unread??0} persoonlijke berichten ongelezen</span></div></header>
-  {error&&<p role="alert" className="portal-thanks-error">{error}</p>}<button className="portal-thanks-cancel" type="button" disabled={busy} onClick={()=>void load()}>Bedankjes vernieuwen</button>
-  {visibleInbox?.counters&&<><div className="portal-thanks-totals" aria-label="Alle ontvangen bedankjes"><div><strong>{visibleInbox.counters.general}</strong><span>Algemene bedankjes</span></div><div><strong>{visibleInbox.counters.personal}</strong><span>Extra bedankjes voor jullie poort</span></div><div><strong>{visibleInbox.aggregateOnlyCount??0}</strong><span>Bedankjes zonder eigen tekst</span></div></div><div className="portal-thanks-received">{thankChoices.map(choice=>{const count=visibleInbox.counters?.[choice.id]??0;return count>0?<div key={choice.id}><Heart size={17}/><p>{choice.message}</p><span>{count}×</span></div>:null;})}</div></>}
-  <p className="portal-thanks-local">Standaardbedankjes tellen hierboven mee en versturen geen e-mail. Hieronder staan alleen eigen aanvullende teksten van gezinnen, zonder namen van kinderen of gezinnen.</p>
-  <h3>Persoonlijke berichten {visibleInbox?.customMessageCount!==undefined&&`(${visibleInbox.customMessageCount})`}</h3>
-  <div className="closed-thanks-history">{visibleInbox?.messages.map(item=><article key={item.id} className={item.read?'':'is-unread'}><strong>{item.kind==='all'?'Eigen bericht aan alle huizen':'Extra persoonlijk bedankje'} {!item.read&&<span>· Nieuw</span>}</strong><p>{item.senderLabel} · {new Date(item.receivedAt).toLocaleString('nl-NL',{timeZone:'Europe/Amsterdam'})}</p>{item.choice&&<p>{thankMessage(item.choice)}</p>}{item.message&&<p className="closed-thanks-preserve">{item.message}</p>}<small>{Object.entries(item.mailCounts).filter(([,count])=>count>0).map(([status,count])=>`${mailStatusLabels[status]??'Verwerking'}: ${count}`).join(' · ')||'Nog geen mailontvangers beschikbaar'}</small>{item.missingContacts>0&&<p>Voor {item.missingContacts} {item.missingContacts===1?'actief poortteamlid':'actieve poortteamleden'} ontbreekt een bevestigd e-mailadres. Het bedankje blijft hier beschikbaar; na contactherstel wordt de ontbrekende mail eenmalig klaargezet.</p>}{((item.mailCounts.failed??0)+(item.mailCounts.suppressed??0)+(item.mailCounts.unknown??0)>0)&&<p>Een mail kon niet worden bevestigd of is geblokkeerd. Het bericht is hier wel opgeslagen.</p>}{!item.read&&<button type="button" className="portal-thanks-cancel" onClick={()=>void markRead(item.id)}>Markeer als gelezen</button>}</article>)}</div>
-  {visibleInbox?.customMessageCount===0&&<p>Er zijn nog geen eigen aanvullende berichten. Alle standaardbedankjes blijven in de aantallen hierboven bewaard.</p>}{visibleInbox?.total===0&&<p>Hier verschijnen de bedankjes die gezinnen na de centrale afsluiting bewust aan jullie poort sturen.</p>}{visibleInbox?.nextCursor&&<button className="portal-thanks-cancel" type="button" disabled={busy} onClick={()=>void load(visibleInbox.nextCursor!)}>Meer bedankjes laden</button>}
- </section><LegacyHousePortalThanks portalId={portalId}/></>;
+ const visible=snapshot&&(!portalId||snapshot.inbox.portalId===portalId)?snapshot:null,inbox=visible?.inbox,legacy=visible?.legacy??[];
+ async function markRead(id:string){
+  if(reads.current.has(id))return;reads.current.add(id);const current=generation.current;
+  try{const response=await fetch('/api/redesign/thanks-read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({receiptId:id})});
+   if(current!==generation.current)return;if(response.status===401||response.status===403){revoke.current();return;}
+   if(!response.ok||(await response.json())?.ok!==true)throw new Error();if(current!==generation.current)return;
+   setSnapshot(prior=>prior?{...prior,inbox:{...prior.inbox,unread:Math.max(0,prior.inbox.unread-(prior.inbox.messages.some(item=>item.id===id&&!item.read)?1:0)),messages:prior.inbox.messages.map(item=>item.id===id?{...item,read:true}:item)}}:prior);
+  }catch{if(current===generation.current)setError('Gelezen-status kon niet worden bewaard.');}finally{reads.current.delete(id);}
+ }
+ return <section className="portal-thanks portal-thanks-house" aria-labelledby="house-received-thanks" data-guide="house-thanks"><header className="portal-thanks-heading"><span className="portal-thanks-heading-icon"><Heart size={25}/></span><div><p>Van de gezinnen</p><h2 id="house-received-thanks">Bedankjes van deelnemers</h2><span>{inbox?`${inbox.portalName} · ${inbox.total+legacy.length} bedankjes · ${inbox.unread} persoonlijke berichten ongelezen`:error?'De stand van jullie bedankjes is niet beschikbaar.':'Bedankjes worden opgehaald…'}</span></div></header>
+  {error&&<p role="alert" className="portal-thanks-error">{error}</p>}{denied?<a className="portal-thanks-cancel" href="/mijn-huis">Poortkamer opnieuw openen</a>:<button className="portal-thanks-cancel" type="button" disabled={busy} onClick={()=>void load()}>Bedankjes vernieuwen</button>}
+  {inbox&&<><div className="portal-thanks-totals" aria-label="Alle ontvangen bedankjes"><div><strong>{inbox.counters.general}</strong><span>Algemene bedankjes</span></div><div><strong>{inbox.counters.personal}</strong><span>Extra bedankjes voor jullie poort</span></div><div><strong>{inbox.aggregateOnlyCount+legacy.length}</strong><span>Bedankjes zonder eigen tekst</span></div></div><div className="portal-thanks-received">{thankChoices.map(choice=>{const count=inbox.counters[choice.id];return count>0?<div key={choice.id}><Heart size={17}/><p>{choice.message}</p><span>{count}×</span></div>:null;})}</div>
+  {legacy.length>0&&<details className="closed-thanks-history"><summary>Reacties tijdens de avond ({legacy.length})</summary>{thankChoices.map(choice=>{const count=legacy.filter(item=>item.choice===choice.id).length;return count>0?<p key={choice.id}>{choice.message} · {count}×</p>:null;})}</details>}
+  <p className="portal-thanks-local">Standaardbedankjes en eerdere reacties tellen hierboven mee en versturen geen e-mail. Hieronder staan alleen eigen aanvullende teksten van gezinnen, zonder namen van kinderen of gezinnen.</p>
+  <h3>Persoonlijke berichten ({inbox.customMessageCount})</h3>
+  <div className="closed-thanks-history">{inbox.messages.map(item=><article key={item.id} className={item.read?'':'is-unread'}><strong>{item.kind==='all'?'Eigen bericht aan alle huizen':'Extra persoonlijk bedankje'} {!item.read&&<span>· Nieuw</span>}</strong><p>{item.senderLabel} · {new Date(item.receivedAt).toLocaleString('nl-NL',{timeZone:'Europe/Amsterdam'})}</p>{item.choice&&<p>{thankMessage(item.choice)}</p>}{item.message&&<p className="closed-thanks-preserve">{item.message}</p>}<small>{Object.entries(item.mailCounts).filter(([,count])=>count>0).map(([status,count])=>`${mailStatusLabels[status]??'Verwerking'}: ${count}`).join(' · ')||'Nog geen mailontvangers beschikbaar'}</small>{item.missingContacts>0&&<p>Voor {item.missingContacts} {item.missingContacts===1?'actief poortteamlid':'actieve poortteamleden'} ontbreekt een bevestigd e-mailadres. Het bedankje blijft hier beschikbaar; na contactherstel wordt de ontbrekende mail eenmalig klaargezet.</p>}{((item.mailCounts.failed??0)+(item.mailCounts.suppressed??0)+(item.mailCounts.unknown??0)>0)&&<p>Een mail kon niet worden bevestigd of is geblokkeerd. Het bericht is hier wel opgeslagen.</p>}{!item.read&&<button type="button" className="portal-thanks-cancel" onClick={()=>void markRead(item.id)}>Markeer als gelezen</button>}</article>)}</div>
+  {inbox.customMessageCount===0&&<p>Er zijn nog geen eigen aanvullende berichten. Alle standaardbedankjes blijven in de aantallen hierboven bewaard.</p>}{inbox.total+legacy.length===0&&<p>Er zijn nog geen bedankjes voor jullie poort bewaard.</p>}{inbox.nextCursor&&<button className="portal-thanks-cancel" type="button" disabled={busy} onClick={()=>void load(inbox.nextCursor!)}>Meer bedankjes laden</button>}</>}
+ </section>;
 }

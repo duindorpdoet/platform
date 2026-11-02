@@ -1456,3 +1456,5 @@
 @media(max-width:760px){
  :global(.modern-ui) .dialog[role="dialog"] form input,:global(.modern-ui) .dialog[role="dialog"] form select,:global(.modern-ui) .dialog[role="dialog"] form textarea{font-size:16px}
 }
+
+.thanksFirst{width:min(1260px,100%);margin:0 auto;padding:0 clamp(16px,3vw,38px)}

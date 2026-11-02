@@ -97,6 +97,9 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Certificate registration totals are a read-only planning projection;
   // existing routes, arrivals, campaigns and mail remain unchanged.
   '20261101230529_portal_registered_certificate_impact.sql',
+  // Existing room-capability access to thanks; authoritative central closure
+  // for room reads/status writes, with historical rows and deliveries retained.
+  '20261102074430_portal_closed_room_thanks_access.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

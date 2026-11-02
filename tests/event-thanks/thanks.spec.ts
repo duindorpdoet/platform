@@ -66,20 +66,20 @@ test('aggregate-only house thanks show totals and choice counts without individu
  await page.route('**/api/redesign/thanks?*',route=>route.fulfill({json:{thanks:[{portalId,portalName:'De warme pompoen',choice:'treats'}]}}));
  await page.route('**/api/redesign/thanks-inbox?*',route=>route.fulfill({json:{portalId,portalName:'De warme pompoen',total:42,unread:0,counters:{general:40,personal:2,beautiful:1,welcome:0,treats:1},aggregateOnlyCount:42,customMessageCount:0,messages:[],nextCursor:null}}));
  await page.goto('/?house');await expect(page.getByRole('heading',{name:'Persoonlijke berichten (0)'})).toBeVisible();
- const totals=page.locator('[aria-label="Alle ontvangen bedankjes"]');await expect(totals).toContainText('40Algemene bedankjes');await expect(totals).toContainText('42Bedankjes zonder eigen tekst');
+ const totals=page.locator('[aria-label="Alle ontvangen bedankjes"]');await expect(totals).toContainText('40Algemene bedankjes');await expect(totals).toContainText('43Bedankjes zonder eigen tekst');
  await expect(page.getByText('Er zijn nog geen eigen aanvullende berichten.',{exact:false})).toBeVisible();await expect(page.getByRole('button',{name:'Markeer als gelezen'})).toHaveCount(0);
- await expect(page.getByText('Een gezin uit Duindorp',{exact:false})).toHaveCount(0);await expect(page.getByText('gezin heeft jullie bedankt.',{exact:false})).toBeVisible();
+ await expect(page.getByText('Een gezin uit Duindorp',{exact:false})).toHaveCount(0);await expect(page.getByText('Reacties tijdens de avond (1)')).toBeVisible();await expect(page.getByRole('heading',{name:'Bedankjes van deelnemers'})).toHaveCount(1);await expect(page.getByRole('heading',{name:'Bedankt voor jullie poort'})).toHaveCount(0);await expect(page.getByText('43 bedankjes',{exact:false})).toBeVisible();
 });
 test('a delayed inbox response from the previous portal never restores its private message',async({page})=>{
- let release:()=>void=()=>{};const hold=new Promise<void>(resolve=>{release=resolve;});let started=false;
+ let release:()=>void=()=>{};const hold=new Promise<void>(resolve=>{release=resolve;});let started=false,settled=false;
  await page.route('**/api/redesign/thanks?*',route=>route.fulfill({json:{thanks:[]}}));
  await page.route('**/api/redesign/thanks-inbox?*',async route=>{
   const previous=new URL(route.request().url()).searchParams.get('portalId')===portalId;
   if(previous){started=true;await hold;}
-  await route.fulfill({json:{portalId:previous?portalId:portalTwo,portalName:previous?'Vorige poort':'Nieuwe poort',total:1,unread:1,counters:{general:0,personal:1,beautiful:1,welcome:0,treats:0},aggregateOnlyCount:0,customMessageCount:1,messages:[{id:previous?portalId:portalTwo,kind:'personal',choice:'beautiful',message:previous?'PRIVATE OLD PORTAL':'Bericht voor de nieuwe poort',senderLabel:'Een gezin uit Duindorp',receivedAt:new Date().toISOString(),read:false,missingContacts:0,mailCounts:{}}],nextCursor:null}});
+  await route.fulfill({json:{portalId:previous?portalId:portalTwo,portalName:previous?'Vorige poort':'Nieuwe poort',total:1,unread:1,counters:{general:0,personal:1,beautiful:1,welcome:0,treats:0},aggregateOnlyCount:0,customMessageCount:1,messages:[{id:previous?portalId:portalTwo,kind:'personal',choice:'beautiful',message:previous?'PRIVATE OLD PORTAL':'Bericht voor de nieuwe poort',senderLabel:'Een gezin uit Duindorp',receivedAt:new Date().toISOString(),read:false,missingContacts:0,mailCounts:{}}],nextCursor:null}});if(previous)settled=true;
  });
  await page.goto('/?house');await expect.poll(()=>started).toBe(true);await page.evaluate(id=>window.thanksHarness.mountHouse(id),portalTwo);
- await expect(page.getByText('Bericht voor de nieuwe poort')).toBeVisible();release();await page.waitForResponse(response=>response.url().includes('thanks-inbox')&&new URL(response.url()).searchParams.get('portalId')===portalId);
+ await expect(page.getByText('Bericht voor de nieuwe poort')).toBeVisible();release();await expect.poll(()=>settled).toBe(true);
  await expect(page.getByText('PRIVATE OLD PORTAL')).toHaveCount(0);await expect(page.getByText('Bericht voor de nieuwe poort')).toBeVisible();
 });
 test('resident inbox shows private-safe types, pagination and persistent read requests',async({page})=>{
@@ -90,4 +90,60 @@ test('resident inbox shows private-safe types, pagination and persistent read re
  await page.route('**/api/redesign/thanks-read',route=>{readRequests.push(route.request().postDataJSON().receiptId);marked=true;return route.fulfill({json:{ok:true}});});
  await page.goto('/?house');await expect(page.getByRole('heading',{name:'Bedankjes van deelnemers'})).toBeVisible();await expect(page.getByText('Eigen bericht aan alle huizen · Nieuw')).toBeVisible();await expect(page.getByText('Een gezin uit Duindorp',{exact:false})).toBeVisible();await expect(page.getByText('Voor 1 actief poortteamlid',{exact:false})).toBeVisible();await expect(page.getByText('In wachtrij: 1',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'Markeer als gelezen'}).click();expect(readRequests).toEqual([portalId]);await page.getByRole('button',{name:'Meer bedankjes laden'}).click();await expect(page.getByText('Extra persoonlijk bedankje · Nieuw')).toBeVisible();await expect(page.getByText('Een extra dank')).toBeVisible();
+});
+function received(message='PRIVATE CONFIRMED THANK'){
+ return{portalId,portalName:'De warme pompoen',total:1,unread:1,counters:{general:0,personal:1,beautiful:1,welcome:0,treats:0},aggregateOnlyCount:0,customMessageCount:1,messages:[{id:portalId,kind:'personal',choice:'beautiful',message,senderLabel:'Een gezin uit Duindorp',receivedAt:'2026-11-01T20:00:00Z',read:false,missingContacts:0,mailCounts:{delivered:1}}],nextCursor:null};
+}
+test('loading and malformed payloads never claim zero received thanks',async({page})=>{
+ let release:()=>void=()=>{};const held=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('**/api/redesign/thanks-inbox?*',async route=>{await held;await route.fulfill({json:{}});});
+ await page.goto('/?house');await expect(page.getByText('Bedankjes worden opgehaald…')).toBeVisible();
+ await expect(page.getByText('0 bedankjes',{exact:false})).toHaveCount(0);await expect(page.getByRole('heading',{name:'Bedankt voor jullie poort'})).toHaveCount(0);
+ release();await expect(page.getByRole('alert')).toContainText('konden niet worden opgehaald');await expect(page.getByText('0 bedankjes',{exact:false})).toHaveCount(0);
+});
+test('an authorization failure clears confirmed messages and stops automatic reloads without a false zero',async({page})=>{
+ let requests=0;
+ await page.route('**/api/redesign/thanks?*',route=>route.fulfill({json:{thanks:[]}}));
+ await page.route('**/api/redesign/thanks-inbox?*',route=>{requests++;return requests===1?route.fulfill({json:received()}):route.fulfill({status:403,json:{error:{code:'NOT_AUTHORIZED'}}});});
+ await page.goto('/?house');await expect(page.getByText('PRIVATE CONFIRMED THANK')).toBeVisible();await page.getByRole('button',{name:'Bedankjes vernieuwen'}).click();
+ await expect(page.getByRole('alert')).toContainText('Je toegang');await expect(page.getByText('PRIVATE CONFIRMED THANK')).toHaveCount(0);await expect(page.getByText('0 bedankjes',{exact:false})).toHaveCount(0);await expect(page.getByRole('link',{name:'Poortkamer opnieuw openen'})).toBeVisible();
+ await page.clock.install();await page.clock.fastForward(120_000);await page.evaluate(()=>{for(let i=0;i<10;i++){window.dispatchEvent(new Event('online'));document.dispatchEvent(new Event('visibilitychange'));}});expect(requests).toBe(2);
+});
+test('transient failures retain the same authorized confirmed counts and request no interval retries',async({page})=>{
+ let requests=0;
+ await page.route('**/api/redesign/thanks?*',route=>route.fulfill({json:{thanks:[]}}));
+ await page.route('**/api/redesign/thanks-inbox?*',route=>{requests++;return requests===1?route.fulfill({json:received()}):route.fulfill({status:503});});
+ await page.goto('/?house');await expect(page.getByText('PRIVATE CONFIRMED THANK')).toBeVisible();await page.getByRole('button',{name:'Bedankjes vernieuwen'}).click();
+ await expect(page.getByRole('alert')).toContainText('konden niet worden opgehaald');await expect(page.getByText('PRIVATE CONFIRMED THANK')).toBeVisible();await expect(page.getByText('1 bedankjes',{exact:false})).toBeVisible();
+ await page.clock.install();await page.clock.fastForward(120_000);expect(requests).toBe(2);
+});
+test('the full response body remains serialized and multiple online refreshes produce one follow-up',async({page})=>{
+ let requests=0;
+ await page.addInitScript(()=>{
+  const original=window.fetch;let first=true;
+  window.fetch=async(...args)=>{const response=await original(...args);if(first&&String(args[0]).includes('thanks-inbox')){first=false;const body=await response.clone().json();response.json=()=>new Promise(resolve=>{window.releaseThanksBody=()=>resolve(body);});}return response;};
+ });
+ await page.route('**/api/redesign/thanks?*',route=>route.fulfill({json:{thanks:[]}}));
+ await page.route('**/api/redesign/thanks-inbox?*',route=>{requests++;return route.fulfill({json:received()});});
+ await page.goto('/?house');await page.waitForFunction(()=>Boolean(window.releaseThanksBody));await page.evaluate(()=>{for(let i=0;i<10;i++)window.dispatchEvent(new Event('online'));});expect(requests).toBe(1);
+ await page.evaluate(()=>window.releaseThanksBody?.());await expect(page.getByText('PRIVATE CONFIRMED THANK')).toBeVisible();await expect.poll(()=>requests).toBe(2);
+ await page.clock.install();await page.clock.fastForward(120_000);expect(requests).toBe(2);
+});
+test('read confirmation cannot erase privacy or claim success for a malformed response',async({page})=>{
+ let posts=0;
+ await page.route('**/api/redesign/thanks?*',route=>route.fulfill({json:{thanks:[]}}));await page.route('**/api/redesign/thanks-inbox?*',route=>route.fulfill({json:received()}));
+ await page.route('**/api/redesign/thanks-read',route=>{posts++;return posts===1?route.fulfill({json:{}}):route.fulfill({status:401});});
+ await page.goto('/?house');await page.getByRole('button',{name:'Markeer als gelezen'}).click();await expect(page.getByRole('alert')).toContainText('Gelezen-status kon niet worden bewaard');await expect(page.getByRole('button',{name:'Markeer als gelezen'})).toBeVisible();
+ await page.getByRole('button',{name:'Markeer als gelezen'}).click();await expect(page.getByRole('alert')).toContainText('Je toegang');await expect(page.getByText('PRIVATE CONFIRMED THANK')).toHaveCount(0);await expect(page.getByRole('button',{name:'Markeer als gelezen'})).toHaveCount(0);
+});
+test('a timed-out body remains guarded until settlement, reports failure and permits one explicit recovery',async({page})=>{
+ let requests=0;
+ await page.addInitScript(()=>{
+  const original=window.fetch;let first=true;
+  window.fetch=async(...args)=>{const response=await original(...args);if(first&&String(args[0]).includes('thanks-inbox')){first=false;const body=await response.clone().json();response.json=()=>new Promise(resolve=>{window.releaseThanksBody=()=>resolve(body);});}return response;};
+ });
+ await page.route('**/api/redesign/thanks?*',route=>route.fulfill({json:{thanks:[]}}));await page.route('**/api/redesign/thanks-inbox?*',route=>{requests++;return route.fulfill({json:received()});});
+ await page.clock.install();await page.goto('/?house');await page.waitForFunction(()=>Boolean(window.releaseThanksBody));await page.clock.fastForward(8001);await expect(page.getByRole('button',{name:'Bedankjes vernieuwen'})).toBeDisabled();expect(requests).toBe(1);
+ await page.evaluate(()=>window.releaseThanksBody?.());await expect(page.getByRole('alert')).toContainText('konden niet worden opgehaald');await expect(page.getByText('0 bedankjes',{exact:false})).toHaveCount(0);expect(requests).toBe(1);
+ await page.getByRole('button',{name:'Bedankjes vernieuwen'}).click();await expect(page.getByText('PRIVATE CONFIRMED THANK')).toBeVisible();expect(requests).toBe(2);
 });

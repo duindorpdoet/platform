@@ -109,6 +109,9 @@ export type PortalRoom = {
   eventId: string;
   eventDate: string;
   updatedAt: string;
+  /** The centrally confirmed event closure, independently of the local clock. */
+  eventClosed?: boolean;
+  closedAt?: string | null;
   /** Confirmed physical arrivals only, independently of gift seals and planning. */
   impact?: PortalImpact;
   /** Registered planning totals for the certificate, independently of arrivals. */
@@ -260,6 +263,8 @@ export function portalTime(value: string | null | undefined) {
     : "Nog niet bekend";
 }
 export function roomError(message: string) {
+  if (message.includes("EVENING_ENDED") || message.includes("EVENING_CLOSING"))
+    return "De avond is centraal afgesloten. De poort blijft gesloten; bedankjes, berichten en het certificaat blijven beschikbaar.";
   if (message.includes("NOT_AUTHORIZED"))
     return "Je hebt geen toegang meer tot deze handeling. De actuele rechten zijn opgehaald.";
   if (message.includes("RATE_LIMITED"))

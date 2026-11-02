@@ -22,7 +22,7 @@ export async function GET(request: Request, context: Context) {
     else if (action === 'thanks') result = await client.schema('api').rpc('portal_thanks_snapshot', { _event_slug: serverEnv().EVENT_SLUG, _scope: z.enum(['family', 'house', 'admin']).parse(params.get('scope') ?? 'family'), _portal_id: params.has('portalId') ? z.uuid().parse(params.get('portalId')) : null });
     else throw new ApiError(404, 'NOT_FOUND', 'Niet gevonden.');
     if (result.error) {
-      if(action==='guidance'&&['PGRST301','PGRST303'].includes(result.error.code))throw new ApiError(401,'NOT_AUTHORIZED','Log opnieuw in.');
+      if(['guidance','thanks','thanks-inbox'].includes(action)&&['PGRST301','PGRST303'].includes(result.error.code))throw new ApiError(401,'NOT_AUTHORIZED','Log opnieuw in.');
       // A verified account may own an intake/draft without an active participant
       // role. There is no tour to require; the page retains its own authorization.
       if(action==='guidance'&&result.error.message==='NOT_AUTHORIZED')return new NextResponse(null,{status:204,headers:{'Cache-Control':'private, no-store',Vary:'Cookie'}});
