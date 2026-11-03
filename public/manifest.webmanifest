@@ -1,17 +1,32 @@
 {
-  "name": "De Duindorpse Poorten van Halloween",
-  "short_name": "De Poorten",
-  "description": "Veilige avondloop door Duindorp op 31 oktober 2026.",
+  "name": "Duindorp FrightNight 2027",
+  "short_name": "FrightNight",
+  "description": "De Vloek van de Pompoenkoning. 30 oktober 2027, Duinpad / Oogstdorp.",
   "lang": "nl-NL",
-  "id": "/omgeving",
-  "start_url": "/app",
+  "id": "/nachtpas",
+  "start_url": "/nachtpas",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#08101e",
-  "theme_color": "#08101e",
+  "background_color": "#081712",
+  "theme_color": "#081712",
   "icons": [
-    { "src": "/pwa/icons/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/pwa/icons/pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/pwa/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/frightnight/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/frightnight/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/frightnight/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

@@ -6,6 +6,13 @@ const context={GITHUB_SHA:sha,GITHUB_EVENT_NAME:"push",GITHUB_REPOSITORY:"duindo
 const waiver={...context,MAIL_TEST_WAIVER_SHA:sha,MAIL_TEST_WAIVER_EXPIRES_AT:"2026-10-28T10:00:00Z",MAIL_TEST_WAIVER_REASON:"Explicit account/app release authorization: no mail tests."};
 describe("release-bound mail-test exception",()=>{
  it("keeps the normal acceptance policy as default",()=>expect(mailTestPolicy(context,now).skip).toBe(false));
+ it('requires no-send acceptance for the 2027 staging release without a mail waiver',()=>{
+  const fn={...waiver,FRIGHTNIGHT_RELEASE:'true',GITHUB_REF:'refs/heads/staging'};
+  expect(mailTestPolicy(fn,now)).toMatchObject({skip:false,source:'frightnight-no-send'});
+  expect(()=>mailTestPolicy({...fn,SKIP_MAIL_TESTS_REQUESTED:'true'},now)).toThrow('FRIGHTNIGHT_NO_SEND_GATES_CANNOT_BE_SKIPPED');
+  expect(()=>mailTestPolicy({...fn,SKIP_MAIL_ACCEPTANCE_REQUESTED:'true'},now)).toThrow('FRIGHTNIGHT_NO_SEND_GATES_CANNOT_BE_SKIPPED');
+  expect(()=>mailTestPolicy({...fn,GITHUB_REF:'refs/heads/production'},now)).toThrow('FRIGHTNIGHT_STAGING_RELEASE_REQUIRED');
+ });
  it("accepts only the exact authorized release SHA on automatic pushes",()=>{
   expect(mailTestPolicy(waiver,now)).toMatchObject({skip:true,source:"exact-release-sha",sha});
   expect(mailTestPolicy({...waiver,GITHUB_SHA:"b".repeat(40)},now).skip).toBe(false);

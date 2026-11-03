@@ -95,10 +95,11 @@ export async function handleMail(request: Request, deps: Dependencies): Promise<
       if (!config) return result(503, "MAIL_CONFIG_MISSING");
       const apiKey = env(config.provider === "resend" ? "RESEND_API_KEY" : "SENDGRID_API_KEY") ?? (config.provider === "sendgrid" ? env("SENDGRID_API") : "");
       if (!apiKey) return result(503, "PROVIDER_KEY_MISSING");
-      const rendered = transactional ?? renderAuthMail({ template: delivery.template, token: delivery.token, siteUrl: env("AUTH_SITE_URL")!, supportEmail: config.reply_to });
+      const frightnightAuth = !transactional && env("FRIGHTNIGHT_ENABLED") === "true" && environment === "staging";
+      const rendered = transactional ?? renderAuthMail({ template: delivery.template, token: delivery.token, siteUrl: env("AUTH_SITE_URL")!, supportEmail: config.reply_to, ...(frightnightAuth ? { brand: "frightnight-2027" as const } : {}) });
       const channel = transactional ? transactional.messageType === "mail_provider_test" || transactional.testKey ? "test" : transactional.editorial ? "nachtpost" : "transactional" : "auth";
       const message: ResendMessage = {
-        from: `${transactional?.editorial ? transactional.senderName ?? config.from_name : config.from_name} <${config.from_email}>`, to: [recipient], reply_to: config.reply_to,
+        from: `${frightnightAuth ? "Duindorp FrightNight 2027" : transactional?.editorial ? transactional.senderName ?? config.from_name : config.from_name} <${config.from_email}>`, to: [recipient], reply_to: config.reply_to,
         subject: rendered.subject, text: rendered.text, html: rendered.html,
         ...(transactional?.editorial && transactional.unsubscribeUrl ? { headers: { "List-Unsubscribe": `<${transactional.unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } } : {}),
         tags: [{ name: "environment", value: environment }, { name: "message_type", value: transactional?.messageType ?? (transactional ? transactional.editorial ? "nachtpost" : "transactional" : delivery.template) }, ...(transactional?.outboxId ? [{ name: "outbox_id", value: transactional.outboxId }] : []), ...(transactional?.registrationBindingHash ? [{ name: "registration_binding", value: transactional.registrationBindingHash }] : [])],

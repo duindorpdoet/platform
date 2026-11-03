@@ -1,5 +1,2 @@
-import { PublicRequestForm } from "@/components/forms/public-request-form";
-
-export default function ContactPage() {
-  return <div className="page wrap narrow"><div className="page-head"><p className="kicker">Contact</p><h1>Een vraag voor de <em>organisatie?</em></h1><p>Wil je iets weten over aanmelden, de werelden, spanning of meedoen met je huis? Laat een bericht achter. Ben je al ingeschreven? Gebruik dan ook de Messenger via Hulp van de organisatie in jullie persoonlijke omgeving; zo blijft jullie gesprek bij elkaar.</p></div><PublicRequestForm mode="contact" /></div>;
-}
+import { FestivalInfo } from "@/components/frightnight/info-page";
+export default function Page() { return <FestivalInfo title="HULP & CONTACT."><p>{"Start, terugkomst en het hulppunt zijn in Oogstdorp op het Duinpad. Je Nachtpas heeft een eigen hulpformulier; de organisatie ziet en beantwoordt je melding binnen jouw editie."}</p><p>{"Het hulpformulier is geen gegarandeerd bemande noodlijn. Bel bij direct gevaar 112."}</p><p>{"Voor vragen over de testeditie: halloween@duindorpdoet.nl."}</p><p>{"Een QR werkt niet maar je hebt verbinding? Gebruik de handmatige code. Bij volledige uitval volg je het vooraf gedownloade noodpakket en de aanwijzingen van vrijwilligers op het Duinpad. Het fysieke Lichtbaken werkt met lokale bediening."}</p></FestivalInfo>; }

@@ -1,0 +1,24 @@
+# Geïsoleerde acceptatie op de gepubliceerde stagingrelease
+
+`scripts/acceptance/frightnight-staging.mjs` is een uitvoerbare acceptatiepoort. Opname in de workflow betekent niet dat de proef al is uitgevoerd. Het actuele resultaat en de exacte SHA staan pas na uitvoering in het Actions-artifact `frightnight-staging-<SHA>/authenticated/report.json`.
+
+De poort draait uitsluitend na de geslaagde stagingdeploy. Die deploy vereist de versleutelde backup/herstelproef, migratiedry-run, preflight, oorspronkelijke databehoudsvergelijking, schema-/rechten-/sinkcontrole en runtimehealth op dezelfde SHA. De uitvoer `needs.deploy.outputs.verified_revision` wordt als `FRIGHTNIGHT_VERIFIED_RELEASE_SHA` doorgegeven; een ontbrekende of afwijkende waarde blokkeert de proef. URL, projectref, omgeving en canonieke configuratieslug zijn bovendien hard begrensd.
+
+De proef maakt vijf nieuwe synthetische Authaccounts onder `example.invalid`, bevestigt die uitsluitend via de server-side Admin API en logt met willekeurige wachtwoorden in. Er wordt geen OTP, uitnodigingsmail of wachtwoordherstel aangevraagd. Wachtwoorden, sessies en QRgeheimen blijven uitsluitend in het procesgeheugen; geen storageState, HAR, trace, credentials of codes worden als artifact opgeslagen. Bestaande identiteiten en huishoudens worden niet als actor gebruikt.
+
+Een tijdelijk event_admin-recht voor de nieuwe testregisseur op de canonieke 2027-testeditie is alleen nodig om via het echte bootstrapcontract een nieuwe sibling te maken: `frightnight-2027-test-acceptance-<run>`. Dat tijdelijke canonieke recht wordt direct na bootstrap ingetrokken. Alle scenario's, seed, routecapaciteit, voorkeuren, betalingen, bewonerszone, reset en klokwijzigingen vinden vervolgens uitsluitend in die nieuwe sibling plaats. De server kiest de editie via de ondertekende, actorgebonden HttpOnlycookie nadat de eigen deelname of capability op de server is bevestigd. Een clientselector geeft geen bevoegdheid.
+
+De poort controleert:
+
+- Echte bevestigde Authsessies; serverprijs; families, bewoner, regie en beperkte supportrol; kruisgrenzen tussen huizen en edities.
+- Herkenbare contractcheckout, mislukken/verlopen, retry, dubbele providerbevestiging, reconciliatie en gecontroleerde contractrefund. Er is geen echte externe PSPtransactie.
+- Activiteit boeken/annuleren, zes blijvende spellen/raadsels, eigen zone beoordelen, statuswijzigingen, private foto en echt afdrukbaar QRbord.
+- Start via de echte handmatige QRinterface, gelijktijdig met het tweede gezin; geen overschreden personen-capaciteit. Twee echte tabbladen herhalen hetzelfde scancommand en controleren één bezoek en beloning; een verouderde versie wordt geweigerd.
+- Instemmen met samenloop, actuele gedeelde route, gezamenlijke personen/intensiteit/comfort en transactioneel verlaten.
+- Pauze/hervatten, globale pauze, eindtijd en de laatste geldige Duinpadscan; eigen Nachtpas en zelfstandig noodpakket.
+- Alle vier ingelogde schermen op 1440 en 390 pixels, zonder echte personen in screenshots.
+- Reset met zichtbare omvang, weigering van een oude run en opnieuw seeden zonder de canonieke editie of 2026 te wijzigen. Historische Authids blijven bestaan. De legacy-outbox krijgt geen extra regel en bevat geen testontvanger.
+
+Na afloop worden alleen capabilities van de vijf nieuwe testidentiteiten ingetrokken. Hun sessies worden afgemeld en de nieuwe accounts een jaar geblokkeerd. De Authrecords, betalingsledger, audit en scenariogeschiedenis worden niet verwijderd. Het siblingevent behoudt zijn beschermde `retention_until`; er is geen globale cleanup of stilzwijgende verwijdertaak. De artifactretentie is veertien dagen en is geen bewaartermijn voor de database.
+
+De poort claimt geen fysieke cameratoestemming op een telefoon, hardware-uitvoer, echte Molliebetaling, externe mailbezorging of grote belastingproef. Die resultaten moeten afzonderlijk bij de relevante SHA worden vastgelegd. Er wordt wel echte browser-/HTTP-/databasewerking op de bevestigde stagingomgeving getest. De huidige poort vereist expliciet `FRIGHTNIGHT_PAYMENT_PROVIDER=contract`, zodat een automatische releaseacceptatie nooit een externe betaalactie kan starten.

@@ -1,6 +1,7 @@
 export type AuthMailTemplate = "auth_otp" | "auth_email_change" | "auth_email_change_new";
 
 type AuthMailOptions = {
+  brand?: "frightnight-2027";
   template: AuthMailTemplate;
   token: string;
   siteUrl: string;
@@ -56,7 +57,7 @@ function cleanHttpsOrigin(value: string) {
   return url.origin;
 }
 
-export function renderAuthMail({ template, token, siteUrl, supportEmail, expiresMinutes = 10 }: AuthMailOptions) {
+function renderLegacyAuthMail({ template, token, siteUrl, supportEmail, expiresMinutes = 10 }: AuthMailOptions) {
   if (!/^[A-Za-z0-9]{4,12}$/.test(token)) throw new TypeError("Invalid Auth code");
   if (!Number.isInteger(expiresMinutes) || expiresMinutes < 1 || expiresMinutes > 60) throw new TypeError("Invalid Auth code expiry");
   if (!/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(supportEmail)) throw new TypeError("Invalid support email");
@@ -87,4 +88,21 @@ export function renderAuthMail({ template, token, siteUrl, supportEmail, expires
     `Privacy: ${privacyUrl}`,
   ].join("\n") + "\n";
   return { subject: selected.subject, preheader: selected.preheader, html, text };
+}
+
+export function renderAuthMail(options: AuthMailOptions) {
+  const result = renderLegacyAuthMail(options);
+  if (options.brand !== "frightnight-2027") return result;
+  const replacements = [
+    ["De Duindorpse Poorten van Halloween", "Duindorp FrightNight 2027"],
+    ["De Duindorpse Poorten", "FrightNight 2027"],
+    ["Team Duindorpse Poorten", "Team FrightNight"],
+    ["De poort gaat voor je open.", "Je Nachtpas wacht op je."],
+    ["Een wijk. Duizend verhalen.", "De nacht is van ons."],
+    ["/images/logo.webp", "/frightnight/logo.png"],
+    ["#060b13", "#081712"], ["#0b1420", "#10251b"], ["#111e2d", "#193126"],
+    ["#f0e9de", "#f4e6cf"], ["#e3b68e", "#e8883c"],
+  ];
+  const transform = (value: string) => replacements.reduce((text, [before, after]) => text.replaceAll(before, after), value);
+  return { subject: transform(result.subject), preheader: transform(result.preheader), html: transform(result.html), text: transform(result.text) };
 }

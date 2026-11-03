@@ -1,0 +1,68 @@
+{
+  "testedAt": "2026-11-03T02:57:12.789Z",
+  "buildId": "eRSyuhMgvmTFYkX3lfRR3",
+  "runtime": "local production build",
+  "checks": [
+    {
+      "path": "/",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "path": "/inloggen",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "path": "/nachtpas",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "path": "/mijn-zone",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "path": "/avondregie",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "path": "/testcentrum",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "path": "/",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "path": "/inloggen",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "path": "/nachtpas",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "path": "/mijn-zone",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "path": "/avondregie",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "path": "/testcentrum",
+      "width": 1440,
+      "overflow": false
+    }
+  ],
+  "pageErrors": []
+}

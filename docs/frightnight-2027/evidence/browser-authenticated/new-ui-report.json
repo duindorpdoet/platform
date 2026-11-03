@@ -1,0 +1,107 @@
+{
+  "testedAt": "2026-11-03T02:56:53.139Z",
+  "buildId": "eRSyuhMgvmTFYkX3lfRR3",
+  "checks": [
+    {
+      "check": "confirmed account lookup returns account ID without granting a role",
+      "passed": true
+    },
+    {
+      "check": "organizer assigns a confirmed account to one activity using real UI",
+      "passed": true
+    },
+    {
+      "check": "activity assignment grants narrow check-in authority only",
+      "passed": true
+    },
+    {
+      "check": "activity assignment can be revoked through same scoped UI",
+      "passed": true
+    },
+    {
+      "check": "administrator copies only edition configuration through real test console",
+      "passed": true
+    },
+    {
+      "check": "opening copied edition sets authoritative server context",
+      "passed": true
+    },
+    {
+      "check": "snapshot confirms copied edition context",
+      "passed": true
+    },
+    {
+      "check": "new isolated test edition seeds from real UI",
+      "passed": true
+    },
+    {
+      "check": "issued test invitation uses fragment rather than logged query",
+      "passed": true
+    },
+    {
+      "check": "browser strips invitation token before further navigation",
+      "passed": true
+    },
+    {
+      "check": "test invitation requires explicit consent before edition membership changes",
+      "passed": true
+    },
+    {
+      "check": "recipient accepts invitation through explicit real server action",
+      "passed": true
+    },
+    {
+      "check": "invited family receives only empty own registration in exact copied edition",
+      "passed": true
+    },
+    {
+      "check": "consumed invitation is removed from transient browser storage",
+      "passed": true
+    },
+    {
+      "check": "invited family creates own server-priced unpaid registration",
+      "passed": true
+    },
+    {
+      "check": "missing PSP configuration produces explicit contract checkout rather than fake payment success",
+      "passed": true
+    },
+    {
+      "check": "contract checkout cannot mark family paid",
+      "passed": true
+    },
+    {
+      "check": "only authorized test console provider replay confirms payment, including duplicate webhook",
+      "passed": true
+    },
+    {
+      "check": "ordinary family cannot read organizer testmail preview",
+      "passed": true
+    },
+    {
+      "check": "organizer opens actual event-scoped paid testmail sink preview with private cache protection",
+      "passed": true
+    },
+    {
+      "check": "actual testmail preview fits 390px",
+      "passed": true
+    },
+    {
+      "check": "actual testmail preview fits 1440px",
+      "passed": true
+    }
+  ],
+  "pageErrors": [],
+  "limits": "Actual local GoTrue/test database. No real OTP, external PSP, provider walking verification or remote staging evidence.",
+  "copiedEdition": "frightnight-2027-test-browser-mw03jy1k",
+  "checkout": {
+    "status": 200,
+    "resultKeys": [
+      "checkoutUrl",
+      "provider",
+      "simulated",
+      "message",
+      "orderId"
+    ]
+  }
+}

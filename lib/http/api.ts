@@ -37,11 +37,11 @@ export function apiSuccess<T>(data: T, status = 200) {
 
 export function apiFailure(error: unknown, requestId: string) {
   if (error instanceof ApiError) {
-    return NextResponse.json({ error: { code: error.code, message: error.message, requestId } }, { status: error.status });
+    return NextResponse.json({ error: { code: error.code, message: error.message, requestId } }, { status: error.status, headers: { "Cache-Control": "private, no-store" } });
   }
   if (error instanceof ZodError) {
-    return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Controleer de gemarkeerde velden.", requestId, fields: error.flatten().fieldErrors } }, { status: 422 });
+    return NextResponse.json({ error: { code: "VALIDATION_ERROR", message: "Controleer de gemarkeerde velden.", requestId, fields: error.flatten().fieldErrors } }, { status: 422, headers: { "Cache-Control": "private, no-store" } });
   }
   console.error("api_error", { requestId, name: error instanceof Error ? error.name : "unknown" });
-  return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "Dat ging niet goed. Probeer het later opnieuw.", requestId } }, { status: 500 });
+  return NextResponse.json({ error: { code: "INTERNAL_ERROR", message: "Dat ging niet goed. Probeer het later opnieuw.", requestId } }, { status: 500, headers: { "Cache-Control": "private, no-store" } });
 }

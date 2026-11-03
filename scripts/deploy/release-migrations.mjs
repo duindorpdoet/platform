@@ -100,6 +100,9 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Existing room-capability access to thanks; authoritative central closure
   // for room reads/status writes, with historical rows and deliveries retained.
   '20261102074430_portal_closed_room_thanks_access.sql',
+  // Isolated 2027 private tables and explicit RPC grants; no event, seed or
+  // historical writes. Bootstrap follows the unchanged preservation gate.
+  '20261103012453_frightnight_2027_isolated_core.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

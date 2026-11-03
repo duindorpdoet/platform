@@ -93,13 +93,17 @@ describe("explicit release read transport workflow contract", () => {
       "/usr/local/bin/dg-site-deploy",
       "run: node scripts/deploy/check-security-advisors.mjs",
       `run: node scripts/deploy/verify-deployment.mjs ${environment}`,
-      "run: node scripts/deploy/check-startregie-reads.mjs",
+      environment==='production'?"run: node scripts/deploy/check-startregie-reads.mjs":"run: node scripts/deploy/check-frightnight-public-rpc.mjs",
     );
     const comparison = deployment.slice(deployment.indexOf(environment === "production"
       ? "- name: Compare existing production data before deploying the application"
       : "- name: Compare existing data before deploying the application")).split(/\n      - name:/)[0];
     expect(comparison).toContain("run: node scripts/deploy/redesign-postmigration.mjs");
     expect(comparison).not.toMatch(/\n\s+(?:if|continue-on-error):/);
+    if(environment==='staging') {
+      ordered(deployment,'run: node scripts/deploy/redesign-postmigration.mjs','run: node scripts/deploy/check-frightnight-safety.mjs --schema-only','run: node scripts/deploy/bootstrap-frightnight.mjs','/usr/local/bin/dg-site-deploy');
+      expect(deployment).toContain('EVENT_SLUG: frightnight-2027-test');
+    }
     if (environment === "production") {
       for (const name of ["prepare-database-client", "backup-export", "backup-restore", "deploy"]) expect(entries.get(name)).toContain("run: node scripts/deploy/require-staging-success.mjs");
       for (const name of ["backup-export", "deploy"]) {

@@ -18,8 +18,11 @@ describe("Resend release provisioning",()=>{
  it("updates only the exact environment endpoint and never prints its signing secret",()=>{const r=run("provision");expect(r.status,r.stderr).toBe(0);expect(r.stdout).toContain("OWN_ENDPOINT_UPDATED");expect(r.stdout).not.toContain("whsec_");});
  it("registers the secret with Actions before any runtime environment handoff",()=>{const r=run("provision",true);expect(r.status,r.stderr).toBe(0);const lines=r.stdout.split("\n");expect(lines.filter(line=>line.startsWith("::add-mask::whsec_"))).toHaveLength(1);expect(lines.filter(line=>!line.startsWith("::add-mask::")).join("\n")).not.toContain("whsec_");});
  it("keeps runtime validation non-sending and does not claim provider delivery",()=>{const r=run("validate");expect(r.status,r.stderr).toBe(0);expect(r.stdout).toContain("NON_SENDING_PROBE");expect(r.stdout).toContain("validated without sending");expect(r.stdout).not.toContain("delivered");});
- it("preserves exact staging SHA, backup and mailbox gates in deployment workflows",()=>{
+ it("preserves exact staging SHA, backup and no-send 2027 mail gates in deployment workflows",()=>{
   for(const name of ["deploy-staging.yml","deploy-production.yml"]) {const s=readFileSync(`.github/workflows/${name}`,"utf8");expect(s).toContain("redesign-backup.mjs");expect(s).toContain("redesign-preflight.mjs");expect(s).toContain("configure-resend-webhook.mjs");}
-  expect(readFileSync('.github/workflows/deploy-production.yml','utf8')).toContain('require-staging-success.mjs');expect(readFileSync('.github/workflows/deploy-staging.yml','utf8')).toContain('staging_mail.py');
+  expect(readFileSync('.github/workflows/deploy-production.yml','utf8')).toContain('require-staging-success.mjs');
+  const staging=readFileSync('.github/workflows/deploy-staging.yml','utf8');
+  expect(staging).not.toContain('staging_mail.py');
+  for(const script of ['verify-mail-provider.mjs','check-frightnight-safety.mjs','check-frightnight-public-rpc.mjs','accept-frightnight.mjs'])expect(staging).toContain(script);
  });
 });

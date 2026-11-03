@@ -1,0 +1,27 @@
+{
+  "scope": "local-contract-and-syntax-only",
+  "verifiedAt": "2026-11-03T02:57:29.244961+00:00",
+  "sourceSha256": {
+    "scripts/acceptance/frightnight-load.mjs": "2ec5b2baaf1a1ba1e3edda812464ec2db9f9662ff885f271c4021b11241d23f9",
+    "scripts/acceptance/frightnight-load.d.mts": "023f440d564177049b77cdbb8d418452b4e5ab4ec3a7bc1ac5ee6e3c4e7172d5",
+    "scripts/acceptance/frightnight-load.test.ts": "a8dce603c60ae86027a90e35e42484182bde1c35119f6c2b71ef94d5f010ab85"
+  },
+  "unitTests": {
+    "passed": 12,
+    "failed": 0
+  },
+  "syntax": {
+    "nodeCheck": true,
+    "eslint": true,
+    "typescript": true,
+    "localPostgresSetupRollback": true,
+    "localPostgresAggregateMetricsRead": true
+  },
+  "defaultPlanNetworkRequests": 0,
+  "remoteExecuted": false,
+  "performanceMeasurements": null,
+  "stagingMembershipRacesExecuted": false,
+  "remainingExecution": "Run after exact verified staging release with explicit load scope; 12/25/50/100/125 steps and five independent member-complete/member-leave/replay rounds.",
+  "independentReview": "Fresh-scope review completed; live provider-health binding and in-flight cleanup drain corrected before execution.",
+  "functionalRaceScope": "Five fresh editions: 4+5 persons with different comfort preferences; two distinct account scans with distinct command IDs, then complete/leave race and independent replay."
+}

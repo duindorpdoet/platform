@@ -26,11 +26,19 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
         }
       }
 
-      if (url.origin === 'https://staging.example.invalid' && url.pathname === '/api/jobs/mail') {
+      if (url.origin === process.env.APP_URL && url.pathname === '/api/jobs/mail') {
         return new Response(
-          runtimeStatus === 200 ? JSON.stringify({ probe: 'transactional_gateway', accepted: true }) : 'runtime probe failed',
+          runtimeStatus === 200 ? JSON.stringify({ probe: 'transactional_gateway', validated:process.env.TEST_INVALID_NO_SEND!=='true', accepted:false }) : 'runtime probe failed',
           { status: runtimeStatus, headers: { 'content-type': 'application/json' } },
         );
+      }
+
+      if(url.pathname.endsWith('/database/query')) {
+        const requested=JSON.parse(init.body);
+        if(requested.read_only!==true)throw new Error('Configuration audit must be read only');
+        body=[{frightnight_safety:{tables:23,unsafeTables:0,unsafeFunctions:process.env.TEST_UNSAFE_FN==='true'?1:0,actorFunctions:4,unsafeEvents:0,unsafeSink:0,sinkHasRecipient:false,legacyBindings:0,
+          edition:{slug:'frightnight-2027-test',date:'2027-10-30',timezone:'Europe/Amsterdam',environment:'staging',isTest:true,retentionUntil:'2027-11-03T00:00:00Z'},
+          mailWorker:{active:true,endpoint:process.env.APP_URL+'/api/jobs/mail',hasSecret:true},legacyJobs:['duindorp-halloween-route-dispatch','duindorp-poortkamer-maintenance','duindorp-halloween-mail-outbox'].map(name=>({name,active:true,schedule:'* * * * *'}))}}];
       }
 
       if (url.pathname.endsWith('/config/auth') && init.method !== 'PATCH') {
@@ -41,12 +49,13 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
           mailer_otp_exp: 600,
           mailer_otp_length: 6,
           hook_send_email_enabled: true,
-          hook_send_email_uri: 'https://project-ref.supabase.co/functions/v1/send-email-hook',
+          hook_send_email_uri: process.env.NEXT_PUBLIC_SUPABASE_URL+'/functions/v1/send-email-hook',
           rate_limit_email_sent: process.env.APP_ENVIRONMENT === 'production' ? 120 : 30,
         };
       }
 
       if (url.pathname.endsWith('/configure_release_mode')) {
+        if(process.env.FRIGHTNIGHT_ENABLED==='true')throw new Error('FrightNight must not invoke legacy release commands');
         const requested = JSON.parse(init.body)._mode;
         if (process.env.REGISTRATION_MODE === 'live' && requested !== 'production_open') throw new Error('Live deployment did not request participant opening');
         body = {
@@ -73,6 +82,7 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
       }
 
       if (url.pathname.endsWith('/dispatch_mail_worker_probe')) {
+        if(process.env.FRIGHTNIGHT_ENABLED==='true')throw new Error('FrightNight must not dispatch the legacy queue');
         body = 42;
       }
 
@@ -167,6 +177,23 @@ describe("mail worker deployment probe", () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("runtime configuration is unavailable or disabled");
   });
+});
+
+describe('isolated FrightNight configuration gate',()=>{
+ const fn={APP_URL:'https://staging-halloween.duindorpdoet.nl',SUPABASE_PROJECT_REF:'nocteiuvohesvqbowchw',NEXT_PUBLIC_SUPABASE_URL:'https://nocteiuvohesvqbowchw.supabase.co',EVENT_SLUG:'frightnight-2027-test',FRIGHTNIGHT_ENABLED:'true',FRIGHTNIGHT_PROJECT_REF:'nocteiuvohesvqbowchw',FRIGHTNIGHT_PAYMENT_PROVIDER:'contract',FRIGHTNIGHT_MAIL_MODE:'sink',FRIGHTNIGHT_HARDWARE_ENABLED:'false'};
+ it('keeps existing jobs while proving the isolated edition and no-send gateway',()=>{
+  const result=configure({},200,fn);
+  expect(result.status,result.stderr).toBe(0);
+  expect(result.stdout).toContain('No legacy release command or worker dispatch invoked');
+  expect(result.stdout).not.toContain('Supabase pg_net mail worker probe passed');
+  expect(result.stdout).not.toContain('Fixed staging notification recipient configured');
+ });
+ it('fails on unsafe database grants or a gateway without explicit non-delivery proof',()=>{
+  const grants=configure({},200,{...fn,TEST_UNSAFE_FN:'true'});
+  expect(grants.status).not.toBe(0);expect(grants.stderr).toContain('FRIGHTNIGHT_DATABASE_ISOLATION_FAILED');
+  const sending=configure({},200,{...fn,TEST_INVALID_NO_SEND:'true'});
+  expect(sending.status).not.toBe(0);expect(sending.stderr).toContain('FRIGHTNIGHT_GATEWAY_NO_SEND_PROOF_REQUIRED');
+ });
 });
 
 describe("Data API deployment configuration", () => {

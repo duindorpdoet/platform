@@ -1,0 +1,54 @@
+{
+  "direction": "definitieve donkere versie 7",
+  "assets": [
+    {
+      "file": "public/frightnight/coast-hero.webp",
+      "source": "03-design-assets/assets/coast-hero.webp",
+      "sha256": "b48ce9a1b9f26d2b6b20da46991cb6af7ed8c5c4be6497f7ef382f3e45eb74a5",
+      "identical": true
+    },
+    {
+      "file": "public/frightnight/king-head.webp",
+      "source": "03-design-assets/assets/king-head.webp",
+      "sha256": "cf591d4d35eb89339cf0ac12002f9440a4ecc09d3dc15fc242f1e32450855a60",
+      "identical": true
+    },
+    {
+      "file": "public/frightnight/king.webp",
+      "source": "03-design-assets/assets/king.webp",
+      "sha256": "45bf8e7d9d67ed3c9a6c6b9bd702607239f88541bbe87f98d7a341cb33e92119",
+      "identical": true
+    },
+    {
+      "file": "public/frightnight/kraaienbode.webp",
+      "source": "03-design-assets/assets/kraaienbode.webp",
+      "sha256": "65f1f716a5f4f302f28457b4a57c41bfd6bcd965af3c1e1294d38b6e5498d4e4",
+      "identical": true
+    },
+    {
+      "file": "public/frightnight/logo-scene.png",
+      "source": "03-design-assets/assets/logo-scene.png",
+      "sha256": "946f0ee48c9853cfde1c96d13c19ed95c7e718d4f2b6eca7a86e2c02133395fa",
+      "identical": true
+    },
+    {
+      "file": "public/frightnight/logo.png",
+      "source": "03-design-assets/assets/logo.png",
+      "sha256": "c05e269470d7a4c3370d2d346bd2cf6c66f91e05642fc4921ab340fb1c645bd6",
+      "identical": true
+    },
+    {
+      "file": "public/frightnight/oogstdorp.webp",
+      "source": "03-design-assets/assets/oogstdorp.webp",
+      "sha256": "ba90aa30618fc4498266621fc04bbfa30e70768afe95280a0676bdd4b603270d",
+      "identical": true
+    },
+    {
+      "file": "public/frightnight/zone-garden.webp",
+      "source": "03-design-assets/assets/zone-garden.webp",
+      "sha256": "38794c2d82f2957f460c3af90c89b2e6f99e609ac153e4b0316fe19cc55abe52",
+      "identical": true
+    }
+  ],
+  "derived": "PWA icons and favicon are crops/scales of the supplied king-head asset; no stock or generated replacement images. Fonts are self-hosted with included OFL licences."
+}

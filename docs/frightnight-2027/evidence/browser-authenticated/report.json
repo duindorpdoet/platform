@@ -1,0 +1,193 @@
+{
+  "testedAt": "2026-11-03T02:57:41.798Z",
+  "base": "http://127.0.0.1:3137",
+  "buildId": "eRSyuhMgvmTFYkX3lfRR3",
+  "checks": [
+    {
+      "role": "familyA",
+      "path": "/nachtpas",
+      "authenticated": true,
+      "capabilities": [],
+      "routeType": "lantern",
+      "paymentStatus": "paid",
+      "journeyState": "walking",
+      "ownZoneCount": 0
+    },
+    {
+      "role": "familyA",
+      "path": "/nachtpas",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "role": "familyA",
+      "path": "/nachtpas",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "familyA",
+      "path": "/nachtpas",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "familyB",
+      "path": "/nachtpas",
+      "authenticated": true,
+      "capabilities": [],
+      "routeType": "lantern",
+      "paymentStatus": "paid",
+      "journeyState": "walking",
+      "ownZoneCount": 0
+    },
+    {
+      "role": "familyB",
+      "path": "/nachtpas",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "role": "familyB",
+      "path": "/nachtpas",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "familyB",
+      "path": "/nachtpas",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "resident",
+      "path": "/mijn-zone",
+      "authenticated": true,
+      "capabilities": [],
+      "ownZoneCount": 1
+    },
+    {
+      "role": "resident",
+      "path": "/mijn-zone",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "role": "resident",
+      "path": "/mijn-zone",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "resident",
+      "path": "/mijn-zone",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "admin",
+      "path": "/avondregie",
+      "authenticated": true,
+      "capabilities": [
+        "event_admin"
+      ],
+      "ownZoneCount": 0
+    },
+    {
+      "role": "admin",
+      "path": "/avondregie",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "role": "admin",
+      "path": "/avondregie",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "admin",
+      "path": "/avondregie",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "activity",
+      "path": "/avondregie",
+      "authenticated": true,
+      "capabilities": [
+        "activities_manage"
+      ],
+      "ownZoneCount": 0
+    },
+    {
+      "role": "activity",
+      "path": "/avondregie",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "role": "activity",
+      "path": "/avondregie",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "activity",
+      "path": "/avondregie",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "role": "finance",
+      "path": "/avondregie",
+      "authenticated": true,
+      "capabilities": [
+        "payments_manage"
+      ],
+      "ownZoneCount": 0
+    },
+    {
+      "role": "finance",
+      "path": "/avondregie",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "role": "finance",
+      "path": "/avondregie",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "role": "finance",
+      "path": "/avondregie",
+      "width": 1440,
+      "overflow": false
+    },
+    {
+      "check": "real GoTrue identity switch between two synthetic accounts",
+      "actorChanged": true,
+      "oldActorCacheCleared": true,
+      "opaqueMarkerCorrect": true,
+      "currentLabelCorrect": true,
+      "privateContentVisible": true
+    },
+    {
+      "check": "back navigation after identity switch",
+      "currentActorStillFamilyB": true,
+      "privateContentVisible": true
+    },
+    {
+      "check": "held real A snapshot response released after identity invalidation event",
+      "oldActorCacheCleared": true,
+      "oldIdentityContentAbsent": true
+    },
+    {
+      "check": "real B session recovers after delayed A response is discarded",
+      "currentActorStillFamilyB": true
+    }
+  ],
+  "pageErrors": [],
+  "limits": "Actual local GoTrue sessions and local isolated FrightNight database. No OTP mail, external PSP delivery, hardware, real camera or staging release verification is implied."
+}

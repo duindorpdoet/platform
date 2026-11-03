@@ -1,6 +1,2 @@
-import { PageHeading } from "@/components/brand/public-page";
-import { FaqDirectory } from "@/components/brand/faq-directory";
-export const metadata = { title: "Veelgestelde vragen · De Duindorpse Poorten", description: "Uitleg over meedoen, samenlopen, het Poortenboek, de Poortkamer, betalen, de app en hulp tijdens Halloween in Duindorp." };
-export default function FaqPage() {
-  return <div className="wrap page"><PageHeading eyebrow="WE HELPEN JE OP WEG" title="Een antwoord voor iedere avonturier." intro="Voor ouders, kinderen en Poortwachters. Kies een onderwerp of zoek direct naar jouw vraag." /><FaqDirectory /></div>;
-}
+import { FestivalInfo } from "@/components/frightnight/info-page";
+export default function Page() { return <FestivalInfo title="GOED OM TE WETEN."><p>{"Start en einde zijn in Oogstdorp op het Duinpad, op 30 oktober 2027. Een startblok is een verwachting; de begin- en eindtijd van je gekozen tocht gelden wel."}</p><p>{"Je hoeft niet alle huizen en spellen af te maken. Je loopt op je eigen tempo naar passende zones en sluit af met de passende Duinpadfinale. Je kunt pauzeren of een gewone halte overslaan."}</p><p>{"Live afschrijvingen staan uit. Mollie gebruikt testmodus wanneer geconfigureerd. De contractsimulator heet zichtbaar zo en verplaatst geen geld. De betaalstatus komt altijd van de server."}</p><p>{"Bij verbindingsuitval blijft de laatste bestemming tijdelijk als verouderde informatie zichtbaar. Een wachtend bezoek is nog niet bevestigd. Bewaar vooraf het noodpakket en ga bij volledige uitval naar het hulppunt op het Duinpad."}</p></FestivalInfo>; }

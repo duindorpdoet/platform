@@ -1,6 +1,8 @@
-# De Duindorpse Poorten van Halloween
+# Duindorp eventplatform — FrightNight 2027 staging
 
-Productieplatform voor de Halloween-avondloop in Duindorp op 31 oktober 2026. De applicatie gebruikt Next.js App Router, strict TypeScript, Supabase Auth/Postgres/Realtime/Storage/Cron en een gedeelde mailgateway met Resend en SendGrid-migratiehistorie. De aangeleverde ontwerpversie 4 blijft de visuele basis; productie bevat geen rollenknop, universele democode of fictieve deelnemers.
+Deze stagingrelease bouwt Duindorp FrightNight op **30 oktober 2027** in de definitieve donkere **versie 7** op de bestaande Next.js App Router-/VPS-/Supabase-basis. Start bij de [uitvoeringsstatus](docs/frightnight-2027/IMPLEMENTATION-STATUS.md), [beheerhandleiding](docs/frightnight-2027/BEHEERHANDLEIDING.md) en [acceptatiematrix](docs/frightnight-2027/ACCEPTANCE-MATRIX.md) voor de exacte release, inloginstructies, testeditie, bewijs en resterende externe configuratie.
+
+Productie en historische 2026-gegevens blijven behouden. De nieuwe kern gebruikt private editiegebonden `fn_*`-tabellen en gecontroleerde `api`-RPCs; stagingmail blijft in een sink. De hieronder genoemde basisrunbooks en legacytests blijven ook de historische 2026-engine beschrijven. Gebruik voor 2027 de expliciete FrightNight-stagingconfiguratie; een lokale database-reset is geen toegestane remote releasehandeling.
 
 ## Lokaal ontwikkelen
 

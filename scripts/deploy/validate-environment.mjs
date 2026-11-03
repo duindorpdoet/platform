@@ -1,4 +1,5 @@
 import {createECDH} from "node:crypto";
+import {assertFrightnightRelease} from './frightnight-release.mjs';
 const target = process.argv[2];
 if (!new Set(["staging", "production"]).has(target)) {
   throw new Error("Usage: node scripts/deploy/validate-environment.mjs <staging|production>");
@@ -57,6 +58,7 @@ if (!/^[A-Za-z0-9+/]+={0,2}$/.test(hookKey) || decodedHookKey.byteLength < 32 ||
 }
 
 if (process.env.APP_ENVIRONMENT !== target) throw new Error("APP_ENVIRONMENT does not match the deployment target.");
+if (process.env.FRIGHTNIGHT_ENABLED === 'true') assertFrightnightRelease(process.env);
 if (!/^[a-f0-9]{40}$/.test(process.env.APP_REVISION)) throw new Error("APP_REVISION must be an exact Git commit.");
 if (new URL(process.env.APP_URL).origin !== new URL(process.env.NEXT_PUBLIC_SITE_URL).origin) {
   throw new Error("APP_URL and NEXT_PUBLIC_SITE_URL must have the same origin.");

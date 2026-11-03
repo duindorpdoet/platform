@@ -9,7 +9,7 @@ describe("PWA privacy and installation contract", () => {
       display: string;
       icons: Array<{ src: string; purpose: string }>;
     };
-    expect(manifest).toMatchObject({ id: "/omgeving", start_url: "/app", display: "standalone" });
+    expect(manifest).toMatchObject({ id: "/nachtpas", start_url: "/nachtpas", display: "standalone" });
     expect(manifest.icons.some((icon) => icon.src.endsWith("maskable-512.png") && icon.purpose === "maskable")).toBe(true);
     expect(manifest.icons.every((icon) => icon.src.endsWith(".png"))).toBe(true);
   });
@@ -17,6 +17,9 @@ describe("PWA privacy and installation contract", () => {
   it("never adds private documents, API or RSC responses to Cache Storage", () => {
     const worker = readFileSync("public/sw.js", "utf8");
     expect(worker).toContain('"/omgeving"');
+    expect(worker).toContain('"/nachtpas"');
+    expect(worker).toContain('"/avondregie"');
+    expect(worker).toContain('"/testcentrum"');
     expect(worker).toContain('"/api/"');
     expect(worker).toContain('"/uitnodiging"');
     expect(worker).toContain('"/mijn-"');

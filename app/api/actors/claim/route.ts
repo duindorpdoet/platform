@@ -8,7 +8,7 @@ import { readBoundedJson } from '@/lib/http/bounded-json';
 import { serverEnv } from '@/lib/config/server-env';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const ACTOR_CLAIM_COOKIE = 'duinpad_actor_claim';
+const ACTOR_CLAIM_COOKIE = 'duinpad_actor_claim';
 const command = z.discriminatedUnion('action', [
   z.object({ action: z.literal('prepare'), token: z.string().regex(/^[A-Za-z0-9_-]{43}$/) }).strict(),
   z.object({ action: z.literal('claim') }).strict(),

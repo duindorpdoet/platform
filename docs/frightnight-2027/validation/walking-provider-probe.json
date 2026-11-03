@@ -1,0 +1,19 @@
+{
+  "scope": "public-provider-probe-only",
+  "testedAt": "2026-11-03T02:41:42.136026+00:00",
+  "request": "https://routing.openstreetmap.de/routed-foot/route/v1/foot/4.2521,52.0934;4.2557,52.0935?overview=full&geometries=geojson&alternatives=false&steps=false",
+  "httpStatus": 200,
+  "status": "Ok",
+  "geometryType": "LineString",
+  "points": 31,
+  "distanceMetres": 624.9,
+  "durationSeconds": 499.9,
+  "responseSha256": "442e9b46c588f5cbcfc8771bc27ad9d610912a9dd1798df561f8100e5668b245",
+  "providerPolicy": "https://routing.openstreetmap.de/about.html",
+  "applicationLimit": "At most one uncached external lookup per 1050 ms per app process; identical calls coalesce, 24-hour bounded cache; saved reviewed edges avoid event-time external lookups.",
+  "limitations": [
+    "Public coordinates only; no household or personal data transmitted in this probe.",
+    "No physical survey or safety approval of a route is claimed.",
+    "No uptime, peak capacity or authenticated hosted map test is proved by this result."
+  ]
+}

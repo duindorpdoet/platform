@@ -4,6 +4,11 @@ import { pathToFileURL } from "node:url";
 export function mailTestPolicy(context, now = Date.now()) {
   const sha = context.GITHUB_SHA;
   if (!/^[a-f0-9]{40}$/.test(sha ?? "")) throw new Error("RELEASE_SHA_REQUIRED");
+  if (context.FRIGHTNIGHT_RELEASE === 'true') {
+    if (context.GITHUB_REPOSITORY !== 'duindorpdoet/platform' || context.GITHUB_REF !== 'refs/heads/staging') throw new Error('FRIGHTNIGHT_STAGING_RELEASE_REQUIRED');
+    if (context.SKIP_MAIL_TESTS_REQUESTED === 'true' || context.SKIP_MAIL_ACCEPTANCE_REQUESTED === 'true') throw new Error('FRIGHTNIGHT_NO_SEND_GATES_CANNOT_BE_SKIPPED');
+    return {skip:false,source:'frightnight-no-send',sha,reason:'User-directed no-send acceptance: signed gateway/provider configuration, isolated sink, authorization and browser gates remain mandatory. OTP is only requested by a real tester.'};
+  }
   if (context.GITHUB_EVENT_NAME === "workflow_dispatch" && context.SKIP_MAIL_TESTS_REQUESTED === "true") {
     return { skip: true, source: "explicit-dispatch", sha, reason: "Operator explicitly selected skip_mail_tests for this release run." };
   }

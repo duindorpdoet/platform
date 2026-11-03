@@ -1,3 +1,7 @@
+import { assertFrightnightRelease, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL } from './frightnight-release.mjs';
+
+const frightnightRelease = process.env.APP_ENVIRONMENT === 'staging' && process.env.FRIGHTNIGHT_ENABLED === 'true';
+if (frightnightRelease) assertFrightnightRelease(process.env);
 const required = [
   "SUPABASE_ACCESS_TOKEN",
   "SUPABASE_PROJECT_REF",
@@ -59,7 +63,7 @@ function safeProbeError(value) {
     .slice(0, 500);
 }
 
-async function verifyRuntimeMailGateway() {
+async function verifyRuntimeMailGateway(requireNoSend = false) {
   let response;
   try {
     response = await fetch(`${appUrl}/api/jobs/mail`, {
@@ -75,7 +79,13 @@ async function verifyRuntimeMailGateway() {
     throw new Error("The deployed application could not complete the transactional mail gateway runtime probe.");
   }
 
-  if (response.ok) return;
+  if (response.ok) {
+    if (requireNoSend) {
+      const result = await response.json();
+      if (result.validated !== true || result.accepted !== false) throw new Error('FRIGHTNIGHT_GATEWAY_NO_SEND_PROOF_REQUIRED');
+    }
+    return;
+  }
 
   let detail = "";
   try {
@@ -215,6 +225,17 @@ const serviceHeaders = {
 };
 
 const releaseMode = process.env.REGISTRATION_MODE === "staging_test" ? "staging_test_open" : process.env.REGISTRATION_MODE === "live" ? "production_open" : "production_closed";
+if (frightnightRelease) {
+  const rows = await request(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
+    method:'POST', headers:managementHeaders, body:JSON.stringify({read_only:true,query:FRIGHTNIGHT_SAFETY_SQL}),
+  });
+  assertFrightnightSafety(rows[0]?.frightnight_safety);
+  // Preserve the already configured 2026 worker. Its pg_net probe dispatches
+  // the real queue, so it is deliberately replaced by metadata plus the
+  // explicit sandbox gateway path; neither processes legacy mail or push.
+  await verifyRuntimeMailGateway(true);
+  console.log('FrightNight edition, isolated sink, preserved legacy jobs and no-send gateway verified. No legacy release command or worker dispatch invoked.');
+} else {
 const release = await rpcRequest(`${supabaseUrl.origin}/rest/v1/rpc/configure_release_mode`, {
   method: "POST",
   headers: serviceHeaders,
@@ -268,5 +289,6 @@ if (process.env.MAIL_MODE !== "disabled" && process.env.SKIP_MAIL_TESTS !== "tru
   console.log("Transactional mail gateway runtime probe passed.");
 }
 if(process.env.SKIP_MAIL_TESTS==="true")console.log(`Mail worker/gateway probes skipped for authorized release ${process.env.GITHUB_SHA}; normal mail configuration is retained.`);
+}
 
 console.log(`Supabase release controls configured for ${process.env.APP_ENVIRONMENT}.`);

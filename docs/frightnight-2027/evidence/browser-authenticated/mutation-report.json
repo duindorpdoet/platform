@@ -1,0 +1,133 @@
+{
+  "testedAt": "2026-11-03T02:57:11.642Z",
+  "buildId": "eRSyuhMgvmTFYkX3lfRR3",
+  "base": "http://127.0.0.1:3137",
+  "checks": [
+    {
+      "check": "fresh recovery fixture is selected by server-scoped edition context",
+      "passed": true
+    },
+    {
+      "check": "fixture family explicitly accepts only this isolated recovery edition",
+      "passed": true
+    },
+    {
+      "check": "recovery fixture uses explicit contract checkout",
+      "passed": true
+    },
+    {
+      "check": "fixture family explicitly accepts only this isolated recovery edition",
+      "passed": true
+    },
+    {
+      "check": "recovery fixture uses explicit contract checkout",
+      "passed": true
+    },
+    {
+      "check": "isolated staging-mode local edition verified",
+      "passed": true
+    },
+    {
+      "check": "both synthetic families have confirmed contract-provider test state",
+      "passed": true
+    },
+    {
+      "check": "two independent paid families simultaneously start through real QR UI",
+      "passed": true
+    },
+    {
+      "check": "simultaneous family starts never exceed any zone capacity",
+      "passed": true
+    },
+    {
+      "check": "family A receives one authoritative destination",
+      "passed": true
+    },
+    {
+      "check": "second actual account tab selects same server-authorized edition",
+      "passed": true
+    },
+    {
+      "check": "real offline manual scan queues only an unconfirmed visit",
+      "passed": true
+    },
+    {
+      "check": "offline queued scan grants no visit or reward",
+      "passed": true
+    },
+    {
+      "check": "second actual browser tab changes route version while first is offline",
+      "passed": true
+    },
+    {
+      "check": "stale offline route command receives 409 and no visit",
+      "passed": true,
+      "status": 409
+    },
+    {
+      "check": "participant recovers explicitly using current server route",
+      "passed": true
+    },
+    {
+      "check": "real browser receives injected HTTP 503 on scan",
+      "passed": true
+    },
+    {
+      "check": "503 without commit leaves authoritative visit state unchanged",
+      "passed": true
+    },
+    {
+      "check": "503 recovery reuses same command ID and grants exactly one visit",
+      "passed": true
+    },
+    {
+      "check": "second family B tab selects same server-authorized edition",
+      "passed": true
+    },
+    {
+      "check": "browser setOffline queues exact current-destination command",
+      "passed": true
+    },
+    {
+      "check": "offline queue keeps server visit and reward counts unchanged",
+      "passed": true
+    },
+    {
+      "check": "reconnection explicitly replays exact queued command once",
+      "passed": true
+    },
+    {
+      "check": "identical committed command replay gives no second visit or reward",
+      "passed": true
+    },
+    {
+      "check": "two actual same-account browser tabs cannot double-complete destination",
+      "passed": true,
+      "statuses": [
+        200,
+        409
+      ]
+    },
+    {
+      "check": "resident sets own timed pause with persisted reason",
+      "passed": true
+    },
+    {
+      "check": "resident resumes only own zone through authorized command",
+      "passed": true
+    }
+  ],
+  "pageErrors": [],
+  "limits": "Real local isolated database and GoTrue sessions, actual browser UI commands. No remote staging, OTP mail, external PSP, real camera or physical hardware verification.",
+  "copiedEdition": "frightnight-2027-test-browser-recovery-mw03kbjy",
+  "residentPause": {
+    "status": 200,
+    "actualStatus": "paused",
+    "pauseUntil": "2027-10-30T15:20:00+00:00",
+    "reasonPresent": true
+  },
+  "clock": {
+    "originalTime": "2027-10-30T15:05:00+00:00",
+    "localFixtureTime": "2027-10-30T15:05:00.000Z"
+  }
+}

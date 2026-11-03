@@ -1,0 +1,50 @@
+{
+  "scope": "local-vitest-and-eslint",
+  "recordedAt": "2026-11-03T02:55:31.148Z",
+  "baseRevision": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
+  "remoteMutations": false,
+  "tests": {
+    "command": "pnpm exec vitest run lib/frightnight/payments.test.ts lib/frightnight/payment-server.test.ts lib/frightnight/request-body.test.ts lib/frightnight/qr-export.test.ts lib/frightnight/transactional-mail.test.ts lib/frightnight/mail-preview.test.ts",
+    "passed": 53,
+    "failed": 0,
+    "durationMs": 402
+  },
+  "eslint": {
+    "passed": true,
+    "files": [
+      "lib/frightnight/payments.ts",
+      "lib/frightnight/payments.test.ts",
+      "lib/frightnight/payment-server.ts",
+      "lib/frightnight/payment-server.test.ts",
+      "lib/frightnight/request-body.ts",
+      "lib/frightnight/request-body.test.ts",
+      "lib/frightnight/qr-export.test.ts",
+      "app/api/frightnight/qr/route.ts",
+      "app/api/frightnight/payments/webhook/route.ts",
+      "app/api/frightnight/zone-photo/route.ts",
+      "lib/frightnight/transactional-mail.ts",
+      "lib/frightnight/transactional-mail.test.ts",
+      "lib/frightnight/mail-preview.test.ts",
+      "app/api/frightnight/mail-preview/route.ts"
+    ]
+  },
+  "externalProviderTested": false,
+  "physicalCameraTested": false,
+  "sourceSha256": {
+    "lib/frightnight/payments.ts": "44657a02ee962439f26c881e3b2b04af73de3340c2cc5a6f167496b85b85a175",
+    "lib/frightnight/payments.test.ts": "ecda0a8fced3ea91ddba21f6127d86b97b1f455bc399fa40bf2ff1219f759e3c",
+    "lib/frightnight/payment-server.ts": "3a27c994986a91adb7299dde16488a6effd28a1f5a5a959be1347e1b863381a0",
+    "lib/frightnight/payment-server.test.ts": "27a15bdc1f297ddbffd577b406b5a5cd6b20d8a740c5eb0a2f7a9dbd3c5dc2d0",
+    "lib/frightnight/request-body.ts": "b51e42e8d80afc2ee0f991afdadf09284e761a827f1e6a0ffe2c1817449b96af",
+    "lib/frightnight/request-body.test.ts": "3db069cadfaa4a6cbface7891617f723974df6c1bcae61cea3f4409586c28f29",
+    "lib/frightnight/qr-export.test.ts": "c40d8a06915d2fb4d68a05dfd500c19a41124f9c5363ab37eac8f04bbea8706c",
+    "app/api/frightnight/qr/route.ts": "717693d06804691be9a3ea428993237da113c133f272bce0cc52deb3573924e4",
+    "app/api/frightnight/payments/webhook/route.ts": "4e17181f88f2e65ecbf2cbeaee18bb0a044d36968204317522692f2453dbe9b6",
+    "app/api/frightnight/zone-photo/route.ts": "62d8a43bfd0058cbeb547d659fcd80cd7884d7b4ec9456b897c45bb4ce5e84b1",
+    "lib/frightnight/transactional-mail.ts": "017b63a4d31cb52910a341c692c2e2f7e7f671f1aa3a7ba59b88468e070e3e3a",
+    "lib/frightnight/transactional-mail.test.ts": "775ca7afe141c99899fe9ba7ac3ebf856108cbbe1769c099a31a0c034f38fd41",
+    "lib/frightnight/mail-preview.test.ts": "1e79553d3d51e210b629ea130dba3aeb34d1777b15531c9e603be4277fafcbac",
+    "app/api/frightnight/mail-preview/route.ts": "45921be4e7b5915bacaf43b4667f111cdef41ada0486a6dfe9e374fb81a53b0a",
+    "public/frightnight/king-head.webp": "cf591d4d35eb89339cf0ac12002f9440a4ecc09d3dc15fc242f1e32450855a60"
+  }
+}

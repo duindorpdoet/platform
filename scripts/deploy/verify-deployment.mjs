@@ -1,3 +1,5 @@
+import { verifyFrightnightDeployment } from './verify-frightnight-deployment.mjs';
+
 const [target, expectedUrl] = process.argv.slice(2);
 if (!new Set(["staging", "production"]).has(target) || !expectedUrl) {
   throw new Error("Usage: node scripts/deploy/verify-deployment.mjs <staging|production> <url>");
@@ -37,6 +39,9 @@ if (
   throw new Error("The health response does not match the deployed release contract.");
 }
 
+if (target === 'staging' && process.env.FRIGHTNIGHT_ENABLED === 'true') {
+  await verifyFrightnightDeployment(get, health);
+} else {
 for (const path of ["/", "/verhaal", "/werelden", "/kaart", "/ontdek", "/faq", "/contact", "/sponsoren", "/privacy", "/voorwaarden", "/toegankelijkheid"]) {
   const response = await get(path);
   if (!response.ok) throw new Error(`Public smoke test failed for ${path} (${response.status}).`);
@@ -81,3 +86,4 @@ if (process.env.REDACTIEKAMER_ENABLED === "true") {
 }
 
 console.log(`${target} deployment ${process.env.GITHUB_SHA} passed its public and protected-route smoke tests.`);
+}

@@ -1,4 +1,4 @@
-const VERSION = "duindorp-public-v7";
+const VERSION = "duindorp-public-frightnight-2027-v1";
 const ASSET_CACHE = `${VERSION}:assets`;
 const LEGACY_PUBLIC_CACHE_PREFIX = "duindorp-public-";
 const PRIVATE_CACHE_PREFIX = "duindorp-private";
@@ -7,13 +7,17 @@ const SAFE_ASSETS = [
   OFFLINE_URL,
   "/favicon.svg",
   "/manifest.webmanifest",
-  "/images/logo.webp",
+  "/frightnight/logo.png",
+  "/frightnight/kraaienbode.webp",
+  "/frightnight/icon-192.png",
+  "/frightnight/icon-512.png",
+  "/frightnight/maskable-512.png",
   "/pwa/icons/apple-touch-icon-180.png",
-  "/pwa/icons/pwa-192.png",
+  "/frightnight/icon-192.png",
   "/pwa/icons/pwa-512.png",
   "/pwa/icons/maskable-512.png",
 ];
-const PRIVATE_PREFIXES = ["/mijn-", "/omgeving", "/app", "/inloggen", "/admin", "/api/", "/auth/", "/poortenboek", "/uitnodiging", "/nachtpost"];
+const PRIVATE_PREFIXES = ["/nachtpas", "/avondregie", "/testcentrum","/mijn-", "/omgeving", "/app", "/inloggen", "/admin", "/api/", "/auth/", "/poortenboek", "/uitnodiging", "/nachtpost"];
 
 function isPrivatePath(pathname) {
   return PRIVATE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -99,18 +103,18 @@ self.addEventListener("push", (event) => {
   try { payload = event.data?.json() ?? {}; } catch { /* Generic notification if a provider sent malformed data. */ }
   const portal = payload.url === "/mijn-huis";
   const news = safeNewsUrl(payload.url);
-  event.waitUntil(self.registration.showNotification(portal ? "De Poortkamer" : "De Duindorpse Poorten", {
+  event.waitUntil(self.registration.showNotification(portal ? "FrightNight · Mijn zone" : "Duindorp FrightNight", {
     body: portal && typeof payload.body === "string" ? payload.body.slice(0, 240) : news ? "Er staat een nieuw bericht voor je klaar." : "Er staat een nieuwe melding in je persoonlijke omgeving klaar.",
     tag: (portal || news) && typeof payload.tag === "string" ? payload.tag.slice(0, 120) : undefined,
-    icon: "/pwa/icons/pwa-192.png",
-    badge: "/pwa/icons/pwa-192.png",
-    data: { url: portal ? "/mijn-huis" : news || "/omgeving" },
+    icon: "/frightnight/icon-192.png",
+    badge: "/frightnight/icon-192.png",
+    data: { url: portal ? "/mijn-zone" : news || "/nachtpas" },
   }));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const destination = event.notification.data?.url === "/mijn-huis" ? "/mijn-huis" : safeNewsUrl(event.notification.data?.url) || "/omgeving";
+  const destination = event.notification.data?.url === "/mijn-huis" ? "/mijn-huis" : safeNewsUrl(event.notification.data?.url) || "/nachtpas";
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);

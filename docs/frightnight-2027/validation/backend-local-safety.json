@@ -1,0 +1,21 @@
+{
+  "tables": 30,
+  "edition": {
+    "date": "2027-10-30",
+    "slug": "frightnight-2027-test",
+    "phase": "draft",
+    "isTest": true,
+    "timezone": "Europe/Amsterdam",
+    "environment": "staging",
+    "retentionUntil": "2027-11-03T02:12:59.064705+00:00"
+  },
+  "legacyJobs": null,
+  "mailWorker": null,
+  "unsafeSink": 0,
+  "unsafeEvents": 0,
+  "unsafeTables": 0,
+  "actorFunctions": 4,
+  "legacyBindings": 0,
+  "unsafeFunctions": 0,
+  "sinkHasRecipient": false
+}

@@ -64,7 +64,7 @@ describe("actual service worker editorial events", () => {
       },
     });
     expect(w.showNotification).toHaveBeenCalledWith(
-      "De Duindorpse Poorten",
+      "Duindorp FrightNight",
       expect.objectContaining({
         body: "Er staat een nieuw bericht voor je klaar.",
         tag: "news-version",
@@ -85,7 +85,7 @@ describe("actual service worker editorial events", () => {
       await w.event("notificationclick", {
         notification: { data: { url }, close: vi.fn() },
       });
-      expect(w.navigate).toHaveBeenCalledWith("/omgeving");
+      expect(w.navigate).toHaveBeenCalledWith("/nachtpas");
     },
   );
   it.each([

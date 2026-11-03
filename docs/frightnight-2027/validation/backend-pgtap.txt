@@ -1,0 +1,161 @@
+ok 1 - production cannot bootstrap a test edition
+ok 2 - verified isolated edition can bootstrap
+ok 3 - service initialize seeds only ownerless synthetic data and is idempotent without impersonation
+ok 4 - initialization is service-only
+ok 5 - browser cannot confirm payment
+ok 6 - anonymous actor cannot read personal snapshots
+ok 7 - private tables are not directly exposed
+ok 8 - all new tables have RLS
+ok 9 - printing after a zone rotation preserves the exact newly returned credential
+ok 10 - rotated zone rejects the previous printed credential
+ok 11 - seed creates isolated synthetic families with no historical households
+ok 12 - synthetic families never use existing households
+ok 13 - three riddles and three games are server configured
+ok 14 - seed never invents verified walking routes
+ok 15 - timed pause blocks new arrivals before its end
+ok 16 - expired pause can reopen only within approved opening hours
+ok 17 - expired pause does not reopen a zone outside its hours
+ok 18 - new signup requires explicit current test terms consent
+ok 19 - server calculates full-person integer price
+ok 20 - unpaid families cannot start
+ok 21 - participants cannot seed data
+ok 22 - NULL-owned synthetic zone does not bypass resident authorization
+ok 23 - only provider confirmation activates registration
+ok 24 - payment queues exactly one isolated sink confirmation
+ok 25 - duplicate webhook is idempotent
+ok 26 - duplicate webhook never doubles ledger
+ok 27 - provider amount mismatch is rejected
+ok 28 - out-of-order open is accepted without state regression
+ok 29 - paid never regresses to open
+ok 30 - finance creates a durable scoped refund intent
+ok 31 - identical refund intent retry returns same order
+ok 32 - refund key reuse for a different registration cannot refund the previous household
+ok 33 - different command IDs cannot claim a second full refund for one paid order
+ok 34 - refund contention leaves exactly one durable provider intent
+ok 35 - invalid refund state cannot release the provider claim
+ok 36 - verified provider failure is durably recorded before releasing a claim
+ok 37 - a new intent is possible only after the previous provider failure is recorded
+ok 38 - second actor sees only own registration
+ok 39 - participant snapshot contains no regie roster
+ok 40 - invalid start token is rejected
+ok 41 - synthetic walking geometry is never labelled organisation verified
+ok 42 - synthetic geometry cannot become an available street instruction
+ok 43 - synthetic walking geometry is withheld from personal route responses
+ok 44 - walk verification rejects non-LineString geometry
+ok 45 - walk geometry cannot leave the bounded Duindorp region
+ok 46 - walk geometry needs at least two points
+ok 47 - authorized reviewed walking geometry can replace a synthetic fixture edge
+ok 48 - reverification updates an existing fixture source as well as its geometry
+ok 49 - a missing path remains unavailable rather than fabricated
+ok 50 - walk validation bounds coordinate count at five thousand
+ok 51 - current-destination endpoint returns the actual reviewed edge source
+ok 52 - first valid scan reserves suitable low-intensity zone
+ok 53 - capacity measured in whole persons
+ok 54 - exact command replay returns original result
+ok 55 - same key with different body conflicts
+ok 56 - stale scan cannot advance next destination
+ok 57 - second family cannot reserve already full zone
+ok 58 - registration edit atomically reassesses a lower comfort limit
+ok 59 - new current destination respects lowered preference from registration form
+ok 60 - paid families explicitly join during walk
+ok 61 - shared route counts all people
+ok 62 - shared intensity takes lowest chosen maximum
+ok 63 - comfort preferences aggregate restrictively
+ok 64 - join cannot overbook capacity
+ok 65 - leaving produces two coherent independent routes
+ok 66 - leaving restores own family size
+ok 67 - correct server answer earns award
+ok 68 - quest replay gives one award
+ok 69 - incorrect answer earns nothing
+ok 70 - stop walking returns one final Duinpad destination
+ok 71 - Duinpad is last destination
+ok 72 - finale scan completes walk
+ok 73 - arrival scan retains a bounded physical occupancy hold
+ok 74 - journey finished only after Duinpad visit
+ok 75 - digital beacon is separate idempotent finale reward
+ok 76 - global pause prevents route transitions
+ok 77 - expired lease requires explicit route recovery
+ok 78 - expired lease recovers without a second active reservation
+ok 79 - lease recovery keeps exactly one destination
+ok 80 - ordinary scan still requires current zone credential
+ok 81 - ordinary visits cannot complete beyond chosen evening window
+ok 82 - late recovery returns safely to Duinpad
+ok 83 - late family receives finale rather than a new ordinary house
+ok 84 - regie QR release allows authorized current visit button
+ok 85 - QR release is recorded as a separate explicit method
+ok 86 - participant receives no other resident profiles
+ok 87 - unassigned participant cannot edit a house
+ok 88 - Storage policy rejects another house upload
+ok 89 - QR issuance requires actual resident ownership or event capability
+ok 90 - thank-you requires an actual own visit
+ok 91 - finished family can durably evaluate
+ok 92 - paid family books all its activity places atomically
+ok 93 - repeated activity booking does not double seats
+ok 94 - one family booking uses exactly all two places
+ok 95 - a second whole family cannot overbook remaining one place
+ok 96 - cancelling atomically releases places
+ok 97 - cancelled places are fully available once
+ok 98 - adult explicitly accepts shared access to existing registration
+ok 99 - shared adult receives same paid family without new order
+ok 100 - registration owner can revoke shared adult
+ok 101 - revoked adult loses registration immediately
+ok 102 - revoked member cannot replay an old private command receipt
+ok 103 - direct paginated finance API still enforces capability
+ok 104 - admin list bounds a page to requested size
+ok 105 - admin list returns explicit continuation cursor
+ok 106 - months-long protected edition cannot be cleaned before retention expires
+ok 107 - an unverified Auth contact cannot activate a house
+ok 108 - actual verified owner confirms contact without external mail
+ok 109 - out-of-area browser coordinates cannot become a route location
+ok 110 - owner confirmation stores the location for later organization review
+ok 111 - client location confirmation never self-approves a house
+ok 112 - capability-bound organization can approve a confirmed house
+ok 113 - pending real-time payment hold protects all start places
+ok 114 - expired payment hold releases start places without touching provider status
+ok 115 - late paid status is recorded without inventing capacity
+ok 116 - late paid family needs explicit rebooking rather than overbooked activation
+ok 117 - real provider receipt remains authoritative in compensation state
+ok 118 - paid start slot never exceeds physical capacity
+ok 119 - late paid family safely rebooks an available start without paying twice
+ok 120 - capacity-checked rebooking resolves compensation state
+ok 121 - mail retry is event-scoped and sink-only
+ok 122 - retry updates sink attempts without a dispatcher
+ok 123 - authorized sink preview receives the stored event-scoped transaction payload
+ok 124 - provider-scope resolver remains server-only
+ok 125 - push requires explicit consent
+ok 126 - opt-in subscription is durable without an external dispatcher
+ok 127 - own snapshot reports only push opt-in state
+ok 128 - actor can revoke own opt-in
+ok 129 - unsubscribe is immediately durable
+ok 130 - create/status/link/retry never changes legacy mail outbox
+ok 131 - new payments do not touch legacy trigger table
+ok 132 - new route engine does not activate legacy groups
+ok 133 - reset requires exact server edition and run
+ok 134 - scoped reset archives synthetic data
+ok 135 - reset preserves real tester registrations
+ok 136 - reset preserves historical event
+ok 137 - reset never deletes auth identities
+ok 138 - reset preserves financial ledger
+ok 139 - scenario can reseed after archive without global deletion
+ok 140 - reset and reseed cannot reactivate the previous run start credential
+ok 141 - reseed has exactly four active synthetic families
+ok 142 - test configuration copies into a fresh independently scoped edition
+ok 143 - verified full refund reconciles an uncertain active intent
+ok 144 - refund reconciliation never invents a missing provider refund reference
+ok 145 - an already refunded order returns without a new provider intent
+ok 146 - already refunded retry preserves the original intent history only
+ok 147 - event administrator assigns a confirmed adult to one activity
+ok 148 - activity access exact-key retry is idempotent
+ok 149 - assignment replay never duplicates staff membership
+ok 150 - staff access command key cannot change its enabled value
+ok 151 - limited activity staff cannot grant staff roles
+ok 152 - activity assignment cannot cross editions even when the admin owns both
+ok 153 - an unconfirmed identity cannot receive activity access
+ok 154 - administrator can revoke the exact activity assignment
+ok 155 - revocation immediately removes activity access
+ok 156 - staff changes write explicit target audit once per successful command
+ok 157 - copy does not duplicate people, orders or historical permissions
+ok 158 - forged browser test flag cannot reset a legacy edition
+ok 159 - expired test edition can be archived in its explicit scope
+ok 160 - cleanup of expired sibling preserves protected source edition
+1..160

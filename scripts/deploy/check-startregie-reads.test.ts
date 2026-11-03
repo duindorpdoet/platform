@@ -152,6 +152,11 @@ describe("production Startregie HTTP read acceptance", () => {
     const source = readFileSync(`.github/workflows/deploy-${environment}.yml`, "utf8");
     const revisionCheck = source.indexOf(`run: node scripts/deploy/verify-deployment.mjs ${environment}`);
     expect(revisionCheck).toBeGreaterThan(0);
-    expect(source.indexOf("run: node scripts/deploy/check-startregie-reads.mjs")).toBeGreaterThan(revisionCheck);
+    const readGate=environment==='production'?'check-startregie-reads.mjs':'check-frightnight-public-rpc.mjs';
+    expect(source.indexOf(`run: node scripts/deploy/${readGate}`)).toBeGreaterThan(revisionCheck);
+    if(environment==='staging') {
+      expect(source).toContain('check-frightnight-safety.mjs');
+      expect(source).toContain('accept-frightnight.mjs');
+    }
   });
 });

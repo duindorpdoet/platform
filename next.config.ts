@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: { cpus: 2 },
+  webpack(config) {
+    // Local verification may run on a disk-constrained shared workspace.
+    // This only disables disposable compiler caches, never application caches.
+    if (process.env.FRIGHTNIGHT_BUILD_NO_CACHE === "true") config.cache = false;
+    return config;
+  },
   async headers() {
     return [
       {
@@ -15,7 +22,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/(mijn-groep|mijn-huis|mijn-inschrijving|omgeving|app|inloggen|admin|auth|poortenboek|uitnodiging|nachtpost)(.*)",
+        source: "/(nachtpas|mijn-zone|avondregie|testcentrum|mijn-groep|mijn-huis|mijn-inschrijving|omgeving|app|inloggen|admin|auth|poortenboek|uitnodiging|nachtpost)(.*)",
         headers: [
           { key: "Cache-Control", value: "private, no-store, max-age=0" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
@@ -46,6 +53,7 @@ const nextConfig: NextConfig = {
         ],
       },
       { source: "/uitnodiging/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
+      { source: "/(nachtpas|mijn-zone|avondregie|testcentrum|inloggen)(.*)", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
     ];
   },
 };

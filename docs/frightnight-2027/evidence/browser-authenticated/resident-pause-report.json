@@ -1,0 +1,30 @@
+{
+  "testedAt": "2026-11-03T02:51:37.016Z",
+  "buildId": "tUVeO9dvWsOWKpU3eLZ9L",
+  "base": "http://127.0.0.1:3137",
+  "checks": [
+    {
+      "check": "resident persists timed pause",
+      "passed": true
+    },
+    {
+      "check": "resident restores own zone open",
+      "passed": true
+    }
+  ],
+  "pageErrors": [],
+  "limits": "Real local isolated database and GoTrue sessions, actual browser UI commands. No remote staging, OTP mail, external PSP, real camera or physical hardware verification.",
+  "residentPause": {
+    "status": 200,
+    "actualStatus": "paused",
+    "pauseUntil": "2027-10-30T15:20:00+00:00",
+    "reasonPresent": true,
+    "payload": {
+      "zoneId": "ea7a7953-1be6-4392-90d5-7fc96f7f2aae",
+      "status": "paused",
+      "expectedVersion": 2,
+      "pauseUntil": "2027-10-30T15:20:00.000Z",
+      "reason": "Gecontroleerde lokale browserproef"
+    }
+  }
+}

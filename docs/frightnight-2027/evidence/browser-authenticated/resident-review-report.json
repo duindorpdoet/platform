@@ -1,0 +1,40 @@
+{
+  "testedAt": "2026-11-03T02:58:07.948Z",
+  "buildId": "eRSyuhMgvmTFYkX3lfRR3",
+  "base": "http://127.0.0.1:3137",
+  "checks": [
+    {
+      "check": "own contact confirmation is durable",
+      "passed": true
+    },
+    {
+      "check": "explicit synthetic fixture location confirmation requires renewed organization review",
+      "passed": true
+    },
+    {
+      "check": "unapproved own zone safely rejects pause until actual organization approval",
+      "passed": true,
+      "status": 409,
+      "code": "APPROVAL_REQUIRED"
+    },
+    {
+      "check": "real authorized organization review approves confirmed synthetic fixture through UI",
+      "passed": true
+    },
+    {
+      "check": "reviewed fixture owner can set persisted timed pause",
+      "passed": true
+    },
+    {
+      "check": "reviewed fixture owner resumes own open zone",
+      "passed": true
+    }
+  ],
+  "pageErrors": [],
+  "limits": "Real local isolated database and GoTrue sessions, actual browser UI commands. No remote staging, OTP mail, external PSP, real camera or physical hardware verification.",
+  "syntheticLocation": {
+    "latitude": 52.09,
+    "longitude": 4.26,
+    "note": "Explicit synthetic local fixture coordinates, not a claim of PDOK/provider/address verification."
+  }
+}

@@ -60,7 +60,9 @@ jobs:
       - name: Record exact release exception
         id: policy
         env:
+          FRIGHTNIGHT_RELEASE: "true"
           SKIP_MAIL_TESTS_REQUESTED: ${{ inputs.skip_mail_tests || false }}
+          SKIP_MAIL_ACCEPTANCE_REQUESTED: ${{ inputs.skip_mail_acceptance || false }}
           MAIL_TEST_WAIVER_SHA: ${{ vars.MAIL_TEST_WAIVER_SHA }}
           MAIL_TEST_WAIVER_EXPIRES_AT: ${{ vars.MAIL_TEST_WAIVER_EXPIRES_AT }}
           MAIL_TEST_WAIVER_REASON: ${{ vars.MAIL_TEST_WAIVER_REASON }}
@@ -261,6 +263,8 @@ jobs:
           if-no-files-found: error
   deploy:
     name: Validate, migrate, deploy and accept
+    outputs:
+      verified_revision: ${{ steps.frightnight-verified.outputs.revision }}
     if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
     needs: [backup-restore, release-policy]
     environment:
@@ -283,7 +287,15 @@ jobs:
       NEXT_PUBLIC_SITE_URL: https://staging-halloween.duindorpdoet.nl
       ALLOWED_ORIGINS: https://staging-halloween.duindorpdoet.nl
       AUTH_SITE_URL: https://staging-halloween.duindorpdoet.nl
-      EVENT_SLUG: duindorp-halloween-2026
+      EVENT_SLUG: frightnight-2027-test
+      FRIGHTNIGHT_ENABLED: "true"
+      FRIGHTNIGHT_PROJECT_REF: nocteiuvohesvqbowchw
+      FRIGHTNIGHT_PAYMENT_PROVIDER: ${{ vars.FRIGHTNIGHT_PAYMENT_PROVIDER || 'contract' }}
+      FRIGHTNIGHT_MAIL_MODE: sink
+      FRIGHTNIGHT_HARDWARE_ENABLED: "false"
+      FRIGHTNIGHT_BOOTSTRAP_ACTOR_ID: ${{ vars.FRIGHTNIGHT_BOOTSTRAP_ACTOR_ID }}
+      FRIGHTNIGHT_REVIEWED_TIMER_SHA256: ${{ vars.FRIGHTNIGHT_REVIEWED_TIMER_SHA256 }}
+      MOLLIE_TEST_API_KEY: ${{ secrets.MOLLIE_TEST_API_KEY }}
       EVENT_TIMEZONE: Europe/Amsterdam
       REGISTRATION_MODE: staging_test
       AUTH_MAIL_MODE: live
@@ -312,7 +324,7 @@ jobs:
       SENDGRID_API: ${{ secrets.SENDGRID_API }}
       SENDGRID_API_BASE_URL: ${{ vars.SENDGRID_API_BASE_URL || 'https://api.sendgrid.com/v3' }}
       SENDGRID_FROM_EMAIL: halloween@duindorpdoet.nl
-      SENDGRID_FROM_NAME: De Duindorpse Poorten van Halloween
+      SENDGRID_FROM_NAME: Duindorp FrightNight 2027
       SENDGRID_REPLY_TO: halloween@duindorpdoet.nl
       SEND_EMAIL_HOOK_SECRET: ${{ secrets.SEND_EMAIL_HOOK_SECRET }}
       EVENT_WEBHOOK_REQUIRED: "false"
@@ -340,6 +352,7 @@ jobs:
       DG_RUNTIME_ENV_KEYS: >-
         APP_ENVIRONMENT APP_REVISION APP_URL NEXT_PUBLIC_SITE_URL ALLOWED_ORIGINS AUTH_SITE_URL
         EVENT_SLUG EVENT_TIMEZONE REGISTRATION_MODE MAIL_MODE AUTH_MAIL_MODE MAIL_ALLOWED_RECIPIENTS
+        FRIGHTNIGHT_ENABLED FRIGHTNIGHT_PROJECT_REF FRIGHTNIGHT_PAYMENT_PROVIDER FRIGHTNIGHT_MAIL_MODE FRIGHTNIGHT_HARDWARE_ENABLED MOLLIE_TEST_API_KEY
         NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
         NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT
         REDACTIEKAMER_ENABLED NEWSLETTER_SENDING_ENABLED WEB_PUSH_SENDING_ENABLED EDITORIAL_ALLOWED_RECIPIENTS EDITORIAL_TOKEN_SECRET
@@ -401,6 +414,14 @@ jobs:
           pnpm exec supabase db query --linked --file scripts/deploy/nachtpost-activation-report.sql --output json
       - name: Compare existing data before deploying the application
         run: node scripts/deploy/redesign-postmigration.mjs
+      - name: Verify isolated 2027 schema and preserve active legacy jobs
+        run: node scripts/deploy/check-frightnight-safety.mjs --schema-only
+      - name: Inventory dedicated VPS cron and systemd timers without printing commands
+        run: node scripts/deploy/audit-frightnight-vps-timers.mjs
+      - name: Configure only the explicitly selected new staging edition
+        run: node scripts/deploy/bootstrap-frightnight.mjs
+      - name: Initialize only ownerless synthetic 2027 records without auth or mail delivery
+        run: node scripts/deploy/initialize-frightnight.mjs
       - name: Initialize central provider configuration without activation
         run: node scripts/deploy/bootstrap-mail-config.mjs
       - name: Automatically preserve SendGrid suppressions
@@ -423,6 +444,7 @@ jobs:
             "AUTH_MAIL_MODE=${AUTH_MAIL_MODE}" \
             "MAIL_ALLOWED_RECIPIENTS=${MAIL_ALLOWED_RECIPIENTS}" \
             "APP_ENVIRONMENT=staging" \
+            "FRIGHTNIGHT_ENABLED=true" \
             "NEWSLETTER_SENDING_ENABLED=${NEWSLETTER_SENDING_ENABLED}" \
             "EDITORIAL_ALLOWED_RECIPIENTS=${EDITORIAL_ALLOWED_RECIPIENTS}"
           pnpm exec supabase functions deploy send-email-hook --project-ref "${SUPABASE_PROJECT_REF}" --no-verify-jwt --use-api
@@ -441,8 +463,11 @@ jobs:
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed staging release
         run: node scripts/deploy/verify-deployment.mjs staging "${APP_URL}"
-      - name: Check Startregie HTTP reads without publication (empty staging is no production performance proof)
-        run: node scripts/deploy/check-startregie-reads.mjs
+      - name: Bind subsequent synthetic acceptance to the verified release
+        id: frightnight-verified
+        run: printf 'revision=%s\n' "${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+      - name: Verify 2027 Data API boundary and Auth configuration without OTP
+        run: node scripts/deploy/check-frightnight-public-rpc.mjs
       - name: Verify text status RPC through the real service role route
         run: node scripts/deploy/diagnose-mail-worker.mjs --require-v2
       - name: Activate Resend default for the authorized exact release
@@ -473,9 +498,17 @@ jobs:
       - name: Report unavailable SendGrid delivery tracking
         if: env.SKIP_MAIL_TESTS != 'true' && env.MAIL_ACTIVE_PROVIDER == 'sendgrid' && env.SENDGRID_EVENT_WEBHOOK_AVAILABLE != 'true'
         run: echo "::warning title=Staging delivery tracking skipped::The shared SendGrid account has no free application webhook slot; no existing webhook was changed."
+      - name: Retain sanitized staging timer inventory
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: frightnight-operations-${{ github.sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/frightnight-operations/
+          retention-days: 30
+          if-no-files-found: warn
 
   account-app-acceptance:
-    name: Verify live account and app flows without mail or push delivery
+    name: Verify FrightNight mobile and desktop without mail or push delivery
     needs: deploy
     environment: staging
     runs-on: ubuntu-latest
@@ -483,8 +516,19 @@ jobs:
     env:
       APP_ENVIRONMENT: staging
       APP_URL: https://staging-halloween.duindorpdoet.nl
+      EVENT_SLUG: frightnight-2027-test
+      FRIGHTNIGHT_ENABLED: "true"
+      FRIGHTNIGHT_PROJECT_REF: nocteiuvohesvqbowchw
+      FRIGHTNIGHT_PAYMENT_PROVIDER: ${{ vars.FRIGHTNIGHT_PAYMENT_PROVIDER || 'contract' }}
+      FRIGHTNIGHT_MAIL_MODE: sink
+      FRIGHTNIGHT_HARDWARE_ENABLED: "false"
+      MOLLIE_TEST_API_KEY: ${{ secrets.MOLLIE_TEST_API_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      FRIGHTNIGHT_VERIFIED_RELEASE_SHA: ${{ needs.deploy.outputs.verified_revision }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -499,18 +543,21 @@ jobs:
           pnpm install --frozen-lockfile
           bash scripts/acceptance/prepare-browser-runner.sh
           pnpm exec playwright install --with-deps chromium
-      - name: Verify staging with rollback and no delivery
-        run: node scripts/deploy/accept-account-app.mjs
+      - name: Verify 2027 browser, authorization and private-cache boundaries without delivery
+        run: node scripts/deploy/accept-frightnight.mjs
+      - name: Verify fresh synthetic accounts and a separate 2027 route edition without deliveries
+        run: node scripts/acceptance/frightnight-staging.mjs
       - name: Retain public app-entry screenshots
+        if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: account-app-staging-${{ github.sha }}
-          path: ${{ runner.temp }}/account-app-acceptance/
+          name: frightnight-staging-${{ github.sha }}
+          path: ${{ runner.temp }}/frightnight-acceptance/
           retention-days: 14
           if-no-files-found: error
 
   mail-acceptance:
-    name: Verify real OTP and transactional mail
+    name: Verify isolated sink and Auth configuration without requesting codes
     needs: [deploy, release-policy]
     if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && !(github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance) && needs.release-policy.outputs.skip_mail_tests != 'true'
     environment:
@@ -519,18 +566,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      APP_ENVIRONMENT: staging
       APP_URL: https://staging-halloween.duindorpdoet.nl
+      EVENT_SLUG: frightnight-2027-test
+      FRIGHTNIGHT_ENABLED: "true"
+      FRIGHTNIGHT_PROJECT_REF: nocteiuvohesvqbowchw
+      FRIGHTNIGHT_PAYMENT_PROVIDER: ${{ vars.FRIGHTNIGHT_PAYMENT_PROVIDER || 'contract' }}
+      FRIGHTNIGHT_MAIL_MODE: sink
+      FRIGHTNIGHT_HARDWARE_ENABLED: "false"
+      MOLLIE_TEST_API_KEY: ${{ secrets.MOLLIE_TEST_API_KEY }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      TEST_EMAIL_1: ${{ vars.TEST_EMAIL_1 }}
-      TEST_EMAIL_2: ${{ vars.TEST_EMAIL_2 }}
-      IMAP_HOST: ${{ vars.IMAP_HOST }}
-      IMAP_PORT: ${{ vars.IMAP_PORT }}
-      IMAP_SECURE: ${{ vars.IMAP_SECURE }}
-      IMAP_USER_1: ${{ secrets.IMAP_USER_1 }}
-      IMAP_PASSWORD_1: ${{ secrets.IMAP_PASSWORD_1 }}
-      IMAP_USER_2: ${{ secrets.IMAP_USER_2 }}
-      IMAP_PASSWORD_2: ${{ secrets.IMAP_PASSWORD_2 }}
     steps:
       - name: Check out exact revision
         uses: actions/checkout@v7
@@ -540,11 +588,57 @@ jobs:
           ref: ${{ github.sha }}
       - name: Verify exact revision
         run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
-      - name: Verify allowed-mailbox OTP and transaction delivery
-        run: python3 -u scripts/acceptance/staging_mail.py
-      - name: Diagnose failed mail delivery
-        if: failure()
-        continue-on-error: true
-        env:
-          SENDGRID_API: ${{ secrets.SENDGRID_API }}
-        run: node scripts/deploy/diagnose-mail-delivery.mjs
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Verify test sink, private schema and preserved legacy jobs
+        run: node scripts/deploy/check-frightnight-safety.mjs
+      - name: Verify public Auth settings and anonymous RPC denial without OTP
+        run: node scripts/deploy/check-frightnight-public-rpc.mjs
+
+  frightnight-load-acceptance:
+    name: Verify bounded synthetic load and membership races after release acceptance
+    needs: [deploy, account-app-acceptance, mail-acceptance]
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      APP_ENVIRONMENT: staging
+      APP_URL: https://staging-halloween.duindorpdoet.nl
+      EVENT_SLUG: frightnight-2027-test
+      FRIGHTNIGHT_ENABLED: "true"
+      FRIGHTNIGHT_PROJECT_REF: nocteiuvohesvqbowchw
+      FRIGHTNIGHT_PAYMENT_PROVIDER: ${{ vars.FRIGHTNIGHT_PAYMENT_PROVIDER || 'contract' }}
+      FRIGHTNIGHT_MAIL_MODE: sink
+      FRIGHTNIGHT_HARDWARE_ENABLED: "false"
+      MOLLIE_TEST_API_KEY: ${{ secrets.MOLLIE_TEST_API_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      FRIGHTNIGHT_VERIFIED_RELEASE_SHA: ${{ needs.deploy.outputs.verified_revision }}
+      FRIGHTNIGHT_LOAD_APPROVAL: nocteiuvohesvqbowchw:staging:duindorphalloweenstg
+      FRIGHTNIGHT_LOAD_CLIENT_FAULTS: "true"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install locked load tools
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Verify exact release and exercise only fresh synthetic sibling editions
+        run: node scripts/acceptance/frightnight-load.mjs --execute-staging-load --maximum=125
+      - name: Retain sanitized bounded-load report
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: frightnight-load-${{ github.sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/frightnight-load/report.json
+          retention-days: 30
+          if-no-files-found: error

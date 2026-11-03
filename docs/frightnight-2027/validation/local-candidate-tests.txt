@@ -1,0 +1,8 @@
+
+ RUN  v5.0.0 /home/codex/repos/duindorphalloween-frightnight-2027
+
+
+ Test Files  16 passed (16)
+      Tests  103 passed (103)
+   Start at  03:47:55
+   Duration  542ms (transform 46%, import 41%, tests 10%, worker 3%)
