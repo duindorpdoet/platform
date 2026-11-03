@@ -12,6 +12,7 @@ import { assertFrightnightRelease, assertFrightnightHostedRelease, assertFrightn
 import { runRegieAcceptance } from './frightnight-regie.mjs';
 import { runEdgeAcceptance } from './frightnight-edges.mjs';
 import { verifyEditionBoundary } from './frightnight-edition-boundary.mjs';
+import { hasPrivateNoStore } from './frightnight-private-cache.mjs';
 
 const target = assertFrightnightRelease(process.env);
 if (!/^[a-f0-9]{40}$/.test(process.env.GITHUB_SHA ?? '') || process.env.FRIGHTNIGHT_VERIFIED_RELEASE_SHA !== process.env.GITHUB_SHA) throw new Error('VERIFIED_BACKUP_PRESERVATION_AND_RELEASE_REQUIRED');
@@ -222,7 +223,8 @@ try {
   const captureRow=captureRows.find(row=>row.template==='frightnight-payment-confirmed'&&row.payload?.brandVersion===7);
   assert(captureRow?.id,'PAYMENT_MAIL_CAPTURE_MISSING');
   const previewMail=await admin.context.request.get(`${target.origin}/api/frightnight/mail-preview?id=${captureRow.id}&cursor=0`);
-  assert(previewMail.ok()&&previewMail.headers()['cache-control']==='private, no-store'&&previewMail.headers()['content-security-policy'].includes("default-src 'none'"),'MAIL_CAPTURE_PREVIEW_BOUNDARY_FAILED');
+  report.mailCapturePreview={status:previewMail.status(),cacheControl:previewMail.headers()['cache-control'],restrictedCsp:previewMail.headers()['content-security-policy']?.includes("default-src 'none'")===true};
+  assert(previewMail.ok()&&hasPrivateNoStore(previewMail.headers()['cache-control'])&&previewMail.headers()['content-security-policy']?.includes("default-src 'none'"),'MAIL_CAPTURE_PREVIEW_BOUNDARY_FAILED');
   const previewHtml=await previewMail.text();
   assert(previewHtml.includes('NIET VERZONDEN')&&previewHtml.includes('De Pompoenkoning')&&previewHtml.includes('data:image/webp;base64,'),'MAIL_CAPTURE_BRANDING_FAILED');
   assert((await a.context.request.get(`${target.origin}/api/frightnight/mail-preview?id=${captureRow.id}`)).status()===403,'PARTICIPANT_MAIL_CAPTURE_EXPOSED');
@@ -284,7 +286,7 @@ try {
   assert(savedPhoto===residentPhotoPath,'PHOTO_PATH_NOT_PERSISTED');
   assert((await snapshot(admin)).zones.find(z=>z.id===ownZone.id).photoPath===savedPhoto,'ADMIN_CURRENT_OWNER_PHOTO_PATH_MISMATCH');
   const adminReadsOwnerPhoto=await admin.context.request.get(`${target.origin}/api/frightnight/zone-photo?zoneId=${ownZone.id}`);
-  assert(adminReadsOwnerPhoto.ok()&&adminReadsOwnerPhoto.headers()['content-type']==='image/webp'&&adminReadsOwnerPhoto.headers()['cache-control']==='private, no-store'&&(await adminReadsOwnerPhoto.body()).length>0,'ADMIN_CANNOT_READ_CURRENT_OWNER_PHOTO');
+  assert(adminReadsOwnerPhoto.ok()&&adminReadsOwnerPhoto.headers()['content-type']==='image/webp'&&hasPrivateNoStore(adminReadsOwnerPhoto.headers()['cache-control'])&&(await adminReadsOwnerPhoto.body()).length>0,'ADMIN_CANNOT_READ_CURRENT_OWNER_PHOTO');
   const foreignStorage=createClient(sbUrl,anonKey,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:`Bearer ${a.session.access_token}`}}});
   const forbiddenStorage=await foreignStorage.storage.from('frightnight-zone-photos').download(savedPhoto);
   assert(forbiddenStorage.error&&!forbiddenStorage.data,'STORAGE_RLS_FOREIGN_PHOTO_EXPOSED');
@@ -298,7 +300,7 @@ try {
   assert((await adminPhoto.json()).data.snapshot.zones.find(z=>z.id===ownZone.id).photoPath===adminPhotoPath,'ADMIN_PHOTO_NAMESPACE_OR_PATH_MISMATCH');
   assert((await snapshot(resident)).ownZones.find(z=>z.id===ownZone.id).photoPath===adminPhotoPath,'OWNER_CURRENT_ADMIN_PHOTO_PATH_MISMATCH');
   const ownerReadsAdminPhoto=await resident.context.request.get(`${target.origin}/api/frightnight/zone-photo?zoneId=${ownZone.id}`);
-  assert(ownerReadsAdminPhoto.ok()&&ownerReadsAdminPhoto.headers()['content-type']==='image/webp'&&ownerReadsAdminPhoto.headers()['cache-control']==='private, no-store'&&(await ownerReadsAdminPhoto.body()).length>0,'OWNER_CANNOT_READ_CURRENT_ADMIN_PHOTO');
+  assert(ownerReadsAdminPhoto.ok()&&ownerReadsAdminPhoto.headers()['content-type']==='image/webp'&&hasPrivateNoStore(ownerReadsAdminPhoto.headers()['cache-control'])&&(await ownerReadsAdminPhoto.body()).length>0,'OWNER_CANNOT_READ_CURRENT_ADMIN_PHOTO');
   const forbiddenAdminStorage=await foreignStorage.storage.from('frightnight-zone-photos').download(adminPhotoPath);
   assert(forbiddenAdminStorage.error&&!forbiddenAdminStorage.data,'STORAGE_RLS_FOREIGN_ADMIN_PHOTO_EXPOSED');
   const foreignAdminPhoto=await a.context.request.get(`${target.origin}/api/frightnight/zone-photo?zoneId=${ownZone.id}`);assert([403,404].includes(foreignAdminPhoto.status()),'FOREIGN_CURRENT_ADMIN_PHOTO_EXPOSED');
@@ -350,7 +352,7 @@ try {
   const afterForeignContact=await snapshot(a);assert(afterForeignContact.registration.contactName===contactName&&afterForeignContact.registration.contactPhone===contactPhone,'FOREIGN_CONTACT_CHANGED_OWNER_DATA');
   const adminContactState=await snapshot(admin);assert((adminContactState.registrations??[]).every(row=>!Object.hasOwn(row,'contactName')&&!Object.hasOwn(row,'contactPhone')),'CONTACT_EXPOSED_IN_SHARED_ADMIN_DTO');
   const svgResponse=await a.context.request.get(`${target.origin}/api/frightnight/pass`);const svg=await svgResponse.text();
-  assert(svgResponse.ok()&&svgResponse.headers()['content-type']?.startsWith('image/svg+xml')&&svgResponse.headers()['cache-control']==='private, no-store'&&/<svg\b/.test(svg)&&svg.includes(contactState.registration.label)&&svg.includes('data:image/png;base64,'),'PERSONAL_SVG_PASS_CONTRACT_FAILED');
+  assert(svgResponse.ok()&&svgResponse.headers()['content-type']?.startsWith('image/svg+xml')&&hasPrivateNoStore(svgResponse.headers()['cache-control'])&&/<svg\b/.test(svg)&&svg.includes(contactState.registration.label)&&svg.includes('data:image/png;base64,'),'PERSONAL_SVG_PASS_CONTRACT_FAILED');
   const downloadClockValid=body=>body.includes('werkelijke tijd')&&body.includes('Editieklok:')&&Math.abs(Date.now()-Date.parse(body.match(/Gedownload(?: op|:) ([0-9TZ:.+-]+)/)?.[1]??''))<120000;
   assert(downloadClockValid(svg),'SVG_REAL_DOWNLOAD_CLOCK_NOT_DISTINCT_FROM_EDITION_CLOCK');
   const privateAddress=contactState.current?.zone.address;
@@ -382,7 +384,7 @@ try {
   const operationalState=await snapshot(admin);const approvedZones=operationalState.zones.filter(zone=>zone.reviewStatus==='approved'&&zone.type!=='finale');
   assert(approvedZones.length>0,'APPROVED_OPERATIONAL_ZONE_FIXTURE_REQUIRED');
   const operationalEmergency=await admin.context.request.get(`${target.origin}/api/frightnight/emergency`);const operationalHtml=await operationalEmergency.text();
-  assert(operationalEmergency.ok()&&operationalEmergency.headers()['cache-control']==='private, no-store'&&operationalHtml.includes('zonekaartjes voor de avondpost')&&operationalHtml.includes(approvedZones[0].name)&&operationalHtml.includes(approvedZones[0].address)&&operationalHtml.includes('Bevestigd om:')&&operationalHtml.includes('Capaciteit:')&&operationalHtml.includes('Europe/Amsterdam'),'OPERATIONAL_EMERGENCY_ZONE_CARDS_MISSING');
+  assert(operationalEmergency.ok()&&hasPrivateNoStore(operationalEmergency.headers()['cache-control'])&&operationalHtml.includes('zonekaartjes voor de avondpost')&&operationalHtml.includes(approvedZones[0].name)&&operationalHtml.includes(approvedZones[0].address)&&operationalHtml.includes('Bevestigd om:')&&operationalHtml.includes('Capaciteit:')&&operationalHtml.includes('Europe/Amsterdam'),'OPERATIONAL_EMERGENCY_ZONE_CARDS_MISSING');
   assert(!emergencyHtml.includes('zonekaartjes voor de avondpost')&&approvedZones.every(zone=>!emergencyHtml.includes(zone.address)),'PARTICIPANT_EMERGENCY_FUTURE_ADDRESS_LEAK');
   checked('pre-downloadable operational approved-zone cards and participant future-address privacy');
   for(const [person,path,name] of [[a,'/nachtpas','participant'],[resident,'/mijn-zone','resident'],[admin,'/avondregie','operations'],[admin,'/testcentrum','test-center']])await capture(person,path,name);

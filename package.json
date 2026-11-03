@@ -14,7 +14,7 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:acceptance-guards": "node --test scripts/acceptance/frightnight-edges.test.mjs",
+    "test:acceptance-guards": "node --test scripts/acceptance/frightnight-edges.test.mjs scripts/acceptance/frightnight-private-cache.test.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:artifacts": "node scripts/acceptance/scan-client-artifacts.mjs",
