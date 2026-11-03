@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-11-03T10:17:17.710354+00:00",
+  "recordedAt": "2026-11-03T10:27:09.616449+00:00",
   "scope": "Current published intermediate staging state and latest failed attempt; NOT final product acceptance.",
   "origin": "https://staging-halloween.duindorpdoet.nl",
   "environment": "staging",
@@ -9,11 +9,11 @@
   "publishedRunId": 41607150306,
   "releasePath": "/srv/sites/duindorphalloweenstg/releases/d8439e09c670-41607150306-1",
   "health": {
-    "observedAt": "2026-11-03T10:12:43.704932+00:00",
+    "observedAt": "2026-11-03T10:27:09.616449+00:00",
     "http": 200,
     "status": "ok",
-    "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
     "environment": "staging",
+    "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
     "eventSlug": "frightnight-2027-test",
     "brand": "frightnight-2027-v7",
     "paymentProvider": "contract"
@@ -72,5 +72,12 @@
     "All five applied migrations are immutable.",
     "No automatic OTP, external PSP, mail or push delivery, or new hosted fixtures in the failed 9b attempt.",
     "No accepted 005-compatible FrightNight rollback application yet; use operational emergency information and a verified forward release after disk recovery."
-  ]
+  ],
+  "duplicateExactCandidateCi": {
+    "runId": 41615887239,
+    "conclusion": "success",
+    "allThreeJobsAndRequiredSteps": "success",
+    "evidence": "ci-9b0b215f-staging-repeat-report.json"
+  },
+  "evidencePullRequest": "https://github.com/duindorpdoet/platform/pull/73"
 }

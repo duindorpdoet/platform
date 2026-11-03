@@ -1,0 +1,63 @@
+{
+  "recordedAt": "2026-11-03T10:25:28.145279+00:00",
+  "revision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+  "runId": 41615887239,
+  "url": "https://github.com/duindorpdoet/platform/actions/runs/41615887239",
+  "event": "push",
+  "branch": "staging",
+  "status": "completed",
+  "conclusion": "success",
+  "allThreeJobCheckoutsVerifiedAgainstExactSha": true,
+  "mailTestsEnabled": true,
+  "mailAcceptanceWaiver": false,
+  "requiredWorkflowStepsFailed": 0,
+  "requiredWorkflowStepsSkipped": 0,
+  "jobs": [
+    {
+      "id": 125849098057,
+      "name": "Resolve release mail-test policy",
+      "conclusion": "success",
+      "started_at": "2026-11-03T10:02:22Z",
+      "completed_at": "2026-11-03T10:02:42Z",
+      "stepsSucceeded": 7,
+      "waiver": false
+    },
+    {
+      "id": 125849273125,
+      "name": "Database migrations, contracts and lint",
+      "conclusion": "success",
+      "started_at": "2026-11-03T10:02:45Z",
+      "completed_at": "2026-11-03T10:24:51Z",
+      "stepsSucceeded": 34,
+      "pgTAPFiles": 137,
+      "pgTAPAssertions": 4661,
+      "pgTAPResult": "PASS",
+      "requiredHttpAuthMailConcurrencyLoadEditorialSteps": "all success"
+    },
+    {
+      "id": 125849273166,
+      "name": "Application and browser tests",
+      "conclusion": "success",
+      "started_at": "2026-11-03T10:02:55Z",
+      "completed_at": "2026-11-03T10:06:01Z",
+      "stepsSucceeded": 11,
+      "unitPassed": 1565,
+      "unitOptionalSkipped": 6,
+      "unitFilesPassed": 167,
+      "unitFilesOptionalSkipped": 2,
+      "nodeGuardPassed": 17,
+      "clientArtifactsScanned": 697,
+      "nativePublicBrowserPassed": 24
+    }
+  ],
+  "logSha256": {
+    "policy": "a3f376063cb8623ff31ab426b7e76e97b40289385197e5cff28715033db6419d",
+    "app": "04d63ef2e48ff90d18ce8077a6c8711dbb47806aff2130bb01d0a1ff4e14b2a8",
+    "db": "873b0cd6ef367229df1a48c41dbe02e04f83dd9ec314910739b7fb775e2f0d49"
+  },
+  "limits": [
+    "This is the full repeated CI triggered by the staging push, independently of earlier verified build-branch CI41612954081.",
+    "This local isolated CI success does not turn failed deployment41615887268 into a successful publication; that release stopped with ENOSPC before application activation.",
+    "No new hosted account/Storage/REG/EDGE/load125/RET05 claim or remote maintenance action is made."
+  ]
+}
