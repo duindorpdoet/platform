@@ -1,0 +1,288 @@
+{
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "recordedAt": "2026-11-03T06:48:21.357Z",
+  "user": "duindorphalloweenstg",
+  "readOnly": true,
+  "crontab": {
+    "status": "absent",
+    "entries": []
+  },
+  "systemTimers": [
+    {
+      "timer": "sysstat-collect.timer",
+      "activates": "sysstat-collect.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "39d7eb32c4248ee80c8e48c2b6420d206f676f7c6c7eca23535ebe88e0d7e3bc",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "motd-news.timer",
+      "activates": "motd-news.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "f0d46d7d16bb3d5b7605cc0bd67be5d3e8c892935108ecc15b07b9ebf52ad81f",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "apt-daily.timer",
+      "activates": "apt-daily.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "bdab21968df83fe0700fb8168f035ffc96e3efda4dc7189a0ef0b4fae3337f72",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "update-notifier-download.timer",
+      "activates": "update-notifier-download.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "1c3793018ea9cebecc457c1f81c4997f8152c7b3e8ef71a4e6fc8fa7073febb9",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "systemd-tmpfiles-clean.timer",
+      "activates": "systemd-tmpfiles-clean.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "11602c42269bcef60000410d48783d0b1bf9b21278bf38a949f338f4c27b3868",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "dpkg-db-backup.timer",
+      "activates": "dpkg-db-backup.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "752408025147676f71bdfc77a854e0907a5efd6b6e26428c05fba8b3280439f3",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "logrotate.timer",
+      "activates": "logrotate.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "dd9c45573c2ebbb3d04556b57f0cd70d0a6ed652565d6c872bdccb975fe8f893",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "sysstat-summary.timer",
+      "activates": "sysstat-summary.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "328d6a8dd40aaa3158fd5b829a984fc40495904ea50a89e1aeacbce402449bff",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "man-db.timer",
+      "activates": "man-db.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "ab652ba0f4155e88600ac9cf13efc7c153d2d2b2f45114bb36e93bf66b1c5942",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "apt-daily-upgrade.timer",
+      "activates": "apt-daily-upgrade.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "0dbe63648096a18690fa3d635f2af4c19a82c49dbd73bf395c8ed113e7f0eb90",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "e2scrub_all.timer",
+      "activates": "e2scrub_all.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "22fffe521f0981c34c103a7f197122cb843608efac4aee2228a2ea788361b098",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "fstrim.timer",
+      "activates": "fstrim.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "0aafa50d0770bc307fb2692adae9be36eeadd297843055abc375c9c085ba25d6",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "update-notifier-motd.timer",
+      "activates": "update-notifier-motd.service",
+      "state": "active",
+      "commandReadable": true,
+      "commandSha256": "16d02a7ef6fabf4d797d3ba5738e6cbebc1923879775d88ce158af8f42d53386",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "apport-autoreport.timer",
+      "activates": "apport-autoreport.service",
+      "state": "inactive",
+      "commandReadable": true,
+      "commandSha256": "e9d8c96ae41bcf6f33c957eb5c8de68ef64b4f5bf8e1dceab622d7e4c592416c",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "snapd.snap-repair.timer",
+      "activates": "snapd.snap-repair.service",
+      "state": "inactive",
+      "commandReadable": true,
+      "commandSha256": "dd563a1c6a6b6977836dc980a0a9f773849d464b3fd1718df59d7fdb7aa91a68",
+      "scope": "unclassified-system"
+    },
+    {
+      "timer": "ua-timer.timer",
+      "activates": "ua-timer.service",
+      "state": "inactive",
+      "commandReadable": true,
+      "commandSha256": "7ba7c91146ee370115c57303fb945522a2f82d4dc92043ebb71b2bd0dd0f4126",
+      "scope": "unclassified-system"
+    }
+  ],
+  "userTimers": [],
+  "systemTimerStatus": "read",
+  "userTimerStatus": "no-active-user-manager",
+  "systemCron": {
+    "files": [
+      {
+        "directory": "/etc",
+        "name": "crontab",
+        "status": "read",
+        "sha256": "ffb48ad57868ed639fad049d11ef4b9bcdd3d2d3e556754ce69b4d6b016969a3",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc",
+        "name": "anacrontab",
+        "status": "absent",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.d",
+        "name": ".placeholder",
+        "status": "read",
+        "sha256": "49674d9b1bd433cdb58f30497f6c441dc823de549160eef5c1acec4c20786810",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.d",
+        "name": "e2scrub_all",
+        "status": "read",
+        "sha256": "d4df081b982b23e66cac7102f9d91032f296caf13031991d90af44ee6cbf6e3b",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.d",
+        "name": "sysstat",
+        "status": "read",
+        "sha256": "47a67deba0d029d43209e6e512399543a945172f2a640021a6c21422a66adb1a",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.hourly",
+        "name": ".placeholder",
+        "status": "read",
+        "sha256": "49674d9b1bd433cdb58f30497f6c441dc823de549160eef5c1acec4c20786810",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.daily",
+        "name": ".placeholder",
+        "status": "read",
+        "sha256": "49674d9b1bd433cdb58f30497f6c441dc823de549160eef5c1acec4c20786810",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.daily",
+        "name": "apport",
+        "status": "read",
+        "sha256": "ece406240beddfd8d262a9f0f2ffd5aa40cae4bf5401e7641db3ae1aca737a39",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.daily",
+        "name": "apt-compat",
+        "status": "read",
+        "sha256": "1983c659b042b1ec26127e7874954d83cd97eb8dcfd03238a7d2031ea0182fbe",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.daily",
+        "name": "dpkg",
+        "status": "read",
+        "sha256": "9f2fdd4b4e7706dda74e8e443e1e1da0fbbb19c62a58e230e90d648b69177c35",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.daily",
+        "name": "logrotate",
+        "status": "read",
+        "sha256": "12b36ff7068d3932f428e6eba07cbc9b9b2f7f7d37756d86ce13ddfcc6cd875f",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.daily",
+        "name": "man-db",
+        "status": "read",
+        "sha256": "8436d3109f24a1a4e221e765c42b3cc34a455bd30478ad3a09d793c736a8a2e7",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.daily",
+        "name": "sysstat",
+        "status": "read",
+        "sha256": "bf4e40f5cbe6a073dbd2b7148a8f4c574e33729426d44b0ef852d78f12c8a0c9",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.weekly",
+        "name": ".placeholder",
+        "status": "read",
+        "sha256": "49674d9b1bd433cdb58f30497f6c441dc823de549160eef5c1acec4c20786810",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.weekly",
+        "name": "man-db",
+        "status": "read",
+        "sha256": "292aa5e844ae053ede690e31806c0a1f0451789555b3655a1a93221f7df4bfd5",
+        "scope": "unclassified-system"
+      },
+      {
+        "directory": "/etc/cron.monthly",
+        "name": ".placeholder",
+        "status": "read",
+        "sha256": "49674d9b1bd433cdb58f30497f6c441dc823de549160eef5c1acec4c20786810",
+        "scope": "unclassified-system"
+      }
+    ],
+    "directories": [
+      {
+        "directory": "/etc/cron.d",
+        "status": "read"
+      },
+      {
+        "directory": "/etc/cron.hourly",
+        "status": "read"
+      },
+      {
+        "directory": "/etc/cron.daily",
+        "status": "read"
+      },
+      {
+        "directory": "/etc/cron.weekly",
+        "status": "read"
+      },
+      {
+        "directory": "/etc/cron.monthly",
+        "status": "read"
+      }
+    ],
+    "boundaries": [
+      "Private/root and other-user crontabs are not read; no sudo or permission bypass.",
+      "Only reachable system cron files are inventoried; unreadable files and directories remain explicit limits."
+    ]
+  },
+  "unreviewedSystemCron": 0,
+  "unreviewedScopedTimers": 0,
+  "unreadableTimerCommands": 0,
+  "complete": true
+}

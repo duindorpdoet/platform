@@ -1,0 +1,101 @@
+{
+  "scope": "local real public OTP form invalid-input validation only; no authentication request authorized",
+  "origin": "http://127.0.0.1:3137",
+  "buildId": "_1OR884fyGsZ8DqPkdSnD",
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "startedAt": "2026-11-03T06:21:38.635Z",
+  "checks": [
+    {
+      "width": 390,
+      "label": "empty email prevents code request",
+      "status": "passed"
+    },
+    {
+      "width": 390,
+      "label": "malformed email rejected before Auth",
+      "value": "geen-adres",
+      "validity": {
+        "valid": false,
+        "typeMismatch": true,
+        "valueMissing": false,
+        "message": "Please include an '@' in the email address. 'geen-adres' is missing an '@'."
+      },
+      "status": "passed"
+    },
+    {
+      "width": 390,
+      "label": "malformed email rejected before Auth",
+      "value": "ongeldig@",
+      "validity": {
+        "valid": false,
+        "typeMismatch": true,
+        "valueMissing": false,
+        "message": "Please enter a part following '@'. 'ongeldig@' is incomplete."
+      },
+      "status": "passed"
+    },
+    {
+      "width": 390,
+      "label": "malformed email rejected before Auth",
+      "value": "dubbel@@voorbeeld.invalid",
+      "validity": {
+        "valid": false,
+        "typeMismatch": true,
+        "valueMissing": false,
+        "message": "A part following '@' should not contain the symbol '@'."
+      },
+      "status": "passed"
+    },
+    {
+      "width": 1440,
+      "label": "empty email prevents code request",
+      "status": "passed"
+    },
+    {
+      "width": 1440,
+      "label": "malformed email rejected before Auth",
+      "value": "geen-adres",
+      "validity": {
+        "valid": false,
+        "typeMismatch": true,
+        "valueMissing": false,
+        "message": "Please include an '@' in the email address. 'geen-adres' is missing an '@'."
+      },
+      "status": "passed"
+    },
+    {
+      "width": 1440,
+      "label": "malformed email rejected before Auth",
+      "value": "ongeldig@",
+      "validity": {
+        "valid": false,
+        "typeMismatch": true,
+        "valueMissing": false,
+        "message": "Please enter a part following '@'. 'ongeldig@' is incomplete."
+      },
+      "status": "passed"
+    },
+    {
+      "width": 1440,
+      "label": "malformed email rejected before Auth",
+      "value": "dubbel@@voorbeeld.invalid",
+      "validity": {
+        "valid": false,
+        "typeMismatch": true,
+        "valueMissing": false,
+        "message": "A part following '@' should not contain the symbol '@'."
+      },
+      "status": "passed"
+    }
+  ],
+  "blockedWrites": [],
+  "pageErrors": [],
+  "otpRequests": 0,
+  "sourceSha256": {
+    "components/frightnight/login.tsx": "cf0ef612867472511438220eb371eb20a30ff01c68df922aa1b31e0a31e6a0f8",
+    "components/auth/email-otp-form.tsx": "a298e1473d1b9d0a293003bfb0e48479cdec1f4f0f125573416a3e07988bfce3",
+    "app/inloggen/page.tsx": "d7754da140958bc50081cdfcc0643fba7ea89072b43ae0efd42ba04917641908"
+  },
+  "status": "passed",
+  "completedAt": "2026-11-03T06:21:41.076Z"
+}

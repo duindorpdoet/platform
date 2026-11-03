@@ -1,0 +1,32 @@
+{
+  "testedAt": "2026-11-03T06:51:02.806Z",
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "health": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "readOnly": true,
+  "sourceAudit": {
+    "source": "/home/codex/repos/duindorphalloween-frightnight-2027/tests/e2e/frightnight.spec.ts",
+    "sha256": "6bf100d1e7cc50d7dffe9938bbf8beda2365bc2a361aace5fcec60f85593ec0a",
+    "expectedTests": 23,
+    "audit": "No form fill/submit or OTP/PSP/mail/push action; request fixture uses GET only. Login code button remains disabled; public content fixture does not reach backend.",
+    "execution": "Not run on staging. Requires explicit released SHA plus live health binding first.",
+    "lastReadOnlyReviewAt": "2026-11-03",
+    "candidateNote": "Prepared for the next verified release candidate; no hosted execution has occurred. Candidate currently identified by the parent as 0ddd9558; execution requires the complete published health SHA and a matching explicit acknowledgment.",
+    "hostedSpecSha256": "cbad16b06c850b707b08df286d44b41790ae2bbcdce1c6f15a04851801d3770e",
+    "guardsReviewed": [
+      "All browser contexts: submit prevented; non-GET/HEAD/OPTIONS, Auth send endpoints, payment/mail/push/edition/command routes and other HTTP origins aborted; WebSockets closed.",
+      "API request proxy denies write helpers and external origins; GET/HEAD redirects disabled.",
+      "Global setup refuses before any staging request without exact40hex releaseSHA and matching explicitACK, then validates live health.",
+      "Visual/PWA runner blocks writes in native fetch/route/beacon/form guards, validates exact released serviceworker bytes and uses no account sessions."
+    ]
+  },
+  "limits": "Anonymous public browser only. No forms, OTP, PSP, push, mail or database commands. Published text projection fixture is presentation-only."
+}

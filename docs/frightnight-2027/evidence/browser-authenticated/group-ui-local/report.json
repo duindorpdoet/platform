@@ -1,0 +1,142 @@
+{
+  "scope": "LOCAL ONLY; real GoTrue/PostgreSQL production UI; not a staging result",
+  "origin": "http://127.0.0.1:3137",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "run": "supp-20261103-c3312b85",
+  "edition": "frightnight-2027-test-acceptance-supplement-supp-20261103-c3312b85",
+  "eventId": "7b9db205-ea80-4be6-a510-fcf728fa1451",
+  "startedAt": "2026-11-03T06:28:02.832Z",
+  "checks": [
+    {
+      "label": "INS-01 actual four-person mild registration UI, server quote and identical-command replay",
+      "status": "passed"
+    },
+    {
+      "label": "SAM-06 setup two independently paid journeys perform actual different ordinary QR visits before joining",
+      "status": "passed",
+      "oldPersonalVisits": [
+        1,
+        1
+      ],
+      "oldPersonalAwards": [
+        1,
+        1
+      ],
+      "distinctVisitedZones": true
+    },
+    {
+      "label": "SAM-01 actual visible invitation creation and second-household code/consent acceptance show both recognizable member labels and one shared destination in both account UIs",
+      "status": "passed",
+      "distinctPaidRegistrations": true,
+      "persons": 6,
+      "members": 2
+    },
+    {
+      "label": "SAM-06 joining mid-route preserves each different personal visit and award set exactly, with no retroactive gift and one shared current",
+      "status": "passed",
+      "personalVisitCounts": [
+        1,
+        1
+      ],
+      "historyPreserved": true
+    },
+    {
+      "label": "ROU-02 actual current-preference form lowers2→1 and adds smoke/strobe avoidance; server unions both households and replaces too-intense current with suitable shared ordinary destination",
+      "status": "passed",
+      "persons": 6,
+      "groupMaxIntensity": 1,
+      "groupAvoidSmoke": true,
+      "groupAvoidStrobes": true,
+      "personalQuotesUnchanged": true,
+      "oldHistoryPreserved": true
+    },
+    {
+      "label": "SAM-07 visible leave button restores two coherent independent server journeys and own-only member UIs; both distinct personal histories and exactly one current claim each remain",
+      "status": "passed",
+      "personalPersons": [
+        4,
+        2
+      ],
+      "currentClaims": [
+        1,
+        1
+      ],
+      "historyPreserved": true,
+      "limits": "Sequential actual UI; mandatory hosted complete/leave race remains separate."
+    }
+  ],
+  "screenshots": [
+    "group-ui-shared-members-a-390.png",
+    "group-ui-shared-members-a-1440.png",
+    "group-ui-shared-members-b-390.png",
+    "group-ui-shared-members-b-1440.png",
+    "group-ui-lowered-preferences-safe-route-a-390.png",
+    "group-ui-lowered-preferences-safe-route-a-1440.png",
+    "group-ui-lowered-preferences-safe-route-b-390.png",
+    "group-ui-lowered-preferences-safe-route-b-1440.png",
+    "group-ui-independent-after-leave-a-390.png",
+    "group-ui-independent-after-leave-a-1440.png",
+    "group-ui-independent-after-leave-b-390.png",
+    "group-ui-independent-after-leave-b-1440.png"
+  ],
+  "sourceSha256": {
+    "group-runner.mjs": "42ba8d5a28e7e0dc609ef24911b4ef2929d3305ec5decfda894b0eed3c8596d9",
+    "guards.mjs": "451cf2b8efc2c32ac8500683283b8c5f0401cb199ad9f2b94e7647a586e94d7f",
+    "group-ui.mjs": "f0c5a6bbcd4b1dd599d83f1816c57ed0f5103a99ec26b2f109fd6df8dcf08157",
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+  },
+  "limitations": [
+    "No camera hardware or two physical phones",
+    "No external PSP or mail delivery",
+    "No elapsed-year retention or physical beacon proof"
+  ],
+  "localBuildId": "_1OR884fyGsZ8DqPkdSnD",
+  "appSourceSha256": {
+    "components/frightnight/participant.tsx": "ae54b364271c0bb2ca13b12681028df2a24d625248025e7553adbdc562d059dd",
+    "components/frightnight/games.tsx": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e",
+    "components/frightnight/client.tsx": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+    "components/frightnight/operations.tsx": "7e5ebae9317fd31f16c5041ac23c7a7c9b54409d94d4405b65e75e8a79449da7",
+    "lib/frightnight/model.ts": "8c06aeb0a25fa153030699abb4ecfa03dcda4004e73b57d8fc3dc2f1bcf3d08f",
+    "lib/frightnight/server.ts": "db37464a55546f46eab4b297e04476b0ac776a97cb24b89de08add2d231360f1",
+    "lib/frightnight/payment-server.ts": "3a27c994986a91adb7299dde16488a6effd28a1f5a5a959be1347e1b863381a0",
+    "app/api/frightnight/command/route.ts": "d2a1e15e98c19e2d8c52f0e8c12f3b8fb2e356abd7f8bc1401b9371242b9d5c0"
+  },
+  "servedBuildId": "_1OR884fyGsZ8DqPkdSnD",
+  "groupUI": {
+    "status": "passed",
+    "cases": [
+      "SAM-01",
+      "SAM-06",
+      "ROU-02",
+      "SAM-07"
+    ],
+    "pageErrors": 0,
+    "setup": "Own synthetic statuses force different old visits; own synthetic Kraaienhof re-reviewed at level1 to offer an unvisited valid alternative. Synthetic paths do not prove street walking."
+  },
+  "status": "passed",
+  "cleanup": {
+    "ownSiblingArchived": true,
+    "closed": true,
+    "financialHistoryUnchanged": true,
+    "householdsPreserved": true
+  },
+  "preservation": {
+    "allPriorEditionsUnchanged": true,
+    "canonicalUnchanged": true,
+    "legacyOutboxRowsUnchanged": true,
+    "legacyOutboxContentUnchanged": true,
+    "oldAuthIdsPreserved": true
+  },
+  "cleanupErrors": [],
+  "auth": {
+    "created": 3,
+    "preserved": true,
+    "retired": true,
+    "retiredActors": 3,
+    "otpRequests": 0,
+    "passwordsOrSessionsInEvidence": false
+  },
+  "completedAt": "2026-11-03T06:28:24.631Z"
+}

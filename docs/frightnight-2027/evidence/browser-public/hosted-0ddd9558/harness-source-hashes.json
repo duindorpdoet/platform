@@ -1,0 +1,15 @@
+{
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "capturedAt": "2026-11-03T06:51:02.840301+00:00",
+  "scope": "authorized published anonymous public read-only browser checks",
+  "hashes": {
+    "/tmp/frightnight-public-hosted/playwright.config.ts": "e2b091290c431fac0169cd399e7efb9edbc8a4c292f609833b4ca9d36bbdab5e",
+    "/tmp/frightnight-public-hosted/global-setup.ts": "fa8e42913051133408783cc5931aed4c979ca25c592d5697672eab02d8e6673c",
+    "/tmp/frightnight-public-hosted/guarded-test.ts": "57bc50b4e4eef9baabc1b8475b958b75a6458d6de2b6dd1ceeeebd74cb14fe20",
+    "/tmp/frightnight-public-hosted/frightnight.spec.ts": "cbad16b06c850b707b08df286d44b41790ae2bbcdce1c6f15a04851801d3770e",
+    "/tmp/frightnight-public-hosted/visuals.mjs": "7f0d70de3a38e327105b6d80a8a3c05f904db8d4531fe2b41862fdf97cd6797a",
+    "/tmp/frightnight-public-hosted/source-audit.json": "56f998fe28fbec83634a3cd1068350c7ec81736589f692764148e32964ce9894",
+    "/home/codex/repos/duindorphalloween-frightnight-2027/tests/e2e/frightnight.spec.ts": "6bf100d1e7cc50d7dffe9938bbf8beda2365bc2a361aace5fcec60f85593ec0a",
+    "/home/codex/repos/duindorphalloween-frightnight-2027/public/sw.js": "aae7b62f1714fa9fe97dacd4f5bdb93130609eee93fe3e77a261df94648b7540"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "health": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "console": [],
+  "workers": [
+    "https://staging-halloween.duindorpdoet.nl/sw.js",
+    "closed"
+  ],
+  "failed": [],
+  "scope": "read-only public SW installation diagnosis",
+  "state": {
+    "controller": false,
+    "registrations": [],
+    "caches": [
+      "duindorp-public-frightnight-2027-v1:assets"
+    ]
+  },
+  "testedAt": "2026-11-03T06:52:13.729Z"
+}

@@ -334,5 +334,12 @@
     "remoteRetryPassed": false,
     "originalReleaseRun": 41583941440,
     "scope": "Source-observed targeted Storage policy delegation; no ownership, role, RLS or migration changes."
+  },
+  "intermediatePublishedRelease": {
+    "evidence": "docs/frightnight-2027/validation/published-release-report.json",
+    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+    "mainDeployAndSinkAuth": "success",
+    "runConclusion": "cancelled for actual native service worker installation failure before synthetic-account step",
+    "parentREGEDGELoadRET05": "not executed; no final acceptance claim"
   }
 }

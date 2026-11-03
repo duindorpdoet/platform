@@ -1,6 +1,6 @@
 {
   "recordedAt": "2026-11-03T05:39:20.259470+00:00",
-  "scope": "local final functional application and acceptance guard sources; not hosted staging or external providers",
+  "scope": "Local application build plus individually recorded post-build verification; exact-head CI and published release are recorded separately",
   "baseRevision": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
   "previousCheckpoint": "090773a0a15a49316128e08004e026f1541c6e04",
   "buildId": "_1OR884fyGsZ8DqPkdSnD",
@@ -152,7 +152,7 @@
     "public/frightnight/zone-garden.webp": "38794c2d82f2957f460c3af90c89b2e6f99e609ac153e4b0316fe19cc55abe52",
     "public/manifest.webmanifest": "2c1239fed24cff5839f9192c787e655defdd48874d327e3b156adaefebf4f4a4",
     "public/offline.html": "c91ad7484c40e9c440c003cbcb5aa941640e2331a6175ab03a0b79ab4d728790",
-    "public/sw.js": "aae7b62f1714fa9fe97dacd4f5bdb93130609eee93fe3e77a261df94648b7540",
+    "public/sw.js": "bc23b25f2082e11ef04cacbcbb40927a83b5c249a9999775fa4d60ea29625d70",
     "scripts/acceptance/frightnight-edges.mjs": "d0ce257ace09b7ea70d7cdb2274d2b98666aef8b5edbf9d5a2246a1558145db2",
     "scripts/acceptance/frightnight-edges.test.mjs": "daed56128055f4c061e6dc58b08459a0b6cf3518a466644e98784205b55c306d",
     "scripts/acceptance/frightnight-load.d.mts": "023f440d564177049b77cdbb8d418452b4e5ab4ec3a7bc1ac5ee6e3c4e7172d5",
@@ -160,7 +160,9 @@
     "scripts/acceptance/frightnight-load.test.ts": "a8dce603c60ae86027a90e35e42484182bde1c35119f6c2b71ef94d5f010ab85",
     "scripts/acceptance/frightnight-regie.mjs": "9ecbcac989523e606374e32a4a34755e76de503545216e1d9c37b69d612fe49f",
     "scripts/acceptance/frightnight-staging.mjs": "0f204f2d24cae38afad9b04056494bdf8ca1a55f9803e724cd314631976a67bf",
-    "scripts/deploy/configure-supabase.test.ts": "07066583714f34e9cb418d376a78b5ab6ccba4c503f7965dc41403fd6aa837e6"
+    "scripts/deploy/configure-supabase.test.ts": "07066583714f34e9cb418d376a78b5ab6ccba4c503f7965dc41403fd6aa837e6",
+    "tests/e2e/frightnight.spec.ts": "c68fc6cec4e0b6144e58d1fe07559d85ffbc91807f9bc8b3676bd86df4140164",
+    "scripts/deploy/accept-frightnight.mjs": "cd7e654f4ebe55e002c8a7b62d6207562c0ce50279bb20e36c1160ef6ab62440"
   },
   "logSha256": "2c8b9fd848b1eb375285bbb363eed0a4a690285375a3b84406dd1e317e640976",
   "limitations": [
@@ -242,6 +244,70 @@
     "scope": "Only existing observed managed policy delegation is reproduced in a networkless restore. Positive policy and negative table-owner/other-policy/SET ROLE checks actually executed. No remote grants, migration, seed or deploy."
   },
   "exactHeadContinuousIntegration": {
+    "runId": 41588703791,
+    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+    "event": "push",
+    "conclusion": "success",
+    "jobsPassed": 3,
+    "failedOrSkippedSteps": 0,
+    "normalMailTests": true,
+    "unitPassed": 1519,
+    "optionalUnitSkipped": 6,
+    "publicBrowserPassed": 23,
+    "clientArtifactsScanned": 697,
+    "pgTapFiles": 134,
+    "pgTapPassed": 4520,
+    "remainingHostedRelease": "41591028787 published online healthy but public PWA installation failed; account/parent/load/RET05 cancelled before execution. New fixed-candidate exactCI/full release required.",
+    "url": "https://github.com/duindorpdoet/platform/actions/runs/41588703791"
+  },
+  "postBuildOriginFixtureVerification": {
+    "evidence": "docs/frightnight-2027/validation/staging-origin-fixture-report.json",
+    "onlyChangedSources": [
+      "lib/frightnight/access-boundary.test.ts",
+      "lib/frightnight/admin-search-boundary.test.ts"
+    ],
+    "applicationSourceChanged": false,
+    "localDefaultsPassed": 12,
+    "stagingOriginTargetedPassed": 12,
+    "stagingOriginFullSuitePassed": 1519,
+    "optionalSkipped": 6,
+    "eslint": "passed",
+    "typecheck": "passed",
+    "newExactHeadCI": "41588703791 fully passed on0ddd9558 with all three jobs and every step successful"
+  },
+  "additionalCurrentBuildEvidence": [
+    {
+      "evidence": "docs/frightnight-2027/evidence/browser-public/login-validation-local/report.json",
+      "sha256": "ca51e14f03aff80f34a96f4bb5d86cab5d9f33e83a0f26cf13df4522e78a63d9",
+      "checks": 8,
+      "buildId": "_1OR884fyGsZ8DqPkdSnD",
+      "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+      "scope": "Actual local invalid-email UI at390/1440; zero POST or OTP; no authentication attempt.",
+      "applicationSourceChanged": false,
+      "hostedClaimed": false
+    },
+    {
+      "evidence": "docs/frightnight-2027/evidence/browser-authenticated/software-boundaries-local/report.json",
+      "sha256": "ab3fa9dbeaa1f59ee8f145633afddfbdce744c42e9cdf5b3e9e7494a04784b1a",
+      "checks": 7,
+      "buildId": "_1OR884fyGsZ8DqPkdSnD",
+      "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+      "scope": "Actual local whole-family activity race/staff boundaries, owner/global pause, non-inviter scan and all-ordinary-closed finale; includes setup registration.",
+      "applicationSourceChanged": false,
+      "hostedClaimed": false
+    },
+    {
+      "evidence": "docs/frightnight-2027/evidence/browser-authenticated/group-ui-local/report.json",
+      "sha256": "8d90cd99cb649114e592e08d78f7164495c4fd55192d5c5c3c2615ae724ed423",
+      "checks": 6,
+      "buildId": "_1OR884fyGsZ8DqPkdSnD",
+      "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+      "scope": "Actual local invitation/consent/member UI, independent historical visits, shared lower intensity/comfort, leave with independent preserved history; includes setup registration.",
+      "applicationSourceChanged": false,
+      "hostedClaimed": false
+    }
+  ],
+  "previousExactHeadContinuousIntegration": {
     "runId": 41585240647,
     "revision": "aad96668a3744b0dbfe09111956537ee53d9ff8d",
     "event": "push",
@@ -258,19 +324,33 @@
     "remainingHostedRelease": "41587423924 stopped safely before migration/deploy at environment-dependent unit fixtures; new exact-head CI and full release required",
     "url": "https://github.com/duindorpdoet/platform/actions/runs/41585240647"
   },
-  "postBuildOriginFixtureVerification": {
-    "evidence": "docs/frightnight-2027/validation/staging-origin-fixture-report.json",
-    "onlyChangedSources": [
-      "lib/frightnight/access-boundary.test.ts",
-      "lib/frightnight/admin-search-boundary.test.ts"
+  "postBuildServiceWorkerVerification": {
+    "evidence": "docs/frightnight-2027/validation/service-worker-native-regression-report.json",
+    "deploymentCallbackEvidence": "docs/frightnight-2027/validation/service-worker-gate-report.json",
+    "changedSources": [
+      "public/sw.js",
+      "tests/e2e/frightnight.spec.ts",
+      "scripts/deploy/accept-frightnight.mjs"
     ],
-    "applicationSourceChanged": false,
-    "localDefaultsPassed": 12,
-    "stagingOriginTargetedPassed": 12,
-    "stagingOriginFullSuitePassed": 1519,
-    "optionalSkipped": 6,
+    "runtimeChange": "Removed one duplicate static precache asset; private handling/legacy cleanup unchanged. No application TSX/SQL change.",
+    "localBuildContext": "Existing _1OR884fyGsZ8DqPkdSnD app with exact new standalone public/sw.js bytes; not a new full local build.",
+    "nativeRegression": {
+      "before": "actual20s activation failure",
+      "after": "actual2.6s pass"
+    },
+    "fullTargetedPublicFile": {
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    "deployCallback": {
+      "brokenHostedFailureMs": 15030,
+      "fixedLocalPassMs": 199
+    },
     "eslint": "passed",
     "typecheck": "passed",
-    "newExactHeadCI": "required"
+    "independentReviews": "backend acknowledged both SW/test diff and bounded deployment callback",
+    "nextExactHeadContinuousIntegration": "required; previous0ddd CI does not include this correction",
+    "hostedFixedWorker": "not yet published/proved"
   }
 }

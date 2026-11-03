@@ -1,0 +1,12 @@
+{
+  "scope": "Actual local Chromium Cache.addAll duplicate request behavior and current worker registration",
+  "origin": "http://127.0.0.1:3137",
+  "verifiedAt": "2026-11-03T06:52:21.755Z",
+  "duplicate": {
+    "name": "InvalidStateError",
+    "message": "Failed to execute 'addAll' on 'Cache': Cache.addAll(): duplicate requests (http://127.0.0.1:3137/frightnight/icon-192.png)"
+  },
+  "registrations": [],
+  "controller": null,
+  "errors": []
+}

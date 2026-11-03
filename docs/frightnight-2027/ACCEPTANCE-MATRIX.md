@@ -21,6 +21,8 @@ De vorige build **fzribBblz0y5tNosd_-R-** heeft **96 geslaagde lokale browserche
 
 De hosted scripts zijn uitsluitend na geverifieerde binding, backup/restore, behoud en deployment toegestaan. Zij gebruiken de werkelijk gepubliceerde SHA en een eigen nieuwe testscope. Geen lokale uitkomst vervangt een externe PSP-, echte camera-, fysieke straat-/baken- of gepubliceerde duurproef.
 
+De [gedetailleerde beoordeling van alle 87 IDs](validation/acceptance-evidence-assessment.json) koppelt bovendien elke proef aan de werkelijk uitgevoerde lokale SQL-, unit-, race- en browseruitkomsten, actuele bronhashen en precieze resterende proeven. Zij bevat geen gepubliceerde succesclaim. De nieuwste lokale aanvullingen omvatten acht loginchecks, zeven activiteit-/pauze-/finalechecks en zes samenloop-UIchecks; inschrijffixtures worden daarbij expliciet meegeteld.
+
 ## Registratie per pakket-ID
 
 Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrijft uitsluitend het werkelijk aanwezige lokale deelbewijs en de noodzakelijke aanvulling. `Extern geblokkeerd` betekent geen bewezen PSP-test omdat de stagingsecretnaam `MOLLIE_TEST_API_KEY` bij controle ontbrak. Er wordt geen OTP aangevraagd om een vakje groen te maken.
@@ -32,8 +34,8 @@ Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrij
 | ENV-03 | Open | Croncatalogus geaudit; twee echte cycli plus nieuwe editie observeren na release. |
 | ENV-04 | LU | Envvalidator weigert onveilige mailmodus. Gecontroleerde foutinjectie op staging nog open. |
 | ENV-05 | LDB | Lokale legacy-aantallen en bewaarde dummyhistorie gelijk. Echte stagingbehoudsvergelijking opnieuw vereist. |
-| INS-01 | LDB | Serverprijs, consent en idempotentie deels bewezen; vierpersoons-UIreis en dubbelklik op staging open. |
-| INS-02 | LDB | Consent-/databasegrenzen deels bewezen; alle ongeldige invoer incl. Authmailadres via echte app open. |
+| INS-01 | LDB, lokale browser | Echte vierpersoonsinschrijving, serverquote en identiek commandreplay lokaal bewezen. Gepubliceerde herhaling blijft open. |
+| INS-02 | LDB, lokale browser | Consent-/databasegrenzen lokaal; acht echte loginchecks op390/1440 weigeren lege/foutieve e-mail vóór Auth met native feedback en nul OTP/POST. Directe Auth/API-invalidemail en gepubliceerde herhaling blijven apart. |
 | INS-03 | Extern geblokkeerd | MOLLIE_TEST_API_KEY ontbreekt in stagingsecretnamen. Contractbetaling is afzonderlijk gelabeld. |
 | INS-04 | LDB | Onbetaald starten geweigerd; return-URL zonder betaling nog via gepubliceerde app uitvoeren. |
 | INS-05 | LU | Adapter valideert statusvormen; echte PSP mislukken/open/annuleren/verlopen niet uitgevoerd. |
@@ -43,7 +45,7 @@ Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrij
 | INS-09 | LDB, lokale browser | Vanaf eerste betaalpoging staan personen/tocht/bedrag vast, ook na failed/expired of tariefwijziging; duidelijke organisatie-uitleg en gemanipuleerd verzoek409 lokaal bewezen. Start/contact/comfort blijven werken; refund wordt niet heractiveerd. Gepubliceerde herhaling open. |
 | INS-10 | LDB, LRACE, LU | Refundledger/scanrace en providerbindings lokaal; echte PSP-testrefund niet uitgevoerd. |
 | QR-01 | Fysiek open | Geen echte Android-/iOS-cameratest uitgevoerd. HTTPS-camera-implementatie is geen toestelbewijs. |
-| QR-02 | LDB | Handmatige servercodevalidatie lokaal; geweigerde cameratoestemming en dezelfde UIflow open. |
+| QR-02 | LDB, native lokale browser | Native Chromiumpermission denied/NotAllowedError met virtueel device; zichtbare hersteltekst en dezelfde handmatige code-UI geeft één serverbestemming. Geen fysieke camera-/optische scanclaim; stagingherhaling open. |
 | QR-03 | Open | Editieklok en tijdgrenzen aanwezig; beide starttijdscenario's op staging uitvoeren. |
 | QR-04 | LDB | Na venster gecontroleerd herstel naar Duinpad lokaal; late start met echte looptijden open. |
 | QR-05 | LDB | Verkeerde start-/zonecode en oude routeversie lokaal; alle oude-editiecodevarianten open. |
@@ -54,8 +56,8 @@ Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrij
 | QR-10 | LU | QR-exportkey actor/editie/registratie/run lokaal; echte intrekking en vervangend geprint bord open. |
 | QR-11 | LDB | QR-vrijbeleid en opgeslagen released-scanmethode lokaal; heen/terugsynchronisatie na herstart open. |
 | ROU-01 | LDB | Milde selectie, verlaagde spanning en Duinpadfinale lokaal; volledige wandeling open. |
-| ROU-02 | LDB | Lagere intensiteit en strengste groepscomfort lokaal; alle effecten tijdens tocht op staging open. |
-| ROU-03 | LDB | Zonepauzebeleid lokaal; sluiten huidige zone met live deelnemer en alternatief open. |
+| ROU-02 | LDB, lokale browser | Actieve gedeelde UI verlaagt2→1 en vermijdt rook/flitsen; serverunion telt zes personen, vervangt bestemming door geschikt regulier niveau1 en bewaart eigen quotes/voorkeur. Gepubliceerde en fysieke wandeling open. |
+| ROU-03 | LDB, lokale browser | Eigenaar pauzeert werkelijke huidige gewone bestemming via UI: oude QR409 zonder bezoek/award, herstelUI geeft één alternatief. Gepubliceerde herhaling open. |
 | ROU-04 | LRACE | Elf van twaalf gezinnen wachten veilig bij volle passende zones lokaal; UI-uitleg staging open. |
 | ROU-05 | LDB, LRACE | Twaalf starts tegelijk, nul overboeking lokaal; herhalen op geverifieerde stagingeditie open. |
 | ROU-06 | LDB | Verlopen lease vereist hervatten; precies één herstelde bestemming. Stagingherhaling open. |
@@ -64,15 +66,15 @@ Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrij
 | ROU-09 | Open | Skipcommand aanwezig; oude QR zonder award en terugtoewijzing nog expliciet testen. |
 | ROU-10 | LDB | Venstereinde/herstel naar Duinpad lokaal; gemeten verre locatie en wandelmarge open. |
 | ROU-11 | Open | Volle/gesloten finale met hulp- en herstelpad nog specifiek accepteren. |
-| ROU-12 | LDB | Expliciet stoppen geeft finale zonder alle bezoeken; alle gesloten gewone zones nog testen. |
+| ROU-12 | LDB, lokale browser | Alle vier gewone zones werkelijk gesloten; beide gekoppelde gezinnen krijgen één Duinpadfinale met nul quests. Pas de echte finale-scan rondt af. Gepubliceerde herhaling open. |
 | ROU-13 | LDB | Stoppen geeft één Duinpadbestemming; rustige/stepvrije fysieke terugkeer open. |
-| SAM-01 | LDB | Twee betaalde accounts stemmen in en krijgen gedeelde route lokaal; twee echte toestellen open. |
+| SAM-01 | LDB, lokale browser | A maakt zichtbaar een uitnodiging; B voert code + instemming in en accepteert. Beide onafhankelijke UIs tonen herkenbare leden en dezelfde actuele bestemming. Geen fysiek tweede toestel; stagingherhaling open. |
 | SAM-02 | Open | Serverregels aanwezig; alle drie afwijzingsvarianten nog met bewijs uitvoeren. |
 | SAM-03 | LDB | Vier gezamenlijke personen en strengste voorkeuren lokaal; exact vier-plus-vijfscenario open. |
-| SAM-04 | LDB | Tweede actor bedient route in lokale fixtures; echte contactpersonen via app open. |
+| SAM-04 | LDB, lokale browser | Niet-uitnodiger B voltooit via echte handmatige QR-UI aantoonbaar met200 de gedeelde bestemming. Beide krijgen precies één persoonlijk bezoek/award en blijven coherent. Gepubliceerde herhaling open. |
 | SAM-05 | LRACE | Receipt-replayrace lokaal; herhaalde gelijktijdige scans van verschillende samenloople­ den open. |
-| SAM-06 | LDB | Aansluiten tijdens wandelen lokaal; persoonlijke eerdere awards en geen retroactieve beloning specifiek open. |
-| SAM-07 | LDB | Verlaten levert twee coherente routes lokaal; herhaalde leave-versus-scanrace op staging open. |
+| SAM-06 | LDB, lokale browser | Beide gezinnen hebben vóór aansluiten één verschillend werkelijk bezoek. Na expliciete UI-instemming delen zij één bestemming; persoonlijke oude bezoeken/awards blijven exact gelijk, zonder cadeauhistorie. Gepubliceerde herhaling open. |
+| SAM-07 | LDB, lokale browser, LRACE | B verlaat via echte UI; twee zelfstandige IDs, elk één actuele claim en eigen ongewijzigde historie/ledenlijst. De verplichte herhaalde leave-versus-scanraces op staging blijven apart open. |
 | SAM-08 | Open | Eventlock/versies en voorkeuraggregatie aanwezig; join-versus-voorkeurswijzigingrace open. |
 | SAM-09 | Open | Afgeronde/actieve combinatie nog specifiek uitvoeren en geschiedenis vergelijken. |
 | HUI-01 | LDB, LU | Eigen aanvraag, geverifieerd contact/ligging en Storagepredicate lokaal; echte upload/browserflow open. |
@@ -80,17 +82,17 @@ Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrij
 | HUI-03 | LDB | Snoep-/spanning- en capaciteitsgrenzen deels lokaal; volledige bewerking en routereactie open. |
 | HUI-04 | LDB | Pauze, vroege afloop en geen heropening buiten uren lokaal bewezen; echte browserherhaling open. |
 | HUI-05 | LU | Uitgegeven QR-exportreceipt lokaal; afdruk en echte camerascan van fysiek bord open. |
-| ACT-01 | LDB | Hele gezin, herhaalboeking en laatste capaciteit lokaal; gelijktijdige boeking/tweede toestel open. |
-| ACT-02 | LDB | Annuleren geeft plaatsen eenmaal vrij lokaal; toegewezen medewerker en onbevoegde inzage open. |
+| ACT-01 | LDB, lokale browser/APIrace | Twee zelfstandige gezinnen van4/2 racen om vier hele-gezinplaatsen:200/409, geen overboeking; onafhankelijke context leest exact dezelfde duurzame boeking. Gepubliceerde herhaling open. |
+| ACT-02 | LDB, lokale browser | Werkelijke annulering/replay geeft eenmaal plaatsen vrij, herboeken en toegewezen medewerker checkt via UI precies vier personen in. Onbevoegde eigenaar, vreemde activiteit en ingetrokken medewerker403. Gepubliceerde herhaling open. |
 | KID-01 | LDB, lokale browser | Alle drie raadsels en drie spelinterfaces werkelijk bediend met fout/herkansing op actuele build; gepubliceerde herhaling open. |
 | KID-02 | LDB, lokale browser | Alle zes voltooide spellen blijven na refresh en tweede onafhankelijke browsercontext bewaard; zes echte commandreplays geven geen dubbele award. Fysiek tweede toestel/gepubliceerde herhaling open. |
 | KID-03 | Open | Server valideert quests/antwoorden; willekeurige award-ID en clientmanipulatie nog accepteren. |
 | BAK-01 | LU | Stagingbakenadapter ondersteunt rehearsal zonder hardware; geen fysiek lichtbewijs. |
 | BAK-02 | LDB | Finalescan en digitale bakenaward na enkele huizen lokaal; drie UIstappen/Nachtpas op staging open. |
-| BAK-03 | LU | Adapter zonder netwerkuitgang; hardwareuitvoer false. Fysieke onafhankelijke bediening niet gekeurd. |
+| BAK-03 | LU, netwerkloze container | Ongewijzigde stagingadapter werkelijk uitgevoerd zonder netwerk en met alleen-lezen bron: stabiele rehearsal/finale/faultreceipt, simulated=true en hardwareEnabled=false. Geen fysieke hardwarekeuring. |
 | REG-01 | LDB, lokale browser | 65 rijen per resource; 50/15-paginering, zoekmatch buiten pagina één, exacte gefilterde totalen en POST-zoektermen lokaal op 390/1440 px groen. Gepubliceerde herhaling open. |
 | REG-02 | LDB, lokale browser | Alle vijf doelgroepen, versieconflict, vreemde editie en doelgroepwijziging lokaal groen; na vertrek uit een bestemming verdwijnt het zonebericht. De duurzame in-appstatus en aparte niet-verzonden capture zijn zichtbaar. Gepubliceerde herhaling open. |
-| REG-03 | LDB | Globale pauze blokkeert overgang lokaal; actieve browsers hervatten en actuele keuze open. |
+| REG-03 | LDB, lokale browser | Globale pauze via regieUI weigert geldige scan409 EVENT_PAUSED en schakelt scanUI uit. Hervatten hercontroleert één bestemming zonder cadeauvoortgang. Gepubliceerde herhaling open. |
 | REG-04 | Open | Duurzame hulp/antwoordcommands aanwezig; privacy en tweede toestel nog uitvoeren. |
 | REG-05 | LU | Pure CSV-proeven neutraliseren =,+,-,@ ook na witruimte/control/BOM en escapen quotes. Hosted gate bevat een echte viergezins-download plus participant403; die uitvoering is nog open. |
 | REG-06 | LDB | Archiveren/gesloten sibling behoudt bron lokaal; regiepreview/sluiten actieve editie open. |

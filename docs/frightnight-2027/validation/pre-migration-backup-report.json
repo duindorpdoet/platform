@@ -1,9 +1,9 @@
 {
   "scope": "Actual verified staging pre-migration encrypted backup and networkless restore; no published-app or scenario-restore claim",
-  "runId": 41587423924,
-  "jobId": 125756150649,
-  "revision": "aad96668a3744b0dbfe09111956537ee53d9ff8d",
-  "verifiedAt": "2026-11-03T06:08:50.7448411Z",
+  "runId": 41591028787,
+  "jobId": 125767651643,
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "verifiedAt": "2026-11-03T06:44:03.8053722Z",
   "environment": "staging",
   "projectRef": "nocteiuvohesvqbowchw",
   "postgresVersion": "17.6",
@@ -14,13 +14,39 @@
   "migrationDryRun": "passed",
   "managedStoragePolicyParity": "observed source delegation reproduced; ownership retained",
   "artifact": {
-    "id": 13208503054,
-    "name": "redesign-backup-staging-41587423924-1",
-    "sizeBytes": 33530500,
-    "digest": "sha256:d4444cc0fe4c6ccfe4510e1257692648c515362319e7854acd659af8a55b5924",
-    "expiresAt": "2026-12-03T06:08:51Z",
-    "url": "https://github.com/duindorpdoet/platform/actions/runs/41587423924/artifacts/13208503054"
+    "id": 13210496516,
+    "name": "redesign-backup-staging-41591028787-1",
+    "sizeBytes": 33532527,
+    "digest": "sha256:c1e9ad2a24f630fb235b86a1679c91a0246fa26807d2d021b2648b6effe7791b",
+    "expiresAt": "2026-12-03T06:44:04Z",
+    "url": "https://github.com/duindorpdoet/platform/actions/runs/41591028787/artifacts/13210496516"
   },
-  "jobUrl": "https://github.com/duindorpdoet/platform/actions/runs/41587423924/job/125756150649",
-  "scenarioRestore": "pending separate post-acceptance 31-table gate"
+  "jobUrl": "https://github.com/duindorpdoet/platform/actions/runs/41591028787/job/125767651643",
+  "scenarioRestore": "pending separate post-acceptance 31-table gate",
+  "previousVerifiedBackup": {
+    "scope": "Actual verified staging pre-migration encrypted backup and networkless restore; no published-app or scenario-restore claim",
+    "runId": 41587423924,
+    "jobId": 125756150649,
+    "revision": "aad96668a3744b0dbfe09111956537ee53d9ff8d",
+    "verifiedAt": "2026-11-03T06:08:50.7448411Z",
+    "environment": "staging",
+    "projectRef": "nocteiuvohesvqbowchw",
+    "postgresVersion": "17.6",
+    "encryptedAndAuthenticated": true,
+    "isolatedNetwork": "none",
+    "tablesPreserved": 236,
+    "storageObjects": 12,
+    "migrationDryRun": "passed",
+    "managedStoragePolicyParity": "observed source delegation reproduced; ownership retained",
+    "artifact": {
+      "id": 13208503054,
+      "name": "redesign-backup-staging-41587423924-1",
+      "sizeBytes": 33530500,
+      "digest": "sha256:d4444cc0fe4c6ccfe4510e1257692648c515362319e7854acd659af8a55b5924",
+      "expiresAt": "2026-12-03T06:08:51Z",
+      "url": "https://github.com/duindorpdoet/platform/actions/runs/41587423924/artifacts/13208503054"
+    },
+    "jobUrl": "https://github.com/duindorpdoet/platform/actions/runs/41587423924/job/125756150649",
+    "scenarioRestore": "pending separate post-acceptance 31-table gate"
+  }
 }

@@ -43,8 +43,14 @@ try {
     await page.goto(`${target.origin}/`);
     await page.evaluate(async () => {
       if (!('serviceWorker' in navigator)) throw new Error('SERVICE_WORKER_UNAVAILABLE');
-      await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
+      let installationTimer;
+      try {
+        await Promise.race([
+          navigator.serviceWorker.register('/sw.js').then(() => navigator.serviceWorker.ready),
+          new Promise((_,reject) => { installationTimer=setTimeout(()=>reject(new Error('SW_INSTALLATION_FAILED')),15000); }),
+        ]);
+      } catch { throw new Error('SW_INSTALLATION_FAILED'); }
+      finally { clearTimeout(installationTimer); }
       if (!navigator.serviceWorker.controller) await new Promise((resolve,reject) => {
         const timer=setTimeout(()=>reject(new Error('SERVICE_WORKER_NOT_CONTROLLING')),10000);
         navigator.serviceWorker.addEventListener('controllerchange',()=>{clearTimeout(timer);resolve(true);},{once:true});

@@ -1,0 +1,67 @@
+{
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "testedAt": "2026-11-03T06:52:26.265Z",
+  "scope": "anonymous fixed-origin GETs only; no Auth or mutations",
+  "declared": 12,
+  "unique": 11,
+  "duplicates": [
+    "/frightnight/icon-192.png"
+  ],
+  "responses": [
+    {
+      "path": "/offline.html",
+      "status": 200,
+      "type": "text/html; charset=UTF-8"
+    },
+    {
+      "path": "/favicon.svg",
+      "status": 200,
+      "type": "image/svg+xml"
+    },
+    {
+      "path": "/manifest.webmanifest",
+      "status": 200,
+      "type": "application/manifest+json"
+    },
+    {
+      "path": "/frightnight/logo.png",
+      "status": 200,
+      "type": "image/png"
+    },
+    {
+      "path": "/frightnight/kraaienbode.webp",
+      "status": 200,
+      "type": "image/webp"
+    },
+    {
+      "path": "/frightnight/icon-192.png",
+      "status": 200,
+      "type": "image/png"
+    },
+    {
+      "path": "/frightnight/icon-512.png",
+      "status": 200,
+      "type": "image/png"
+    },
+    {
+      "path": "/frightnight/maskable-512.png",
+      "status": 200,
+      "type": "image/png"
+    },
+    {
+      "path": "/pwa/icons/apple-touch-icon-180.png",
+      "status": 200,
+      "type": "image/png"
+    },
+    {
+      "path": "/pwa/icons/pwa-512.png",
+      "status": 200,
+      "type": "image/png"
+    },
+    {
+      "path": "/pwa/icons/maskable-512.png",
+      "status": 200,
+      "type": "image/png"
+    }
+  ]
+}

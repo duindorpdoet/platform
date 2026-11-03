@@ -13,7 +13,6 @@ const SAFE_ASSETS = [
   "/frightnight/icon-512.png",
   "/frightnight/maskable-512.png",
   "/pwa/icons/apple-touch-icon-180.png",
-  "/frightnight/icon-192.png",
   "/pwa/icons/pwa-512.png",
   "/pwa/icons/maskable-512.png",
 ];

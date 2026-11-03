@@ -1,0 +1,147 @@
+{
+  "scope": "LOCAL ONLY; real GoTrue/PostgreSQL production UI; not a staging result",
+  "origin": "http://127.0.0.1:3137",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "run": "supp-20261103-3f372313",
+  "edition": "frightnight-2027-test-acceptance-supplement-supp-20261103-3f372313",
+  "eventId": "04eec58f-d693-454c-9a68-b48ac5c1291f",
+  "startedAt": "2026-11-03T06:24:58.852Z",
+  "checks": [
+    {
+      "label": "INS-01 actual four-person mild registration UI, server quote and identical-command replay",
+      "status": "passed"
+    },
+    {
+      "label": "ACT-01 two independent families race last whole-family seats; one controlled full refusal, exact capacity and independent authenticated UI/server persistence",
+      "status": "passed",
+      "raceStatuses": [
+        200,
+        409
+      ],
+      "persons": [
+        4,
+        2
+      ],
+      "capacity": 4,
+      "winnerPersons": 4
+    },
+    {
+      "label": "ACT-02 real cancel and replay release seats once; rebook, explicit activity staff UI checkin persists once; unassigned owner, foreign activity and revoked staff denied",
+      "status": "passed",
+      "ownerDenial": 403,
+      "foreignDenial": 403,
+      "revokedDenial": 403,
+      "checkedInSeats": 4
+    },
+    {
+      "label": "ROU-03 actual zone owner pauses released ordinary destination; stale real QR scan rejected without visit/award; participant recovery UI releases one suitable replacement",
+      "status": "passed",
+      "scanStatus": 409,
+      "scanError": "ZONE_UNAVAILABLE_RESUME"
+    },
+    {
+      "label": "REG-03 real organization pause UI blocks a valid current QR command and disables scanning; resume rechecks one current destination without progress",
+      "status": "passed",
+      "pausedScanStatus": 409,
+      "error": "EVENT_PAUSED"
+    },
+    {
+      "label": "SAM-04 non-inviting independent paid household completes actual shared current QR through UI with200; both personal visits/awards advance once and current stays shared",
+      "status": "passed",
+      "acceptedActor": "family-b-non-inviter",
+      "persons": 6,
+      "personalVisitDelta": [
+        1,
+        1
+      ],
+      "personalAwardDelta": [
+        1,
+        1
+      ]
+    },
+    {
+      "label": "ROU-12 all ordinary zones explicitly closed; both households receive one Duinpad finale without all houses/quests; no award until actual final QR scan",
+      "status": "passed",
+      "ordinaryZonesClosed": 4,
+      "questsCompleted": 0,
+      "finishedAfterRealFinalScan": true
+    }
+  ],
+  "screenshots": [
+    "software-activity-independent-booking-390.png",
+    "software-activity-independent-booking-1440.png",
+    "software-assigned-staff-checkin-390.png",
+    "software-assigned-staff-checkin-1440.png",
+    "software-owner-paused-current-recovery-390.png",
+    "software-owner-paused-current-recovery-1440.png",
+    "software-global-pause-scan-disabled-390.png",
+    "software-global-pause-scan-disabled-1440.png",
+    "software-non-inviter-successful-shared-scan-390.png",
+    "software-non-inviter-successful-shared-scan-1440.png",
+    "software-all-regular-closed-duinpad-390.png",
+    "software-all-regular-closed-duinpad-1440.png"
+  ],
+  "sourceSha256": {
+    "software-runner.mjs": "f6af2a7e1c7c49a4aa376c6a95ac016b9aa79af68f181654143a79cb4fcd1185",
+    "guards.mjs": "451cf2b8efc2c32ac8500683283b8c5f0401cb199ad9f2b94e7647a586e94d7f",
+    "software-boundaries.mjs": "bb0d9301df97dee65d37b57256f1b859137938b9e9d42a5ad580416a858ff58e",
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+  },
+  "limitations": [
+    "No camera hardware or two physical phones",
+    "No external PSP or mail delivery",
+    "No elapsed-year retention or physical beacon proof"
+  ],
+  "localBuildId": "_1OR884fyGsZ8DqPkdSnD",
+  "appSourceSha256": {
+    "components/frightnight/resident.tsx": "600788fbf32faba6676dcb4ab6245b3243550cd71fe4efd4b157f1c53c35574e",
+    "components/frightnight/admin-resource.tsx": "ffadb9296b26c079b97744c4aba1ed0575be75cc2ec4d805fecab6d69ce67038",
+    "components/frightnight/participant.tsx": "ae54b364271c0bb2ca13b12681028df2a24d625248025e7553adbdc562d059dd",
+    "components/frightnight/games.tsx": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e",
+    "components/frightnight/client.tsx": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+    "components/frightnight/operations.tsx": "7e5ebae9317fd31f16c5041ac23c7a7c9b54409d94d4405b65e75e8a79449da7",
+    "lib/frightnight/model.ts": "8c06aeb0a25fa153030699abb4ecfa03dcda4004e73b57d8fc3dc2f1bcf3d08f",
+    "lib/frightnight/server.ts": "db37464a55546f46eab4b297e04476b0ac776a97cb24b89de08add2d231360f1",
+    "lib/frightnight/payment-server.ts": "3a27c994986a91adb7299dde16488a6effd28a1f5a5a959be1347e1b863381a0",
+    "app/api/frightnight/command/route.ts": "d2a1e15e98c19e2d8c52f0e8c12f3b8fb2e356abd7f8bc1401b9371242b9d5c0"
+  },
+  "servedBuildId": "_1OR884fyGsZ8DqPkdSnD",
+  "softwareBoundaries": {
+    "status": "passed",
+    "cases": [
+      "ACT-01",
+      "ACT-02",
+      "ROU-03",
+      "REG-03",
+      "SAM-04",
+      "ROU-12"
+    ],
+    "pageErrors": 0
+  },
+  "status": "passed",
+  "cleanup": {
+    "ownSiblingArchived": true,
+    "closed": true,
+    "financialHistoryUnchanged": true,
+    "householdsPreserved": true
+  },
+  "preservation": {
+    "allPriorEditionsUnchanged": true,
+    "canonicalUnchanged": true,
+    "legacyOutboxRowsUnchanged": true,
+    "legacyOutboxContentUnchanged": true,
+    "oldAuthIdsPreserved": true
+  },
+  "cleanupErrors": [],
+  "auth": {
+    "created": 3,
+    "preserved": true,
+    "retired": true,
+    "retiredActors": 3,
+    "otpRequests": 0,
+    "passwordsOrSessionsInEvidence": false
+  },
+  "completedAt": "2026-11-03T06:25:20.469Z"
+}

@@ -1,0 +1,73 @@
+{
+  "verifiedAt": "2026-11-03T06:56:46.908467+00:00",
+  "scope": "local real Chromium production-serviceworker regression after published installation failure; no Auth or server mutation",
+  "sourceHashes": {
+    "public/sw.js": "bc23b25f2082e11ef04cacbcbb40927a83b5c249a9999775fa4d60ea29625d70",
+    "tests/e2e/frightnight.spec.ts": "c68fc6cec4e0b6144e58d1fe07559d85ffbc91807f9bc8b3676bd86df4140164"
+  },
+  "before": {
+    "outcome": "expected failure",
+    "report": "/tmp/frightnight-sw-before-browser.json",
+    "stats": {
+      "startTime": "2026-11-03T06:54:34.455Z",
+      "duration": 21566.817,
+      "expected": 0,
+      "skipped": 0,
+      "unexpected": 1,
+      "flaky": 0
+    },
+    "cause": "duplicate SAFE_ASSETS icon-192 request rejects native Cache.addAll; no activated serviceworker/controller"
+  },
+  "after": {
+    "outcome": "passed",
+    "report": "/tmp/frightnight-sw-after-browser.json",
+    "stats": {
+      "startTime": "2026-11-03T06:56:09.436Z",
+      "duration": 2619.179,
+      "expected": 1,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "servedSourceProof": {
+      "testedAt": "2026-11-03T06:55:14.457Z",
+      "scope": "local production runtime static SW replacement only; buildId remains existing 1OR app artifact",
+      "sourceSha256": "bc23b25f2082e11ef04cacbcbb40927a83b5c249a9999775fa4d60ea29625d70",
+      "servedSha256": "bc23b25f2082e11ef04cacbcbb40927a83b5c249a9999775fa4d60ea29625d70",
+      "sourceMatches": true,
+      "beforeExpectedFailureReport": "/tmp/frightnight-sw-before-browser.json"
+    }
+  },
+  "verifiedBehaviors": [
+    "actual production SW ready, active and controlling",
+    "obsolete public cache and private cache deleted on native activation",
+    "no push subscription",
+    "real offline reload shows fixed public emergency information",
+    "icon cached exactly once and no private-page/API cache entry",
+    "offline private navigation returns503/private no-store/public fallback without old cached private fixture",
+    "actual reconnect restores public home",
+    "same-origin read-only browser network guard sees zero forbidden requests"
+  ],
+  "published": {
+    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+    "public23": "passed",
+    "offline": "failed before correction; not claimed as fixed on hosted release"
+  },
+  "cacheVersion": "v1 retained; corrected serviceworker bytes cause installation/update, cache.addAll refreshes safe assets and existing activate removes legacy/public/private caches",
+  "limits": [
+    "Only local standalone public/sw.js was replaced to test exact fixed bytes; existing app build remains _1OR884fyGsZ8DqPkdSnD.",
+    "New complete CI/release and hosted corrected-worker proof remain required."
+  ],
+  "completePublicBrowserFile": {
+    "report": "/tmp/frightnight-sw-final-public24.json",
+    "stats": {
+      "startTime": "2026-11-03T06:57:29.401Z",
+      "duration": 19097.126,
+      "expected": 24,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "scope": "local existing production app with exact corrected static worker, no Auth or database mutation"
+  }
+}

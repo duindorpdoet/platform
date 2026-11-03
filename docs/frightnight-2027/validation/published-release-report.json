@@ -1,0 +1,132 @@
+{
+  "recordedAt": "2026-11-03T06:57:29.319434+00:00",
+  "scope": "Actual intermediate published staging release; not final acceptance because the native service worker installation failed.",
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "runId": 41591028787,
+  "runConclusion": "cancelled",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "environment": "staging",
+  "site": "duindorphalloweenstg",
+  "health": {
+    "observedAt": "2026-11-03T06:51:17.562Z",
+    "http": 200,
+    "status": "ok",
+    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "releasePath": "/srv/sites/duindorphalloweenstg/releases/0ddd9558f3fd-41591028787-1",
+  "previousRollbackPoint": {
+    "path": "/srv/sites/duindorphalloweenstg/releases/ce6bbb52551c-41433832508-1",
+    "source": "Previously verified successful deployment log job125241574455; no new filesystem inspection claimed."
+  },
+  "jobs": {
+    "policy": {
+      "id": 125767550279,
+      "conclusion": "success"
+    },
+    "backup": {
+      "id": 125767651643,
+      "conclusion": "success"
+    },
+    "deploy": {
+      "id": 125769871954,
+      "conclusion": "success"
+    },
+    "sinkAuth": {
+      "id": 125771987303,
+      "conclusion": "success"
+    },
+    "publicAndAccount": {
+      "id": 125771987411,
+      "conclusion": "cancelled",
+      "publicWorkerInstallationFailed": true,
+      "syntheticAccountStepStarted": false
+    },
+    "load": {
+      "id": 125773743442,
+      "conclusion": "cancelled",
+      "executed": false
+    },
+    "scenarioBackup": {
+      "id": 125773742801,
+      "conclusion": "cancelled",
+      "executed": false
+    }
+  },
+  "preMigrationBackup": {
+    "artifactId": 13210496516,
+    "name": "redesign-backup-staging-41591028787-1",
+    "sizeBytes": 33532527,
+    "expiresAt": "2026-12-03T06:44:04Z",
+    "encrypted": true,
+    "isolatedNetworklessRestoreVerified": true,
+    "tables": 236,
+    "storageObjects": 12,
+    "migrationDryRunVerified": true
+  },
+  "migrations": {
+    "20261103012453": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "20261103042000": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+  },
+  "existingDataPreservationCompared": true,
+  "safety": {
+    "tables": 31,
+    "editionConfigured": true,
+    "mailMode": "sink",
+    "legacyJobsPreserved": true,
+    "anonymousRpcDenied": true,
+    "privateSchemaUnexposed": true
+  },
+  "authPolicy": {
+    "recipientCount": 3,
+    "verifiedOwnerAllowed": true,
+    "existingTestersPreserved": true,
+    "authenticationRequests": 0,
+    "mailDelivery": 0,
+    "signedHookDeployedBeforeSeed": true
+  },
+  "initializer": {
+    "seeded": true,
+    "seedVersion": 1,
+    "ownerlessSyntheticOnly": true,
+    "legacyDataPreserved": true,
+    "externalDelivery": false,
+    "syntheticWalkingFixture": true,
+    "jwtImpersonation": false
+  },
+  "timers": {
+    "artifactId": 13210114737,
+    "evidence": "docs/frightnight-2027/validation/published-vps-timers.json",
+    "systemTimers": 16,
+    "userCrontab": "absent",
+    "systemCronDirectories": 5,
+    "unreviewedScopedTimers": 0,
+    "unreviewedSystemCron": 0,
+    "complete": true,
+    "privateRootBoundary": [
+      "Private/root and other-user crontabs are not read; no sudo or permission bypass.",
+      "Only reachable system cron files are inventoried; unreadable files and directories remain explicit limits."
+    ]
+  },
+  "actualHostedCoverage": {
+    "parent": false,
+    "REG": false,
+    "EDGE": false,
+    "photoStorageHTTP": false,
+    "load125": false,
+    "RET05ScenarioRestore": false,
+    "ENV03TwoNaturalCyclesAfterLoad": false
+  },
+  "openBlockingBug": {
+    "issue": "Duplicated install asset caused native Cache.addAll failure; worker never installed. Corrective source and bounded deployment gate require fresh exact-head CI and normal release.",
+    "evidence": "docs/frightnight-2027/validation/service-worker-gate-report.json"
+  },
+  "limits": [
+    "No final PWA/offline or authenticated hosted acceptance claimed on this intermediate SHA.",
+    "No OTP, external PSP, hardware or outbound mail delivery test performed.",
+    "Schema migrations already applied; their source must remain immutable."
+  ]
+}

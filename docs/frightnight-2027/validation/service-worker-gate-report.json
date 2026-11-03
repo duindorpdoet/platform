@@ -1,0 +1,38 @@
+{
+  "verifiedAt": "2026-11-03T06:55:34.671Z",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "scope": "Actual native Chromium executes the exact new deployment callback against currently broken published worker; no login, actor, provider, mail or data mutation.",
+  "error": "SW_INSTALLATION_FAILED",
+  "durationMs": 15030,
+  "forbiddenRequests": 0,
+  "registrations": [],
+  "sourceSha256": {
+    "scripts/deploy/accept-frightnight.mjs": "cd7e654f4ebe55e002c8a7b62d6207562c0ce50279bb20e36c1160ef6ab62440"
+  },
+  "change": "Bound real registration and ready to15s with Promise.race and timercleanup. Real installation/controller/cache/offline assertions remain required.",
+  "eslintPassed": true,
+  "syntaxPassed": true,
+  "positiveFixedWorkerProbe": {
+    "verifiedAt": "2026-11-03T06:56:29.317Z",
+    "scope": "Exact deployment callback with actual fixed local production worker in native Chromium; no authenticated actor, mail, PSP or remote mutation.",
+    "origin": "http://127.0.0.1:3137",
+    "durationMs": 199,
+    "controller": true,
+    "active": true,
+    "privateCache": false,
+    "emergencyCached": true,
+    "offlineHelp": true,
+    "forbiddenRequests": 0,
+    "sourceSha256": "cd7e654f4ebe55e002c8a7b62d6207562c0ce50279bb20e36c1160ef6ab62440",
+    "workerSha256": "bc23b25f2082e11ef04cacbcbb40927a83b5c249a9999775fa4d60ea29625d70"
+  },
+  "parentAndLoadAndRET05": "not executed in release41591028787; first public browser gate stalled before synthetic-account step",
+  "releaseRunConclusion": "cancelled",
+  "parentAccountStepNeverStarted": true,
+  "cancelledDependentJobs": {
+    "account": 125771987411,
+    "load": 125773743442,
+    "scenarioBackup": 125773742801
+  }
+}

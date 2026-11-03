@@ -1,0 +1,77 @@
+{
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "testedAt": "2026-11-03T06:51:31.807Z",
+  "scope": "published-anonymous-public-only-read-only",
+  "healthBefore": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "checks": [
+    {
+      "label": "published-home fits 390px",
+      "passed": true
+    },
+    {
+      "label": "published-story-open fits 390px",
+      "passed": true
+    },
+    {
+      "label": "published-terms fits 390px",
+      "passed": true
+    },
+    {
+      "label": "published-login-no-send fits 390px",
+      "passed": true
+    },
+    {
+      "label": "published-home fits 1440px",
+      "passed": true
+    },
+    {
+      "label": "published-story-open fits 1440px",
+      "passed": true
+    },
+    {
+      "label": "published-terms fits 1440px",
+      "passed": true
+    },
+    {
+      "label": "published-login-no-send fits 1440px",
+      "passed": true
+    },
+    {
+      "label": "Published public pages hydrate without page errors",
+      "passed": true
+    },
+    {
+      "label": "Published service worker bytes match exact released repository SHA",
+      "passed": true
+    },
+    {
+      "label": "Reviewed service worker restricts network handling to GET",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    "published-home-390.png",
+    "published-story-open-390.png",
+    "published-terms-390.png",
+    "published-login-no-send-390.png",
+    "published-home-1440.png",
+    "published-story-open-1440.png",
+    "published-terms-1440.png",
+    "published-login-no-send-1440.png"
+  ],
+  "blocked": [],
+  "pageErrors": [],
+  "limits": "No account sessions, forms, OTP, PSP, push subscriptions, mail or database commands. PWA is headless Chromium; no physical-device installation claim.",
+  "status": "failed",
+  "failure": "page.waitForFunction: Timeout 20000ms exceeded."
+}

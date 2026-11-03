@@ -201,3 +201,70 @@ test("PWA en onafhankelijke noodinformatie hebben de nieuwe identiteit", async (
   await expect(page.locator("body")).toContainText("lokale bediening");
   await expect(page.locator("body")).toContainText("geen actuele huisstatus");
 });
+
+test("productieserviceworker wordt actief en levert offline noodinformatie met herstel", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ serviceWorkers: "allow", viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  const origin = new URL(baseURL!).origin;
+  const forbidden: string[] = [];
+  await context.route("**/*", route => {
+    const request = route.request(); const url = new URL(request.url());
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method()) || url.origin !== origin || /^\/auth\/|^\/api\/(?:frightnight\/(?:command|edition|push|logout)|mail|push|payments?)(?:\/|$)/.test(url.pathname)) {
+      forbidden.push(`${request.method()} ${url.origin}${url.pathname}`);
+      return route.abort("blockedbyclient");
+    }
+    return route.continue();
+  });
+  const page = await context.newPage();
+  try {
+    // A static page lets this browser prepare harmless obsolete-cache fixtures
+    // before the production layout registers its real service worker.
+    await page.goto(`${origin}/offline.html`);
+    await page.evaluate(async () => {
+      const legacy = await caches.open("duindorp-public-browser-regression-obsolete");
+      await legacy.put("/obsolete-public-fixture", new Response("obsolete public fixture"));
+      const privateCache = await caches.open("duindorp-private-browser-regression-obsolete");
+      await privateCache.put("/nachtpas", new Response("cached private fixture"));
+    });
+    await page.goto(baseURL!);
+    await page.waitForFunction(async () => {
+      const registration = await navigator.serviceWorker.ready;
+      return registration.active?.state === "activated" && navigator.serviceWorker.controller?.state === "activated";
+    }, undefined, { timeout: 20_000 });
+    // Activating after an obsolete public cache also refreshes the open page.
+    // Let that real navigation settle before inspecting its new document.
+    await page.waitForLoadState("networkidle");
+    expect(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toBe(`${origin}/sw.js`);
+    expect(await page.evaluate(async () => (await navigator.serviceWorker.ready).pushManager.getSubscription())).toBeNull();
+    const keys = await page.evaluate(() => caches.keys());
+    expect(keys).not.toContain("duindorp-public-browser-regression-obsolete");
+    expect(keys.some(key => key.startsWith("duindorp-private"))).toBe(false);
+    await context.setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("EVEN GEEN VERBINDING");
+    await expect(page.locator("body")).toContainText("Duinpad / Oogstdorp");
+    await expect(page.locator("body")).toContainText("lokale bediening");
+    const cached = await page.evaluate(async () => {
+      const paths: string[] = [];
+      for (const key of await caches.keys()) {
+        const cache = await caches.open(key);
+        for (const request of await cache.keys()) paths.push(new URL(request.url).pathname);
+      }
+      return paths;
+    });
+    expect(cached).toContain("/offline.html");
+    expect(cached.filter(path => path === "/frightnight/icon-192.png")).toHaveLength(1);
+    expect(cached.some(path => /^\/(?:api|auth|inloggen|nachtpas|avondregie|testcentrum)(?:\/|$)|^\/mijn-/.test(path))).toBe(false);
+    const privateResponse = await page.goto(`${origin}/nachtpas`, { waitUntil: "domcontentloaded" });
+    expect(privateResponse?.status()).toBe(503);
+    expect(privateResponse?.headers()["cache-control"]).toContain("private, no-store");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("EVEN GEEN VERBINDING");
+    await expect(page.locator("body")).not.toContainText("cached private fixture");
+    await context.setOffline(false);
+    await page.goto(baseURL!);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("DIT WORDTJOUW NACHT.");
+    expect(forbidden).toEqual([]);
+  } finally {
+    await context.setOffline(false);
+    await context.close();
+  }
+});
