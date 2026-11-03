@@ -1,0 +1,48 @@
+{
+  "recordedAt": "2026-11-03T03:51:58.049845+00:00",
+  "scope": "Targeted local Auth hardgate tests plus explicitly authorized GitHub staging secret configuration and remote read-only actor hash comparison",
+  "stagingSecret": {
+    "name": "FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS",
+    "recipientCount": 3,
+    "existingTransactionalRecipientsUnchanged": true,
+    "existingTestersPreserved": true,
+    "verifiedOwnerIncluded": true,
+    "serverOnly": true,
+    "plaintextFilesWritten": 0,
+    "plaintextValuesLogged": false
+  },
+  "remoteActorComparison": {
+    "actor_exists": true,
+    "actor_active": true,
+    "actor_allowlisted": true,
+    "actor_is_existing_admin": true,
+    "readOnly": true,
+    "emailValuesReturned": false
+  },
+  "tests": {
+    "command": "pnpm exec vitest run scripts/deploy/validate-environment.test.ts scripts/deploy/frightnight-auth-policy.test.ts scripts/deploy/workflow-edge-secrets.test.ts supabase/functions/send-email-hook/handler.test.ts scripts/acceptance/scan-client-artifacts.test.ts",
+    "files": 5,
+    "passed": 40,
+    "failed": 0,
+    "durationMs": 501,
+    "eslint": "passed",
+    "typecheck": "pnpm exec tsc --noEmit passed"
+  },
+  "authenticationRequests": 0,
+  "mailDelivery": 0,
+  "runtimeHookDeploy": "not yet executed; new complete CI and release still required",
+  "sourceSha256": {
+    ".github/workflows/deploy-staging.yml": "ab49d41fe9330f6940eb543cf6a56d2c770040b1bd884395124a875a34ba5287",
+    "lib/config/server-env.ts": "d195c386a8010aef67a6de1d0350b20c04a6c05b3438ec2cb105932bedad2b31",
+    "scripts/acceptance/scan-client-artifacts.mjs": "c562167b60d61d6d0df363f2f34563eddc3da598e4fff201138fe78f13709a6d",
+    "scripts/acceptance/scan-client-artifacts.test.ts": "c897d3fa9415b88a61cd591f0d2982453350b0e1e600bea936a45e573f6f45ea",
+    "scripts/deploy/validate-environment.mjs": "1d8f9a8e26c4d02af69a805a5dcfa837284cce25f4ff2e8093e4a081a72d4a82",
+    "scripts/deploy/validate-environment.test.ts": "9dfd84ce6ba632b8936e2f2919b3cb851f58f06145b5e0731209e033f26d094c",
+    "scripts/deploy/frightnight-auth-policy.mjs": "218681643dc7709b9ce308fe7917e48597e7517bcb4657160f54ef58ef9984d1",
+    "scripts/deploy/frightnight-auth-policy.test.ts": "0fbf7059440dc39e576ecf899a7f808fb9c1259b8e664541f3d3d90b35a6b5d8",
+    "scripts/deploy/workflow-edge-secrets.test.ts": "25c67b6bfee27e557189e7758a37acfad1d55c5ed2b9770851b29413805f8b7b",
+    "supabase/functions/send-email-hook/handler.ts": "7c464be003694448a32c644c51387cf183b3d6ae863d9d4be77ae235d6cae5bd",
+    "supabase/functions/send-email-hook/handler.test.ts": "651ecd0fa4e91ed14e601db97144fe0f23a8395266aebc8b54ace61514e20804"
+  },
+  "followup": "Explicit NODE_ENV=test in isolated child-process test environments; no broad process.env or secret inheritance."
+}

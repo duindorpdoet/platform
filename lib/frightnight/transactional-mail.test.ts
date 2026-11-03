@@ -25,4 +25,16 @@ describe("FrightNight transactionele sinktemplates", () => {
       expect(result.externallyDelivered).toBe(false); expect(result.html).toContain(eventSlug);
     }
   });
+  it.each([
+    ["cancelled", "Betaling ontvangen na annulering", "De inschrijving blijft geannuleerd"],
+    ["quote_mismatch", "Betaling ontvangen; bedrag afstemmen", "Nieuwe tochtrechten blijven geblokkeerd"],
+    ["start_required", "Betaling ontvangen; startmoment afstemmen", "Er is nog geen actieve inschrijving"],
+  ])("bevestigt ontvangst zonder toegang te beloven bij %s", (fulfillment, title, explanation) => {
+    const result = renderFrightnightTransactionalMail("frightnight-payment-confirmed", { ...payload, fulfillment }, { eventSlug });
+    expect(result.text).toContain("€ 10,50"); expect(result.html).toContain("€ 10,50");
+    expect(result.text).toContain(title); expect(result.html).toContain(title);
+    expect(result.text).toContain(explanation); expect(result.html).toContain(explanation);
+    expect(result.text).not.toContain("Je Nachtpas staat klaar"); expect(result.html).not.toContain("Je Nachtpas staat klaar");
+    expect(result).toMatchObject({ delivery: "sink", externallyDelivered: false });
+  });
 });

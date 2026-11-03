@@ -1,19 +1,15 @@
 {
   "scope": "local-vitest-and-eslint",
-  "recordedAt": "2026-11-03T03:40:05.040725+00:00",
+  "recordedAt": "2026-11-03T04:02:50.680077+00:00",
   "baseRevision": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
   "remoteMutations": false,
   "tests": {
-    "command": "pnpm exec vitest run lib/frightnight/payments.test.ts lib/frightnight/payment-server.test.ts lib/frightnight/request-body.test.ts lib/frightnight/qr-export.test.ts lib/frightnight/transactional-mail.test.ts lib/frightnight/mail-preview.test.ts",
-    "passed": 53,
+    "command": "pnpm exec vitest run lib/frightnight/payments.test.ts lib/frightnight/payment-server.test.ts lib/frightnight/request-body.test.ts lib/frightnight/qr-export.test.ts lib/frightnight/transactional-mail.test.ts lib/frightnight/mail-preview.test.ts lib/frightnight/downloads.test.ts lib/frightnight/offline.test.ts lib/frightnight/csv.test.ts",
+    "passed": 68,
+    "files": 9,
     "failed": 0,
-    "durationMs": 349,
-    "latestCombinedCommand": "pnpm exec vitest run scripts/deploy lib/frightnight/payments.test.ts lib/frightnight/payment-server.test.ts lib/frightnight/request-body.test.ts lib/frightnight/qr-export.test.ts lib/frightnight/transactional-mail.test.ts lib/frightnight/mail-preview.test.ts lib/frightnight/downloads.test.ts lib/frightnight/offline.test.ts lib/frightnight/csv.test.ts",
-    "latestCombinedPassed": 548,
-    "latestCombinedDurationMs": 1530,
-    "latestCombinedFiles": 49,
-    "latestCombinedDeployPassed": 483,
-    "latestCombinedSecurityDownloadsOfflineCsvPassed": 65
+    "durationMs": 407,
+    "scope": "Current financial-quote, receipt-fulfillment, private-download, offline and CSV source; additional Auth-policy evidence is linked separately"
   },
   "eslint": {
     "passed": true,
@@ -47,12 +43,12 @@
     "app/api/frightnight/qr/route.ts": "717693d06804691be9a3ea428993237da113c133f272bce0cc52deb3573924e4",
     "app/api/frightnight/payments/webhook/route.ts": "4e17181f88f2e65ecbf2cbeaee18bb0a044d36968204317522692f2453dbe9b6",
     "app/api/frightnight/zone-photo/route.ts": "62d8a43bfd0058cbeb547d659fcd80cd7884d7b4ec9456b897c45bb4ce5e84b1",
-    "lib/frightnight/transactional-mail.ts": "017b63a4d31cb52910a341c692c2e2f7e7f671f1aa3a7ba59b88468e070e3e3a",
-    "lib/frightnight/transactional-mail.test.ts": "775ca7afe141c99899fe9ba7ac3ebf856108cbbe1769c099a31a0c034f38fd41",
+    "lib/frightnight/transactional-mail.ts": "96912d2e81a3c840f3241920a6026c79f42e1932a4b254391a63271eab131b83",
+    "lib/frightnight/transactional-mail.test.ts": "036aa99b79692a0e37fa093fc9f37c1d03a483511bf310de8dace5d49c750eb0",
     "lib/frightnight/mail-preview.test.ts": "6ff4ac511e608f5690662855c93c339e98bfa0a981e972837d3bc97594a6c419",
     "app/api/frightnight/mail-preview/route.ts": "c9f8dc9dbf7e667b66d7e076932832805a8504625dd639aa606adeb21f408380",
     "public/frightnight/king-head.webp": "cf591d4d35eb89339cf0ac12002f9440a4ecc09d3dc15fc242f1e32450855a60",
-    "lib/frightnight/server.ts": "980ebbf445ea2b0bbcb9d04eff6e4a9bf539572a9ffd86b30bbe62c30bb9710b",
+    "lib/frightnight/server.ts": "385108001a3bff267752910c7ae063f4f9657a38ce30ef33045c8e25c7d8bbe9",
     "lib/frightnight/downloads.ts": "563ebafa3d66980d88fbbf37919b7910f64c43b7762efd3ef3759551bc169313",
     "lib/frightnight/downloads.test.ts": "63d4ac2c9d9f2b4b9c08d800fa52a9371ecec7d36de3cb52e86ca14d316f4961",
     "lib/frightnight/offline.ts": "f50541a5d109ee33c8eac221ea447cd3a48c1a153fb49ff950b9475bc3c77255",
@@ -68,25 +64,70 @@
   },
   "serverReadReview": "Current actor RPC deadline code reviewed with root; separate root full-suite evidence applies to that boundary, not an external timeout or delivery test.",
   "backendProof": {
-    "pgTapPassed": 264,
-    "migrationSha256": "f994e74783163229acc9347d356623ceb0820e1e1079f5ecd95d07331f599c20",
-    "verifiedAt": "2026-11-03T03:27:59.052731+00:00",
-    "scope": "independent backend local report; no remote or provider claim"
+    "pgTapPassed": 319,
+    "migrationSha256": "0dd0fb20fa8da12c94154c0252c92e1b07fa1e2603c927e380399b857453214d",
+    "testSha256": "638b1239b70daf775dae8cf662eed522c3585713c1f66520a66cd41729cf9ed8",
+    "verifiedAt": "2026-11-03T04:02:20.293131+00:00",
+    "concurrency": "12 families; scan/replay, join/refund, unique full-refund claim and checkout/material-edit serialized",
+    "checkoutMaterialEdit": {
+      "families": 1,
+      "outcome": "rejected-after-checkout",
+      "quotedPersons": 2,
+      "activePersons": 2,
+      "amountCents": 700,
+      "pricePerPersonCents": 350,
+      "freePlaces": 0,
+      "legacyOutboxUnchanged": true
+    },
+    "safety": {
+      "tables": 30,
+      "actorFunctions": 4,
+      "unsafeTables": 0,
+      "unsafeFunctions": 0,
+      "legacyBindings": 0,
+      "sinkHasRecipient": false
+    },
+    "scope": "Independent local backend evidence; remote runtime jobs/mailworker and hosted release still require actual staging gates"
   },
   "rootFullValidation": {
     "evidence": "docs/frightnight-2027/validation/application-verify-report.json",
     "reportedBy": "root; separate recorded full verify evidence",
-    "unitPassed": 1476,
+    "unitPassed": 1505,
     "optionalSkipped": 6,
-    "productionBuild": "VpdIRkZaItVoBhFIowORv",
-    "hostedRelease": "not yet executed"
+    "productionBuild": "Y-D-8X-SAa492KG6nnWGs",
+    "clientArtifactsScanned": 697,
+    "hostedRelease": "not yet executed",
+    "phase": "Current final mobile quote-note layout source passed complete app verify; hosted release remains pending."
   },
   "downloadAndOfflineFollowup": {
-    "command": "pnpm exec vitest run scripts/deploy lib/frightnight/payments.test.ts lib/frightnight/payment-server.test.ts lib/frightnight/request-body.test.ts lib/frightnight/qr-export.test.ts lib/frightnight/transactional-mail.test.ts lib/frightnight/mail-preview.test.ts lib/frightnight/downloads.test.ts lib/frightnight/offline.test.ts lib/frightnight/csv.test.ts",
-    "securityDownloadsOfflineCsvPassed": 65,
-    "allCombinedPassed": 548,
+    "passed": 68,
     "failed": 0,
-    "durationMs": 1530,
-    "scope": "Local security, private role-bounded emergency cards, participant address privacy, standalone SVG, real download time versus edition clock, offline contact exclusion and formula-safe CSV; no hosted delivery or physical device claim"
+    "scope": "Current nine-file suite includes role-bounded operational emergency cards, participant address privacy, standalone SVG, real download time versus edition clock, offline contact exclusion, formula-safe CSV and payment mail that makes no access promise after cancellation or mismatch."
+  },
+  "authHardgateFollowup": {
+    "evidence": "docs/frightnight-2027/validation/auth-allowlist-report.json",
+    "passed": 40,
+    "failed": 0,
+    "scope": "Targeted additional Auth policy, workflow ordering, server-only recipient leak checks and remote read-only actor hash comparison; runtime hook deploy not yet performed",
+    "previousFullValidation": "Current 1505/Y-D full verify includes the final mobile quote-note CSS correction; hosted release and final browser proof are separately tracked."
+  },
+  "financialReview": {
+    "reviewer": "release_audit",
+    "sourceFrozen": true,
+    "conclusion": "Accepted targeted quote/material-edit, status ordering, cancellation/refund entitlement, activity capacity and mail fulfillment changes; no concrete blocker found",
+    "mailTestsPassed": 6,
+    "currentSecurityDownloadsOfflineCsvSuitePassed": 68,
+    "remotePspTested": false
+  },
+  "currentLocalBrowserEvidence": {
+    "reportedBy": "root/frontend_v7; independent recorded local browser artifacts",
+    "productionBuild": "Y-D-8X-SAa492KG6nnWGs",
+    "publicChecks": 23,
+    "downloadClockChecks": 24,
+    "quoteChecks": 25,
+    "quoteEvidence": "docs/frightnight-2027/evidence/browser-authenticated/quote-lock-browser-report.json",
+    "downloadEvidence": "docs/frightnight-2027/evidence/browser-authenticated/download-clock-report.json",
+    "index": "docs/frightnight-2027/evidence/README.md",
+    "scope": "Local production preview; no hosted release, external PSP, camera or hardware claim"
   }
 }

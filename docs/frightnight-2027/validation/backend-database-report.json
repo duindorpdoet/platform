@@ -11,19 +11,19 @@
   "mail": "new event-scoped sink only; no delivery worker or recipient-address column",
   "advisors": "CLI 2.117.0 attempted twice against isolated Docker DB; LegacyDbConnectError. Explicit ACL/search_path/RLS metadata safety query and pgTAP did execute; full advisors not claimed.",
   "sourceSha256": {
-    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "f994e74783163229acc9347d356623ceb0820e1e1079f5ecd95d07331f599c20",
-    "supabase/tests/127_frightnight_2027_core.sql": "f8c85ef1bc109e91eddc3f16c14baff3c2f7050a7c6805103515362726953b1e",
-    "scripts/frightnight/db-concurrency.py": "4255bb572941c1a78d079007634b690ea0d5031c152841f802374289d0309a5f"
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "0dd0fb20fa8da12c94154c0252c92e1b07fa1e2603c927e380399b857453214d",
+    "supabase/tests/127_frightnight_2027_core.sql": "638b1239b70daf775dae8cf662eed522c3585713c1f66520a66cd41729cf9ed8",
+    "scripts/frightnight/db-concurrency.py": "89fb8b67ae7569270db05b97ac85f1b5bee99bbd5099e3012748a8c8d3e3bb56"
   },
   "pgtap": {
-    "passed": 264,
+    "passed": 319,
     "failed": 0,
     "rollback": true
   },
   "concurrency": {
     "passed": true,
     "database": "frightnight_2027_acceptance",
-    "slug": "frightnight-2027-test-race-946bd38cacfd",
+    "slug": "frightnight-2027-test-race-7a14dd5808fd",
     "families": 12,
     "simultaneousStarts": 12,
     "walking": 2,
@@ -43,11 +43,22 @@
     "duplicateRefundRejected": 1,
     "alreadyRefundedCreatesIntent": false,
     "oldRefundedInvitationRejectedWithoutMutation": true,
+    "oldRefundedInvitationDenial": "SAME_PAID_ROUTE_REQUIRED",
     "concurrentJoinRefund": "rejected-after-refund",
     "joinRefundActiveClaims": 0,
     "joinRefundLedger": 1,
     "sourceHistoryPreserved": true,
-    "durationSeconds": 7.446
+    "concurrentCheckoutEdit": {
+      "families": 1,
+      "outcome": "rejected-after-checkout",
+      "quotedPersons": 2,
+      "activePersons": 2,
+      "amountCents": 700,
+      "pricePerPersonCents": 350,
+      "freePlaces": 0,
+      "legacyOutboxUnchanged": true
+    },
+    "durationSeconds": 8.082
   },
   "localSafety": {
     "tables": 30,
@@ -72,7 +83,7 @@
   },
   "safetyLimitation": "Local schema-only fixture has no legacy cron/mailworker configuration; staging runtime assertion is still required.",
   "releaseSafetyQuerySha256": "b87ae92ada08dcff22ca97d46b3da124dab86f77a1951ade8f927da6e69f3a96",
-  "verifiedAt": "2026-11-03T03:27:59.052731+00:00",
+  "verifiedAt": "2026-11-03T04:02:20.293131+00:00",
   "latestRegressionScope": [
     "paid active same-edition/evening members checked atomically for both joining parties and invitation creation",
     "pre-refund invitation rejects without any party, capacity, receipt, history or audit mutations",
@@ -81,5 +92,17 @@
     "owner-only versioned contact fields absent from shared-adult and admin DTOs; Auth and mail unchanged",
     "idempotency receipts persist immutable result and registration binding without contact data or full snapshots",
     "programme/terms draft publication and cross-edition isolation"
+  ],
+  "latestFinancialRegressionScope": [
+    "any first order fixes people, route and amount even after failure, expiry, tariff changes or retry",
+    "old seven-euro quote cannot pay for a four-person registration",
+    "concurrent checkout versus material edit either quotes the changed people or rejects the edit, with zero free places",
+    "older failed attempt cannot downgrade a paid retry",
+    "failed A, paid B, refunded B, late paid A retains cancelled rights and supports refund of the outstanding paid attempt",
+    "quote mismatch records financial receipt but grants no active route, activity or new award rights",
+    "archived late payment preserves the archive boundary",
+    "refund or quote invalidation cancels only booked activity seats; checked_in attendance is retained",
+    "owner cancellation after refund is allowed and idempotent; checkin requires active paid registration",
+    "sink fulfillment accurately distinguishes active, start_required, quote_mismatch and cancelled"
   ]
 }

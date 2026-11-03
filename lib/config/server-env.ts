@@ -18,6 +18,7 @@ const schema = z.object({
   FRIGHTNIGHT_PAYMENT_PROVIDER: z.enum(["mollie", "contract"]).default("contract"),
   MOLLIE_TEST_API_KEY: z.string().optional(),
   FRIGHTNIGHT_MAIL_MODE: z.enum(["sink", "allowlist"]).default("sink"),
+  FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS: z.string().optional(),
   FRIGHTNIGHT_HARDWARE_ENABLED: z.literal("false").default("false"),
   EVENT_TIMEZONE: z.string().default("Europe/Amsterdam"),
   REGISTRATION_MODE: z.enum(["closed", "staging_test", "live"]).default("closed"),

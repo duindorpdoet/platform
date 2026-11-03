@@ -1,5 +1,6 @@
 import {createECDH} from "node:crypto";
 import {assertFrightnightRelease} from './frightnight-release.mjs';
+import {frightnightAuthPolicy} from './frightnight-auth-policy.mjs';
 const target = process.argv[2];
 if (!new Set(["staging", "production"]).has(target)) {
   throw new Error("Usage: node scripts/deploy/validate-environment.mjs <staging|production>");
@@ -58,7 +59,7 @@ if (!/^[A-Za-z0-9+/]+={0,2}$/.test(hookKey) || decodedHookKey.byteLength < 32 ||
 }
 
 if (process.env.APP_ENVIRONMENT !== target) throw new Error("APP_ENVIRONMENT does not match the deployment target.");
-if (process.env.FRIGHTNIGHT_ENABLED === 'true') assertFrightnightRelease(process.env);
+if (process.env.FRIGHTNIGHT_ENABLED === 'true') {assertFrightnightRelease(process.env);frightnightAuthPolicy(process.env);}
 if (!/^[a-f0-9]{40}$/.test(process.env.APP_REVISION)) throw new Error("APP_REVISION must be an exact Git commit.");
 if (new URL(process.env.APP_URL).origin !== new URL(process.env.NEXT_PUBLIC_SITE_URL).origin) {
   throw new Error("APP_URL and NEXT_PUBLIC_SITE_URL must have the same origin.");
@@ -69,8 +70,8 @@ if (new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname !== `${process.env.SU
 if (!process.env.VAPID_SUBJECT.startsWith("mailto:") && !process.env.VAPID_SUBJECT.startsWith("https://")) {
   throw new Error("VAPID_SUBJECT must start with mailto: or https://.");
 }
-if (process.env.AUTH_MAIL_MODE !== "live") throw new Error("User-requested authentication codes must be deliverable to residents in both environments.");
 if (target === "staging") {
+  if (process.env.AUTH_MAIL_MODE !== "allowlist") throw new Error("Staging authentication mail must use the explicit tester allowlist.");
   if (process.env.REGISTRATION_MODE !== "staging_test") throw new Error("Staging must use staging_test registration mode.");
   if (process.env.MAIL_MODE !== "allowlist") throw new Error("Staging mail must use allowlist mode.");
   const allowed = new Set((process.env.MAIL_ALLOWED_RECIPIENTS ?? "").split(",").map((value) => value.trim()).filter(Boolean));
@@ -78,6 +79,7 @@ if (target === "staging") {
     throw new Error("Staging mail allowlist must exactly contain the two authorized test inboxes.");
   }
 } else {
+  if (process.env.AUTH_MAIL_MODE !== "live") throw new Error("Production authentication mail must use live mode.");
   if (!new Set(["closed", "live"]).has(process.env.REGISTRATION_MODE)) throw new Error("Production registration must explicitly be closed or live.");
   if (process.env.MAIL_MODE !== "live") throw new Error("Production transactional mail must use live mode after staging approval.");
 }

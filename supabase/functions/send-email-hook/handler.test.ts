@@ -18,8 +18,51 @@ const rpc:Rpc=async <T>(name:string,args:Record<string,unknown>)=>{
  const found=envelopes.get(String(args._id))!;Object.assign(found,{status:args._status,provider_id:args._provider_id});return found as T;
 };
 const request=()=>new Request("https://edge.example.com",{method:"POST",body:"verified in dependency"});
-beforeEach(()=>{calls=[];envelopes.clear();env.AUTH_MAIL_MODE="live";env.MAIL_MODE="allowlist";env.AUTH_SITE_URL="https://staging.example.com";});
+beforeEach(()=>{calls=[];envelopes.clear();env.APP_ENVIRONMENT="staging";delete env.FRIGHTNIGHT_ENABLED;delete env.FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS;env.AUTH_MAIL_MODE="live";env.MAIL_MODE="allowlist";env.AUTH_SITE_URL="https://staging.example.com";});
 describe("shared durable Auth and outbox dispatch",()=>{
+ it("fails closed when the separate FrightNight Auth recipient secret is missing",async()=>{
+  env.FRIGHTNIGHT_ENABLED="true";env.AUTH_MAIL_MODE="allowlist";const fetcher=vi.fn();
+  expect((await handleMail(request(),{env:key=>env[key],rpc,verify:()=>auth,fetcher})).status).toBe(503);
+  expect(calls).toEqual([]);expect(fetcher).not.toHaveBeenCalled();
+ });
+ it("permits an additional Auth tester without widening existing transactional recipients",async()=>{
+  env.FRIGHTNIGHT_ENABLED="true";env.AUTH_MAIL_MODE="allowlist";env.FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS="old@example.com,new@example.com,owner@example.invalid";
+  const fetcher=vi.fn().mockImplementation(async()=>Response.json({id}));
+  const otp={...auth,user:{id,email:"owner@example.invalid"},email_data:{...auth.email_data,email_action_type:"magiclink"}};
+  expect((await handleMail(request(),{env:key=>env[key],rpc,verify:()=>otp,fetcher})).status).toBe(200);
+  const callsAfterAuth=calls.length;
+  const message={kind:"transactional",message:{to:"owner@example.invalid",subject:"Legacy",text:"Fixture",html:"<p>Fixture</p>",outboxId:id}};
+  expect((await handleMail(request(),{env:key=>env[key],rpc,verify:()=>message,fetcher})).status).toBe(403);
+  expect(calls).toHaveLength(callsAfterAuth);expect(fetcher).toHaveBeenCalledOnce();
+ });
+ it.each(["live","sandbox","disabled",undefined])("fails closed before any gateway or provider activity for FrightNight staging Auth mode %s",async(mode)=>{
+  env.FRIGHTNIGHT_ENABLED="true";
+  if(mode===undefined)delete env.AUTH_MAIL_MODE;else env.AUTH_MAIL_MODE=mode;
+  const fetcher=vi.fn();
+  const response=await handleMail(request(),{env:key=>env[key],rpc,verify:()=>auth,fetcher});
+  expect(response.status).toBe(503);expect(await response.text()).toContain("STAGING_AUTH_ALLOWLIST_REQUIRED");
+  expect(calls).toEqual([]);expect(fetcher).not.toHaveBeenCalled();
+ });
+ it.each(["magiclink","email_change"])("rejects non-allowlisted FrightNight staging %s without creating an envelope or sending mail",async(action)=>{
+  env.FRIGHTNIGHT_ENABLED="true";env.AUTH_MAIL_MODE="allowlist";env.FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS="old@example.com,new@example.com";
+  const fetcher=vi.fn();
+  const blocked={...auth,user:{...auth.user,...(action==="magiclink"?{email:"outside@example.invalid"}:{new_email:"outside@example.invalid"})},email_data:{...auth.email_data,email_action_type:action}};
+  const response=await handleMail(request(),{env:key=>env[key],rpc,verify:()=>blocked,fetcher});
+  expect(response.status).toBe(403);expect(await response.text()).toContain("RECIPIENT_NOT_ALLOWED");
+  expect(calls).toEqual([]);expect(fetcher).not.toHaveBeenCalled();
+ });
+ it("allows a tester-requested OTP only to the configured allowlist and leaves production Auth policy intact",async()=>{
+  env.FRIGHTNIGHT_ENABLED="true";env.AUTH_MAIL_MODE="allowlist";env.FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS="old@example.com,new@example.com,owner@example.invalid";
+  const fetcher=vi.fn().mockImplementation(async()=>Response.json({id}));
+  const otp={...auth,user:{id,email:"old@example.com"},email_data:{...auth.email_data,email_action_type:"magiclink"}};
+  expect((await handleMail(request(),{env:key=>env[key],rpc,verify:()=>otp,fetcher})).status).toBe(200);
+  expect(fetcher).toHaveBeenCalledOnce();
+  expect(JSON.parse(fetcher.mock.calls[0][1].body).to).toEqual(["old@example.com"]);
+  env.APP_ENVIRONMENT="production";env.AUTH_MAIL_MODE="live";
+  const production={...otp,user:{id,email:"production@example.invalid"}};
+  expect((await handleMail(request(),{env:key=>env[key],rpc,verify:()=>production,fetcher})).status).toBe(200);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+ });
  it("does not persist actor claim links in durable gateway envelopes",async()=>{
   const fetcher=vi.fn().mockResolvedValue(Response.json({id}));
   const token="test-token-in-memory-only";

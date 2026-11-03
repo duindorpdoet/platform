@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-11-03T03:41:39.910Z",
+  "scope": "read-only before new staging release",
+  "githubEnvironment": "staging",
+  "supabaseProjectRef": "nocteiuvohesvqbowchw",
+  "supabaseOrigin": "https://nocteiuvohesvqbowchw.supabase.co",
+  "vpsSite": "duindorphalloweenstg",
+  "branches": {
+    "main": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
+    "staging": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
+    "production": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18"
+  },
+  "runtime": {
+    "origin": "https://staging-halloween.duindorpdoet.nl",
+    "httpStatus": 200,
+    "status": "ok",
+    "environment": "staging",
+    "revision": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
+    "registrationMode": "staging_test"
+  },
+  "rollbackRelease": {
+    "workflowRun": 41433832508,
+    "job": 125241574455,
+    "path": "/srv/sites/duindorphalloweenstg/releases/ce6bbb52551c-41433832508-1",
+    "evidence": "literal path read from successful deploy job log"
+  },
+  "authFinding": {
+    "sourceMode": "AUTH_MAIL_MODE=live",
+    "legacyValidator": "required live for staging and production",
+    "requiredCorrection": "FrightNight staging separate Authallowlist; production and transactional 2026 policy preserved",
+    "verifiedDannyPresent": true,
+    "verifiedDannyInExistingTestInboxAllowlist": false,
+    "automaticOtpRequests": 0
+  },
+  "newMigrationApplied": false,
+  "newEditionSeeded": false,
+  "productionMutations": 0
+}

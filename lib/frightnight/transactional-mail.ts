@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const slug = z.string().regex(/^frightnight-2027-test(?:-[a-z0-9-]{1,90})?$/);
 const common = z.object({ brandVersion: z.literal(7), message: z.string().trim().min(1).max(4000), label: z.string().trim().max(120).optional() }).strict();
-const payment = z.object({ brandVersion: z.literal(7), orderId: z.uuid(), amountCents: z.number().int().min(1).max(100_000_000) }).strict();
+const payment = z.object({ brandVersion: z.literal(7), orderId: z.uuid(), amountCents: z.number().int().min(1).max(100_000_000), fulfillment: z.enum(["active", "start_required", "quote_mismatch", "cancelled"]).default("active") }).strict();
 const copy = {
   "frightnight-registration-confirmed": ["Je inschrijving is bewaard", "Jullie avontuur krijgt vorm"],
   "frightnight-payment-confirmed": ["Je testbetaling is bevestigd", "Je Nachtpas staat klaar"],
@@ -21,13 +21,26 @@ const escape = (value: string) => value.replace(/[&<>"']/g, character => ({ "&":
 export function renderFrightnightTransactionalMail(template: string, payload: unknown, context: { eventSlug: string; logoDataUri?: string }) {
   const eventSlug = slug.parse(context.eventSlug);
   if (!Object.hasOwn(copy, template)) throw new Error("UNKNOWN_FRIGHTNIGHT_MAIL_TEMPLATE");
-  const [subject, title] = copy[template as FrightnightMailTemplate];
+  const [subject, defaultTitle] = copy[template as FrightnightMailTemplate];
+  let title: string = defaultTitle;
   let message: string;
   let reference = "";
   if (template === "frightnight-payment-confirmed") {
     const values = payment.parse(payload);
     const amount = `${Math.floor(values.amountCents / 100)},${String(values.amountCents % 100).padStart(2, "0")}`;
-    message = `De server heeft jullie testbetaling van € ${amount} bevestigd. Open je Nachtpas voor jullie tocht en verwachte startmoment. Een startblok helpt de aankomst spreiden; het is geen verplichte afspraak.`;
+    const received = `De server heeft jullie testbetaling van € ${amount} bevestigd.`;
+    if (values.fulfillment === "cancelled") {
+      title = "Betaling ontvangen na annulering";
+      message = `${received} De inschrijving blijft geannuleerd; deze ontvangst opent geen tocht of nieuwe plaatsen. Neem contact op met het hulppunt voor controle of testterugbetaling.`;
+    } else if (values.fulfillment === "quote_mismatch") {
+      title = "Betaling ontvangen; bedrag afstemmen";
+      message = `${received} Het ontvangen bedrag sluit niet aan bij de vastgelegde inschrijving. Nieuwe tochtrechten blijven geblokkeerd. Neem contact op met het hulppunt voor controle of testterugbetaling.`;
+    } else if (values.fulfillment === "start_required") {
+      title = "Betaling ontvangen; startmoment afstemmen";
+      message = `${received} De tijdelijke startreservering was verlopen en het gekozen blok is vol. Er is nog geen actieve inschrijving. Kies een beschikbaar startmoment in je Nachtpas of neem contact op met het hulppunt voor omboeken of testterugbetaling.`;
+    } else {
+      message = `${received} Open je Nachtpas voor jullie tocht en verwachte startmoment. Een startblok helpt de aankomst spreiden; het is geen verplichte afspraak.`;
+    }
     reference = `Orderreferentie: ${values.orderId}`;
   } else {
     const values = common.parse(payload);

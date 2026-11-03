@@ -10,9 +10,10 @@ const checks = [
   { label: "prototype child-book hash route", pattern: /\/#\/poortenboek/ },
 ];
 
-for (const name of ["MOLLIE_TEST_API_KEY", "RESEND_API_KEY", "RESEND_ADMIN_API_KEY", "RESEND_WEBHOOK_SECRET", "MAIL_IDENTITY_SECRET", "SENDGRID_API_KEY", "SENDGRID_SUPPRESSIONS_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY", "CRON_SECRET", "PORTAL_CODE_PEPPER", "ABUSE_HASH_SECRET", "SEND_EMAIL_HOOK_SECRET", "CHILD_CODE_PEPPER", "CHILD_CODE_ENCRYPTION_KEY", "EDITORIAL_TOKEN_SECRET", "VAPID_PRIVATE_KEY"]) {
+for (const name of ["FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS", "MOLLIE_TEST_API_KEY", "RESEND_API_KEY", "RESEND_ADMIN_API_KEY", "RESEND_WEBHOOK_SECRET", "MAIL_IDENTITY_SECRET", "SENDGRID_API_KEY", "SENDGRID_SUPPRESSIONS_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY", "CRON_SECRET", "PORTAL_CODE_PEPPER", "ABUSE_HASH_SECRET", "SEND_EMAIL_HOOK_SECRET", "CHILD_CODE_PEPPER", "CHILD_CODE_ENCRYPTION_KEY", "EDITORIAL_TOKEN_SECRET", "VAPID_PRIVATE_KEY"]) {
   const value = process.env[name];
-  if (value && value.length >= 12) checks.push({ label: `${name} value`, pattern: new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) });
+  const values=name === "FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS" && value ? [value,...value.split(",").map(v=>v.trim().toLowerCase()).filter(Boolean)] : [value];
+  for(const item of values)if (item && (name === "FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS" || item.length >= 12)) checks.push({ label: `${name} value`, pattern: new RegExp(item.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),name === "FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS" ? "i" : undefined) });
 }
 
 async function filesAt(path) {

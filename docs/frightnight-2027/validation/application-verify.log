@@ -6,32 +6,32 @@ $ vitest run
  RUN  v5.0.0 /home/codex/repos/duindorphalloween-frightnight-2027
 
 
- Test Files  158 passed | 2 skipped (160)
-      Tests  1476 passed | 6 skipped (1482)
-   Start at  04:35:35
-   Duration  18.56s (tests 59%, transform 22%, import 18%, worker 1%)
+ Test Files  161 passed | 2 skipped (163)
+      Tests  1505 passed | 6 skipped (1511)
+   Start at  05:03:32
+   Duration  19.03s (tests 57%, transform 22%, import 19%, worker 1%)
 
-    Isolate  160 workers spawned · ~116ms startup each (spawn + environment, per file)
-             at least ~1.58s faster with isolate: false — reuses workers across files instead of one per file
+    Isolate  163 workers spawned · ~117ms startup each (spawn + environment, per file)
+             at least ~1.61s faster with isolate: false — reuses workers across files instead of one per file
 
 $ node scripts/copy-maplibre-worker.mjs
 $ next build --webpack
 ▲ Next.js 16.3.5 (webpack)
 - Environments: .env.local
-✓ Running next.config.ts took 23ms
+✓ Running next.config.ts took 25ms
 - Experiments (use with caution):
   · cpus: 2
 
   Creating an optimized production build ...
-✓ Compiled successfully in 21.8s
+✓ Compiled successfully in 20.0s
   Running TypeScript ...
-  Finished TypeScript in 17.4s ...
+  Finished TypeScript in 13.0s ...
   Collecting page data using 2 workers ...
   Generating static pages using 2 workers (0/59) ...
   Generating static pages using 2 workers (14/59)
   Generating static pages using 2 workers (29/59)
   Generating static pages using 2 workers (44/59)
-✓ Generating static pages using 2 workers (59/59) in 504ms
+✓ Generating static pages using 2 workers (59/59) in 484ms
   Finalizing page optimization ...
   Collecting build traces ...
 

@@ -1,0 +1,89 @@
+{
+  "recordedAt": "2026-11-03T03:55:18.757372+00:00",
+  "scope": "Targeted legacy acceptance fixture time repair; isolated new local synthetic clone, no staging/runtime SQL changes",
+  "ciBeforeRepair": {
+    "revision": "4727cc77d750d98e074b27b3ba25331f9f7d80e9",
+    "run": 41573663970,
+    "databaseJob": 125712214271,
+    "pgTapFiles": 133,
+    "pgTapPassed": 4138,
+    "applicationAndBrowser": "passed",
+    "failureStep": "Exercise coherent grouping and reservation races",
+    "cause": "Fixed 2026 finale expiry precedes actual 2026-11-03 reservation.created_at, correctly rejected by portal_reservations_check1",
+    "overall": "failed; downstream gates not executed"
+  },
+  "repair": {
+    "fixtureOnly": true,
+    "calendar": "October31 in current database year+2, with consistent local event/start/window timestamps",
+    "clockOverride": false,
+    "constraintWeakened": false,
+    "gateSkipped": false
+  },
+  "localRace": {
+    "database": "codex_fn_finale_race_20261103",
+    "source": "New clone of own synthetic-only disposable harness; see LOCAL-FIXTURE-DRIFT.md for baseline limitations",
+    "command": "TOGETHER_TEST_DB_CONTAINER=supabase_db_duindorp_event_close_20261101 TOGETHER_TEST_DB_NAME=codex_fn_finale_race_20261103 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 node scripts/acceptance/finale-overrun-concurrency.mjs",
+    "exitCode": 0,
+    "code": "FINALE_OVERRUN_CONCURRENCY_VERIFIED",
+    "competingScheduleWriters": 2,
+    "competingLiveWriters": 2,
+    "exactlyOnePlace": true,
+    "retriesReuseReservation": true,
+    "invalidOverrunRejected": true,
+    "noMail": true,
+    "eslint": "passed",
+    "syntax": "passed"
+  },
+  "fullNewHeadCi": "pending; required before release",
+  "remoteMutations": false,
+  "sourceSha256": {
+    "scripts/acceptance/finale-overrun-concurrency.mjs": "c969b0240072a28bcc0e50cdad9248025d4a175af53680f19af458494c517940",
+    "supabase/tests/fixtures/future-legacy-calendar.inc": "b84442804990dbf4803683524ae5786bac718e3f54093efd83e6c59e7fc7e88c",
+    "scripts/acceptance/together-fixtures.mjs": "44bc8adc889d8932259d3d67aee38a668acd8de7b2d14ff43ee6082f085b1bb6",
+    "scripts/acceptance/group-operations-concurrency.mjs": "92ef8021d2361134d82cdcf07af0983dc402e8fcf4918dd49e6ac783b060788f",
+    "scripts/acceptance/world-policy-preservation.mjs": "269f81ad7fd857769179a57873002488d905eeabdcc7cbd71360633ba2661ef6",
+    "scripts/acceptance/live-planboard-read-concurrency.mjs": "cd627da7f6c666ac9da6a0be8dd23861e5680400e7310eaaf886894ea4a104f5",
+    "scripts/acceptance/world-compensation-concurrency.mjs": "0a942979a1e05ce4f2ac28e296588fb286aa4c3c8b36145d4aae7a0c78acca46",
+    "scripts/acceptance/registration-activation-concurrency.mjs": "5ac83dd2334ef8fbe198313451c065754a376d661cc88e5a431c88faee26cba7",
+    "scripts/acceptance/registration-management-concurrency.mjs": "d7696755c6665f1b8777fadfd198b0a5a9a97208ac9f4462bdd8251784e28916",
+    "scripts/acceptance/joint-route-concurrency.mjs": "0d756b32c0462abfbf39698aa62b8f356c1dd9f0a7d35dcbcf495b5076554f9c",
+    "scripts/acceptance/poortenboek-concurrency.mjs": "af8e4f23de329482233dcaa46175e2096e2ace9ba8e758d5f65da1e304d7e419",
+    "scripts/acceptance/poortkamer-concurrency.mjs": "fc88b5a505c730d29c73303ee265705a9d4934eb02c9a3c11ad2bc378142d53d",
+    "scripts/acceptance/editorial-concurrency.mjs": "b3aae2e92a2d7e06f2189da2146f51580a46ac5f916356152e0631497e543f7d"
+  },
+  "downstreamDateReview": {
+    "scope": "Limited read-only source review; not a full downstream HTTP acceptance claim",
+    "reviewed": [
+      "group-operations-concurrency.mjs",
+      "world-policy-preservation.mjs",
+      "live-planboard-read-concurrency.mjs",
+      "world-compensation-concurrency.mjs",
+      "registration-activation-concurrency.mjs",
+      "registration-management-concurrency.mjs",
+      "joint-route-concurrency.mjs"
+    ],
+    "additionalConcreteDateFaultsFound": 0,
+    "basis": "Actual reservation timestamps are relative to current time; historical calendar-only fixtures do not create expiring live reservations. New activation tokens are created during the fixture. No source changed without reproduced failure."
+  },
+  "worldCompensationProbe": {
+    "database": "codex_fn_world_probe_20261103",
+    "sourceUnchanged": true,
+    "exitCode": 0,
+    "code": "WORLD_COMPENSATION_CONCURRENCY_VERIFIED",
+    "simultaneousWriters": 6,
+    "oneArrivalDraw": true,
+    "noReroll": true,
+    "settlementTotal": 3,
+    "noMail": true
+  },
+  "independentDownstreamReview": {
+    "reviewer": "frontend_v7",
+    "readOnly": true,
+    "scripts": [
+      "poortenboek-concurrency.mjs",
+      "poortkamer-concurrency.mjs",
+      "editorial-concurrency.mjs"
+    ],
+    "findings": "Child credentials and newsletter/push deadlines are current-time relative. The room fixture contains a historical display window, while tested access/transfer/invite/chat paths do not use it as a current-time boundary. No concrete date failure found; no source edits."
+  }
+}

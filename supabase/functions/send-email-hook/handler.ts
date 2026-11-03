@@ -60,10 +60,15 @@ export async function handleMail(request: Request, deps: Dependencies): Promise<
   if (!transactional && (!payload?.user || !payload?.email_data)) return result(422, "INVALID_PAYLOAD");
   const mailMode = env("MAIL_MODE") ?? "disabled";
   const mode = transactional ? mailMode : env("AUTH_MAIL_MODE") ?? mailMode;
+  const frightnightAuthPolicy = !transactional && environment === "staging" && env("FRIGHTNIGHT_ENABLED") === "true";
+  const authRecipients = (env("FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS") ?? "").split(",").map(v => v.trim().toLowerCase()).filter(Boolean);
+  // A staging configuration error must not broaden who can receive an OTP.
+  // Existing transactional workers retain their own independent mail policy.
+  if (frightnightAuthPolicy && (env("AUTH_MAIL_MODE") !== "allowlist" || !authRecipients.length || authRecipients.length > 50 || authRecipients.some(v => !/^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/.test(v)))) return result(503, "STAGING_AUTH_ALLOWLIST_REQUIRED");
   const probe = transactional?.providerProbe === true || payload?.email_data?.email_action_type === "staging_provider_probe";
   const deliveries = transactional ? [{ email: transactional.to, token: "", template: "auth_otp" as const }] : deliveriesForPayload(payload).deliveries;
   if (!deliveries.length) return result(422, "UNSUPPORTED_OR_INVALID_AUTH_ACTION");
-  if (deliveries.some(d => !recipientAllowed(mode, d.email.trim().toLowerCase(), allowlist) && !(transactional?.messageType === "mail_provider_test" && transactional.outboxId && simulatedTestRecipient(d.email)))) return result(403, "RECIPIENT_NOT_ALLOWED");
+  if (deliveries.some(d => !recipientAllowed(mode, d.email.trim().toLowerCase(), frightnightAuthPolicy ? new Set(authRecipients) : allowlist) && !(transactional?.messageType === "mail_provider_test" && transactional.outboxId && simulatedTestRecipient(d.email)))) return result(403, "RECIPIENT_NOT_ALLOWED");
   if (transactional?.editorial) {
     const editorialAllowed = new Set((env("EDITORIAL_ALLOWED_RECIPIENTS") ?? "").split(",").map(v => v.trim().toLowerCase()));
     if (env("NEWSLETTER_SENDING_ENABLED") !== "true" || (environment !== "production" && !editorialAllowed.has(transactional.to))) return result(403, "EDITORIAL_RECIPIENT_NOT_ALLOWED");

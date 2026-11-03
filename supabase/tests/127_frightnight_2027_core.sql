@@ -515,5 +515,135 @@ select ok(not exists(select 1 from app_private.fn_audit where action='contact.sa
 select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 select ok(not exists(select 1 from jsonb_array_elements(api.frightnight_admin_list('frightnight-2027-test-replay','registrations',0,100)->'items') x where x ?| array['contactName','contactPhone']),'administrative registration listing excludes owner contact fields');
 
+-- A provider quote remains immutable across retries, failures and tariff edits.
+-- The controller uses existing synthetic Auth fixtures in a fresh isolated event.
+create function pg_temp.fn_quote_cmd(who uuid,cmd text,body jsonb default '{}',k uuid default gen_random_uuid()) returns jsonb language plpgsql as $$begin
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',who,'role','authenticated')::text,true);
+ return api.frightnight_command('frightnight-2027-test-quotes',cmd,body,k);
+end$$;
+create function pg_temp.fn_quote_order(who uuid) returns jsonb language plpgsql as $$declare o jsonb;begin
+ o:=api.frightnight_payment_create('frightnight-2027-test-quotes',who,gen_random_uuid());
+ return api.frightnight_payment_bind('frightnight-2027-test-quotes',(o->>'order_id')::uuid,'ct_'||(o->>'order_id'),null);
+end$$;
+create function pg_temp.fn_quote_confirm(k text,st text,ev text) returns jsonb language plpgsql as $$declare o jsonb;begin
+ select value into o from fn_test_state where key=k;
+ return api.frightnight_payment_confirm('frightnight-2027-test-quotes',o->>'provider_ref',st,(o->>'amount_cents')::integer,'EUR',ev,jsonb_build_object('order_id',o->>'order_id','event_id',o->>'event_id','testmode',true,'environment','staging'));
+end$$;
+select api.frightnight_bootstrap('frightnight-2027-test-quotes','f7270000-0000-0000-0000-000000000001','staging','nocteiuvohesvqbowchw:staging:duindorphalloweenstg');
+insert into fn_test_state select 'quote-seed',pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000001','test.seed')->'result';
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000001','test.walk.fixture');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000002','registration.save','{"label":"Quote family A","routeType":"lantern","adults":1,"children":1,"maxIntensity":2,"consent":true,"termsVersion":"2027-test-v1"}');
+insert into fn_test_state select 'quote-a',pg_temp.fn_quote_order('f7270000-0000-0000-0000-000000000002');
+select is((select (value->>'amount_cents')::integer from fn_test_state where key='quote-a'),700,'first two-person checkout fixes its seven-euro server quote');
+insert into fn_test_state select 'quote-a-before',to_jsonb(r) from app_private.fn_registrations r where id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-a');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000002','registration.save','{"label":"Unpaid upgrade attempt","routeType":"lantern","adults":2,"children":2,"maxIntensity":2}')$$,'22023','PAYMENT_QUOTE_LOCKED','an open seven-euro quote cannot become a four-person registration');
+select is((select to_jsonb(r) from app_private.fn_registrations r where id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-a')),(select value from fn_test_state where key='quote-a-before'),'refused material edit changes neither people, price, version nor start slot');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000002','registration.save','{"label":"Another evening","routeType":"roots","adults":1,"children":1,"maxIntensity":2}')$$,'22023','PAYMENT_QUOTE_LOCKED','a quoted registration cannot change its evening even before payment');
+select lives_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000002','registration.save','{"label":"Quote family A preferences","routeType":"lantern","adults":1,"children":1,"maxIntensity":1,"avoidSmoke":true,"startSlot":"2027-10-30T15:30:00Z"}')$$,'quote locking permits label, comfort and advisory start changes');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000003','registration.save','{"label":"Quote family B failed attempt","routeType":"lantern","adults":1,"children":1,"maxIntensity":2,"consent":true,"termsVersion":"2027-test-v1"}');
+insert into fn_test_state select 'quote-b-old',pg_temp.fn_quote_order('f7270000-0000-0000-0000-000000000003');
+select pg_temp.fn_quote_confirm('quote-b-old','failed','quote-b:failed');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000003','registration.save','{"label":"Upgrade after failure","routeType":"lantern","adults":2,"children":2,"maxIntensity":2}')$$,'22023','PAYMENT_QUOTE_LOCKED','a failed attempt still locks people because late provider payment remains possible');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000004','registration.save','{"label":"Unquoted tariff family","routeType":"lantern","adults":1,"children":1,"maxIntensity":2,"consent":true,"termsVersion":"2027-test-v1"}');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000001','admin.settings',jsonb_build_object('expectedVersion',(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{event,version}')::integer,'priceCents',500,'reason','Synthetic quote regression: new tariff without rewriting existing quotes'));
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000002','registration.save','{"label":"Quote family A unchanged tariff","routeType":"lantern","adults":1,"children":1,"maxIntensity":1,"startSlot":"2027-10-30T15:30:00Z"}');
+select is((api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,amountCents}')::integer,700,'a preference save after an event tariff increase preserves the open original quote');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000003','registration.save','{"label":"Quote family B retry","routeType":"lantern","adults":1,"children":1,"maxIntensity":1}');
+select is((api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,amountCents}')::integer,700,'a failed-attempt preference save also preserves its original quote after tariff change');
+insert into fn_test_state select 'quote-b-retry',pg_temp.fn_quote_order('f7270000-0000-0000-0000-000000000003');
+select is((select (value->>'amount_cents')::integer from fn_test_state where key='quote-b-retry'),700,'retry creates a new attempt at the existing immutable amount');
+select isnt((select value->>'order_id' from fn_test_state where key='quote-b-retry'),(select value->>'order_id' from fn_test_state where key='quote-b-old'),'failed quote retry has its own auditable payment attempt');
+select pg_temp.fn_quote_confirm('quote-b-retry','paid','quote-b:retry-paid');
+select pg_temp.fn_quote_confirm('quote-b-old','expired','quote-b:late-expired');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,paymentStatus}','paid','an older expired callback cannot regress the later paid retry registration');
+select pg_temp.fn_quote_confirm('quote-b-old','paid','quote-b:late-paid');
+select is((api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,persons}')::integer,2,'late paid on an older failed quote activates only its original two places');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,status}','active','matching late payment keeps the original registration eligible without free upgrades');
+select pg_temp.fn_quote_confirm('quote-b-old','paid','quote-b:late-paid');
+select is((select count(*) from app_private.fn_ledger where order_id=(select (value->>'order_id')::uuid from fn_test_state where key='quote-b-old') and kind='receipt'),1::bigint,'replayed late provider payment creates exactly one receipt for that attempt');
+select pg_temp.fn_quote_confirm('quote-a','paid','quote-a:paid');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000002','journey.start',jsonb_build_object('expectedVersion',1,'code',(select value->>'startCode' from fn_test_state where key='quote-seed')));
+select is((select persons from app_private.fn_destinations where event_id=(select id from app_private.events where slug='frightnight-2027-test-quotes') and party_id=(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{journey,id}')::uuid and state='current'),2,'the old seven-euro callback releases a route reservation for two people only');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000004','registration.save','{"label":"Unquoted tariff family","routeType":"lantern","adults":1,"children":1,"maxIntensity":2}');
+select is((api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,amountCents}')::integer,1000,'an existing unquoted registration can accept the current new tariff');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000005','registration.save','{"label":"Mismatch defensive fixture","routeType":"lantern","adults":1,"children":1,"maxIntensity":2,"consent":true,"termsVersion":"2027-test-v1"}');
+insert into fn_test_state select 'quote-mismatch',pg_temp.fn_quote_order('f7270000-0000-0000-0000-000000000005');
+select is((select (value->>'amount_cents')::integer from fn_test_state where key='quote-mismatch'),1000,'new registrations receive the changed tariff without rewriting old attempts');
+-- Deliberately simulate an inconsistent registration using private rollback-only
+-- fixture SQL: no public command can perform this now that a quote exists.
+update app_private.fn_registrations set adults=2,children=2,amount_cents=2000 where id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-mismatch');
+insert into app_private.fn_bookings(event_id,activity_id,registration_id,seats,status) select a.event_id,a.id,(select (value->>'registration_id')::uuid from fn_test_state where key='quote-mismatch'),4,'booked' from app_private.fn_activities a where a.event_id=(select id from app_private.events where slug='frightnight-2027-test-quotes') order by a.starts_at limit 1;
+select pg_temp.fn_quote_confirm('quote-mismatch','paid','quote-mismatch:paid');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,paymentStatus}','paid','an inconsistent quote still records the verified money as received');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,status}','draft','an inconsistent old amount never grants active places');
+select is((select count(*) from app_private.fn_bookings where registration_id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-mismatch') and status='booked'),0::bigint,'quote invalidation releases still-booked places under the same payment lock');
+select ok(exists(select 1 from app_private.fn_notifications where registration_id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-mismatch') and title='Betaling ontvangen; bedrag afstemmen'),'quote mismatch creates a durable understandable compensation notification');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000005','registration.save','{"label":"Mismatch same people edited","routeType":"lantern","adults":2,"children":2,"maxIntensity":1,"startSlot":"2027-10-30T15:45:00Z"}');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,status}','draft','start or preference edits cannot bypass quote-mismatch compensation gating');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000005','activity.book',jsonb_build_object('activityId',(select id from app_private.fn_activities where event_id=(select id from app_private.events where slug='frightnight-2027-test-quotes') limit 1)))$$,'42501','PAID_REGISTRATION_REQUIRED','mismatched payment cannot grant larger unpaid activity places');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000005','journey.start',jsonb_build_object('expectedVersion',1,'code',(select value->>'startCode' from fn_test_state where key='quote-seed')))$$,'42501','PAID_REGISTRATION_REQUIRED','a mismatch cannot start a route despite financial paid truth');
+select pg_temp.fn_quote_confirm('quote-mismatch','paid','quote-mismatch:paid');
+select is((select count(*) from app_private.fn_ledger where order_id=(select (value->>'order_id')::uuid from fn_test_state where key='quote-mismatch') and kind='receipt'),1::bigint,'mismatch reconciliation replay preserves one financial receipt without issuing rights');
+select is((select count(*) from app_private.email_outbox),(select (value->>'outbox')::bigint from fn_test_state where key='legacy-counts'),'quote edits, late retries and compensation never enqueue legacy email');
+
+-- A refunded retry must not be undone by payment on an older failed attempt.
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','registration.save','{"label":"Failed-paid-refunded-late fixture","routeType":"lantern","adults":1,"children":1,"maxIntensity":2,"consent":true,"termsVersion":"2027-test-v1"}');
+select ok(not(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,paymentQuoteLocked}')::boolean,'registration DTO reports unquoted state before its first attempt');
+insert into fn_test_state select 'quote-refund-old',pg_temp.fn_quote_order('f7270000-0000-0000-0000-000000000006');
+select ok((api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,paymentQuoteLocked}')::boolean,'registration DTO exposes the server-owned immutable quote flag');
+select pg_temp.fn_quote_confirm('quote-refund-old','failed','quote-refund:old-failed');
+select ok((api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,paymentQuoteLocked}')::boolean,'failed attempts retain the immutable quote flag');
+insert into fn_test_state select 'quote-refund-retry',pg_temp.fn_quote_order('f7270000-0000-0000-0000-000000000006');
+select pg_temp.fn_quote_confirm('quote-refund-retry','paid','quote-refund:retry-paid');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000001','test.clock','{"time":"2027-10-30T11:30:00Z"}');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','activity.book',jsonb_build_object('activityId',(select id from app_private.fn_activities where event_id=(select id from app_private.events where slug='frightnight-2027-test-quotes') order by starts_at limit 1)));
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','activity.book',jsonb_build_object('activityId',(select id from app_private.fn_activities where event_id=(select id from app_private.events where slug='frightnight-2027-test-quotes') order by starts_at desc limit 1)));
+insert into fn_test_state select 'quote-checked-booking',jsonb_build_object('id',b.id,'activityId',b.activity_id) from app_private.fn_bookings b join app_private.fn_activities a on a.id=b.activity_id where b.registration_id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-refund-retry') order by a.starts_at limit 1;
+insert into fn_test_state select 'quote-booked-booking',jsonb_build_object('id',b.id,'activityId',b.activity_id) from app_private.fn_bookings b join app_private.fn_activities a on a.id=b.activity_id where b.registration_id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-refund-retry') order by a.starts_at desc limit 1;
+select lives_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000001','admin.activity.checkin',jsonb_build_object('bookingId',(select value->>'id' from fn_test_state where key='quote-checked-booking')))$$,'staff can check in an active paid registration before its refund');
+select pg_temp.fn_quote_confirm('quote-refund-retry','refunded','quote-refund:retry-refunded');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000006","role":"authenticated"}',true);
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,status}','cancelled','refunding the paid retry cancels its route rights');
+select is((select status from app_private.fn_bookings where id=(select (value->>'id')::uuid from fn_test_state where key='quote-booked-booking')),'cancelled','refund releases future booked activity places');
+select is((select status from app_private.fn_bookings where id=(select (value->>'id')::uuid from fn_test_state where key='quote-checked-booking')),'checked_in','refund preserves historical checked-in attendance');
+select is((select (x->>'available')::integer from jsonb_array_elements(api.frightnight_snapshot('frightnight-2027-test-quotes')->'activities')x where x->>'id'=(select value->>'activityId' from fn_test_state where key='quote-booked-booking')),30,'refund returns all future booked seats to capacity');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000001','admin.activity.checkin',jsonb_build_object('bookingId',(select value->>'id' from fn_test_state where key='quote-booked-booking')))$$,'22023','BOOKING_NOT_ACTIVE','staff cannot check in a booking cancelled by refund');
+select lives_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','activity.cancel',jsonb_build_object('activityId',(select value->>'activityId' from fn_test_state where key='quote-booked-booking')))$$,'owner can safely repeat cancellation after refund without paid status');
+select is((select (x->>'available')::integer from jsonb_array_elements(api.frightnight_snapshot('frightnight-2027-test-quotes')->'activities')x where x->>'id'=(select value->>'activityId' from fn_test_state where key='quote-booked-booking')),30,'repeated cancellation never releases capacity twice');
+update app_private.fn_bookings set status='booked' where id=(select (value->>'id')::uuid from fn_test_state where key='quote-booked-booking');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000001','admin.activity.checkin',jsonb_build_object('bookingId',(select value->>'id' from fn_test_state where key='quote-booked-booking')))$$,'22023','BOOKING_NOT_ACTIVE','even a stale booked row cannot bypass inactive registration check-in guard');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','activity.cancel',jsonb_build_object('activityId',(select value->>'activityId' from fn_test_state where key='quote-booked-booking')));
+
+select pg_temp.fn_quote_confirm('quote-refund-old','paid','quote-refund:old-late-paid');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,status}','cancelled','late paid on the older failed attempt cannot reactivate a refunded registration');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,paymentStatus}','paid','money received after cancellation is recorded without restoring route rights');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','quest.answer','{"questId":"riddle-1","answer":"kroon"}')$$,'42501','PAID_REGISTRATION_REQUIRED','cancelled late payment cannot issue a new riddle award');
+update app_private.fn_parties set state='finished' where id=(select party_id from app_private.fn_members where registration_id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-refund-old'));
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','beacon.complete')$$,'42501','PAID_REGISTRATION_REQUIRED','a formerly finished party cannot issue a new beacon award after cancellation');
+
+select ok(exists(select 1 from app_private.fn_notifications where registration_id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-refund-old') and title='Betaling ontvangen na annulering'),'late money after cancellation creates a durable support and refund notification');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','registration.save','{"label":"Cancelled preference update","routeType":"lantern","adults":1,"children":1,"maxIntensity":1,"startSlot":"2027-10-30T16:00:00Z"}');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,status}','cancelled','advisory start and comfort changes cannot reactivate cancelled late payment');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','activity.book',jsonb_build_object('activityId',(select id from app_private.fn_activities where event_id=(select id from app_private.events where slug='frightnight-2027-test-quotes') limit 1)))$$,'42501','PAID_REGISTRATION_REQUIRED','cancelled late payment cannot book new activity places');
+select throws_ok($$select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000006','journey.start',jsonb_build_object('expectedVersion',1,'code',(select value->>'startCode' from fn_test_state where key='quote-seed')))$$,'42501','PAID_REGISTRATION_REQUIRED','cancelled late payment cannot obtain a start reservation');
+select is((api.frightnight_payment_for_refund('frightnight-2027-test-quotes','f7270000-0000-0000-0000-000000000001',(select (value->>'registration_id')::uuid from fn_test_state where key='quote-refund-old'),'f7270000-0000-0000-0000-000000000397','Controlled refund of older late-paid attempt')->>'order_id'),(select value->>'order_id' from fn_test_state where key='quote-refund-old'),'finance can select the older still-paid attempt before the newer already-refunded attempt');
+select pg_temp.fn_quote_confirm('quote-refund-old','refunded','quote-refund:old-refunded');
+select pg_temp.fn_quote_confirm('quote-refund-old','paid','quote-refund:paid-after-own-refund');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,paymentStatus}','refunded','a paid callback after refund of that same attempt never regresses refund truth');
+select is(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{registration,status}','cancelled','the fully refunded registration remains cancelled after every late callback');
+-- Reset archives test data; late provider truth must retain that archive boundary.
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000007','registration.save','{"label":"Archived pending quote fixture","routeType":"lantern","adults":1,"children":1,"maxIntensity":2,"consent":true,"termsVersion":"2027-test-v1"}');
+insert into fn_test_state select 'quote-archive-old',pg_temp.fn_quote_order('f7270000-0000-0000-0000-000000000007');
+update app_private.fn_registrations set synthetic=true where id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-archive-old');
+select pg_temp.fn_quote_cmd('f7270000-0000-0000-0000-000000000001','test.reset',jsonb_build_object('confirmation','frightnight-2027-test-quotes','runId',(api.frightnight_snapshot('frightnight-2027-test-quotes')#>>'{event,runId}')));
+select pg_temp.fn_quote_confirm('quote-archive-old','paid','quote-archive:late-paid');
+select is((select status from app_private.fn_registrations where id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-archive-old')),'archived','late verified payment preserves the reset archive boundary');
+select is((select count(*) from app_private.fn_destinations where event_id=(select id from app_private.events where slug='frightnight-2027-test-quotes') and party_id=(select party_id from app_private.fn_members where registration_id=(select (value->>'registration_id')::uuid from fn_test_state where key='quote-archive-old')) and state='current'),0::bigint,'archived late payment cannot acquire a destination or revive old jobs');
+
+select is((select payload->>'fulfillment' from app_private.fn_mail_sink where dedupe_key=(select 'paid:'||(value->>'order_id') from fn_test_state where key='quote-a')),'active','paid sink confirms usable Nightpass only for an active matching registration');
+select is((select payload->>'fulfillment' from app_private.fn_mail_sink where dedupe_key=(select 'paid:'||(value->>'order_id') from fn_test_state where key='late-order')),'start_required','paid sink preserves the original full-start-slot support state');
+select is((select payload->>'fulfillment' from app_private.fn_mail_sink where dedupe_key=(select 'paid:'||(value->>'order_id') from fn_test_state where key='quote-mismatch')),'quote_mismatch','paid sink describes amount mismatch instead of asserting route readiness');
+select is((select payload->>'fulfillment' from app_private.fn_mail_sink where dedupe_key=(select 'paid:'||(value->>'order_id') from fn_test_state where key='quote-refund-old')),'cancelled','paid sink describes receipt after cancellation without claiming restored rights');
+
 select * from finish();
 rollback;

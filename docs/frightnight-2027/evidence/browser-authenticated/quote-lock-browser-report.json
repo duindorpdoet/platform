@@ -1,0 +1,129 @@
+{
+  "testedAt": "2026-11-03T04:05:11.689Z",
+  "buildId": "Y-D-8X-SAa492KG6nnWGs",
+  "checks": [
+    {
+      "check": "Local quote probe requires explicit deterministic contract adapter before any payment action",
+      "passed": true
+    },
+    {
+      "check": "Existing local fixture actor consents only to own quote test edition",
+      "passed": true
+    },
+    {
+      "check": "Draft without an issued quote still permits people and route edits",
+      "passed": true
+    },
+    {
+      "check": "Actual participant checkout issues an explicitly simulated contract quote without external PSP",
+      "passed": true
+    },
+    {
+      "check": "Server snapshot explicitly marks open payment quote immutable",
+      "passed": true
+    },
+    {
+      "check": "Open quote disables only quoted people and route",
+      "passed": true
+    },
+    {
+      "check": "Open quote keeps label/start/comfort and owner contact controls usable",
+      "passed": true
+    },
+    {
+      "check": "Saving unlocked preferences explicitly preserves disabled field server values in command payload",
+      "passed": true
+    },
+    {
+      "check": "Actual start/comfort save preserves immutable original amount after event price changed",
+      "passed": true
+    },
+    {
+      "check": "Owner can update separate private contact form while quote remains locked",
+      "passed": true
+    },
+    {
+      "check": "Failed provider attempt remains a server-owned immutable quote",
+      "passed": true
+    },
+    {
+      "check": "Failed quote disables only quoted people and route",
+      "passed": true
+    },
+    {
+      "check": "Failed quote keeps label/start/comfort and owner contact controls usable",
+      "passed": true
+    },
+    {
+      "check": "Direct client tampering is rejected409 with clear organization-support explanation",
+      "passed": true
+    },
+    {
+      "check": "Controlled contract confirmation uses original quote and active capacity, without client-paid authority",
+      "passed": true
+    },
+    {
+      "check": "Controlled test refund preserves cancelled lifecycle",
+      "passed": true
+    },
+    {
+      "check": "Refunded quote disables only quoted people and route",
+      "passed": true
+    },
+    {
+      "check": "Refunded quote keeps label/start/comfort and owner contact controls usable",
+      "passed": true
+    },
+    {
+      "check": "Start-slot update after refund remains cancelled and does not reactivate route rights",
+      "passed": true
+    },
+    {
+      "check": "Quote-locked registration remains readable at 390px",
+      "passed": true
+    },
+    {
+      "check": "Quote explanation paragraphs use readable full width at 390px",
+      "passed": true,
+      "widths": [
+        {
+          "paragraph": 300,
+          "container": 330
+        },
+        {
+          "paragraph": 300,
+          "container": 330
+        }
+      ]
+    },
+    {
+      "check": "Quote-locked registration remains readable at 1440px",
+      "passed": true
+    },
+    {
+      "check": "Quote explanation paragraphs use readable full width at 1440px",
+      "passed": true,
+      "widths": [
+        {
+          "paragraph": 890,
+          "container": 920
+        },
+        {
+          "paragraph": 890,
+          "container": 920
+        }
+      ]
+    },
+    {
+      "check": "Actual quote-lock UI flow has no page errors",
+      "passed": true
+    },
+    {
+      "check": "Only own quote fixture edition closes; financial/audit/auth and earlier event records preserved",
+      "passed": true
+    }
+  ],
+  "pageErrors": [],
+  "limits": "Actual local GoTrue/test database. No real OTP, external PSP, provider walking verification or remote staging evidence.",
+  "edition": "frightnight-2027-test-quote-mw05zpy8"
+}

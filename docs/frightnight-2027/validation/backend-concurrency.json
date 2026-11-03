@@ -1,7 +1,7 @@
 {
   "passed": true,
   "database": "frightnight_2027_acceptance",
-  "slug": "frightnight-2027-test-race-946bd38cacfd",
+  "slug": "frightnight-2027-test-race-7a14dd5808fd",
   "families": 12,
   "simultaneousStarts": 12,
   "walking": 2,
@@ -21,9 +21,20 @@
   "duplicateRefundRejected": 1,
   "alreadyRefundedCreatesIntent": false,
   "oldRefundedInvitationRejectedWithoutMutation": true,
+  "oldRefundedInvitationDenial": "SAME_PAID_ROUTE_REQUIRED",
   "concurrentJoinRefund": "rejected-after-refund",
   "joinRefundActiveClaims": 0,
   "joinRefundLedger": 1,
   "sourceHistoryPreserved": true,
-  "durationSeconds": 7.446
+  "concurrentCheckoutEdit": {
+    "families": 1,
+    "outcome": "rejected-after-checkout",
+    "quotedPersons": 2,
+    "activePersons": 2,
+    "amountCents": 700,
+    "pricePerPersonCents": 350,
+    "freePlaces": 0,
+    "legacyOutboxUnchanged": true
+  },
+  "durationSeconds": 8.082
 }

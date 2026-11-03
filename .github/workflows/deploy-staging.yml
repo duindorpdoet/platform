@@ -346,11 +346,12 @@ jobs:
       FRIGHTNIGHT_MAIL_MODE: sink
       FRIGHTNIGHT_HARDWARE_ENABLED: "false"
       FRIGHTNIGHT_BOOTSTRAP_ACTOR_ID: ${{ vars.FRIGHTNIGHT_BOOTSTRAP_ACTOR_ID }}
+      FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS: ${{ secrets.FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS }}
       FRIGHTNIGHT_REVIEWED_TIMER_SHA256: ${{ vars.FRIGHTNIGHT_REVIEWED_TIMER_SHA256 }}
       MOLLIE_TEST_API_KEY: ${{ secrets.MOLLIE_TEST_API_KEY }}
       EVENT_TIMEZONE: Europe/Amsterdam
       REGISTRATION_MODE: staging_test
-      AUTH_MAIL_MODE: live
+      AUTH_MAIL_MODE: allowlist
       MAIL_MODE: allowlist
       MAIL_ALLOWED_RECIPIENTS: ${{ vars.TEST_EMAIL_1 }},${{ vars.TEST_EMAIL_2 }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
@@ -404,7 +405,7 @@ jobs:
       DG_RUNTIME_ENV_KEYS: >-
         APP_ENVIRONMENT APP_REVISION APP_URL NEXT_PUBLIC_SITE_URL ALLOWED_ORIGINS AUTH_SITE_URL
         EVENT_SLUG EVENT_TIMEZONE REGISTRATION_MODE MAIL_MODE AUTH_MAIL_MODE MAIL_ALLOWED_RECIPIENTS
-        FRIGHTNIGHT_ENABLED FRIGHTNIGHT_PROJECT_REF FRIGHTNIGHT_PAYMENT_PROVIDER FRIGHTNIGHT_MAIL_MODE FRIGHTNIGHT_HARDWARE_ENABLED MOLLIE_TEST_API_KEY
+        FRIGHTNIGHT_ENABLED FRIGHTNIGHT_PROJECT_REF FRIGHTNIGHT_PAYMENT_PROVIDER FRIGHTNIGHT_MAIL_MODE FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS FRIGHTNIGHT_HARDWARE_ENABLED MOLLIE_TEST_API_KEY
         NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
         NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT
         REDACTIEKAMER_ENABLED NEWSLETTER_SENDING_ENABLED WEB_PUSH_SENDING_ENABLED EDITORIAL_ALLOWED_RECIPIENTS EDITORIAL_TOKEN_SECRET
@@ -470,10 +471,6 @@ jobs:
         run: node scripts/deploy/check-frightnight-safety.mjs --schema-only
       - name: Inventory dedicated VPS cron and systemd timers without printing commands
         run: node scripts/deploy/audit-frightnight-vps-timers.mjs
-      - name: Configure only the explicitly selected new staging edition
-        run: node scripts/deploy/bootstrap-frightnight.mjs
-      - name: Initialize only ownerless synthetic 2027 records without auth or mail delivery
-        run: node scripts/deploy/initialize-frightnight.mjs
       - name: Initialize central provider configuration without activation
         run: node scripts/deploy/bootstrap-mail-config.mjs
       - name: Automatically preserve SendGrid suppressions
@@ -494,12 +491,19 @@ jobs:
             "SEND_EMAIL_HOOK_SECRET=${SEND_EMAIL_HOOK_SECRET}" \
             "MAIL_MODE=${MAIL_MODE}" \
             "AUTH_MAIL_MODE=${AUTH_MAIL_MODE}" \
+            "FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS=${FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS}" \
             "MAIL_ALLOWED_RECIPIENTS=${MAIL_ALLOWED_RECIPIENTS}" \
             "APP_ENVIRONMENT=staging" \
             "FRIGHTNIGHT_ENABLED=true" \
             "NEWSLETTER_SENDING_ENABLED=${NEWSLETTER_SENDING_ENABLED}" \
             "EDITORIAL_ALLOWED_RECIPIENTS=${EDITORIAL_ALLOWED_RECIPIENTS}"
           pnpm exec supabase functions deploy send-email-hook --project-ref "${SUPABASE_PROJECT_REF}" --no-verify-jwt --use-api
+      - name: Prove owner Auth allowlist binding without requesting authentication mail
+        run: node scripts/deploy/frightnight-auth-policy.mjs
+      - name: Configure only the explicitly selected new staging edition
+        run: node scripts/deploy/bootstrap-frightnight.mjs
+      - name: Initialize only ownerless synthetic 2027 records without auth or mail delivery
+        run: node scripts/deploy/initialize-frightnight.mjs
       - name: Retain signed SendGrid webhook for migration history
         run: node scripts/deploy/configure-sendgrid-webhook.mjs
       - name: Deploy through the Sites VPS interface

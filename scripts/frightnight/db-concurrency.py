@@ -126,7 +126,14 @@ try:
     command(actor, 'party.join', {'token': old_refund_invitation, 'consent': True})
     raise AssertionError('Old invitation reopened a refunded party.')
 except RuntimeError as error:
-    if 'SAME_PAID_ROUTE_REQUIRED' not in str(error):
+    # If the finale scan won before refund, the target is already finished and
+    # the invitation-state guard correctly runs before the member-payment guard.
+    finished_refunded_target = sql(f"select jsonb_build_object('finished',state='finished') from app_private.fn_parties where id='{refund_snapshot['journey']['id']}' and event_id='{refund_order['event_id']}';")['finished']
+    if 'SAME_PAID_ROUTE_REQUIRED' in str(error):
+        old_invitation_denial = 'SAME_PAID_ROUTE_REQUIRED'
+    elif refund_scan_outcome == 'accepted-before-refund' and finished_refunded_target and 'INVITATION_INVALID' in str(error):
+        old_invitation_denial = 'INVITATION_INVALID_FINISHED_FINALE'
+    else:
         raise
 assert membership_digest() == before_old_join, 'Rejected invitation changed membership, claims or history.'
 # A separate paid target races joining against provider-confirmed refund.
@@ -152,4 +159,33 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
     assert join_refund_future.result()['status'] == 'refunded'
 join_refund_integrity = sql(f"select jsonb_build_object('activeClaims',(select count(*) from app_private.fn_destinations where state='current' and party_id=(select party_id from app_private.fn_members where registration_id='{join_order['registration_id']}')),'refundLedger',(select count(*) from app_private.fn_ledger where order_id='{join_order['order_id']}' and kind='refund'),'sourceVisits',(select count(*) from app_private.fn_visits where registration_id=app_private.fn_registration('{join_order['event_id']}','{actor}')));")
 assert join_refund_integrity == {'activeClaims': 0, 'refundLedger': 1, 'sourceVisits': 1}, join_refund_integrity
-print(json.dumps({'passed': True, 'database': args.database, 'slug': slug, 'families': args.families, 'simultaneousStarts': args.families, 'walking': len(walking), 'waiting': waiting, 'overbooked': 0, 'concurrentReplayRequests': 2, 'visits': 1, 'awards': 1, 'legacyPayments': 0, 'legacyGroups': 0, 'sinkMessages': legacy['sink'], 'concurrentRefundScan': refund_scan_outcome, 'refundedPartyActiveClaims': 0, 'refundLedger': 1, 'distinctRefundRequests': 2, 'fullRefundClaims': 1, 'duplicateRefundRejected': 1, 'alreadyRefundedCreatesIntent': False, 'oldRefundedInvitationRejectedWithoutMutation': True, 'concurrentJoinRefund': join_refund_outcome, 'joinRefundActiveClaims': 0, 'joinRefundLedger': 1, 'sourceHistoryPreserved': True, 'durationSeconds': round(time.monotonic()-started, 3)}, indent=2))
+# Checkout and a material edit race for the same event lock. If the edit wins,
+# the new larger amount must be quoted; if checkout wins, the edit must fail.
+quote_actor = str(uuid.uuid4())
+sql(f"insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data) values('{quote_actor}','quote-race-{quote_actor}@example.invalid',now(),'{{}}','{{}}');")
+command(quote_actor, 'registration.save', {'label': 'Synthetic quote race', 'routeType': 'lantern', 'adults': 1, 'children': 1, 'maxIntensity': 1})
+quote_mail_before = sql("select jsonb_build_object('outbox',count(*)) from app_private.email_outbox;")
+def race_material_edit():
+    try:
+        command(quote_actor, 'registration.save', {'label': 'Synthetic quote race', 'routeType': 'lantern', 'adults': 2, 'children': 2, 'maxIntensity': 1})
+        return 'edited-before-checkout'
+    except RuntimeError as error:
+        if 'PAYMENT_QUOTE_LOCKED' not in str(error):
+            raise
+        return 'rejected-after-checkout'
+def race_quote_create():
+    return sql(f"select api.frightnight_payment_create('{slug}','{quote_actor}','{uuid.uuid4()}');")
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+    edit_future = pool.submit(race_material_edit)
+    quote_future = pool.submit(race_quote_create)
+    quote_edit_outcome, quote_order = edit_future.result(), quote_future.result()
+quote_people = 4 if quote_edit_outcome == 'edited-before-checkout' else 2
+assert quote_order['amount_cents'] == quote_people * 350, 'Concurrent checkout quoted an obsolete amount.'
+sql(f"select api.frightnight_payment_bind('{slug}','{quote_order['order_id']}','ct_{quote_order['order_id']}',null);")
+quote_metadata = {'order_id': quote_order['order_id'], 'event_id': quote_order['event_id'], 'testmode': True, 'environment': 'staging'}
+sql(f"select api.frightnight_payment_confirm('{slug}','ct_{quote_order['order_id']}','paid',{quote_order['amount_cents']},'EUR','quote-race-paid:{quote_order['order_id']}',{literal(json.dumps(quote_metadata))}::jsonb);")
+quote_after = command(quote_actor, 'notification.read', {'notificationId': str(uuid.uuid4())})['snapshot']['registration']
+assert quote_after['persons'] == quote_people and quote_after['amountCents'] == quote_people * 350 and quote_after['status'] == 'active' and quote_after['paymentQuoteLocked'], quote_after
+assert quote_mail_before == sql("select jsonb_build_object('outbox',count(*)) from app_private.email_outbox;"), 'Quote race touched legacy mail.'
+quote_race_proof = {'families': 1, 'outcome': quote_edit_outcome, 'quotedPersons': quote_people, 'activePersons': quote_after['persons'], 'amountCents': quote_order['amount_cents'], 'pricePerPersonCents': 350, 'freePlaces': 0, 'legacyOutboxUnchanged': True}
+print(json.dumps({'passed': True, 'database': args.database, 'slug': slug, 'families': args.families, 'simultaneousStarts': args.families, 'walking': len(walking), 'waiting': waiting, 'overbooked': 0, 'concurrentReplayRequests': 2, 'visits': 1, 'awards': 1, 'legacyPayments': 0, 'legacyGroups': 0, 'sinkMessages': legacy['sink'], 'concurrentRefundScan': refund_scan_outcome, 'refundedPartyActiveClaims': 0, 'refundLedger': 1, 'distinctRefundRequests': 2, 'fullRefundClaims': 1, 'duplicateRefundRejected': 1, 'alreadyRefundedCreatesIntent': False, 'oldRefundedInvitationRejectedWithoutMutation': True, 'oldRefundedInvitationDenial': old_invitation_denial, 'concurrentJoinRefund': join_refund_outcome, 'joinRefundActiveClaims': 0, 'joinRefundLedger': 1, 'sourceHistoryPreserved': True, 'concurrentCheckoutEdit': quote_race_proof, 'durationSeconds': round(time.monotonic()-started, 3)}, indent=2))

@@ -57,6 +57,7 @@ export function rpcError(error: { code?: string; message?: string }): never {
     RESERVATION_EXPIRED_RESUME: "Jullie reservering is verlopen. Kies Hervatten om de route veilig opnieuw te beoordelen.",
     ZONE_UNAVAILABLE_RESUME: "Deze zone is niet meer beschikbaar. Kies Hervatten voor een actuele bestemming.",
     PAID_PLACES_REQUIRE_SUPPORT: "Na betaling veranderen personen en tocht via de organisatie; er worden geen extra gratis plaatsen toegevoegd.",
+    PAYMENT_QUOTE_LOCKED: "Voor deze inschrijving bestaat al een betaalpoging. Personen en tocht wijzigen via de organisatie; voorkeuren, contactgegevens en startmoment blijven bewerkbaar.",
     INVITATION_INVALID: "Deze uitnodiging is verlopen, ingetrokken of al gebruikt. Vraag een nieuwe uitnodiging.",
     PARTY_TOO_LARGE: "Het gezamenlijke gezelschap is te groot. Loop in kleinere gezelschappen.",
     SAME_PAID_ROUTE_REQUIRED: "Samenlopen vereist betaalde inschrijvingen voor hetzelfde avondvenster.",

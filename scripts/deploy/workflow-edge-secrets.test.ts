@@ -15,8 +15,26 @@ describe("Auth email hook deployment", () => {
     expect(secretBlock).toContain('"RESEND_API_KEY=${RESEND_API_KEY}"');
     expect(secretBlock).toContain('"MAIL_IDENTITY_SECRET=${MAIL_IDENTITY_SECRET}"');
     expect(secretBlock).toContain('"AUTH_MAIL_MODE=${AUTH_MAIL_MODE}"');
-    if(workflow==='deploy-staging.yml')expect(secretBlock).toContain('"FRIGHTNIGHT_ENABLED=true"');
-    else expect(secretBlock).not.toContain('"FRIGHTNIGHT_ENABLED=true"');
+    if(workflow==='deploy-staging.yml') {
+      expect(secretBlock).toContain('"FRIGHTNIGHT_ENABLED=true"');
+      expect(source).toContain('AUTH_MAIL_MODE: allowlist');
+      expect(source).not.toContain('AUTH_MAIL_MODE: live');
+      expect(source).toContain('FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS: ${{ secrets.FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS }}');
+      expect(secretBlock).toContain('"FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS=${FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS}"');
+      const hook=source.indexOf('pnpm exec supabase functions deploy send-email-hook');
+      const bootstrap=source.indexOf('run: node scripts/deploy/bootstrap-frightnight.mjs');
+      const seed=source.indexOf('run: node scripts/deploy/initialize-frightnight.mjs');
+      expect(hook).toBeGreaterThan(source.indexOf('run: node scripts/deploy/redesign-postmigration.mjs'));
+      expect(hook).toBeGreaterThan(source.indexOf('run: node scripts/deploy/audit-frightnight-vps-timers.mjs'));
+      expect(bootstrap).toBeGreaterThan(hook);
+      const ownerGate=source.indexOf('run: node scripts/deploy/frightnight-auth-policy.mjs');
+      expect(ownerGate).toBeGreaterThan(hook);expect(bootstrap).toBeGreaterThan(ownerGate);
+      expect(seed).toBeGreaterThan(bootstrap);
+      expect(source.indexOf('/usr/local/bin/dg-site-deploy')).toBeGreaterThan(seed);
+    } else {
+      expect(secretBlock).not.toContain('"FRIGHTNIGHT_ENABLED=true"');
+      expect(source).toContain('AUTH_MAIL_MODE: live');
+    }
     expect(source).toContain('MAIL_MODE AUTH_MAIL_MODE MAIL_ALLOWED_RECIPIENTS');
     expect(source).toContain('RESEND_API_KEY RESEND_WEBHOOK_SECRET RESEND_ADMIN_API_KEY MAIL_ADMIN_USER_IDS');
   });

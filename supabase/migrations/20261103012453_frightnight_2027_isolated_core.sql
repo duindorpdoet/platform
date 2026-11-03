@@ -123,6 +123,7 @@ create table app_private.fn_orders (
  foreign key(event_id,registration_id) references app_private.fn_registrations(event_id,id)
 );
 create unique index fn_one_open_order on app_private.fn_orders(registration_id) where status='open';
+create index fn_orders_registration_quote on app_private.fn_orders(event_id,registration_id,status);
 create table app_private.fn_payment_events (
  event_id uuid not null, order_id uuid not null, provider_event text not null, status text not null,
  created_at timestamptz not null default now(), primary key(event_id,provider_event),
@@ -203,7 +204,7 @@ create function app_private.fn_zone_json(p_zone uuid,p_private boolean default f
  select jsonb_build_object('id',id,'name',name,'type',type,'intensity',intensity,'capacity',capacity,'status',app_private.fn_zone_status(id),'pauseUntil',pause_until,'pauseReason',pause_reason,'reviewStatus',review_status,'smoke',smoke,'strobes',strobes,'stepFree',step_free,'description',description,'photoPath',photo_path,'version',version,'opensAt',opens_at,'closesAt',closes_at)
  ||case when p_private then jsonb_build_object('address',address,'latitude',latitude,'longitude',longitude,'locationConfirmedAt',location_confirmed_at,'contactConfirmedAt',contact_confirmed_at,'expectedVisitors',(select coalesce(sum(d.persons),0) from app_private.fn_destinations d where d.zone_id=z.id and (d.state='current' or (d.state='visited' and d.lease_until>app_private.fn_now(d.event_id))))) else '{}' end from app_private.fn_zones z where id=p_zone
 $$;
-create function app_private.fn_registration_json(p_id uuid) returns jsonb language sql stable set search_path='' as $$ select jsonb_build_object('id',id,'label',label,'termsVersion',terms_version,'consentedAt',consented_at,'routeType',route_type,'adults',adults,'children',children,'persons',adults+children,'maxIntensity',max_intensity,'avoidSmoke',avoid_smoke,'avoidStrobes',avoid_strobes,'stepFree',step_free,'startSlot',start_slot,'status',status,'paymentStatus',payment_status,'amountCents',amount_cents,'version',version) from app_private.fn_registrations where id=p_id $$;
+create function app_private.fn_registration_json(p_id uuid) returns jsonb language sql stable set search_path='' as $$ select jsonb_build_object('id',id,'label',label,'termsVersion',terms_version,'consentedAt',consented_at,'routeType',route_type,'adults',adults,'children',children,'persons',adults+children,'maxIntensity',max_intensity,'avoidSmoke',avoid_smoke,'avoidStrobes',avoid_strobes,'stepFree',step_free,'startSlot',start_slot,'status',status,'paymentStatus',payment_status,'paymentQuoteLocked',exists(select 1 from app_private.fn_orders o where o.registration_id=p_id and o.event_id=app_private.fn_registrations.event_id),'amountCents',amount_cents,'version',version) from app_private.fn_registrations where id=p_id $$;
 create function app_private.fn_party_preferences(p_party uuid) returns jsonb language sql stable set search_path='' as $$ select jsonb_build_object('persons',sum(r.adults+r.children),'maxIntensity',min(r.max_intensity),'avoidSmoke',bool_or(r.avoid_smoke),'avoidStrobes',bool_or(r.avoid_strobes),'stepFree',bool_or(r.step_free),'routeType',min(r.route_type),'members',jsonb_agg(jsonb_build_object('registrationId',r.id,'label',r.label,'persons',r.adults+r.children) order by r.id)) from app_private.fn_members m join app_private.fn_registrations r on r.event_id=m.event_id and r.id=m.registration_id where m.party_id=p_party $$;
 create function app_private.fn_choose(p_event uuid,p_party uuid,p_return boolean default false) returns uuid language plpgsql security definer set search_path='' as $$
 declare pref jsonb; t timestamptz; deadline timestamptz; finale uuid; previous uuid; chosen uuid; walk integer; seq integer; did uuid; occupied integer; considered integer:=0; capacity_rejected integer:=0; z record;
@@ -353,7 +354,7 @@ begin
 end $$;
 create function api.frightnight_command(p_slug text,p_command text,p_payload jsonb,p_key uuid) returns jsonb language plpgsql security definer set search_path='' as $$
 declare actor uuid:=auth.uid(); eid uuid; f app_private.fn_events; r app_private.fn_registrations; p app_private.fn_parties; d app_private.fn_destinations; z app_private.fn_zones; other app_private.fn_registrations; target app_private.fn_parties;
- rid uuid; pid uuid; oid uuid; did uuid; tok text; request_digest bytea; previous app_private.fn_receipts; result jsonb:='{}'; response jsonb; now_business timestamptz; pref jsonb; cnt integer; a app_private.fn_activities; invitation app_private.fn_invites; endtime timestamptz; starttime timestamptz; q app_private.fn_quests; adult_invitation app_private.fn_registration_invites; announcement app_private.fn_announcements; message_audience text; message_target uuid; x record;
+ rid uuid; pid uuid; oid uuid; did uuid; tok text; request_digest bytea; previous app_private.fn_receipts; result jsonb:='{}'; response jsonb; now_business timestamptz; pref jsonb; cnt integer; a app_private.fn_activities; invitation app_private.fn_invites; endtime timestamptz; starttime timestamptz; q app_private.fn_quests; adult_invitation app_private.fn_registration_invites; announcement app_private.fn_announcements; message_audience text; message_target uuid; quoted boolean:=false; x record;
 begin
  if actor is null then raise exception 'LOGIN_REQUIRED' using errcode='42501'; end if;
  if p_key is null or p_payload is null or jsonb_typeof(p_payload)<>'object' then raise exception 'INVALID_COMMAND' using errcode='22023'; end if;
@@ -388,7 +389,11 @@ begin
  if f.closed and p_command in('registration.save','journey.start','party.join','activity.book') then raise exception 'EDITION_CLOSED' using errcode='22023'; end if;
  if p_command='registration.save' then
   pref:=app_private.fn_party_preferences(pid);
+  quoted:=exists(select 1 from app_private.fn_orders where event_id=eid and registration_id=rid);
   if r.id is not null and (r.payment_status='paid' or p.started_at is not null) and ((p_payload->>'adults')::integer<>r.adults or (p_payload->>'children')::integer<>r.children or p_payload->>'routeType'<>r.route_type) then raise exception 'PAID_PLACES_REQUIRE_SUPPORT' using errcode='22023'; end if;
+  -- Every issued quote remains binding even after failure/expiry: a provider
+  -- may still confirm that old attempt. Preferences/start/contact stay editable.
+  if quoted and ((p_payload->>'adults')::integer is distinct from r.adults or (p_payload->>'children')::integer is distinct from r.children or p_payload->>'routeType' is distinct from r.route_type) then raise exception 'PAYMENT_QUOTE_LOCKED' using errcode='22023'; end if;
   if p_payload?'expectedVersion' and r.id is not null and (p_payload->>'expectedVersion')::integer<>r.version then raise exception 'VERSION_CONFLICT' using errcode='40001'; end if;
   if r.id is null then
    if (p_payload->>'consent')::boolean is distinct from true or p_payload->>'termsVersion' is distinct from '2027-test-v1' then raise exception 'REGISTRATION_CONSENT_REQUIRED' using errcode='22023'; end if;
@@ -402,7 +407,7 @@ begin
    if (p_payload->>'consent')::boolean=true and p_payload->>'termsVersion'='2027-test-v1' then update app_private.fn_registrations set terms_version='2027-test-v1',consented_at=coalesce(consented_at,now()),consent_actor=coalesce(consent_actor,actor) where id=rid; end if;
    update app_private.fn_registrations set label=trim(p_payload->>'label'),route_type=p_payload->>'routeType',adults=(p_payload->>'adults')::integer,children=(p_payload->>'children')::integer,max_intensity=(p_payload->>'maxIntensity')::integer,
     avoid_smoke=coalesce((p_payload->>'avoidSmoke')::boolean,false),avoid_strobes=coalesce((p_payload->>'avoidStrobes')::boolean,false),step_free=coalesce((p_payload->>'stepFree')::boolean,false),start_slot=nullif(p_payload->>'startSlot','')::timestamptz,
-    amount_cents=case when payment_status='paid' then amount_cents else ((p_payload->>'adults')::integer+(p_payload->>'children')::integer)*f.price_cents end,version=version+1 where id=rid;
+    amount_cents=case when quoted or payment_status='paid' then amount_cents else ((p_payload->>'adults')::integer+(p_payload->>'children')::integer)*f.price_cents end,version=version+1 where id=rid;
   end if;
   select * into r from app_private.fn_registrations where id=rid;
   if r.start_slot is null then
@@ -413,7 +418,7 @@ begin
    select (e.local_date+case when r.route_type='lantern' then time '17:00' else time '18:30' end) at time zone e.timezone,(e.local_date+case when r.route_type='lantern' then time '18:30' else time '21:00' end) at time zone e.timezone into starttime,endtime from app_private.events e where e.id=eid;
    if r.start_slot<starttime or r.start_slot>=endtime then raise exception 'START_SLOT_OUTSIDE_WINDOW' using errcode='22023'; end if;
   end if;
-  if r.payment_status='paid' and r.status='draft' and r.start_slot is not null then update app_private.fn_registrations set status='active',version=version+1 where id=rid; end if;
+  if r.payment_status='paid' and r.status='draft' and r.start_slot is not null and exists(select 1 from app_private.fn_orders where event_id=eid and registration_id=rid and status='paid' and amount_cents=r.amount_cents) and not exists(select 1 from app_private.fn_orders where event_id=eid and registration_id=rid and ((status='paid' and amount_cents<>r.amount_cents) or status='refunded')) then update app_private.fn_registrations set status='active',version=version+1 where id=rid; end if;
   if p.started_at is not null and p.state in('walking','waiting') and (pref-'members') is distinct from (app_private.fn_party_preferences(pid)-'members') then update app_private.fn_destinations set state='released' where party_id=pid and state='current'; update app_private.fn_parties set version=version+1 where id=pid; perform app_private.fn_choose(eid,pid); end if;
   result:=jsonb_build_object('registrationId',rid);
  elsif p_command='preferences.save' then
@@ -514,7 +519,7 @@ begin
   update app_private.fn_parties set membership_version=membership_version+1,version=version+1 where id=pid;
   if p.started_at is not null then perform app_private.fn_choose(eid,pid); perform app_private.fn_choose(eid,oid); end if; result:=jsonb_build_object('partyId',oid);
  elsif p_command in('activity.book','activity.cancel') then
-  if rid is null or r.payment_status<>'paid' then raise exception 'PAID_REGISTRATION_REQUIRED' using errcode='42501'; end if;
+  if rid is null or (p_command='activity.book' and (r.payment_status<>'paid' or r.status<>'active')) then raise exception 'PAID_REGISTRATION_REQUIRED' using errcode='42501'; end if;
   select * into a from app_private.fn_activities where event_id=eid and id=(p_payload->>'activityId')::uuid and run_id=f.run_id for update;
   if a.id is null then raise exception 'ACTIVITY_NOT_FOUND' using errcode='22023'; end if;
   if p_command='activity.book' then
@@ -527,12 +532,13 @@ begin
    end if;
   else update app_private.fn_bookings set status='cancelled' where event_id=eid and registration_id=rid and activity_id=a.id and status='booked'; end if;
  elsif p_command='quest.answer' then
-  if rid is null or r.payment_status<>'paid' then raise exception 'PAID_REGISTRATION_REQUIRED' using errcode='42501'; end if;
+  if rid is null or r.payment_status<>'paid' or r.status<>'active' then raise exception 'PAID_REGISTRATION_REQUIRED' using errcode='42501'; end if;
   select * into q from app_private.fn_quests where event_id=eid and id=p_payload->>'questId';
   if q.id is null or q.answer_hash is distinct from extensions.digest(lower(trim(coalesce(p_payload->>'answer',''))),'sha256') then raise exception 'ANSWER_INCORRECT' using errcode='22023'; end if;
   insert into app_private.fn_awards(event_id,registration_id,award_key) values(eid,rid,'quest:'||q.id) on conflict do nothing;
  elsif p_command='beacon.complete' then
-  if rid is null or p.state<>'finished' then raise exception 'FINALE_REQUIRED' using errcode='22023'; end if;
+  if rid is null or r.payment_status<>'paid' or r.status<>'active' then raise exception 'PAID_REGISTRATION_REQUIRED' using errcode='42501'; end if;
+  if p.state<>'finished' then raise exception 'FINALE_REQUIRED' using errcode='22023'; end if;
   insert into app_private.fn_awards(event_id,registration_id,award_key) values(eid,rid,'beacon') on conflict do nothing;
  elsif p_command='zone.apply' then
   if p_payload->>'type' not in('candy','fright') then raise exception 'INVALID_ZONE_TYPE' using errcode='22023'; end if;
@@ -652,7 +658,7 @@ begin
   else delete from app_private.fn_activity_staff where event_id=eid and activity_id=(p_payload->>'activityId')::uuid and user_id=(p_payload->>'userId')::uuid; end if;
   insert into app_private.fn_audit(event_id,actor_id,action,details) values(eid,actor,case when (p_payload->>'enabled')::boolean then 'activity.staff.granted' else 'activity.staff.revoked' end,jsonb_build_object('activityId',(p_payload->>'activityId')::uuid,'userId',(p_payload->>'userId')::uuid,'commandId',p_key));
  elsif p_command='admin.activity.checkin' then
-  update app_private.fn_bookings set status='checked_in' where event_id=eid and id=(p_payload->>'bookingId')::uuid and status='booked';
+  update app_private.fn_bookings set status='checked_in' where event_id=eid and id=(p_payload->>'bookingId')::uuid and status='booked' and exists(select 1 from app_private.fn_registrations eligible_registration where eligible_registration.event_id=eid and eligible_registration.id=app_private.fn_bookings.registration_id and eligible_registration.status='active' and eligible_registration.payment_status='paid');
   if not found then raise exception 'BOOKING_NOT_ACTIVE' using errcode='22023'; end if;
  elsif p_command='admin.content.save' then
   insert into app_private.fn_content(event_id,content_key,body,published) values(eid,p_payload->>'key',p_payload->'body',coalesce((p_payload->>'published')::boolean,false)) on conflict(event_id,content_key) do update set body=excluded.body,published=excluded.published,version=app_private.fn_content.version+1;
@@ -781,7 +787,7 @@ create function api.frightnight_payment_scope(p_provider_ref text) returns jsonb
 create function api.frightnight_payment_lookup(p_slug text,p_provider_ref text) returns jsonb language sql stable security definer set search_path='' as $$ select app_private.fn_order_json(o.id) from app_private.fn_orders o join app_private.events e on e.id=o.event_id join app_private.fn_events f on f.event_id=e.id where e.slug=p_slug and f.environment='staging' and f.is_test and o.provider_ref=p_provider_ref $$;
 create function api.frightnight_payment_for_actor(p_slug text,p_actor uuid) returns jsonb language sql stable security definer set search_path='' as $$ select app_private.fn_order_json(o.id) from app_private.fn_orders o join app_private.events e on e.id=o.event_id join app_private.fn_events f on f.event_id=e.id where e.slug=p_slug and f.environment='staging' and f.is_test and o.registration_id=app_private.fn_registration(e.id,p_actor) order by o.created_at desc limit 1 $$;
 create function api.frightnight_payment_confirm(p_slug text,p_provider_ref text,p_status text,p_amount_cents integer,p_currency text,p_provider_event text,p_metadata jsonb) returns jsonb language plpgsql security definer set search_path='' as $$
-declare o app_private.fn_orders; v_status text; is_duplicate boolean; eid uuid;
+declare o app_private.fn_orders; v_status text; is_duplicate boolean; quote_matches boolean; quote_cancelled boolean; eid uuid;
 begin
  select e.id into eid from app_private.events e join app_private.fn_events f on f.event_id=e.id where e.slug=p_slug and f.environment='staging' and f.is_test;
  if eid is null then raise exception 'TEST_SCOPE_REQUIRED' using errcode='42501'; end if;
@@ -796,12 +802,23 @@ begin
  if o.status='refunded' or (o.status='paid' and v_status<>'refunded') then return app_private.fn_order_json(o.id); end if;
  if v_status='refunded' and o.status<>'paid' then raise exception 'PAID_ORDER_REQUIRED' using errcode='22023'; end if;
  update app_private.fn_orders set status=v_status where id=o.id;
- update app_private.fn_registrations set payment_status=v_status,status=case when v_status='paid' and coalesce(app_private.fn_slot_available(o.event_id,app_private.fn_registrations.start_slot,o.registration_id),-1)>=adults+children then 'active' when v_status='paid' then 'draft' when v_status='refunded' then 'cancelled' else app_private.fn_registrations.status end,version=version+1 where id=o.registration_id;
+ select r.amount_cents=o.amount_cents,(r.status in('cancelled','archived') or exists(select 1 from app_private.fn_orders prior where prior.event_id=eid and prior.registration_id=r.id and prior.status='refunded')) into quote_matches,quote_cancelled from app_private.fn_registrations r where r.event_id=eid and r.id=o.registration_id;
+ -- An older failed attempt cannot revoke a later confirmed payment. Financial
+ -- receipt truth is retained even if an inconsistent quote requires assistance.
+ if v_status in('paid','refunded') or not exists(select 1 from app_private.fn_orders where event_id=eid and registration_id=o.registration_id and id<>o.id and status='paid') then
+  update app_private.fn_registrations set payment_status=v_status,status=case when v_status='paid' and quote_cancelled then case when app_private.fn_registrations.status='archived' then 'archived' else 'cancelled' end when v_status='paid' and quote_matches and coalesce(app_private.fn_slot_available(o.event_id,app_private.fn_registrations.start_slot,o.registration_id),-1)>=adults+children then 'active' when v_status='paid' then 'draft' when v_status='refunded' then 'cancelled' else app_private.fn_registrations.status end,version=version+1 where event_id=eid and id=o.registration_id;
+ end if;
+ if v_status='paid' and (not quote_matches or quote_cancelled) then
+  update app_private.fn_bookings set status='cancelled' where event_id=eid and registration_id=o.registration_id and status='booked';
+  update app_private.fn_destinations set state='released' where event_id=eid and state='current' and party_id in(select party_id from app_private.fn_members where event_id=eid and registration_id=o.registration_id);
+  update app_private.fn_parties set state='paused',version=version+1,reason=case when quote_cancelled then 'Een betaling is ontvangen na annulering. Nieuwe tochtrechten blijven geblokkeerd; stem af met het hulppunt.' else 'Betaalbedrag en inschrijving sluiten niet aan. Stem eerst af met het hulppunt.' end where event_id=eid and id in(select party_id from app_private.fn_members where event_id=eid and registration_id=o.registration_id) and state in('ready','walking','waiting','paused');
+ end if;
  if v_status='paid' then
   insert into app_private.fn_ledger(event_id,order_id,kind,amount_cents) values(o.event_id,o.id,'receipt',o.amount_cents) on conflict do nothing;
-  insert into app_private.fn_notifications(event_id,registration_id,title,message,dedupe_key) values(o.event_id,o.registration_id,case when (select status from app_private.fn_registrations where id=o.registration_id)='active' then 'Je Nachtpas staat klaar' else 'Betaling ontvangen; startmoment afstemmen' end,case when (select status from app_private.fn_registrations where id=o.registration_id)='active' then 'Je testbetaling is bevestigd. Bekijk je tocht en verwachte startmoment.' else 'De tijdelijke startreservering was verlopen en dit blok is vol. Neem contact op met het hulppunt voor omboeken of testterugbetaling.' end,'paid:'||o.id) on conflict do nothing;
-  insert into app_private.fn_mail_sink(event_id,registration_id,dedupe_key,template,payload) values(o.event_id,o.registration_id,'paid:'||o.id,'frightnight-payment-confirmed',jsonb_build_object('orderId',o.id,'amountCents',o.amount_cents,'brandVersion',7)) on conflict do nothing;
+  insert into app_private.fn_notifications(event_id,registration_id,title,message,dedupe_key) values(o.event_id,o.registration_id,case when quote_cancelled then 'Betaling ontvangen na annulering' when not quote_matches then 'Betaling ontvangen; bedrag afstemmen' when (select status from app_private.fn_registrations where id=o.registration_id)='active' then 'Je Nachtpas staat klaar' else 'Betaling ontvangen; startmoment afstemmen' end,case when quote_cancelled then 'Een oude betaalpoging is na annulering alsnog betaald. Je inschrijving blijft geannuleerd; neem contact op met het hulppunt voor controle of testterugbetaling.' when not quote_matches then 'Het ontvangen bedrag past niet bij de vastgelegde inschrijving. Nieuwe tochtrechten blijven geblokkeerd; neem contact op met het hulppunt voor controle of testterugbetaling.' when (select status from app_private.fn_registrations where id=o.registration_id)='active' then 'Je testbetaling is bevestigd. Bekijk je tocht en verwachte startmoment.' else 'De tijdelijke startreservering was verlopen en dit blok is vol. Neem contact op met het hulppunt voor omboeken of testterugbetaling.' end,'paid:'||o.id) on conflict do nothing;
+  insert into app_private.fn_mail_sink(event_id,registration_id,dedupe_key,template,payload) values(o.event_id,o.registration_id,'paid:'||o.id,'frightnight-payment-confirmed',jsonb_build_object('orderId',o.id,'amountCents',o.amount_cents,'brandVersion',7,'fulfillment',case when quote_cancelled then 'cancelled' when not quote_matches then 'quote_mismatch' when (select status from app_private.fn_registrations where id=o.registration_id)='active' then 'active' else 'start_required' end)) on conflict do nothing;
  elsif v_status='refunded' then
+  update app_private.fn_bookings set status='cancelled' where event_id=eid and registration_id=o.registration_id and status='booked';
   insert into app_private.fn_ledger(event_id,order_id,kind,amount_cents) values(o.event_id,o.id,'refund',-o.amount_cents) on conflict do nothing;
   update app_private.fn_refunds set status='refunded' where event_id=o.event_id and order_id=o.id and status in('requested','queued','pending','processing');
   -- Refunds stop route rights. Release the whole shared reservation and pause the
@@ -828,7 +845,7 @@ begin
  if eid is null or not app_private.fn_can(eid,'payments_manage',p_actor) then raise exception 'FINANCE_REQUIRED' using errcode='42501'; end if;
  select * into old from app_private.fn_refunds where event_id=eid and command_key=p_key;
  if found then if old.actor_id<>p_actor or old.reason<>p_reason or not exists(select 1 from app_private.fn_orders where id=old.order_id and event_id=eid and registration_id=p_registration) then raise exception 'IDEMPOTENCY_CONFLICT' using errcode='40001'; end if; return app_private.fn_order_json(old.order_id); end if;
- select id into oid from app_private.fn_orders where event_id=eid and registration_id=p_registration and status in('paid','refunded') order by created_at desc limit 1;
+ select id into oid from app_private.fn_orders where event_id=eid and registration_id=p_registration and status in('paid','refunded') order by (status='paid') desc,created_at desc limit 1;
  if oid is null then raise exception 'PAID_ORDER_REQUIRED' using errcode='22023'; end if;
  if exists(select 1 from app_private.fn_orders where event_id=eid and id=oid and status='refunded') then return app_private.fn_order_json(oid); end if;
  if exists(select 1 from app_private.fn_refunds where event_id=eid and order_id=oid and status in('requested','queued','pending','processing','refunded')) then raise exception 'REFUND_ALREADY_REQUESTED' using errcode='40001'; end if;

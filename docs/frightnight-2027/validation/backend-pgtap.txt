@@ -262,4 +262,59 @@ ok 261 - contact editing never changes the Auth identity email
 ok 262 - contact editing sends no email or transactional sink capture
 ok 263 - contact audit captures no submitted name or telephone value
 ok 264 - administrative registration listing excludes owner contact fields
-1..264
+ok 265 - first two-person checkout fixes its seven-euro server quote
+ok 266 - an open seven-euro quote cannot become a four-person registration
+ok 267 - refused material edit changes neither people, price, version nor start slot
+ok 268 - a quoted registration cannot change its evening even before payment
+ok 269 - quote locking permits label, comfort and advisory start changes
+ok 270 - a failed attempt still locks people because late provider payment remains possible
+ok 271 - a preference save after an event tariff increase preserves the open original quote
+ok 272 - a failed-attempt preference save also preserves its original quote after tariff change
+ok 273 - retry creates a new attempt at the existing immutable amount
+ok 274 - failed quote retry has its own auditable payment attempt
+ok 275 - an older expired callback cannot regress the later paid retry registration
+ok 276 - late paid on an older failed quote activates only its original two places
+ok 277 - matching late payment keeps the original registration eligible without free upgrades
+ok 278 - replayed late provider payment creates exactly one receipt for that attempt
+ok 279 - the old seven-euro callback releases a route reservation for two people only
+ok 280 - an existing unquoted registration can accept the current new tariff
+ok 281 - new registrations receive the changed tariff without rewriting old attempts
+ok 282 - an inconsistent quote still records the verified money as received
+ok 283 - an inconsistent old amount never grants active places
+ok 284 - quote invalidation releases still-booked places under the same payment lock
+ok 285 - quote mismatch creates a durable understandable compensation notification
+ok 286 - start or preference edits cannot bypass quote-mismatch compensation gating
+ok 287 - mismatched payment cannot grant larger unpaid activity places
+ok 288 - a mismatch cannot start a route despite financial paid truth
+ok 289 - mismatch reconciliation replay preserves one financial receipt without issuing rights
+ok 290 - quote edits, late retries and compensation never enqueue legacy email
+ok 291 - registration DTO reports unquoted state before its first attempt
+ok 292 - registration DTO exposes the server-owned immutable quote flag
+ok 293 - failed attempts retain the immutable quote flag
+ok 294 - staff can check in an active paid registration before its refund
+ok 295 - refunding the paid retry cancels its route rights
+ok 296 - refund releases future booked activity places
+ok 297 - refund preserves historical checked-in attendance
+ok 298 - refund returns all future booked seats to capacity
+ok 299 - staff cannot check in a booking cancelled by refund
+ok 300 - owner can safely repeat cancellation after refund without paid status
+ok 301 - repeated cancellation never releases capacity twice
+ok 302 - even a stale booked row cannot bypass inactive registration check-in guard
+ok 303 - late paid on the older failed attempt cannot reactivate a refunded registration
+ok 304 - money received after cancellation is recorded without restoring route rights
+ok 305 - cancelled late payment cannot issue a new riddle award
+ok 306 - a formerly finished party cannot issue a new beacon award after cancellation
+ok 307 - late money after cancellation creates a durable support and refund notification
+ok 308 - advisory start and comfort changes cannot reactivate cancelled late payment
+ok 309 - cancelled late payment cannot book new activity places
+ok 310 - cancelled late payment cannot obtain a start reservation
+ok 311 - finance can select the older still-paid attempt before the newer already-refunded attempt
+ok 312 - a paid callback after refund of that same attempt never regresses refund truth
+ok 313 - the fully refunded registration remains cancelled after every late callback
+ok 314 - late verified payment preserves the reset archive boundary
+ok 315 - archived late payment cannot acquire a destination or revive old jobs
+ok 316 - paid sink confirms usable Nightpass only for an active matching registration
+ok 317 - paid sink preserves the original full-start-slot support state
+ok 318 - paid sink describes amount mismatch instead of asserting route readiness
+ok 319 - paid sink describes receipt after cancellation without claiming restored rights
+1..319
