@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ snapshot: vi.fn(), rpc: vi.fn() }));
 vi.mock("server-only", () => ({}));
+vi.mock("@/lib/config/server-env", () => ({ allowedOrigins: () => new Set(["http://localhost:3000"]) }));
 vi.mock("./server", async () => {
   const { ApiError } = await import("@/lib/http/api");
   return { frightnightSnapshot: mocks.snapshot, smallJson: (request: Request) => request.json(), rpcError: () => { throw new ApiError(403, "FORBIDDEN", "Geen toegang"); } };

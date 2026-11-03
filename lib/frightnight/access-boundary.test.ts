@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const stubs = vi.hoisted(() => ({ actor: vi.fn(), rpc: vi.fn(), service: vi.fn(), selected: vi.fn(), snapshot: vi.fn() }));
 vi.mock("server-only", () => ({}));
+vi.mock("@/lib/config/server-env", () => ({ allowedOrigins: () => new Set(["http://localhost:3000"]) }));
 vi.mock("./server", async () => {
   const { ApiError } = await import("@/lib/http/api");
   return { frightnightActor: stubs.actor, frightnightSnapshot: stubs.snapshot, frightnightServiceRpc: stubs.service, frightnightConfig: () => ({ APP_URL: origin }), smallJson: (request: Request) => request.json(), rpcError: () => { throw new ApiError(403, "FORBIDDEN", "Geen toegang"); } };

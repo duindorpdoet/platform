@@ -89,5 +89,61 @@
     "eslintPassed": true,
     "typescriptPassed": true,
     "remoteBackupRerun": "pending new exact-head CI and release authorization"
+  },
+  "exactDryRunActorRoute": {
+    "verifiedAt": "2026-11-03T06:02:15.088Z",
+    "image": "supabase/postgres:17.6.1.171",
+    "network": "none",
+    "cronLauncher": false,
+    "remoteWrites": false,
+    "actorRoute": "session supabase_admin then exact dry-run SET LOCAL ROLE postgres",
+    "ownerRoleAssumptionNegativeClaimed": false,
+    "sourceSha256": "7373fc660e7313537f6906b4a883f3f8eb8e610abc3e627c7d3ba0b47e6fe60e",
+    "reports": [
+      {
+        "delegated": false,
+        "actor": {
+          "actor": "postgres",
+          "sessionActor": "supabase_admin",
+          "superuser": false,
+          "owner": "supabase_storage_admin",
+          "ownerMember": false,
+          "rls": true
+        },
+        "capability": {
+          "supautilsLoaded": false,
+          "postgresStorageObjects": false
+        },
+        "policyCreated": false,
+        "policyDenied": true,
+        "denials": {
+          "alterTable": true,
+          "alterOwner": true,
+          "unlistedPolicy": true
+        }
+      },
+      {
+        "delegated": true,
+        "actor": {
+          "actor": "postgres",
+          "sessionActor": "supabase_admin",
+          "superuser": false,
+          "owner": "supabase_storage_admin",
+          "ownerMember": false,
+          "rls": true
+        },
+        "capability": {
+          "supautilsLoaded": true,
+          "postgresStorageObjects": true
+        },
+        "policyCreated": true,
+        "policyDenied": false,
+        "denials": {
+          "alterTable": true,
+          "alterOwner": true,
+          "unlistedPolicy": true
+        }
+      }
+    ]
   }
 }

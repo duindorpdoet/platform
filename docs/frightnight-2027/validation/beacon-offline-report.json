@@ -1,0 +1,72 @@
+{
+  "acceptanceId": "BAK-03",
+  "status": "passed-local-isolated-staging-adapter",
+  "verifiedAt": "2026-11-03T05:43:19.681Z",
+  "revision": "aad96668a3744b0dbfe09111956537ee53d9ff8d",
+  "source": {
+    "path": "lib/frightnight/beacon.ts",
+    "sha256": "f6be40c082bb0a22f1ea8ef2ff7567c6ceea33511dee5e41a128649f3b68d7f3",
+    "unchanged": true
+  },
+  "harness": {
+    "path": "/tmp/frightnight-beacon-offline/probe.mjs",
+    "sha256": "12dcd69d64527d7057b31b89e41265b4c931bbd905bd5ba57eaf2f535fb28613"
+  },
+  "execution": {
+    "image": "mcr.microsoft.com/playwright:v1.63.0-noble",
+    "imageId": "sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27",
+    "containerId": "acdb7516b90268f11c8e456eae30fb04364f5e01d850bd272cac08ec2e50c861",
+    "nodeVersion": "v24.18.0",
+    "networkMode": "none",
+    "readOnlyRootFilesystem": true,
+    "privileged": false,
+    "capabilitiesDropped": [
+      "ALL"
+    ],
+    "securityOptions": [
+      "no-new-privileges"
+    ],
+    "user": "0:0",
+    "allBindMountsReadOnly": true,
+    "bindMountTargets": [
+      "/opt/node",
+      "/probe.mjs",
+      "/source/beacon.ts"
+    ],
+    "exitCode": 0,
+    "externalInterfaces": []
+  },
+  "results": [
+    {
+      "mode": "rehearsal",
+      "stableAcknowledgement": true,
+      "receipt": "d7a8897734d9aa588e9285b1e29e7d37",
+      "simulated": true,
+      "hardwareEnabled": false,
+      "normalState": "acknowledged",
+      "faultState": "unavailable",
+      "stableFaultReceipt": true
+    },
+    {
+      "mode": "finale",
+      "stableAcknowledgement": true,
+      "receipt": "737c213d7f361e5bd437179a2ab7d062",
+      "simulated": true,
+      "hardwareEnabled": false,
+      "normalState": "acknowledged",
+      "faultState": "unavailable",
+      "stableFaultReceipt": true
+    }
+  ],
+  "commandIdentitySeparatesReceipt": true,
+  "modeSeparatesReceipt": true,
+  "attemptNotes": [
+    "The existing PostgreSQL image could not load the host Node executable; an already available Playwright Ubuntu image was used without pulling an image.",
+    "Rootless Docker bind-mount permissions prevented nonzero container users reading the original 0640 source; final container user0 had all capabilities dropped, read-only mounts/rootfs, no-new-privileges and network none."
+  ],
+  "limits": [
+    "Local execution of the unchanged staging adapter only.",
+    "No physical controller, light, sound or hardware interface was exercised.",
+    "No database, payment provider, mail, OTP or remote service was contacted."
+  ]
+}

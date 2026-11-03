@@ -1,0 +1,60 @@
+{
+  "verifiedAt": "2026-11-03T06:13:13.939290+00:00",
+  "scope": "Test fixture isolation only; actual Origin authorization remains unchanged. No runtime, workflow or SQL change.",
+  "releaseFailure": {
+    "runId": 41587423924,
+    "jobId": 125758083871,
+    "phase": "Validate application",
+    "assertionsFailed": 8,
+    "migrationStarted": false,
+    "applicationDeployed": false
+  },
+  "reproduction": {
+    "credentials": false,
+    "networkRequests": false,
+    "APP_URL": "https://staging-halloween.duindorpdoet.nl",
+    "NEXT_PUBLIC_SITE_URL": "https://staging-halloween.duindorpdoet.nl",
+    "ALLOWED_ORIGINS": "https://staging-halloween.duindorpdoet.nl",
+    "before": {
+      "passed": 4,
+      "failed": 8,
+      "files": 2
+    },
+    "afterStagingOrigins": {
+      "passed": 12,
+      "failed": 0,
+      "files": 2
+    },
+    "afterLocalDefaults": {
+      "passed": 12,
+      "failed": 0,
+      "files": 2
+    }
+  },
+  "fullStagingOriginSuite": {
+    "passed": 1519,
+    "failed": 0,
+    "optionalSkipped": 6,
+    "files": 165,
+    "success": true,
+    "command": "APP_URL=<staging-origin> NEXT_PUBLIC_SITE_URL=<staging-origin> ALLOWED_ORIGINS=<staging-origin> pnpm exec vitest run"
+  },
+  "changedBehavior": "Only allowedOrigins dependency supplies explicit localhost test set, as in existing lib/http/api.test.ts; real assertTrustedOrigin and positive/cross-origin/forged actor/event assertions remain intact.",
+  "eslintPassed": true,
+  "typescriptPassed": true,
+  "sourceSha256": {
+    "lib/frightnight/access-boundary.test.ts": "e52871dd33e7f84ec376e93205ae4c1ed2a562cf5007e7c6a689a3d55a9b6c2e",
+    "lib/frightnight/admin-search-boundary.test.ts": "b74d5e186daa21c7fa7d8fa0507e49f52afa42c50c0e3ad08effbc0b7c706fd3"
+  },
+  "fullSuiteLogSha256": "3a9943f2755d4af4321dc16cf7d3cbdba60e12ced3f1295108efcc72f1397b3e",
+  "retainedPreMigrationBackup": {
+    "runId": 41587423924,
+    "artifactId": 13208503054,
+    "restoreVerified": true,
+    "migrationDryRunVerified": true,
+    "tables": 236,
+    "storageObjects": 12
+  },
+  "externalMailOrPSPTested": false,
+  "newExactHeadCI": "required before release retry"
+}

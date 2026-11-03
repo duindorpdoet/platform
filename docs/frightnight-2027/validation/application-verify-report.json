@@ -84,8 +84,8 @@
     "components/frightnight/zone-review.tsx": "5095b48d801635660164676854146eca4e24221efdf2d524383038554e5da9dd",
     "lib/config/server-env.ts": "d195c386a8010aef67a6de1d0350b20c04a6c05b3438ec2cb105932bedad2b31",
     "lib/editorial/service-worker.test.ts": "1345bef209e8cbb1dea5c0c63911c1ed459dce85805b06d83a1dae9d7ff5746e",
-    "lib/frightnight/access-boundary.test.ts": "82c1e339a05ed22e6023561572341ed24cf0b8caaf813b413b691881f8daebfa",
-    "lib/frightnight/admin-search-boundary.test.ts": "a1ae1bb6d22c8b69a14f924262b2370aa8b4a6ebd43a85727505ba01c87c4f82",
+    "lib/frightnight/access-boundary.test.ts": "e52871dd33e7f84ec376e93205ae4c1ed2a562cf5007e7c6a689a3d55a9b6c2e",
+    "lib/frightnight/admin-search-boundary.test.ts": "b74d5e186daa21c7fa7d8fa0507e49f52afa42c50c0e3ad08effbc0b7c706fd3",
     "lib/frightnight/awards.ts": "4f756210361614b8c7a7381b5bf8a95b6cb06c57357b7b7ceeccc64e043a60a6",
     "lib/frightnight/beacon.test.ts": "1cd17b74309c1050e79fad828f758d6ea3a4367ac9cc20e87c9aa527cfe8b4e4",
     "lib/frightnight/beacon.ts": "f6be40c082bb0a22f1ea8ef2ff7567c6ceea33511dee5e41a128649f3b68d7f3",
@@ -240,5 +240,37 @@
     "typecheck": "passed",
     "independentReview": "accepted by backend_2027",
     "scope": "Only existing observed managed policy delegation is reproduced in a networkless restore. Positive policy and negative table-owner/other-policy/SET ROLE checks actually executed. No remote grants, migration, seed or deploy."
+  },
+  "exactHeadContinuousIntegration": {
+    "runId": 41585240647,
+    "revision": "aad96668a3744b0dbfe09111956537ee53d9ff8d",
+    "event": "push",
+    "conclusion": "success",
+    "jobsPassed": 3,
+    "failedOrSkippedSteps": 0,
+    "normalMailTests": true,
+    "unitPassed": 1519,
+    "optionalUnitSkipped": 6,
+    "publicBrowserPassed": 23,
+    "clientArtifactsScanned": 697,
+    "pgTapFiles": 134,
+    "pgTapPassed": 4520,
+    "remainingHostedRelease": "41587423924 stopped safely before migration/deploy at environment-dependent unit fixtures; new exact-head CI and full release required",
+    "url": "https://github.com/duindorpdoet/platform/actions/runs/41585240647"
+  },
+  "postBuildOriginFixtureVerification": {
+    "evidence": "docs/frightnight-2027/validation/staging-origin-fixture-report.json",
+    "onlyChangedSources": [
+      "lib/frightnight/access-boundary.test.ts",
+      "lib/frightnight/admin-search-boundary.test.ts"
+    ],
+    "applicationSourceChanged": false,
+    "localDefaultsPassed": 12,
+    "stagingOriginTargetedPassed": 12,
+    "stagingOriginFullSuitePassed": 1519,
+    "optionalSkipped": 6,
+    "eslint": "passed",
+    "typecheck": "passed",
+    "newExactHeadCI": "required"
   }
 }
