@@ -111,6 +111,9 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   '20261103071355_frightnight_2027_payment_sandbox.sql',
   // Scoped organization feedback and explicit close/pause consistency.
   '20261103073433_frightnight_2027_feedback_closure.sql',
+  // Function-only domain-conflict transport for managed PostgREST 14.
+  // Native serialization failures retain their original SQLSTATE/retry semantics.
+  '20261103092502_frightnight_2027_domain_conflicts.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

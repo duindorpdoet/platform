@@ -15,17 +15,20 @@ describe("the signed restore proof covers the entire reviewed release",()=>{
     expect(migration).toContain("app_private.joint_route_source_hash_before_v3(_event)");
     expect(migration).not.toMatch(/\b(?:insert|update|delete|truncate|alter\s+table)\b/i);
   });
-  it("keeps both deployed FrightNight migrations immutable while appending the sandbox migration",()=>{
+  it("keeps all four deployed FrightNight migrations immutable while appending conflict transport",()=>{
     const applied={
       '20261103012453_frightnight_2027_isolated_core.sql':'5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6',
       '20261103042000_frightnight_2027_edition_access.sql':'d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627',
+      '20261103071355_frightnight_2027_payment_sandbox.sql':'fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4',
+      '20261103073433_frightnight_2027_feedback_closure.sql':'452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8',
     };
     for(const [file,digest] of Object.entries(applied))expect(createHash('sha256').update(readFileSync(`supabase/migrations/${file}`)).digest('hex')).toBe(digest);
-    expect(REVIEWED_RELEASE_MIGRATIONS.at(-2)).toBe('20261103071355_frightnight_2027_payment_sandbox.sql');
-    expect(REVIEWED_RELEASE_MIGRATIONS.at(-1)).toBe('20261103073433_frightnight_2027_feedback_closure.sql');
+    expect(REVIEWED_RELEASE_MIGRATIONS.at(-3)).toBe('20261103071355_frightnight_2027_payment_sandbox.sql');
+    expect(REVIEWED_RELEASE_MIGRATIONS.at(-2)).toBe('20261103073433_frightnight_2027_feedback_closure.sql');
+    expect(REVIEWED_RELEASE_MIGRATIONS.at(-1)).toBe('20261103092502_frightnight_2027_domain_conflicts.sql');
   });
   it("preserves the reviewed route fixes before the additive Duinpad release",()=>{
-    expect(REVIEWED_RELEASE_MIGRATIONS.slice(-17)).toEqual([
+    expect(REVIEWED_RELEASE_MIGRATIONS.slice(-18)).toEqual([
       "20261030182243_p12_hard_close_and_75_minute_routes.sql",
       "20261030231652_bound_startregie_snapshot_reads.sql",
       "20261030233039_materialize_route_source_contexts.sql",
@@ -43,6 +46,7 @@ describe("the signed restore proof covers the entire reviewed release",()=>{
       "20261103042000_frightnight_2027_edition_access.sql",
       "20261103071355_frightnight_2027_payment_sandbox.sql",
       "20261103073433_frightnight_2027_feedback_closure.sql",
+      "20261103092502_frightnight_2027_domain_conflicts.sql",
     ]);
   });
   it("rejects an incomplete, duplicated, reordered or unreviewed migration proof",()=>{
