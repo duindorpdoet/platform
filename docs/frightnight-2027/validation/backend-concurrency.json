@@ -1,11 +1,11 @@
 {
   "passed": true,
   "database": "frightnight_2027_acceptance",
-  "slug": "frightnight-2027-test-race-7a14dd5808fd",
+  "slug": "frightnight-2027-test-race-e80dc26c3b86",
   "families": 12,
   "simultaneousStarts": 12,
-  "walking": 2,
-  "waiting": 10,
+  "walking": 1,
+  "waiting": 11,
   "overbooked": 0,
   "concurrentReplayRequests": 2,
   "visits": 1,
@@ -13,7 +13,7 @@
   "legacyPayments": 0,
   "legacyGroups": 0,
   "sinkMessages": 12,
-  "concurrentRefundScan": "rejected-after-refund",
+  "concurrentRefundScan": "accepted-before-refund",
   "refundedPartyActiveClaims": 0,
   "refundLedger": 1,
   "distinctRefundRequests": 2,
@@ -21,7 +21,7 @@
   "duplicateRefundRejected": 1,
   "alreadyRefundedCreatesIntent": false,
   "oldRefundedInvitationRejectedWithoutMutation": true,
-  "oldRefundedInvitationDenial": "SAME_PAID_ROUTE_REQUIRED",
+  "oldRefundedInvitationDenial": "INVITATION_INVALID_FINISHED_FINALE",
   "concurrentJoinRefund": "rejected-after-refund",
   "joinRefundActiveClaims": 0,
   "joinRefundLedger": 1,
@@ -36,5 +36,74 @@
     "freePlaces": 0,
     "legacyOutboxUnchanged": true
   },
-  "durationSeconds": 8.082
+  "concurrentObservationAdmission": [
+    {
+      "round": 1,
+      "order": "observation-blocked-admission",
+      "appClaims": 0,
+      "effectivePersons": 2,
+      "truthfulPhysicalOvercapacityRetained": false,
+      "newAdmissionAfterPhysicalFull": false
+    },
+    {
+      "round": 2,
+      "order": "observation-blocked-admission",
+      "appClaims": 0,
+      "effectivePersons": 2,
+      "truthfulPhysicalOvercapacityRetained": false,
+      "newAdmissionAfterPhysicalFull": false
+    },
+    {
+      "round": 3,
+      "order": "observation-blocked-admission",
+      "appClaims": 0,
+      "effectivePersons": 2,
+      "truthfulPhysicalOvercapacityRetained": false,
+      "newAdmissionAfterPhysicalFull": false
+    },
+    {
+      "round": 4,
+      "order": "admission-before-observation",
+      "appClaims": 1,
+      "effectivePersons": 4,
+      "truthfulPhysicalOvercapacityRetained": true,
+      "newAdmissionAfterPhysicalFull": false
+    },
+    {
+      "round": 5,
+      "order": "observation-blocked-admission",
+      "appClaims": 0,
+      "effectivePersons": 2,
+      "truthfulPhysicalOvercapacityRetained": false,
+      "newAdmissionAfterPhysicalFull": false
+    }
+  ],
+  "queuedEditionEntry": [
+    {
+      "entry": "revoked",
+      "eventLockBarrierVerified": true,
+      "denial": "42501:EDITION_ACCESS_REQUIRED",
+      "registrationsCreated": 0,
+      "householdsCreated": 0,
+      "receiptsCreated": 0
+    },
+    {
+      "entry": "expired",
+      "eventLockBarrierVerified": true,
+      "denial": "42501:EDITION_ACCESS_REQUIRED",
+      "registrationsCreated": 0,
+      "householdsCreated": 0,
+      "receiptsCreated": 0
+    }
+  ],
+  "concurrentStartCapacityCheckout": {
+    "capacityChange": "blocked-by-checkout-hold",
+    "checkout": "checkout-held-two",
+    "orders": 1,
+    "capacity": 100,
+    "available": 98,
+    "overbooked": false,
+    "existingProviderHoldLost": false
+  },
+  "durationSeconds": 14.775
 }

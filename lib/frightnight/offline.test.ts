@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearFestivalPending, queueFestival, readFestival, rememberFestival, verifiedFestivalPending } from "./offline";
-import type { FrightnightCommand, FrightnightSnapshot } from "./model";
+import type { FrightnightCommand, FrightnightSnapshot, FrightnightZone } from "./model";
 function snapshot() { return { actor: { id: "actor-a", capabilities: ["event_admin"] }, event: { id: "event-a", slug: "frightnight-2027-test" }, registration: { label: "Testgezin" }, journey: { version: 4, party: { members: [{ label: "ander gezin" }] } }, current: { id: "destination-a", zone: { address: "Synthetische testlocatie" } }, progress: { visits: [], awards: [], sparks: 0 }, zones: [{ address: "PRIVE TOEKOMSTIG ADRES" }], registrations: [{ label: "ANDER GEZIN" }], ownZones: [], notifications: [{ message: "Niet nodig offline" }], activities: [], bookings: [], announcements: [], quests: [] } as unknown as FrightnightSnapshot; }
 const command: FrightnightCommand = { commandId: "command-a", operation: "journey.complete", expectedVersion: 4, payload: { destinationId: "destination-a", code: "current-zone-code" } };
 describe("private offline informatie en beperkte wachtrij", () => {
@@ -22,6 +22,20 @@ describe("private offline informatie en beperkte wachtrij", () => {
   });
   it("laat snapshots na dertig minuten vervallen", () => {
     vi.useFakeTimers(); rememberFestival(snapshot()); vi.advanceTimersByTime(31 * 60_000); expect(readFestival("actor-a")).toBeNull(); vi.useRealTimers();
+  });
+  it("bewaart bij een deelnemer die ook bewoner is geen andere groepswaarnemingen in een van beide bestemmingen", () => {
+    const value = snapshot();
+    const occupancy = { candidates: [{ destinationId: "ander-gezelschap-geheim", reference: "ANDERE-GROEP" }], observedDestinationIds: ["ander-gezelschap-geheim"] };
+    value.current!.zone = { ...value.current!.zone, occupancy } as unknown as FrightnightZone;
+    value.journey!.current = value.current;
+    rememberFestival(value);
+    const stored = readFestival("actor-a")!;
+    expect(stored.snapshot.current?.zone.address).toBe("Synthetische testlocatie");
+    expect(stored.snapshot.journey?.current?.zone.address).toBe("Synthetische testlocatie");
+    expect(stored.snapshot.current?.zone.occupancy).toBeUndefined();
+    expect(stored.snapshot.journey?.current?.zone.occupancy).toBeUndefined();
+    expect(JSON.stringify(stored)).not.toContain("ander-gezelschap-geheim");
+    expect(JSON.stringify(stored)).not.toContain("ANDERE-GROEP");
   });
   it("queue alleen actuele bezoekcommand met vaste ID, versie en payloadhash", async () => {
     rememberFestival(snapshot());

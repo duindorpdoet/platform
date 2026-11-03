@@ -185,6 +185,7 @@ export async function runStagingLoad(env = process.env, maximum = 125) {
     check(created.length === 1, 'FRESH_EVENT_REQUIRED');
     check(created[0].event_id === edition.id, 'FRESH_EVENT_ID_MISMATCH');
     await rpc(null, 'frightnight_bootstrap', { p_slug: slug, p_actor: actors[0].id, p_environment: 'staging', p_confirmation: `${target.projectRef}:staging:duindorphalloweenstg` });
+    for (const person of actors) await rpc(null, 'frightnight_entry_grant', { p_slug: slug, p_actor: person.id, p_expires_at: new Date(Date.now() + 3_600_000).toISOString(), p_invitation_digest: createHash('sha256').update(`${run}:${slug}:${person.id}`).digest('hex') });
     const seed = await rpc(actors[0], 'frightnight_command', { p_slug: slug, p_command: 'test.seed', p_payload: {}, p_key: randomUUID() });
     check(seed.result.scenarioVersion === 1, 'REVIEWED_SEED_VERSION_REQUIRED');
     edition.startCode = seed.result.startCode;
@@ -214,7 +215,7 @@ export async function runStagingLoad(env = process.env, maximum = 125) {
   }
   async function integrity(edition) {
     const rows = await sql(`select jsonb_build_object(
-      'overbooked',(select count(*) from(select z.id from app_private.fn_zones z join app_private.fn_destinations d on d.zone_id=z.id and (d.state='current' or(d.state='visited' and d.lease_until>app_private.fn_now(d.event_id))) where z.event_id=${uuid(edition.id)} group by z.id,z.capacity having sum(d.persons)>z.capacity)x),
+      'overbooked',(select count(*) from app_private.fn_zones z where z.event_id=${uuid(edition.id)} and (app_private.fn_zone_occupancy(z.id)->>'effectivePersons')::integer>z.capacity),
       'multipleCurrent',(select count(*) from(select party_id from app_private.fn_destinations where event_id=${uuid(edition.id)} and state='current' group by party_id having count(*)>1)x),
       'duplicateVisits',(select count(*) from(select registration_id,destination_id from app_private.fn_visits where event_id=${uuid(edition.id)} group by registration_id,destination_id having count(*)>1)x),
       'duplicateAwards',(select count(*) from(select registration_id,award_key from app_private.fn_awards where event_id=${uuid(edition.id)} group by registration_id,award_key having count(*)>1)x),

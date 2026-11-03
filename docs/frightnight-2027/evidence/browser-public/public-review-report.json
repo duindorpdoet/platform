@@ -1,12 +1,12 @@
 {
-  "testedAt": "2026-11-03T04:05:44.545Z",
-  "buildId": "Y-D-8X-SAa492KG6nnWGs",
+  "testedAt": "2026-11-03T04:51:44.315Z",
+  "buildId": "fzribBblz0y5tNosd_-R-",
   "runtime": "local standalone production build",
   "publicSuite": {
     "command": "pnpm exec playwright test -c playwright.frightnight.config.ts",
     "passed": 23,
     "total": 23,
-    "completedAt": "2026-11-03T04:05:27.429Z",
+    "completedAt": "2026-11-03T04:51:36.629Z",
     "scope": "six widths, no JavaScript, reduced motion, persisted calm preference across reload/navigation/tabs and storage refusal fallback, keyboard, story open/close, published projection presentation, supplement outage fallback, four unauthenticated boundaries, no unsolicited OTP, PWA"
   },
   "screenshots": [

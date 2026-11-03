@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-11-03T04:02:50.681339+00:00",
+  "recordedAt": "2026-11-03T04:54:58.846659+00:00",
   "scope": "Local code and SQL compilation; new post-release scenario restore and VPS inventory still require actual staging jobs",
   "tests": {
     "previousCombinedProof": {
@@ -19,29 +19,38 @@
       "evidence": "docs/frightnight-2027/validation/security-review-report.json",
       "passed": 68,
       "failed": 0,
-      "files": 9
+      "files": 9,
+      "scope": "Historical pre-admission subset; current aggregate proof includes latest offline and31-table followup"
     },
     "rootFullVerify": {
       "evidence": "docs/frightnight-2027/validation/application-verify-report.json",
-      "passed": 1505,
+      "unitPassed": 1514,
       "optionalSkipped": 6,
-      "productionBuild": "Y-D-8X-SAa492KG6nnWGs",
-      "phase": "Current final mobile quote-note layout source passed complete app verify; hosted release remains pending."
+      "productionBuild": "fzribBblz0y5tNosd_-R-",
+      "clientArtifactsScanned": 697,
+      "exitCode": 0,
+      "phase": "Current application build; subsequent acceptance selector-only corrections proven by actual module browser repeats, not a runtime code change",
+      "hostedRelease": "not yet executed"
     },
     "eslintPassed": true,
     "workflowYamlValid": true,
-    "workflowJobs": 13
+    "workflowJobs": 13,
+    "currentCombinedTargeted": {
+      "evidence": "docs/frightnight-2027/validation/security-review-report.json",
+      "passed": 114,
+      "failed": 0,
+      "files": 13
+    }
   },
   "localScenarioSql": {
-    "scope": "Read-only SQL compilation against local QA database; no restore or remote test claim",
-    "proof": {
-      "slug": "frightnight-2027-test",
-      "seedVersion": 1,
-      "tables": 30,
-      "registrations": 6,
-      "zones": 6,
-      "sha256": "3c02607320eee9174efdf78a7d9cc1254f1ce30706a9dfd29fd9761d5077f330"
-    },
+    "scope": "Read-only SQL compilation and active local scenario assertion; no restore or remote claim",
+    "tables": 31,
+    "slug": "frightnight-2027-test",
+    "seedVersion": 1,
+    "registrations": 6,
+    "zones": 6,
+    "querySha256": "9d02c00c2cd4b4a7cec1b5191b634243b3987048ed1c884371f1fe9be96a3f2d",
+    "snapshotSha256": "5afdae4d7d533d2d9e57a019c4a1d12c50a22a8ff157cd450d2edbaf24fa5080",
     "actualRestore": false,
     "remote": false
   },
@@ -49,19 +58,26 @@
   "vpsSystemCronInventory": "not yet executed",
   "hostedRegieModule": "integrated and reviewed; not yet executed",
   "sourceSha256": {
-    "scripts/deploy/frightnight-scenario-backup.mjs": "b99281f8357301f1fc508cb0d872431f7ce13eefa3fcb3ded212ea2954353d6f",
-    "scripts/deploy/frightnight-scenario-backup.test.ts": "ef754952a8a6e8498e93b98f615552de4222474fc1ce67b76f1264ff62fbb5fb",
+    "scripts/deploy/frightnight-scenario-backup.mjs": "17c78a29863333e605cd3cd92a45c325be44a591034875d68046f965999b294f",
+    "scripts/deploy/frightnight-scenario-backup.test.ts": "44793a9f56575ce096a7baca268a9890a3e472d7cf0d75e9f391ab464fc2b27a",
     "scripts/deploy/redesign-backup.mjs": "30149c566c557e0404b3c02df750740125ce29571dfd55e227903b6ec891fb46",
     "scripts/deploy/frightnight-system-cron.mjs": "8e0c1d95189ebff82ea2c0fba2e912e1663c55e3cb331c42b8f6485e2670f64b",
     "scripts/deploy/frightnight-system-cron.test.ts": "906c8dc10af61c10232a9af055066f517dd98862988c486db7ff603b3616e41b",
     "scripts/deploy/audit-frightnight-vps-timers.mjs": "da652b682d38d9d75fe9304177e536bafdbf86c73b940f840ba792caca0cb493",
     ".github/workflows/deploy-staging.yml": "ab49d41fe9330f6940eb543cf6a56d2c770040b1bd884395124a875a34ba5287",
-    "scripts/acceptance/frightnight-staging.mjs": "99a448548594bc322321ba484f71f2c8bce27b07909e405cfe798af85a6136e6",
+    "scripts/acceptance/frightnight-staging.mjs": "b52ae24b825c8d604982d53bea54cdc12d4a193438f3ed3ed5f4184b140dc170",
     "scripts/acceptance/frightnight-regie.mjs": "9ecbcac989523e606374e32a4a34755e76de503545216e1d9c37b69d612fe49f",
-    "scripts/deploy/frightnight-release.mjs": "64010f4ca56caad4e0ee8edb492f6e50c4bf5a88b13cb49f861258f961c69d86",
-    "scripts/deploy/frightnight-release.test.ts": "2192540fcc29a28c71c53da128ab800903d9cd25800de893060a9f5a5acc0219",
+    "scripts/deploy/frightnight-release.mjs": "a9ea9b054ecc0de48c7a2de7b802226baa0fa9206e1ce591ad57ec655d561e1e",
+    "scripts/deploy/frightnight-release.test.ts": "dbfe2ccf46b2827bda549db5c2917ef68b100696b6ef45a156a300e35ac4811d",
     "lib/frightnight/csv.ts": "8fef02f180643a15767c31e0141d76b870c6a17794c71bd58295ba7fbdc593e6",
-    "lib/frightnight/downloads.ts": "563ebafa3d66980d88fbbf37919b7910f64c43b7762efd3ef3759551bc169313"
+    "lib/frightnight/downloads.ts": "6c87511e668a603a944e9f3dcfdc6a77cbc58ea492010474453e711bbcb8b609",
+    "scripts/acceptance/frightnight-edges.mjs": "d0ce257ace09b7ea70d7cdb2274d2b98666aef8b5edbf9d5a2246a1558145db2",
+    "scripts/acceptance/frightnight-edges.test.mjs": "daed56128055f4c061e6dc58b08459a0b6cf3518a466644e98784205b55c306d",
+    "scripts/deploy/release-migrations.mjs": "b2fa4225ce07552c9c37af2ad56b103ef94e134988d49214badee5894c75973f",
+    "scripts/deploy/release-migrations.test.ts": "a8b78c9adf495633bd8cd62687c9838cb236533cbc9f4f9b0987f5f954d8539c",
+    "scripts/deploy/configure-supabase.test.ts": "07066583714f34e9cb418d376a78b5ab6ccba4c503f7965dc41403fd6aa837e6",
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "cf3daf2166b7fba948b0cd5ea7bb88697eb60abcbc63fb2de749f99f584c8093"
   },
   "hostedContactAndDownloads": "Owner contact UI and second-tab read, foreign-actor denial, SVG/HTML privacy, actual download time versus edition clock, operator emergency cards and participant address privacy included; not yet executed.",
   "hostedCleanup": {
@@ -73,11 +89,12 @@
       "reviewer": "backend_2027",
       "accepted": true,
       "sourceSha256": "99a448548594bc322321ba484f71f2c8bce27b07909e405cfe798af85a6136e6",
-      "basis": "Captured sibling/run only, verified new household membership and preserved historical identifiers, real JWT reset/close and financial/audit retention; actual hosted cleanup still not executed"
+      "basis": "Captured sibling/run only, verified new household membership and preserved historical identifiers, real JWT reset/close and financial/audit retention; actual hosted cleanup still not executed",
+      "phase": "Accepted cleanup SQL before narrow entry-grant/capacity/EDGE additions; whole script hash is historical, current source separately hashed"
     }
   },
   "cleanupSqlCompilation": {
-    "scope": "Exact source template SQL parsed under read-only transactions in own disposable local synthetic DB; no HTTP, Auth, cleanup mutation or remote proof",
+    "scope": "Historical exact cleanup SQL template parsed read-only; whole-script hash predates entry-grant/capacity/EDGE integration, no mutation/HTTP/Auth/remote proof",
     "sourceSha256": "99a448548594bc322321ba484f71f2c8bce27b07909e405cfe798af85a6136e6",
     "results": [
       {
@@ -104,44 +121,159 @@
     "evidence": "docs/frightnight-2027/validation/auth-allowlist-report.json",
     "passed": 40,
     "failed": 0,
-    "scope": "Targeted additional Auth policy, workflow ordering, server-only recipient leak checks and remote read-only actor hash comparison; runtime hook deploy not yet performed",
-    "previousFullValidation": "Current 1505/Y-D full verify includes the final mobile quote-note CSS correction; hosted release and final browser proof are separately tracked."
+    "scope": "Targeted additional Auth policy, workflow ordering, server-only recipient leak checks and remote read-only actor hash comparison; runtime hook deploy not yet performed"
   },
   "backendProof": {
-    "pgTapPassed": 319,
-    "migrationSha256": "0dd0fb20fa8da12c94154c0252c92e1b07fa1e2603c927e380399b857453214d",
-    "testSha256": "638b1239b70daf775dae8cf662eed522c3585713c1f66520a66cd41729cf9ed8",
-    "verifiedAt": "2026-11-03T04:02:20.293131+00:00",
-    "concurrency": "12 families; scan/replay, join/refund, unique full-refund claim and checkout/material-edit serialized",
-    "checkoutMaterialEdit": {
-      "families": 1,
-      "outcome": "rejected-after-checkout",
-      "quotedPersons": 2,
-      "activePersons": 2,
-      "amountCents": 700,
-      "pricePerPersonCents": 350,
-      "freePlaces": 0,
-      "legacyOutboxUnchanged": true
+    "evidence": "docs/frightnight-2027/validation/backend-database-report.json",
+    "verifiedAt": "2026-11-03T04:52:16.737974+00:00",
+    "pgTapPassed": 637,
+    "corePassed": 550,
+    "accessPassed": 87,
+    "sourceSha256": {
+      "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+      "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "cf3daf2166b7fba948b0cd5ea7bb88697eb60abcbc63fb2de749f99f584c8093",
+      "supabase/tests/127_frightnight_2027_core.sql": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
+      "supabase/tests/132_frightnight_2027_edition_access.sql": "432234fd40831724be373e8ebd33f94157d2dc3fcdd162be07599b2c3d8cacb8",
+      "scripts/frightnight/db-concurrency.py": "b826b2152825abc1bd550f5417fd6fd0082157b9b6ffe7df50165679d414b56e"
     },
     "safety": {
-      "tables": 30,
+      "tables": 31,
       "actorFunctions": 4,
       "unsafeTables": 0,
       "unsafeFunctions": 0,
       "legacyBindings": 0,
       "sinkHasRecipient": false
     },
-    "scope": "Independent local backend evidence; remote runtime jobs/mailworker and hosted release still require actual staging gates"
+    "concurrency": {
+      "passed": true,
+      "database": "frightnight_2027_acceptance",
+      "slug": "frightnight-2027-test-race-e80dc26c3b86",
+      "families": 12,
+      "simultaneousStarts": 12,
+      "walking": 1,
+      "waiting": 11,
+      "overbooked": 0,
+      "concurrentReplayRequests": 2,
+      "visits": 1,
+      "awards": 1,
+      "legacyPayments": 0,
+      "legacyGroups": 0,
+      "sinkMessages": 12,
+      "concurrentRefundScan": "accepted-before-refund",
+      "refundedPartyActiveClaims": 0,
+      "refundLedger": 1,
+      "distinctRefundRequests": 2,
+      "fullRefundClaims": 1,
+      "duplicateRefundRejected": 1,
+      "alreadyRefundedCreatesIntent": false,
+      "oldRefundedInvitationRejectedWithoutMutation": true,
+      "oldRefundedInvitationDenial": "INVITATION_INVALID_FINISHED_FINALE",
+      "concurrentJoinRefund": "rejected-after-refund",
+      "joinRefundActiveClaims": 0,
+      "joinRefundLedger": 1,
+      "sourceHistoryPreserved": true,
+      "concurrentCheckoutEdit": {
+        "families": 1,
+        "outcome": "rejected-after-checkout",
+        "quotedPersons": 2,
+        "activePersons": 2,
+        "amountCents": 700,
+        "pricePerPersonCents": 350,
+        "freePlaces": 0,
+        "legacyOutboxUnchanged": true
+      },
+      "concurrentObservationAdmission": [
+        {
+          "round": 1,
+          "order": "observation-blocked-admission",
+          "appClaims": 0,
+          "effectivePersons": 2,
+          "truthfulPhysicalOvercapacityRetained": false,
+          "newAdmissionAfterPhysicalFull": false
+        },
+        {
+          "round": 2,
+          "order": "observation-blocked-admission",
+          "appClaims": 0,
+          "effectivePersons": 2,
+          "truthfulPhysicalOvercapacityRetained": false,
+          "newAdmissionAfterPhysicalFull": false
+        },
+        {
+          "round": 3,
+          "order": "observation-blocked-admission",
+          "appClaims": 0,
+          "effectivePersons": 2,
+          "truthfulPhysicalOvercapacityRetained": false,
+          "newAdmissionAfterPhysicalFull": false
+        },
+        {
+          "round": 4,
+          "order": "admission-before-observation",
+          "appClaims": 1,
+          "effectivePersons": 4,
+          "truthfulPhysicalOvercapacityRetained": true,
+          "newAdmissionAfterPhysicalFull": false
+        },
+        {
+          "round": 5,
+          "order": "observation-blocked-admission",
+          "appClaims": 0,
+          "effectivePersons": 2,
+          "truthfulPhysicalOvercapacityRetained": false,
+          "newAdmissionAfterPhysicalFull": false
+        }
+      ],
+      "queuedEditionEntry": [
+        {
+          "entry": "revoked",
+          "eventLockBarrierVerified": true,
+          "denial": "42501:EDITION_ACCESS_REQUIRED",
+          "registrationsCreated": 0,
+          "householdsCreated": 0,
+          "receiptsCreated": 0
+        },
+        {
+          "entry": "expired",
+          "eventLockBarrierVerified": true,
+          "denial": "42501:EDITION_ACCESS_REQUIRED",
+          "registrationsCreated": 0,
+          "householdsCreated": 0,
+          "receiptsCreated": 0
+        }
+      ],
+      "concurrentStartCapacityCheckout": {
+        "capacityChange": "blocked-by-checkout-hold",
+        "checkout": "checkout-held-two",
+        "orders": 1,
+        "capacity": 100,
+        "available": 98,
+        "overbooked": false,
+        "existingProviderHoldLost": false
+      },
+      "durationSeconds": 14.775
+    },
+    "scope": "Independent local backend proof; runtime jobs/mailworker, hosted release and external provider not yet tested"
   },
   "financialReview": {
     "reviewer": "release_audit",
     "sourceFrozen": true,
-    "conclusion": "Accepted targeted quote/material-edit, status ordering, cancellation/refund entitlement, activity capacity and mail fulfillment changes; no concrete blocker found",
+    "conclusion": "Accepted quote immutability, entitlement ordering, positive bounded tariff and exact persisted refund acknowledgement after later ban/revocation; new intents still require current actor, context and finance capability",
     "mailTestsPassed": 6,
-    "currentSecurityDownloadsOfflineCsvSuitePassed": 68,
-    "remotePspTested": false
+    "remotePspTested": false,
+    "currentCombinedTargetedPassed": 114
   },
-  "currentLocalBrowserEvidence": {
+  "hostedEdgeModule": "Integrated after REG;6 no-send guard tests and27 real local module browser outcomes passed; actual hosted execution not yet performed",
+  "currentReleaseGates": {
+    "privateTables": 31,
+    "authenticatedRpcs": 4,
+    "reviewedMigrations": [
+      "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+      "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql"
+    ],
+    "runtimeSafety": "not yet executed on staging"
+  },
+  "previousLocalBrowserEvidence": {
     "reportedBy": "root/frontend_v7; independent recorded local browser artifacts",
     "productionBuild": "Y-D-8X-SAa492KG6nnWGs",
     "publicChecks": 23,
@@ -150,6 +282,30 @@
     "quoteEvidence": "docs/frightnight-2027/evidence/browser-authenticated/quote-lock-browser-report.json",
     "downloadEvidence": "docs/frightnight-2027/evidence/browser-authenticated/download-clock-report.json",
     "index": "docs/frightnight-2027/evidence/README.md",
-    "scope": "Local production preview; no hosted release, external PSP, camera or hardware claim"
-  }
+    "scope": "Historical pre-admission/occupancy local build; hosted proof not yet executed"
+  },
+  "rootFullValidation": {
+    "evidence": "docs/frightnight-2027/validation/application-verify-report.json",
+    "unitPassed": 1514,
+    "optionalSkipped": 6,
+    "productionBuild": "fzribBblz0y5tNosd_-R-",
+    "clientArtifactsScanned": 697,
+    "exitCode": 0,
+    "phase": "Current application build; subsequent acceptance selector-only corrections proven by actual module browser repeats, not a runtime code change",
+    "hostedRelease": "not yet executed"
+  },
+  "currentLocalBrowserEvidence": {
+    "reportedBy": "frontend_v7; independent recorded real local GoTrue/PostgreSQL browser artifacts",
+    "productionBuild": "fzribBblz0y5tNosd_-R-",
+    "publicChecks": 23,
+    "downloadClockChecks": 24,
+    "edgeChecks": 27,
+    "houseReviewChecks": 12,
+    "edgeEvidence": "docs/frightnight-2027/evidence/browser-authenticated/package-edge-report.json",
+    "houseReviewEvidence": "docs/frightnight-2027/evidence/browser-authenticated/hui02-report.json",
+    "downloadEvidence": "docs/frightnight-2027/evidence/browser-authenticated/download-clock-report.json",
+    "index": "docs/frightnight-2027/evidence/README.md",
+    "scope": "Local production preview only; no hosted, external PSP, SMTP, physical camera or hardware claim"
+  },
+  "hostedHouseReviewModule": "Permanent parent HUI02 block plus one-letter approval regression12/12 local browser checks; actual hosted execution not yet performed"
 }

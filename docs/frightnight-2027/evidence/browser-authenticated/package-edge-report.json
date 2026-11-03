@@ -1,0 +1,413 @@
+{
+  "origin": "http://127.0.0.1:3137",
+  "context": "Local production build with real GoTrue sessions and Postgres. The permanent hosted module body ran with its origin assertion adapted in a temporary copy to loopback only. This does not prove a published staging release.",
+  "buildId": "fzribBblz0y5tNosd_-R-",
+  "startedAt": "2026-11-03T04:53:27.729Z",
+  "checks": [
+    {
+      "label": "PRICE-BOUNDS real regie form accepts one cent and1000euros; zero/above maximum preserve prior tariff with explicit server error",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "SALES-POLICY actual regie sales form independently closes sales and disables one route; new signup stays absent while event remains open",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "INS-02 zero, oversized and unavailable-block API rejection; native person validity",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "remaining": "Invalid Auth-email submission is intentionally not sent."
+    },
+    {
+      "label": "INS-04 forged successful return leaves registration unpaid and start unauthorized",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "INS-07 two actual checkout requests race last start places; expired own hold frees capacity",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "remaining": "Contract adapter only; alternate-block proposal UI is not asserted.",
+      "provider": "contract",
+      "confirmedPayments": 0
+    },
+    {
+      "label": "SALES-BLOCKS actual fifteen\u2192ten minute setting preserves historical paid fixture and open contract hold on old blocks and every quoted financial row",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "confirmedProviderPayments": 0,
+      "remaining": "Paid status is an explicit scoped SQL route fixture; external payment confirmation is not claimed."
+    },
+    {
+      "label": "HELP-ASSIGNMENT real regie assignment, unassignment, versioned reply and resolve persist; unauthorized actor/target and stale version fail; owner receives status and durable answer without staff identity",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "BAK-01 digital rehearsal reacts; hidden finale command rejected without durable award",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "remaining": "Physical locally controlled beacon is not exercised."
+    },
+    {
+      "label": "KID-03 unknown quest, invented award command and hidden finale manipulation grant no awards",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "ROU-08 only ordinary candidate closes before arrival plus visit margin; server selects explained finale",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "remaining": "Synthetic walk durations; decision trace records fallback rather than an individual exclusion code."
+    },
+    {
+      "label": "QR-11 QR release and restore synchronize actual visit button, server validation and browser reload",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "remaining": "VPS process restart is not performed."
+    },
+    {
+      "label": "ROU-07 actual resident form unions known app group once, adds only extras, retains stale load and requires explicit empty confirmation",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "appPersons": 2,
+      "observedKnownPersons": 2,
+      "overlapPersons": 2,
+      "extraPersons": 1,
+      "effectivePersons": 3,
+      "staleAgeFixture": "exact own synthetic zone only; six real-clock minutes",
+      "remaining": "No elapsed-time/physical head-count claim."
+    },
+    {
+      "label": "DUAL-ROLE-OFFLINE actual participant/owner live projection includes own candidates; both disk-cache destination projections omit owner occupancy",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "SEC-06 second adult scans same registration; revoke denies new commands and private receipt replay",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "confirmedPayments": 0,
+      "note": "Existing synthetic quote rows are unchanged; no second adult checkout."
+    },
+    {
+      "label": "OFFLINE-RECOVERY real browser offline queues unconfirmed scan; reconnect reuses ID once and stale second-tab route returns409",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "IDENTITY-ISOLATION actual A\u2192B Auth cookie switch and back navigation remove old private cache and identity",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "ROU-09 skip ordinary zone; stale destination and old QR give no award or immediate reassignment",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "ROU-06 expired claim remains until explicit recovery, releases capacity and denies stale route version",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "RET-02 targeted lease maintenance and protected cleanup denial preserve same test edition/run",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "remaining": "No elapsed-week or external timer-duration claim."
+    },
+    {
+      "label": "QR-04 late initial start gets explained Duinpad finale instead of an infeasible full route",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "remaining": "Only deterministic synthetic walking durations."
+    },
+    {
+      "label": "SAM-02 wrong evening, expired invitation and excessive total group are rejected without registration/order changes",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "SAM-08 simultaneous join/preference commands settle on one shared route satisfying current members and capacity",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "remaining": "Checks committed responses/snapshots; no physical walk or transient-pixel timing claim."
+    },
+    {
+      "label": "ROU-11 closed finale yields wait/help; reopening requires one authoritative finale scan",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "SAM-09 finished registration cannot join active party or copy completion/history",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "REG-07 general evaluation and visited-house thanks replay once; owner sees one durable thank-you",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+      "delivery": "durable records only; zero sink/outbound mail",
+      "remaining": "No email delivery action exists in this thanks flow; no external delivery claim."
+    },
+    {
+      "label": "CLOSED-EDITION closed edition refuses new bookings and joins while preserving recorded finale",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    },
+    {
+      "label": "PRESERVATION only own sibling archived; financial/Auth/audit history and parent edition preserved",
+      "status": "passed",
+      "module": "package-edges",
+      "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900"
+    }
+  ],
+  "screenshots": [
+    "package-edge-tariff-bounds-390.png",
+    "package-edge-tariff-bounds-1440.png",
+    "package-edge-help-assigned-390.png",
+    "package-edge-help-assigned-1440.png",
+    "package-edge-help-management-390.png",
+    "package-edge-help-management-1440.png",
+    "package-edge-rehearsal-390.png",
+    "package-edge-rehearsal-1440.png",
+    "package-edge-qr-policy-restored-390.png",
+    "package-edge-qr-policy-restored-1440.png",
+    "package-edge-owner-occupancy-390.png",
+    "package-edge-owner-occupancy-1440.png",
+    "package-edge-offline-conflict-390.png",
+    "package-edge-offline-conflict-1440.png",
+    "package-edge-finished-pass-390.png",
+    "package-edge-finished-pass-1440.png"
+  ],
+  "moduleSourceSha256": "d0ce257ace09b7ea70d7cdb2274d2b98666aef8b5edbf9d5a2246a1558145db2",
+  "edgeAcceptance": {
+    "revision": "34263f609541deb235fe3f779a38272ef0450822",
+    "edition": "frightnight-2027-test-acceptance-localedge-d1bb6200-edge-961b9900",
+    "startedAt": "2026-11-03T04:53:29.734Z",
+    "status": "passed",
+    "cases": [
+      {
+        "id": "PRICE-BOUNDS",
+        "label": "real regie form accepts one cent and1000euros; zero/above maximum preserve prior tariff with explicit server error",
+        "status": "passed"
+      },
+      {
+        "id": "SALES-POLICY",
+        "label": "actual regie sales form independently closes sales and disables one route; new signup stays absent while event remains open",
+        "status": "passed"
+      },
+      {
+        "id": "INS-02",
+        "label": "zero, oversized and unavailable-block API rejection; native person validity",
+        "status": "passed",
+        "remaining": "Invalid Auth-email submission is intentionally not sent."
+      },
+      {
+        "id": "INS-04",
+        "label": "forged successful return leaves registration unpaid and start unauthorized",
+        "status": "passed"
+      },
+      {
+        "id": "INS-07",
+        "label": "two actual checkout requests race last start places; expired own hold frees capacity",
+        "status": "passed",
+        "remaining": "Contract adapter only; alternate-block proposal UI is not asserted.",
+        "provider": "contract",
+        "confirmedPayments": 0
+      },
+      {
+        "id": "SALES-BLOCKS",
+        "label": "actual fifteen\u2192ten minute setting preserves historical paid fixture and open contract hold on old blocks and every quoted financial row",
+        "status": "passed",
+        "confirmedProviderPayments": 0,
+        "remaining": "Paid status is an explicit scoped SQL route fixture; external payment confirmation is not claimed."
+      },
+      {
+        "id": "HELP-ASSIGNMENT",
+        "label": "real regie assignment, unassignment, versioned reply and resolve persist; unauthorized actor/target and stale version fail; owner receives status and durable answer without staff identity",
+        "status": "passed"
+      },
+      {
+        "id": "BAK-01",
+        "label": "digital rehearsal reacts; hidden finale command rejected without durable award",
+        "status": "passed",
+        "remaining": "Physical locally controlled beacon is not exercised."
+      },
+      {
+        "id": "KID-03",
+        "label": "unknown quest, invented award command and hidden finale manipulation grant no awards",
+        "status": "passed"
+      },
+      {
+        "id": "ROU-08",
+        "label": "only ordinary candidate closes before arrival plus visit margin; server selects explained finale",
+        "status": "passed",
+        "remaining": "Synthetic walk durations; decision trace records fallback rather than an individual exclusion code."
+      },
+      {
+        "id": "QR-11",
+        "label": "QR release and restore synchronize actual visit button, server validation and browser reload",
+        "status": "passed",
+        "remaining": "VPS process restart is not performed."
+      },
+      {
+        "id": "ROU-07",
+        "label": "actual resident form unions known app group once, adds only extras, retains stale load and requires explicit empty confirmation",
+        "status": "passed",
+        "appPersons": 2,
+        "observedKnownPersons": 2,
+        "overlapPersons": 2,
+        "extraPersons": 1,
+        "effectivePersons": 3,
+        "staleAgeFixture": "exact own synthetic zone only; six real-clock minutes",
+        "remaining": "No elapsed-time/physical head-count claim."
+      },
+      {
+        "id": "DUAL-ROLE-OFFLINE",
+        "label": "actual participant/owner live projection includes own candidates; both disk-cache destination projections omit owner occupancy",
+        "status": "passed"
+      },
+      {
+        "id": "SEC-06",
+        "label": "second adult scans same registration; revoke denies new commands and private receipt replay",
+        "status": "passed",
+        "confirmedPayments": 0,
+        "note": "Existing synthetic quote rows are unchanged; no second adult checkout."
+      },
+      {
+        "id": "OFFLINE-RECOVERY",
+        "label": "real browser offline queues unconfirmed scan; reconnect reuses ID once and stale second-tab route returns409",
+        "status": "passed"
+      },
+      {
+        "id": "IDENTITY-ISOLATION",
+        "label": "actual A\u2192B Auth cookie switch and back navigation remove old private cache and identity",
+        "status": "passed"
+      },
+      {
+        "id": "ROU-09",
+        "label": "skip ordinary zone; stale destination and old QR give no award or immediate reassignment",
+        "status": "passed"
+      },
+      {
+        "id": "ROU-06",
+        "label": "expired claim remains until explicit recovery, releases capacity and denies stale route version",
+        "status": "passed"
+      },
+      {
+        "id": "RET-02",
+        "label": "targeted lease maintenance and protected cleanup denial preserve same test edition/run",
+        "status": "passed",
+        "remaining": "No elapsed-week or external timer-duration claim."
+      },
+      {
+        "id": "QR-04",
+        "label": "late initial start gets explained Duinpad finale instead of an infeasible full route",
+        "status": "passed",
+        "remaining": "Only deterministic synthetic walking durations."
+      },
+      {
+        "id": "SAM-02",
+        "label": "wrong evening, expired invitation and excessive total group are rejected without registration/order changes",
+        "status": "passed"
+      },
+      {
+        "id": "SAM-08",
+        "label": "simultaneous join/preference commands settle on one shared route satisfying current members and capacity",
+        "status": "passed",
+        "remaining": "Checks committed responses/snapshots; no physical walk or transient-pixel timing claim."
+      },
+      {
+        "id": "ROU-11",
+        "label": "closed finale yields wait/help; reopening requires one authoritative finale scan",
+        "status": "passed"
+      },
+      {
+        "id": "SAM-09",
+        "label": "finished registration cannot join active party or copy completion/history",
+        "status": "passed"
+      },
+      {
+        "id": "REG-07",
+        "label": "general evaluation and visited-house thanks replay once; owner sees one durable thank-you",
+        "status": "passed",
+        "delivery": "durable records only; zero sink/outbound mail",
+        "remaining": "No email delivery action exists in this thanks flow; no external delivery claim."
+      },
+      {
+        "id": "CLOSED-EDITION",
+        "label": "closed edition refuses new bookings and joins while preserving recorded finale",
+        "status": "passed"
+      },
+      {
+        "id": "PRESERVATION",
+        "label": "only own sibling archived; financial/Auth/audit history and parent edition preserved",
+        "status": "passed"
+      }
+    ],
+    "limits": [
+      "Synthetic paid route fixtures are not provider payment confirmations.",
+      "Synthetic walking minutes do not prove real street geometry or physical feasibility.",
+      "Browser reload is not a VPS process restart.",
+      "Digital rehearsal does not verify physical beacon hardware.",
+      "No OTP, Mollie, outbound mail, push or new Auth identities."
+    ],
+    "eventId": "983e223e-c2a9-4f40-8016-27d8fd2f2182",
+    "runId": "853f8e01-9167-4954-b90f-200ff405ae8e",
+    "startSlotRace": [
+      {
+        "status": 200,
+        "simulated": true
+      },
+      {
+        "status": 409,
+        "code": "START_SLOT_FULL"
+      }
+    ],
+    "cleanup": {
+      "originalRunArchived": true,
+      "siblingClosed": true,
+      "ordersPreserved": true,
+      "ledgerPreserved": true,
+      "auditPreserved": true,
+      "authDeleted": 0,
+      "actorsBanned": 0
+    },
+    "completedAt": "2026-11-03T04:53:53.276Z",
+    "checks": 27
+  },
+  "status": "passed",
+  "localParentClosed": true,
+  "completedAt": "2026-11-03T04:53:53.364Z",
+  "revisionMeaning": "The revision identifies the checkout parent commit; buildId and moduleSourceSha256 identify this working-tree execution. No hosted release claim.",
+  "testedAt": "2026-11-03T04:53:53.364Z"
+}

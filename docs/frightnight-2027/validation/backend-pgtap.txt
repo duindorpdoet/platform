@@ -56,7 +56,7 @@ ok 55 - same key with different body conflicts
 ok 56 - stale scan cannot advance next destination
 ok 57 - second family cannot reserve already full zone
 ok 58 - registration edit atomically reassesses a lower comfort limit
-ok 59 - new current destination respects lowered preference from registration form
+ok 59 - lowered preference yields a suitable current destination or honest temporary wait
 ok 60 - paid families explicitly join during walk
 ok 61 - shared route counts all people
 ok 62 - shared intensity takes lowest chosen maximum
@@ -317,4 +317,235 @@ ok 316 - paid sink confirms usable Nightpass only for an active matching registr
 ok 317 - paid sink preserves the original full-start-slot support state
 ok 318 - paid sink describes amount mismatch instead of asserting route readiness
 ok 319 - paid sink describes receipt after cancellation without claiming restored rights
-1..319
+ok 320 - zero price is rejected before any checkout can exist
+ok 321 - negative tariff is rejected explicitly
+ok 322 - per-person tariff above one thousand euros is rejected
+ok 323 - fractional cents cannot be configured
+ok 324 - a string cannot bypass the integer tariff contract
+ok 325 - explicit null tariff is rejected
+ok 326 - table constraint independently rejects zero tariff
+ok 327 - table constraint independently rejects excessive tariff
+ok 328 - registration amount cannot be zero even through privileged writes
+ok 329 - order amount is bounded at one hundred million cents
+ok 330 - invalid prices leave configuration and version unchanged
+ok 331 - provider order cannot represent zero cents
+ok 332 - registration amount shares the bounded provider ceiling
+ok 333 - one-cent per-person tariff is valid
+ok 334 - twenty places at the minimum tariff remain positive integer cents
+ok 335 - maximum registration remains below the provider order ceiling
+ok 336 - route assignment stores immutable registration identities
+ok 337 - participant receives an anonymous reference for the current party
+ok 338 - the same two persons in app claim and observation count once
+ok 339 - overlap is reported explicitly
+ok 340 - only explicitly uncounted extra persons add to the union
+ok 341 - resident observation cannot fabricate a visit
+ok 342 - resident observation cannot issue an award
+ok 343 - participant sees aggregate occupancy without other destination identifiers
+ok 344 - owner gets only scoped anonymous observation candidates
+ok 345 - observation candidate contains no household or contact identity
+ok 346 - another household cannot change a resident observation
+ok 347 - stale observation version cannot replace newer physical information
+ok 348 - duplicate destination identities are rejected
+ok 349 - nonexistent or foreign observation IDs cannot bind into this zone
+ok 350 - extra persons are bounded
+ok 351 - extra count requires explicit confirmation that these people are uncounted
+ok 352 - a resident can truthfully report more physical people than nominal capacity
+ok 353 - overfull physical observation is visible rather than discarded
+ok 354 - physical overcapacity never silently revokes an underway lease
+ok 355 - new assignment avoids the physically full zone
+ok 356 - profile capacity uses the same physical and app union
+ok 357 - old nonempty observation is explicitly stale after five real minutes
+ok 358 - stale physical information blocks new admissions
+ok 359 - expiry never assumes physical visitors have left
+ok 360 - fresh explicit empty observation releases physical holds but preserves app claim
+ok 361 - an expired empty observation does not block the zone
+ok 362 - expired current travel lease remains reserved until explicit recovery
+ok 363 - explicitly observed people remain counted after their old route claim is released
+ok 364 - prospective regrouping of the same registration never counts it twice
+ok 365 - new app claim and old physical observation union by registration identity
+ok 366 - a distinct prospective household adds its own persons to capacity
+ok 367 - repeated observation retains only its stable command result
+ok 368 - observation replay never writes a second physical update
+ok 369 - observation replay projects the fresh occupancy rather than stale receipt state
+ok 370 - observation receipt stores no participant roster
+ok 371 - a current destination in another zone cannot be reported here
+ok 372 - a destination from another edition cannot enter the physical union
+ok 373 - unseen historical visits older than one hour are not observation candidates
+ok 374 - a recent completed visit remains physically observable after its app hold ends
+ok 375 - recent visited observation does not double count its still-active arrival hold
+ok 376 - old shared-party observation and split current claims count each registration once
+ok 377 - departing members remain physically counted from the immutable observed snapshot
+ok 378 - split claims overlap both immutable known family identities
+ok 379 - prospective regrouping after split cannot double-count existing known members
+ok 380 - participant cannot see another arrival reference even when multiple families share the zone
+ok 381 - anonymous physical occupancy updates are refused
+ok 382 - observed group list is bounded to fifty destinations
+ok 383 - resident candidate list stays bounded after more than fifty arrivals
+ok 384 - selected older physical hold remains visible before unselected recent arrivals
+ok 385 - physical-observation receipt retains aggregate result without other destination references
+ok 386 - former zone owner cannot replay an old observation after ownership is removed
+ok 387 - known intent records the contract-provider pending request before staff revocation
+ok 388 - role revocation prevents any new refund intent
+ok 389 - Auth ban also prevents any new refund intent
+ok 390 - another actor cannot acknowledge somebody else refund claim
+ok 391 - another order cannot be substituted into an authorized claim
+ok 392 - a new idempotency key cannot acknowledge an existing external request
+ok 393 - reason is part of exact previously authorized claim context
+ok 394 - refund acknowledgement cannot cross edition boundary
+ok 395 - known pending provider binding is immutable after staff revocation
+ok 396 - actual provider acknowledgement completes the exact claim after ban and capability revocation
+ok 397 - post-revocation acknowledgement creates exactly one refund ledger entry
+ok 398 - financial truth records the provider refund independently of staff current access
+ok 399 - exact acknowledged refund retry remains valid after actor revocation
+ok 400 - acknowledgement retry never creates a second financial refund
+ok 401 - a refunded receipt still rejects substitution of a different provider refund
+ok 402 - null cannot erase an already bound provider refund on retry
+ok 403 - provider reconciliation remains accepted after the initiating actor ban
+ok 404 - out-of-order provider paid cannot undo the acknowledged refund
+ok 405 - provider reconciliation and late callback preserve one refund ledger
+ok 406 - participant cannot review a house even with its exact UUID
+ok 407 - requesting changes requires a visible bounded reason
+ok 408 - rejecting a house requires a nonempty trimmed reason
+ok 409 - review explanation is bounded at one thousand characters
+ok 410 - review requires explicit current zone version
+ok 411 - review target must belong to the effective edition even when administrator owns both
+ok 412 - organization can request changes transactionally
+ok 413 - change request closes the zone for new routes
+ok 414 - owner sees the normalized durable correction reason on fresh read
+ok 415 - public zone projection never includes review reason even for the owner
+ok 416 - participant current destination never contains private review reason
+ok 417 - another family cannot obtain reason from a private-address zone projection
+ok 418 - another personally admitted actor has no house-review reason access
+ok 419 - dual-role owner participant keeps review reason out of both destination projections
+ok 420 - dual-role actor still receives reason in the explicit owner DTO only
+ok 421 - exact review replay preserves result without a second version increment
+ok 422 - review replay creates one audit entry only
+ok 423 - old review version cannot approve over a newer correction request
+ok 424 - zone with requested corrections is excluded from actual routing
+ok 425 - owner correction explicitly resubmits for review
+ok 426 - resubmission preserves last correction reason as owner reference
+ok 427 - edited house requires location reconfirmation before approval
+ok 428 - organization approves the corrected and reconfirmed own house
+ok 429 - approval clears obsolete correction reason
+ok 430 - approved corrected house becomes routable through the normal deterministic engine
+ok 431 - review and correction never fabricate a completed visit
+ok 432 - review reason is not copied into command receipt
+ok 433 - table independently prevents rejected review without a reason
+ok 434 - new edition defaults to fifteen-minute advisory blocks
+ok 435 - initial grid covers both exact evening windows
+ok 436 - both evening sales can be disabled explicitly without stopping the event
+ok 437 - empty evening set is persisted as an explicit no-new-sales policy
+ok 438 - available evenings cannot duplicate or contain unknown values
+ok 439 - sales switch requires a real boolean
+ok 440 - grid interval is restricted to reviewed five ten fifteen or thirty minutes
+ok 441 - sales closing time is validated server-side
+ok 442 - participant cannot change sales or grid configuration
+ok 443 - capacity reduction counts open real-time payment holds
+ok 444 - capacity reduction also counts active confirmed paid places
+ok 445 - nonexistent start slot update fails explicitly
+ok 446 - start capacity cannot be zero
+ok 447 - thirty-minute grid enables exactly three lantern and five roots choices
+ok 448 - changing grid never deletes historical block rows
+ok 449 - disabled historical block preserves its configured capacity and hold
+ok 450 - retained current-grid block preserves its customized paid capacity
+ok 451 - participant sees enabled grid plus their own retained historical appointment
+ok 452 - own historical start is explicitly labelled
+ok 453 - existing own historical start remains editable without losing its quote
+ok 454 - new family cannot reserve a retired historical block
+ok 455 - retry preserves the original quote and existing historical appointment
+ok 456 - sales closure rejects new registrations without creating a household
+ok 457 - sales closure rejects even an existing open checkout retry before any provider create
+ok 458 - rejected closed checkout neither changes quote nor extends its real-time hold
+ok 459 - existing paid family can change label and comfort after sales closure
+ok 460 - old genuine provider checkout may still confirm payment after sales closure
+ok 461 - late provider truth retains active rights when the original historical hold still fits
+ok 462 - sales closure does not stop a paid journey outside its advisory block but within evening window
+ok 463 - advisory historical start is not a mandatory appointment
+ok 464 - disabled evening cannot accept new registration
+ok 465 - disabled evening blocks new checkout calls without changing existing paid rights
+ok 466 - existing disabled-route family can still manage their original contact and comfort
+ok 467 - disabling new route sales never pauses a previously active route
+ok 468 - sales closes exactly at configured business-clock boundary
+ok 469 - business-clock closing boundary also blocks new provider checkout calls
+ok 470 - all denied sales registrations leave no participant row
+ok 471 - five-minute grid adds only bounded choices across both exact windows
+ok 472 - genuinely new grid slots receive explicit default capacity one hundred
+ok 473 - reenabling an old slot preserves its customized capacity
+ok 474 - ten-minute grid is deterministic and non-destructive
+ok 475 - edition copy preserves sales switch rather than reopening enrollment
+ok 476 - edition copy preserves configured grid interval
+ok 477 - edition copy preserves available evening selection
+ok 478 - configuration copy preserves matching block capacities without copying people or holds
+ok 479 - configuration copy does not duplicate existing orders
+ok 480 - reset archives synthetic registration even with a pending real-time order
+ok 481 - reset preserves exact open financial attempt including original hold timestamp
+ok 482 - archived or cancelled registration open attempt no longer claims start capacity
+ok 483 - a new current-run family can choose all freed places after reset
+ok 484 - only the new valid open hold consumes those two places
+ok 485 - old checkout provider truth still reconciles after its synthetic owner was archived
+ok 486 - late payment never reactivates archived scenario enrollment
+ok 487 - archived late receipt remains exactly once in financial ledger
+ok 488 - late archived receipt does not steal new scenario capacity
+ok 489 - archived payment truth creates no route claim
+ok 490 - full suitable candy and free finale produce a waiting state
+ok 491 - temporary fullness does not release an early finale destination
+ok 492 - temporary wait has explicit useful explanation
+ok 493 - waiting grants no visits or light reward
+ok 494 - route audit distinguishes temporary ordinary pressure from final return
+ok 495 - resuming after controlled capacity release selects the ordinary house
+ok 496 - temporarily paused but still feasible ordinary house also defers finale
+ok 497 - timed pause expiry and explicit resume restore a suitable ordinary destination
+ok 498 - pause and resume of an unvisited house keeps verified Duinpad walking origin
+ok 499 - when ordinary visit and verified return no longer fit finale becomes appropriate
+ok 500 - near-end finale selection still requires a real final scan
+ok 501 - explicit personal stop remains an immediate safe final return despite viable ordinary houses
+ok 502 - registration limit remains bounded by twenty real places
+ok 503 - joint party limit is bounded at one hundred persons
+ok 504 - joint maximum cannot be less than one permitted registration
+ok 505 - largest reviewed registration and joint limits are configurable
+ok 506 - authorized event snapshot exposes exact configured joint maximum
+ok 507 - event snapshot exposes exact configured registration maximum
+ok 508 - a smaller limit is stored without rewriting paid registrations
+ok 509 - lowering joint limit preserves the existing oversized current reservation
+ok 510 - old paid quote remains manageable when current registration maximum is smaller
+ok 511 - existing four-person joint route remains intact after lowering the maximum
+ok 512 - new registration cannot exceed current per-edition person maximum
+ok 513 - new member cannot enlarge an existing party above the new maximum
+ok 514 - edition copy preserves configured registration maximum
+ok 515 - edition copy preserves configured joint maximum
+ok 516 - table independently enforces bounded party settings
+ok 517 - participant receives no support-staff identity choices
+ok 518 - own new incident starts visibly unassigned
+ok 519 - participant cannot assign even their own incident
+ok 520 - a confirmed participant without support capability cannot be assigned
+ok 521 - empty string is not a substitute for explicit null unassignment
+ok 522 - assignment requires current incident version
+ok 523 - incident from another edition or nonexistent target cannot be assigned
+ok 524 - authorized support staff can durably assign a scoped event administrator
+ok 525 - exact assignment replay is idempotent
+ok 526 - assignment replay does not increment the incident version twice
+ok 527 - own second read shows durable assignment status
+ok 528 - own incident never exposes support actor UUID or contact identity
+ok 529 - support role gets bounded current qualified staff choices
+ok 530 - support choices contain no contact fields
+ok 531 - authorized paginated incident DTO includes current staff assignment
+ok 532 - stale reply cannot overwrite a newer assignment
+ok 533 - stale resolve cannot silently close changed incident
+ok 534 - versioned assigned support reply is durable
+ok 535 - requesting household sees staff response on a new server read
+ok 536 - support can explicitly clear assignment without changing incident status
+ok 537 - support resolves the exact current incident version
+ok 538 - resolution status is durably independent from assignment
+ok 539 - revoked support role cannot replay a previously authorized assignment
+ok 540 - revoked staff disappears immediately from available assignment choices
+ok 541 - assignment audit contains IDs and versions without contact or incident message values
+ok 542 - skipping an unvisited assignment never moves map origin away from last completed visit
+ok 543 - router uses the same verified last-visited edge minutes as the map adapter
+ok 544 - reviewed contract geometry starts at the same verified origin
+ok 545 - map target remains exactly the single authorized current destination
+ok 546 - an unquoted oversized old draft cannot obtain a new checkout after a lower limit
+ok 547 - banned scoped support member cannot receive incident assignment
+ok 548 - unconfirmed scoped support member cannot receive incident assignment
+ok 549 - revoked event support membership cannot be selected as assignee
+ok 550 - another family in the same walking party cannot read the requesting household incident
+1..550

@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { management } from '../deploy/redesign-preflight.mjs';
 import { assertFrightnightRelease, assertFrightnightHostedContract, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL } from '../deploy/frightnight-release.mjs';
 import { runRegieAcceptance } from './frightnight-regie.mjs';
+import { runEdgeAcceptance } from './frightnight-edges.mjs';
 
 const target = assertFrightnightRelease(process.env);
 if (!/^[a-f0-9]{40}$/.test(process.env.GITHUB_SHA ?? '') || process.env.FRIGHTNIGHT_VERIFIED_RELEASE_SHA !== process.env.GITHUB_SHA) throw new Error('VERIFIED_BACKUP_PRESERVATION_AND_RELEASE_REQUIRED');
@@ -95,7 +96,7 @@ async function markSynthetic(actorId) {
   await sql(`update app_private.fn_registrations set synthetic=true where event_id=${literal(eventId)}::uuid and owner_id=${literal(actorId)}::uuid and exists(select 1 from auth.users u where u.id=owner_id and u.raw_user_meta_data->>'synthetic_frightnight_run'=${literal(run)})`,true);
 }
 async function checkCapacity() {
-  const result=await sql(`select count(*)::integer violations from(select z.id from app_private.fn_zones z join app_private.fn_destinations d on d.event_id=z.event_id and d.zone_id=z.id and d.state='current' where z.event_id=${literal(eventId)}::uuid group by z.id,z.capacity having sum(d.persons)>z.capacity)x`);
+  const result=await sql(`select count(*)::integer violations from app_private.fn_zones z where z.event_id=${literal(eventId)}::uuid and (app_private.fn_zone_occupancy(z.id)->>'effectivePersons')::integer>z.capacity`);
   assert(result[0].violations===0,'CAPACITY_OVERSUBSCRIBED');
 }
 async function fingerprint2026() {
@@ -147,6 +148,7 @@ try {
   eventId=boot.value.eventId;assert(/^[0-9a-f-]{36}$/.test(eventId),'SIBLING_EVENT_ID_REQUIRED');
   await sql(`update app_private.event_capabilities set revoked_at=now() where event_id=(select id from app_private.events where slug=${literal(target.slug)}) and user_id=${literal(admin.id)}::uuid and capability='event_admin';
     insert into app_private.event_capabilities(event_id,user_id,capability,granted_by) values(${literal(eventId)}::uuid,${literal(support.id)}::uuid,'live_support',${literal(admin.id)}::uuid)`,true);
+  for(const person of [a,b,resident]) await rpc(null,'frightnight_entry_grant',{p_slug:slug,p_actor:person.id,p_expires_at:new Date(Date.now()+3_600_000).toISOString(),p_invitation_digest:createHash('sha256').update(`${run}:${slug}:${person.id}`).digest('hex')});
   await select(admin);await select(support);
   const seed=await app(admin,'test.seed');
   const startCode=seed.value.result.startCode;
@@ -161,7 +163,7 @@ try {
   await rpc(resident,'frightnight_command',{p_slug:slug,p_command:'zone.apply',p_payload:{name:`Acceptatiezone ${run}`,address:'Duinpad · synthetische acceptatielocatie',type:'candy',intensity:0,capacity:8,opensAt:'2027-10-30T15:00:00Z',closesAt:'2027-10-30T19:00:00Z',stepFree:true,description:'Uitsluitend synthetisch decor voor deze geïsoleerde proef.'},p_key:randomUUID()});
   await select(resident);
   let ownZone=(await snapshot(resident)).ownZones[0];
-  assert((await app(admin,'admin.zone.review',{zoneId:ownZone.id,decision:'approved'},randomUUID(),true)).status===409,'UNCONFIRMED_RESIDENT_ZONE_APPROVED');
+  assert((await app(admin,'admin.zone.review',{zoneId:ownZone.id,decision:'approved',expectedVersion:ownZone.version},randomUUID(),true)).status===409,'UNCONFIRMED_RESIDENT_ZONE_APPROVED');
   await app(resident,'zone.confirm',{zoneId:ownZone.id,expectedVersion:ownZone.version,confirmed:true});
   ownZone=(await snapshot(resident)).ownZones[0];
   await app(resident,'zone.location.confirm',{zoneId:ownZone.id,expectedVersion:ownZone.version,confirmed:true,latitude:52.095,longitude:4.26});
@@ -202,7 +204,45 @@ try {
   await app(admin,'test.clock',{time:'2027-10-30T15:05:00Z'});
   for(const [questId,answer] of [['riddle-1','kroon'],['riddle-2','lichtbaken'],['riddle-3','kraaienbode'],['game-1','kroon|veer|lantaarn|maan'],['game-2','amber|groen|wit'],['game-3','kroon:kroon|veer:veer|lantaarn:lantaarn']])await app(a,'quest.answer',{questId,answer});
   checked('activity booking/cancellation and six durable quests');
-  await app(admin,'admin.zone.review',{zoneId:ownZone.id,decision:'approved'});ownZone=(await snapshot(resident)).ownZones[0];
+  // HUI02: a versioned organization request reaches only the owner, who edits
+  // the same house and explicitly resubmits before final approval.
+  ownZone=(await snapshot(resident)).ownZones[0];
+  const reviewReason=`Maak het looppad bij de ingang duidelijk vrij. Synthetische beoordeling ${run}.`;
+  const missingReviewReason=await app(admin,'admin.zone.review',{zoneId:ownZone.id,expectedVersion:ownZone.version,decision:'changes_requested'},randomUUID(),true);
+  assert([409,422].includes(missingReviewReason.status),'HUI02_REASON_REQUIRED');
+  const huiAdminPage=await admin.context.newPage();await huiAdminPage.goto(`${target.origin}/avondregie`);await huiAdminPage.locator('.fn-environment-nav').waitFor();
+  await huiAdminPage.getByRole('button',{name:'zones',exact:true}).click();
+  const huiList=huiAdminPage.waitForResponse(response=>new URL(response.url()).pathname==='/api/frightnight/admin/list'&&response.request().method()==='POST'&&response.request().postDataJSON().resource==='zones'&&response.request().postDataJSON().search===ownZone.name);
+  await huiAdminPage.getByRole('textbox',{name:'Zoek in alle zones',exact:true}).fill(ownZone.name);assert((await huiList).ok(),'HUI02_REVIEW_LIST_FAILED');
+  const huiRow=huiAdminPage.getByRole('row').filter({hasText:ownZone.name});
+  await huiRow.getByText('Beoordeling wijzigen',{exact:true}).click();
+  await huiRow.getByLabel(`Beoordelingsreden voor ${ownZone.name}`,{exact:true}).fill(reviewReason);
+  const huiRequested=huiAdminPage.waitForResponse(response=>new URL(response.url()).pathname==='/api/frightnight/command'&&response.request().postDataJSON()?.operation==='admin.zone.review');
+  await huiRow.getByRole('button',{name:'Wijziging vragen',exact:true}).click();const huiReview=await huiRequested;
+  assert(huiReview.ok()&&huiReview.request().postDataJSON().payload.expectedVersion===ownZone.version,'HUI02_VERSIONED_UI_REQUEST_FAILED');
+  const staleReview=await app(admin,'admin.zone.review',{zoneId:ownZone.id,expectedVersion:ownZone.version,decision:'approved'},randomUUID(),true);assert(staleReview.status===409,'HUI02_STALE_REVIEW_ACCEPTED');
+  ownZone=(await snapshot(resident)).ownZones[0];
+  assert(ownZone.reviewStatus==='changes_requested'&&ownZone.reviewReason===reviewReason&&ownZone.status==='closed','HUI02_OWNER_FEEDBACK_NOT_DURABLE');
+  assert(!JSON.stringify(await snapshot(a)).includes(reviewReason),'HUI02_REVIEW_REASON_EXPOSED_TO_PARTICIPANT');
+  const huiResidentPage=await resident.context.newPage();await huiResidentPage.goto(`${target.origin}/mijn-zone`);await huiResidentPage.locator('.fn-environment-nav').waitFor();
+  await expect(huiResidentPage.getByText('Wijziging gevraagd',{exact:true})).toBeVisible();await expect(huiResidentPage.getByText(reviewReason,{exact:true})).toBeVisible();
+  await capture(resident,'/mijn-zone','hui02-resident-feedback');
+  await huiResidentPage.getByRole('button',{name:'Profiel en opening wijzigen',exact:true}).click();
+  await huiResidentPage.getByRole('textbox',{name:/^Wat mogen bezoekers verwachten\?/}).fill(`${ownZone.description} De ingang en het looppad zijn aangepast.`);
+  await huiResidentPage.getByLabel('Ik ben bewoner of bevoegd contactpersoon en bevestig dit adres en profiel.',{exact:true}).check();
+  const huiResubmitted=huiResidentPage.waitForResponse(response=>new URL(response.url()).pathname==='/api/frightnight/command'&&response.request().postDataJSON()?.operation==='zone.apply');
+  await huiResidentPage.getByRole('button',{name:'Wijzigingen ter beoordeling opslaan',exact:true}).click();assert((await huiResubmitted).ok(),'HUI02_OWNER_RESUBMISSION_FAILED');
+  ownZone=(await snapshot(resident)).ownZones[0];
+  assert(ownZone.reviewStatus==='submitted'&&ownZone.status==='closed'&&ownZone.reviewReason===reviewReason&&ownZone.contactConfirmedAt&&!ownZone.locationConfirmedAt,'HUI02_RESUBMISSION_REVIEW_OR_LOCATION_RECONFIRMATION_FAILED');
+  // Explicit synthetic coordinates: this is owner consent, not a geocoder or
+  // real street validation. Resubmission never silently restores location.
+  await app(resident,'zone.location.confirm',{zoneId:ownZone.id,expectedVersion:ownZone.version,confirmed:true,latitude:52.095,longitude:4.26});
+  ownZone=(await snapshot(resident)).ownZones[0];
+
+  await app(admin,'admin.zone.review',{zoneId:ownZone.id,decision:'approved',expectedVersion:ownZone.version});ownZone=(await snapshot(resident)).ownZones[0];
+  assert(ownZone.reviewStatus==='approved'&&ownZone.reviewReason===null,'HUI02_APPROVAL_DID_NOT_CLEAR_REASON');
+  await huiResidentPage.reload();await expect(huiResidentPage.getByText('Goedgekeurd',{exact:true})).toBeVisible();await expect(huiResidentPage.getByText(reviewReason,{exact:true})).toHaveCount(0);
+  await huiAdminPage.close();await huiResidentPage.close();checked('HUI02 versioned organization feedback, owner UI resubmission and private reason cleared on approval');
   await app(resident,'zone.status',{zoneId:ownZone.id,status:'paused',expectedVersion:ownZone.version});
   ownZone=(await snapshot(resident)).ownZones[0];await app(resident,'zone.status',{zoneId:ownZone.id,status:'closed',expectedVersion:ownZone.version});
   const photo=await resident.context.request.post(`${target.origin}/api/frightnight/zone-photo`,{headers:{Origin:target.origin},multipart:{zoneId:ownZone.id,expectedVersion:String((await snapshot(resident)).ownZones[0].version),commandId:randomUUID(),photo:{name:'synthetisch-zonebeeld.webp',mimeType:'image/webp',buffer:await readFile('public/frightnight/zone-garden.webp')}}});
@@ -299,6 +339,7 @@ try {
   for(const [person,path,name] of [[a,'/nachtpas','participant'],[resident,'/mijn-zone','resident'],[admin,'/avondregie','operations'],[admin,'/testcentrum','test-center']])await capture(person,path,name);
   checked('complete authenticated mobile/desktop screens and personal downloads');
   await runRegieAcceptance({base:target.origin,slug,eventId,run,admin,a,b,resident,support,sql,app,assert,checked,literal,report,directory});
+  await runEdgeAcceptance({base:target.origin,slug,eventId,run,admin,a,b,resident,support,sql,app,assert,checked,literal,report,directory});
   await app(admin,'payment.refund',{registrationId:(await snapshot(a)).registration.id,reason:'Gecontroleerde contractterugbetaling van eigen synthetische acceptatie'});
   assert((await snapshot(a)).registration.paymentStatus==='refunded','CONTRACT_REFUND_FAILED');
   const preview=await app(admin,'test.reset.preview');assert(preview.value.result.slug===slug&&preview.value.result.syntheticRegistrations>=6,'RESET_PREVIEW_SCOPE_MISSING');

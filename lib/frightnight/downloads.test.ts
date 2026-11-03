@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { escapeHtml, printDocument, passSvg, emergencyDocument } from "./downloads";
+import { escapeHtml, printDocument, passDocument, passSvg, emergencyDocument } from "./downloads";
 import type { FrightnightSnapshot } from "./model";
 describe("veilige persoonlijke downloads", () => {
   it("escapet HTML in alle gebruikersvelden en noemt expliciet staging", () => {
@@ -8,11 +8,17 @@ describe("veilige persoonlijke downloads", () => {
     expect(result).not.toContain("<title><img"); expect(result).toContain("STAGING / TEST");
   });
   it("maakt een zelfstandig SVG-aandenken zonder contactdata, bestemming of autorisatiegeheim", () => {
-    const snapshot = { registration: { label: 'Ons <script>alert(1)</script> & gezin', routeType: "lantern", persons: 4, contactPhone: "+31612345678" }, progress: { sparks: 3, visits: [{ zoneId: "private-zone" }], awards: [{ key: "quest:game-1" }] }, event: { serverTime: "2027-10-30T15:05:00Z" }, current: { zone: { address: "Privéadres" }, secret: "NEVER-IN-SOUVENIR" } } as unknown as FrightnightSnapshot;
+    const snapshot = { registration: { label: 'Ons <script>alert(1)</script> & gezin', routeType: "lantern", persons: 4, contactPhone: "+31612345678" }, progress: { sparks: 3, visits: [{ zoneId: "private-zone" }], awards: [{ key: "quest:game-1" }, { key: "visit:9d7ac7bb-54a5-4012-912c-17cef4f1cb3b" }] }, event: { serverTime: "2027-10-30T15:05:00Z" }, current: { zone: { address: "Privéadres" }, secret: "NEVER-IN-SOUVENIR" } } as unknown as FrightnightSnapshot;
     const svg = passSvg(snapshot, "data:image/png;base64,aGVsbG8=");
     expect(svg).toContain('<svg xmlns="http://www.w3.org/2000/svg"');
     expect(svg).toContain('href="data:image/png;base64,aGVsbG8="');
     expect(svg).toContain("Symbolenvolgorde");
+    expect(svg).toContain("Bezoekzegel");
+    const html = passDocument(snapshot, "/frightnight/logo.png");
+    expect(html).toContain("Symbolenvolgorde");
+    expect(html).toContain("Bezoekzegel");
+    expect(html).not.toContain("9d7ac7bb-54a5-4012-912c-17cef4f1cb3b");
+    expect(svg).not.toContain("9d7ac7bb-54a5-4012-912c-17cef4f1cb3b");
     expect(svg).toContain("&lt;script&gt;");
     for (const value of ["<script>", "+31612345678", "Privéadres", "private-zone", "NEVER-IN-SOUVENIR"]) expect(svg).not.toContain(value);
     expect(svg).toContain("Geen toegangsbewijs");

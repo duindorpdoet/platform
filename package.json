@@ -14,12 +14,13 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:acceptance-guards": "node --test scripts/acceptance/frightnight-edges.test.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:artifacts": "node scripts/acceptance/scan-client-artifacts.mjs",
     "test:db": "supabase test db",
     "db:reset": "supabase db reset",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:artifacts"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:acceptance-guards && pnpm build && pnpm test:artifacts"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

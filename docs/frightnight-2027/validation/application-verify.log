@@ -1,4 +1,4 @@
-$ pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:artifacts
+$ pnpm lint && pnpm typecheck && pnpm test && pnpm test:acceptance-guards && pnpm build && pnpm test:artifacts
 $ eslint . --max-warnings=0
 $ tsc --noEmit
 $ vitest run
@@ -6,32 +6,47 @@ $ vitest run
  RUN  v5.0.0 /home/codex/repos/duindorphalloween-frightnight-2027
 
 
- Test Files  161 passed | 2 skipped (163)
-      Tests  1505 passed | 6 skipped (1511)
-   Start at  05:03:32
-   Duration  19.03s (tests 57%, transform 22%, import 19%, worker 1%)
+ Test Files  163 passed | 2 skipped (165)
+      Tests  1514 passed | 6 skipped (1520)
+   Start at  05:49:52
+   Duration  19.74s (tests 56%, transform 23%, import 20%, worker 1%)
 
-    Isolate  163 workers spawned · ~117ms startup each (spawn + environment, per file)
-             at least ~1.61s faster with isolate: false — reuses workers across files instead of one per file
+    Isolate  165 workers spawned · ~122ms startup each (spawn + environment, per file)
+             at least ~1.71s faster with isolate: false — reuses workers across files instead of one per file
 
+$ node --test scripts/acceptance/frightnight-edges.test.mjs
+✔ edge acceptance rejects production and local origins before any database request (4.595377ms)
+✔ edge acceptance requires a separate own acceptance parent (0.298572ms)
+✔ edge acceptance rejects existing real actors before reading or writing fixtures (0.358263ms)
+✔ edge acceptance requires all existing actors to belong to the exact new parent run (0.3037ms)
+✔ edge acceptance requires exact verified published revision before any database request (0.192242ms)
+✔ edge acceptance refuses external payment providers before fixture creation (0.135886ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 66.891215
 $ node scripts/copy-maplibre-worker.mjs
 $ next build --webpack
 ▲ Next.js 16.3.5 (webpack)
 - Environments: .env.local
-✓ Running next.config.ts took 25ms
+✓ Running next.config.ts took 27ms
 - Experiments (use with caution):
   · cpus: 2
 
   Creating an optimized production build ...
-✓ Compiled successfully in 20.0s
+✓ Compiled successfully in 21.7s
   Running TypeScript ...
-  Finished TypeScript in 13.0s ...
+  Finished TypeScript in 6.3s ...
   Collecting page data using 2 workers ...
   Generating static pages using 2 workers (0/59) ...
   Generating static pages using 2 workers (14/59)
   Generating static pages using 2 workers (29/59)
   Generating static pages using 2 workers (44/59)
-✓ Generating static pages using 2 workers (59/59) in 484ms
+✓ Generating static pages using 2 workers (59/59) in 440ms
   Finalizing page optimization ...
   Collecting build traces ...
 

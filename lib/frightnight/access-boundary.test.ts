@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const stubs = vi.hoisted(() => ({ actor: vi.fn(), rpc: vi.fn(), selected: vi.fn(), snapshot: vi.fn() }));
+const stubs = vi.hoisted(() => ({ actor: vi.fn(), rpc: vi.fn(), service: vi.fn(), selected: vi.fn(), snapshot: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("./server", async () => {
   const { ApiError } = await import("@/lib/http/api");
-  return { frightnightActor: stubs.actor, frightnightSnapshot: stubs.snapshot, frightnightConfig: () => ({ APP_URL: origin }), smallJson: (request: Request) => request.json(), rpcError: () => { throw new ApiError(403, "FORBIDDEN", "Geen toegang"); } };
+  return { frightnightActor: stubs.actor, frightnightSnapshot: stubs.snapshot, frightnightServiceRpc: stubs.service, frightnightConfig: () => ({ APP_URL: origin }), smallJson: (request: Request) => request.json(), rpcError: () => { throw new ApiError(403, "FORBIDDEN", "Geen toegang"); } };
 });
 vi.mock("./edition-context", () => ({ activeFrightnightSlug: async () => "frightnight-2027-test-januari", validTestSlug: (slug: string) => /^frightnight-2027-test(?:-[a-z0-9-]+)?$/.test(slug), selectFrightnightSlug: stubs.selected, editionInvitationSecret: () => "local-test-only-secret-for-edition-entry" }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ schema: () => ({ rpc: stubs.rpc }) }) }));
@@ -37,21 +37,43 @@ describe("editiegebonden toegangsbeheer", () => {
 describe("een eigen testinschrijving openen via uitnodiging", () => {
   const target = { event: { test: true, environment: "staging", slug: "frightnight-2027-test-januari", closed: false }, registration: null, ownZones: [], actor: { capabilities: [] } };
   it("weigert alleen een gekende editiecode voor een nieuwe tester", async () => {
-    stubs.rpc.mockResolvedValue({ data: target, error: null });
+    stubs.rpc.mockResolvedValue({ data: null, error: { code: "42501", message: "EDITION_ACCESS_REQUIRED" } });
     expect((await selectEdition(request({ slug: target.event.slug }))).status).toBe(403);
     expect(stubs.selected).not.toHaveBeenCalled();
+    expect(stubs.service).not.toHaveBeenCalled();
   });
   it("laat expliciete instemming met geldige ondertekende link de lege eigen flow openen", async () => {
     stubs.rpc.mockResolvedValue({ data: target, error: null });
     const invitation = createEditionInvitation(target.event.slug, "local-test-only-secret-for-edition-entry").token;
     const result = await selectEdition(request({ invitation, consent: true }));
     expect(result.status).toBe(200);
+    expect(stubs.service).toHaveBeenCalledWith("frightnight_entry_grant", {
+      p_slug: target.event.slug,
+      p_actor: "verified-actor",
+      p_expires_at: expect.any(String),
+      p_invitation_digest: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
+    expect(stubs.service.mock.invocationCallOrder[0]).toBeLessThan(stubs.rpc.mock.invocationCallOrder[0]);
     expect(stubs.selected).toHaveBeenCalledWith("verified-actor", target.event.slug);
+  });
+  it("selecteert een nog lege kopie alleen wanneer de database de persoonlijke entry toestaat", async () => {
+    stubs.rpc.mockResolvedValue({ data: target, error: null });
+    expect((await selectEdition(request({ slug: target.event.slug }))).status).toBe(200);
+    expect(stubs.service).not.toHaveBeenCalled();
+    expect(stubs.selected).toHaveBeenCalledWith("verified-actor", target.event.slug);
+  });
+  it("bewaart geen editiekeuze als het server-only grantcommand faalt", async () => {
+    const { ApiError } = await import("@/lib/http/api");
+    stubs.service.mockRejectedValue(new ApiError(403, "EDITION_ACCESS_REQUIRED", "Geen toegang"));
+    const invitation = createEditionInvitation(target.event.slug, "local-test-only-secret-for-edition-entry").token;
+    expect((await selectEdition(request({ invitation, consent: true }))).status).toBe(403);
+    expect(stubs.rpc).not.toHaveBeenCalled(); expect(stubs.selected).not.toHaveBeenCalled();
   });
   it("geeft via de link geen rol en weigert vervallen/gesloten instroom", async () => {
     const invitation = createEditionInvitation(target.event.slug, "local-test-only-secret-for-edition-entry").token;
     expect((await selectEdition(request({ invitation, consent: true, role: "event_admin" }))).status).toBe(422);
     expect((await selectEdition(request({ invitation: invitation + "bad", consent: true }))).status).toBe(403);
+    expect(stubs.service).not.toHaveBeenCalled();
     stubs.rpc.mockResolvedValue({ data: { ...target, event: { ...target.event, closed: true } }, error: null });
     expect((await selectEdition(request({ invitation, consent: true }))).status).toBe(403);
     expect(stubs.selected).not.toHaveBeenCalled();

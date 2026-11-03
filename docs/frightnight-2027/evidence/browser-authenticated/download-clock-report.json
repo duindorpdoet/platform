@@ -1,6 +1,6 @@
 {
-  "testedAt": "2026-11-03T04:05:10.176Z",
-  "buildId": "Y-D-8X-SAa492KG6nnWGs",
+  "testedAt": "2026-11-03T04:51:45.098Z",
+  "buildId": "fzribBblz0y5tNosd_-R-",
   "checks": [
     {
       "check": "Actual svg download succeeds with private no-store",
@@ -19,7 +19,7 @@
       "passed": true
     },
     {
-      "check": "Actual svg download omits owner contact data",
+      "check": "Actual svg download omits owner contact data and uses readable pass award labels",
       "passed": true
     },
     {
@@ -39,7 +39,7 @@
       "passed": true
     },
     {
-      "check": "Actual html download omits owner contact data",
+      "check": "Actual html download omits owner contact data and uses readable pass award labels",
       "passed": true
     },
     {
@@ -59,7 +59,7 @@
       "passed": true
     },
     {
-      "check": "Actual emergencyAdmin download omits owner contact data",
+      "check": "Actual emergencyAdmin download omits owner contact data and uses readable pass award labels",
       "passed": true
     },
     {
@@ -79,7 +79,7 @@
       "passed": true
     },
     {
-      "check": "Actual emergencyParticipant download omits owner contact data",
+      "check": "Actual emergencyParticipant download omits owner contact data and uses readable pass award labels",
       "passed": true
     },
     {

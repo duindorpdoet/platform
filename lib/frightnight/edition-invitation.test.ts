@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { createEditionInvitation, verifyEditionInvitation } from "./edition-invitation";
+import { createEditionInvitation, verifyEditionInvitation, verifyEditionInvitationClaims } from "./edition-invitation";
 const secret = "local-test-only-secret-for-edition-entry";
 describe("beperkte testeditie-uitnodiging", () => {
   it("bindt een acht uur geldige link aan precies een testeditie", () => {
     const result = createEditionInvitation("frightnight-2027-test-januari", secret, 1000);
     expect(verifyEditionInvitation(result.token, secret, 2000)).toBe("frightnight-2027-test-januari");
+    expect(verifyEditionInvitationClaims(result.token, secret, 2000)).toEqual({ slug: "frightnight-2027-test-januari", expiresAt: result.expiresAt });
     expect(verifyEditionInvitation(result.token, secret, 1000 + 8 * 3600_000)).toBeNull();
     expect(verifyEditionInvitation(result.token, secret, 0)).toBeNull();
   });

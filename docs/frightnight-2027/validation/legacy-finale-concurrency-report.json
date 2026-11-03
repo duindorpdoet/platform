@@ -40,7 +40,7 @@
     "scripts/acceptance/finale-overrun-concurrency.mjs": "c969b0240072a28bcc0e50cdad9248025d4a175af53680f19af458494c517940",
     "supabase/tests/fixtures/future-legacy-calendar.inc": "b84442804990dbf4803683524ae5786bac718e3f54093efd83e6c59e7fc7e88c",
     "scripts/acceptance/together-fixtures.mjs": "44bc8adc889d8932259d3d67aee38a668acd8de7b2d14ff43ee6082f085b1bb6",
-    "scripts/acceptance/group-operations-concurrency.mjs": "92ef8021d2361134d82cdcf07af0983dc402e8fcf4918dd49e6ac783b060788f",
+    "scripts/acceptance/group-operations-concurrency.mjs": "df911898d98d29e6d382d32b32270ff9585664606c83f51d139ae98f576a5f5e",
     "scripts/acceptance/world-policy-preservation.mjs": "269f81ad7fd857769179a57873002488d905eeabdcc7cbd71360633ba2661ef6",
     "scripts/acceptance/live-planboard-read-concurrency.mjs": "cd627da7f6c666ac9da6a0be8dd23861e5680400e7310eaaf886894ea4a104f5",
     "scripts/acceptance/world-compensation-concurrency.mjs": "0a942979a1e05ce4f2ac28e296588fb286aa4c3c8b36145d4aae7a0c78acca46",
@@ -63,7 +63,8 @@
       "joint-route-concurrency.mjs"
     ],
     "additionalConcreteDateFaultsFound": 0,
-    "basis": "Actual reservation timestamps are relative to current time; historical calendar-only fixtures do not create expiring live reservations. New activation tokens are created during the fixture. No source changed without reproduced failure."
+    "basis": "Actual reservation timestamps are relative to current time; historical calendar-only fixtures do not create expiring live reservations. New activation tokens are created during the fixture. No source changed without reproduced failure.",
+    "phase": "Earlier read-only review before actual34263 CI demonstrated group-start preference/calendar fault; no claim of current full downstream success"
   },
   "worldCompensationProbe": {
     "database": "codex_fn_world_probe_20261103",
@@ -85,5 +86,65 @@
       "editorial-concurrency.mjs"
     ],
     "findings": "Child credentials and newsletter/push deadlines are current-time relative. The room fixture contains a historical display window, while tested access/transfer/invite/chat paths do not use it as a current-time boundary. No concrete date failure found; no source edits."
+  },
+  "groupOperationsFollowup": {
+    "evidence": "docs/frightnight-2027/validation/legacy-groupops-concurrency-report.json",
+    "proof": {
+      "testedAt": "2026-11-03T04:25:43.725Z",
+      "scope": "new local synthetic clone only",
+      "database": "codex_fn_groupops_final_20261103",
+      "sourceSha256": "df911898d98d29e6d382d32b32270ff9585664606c83f51d139ae98f576a5f5e",
+      "limits": [
+        "Narrow timing RPC under authenticated test claims and genuine two-connection dispatch race.",
+        "Actual GoTrue Auth full script remains a required CI check.",
+        "No QA/staging/production reset or connection."
+      ],
+      "race": {
+        "realConcurrentConnections": 2,
+        "ordinaryCapacity": 1,
+        "activeOrdinaryReservations": 1,
+        "ordinaryStops": 1
+      },
+      "mail": {
+        "queued": 4,
+        "statuses": [
+          "pending"
+        ],
+        "onlyInvalid": true,
+        "configuredWorkers": 0
+      },
+      "midnight": [
+        {
+          "localAnchor": "00:00",
+          "pastStartOne": true,
+          "pastStartTwo": true,
+          "offGridRejected": true,
+          "afterStopRejected": true,
+          "endTargetValidated": true,
+          "beforeWindowRejected": true
+        },
+        {
+          "localAnchor": "00:10",
+          "pastStartOne": true,
+          "pastStartTwo": true,
+          "offGridRejected": true,
+          "afterStopRejected": true,
+          "endTargetValidated": true,
+          "beforeWindowRejected": true
+        },
+        {
+          "localAnchor": "23:50",
+          "pastStartOne": true,
+          "pastStartTwo": true,
+          "offGridRejected": true,
+          "afterStopRejected": true,
+          "endTargetValidated": true,
+          "beforeWindowRejected": true
+        }
+      ],
+      "result": "pass",
+      "completedAt": "2026-11-03T04:25:46.909Z"
+    },
+    "scope": "Narrow SQL test-claims and real two-connection proof; full Auth acceptance still requires new CI"
   }
 }

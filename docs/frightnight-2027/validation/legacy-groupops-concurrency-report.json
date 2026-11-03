@@ -1,0 +1,56 @@
+{
+  "testedAt": "2026-11-03T04:25:43.725Z",
+  "scope": "new local synthetic clone only",
+  "database": "codex_fn_groupops_final_20261103",
+  "sourceSha256": "df911898d98d29e6d382d32b32270ff9585664606c83f51d139ae98f576a5f5e",
+  "limits": [
+    "Narrow timing RPC under authenticated test claims and genuine two-connection dispatch race.",
+    "Actual GoTrue Auth full script remains a required CI check.",
+    "No QA/staging/production reset or connection."
+  ],
+  "race": {
+    "realConcurrentConnections": 2,
+    "ordinaryCapacity": 1,
+    "activeOrdinaryReservations": 1,
+    "ordinaryStops": 1
+  },
+  "mail": {
+    "queued": 4,
+    "statuses": [
+      "pending"
+    ],
+    "onlyInvalid": true,
+    "configuredWorkers": 0
+  },
+  "midnight": [
+    {
+      "localAnchor": "00:00",
+      "pastStartOne": true,
+      "pastStartTwo": true,
+      "offGridRejected": true,
+      "afterStopRejected": true,
+      "endTargetValidated": true,
+      "beforeWindowRejected": true
+    },
+    {
+      "localAnchor": "00:10",
+      "pastStartOne": true,
+      "pastStartTwo": true,
+      "offGridRejected": true,
+      "afterStopRejected": true,
+      "endTargetValidated": true,
+      "beforeWindowRejected": true
+    },
+    {
+      "localAnchor": "23:50",
+      "pastStartOne": true,
+      "pastStartTwo": true,
+      "offGridRejected": true,
+      "afterStopRejected": true,
+      "endTargetValidated": true,
+      "beforeWindowRejected": true
+    }
+  ],
+  "result": "pass",
+  "completedAt": "2026-11-03T04:25:46.909Z"
+}

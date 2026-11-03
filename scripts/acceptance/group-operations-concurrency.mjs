@@ -21,9 +21,20 @@ const winner=results.findIndex(r=>!r.error);assert.deepEqual(await rpc('admin_gr
 assert.equal(sql(`select jsonb_build_array((select md5(jsonb_agg(to_jsonb(c) order by c.id)::text) from app_private.registration_children c),(select md5(jsonb_agg(to_jsonb(p) order by p.id)::text) from app_private.payment_requests p),(select md5(jsonb_agg(to_jsonb(m) order by m.party_id,m.registration_id)::text) from app_private.together_memberships m),(select md5(jsonb_agg(to_jsonb(p) order by p.publication_order)::text) from app_private.group_start_publications p));`),before);
 assert.equal(sql('select count(*) from app_private.group_registrations where superseded_at is null'),'0');
 // Real concurrent PostgreSQL dispatches share the production mutex. Both try the same last reception gap.
-sql(`update app_private.event_route_settings set first_start_at=date_bin(interval '10 minutes',statement_timestamp(),'2000-01-01Z'::timestamptz)-interval '1 hour',global_ordinary_stop_at=clock_timestamp()+interval '2 hours',finale_opens_at=clock_timestamp(),finale_last_arrival_at=clock_timestamp()+interval '3 hours',finale_closes_at=clock_timestamp()+interval '4 hours',finale_max_concurrent_groups=20,finale_max_concurrent_children=500,finale_available=true,planner_mode='dynamic',final_portal_id='12000000-0000-0000-0000-000000000030';
+// Keep the isolated fixture calendar and exact-preference bounds consistent with
+// the real dispatch clock. A frozen October date excludes today's departures.
+// The end target owns local_date; first_start_at deliberately also admits the
+// previous local day when the two already-past departures straddle midnight.
+const fixtureAnchor=sql("select date_bin(interval '10 minutes',clock_timestamp(),'2000-01-01Z'::timestamptz)");
+const fixtureTick=new Date(fixtureAnchor).getTime();
+assert(Number.isFinite(fixtureTick),'The isolated fixture requires a real database clock');
+const pastDepartures=[1,2].map(step=>new Date(fixtureTick-step*600000).toISOString());
+const completionTarget=new Date(fixtureTick+3*60*60000).toISOString();
+sql(`update app_private.events set local_date=('${completionTarget}'::timestamptz at time zone timezone)::date where slug='${event}';
+ update app_private.event_route_settings set first_start_at='${fixtureAnchor}'::timestamptz-interval '1 hour',global_ordinary_stop_at='${fixtureAnchor}'::timestamptz+interval '2 hours',finale_opens_at='${fixtureAnchor}'::timestamptz,finale_last_arrival_at='${fixtureAnchor}'::timestamptz+interval '3 hours',finale_closes_at='${fixtureAnchor}'::timestamptz+interval '4 hours',preferred_start_min_local='00:00',preferred_start_max_local='23:50',preferred_start_step_minutes=10,desired_end_min_local='00:00',desired_end_max_local='23:50',desired_end_step_minutes=10,finale_max_concurrent_groups=20,finale_max_concurrent_children=500,finale_available=true,planner_mode='dynamic',final_portal_id='12000000-0000-0000-0000-000000000030' where event_id=(select id from app_private.events where slug='${event}');
+ update app_private.registrations set preferred_start_at=null,desired_end_at='${completionTarget}'::timestamptz,requested_ordinary_stop_at='${completionTarget}'::timestamptz where event_id=(select id from app_private.events where slug='${event}');
  update app_private.portals set operation_status=case when system_number in (1,30) then 'open'::app_private.portal_operation_status else 'closed'::app_private.portal_operation_status end;
- update app_private.portal_windows set opens_at=clock_timestamp()-interval '1 hour',closes_at=clock_timestamp()+interval '4 hours',visit_minutes=6,buffer_minutes=2,max_concurrent_groups=1,max_children_per_visit=30;
+ update app_private.portal_windows set opens_at='${fixtureAnchor}'::timestamptz-interval '1 hour',closes_at='${fixtureAnchor}'::timestamptz+interval '4 hours',visit_minutes=6,buffer_minutes=2,max_concurrent_groups=1,max_children_per_visit=30;
  -- The contested ordinary gate stays at one place. The separately configured
  -- finale needs its own twenty physical places for these dispatch forecasts.
  update app_private.portal_windows set max_concurrent_groups=20 where portal_id='12000000-0000-0000-0000-000000000030';
@@ -34,11 +45,12 @@ sql(`update app_private.event_route_settings set first_start_at=date_bin(interva
 const groups=['23000000-0000-0000-0000-000000000001','23000000-0000-0000-0000-000000000002'];
 const pointId='20000000-0000-0000-0000-000000000001';
 await rpc('admin_startregie_confirm_point',{_event_slug:event,_point_id:pointId,_expected_version:Number(sql(`select version from app_private.start_points where id='${pointId}'`))});
+assert.equal(sql(`select bool_and(app_private.departure_time_in_window((select id from app_private.events where slug='${event}'),start_at)) from unnest(array['${pastDepartures[0]}'::timestamptz,'${pastDepartures[1]}'::timestamptz]) start_at`),'t','Both already-past departures must fit the real fixture calendar');
 const runs=[];
 for(const [index,group] of groups.entries()){
  // Preserve distinct historical finale appointments as well as departures.
  sql(`update app_private.event_route_settings set finale_planning_transfer_seconds=${(index+1)*600} where event_id=(select id from app_private.events where slug='${event}')`);
- const schedule=await rpc('admin_startregie_move_group',{_group_id:group,_start_point_id:pointId,_starts_at:new Date(Math.floor(Date.now()/600000)*600000-(index+1)*600000).toISOString(),_expected_group_version:Number(sql(`select version from app_private.walking_groups where id='${group}'`)),_preference_match:'neutral',_reason:'Isolated concurrent live dispatch reservation test'});
+ const schedule=await rpc('admin_startregie_move_group',{_group_id:group,_start_point_id:pointId,_starts_at:pastDepartures[index],_expected_group_version:Number(sql(`select version from app_private.walking_groups where id='${group}'`)),_preference_match:'neutral',_reason:'Isolated concurrent live dispatch reservation test'});
  // This half of the fixture is an already-begun historical dispatch race.
  // Do not call new publication/start APIs without their required joint review.
  await rpc('admin_startregie_confirm_start',{_event_slug:event,_group_id:group,_expected_revision:schedule.revision,_expected_settings_version:Number(sql(`select settings_version from app_private.events where slug='${event}'`))});

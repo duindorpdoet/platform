@@ -103,6 +103,9 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Isolated 2027 private tables and explicit RPC grants; no event, seed or
   // historical writes. Bootstrap follows the unchanged preservation gate.
   '20261103012453_frightnight_2027_isolated_core.sql',
+  // Personal admission for private test copies; guarded actor RPCs retain
+  // signatures and provider acknowledgements remain independent of admission.
+  '20261103042000_frightnight_2027_edition_access.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

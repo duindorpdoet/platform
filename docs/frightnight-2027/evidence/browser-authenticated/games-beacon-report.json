@@ -1,0 +1,79 @@
+{
+  "origin": "http://127.0.0.1:3137",
+  "context": "LOCAL ONLY: actual production UI with local GoTrue/PostgreSQL and contract payment; no camera/hardware/external provider test",
+  "run": "localgames-1f323588",
+  "slug": "frightnight-2027-test-acceptance-localgames-1f323588",
+  "buildId": "fzribBblz0y5tNosd_-R-",
+  "startedAt": "2026-11-03T04:57:05.931Z",
+  "checks": [
+    {
+      "label": "own new sibling and existing local authenticated personas; server confirmed contract payments",
+      "status": "passed"
+    },
+    {
+      "label": "actual riddle UI wrong answer, retry, durable award riddle-1",
+      "status": "passed"
+    },
+    {
+      "label": "actual riddle UI wrong answer, retry, durable award riddle-2",
+      "status": "passed"
+    },
+    {
+      "label": "actual riddle UI wrong answer, retry, durable award riddle-3",
+      "status": "passed"
+    },
+    {
+      "label": "actual symbols game wrong four-choice sequence, reset and correct sequence",
+      "status": "passed"
+    },
+    {
+      "label": "actual colours game wrong submission and corrected independent select values",
+      "status": "passed"
+    },
+    {
+      "label": "actual pairs game mismatch, visual retry, all three matched pairs",
+      "status": "passed"
+    },
+    {
+      "label": "six actual games survive refresh and independent second browser context; six command replays award nothing twice",
+      "status": "passed",
+      "quests": 6,
+      "uniqueQuestAwards": 6
+    },
+    {
+      "label": "separate family real start, ordinary scan, explicit return and real Duinpad final scan without quests",
+      "status": "passed"
+    },
+    {
+      "label": "actual three digital beacon steps and durable completion without six quests; refresh and replay once-only",
+      "status": "passed"
+    }
+  ],
+  "screenshots": [
+    "games-pairs-retry-390.png",
+    "games-six-completed-390.png",
+    "games-six-completed-1440.png",
+    "beacon-independent-final-390.png"
+  ],
+  "sourceHashes": {
+    "components/frightnight/games.tsx": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e",
+    "components/frightnight/participant.tsx": "ae54b364271c0bb2ca13b12681028df2a24d625248025e7553adbdc562d059dd",
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6"
+  },
+  "eventId": "3f64cf56-c84f-4a29-a8f7-9aab9f88ddba",
+  "status": "passed",
+  "cleanup": {
+    "ownSiblingArchived": true,
+    "closed": true,
+    "authUsersPreserved": true,
+    "financialHistoryPreserved": true
+  },
+  "completedAt": "2026-11-03T04:57:14.729Z",
+  "harnessSha256": "a2b116840c7a966fc88fa2d1490ce0c5a9e1ef7d7688836b0dccc3fc1fc5e90d",
+  "measurementLimitations": [
+    "Local production preview only; no hosted staging execution",
+    "Manual QR code entry through the actual scan dialog; no camera hardware test",
+    "Contract payment simulation only; no real provider request",
+    "Digital beacon only; physical independent local beacon remains an operational test"
+  ]
+}

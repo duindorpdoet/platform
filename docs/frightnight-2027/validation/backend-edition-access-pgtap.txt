@@ -1,0 +1,88 @@
+ok 1 - browser cannot mint a private edition entry
+ok 2 - trusted application can record validated entry
+ok 3 - entry table has no direct browser access
+ok 4 - entry table has RLS
+ok 5 - there are no broad entry client policies
+ok 6 - all moved implementations are revoked from every client role
+ok 7 - context helper is private
+ok 8 - confirmed active canonical visitor can enter public registration
+ok 9 - outsider cannot read a private copy
+ok 10 - outsider cannot manufacture participation
+ok 11 - outsider cannot manufacture zone ownership
+ok 12 - other commands cannot bypass private admission
+ok 13 - denied registration left no rows
+ok 14 - denied zone left no rows
+ok 15 - denied command created no household
+ok 16 - expired invitation cannot mint access
+ok 17 - more than eight hours is refused
+ok 18 - raw or malformed invitation proof is refused
+ok 19 - private admission does not grant canonical privileges
+ok 20 - unconfirmed actor cannot receive admission
+ok 21 - banned actor cannot receive admission
+ok 22 - exact eight-hour bound is accepted without extending it
+ok 23 - active personal entry admits an otherwise empty actor
+ok 24 - an entry grants no administrative role
+ok 25 - entry is bound to one exact edition
+ok 26 - expired entry immediately stops private reads
+ok 27 - expired entry cannot manufacture new membership
+ok 28 - invited actor can create own pending registration
+ok 29 - existing own registration keeps its legitimate access
+ok 30 - prospective second adult has no access before consent
+ok 31 - adult token without explicit consent grants nothing
+ok 32 - adult token cannot cross edition boundaries
+ok 33 - adult token cannot be exchanged for a new own registration
+ok 34 - secret consenting second adult can join the existing unpaid household
+ok 35 - adult joins exact registration rather than capturing another identity
+ok 36 - shared adult does not receive owner private phone
+ok 37 - adult acceptance creates no lingering independent entry
+ok 38 - owner can withdraw adult membership
+ok 39 - withdrawn adult loses private copy access
+ok 40 - consumed withdrawn invitation cannot restore access
+ok 41 - four-argument admin-list compatibility preserves scoped support
+ok 42 - revoked sole capability stops admission
+ok 43 - assigned activity staff can select its private edition
+ok 44 - withdrawn sole staff assignment stops admission
+ok 45 - personally admitted resident can submit own zone
+ok 46 - existing zone owner retains legitimate access
+ok 47 - only the explicit authenticated storage predicate remains executable
+ok 48 - all three existing storage policies retain the guarded predicate
+ok 49 - active own-zone storage path remains allowed after temporary entry expiry
+ok 50 - owner cannot use a different actor storage path
+ok 51 - zone path cannot substitute another edition
+ok 52 - banned owner old JWT cannot read, insert or delete a private photo
+ok 53 - deleted owner old JWT cannot use private storage
+ok 54 - unconfirmed owner old JWT cannot use private storage
+ok 55 - reactivated confirmed owner retains the same legitimate photo path
+ok 56 - other confirmed actor cannot claim a foreign house photo with its own actor segment
+ok 57 - active same-edition portals manager can use its own delegated storage path
+ok 58 - banned manager old JWT does not retain photo access through its capability
+ok 59 - deleted manager old JWT does not retain photo access through its capability
+ok 60 - unconfirmed manager old JWT does not retain photo access through its capability
+ok 61 - revoked same-edition role is not replaced by a portals role from another edition
+ok 62 - manager revocation does not remove independent active owner access
+ok 63 - closed copy cannot admit a new visitor
+ok 64 - unconfirmed actor cannot use snapshot with an old or forged claim
+ok 65 - unconfirmed actor cannot use command with an old or forged claim
+ok 66 - unconfirmed actor cannot use walking path with an old or forged claim
+ok 67 - unconfirmed actor cannot use admin list with an old or forged claim
+ok 68 - banned actor cannot use snapshot with an old or forged claim
+ok 69 - banned actor cannot use command with an old or forged claim
+ok 70 - banned actor cannot use walking path with an old or forged claim
+ok 71 - banned actor cannot use admin list with an old or forged claim
+ok 72 - deleted actor cannot use snapshot with an old or forged claim
+ok 73 - deleted actor cannot use command with an old or forged claim
+ok 74 - deleted actor cannot use walking path with an old or forged claim
+ok 75 - deleted actor cannot use admin list with an old or forged claim
+ok 76 - current owner financial read retains its ordinary contract
+ok 77 - banned actor cannot start checkout through a service bridge
+ok 78 - banned actor cannot read financial state through a service bridge
+ok 79 - banned actor cannot create simulated payment intent
+ok 80 - banned actor cannot claim a refund through a service bridge
+ok 81 - refund acknowledgement without an exact pre-existing claim remains forbidden
+ok 82 - genuine provider receipt still reconciles after actor ban
+ok 83 - provider financial truth was preserved
+ok 84 - provider receipt ledger remains exactly once
+ok 85 - provider scope lookup does not depend on actor admission
+ok 86 - expired or absent entry cannot use checkout service bridge
+ok 87 - admission and financial contract create no legacy outbox row
+1..87

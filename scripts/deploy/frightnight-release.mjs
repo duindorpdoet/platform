@@ -42,7 +42,7 @@ export const FRIGHTNIGHT_SAFETY_SQL = `select jsonb_build_object(
 ) as frightnight_safety`;
 
 export function assertFrightnightSafety(safety, requireEdition = true) {
-  if (!safety || safety.tables < 20 || safety.unsafeTables !== 0 || safety.unsafeFunctions !== 0 || safety.actorFunctions !== 4
+  if (!safety || safety.tables !== 31 || safety.unsafeTables !== 0 || safety.unsafeFunctions !== 0 || safety.actorFunctions !== 4
       || safety.unsafeEvents !== 0 || safety.unsafeSink !== 0 || safety.sinkHasRecipient !== false || safety.legacyBindings !== 0) throw new Error('FRIGHTNIGHT_DATABASE_ISOLATION_FAILED');
   const expectedJobs = new Set(['duindorp-halloween-route-dispatch','duindorp-poortkamer-maintenance','duindorp-halloween-mail-outbox']);
   if (!safety.mailWorker?.active || !safety.mailWorker.hasSecret || safety.mailWorker.endpoint !== `${FRIGHTNIGHT_STAGING.origin}/api/jobs/mail`

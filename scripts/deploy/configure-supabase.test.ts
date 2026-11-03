@@ -36,7 +36,7 @@ function configure(probeResult: object, runtimeStatus = 200, environment: Record
       if(url.pathname.endsWith('/database/query')) {
         const requested=JSON.parse(init.body);
         if(requested.read_only!==true)throw new Error('Configuration audit must be read only');
-        body=[{frightnight_safety:{tables:23,unsafeTables:0,unsafeFunctions:process.env.TEST_UNSAFE_FN==='true'?1:0,actorFunctions:4,unsafeEvents:0,unsafeSink:0,sinkHasRecipient:false,legacyBindings:0,
+        body=[{frightnight_safety:{tables:31,unsafeTables:0,unsafeFunctions:process.env.TEST_UNSAFE_FN==='true'?1:0,actorFunctions:4,unsafeEvents:0,unsafeSink:0,sinkHasRecipient:false,legacyBindings:0,
           edition:{slug:'frightnight-2027-test',date:'2027-10-30',timezone:'Europe/Amsterdam',environment:'staging',isTest:true,retentionUntil:'2027-11-03T00:00:00Z'},
           mailWorker:{active:true,endpoint:process.env.APP_URL+'/api/jobs/mail',hasSecret:true},legacyJobs:['duindorp-halloween-route-dispatch','duindorp-poortkamer-maintenance','duindorp-halloween-mail-outbox'].map(name=>({name,active:true,schedule:'* * * * *'}))}}];
       }

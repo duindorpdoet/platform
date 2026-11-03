@@ -8,7 +8,7 @@ export function createEditionInvitation(slug: string, secret: string, now = Date
   const signature = createHmac("sha256", secret).update(payload).digest("base64url");
   return { token: `${payload}.${signature}`, expiresAt: new Date(expiresAt).toISOString() };
 }
-export function verifyEditionInvitation(token: string, secret: string, now = Date.now()): string | null {
+export function verifyEditionInvitationClaims(token: string, secret: string, now = Date.now()): { slug: string; expiresAt: string } | null {
   if (token.length > 1024 || secret.length < 24) return null;
   try {
     const [payload, signature, extra] = token.split(".");
@@ -17,6 +17,9 @@ export function verifyEditionInvitation(token: string, secret: string, now = Dat
     const actual = Buffer.from(signature, "base64url");
     if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    return data.purpose === "frightnight-test-entry" && typeof data.slug === "string" && slugPattern.test(data.slug) && Number.isSafeInteger(data.expiresAt) && data.expiresAt > now && data.expiresAt <= now + TTL ? data.slug : null;
+    return data.purpose === "frightnight-test-entry" && typeof data.slug === "string" && slugPattern.test(data.slug) && Number.isSafeInteger(data.expiresAt) && data.expiresAt > now && data.expiresAt <= now + TTL ? { slug: data.slug, expiresAt: new Date(data.expiresAt).toISOString() } : null;
   } catch { return null; }
+}
+export function verifyEditionInvitation(token: string, secret: string, now = Date.now()): string | null {
+  return verifyEditionInvitationClaims(token, secret, now)?.slug ?? null;
 }

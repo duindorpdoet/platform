@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { assertFrightnightRelease, assertFrightnightHostedContract, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL, type FrightnightSafety } from './frightnight-release.mjs';
 
 const env = {APP_ENVIRONMENT:'staging',APP_URL:'https://staging-halloween.duindorpdoet.nl',SUPABASE_PROJECT_REF:'nocteiuvohesvqbowchw',NEXT_PUBLIC_SUPABASE_URL:'https://nocteiuvohesvqbowchw.supabase.co',EVENT_SLUG:'frightnight-2027-test',FRIGHTNIGHT_ENABLED:'true',FRIGHTNIGHT_PROJECT_REF:'nocteiuvohesvqbowchw',FRIGHTNIGHT_PAYMENT_PROVIDER:'contract',FRIGHTNIGHT_MAIL_MODE:'sink',FRIGHTNIGHT_HARDWARE_ENABLED:'false'};
-const safety = ():FrightnightSafety => ({tables:23,unsafeTables:0,unsafeFunctions:0,actorFunctions:4,unsafeEvents:0,unsafeSink:0,sinkHasRecipient:false,legacyBindings:0,
+const safety = ():FrightnightSafety => ({tables:31,unsafeTables:0,unsafeFunctions:0,actorFunctions:4,unsafeEvents:0,unsafeSink:0,sinkHasRecipient:false,legacyBindings:0,
  edition:{slug:env.EVENT_SLUG,date:'2027-10-30',timezone:'Europe/Amsterdam',phase:'draft',environment:'staging',isTest:true,retentionUntil:'2027-11-03T00:00:00Z'},
  mailWorker:{active:true,endpoint:env.APP_URL+'/api/jobs/mail',hasSecret:true},
  legacyJobs:['duindorp-halloween-route-dispatch','duindorp-poortkamer-maintenance','duindorp-halloween-mail-outbox'].map(name=>({name,active:true,schedule:'* * * * *'}))});
@@ -46,6 +46,8 @@ describe('read-only schema, sink and legacy-job release proof',()=>{
  });
  it.each(['unsafeTables','unsafeFunctions','unsafeEvents','unsafeSink','legacyBindings'] as const)('blocks an unsafe database state: %s',key=>expect(()=>assertFrightnightSafety({...safety(),[key]:1})).toThrow('FRIGHTNIGHT_DATABASE_ISOLATION_FAILED'));
  it('blocks direct recipient delivery and lost actor grants',()=>{
+  expect(()=>assertFrightnightSafety({...safety(),tables:30})).toThrow();
+  expect(()=>assertFrightnightSafety({...safety(),tables:32})).toThrow();
   expect(()=>assertFrightnightSafety({...safety(),sinkHasRecipient:true})).toThrow();
   expect(()=>assertFrightnightSafety({...safety(),actorFunctions:2})).toThrow();
  });

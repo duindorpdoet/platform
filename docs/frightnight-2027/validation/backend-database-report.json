@@ -11,23 +11,25 @@
   "mail": "new event-scoped sink only; no delivery worker or recipient-address column",
   "advisors": "CLI 2.117.0 attempted twice against isolated Docker DB; LegacyDbConnectError. Explicit ACL/search_path/RLS metadata safety query and pgTAP did execute; full advisors not claimed.",
   "sourceSha256": {
-    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "0dd0fb20fa8da12c94154c0252c92e1b07fa1e2603c927e380399b857453214d",
-    "supabase/tests/127_frightnight_2027_core.sql": "638b1239b70daf775dae8cf662eed522c3585713c1f66520a66cd41729cf9ed8",
-    "scripts/frightnight/db-concurrency.py": "89fb8b67ae7569270db05b97ac85f1b5bee99bbd5099e3012748a8c8d3e3bb56"
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "cf3daf2166b7fba948b0cd5ea7bb88697eb60abcbc63fb2de749f99f584c8093",
+    "supabase/tests/127_frightnight_2027_core.sql": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
+    "supabase/tests/132_frightnight_2027_edition_access.sql": "432234fd40831724be373e8ebd33f94157d2dc3fcdd162be07599b2c3d8cacb8",
+    "scripts/frightnight/db-concurrency.py": "b826b2152825abc1bd550f5417fd6fd0082157b9b6ffe7df50165679d414b56e"
   },
   "pgtap": {
-    "passed": 319,
+    "passed": 550,
     "failed": 0,
     "rollback": true
   },
   "concurrency": {
     "passed": true,
     "database": "frightnight_2027_acceptance",
-    "slug": "frightnight-2027-test-race-7a14dd5808fd",
+    "slug": "frightnight-2027-test-race-e80dc26c3b86",
     "families": 12,
     "simultaneousStarts": 12,
-    "walking": 2,
-    "waiting": 10,
+    "walking": 1,
+    "waiting": 11,
     "overbooked": 0,
     "concurrentReplayRequests": 2,
     "visits": 1,
@@ -35,7 +37,7 @@
     "legacyPayments": 0,
     "legacyGroups": 0,
     "sinkMessages": 12,
-    "concurrentRefundScan": "rejected-after-refund",
+    "concurrentRefundScan": "accepted-before-refund",
     "refundedPartyActiveClaims": 0,
     "refundLedger": 1,
     "distinctRefundRequests": 2,
@@ -43,7 +45,7 @@
     "duplicateRefundRejected": 1,
     "alreadyRefundedCreatesIntent": false,
     "oldRefundedInvitationRejectedWithoutMutation": true,
-    "oldRefundedInvitationDenial": "SAME_PAID_ROUTE_REQUIRED",
+    "oldRefundedInvitationDenial": "INVITATION_INVALID_FINISHED_FINALE",
     "concurrentJoinRefund": "rejected-after-refund",
     "joinRefundActiveClaims": 0,
     "joinRefundLedger": 1,
@@ -58,10 +60,79 @@
       "freePlaces": 0,
       "legacyOutboxUnchanged": true
     },
-    "durationSeconds": 8.082
+    "concurrentObservationAdmission": [
+      {
+        "round": 1,
+        "order": "observation-blocked-admission",
+        "appClaims": 0,
+        "effectivePersons": 2,
+        "truthfulPhysicalOvercapacityRetained": false,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 2,
+        "order": "observation-blocked-admission",
+        "appClaims": 0,
+        "effectivePersons": 2,
+        "truthfulPhysicalOvercapacityRetained": false,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 3,
+        "order": "observation-blocked-admission",
+        "appClaims": 0,
+        "effectivePersons": 2,
+        "truthfulPhysicalOvercapacityRetained": false,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 4,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 5,
+        "order": "observation-blocked-admission",
+        "appClaims": 0,
+        "effectivePersons": 2,
+        "truthfulPhysicalOvercapacityRetained": false,
+        "newAdmissionAfterPhysicalFull": false
+      }
+    ],
+    "queuedEditionEntry": [
+      {
+        "entry": "revoked",
+        "eventLockBarrierVerified": true,
+        "denial": "42501:EDITION_ACCESS_REQUIRED",
+        "registrationsCreated": 0,
+        "householdsCreated": 0,
+        "receiptsCreated": 0
+      },
+      {
+        "entry": "expired",
+        "eventLockBarrierVerified": true,
+        "denial": "42501:EDITION_ACCESS_REQUIRED",
+        "registrationsCreated": 0,
+        "householdsCreated": 0,
+        "receiptsCreated": 0
+      }
+    ],
+    "concurrentStartCapacityCheckout": {
+      "capacityChange": "blocked-by-checkout-hold",
+      "checkout": "checkout-held-two",
+      "orders": 1,
+      "capacity": 100,
+      "available": 98,
+      "overbooked": false,
+      "existingProviderHoldLost": false
+    },
+    "durationSeconds": 14.775
   },
   "localSafety": {
-    "tables": 30,
+    "tables": 31,
     "edition": {
       "date": "2027-10-30",
       "slug": "frightnight-2027-test",
@@ -82,8 +153,8 @@
     "sinkHasRecipient": false
   },
   "safetyLimitation": "Local schema-only fixture has no legacy cron/mailworker configuration; staging runtime assertion is still required.",
-  "releaseSafetyQuerySha256": "b87ae92ada08dcff22ca97d46b3da124dab86f77a1951ade8f927da6e69f3a96",
-  "verifiedAt": "2026-11-03T04:02:20.293131+00:00",
+  "releaseSafetyQuerySha256": "69c98a7bcbe1f8472b8c5b5cf36b7f4eadbc9b7e75028e6ca8f4bdf21e64ebc9",
+  "verifiedAt": "2026-11-03T04:52:16.737974+00:00",
   "latestRegressionScope": [
     "paid active same-edition/evening members checked atomically for both joining parties and invitation creation",
     "pre-refund invitation rejects without any party, capacity, receipt, history or audit mutations",
@@ -103,6 +174,46 @@
     "archived late payment preserves the archive boundary",
     "refund or quote invalidation cancels only booked activity seats; checked_in attendance is retained",
     "owner cancellation after refund is allowed and idempotent; checkin requires active paid registration",
-    "sink fulfillment accurately distinguishes active, start_required, quote_mismatch and cancelled"
+    "sink fulfillment accurately distinguishes active, start_required, quote_mismatch and cancelled",
+    "service-only acknowledgement matches exact persisted event/order/actor/key/reason claim after initiating actor ban and role revocation; new intents remain forbidden",
+    "provider binding remains immutable before and after refunded replay including null substitution denial; exact retry/reconciliation retains one financial ledger entry"
+  ],
+  "additionalMigration": "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+  "editionAccessPgtap": {
+    "file": "supabase/tests/132_frightnight_2027_edition_access.sql",
+    "passed": 87,
+    "failed": 0,
+    "rollback": true
+  },
+  "totalPgtapPassed": 637,
+  "latestOccupancyRegressionScope": [
+    "positive integer per-person tariff1..100000 and registration/order1..100000000 constraints, invalid configuration makes no mutation",
+    "immutable registration identity snapshots union app travel/arrival claims, resident known-party observations and prospective party without duplicate persons",
+    "bounded own-zone observation with version, confirmation, cross-event and cross-zone denial, physical overfull retained without evicting underway parties",
+    "five-real-minute stale nonempty observation preserves physical count and blocks only new assignments until explicit fresh confirmation; expired empty observation does not block",
+    "expired current travel claims remain counted until explicit recovery",
+    "split and regrouped families union immutable identities; candidates contain anonymous references only; participant sees no other references even with multiple arrivals",
+    "selected older physical holds remain in bounded50 owner candidates ahead of newer arrivals",
+    "observation replay returns stable aggregate result plus fresh authorized snapshot; revoked owner replay denied; no visits or rewards issued",
+    "five concurrent observation/admission races verify both serialized orders and no admission after full observation"
+  ],
+  "latestEditionAccessRegressionScope": [
+    "private copies require confirmed-active actor plus own participation, event capability/activity staff or explicit personal service-granted entry",
+    "direct authenticated outsider snapshot/registration/zone RPCs rejected; service actor operations also context-bound",
+    "narrow valid adult invite exception creates revocable household access rather than persistent entry",
+    "financial provider truth callbacks remain service-only and independent of actor login state",
+    "queued registration behind a verified event-lock barrier rechecks revoked or real-time expired entry after acquiring the lock:42501,zero registration/household/receipt",
+    "Storage ownership helper applies current Auth/edition context to all existing photo policies; banned,deleted,unconfirmed or revoked manager JWT cannot bypass"
+  ],
+  "latestReviewAndConfigurationRegressionScope": [
+    "versioned changes_requested/rejected reason required3..1000; reason only owner/houseregie DTO and omitted from current/public/receipts including dual-role owner",
+    "owner resubmission retains reference reason,reconfirms location,approval clears reason and becomes routable; no fabricated visits",
+    "salesOpen,salesClosesAt on businessclock,enabledRoutes includingempty,newcheckout denied even existing open retry after salesclosure; prior provider financial truth and paid journeys retained",
+    "startBlockMinutes5/10/15/30 non-destructivegrid; original capacities,own historical selected slot,openholds andpaidappointments preserved",
+    "capacity reduction counts confirmed paid and valid openholds; archived/reset old openattempt stopsclaim without financial rewrite;latepaidstaysarchived",
+    "per-edition maxRegistrationPersons1..20/maxPartyPersons registration..100,copy,new limitswithoutretroactivequote/groupmutation",
+    "temporary full/paused ordinary house that stillfits causeswaiting;resume afterrelease/pauseexpiry selectsordinary;nearend or explicitstop selectsfinale",
+    "router and walk map share lastcompletedvisit/Duinpad origin;released/skipped assignment isnotarrivalproof;geometry andedge minutes match",
+    "versioned helpassign/reply/resolve,currentconfirmedstaffonly,participant seesassignmentbool not staffidentity,revokedstaffreplaydenied,boundedstaffchoices/noemail"
   ]
 }
