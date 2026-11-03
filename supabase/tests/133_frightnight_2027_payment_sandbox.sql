@@ -23,7 +23,7 @@ select throws_ok($$select pg_temp.sb_arm('frightnight-2027-test-sandbox-a','f733
 select pg_temp.sb_actor('f7330000-0000-0000-0000-000000000001');
 select is(api.frightnight_snapshot('frightnight-2027-test-sandbox-a')#>>'{paymentSandbox,reason}',null::text,'fresh private run reports eligibility server-side');
 select is(api.frightnight_snapshot('frightnight-2027-test-sandbox-a')#>>'{event,paymentPolicy}','configured','fresh copies follow server configuration by default');
-select throws_ok($$select api.frightnight_contract_arm('frightnight-2027-test-sandbox-a','f7330000-0000-0000-0000-000000000001',gen_random_uuid(),'wrong')$$,'40001','SANDBOX_RUN_CONFLICT','stale or foreign run cannot be armed');
+select throws_ok($$select api.frightnight_contract_arm('frightnight-2027-test-sandbox-a','f7330000-0000-0000-0000-000000000001',gen_random_uuid(),'wrong')$$,'PT409','SANDBOX_RUN_CONFLICT','stale or foreign run cannot be armed');
 select throws_ok($$select api.frightnight_contract_arm('frightnight-2027-test-sandbox-a','f7330000-0000-0000-0000-000000000001',(select run_id from app_private.fn_events f join app_private.events e on e.id=f.event_id where e.slug='frightnight-2027-test-sandbox-a'),'wrong')$$,'22023','SANDBOX_CONFIRMATION_REQUIRED','full infrastructure and edition binding is mandatory');
 select lives_ok($$select pg_temp.sb_arm('frightnight-2027-test-sandbox-a','f7330000-0000-0000-0000-000000000001')$$,'fresh own child can be explicitly armed');
 select lives_ok($$select pg_temp.sb_arm('frightnight-2027-test-sandbox-a','f7330000-0000-0000-0000-000000000001')$$,'same-run arm retry is idempotent');
@@ -39,7 +39,7 @@ select lives_ok($$select api.frightnight_payment_bind('frightnight-2027-test-san
 select is(api.frightnight_payment_lookup('frightnight-2027-test-sandbox-a','ct_'||(select value->>'order_id'from sandbox_state where key='contract'))->>'provider','contract','provider lookup retains immutable contract binding');
 select pg_temp.sb_cmd('frightnight-2027-test-sandbox-a','test.reset',jsonb_build_object('confirmation','frightnight-2027-test-sandbox-a','runId',(select run_id from app_private.fn_events f join app_private.events e on e.id=f.event_id where e.slug='frightnight-2027-test-sandbox-a')));
 select is(api.frightnight_snapshot('frightnight-2027-test-sandbox-a')#>>'{event,contractSandboxArmed}','false','reset invalidates previous run arming without deleting payment history');
-select throws_ok($$select api.frightnight_payment_test_claim('frightnight-2027-test-sandbox-a','f7330000-0000-0000-0000-000000000001',(select(value->>'registration_id')::uuid from sandbox_state where key='contract'),gen_random_uuid(),'mollie')$$,'40001','SANDBOX_REARM_REQUIRED','stale sandbox refuses provider fallback after reset');
+select throws_ok($$select api.frightnight_payment_test_claim('frightnight-2027-test-sandbox-a','f7330000-0000-0000-0000-000000000001',(select(value->>'registration_id')::uuid from sandbox_state where key='contract'),gen_random_uuid(),'mollie')$$,'PT409','SANDBOX_REARM_REQUIRED','stale sandbox refuses provider fallback after reset');
 select lives_ok($$select pg_temp.sb_arm('frightnight-2027-test-sandbox-a','f7330000-0000-0000-0000-000000000001')$$,'new empty run can be rearmed while preserving earlier contract history');
 select is((select count(*)from app_private.fn_orders where id=(select(value->>'order_id')::uuid from sandbox_state where key='contract')),1::bigint,'rearming never deletes old contract orders');
 -- A configured Mollie claim is persisted before its first external POST.

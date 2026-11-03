@@ -36,9 +36,9 @@ select is(api.frightnight_snapshot('frightnight-2027-test')->>'organizationThank
 select ok(not(api.frightnight_snapshot('frightnight-2027-test')?'feedback'),'family cannot read organizational feedback or evaluations');
 select is(pg_temp.fb_cmd('thanks.general','{"text":"Bedankt voor de hele avond"}','f7340000-0000-0000-0000-000000000101')->'result',(select value->'result'from feedback_state where key='general'),'exact receipt retry returns the stable result');
 select lives_ok($$select pg_temp.fb_cmd('thanks.general','{"text":"Bedankt voor de hele avond"}')$$,'same text with a new command key remains one organizational delivery');
-select throws_ok($$select pg_temp.fb_cmd('thanks.general','{"text":"Changed"}','f7340000-0000-0000-0000-000000000101')$$,'40001','IDEMPOTENCY_CONFLICT','same receipt key cannot change payload');
-select throws_ok($$select pg_temp.fb_cmd('thanks.general','{"text":"Changed"}')$$,'40001','GENERAL_THANKS_ALREADY_SENT','a second different general message cannot create a second delivery');
-select throws_ok($$select pg_temp.fb_cmd('help.submit','{"text":"Another command"}','f7340000-0000-0000-0000-000000000101')$$,'40001','IDEMPOTENCY_CONFLICT','general and core commands share one idempotency-key namespace');
+select throws_ok($$select pg_temp.fb_cmd('thanks.general','{"text":"Changed"}','f7340000-0000-0000-0000-000000000101')$$,'PT409','IDEMPOTENCY_CONFLICT','same receipt key cannot change payload');
+select throws_ok($$select pg_temp.fb_cmd('thanks.general','{"text":"Changed"}')$$,'PT409','GENERAL_THANKS_ALREADY_SENT','a second different general message cannot create a second delivery');
+select throws_ok($$select pg_temp.fb_cmd('help.submit','{"text":"Another command"}','f7340000-0000-0000-0000-000000000101')$$,'PT409','IDEMPOTENCY_CONFLICT','general and core commands share one idempotency-key namespace');
 update auth.users set banned_until=clock_timestamp()+interval'1 hour'where id='f7340000-0000-0000-0000-000000000002';
 select throws_ok($$select pg_temp.fb_cmd('thanks.general','{"text":"Bedankt voor de hele avond"}','f7340000-0000-0000-0000-000000000101')$$,'42501','EDITION_ACCESS_REQUIRED','banned actor cannot replay a former organizational thanks receipt');
 update auth.users set banned_until=null where id='f7340000-0000-0000-0000-000000000002';
@@ -77,7 +77,7 @@ select pg_temp.fb_actor('f7340000-0000-0000-0000-000000000002');
 select pg_temp.fb_cmd('journey.start',jsonb_build_object('code',(select value->>'startCode'from feedback_state where key='seed'),'expectedVersion',1));
 select pg_temp.fb_actor('f7340000-0000-0000-0000-000000000001');
 select pg_temp.fb_cmd('admin.settings',jsonb_build_object('expectedVersion',(api.frightnight_snapshot('frightnight-2027-test')#>>'{event,version}')::integer,'paused',true,'reason','Synthetic global pause before close'));
-select throws_ok($$select pg_temp.fb_cmd('admin.settings',jsonb_build_object('expectedVersion',-1,'closed',true))$$,'40001','VERSION_CONFLICT','stale close cannot clear a current global pause');
+select throws_ok($$select pg_temp.fb_cmd('admin.settings',jsonb_build_object('expectedVersion',-1,'closed',true))$$,'PT409','VERSION_CONFLICT','stale close cannot clear a current global pause');
 select is(api.frightnight_snapshot('frightnight-2027-test')#>>'{event,paused}','true','failed close preserves global pause');
 insert into feedback_state select 'closePayload',jsonb_build_object('expectedVersion',(api.frightnight_snapshot('frightnight-2027-test')#>>'{event,version}')::integer,'closed',true,'reason','Synthetic closed after paused evening');
 insert into feedback_state select 'close',pg_temp.fb_cmd('admin.settings',(select value from feedback_state where key='closePayload'),'f7340000-0000-0000-0000-000000000102');
@@ -99,7 +99,7 @@ select pg_temp.fb_cmd('admin.settings',jsonb_build_object('expectedVersion',(api
 select lives_ok($$select pg_temp.fb_cmd('admin.settings',(select value from feedback_state where key='closePayload'),'f7340000-0000-0000-0000-000000000102')$$,'old close receipt remains replayable after a later policy change');
 select is(api.frightnight_snapshot('frightnight-2027-test')#>>'{event,paused}','true','old close replay cannot clear a later legitimate pause');
 select is(api.frightnight_snapshot('frightnight-2027-test')#>>'{event,closed}','false','old close replay cannot reclose a reopened edition');
-select throws_ok($$select pg_temp.fb_cmd('admin.settings',(select value||'{"paused":false}'::jsonb from feedback_state where key='closePayload'),'f7340000-0000-0000-0000-000000000102')$$,'40001','IDEMPOTENCY_CONFLICT','close wrapper retains original payload hash exactly');
+select throws_ok($$select pg_temp.fb_cmd('admin.settings',(select value||'{"paused":false}'::jsonb from feedback_state where key='closePayload'),'f7340000-0000-0000-0000-000000000102')$$,'PT409','IDEMPOTENCY_CONFLICT','close wrapper retains original payload hash exactly');
 -- Bounded projection: insertion is solely rollback fixture setup, not a command bypass.
 insert into app_private.fn_registrations(event_id,label,route_type,adults,children,max_intensity,amount_cents,run_id,synthetic)select f.event_id,'Synthetic bounded inbox '||n,'lantern',1,0,1,350,f.run_id,true from app_private.fn_events f join app_private.events e on e.id=f.event_id cross join generate_series(1,105)n where e.slug='frightnight-2027-test';
 insert into app_private.fn_organization_thanks(event_id,run_id,registration_id,actor_id,message)select event_id,run_id,id,'f7340000-0000-0000-0000-000000000001','Synthetic bounded inbox fixture'from app_private.fn_registrations where label like'Synthetic bounded inbox %';
