@@ -26,6 +26,7 @@ await mkdir(directory,{recursive:true});
 const report = {revision:process.env.GITHUB_SHA,origin:target.origin,projectRef:target.projectRef,edition:slug,scope:'fresh-synthetic-2027-only',checks:[],screenshots:[],externalPsp:'not exercised; deterministic contract adapter',physicalCamera:'not exercised; manual QR alternative used',load:'two concurrent families; no high-volume load claim',credentials:'memory only; no passwords, sessions or QR secrets in artifacts'};
 const actors=[];
 const contexts=[];
+const ownedPhotos=[];
 let browser;
 let eventId;
 let fixtureAdmin;
@@ -245,16 +246,36 @@ try {
   await huiAdminPage.close();await huiResidentPage.close();checked('HUI02 versioned organization feedback, owner UI resubmission and private reason cleared on approval');
   await app(resident,'zone.status',{zoneId:ownZone.id,status:'paused',expectedVersion:ownZone.version});
   ownZone=(await snapshot(resident)).ownZones[0];await app(resident,'zone.status',{zoneId:ownZone.id,status:'closed',expectedVersion:ownZone.version});
-  const photo=await resident.context.request.post(`${target.origin}/api/frightnight/zone-photo`,{headers:{Origin:target.origin},multipart:{zoneId:ownZone.id,expectedVersion:String((await snapshot(resident)).ownZones[0].version),commandId:randomUUID(),photo:{name:'synthetisch-zonebeeld.webp',mimeType:'image/webp',buffer:await readFile('public/frightnight/zone-garden.webp')}}});
+  const photoRun=(await snapshot(resident)).event.runId;
+  const residentPhotoCommand=randomUUID();
+  const residentPhotoPath=`${eventId}/${ownZone.id}/${resident.id}/${residentPhotoCommand}.webp`;
+  ownedPhotos.push({path:residentPhotoPath,eventId,runId:photoRun,zoneId:ownZone.id,actorId:resident.id});
+  const photo=await resident.context.request.post(`${target.origin}/api/frightnight/zone-photo`,{headers:{Origin:target.origin},multipart:{zoneId:ownZone.id,expectedVersion:String((await snapshot(resident)).ownZones[0].version),commandId:residentPhotoCommand,photo:{name:'synthetisch-zonebeeld.webp',mimeType:'image/webp',buffer:await readFile('public/frightnight/zone-garden.webp')}}});
   assert(photo.ok(),'OWN_ZONE_PHOTO_UPLOAD_FAILED');
   const savedPhoto=(await photo.json()).data.snapshot.ownZones.find(z=>z.id===ownZone.id).photoPath;
-  assert(savedPhoto,'PHOTO_PATH_NOT_PERSISTED');
+  assert(savedPhoto===residentPhotoPath,'PHOTO_PATH_NOT_PERSISTED');
+  assert((await snapshot(admin)).zones.find(z=>z.id===ownZone.id).photoPath===savedPhoto,'ADMIN_CURRENT_OWNER_PHOTO_PATH_MISMATCH');
+  const adminReadsOwnerPhoto=await admin.context.request.get(`${target.origin}/api/frightnight/zone-photo?zoneId=${ownZone.id}`);
+  assert(adminReadsOwnerPhoto.ok()&&adminReadsOwnerPhoto.headers()['content-type']==='image/webp'&&adminReadsOwnerPhoto.headers()['cache-control']==='private, no-store'&&(await adminReadsOwnerPhoto.body()).length>0,'ADMIN_CANNOT_READ_CURRENT_OWNER_PHOTO');
   const foreignStorage=createClient(sbUrl,anonKey,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:`Bearer ${a.session.access_token}`}}});
   const forbiddenStorage=await foreignStorage.storage.from('frightnight-zone-photos').download(savedPhoto);
   assert(forbiddenStorage.error&&!forbiddenStorage.data,'STORAGE_RLS_FOREIGN_PHOTO_EXPOSED');
   const foreignPhoto=await a.context.request.get(`${target.origin}/api/frightnight/zone-photo?zoneId=${ownZone.id}`);assert([403,404].includes(foreignPhoto.status()),'FOREIGN_ZONE_PHOTO_EXPOSED');
+  const adminPhotoCommand=randomUUID();
+  const adminPhotoPath=`${eventId}/${ownZone.id}/${admin.id}/${adminPhotoCommand}.webp`;
+  ownedPhotos.push({path:adminPhotoPath,eventId,runId:photoRun,zoneId:ownZone.id,actorId:admin.id});
+  const adminPhotoZone=(await snapshot(admin)).zones.find(z=>z.id===ownZone.id);
+  const adminPhoto=await admin.context.request.post(`${target.origin}/api/frightnight/zone-photo`,{headers:{Origin:target.origin},multipart:{zoneId:ownZone.id,expectedVersion:String(adminPhotoZone.version),commandId:adminPhotoCommand,photo:{name:'synthetische-regiefoto.webp',mimeType:'image/webp',buffer:await readFile('public/frightnight/zone-garden.webp')}}});
+  assert(adminPhoto.ok(),'ADMIN_ZONE_PHOTO_UPLOAD_FAILED');
+  assert((await adminPhoto.json()).data.snapshot.zones.find(z=>z.id===ownZone.id).photoPath===adminPhotoPath,'ADMIN_PHOTO_NAMESPACE_OR_PATH_MISMATCH');
+  assert((await snapshot(resident)).ownZones.find(z=>z.id===ownZone.id).photoPath===adminPhotoPath,'OWNER_CURRENT_ADMIN_PHOTO_PATH_MISMATCH');
+  const ownerReadsAdminPhoto=await resident.context.request.get(`${target.origin}/api/frightnight/zone-photo?zoneId=${ownZone.id}`);
+  assert(ownerReadsAdminPhoto.ok()&&ownerReadsAdminPhoto.headers()['content-type']==='image/webp'&&ownerReadsAdminPhoto.headers()['cache-control']==='private, no-store'&&(await ownerReadsAdminPhoto.body()).length>0,'OWNER_CANNOT_READ_CURRENT_ADMIN_PHOTO');
+  const forbiddenAdminStorage=await foreignStorage.storage.from('frightnight-zone-photos').download(adminPhotoPath);
+  assert(forbiddenAdminStorage.error&&!forbiddenAdminStorage.data,'STORAGE_RLS_FOREIGN_ADMIN_PHOTO_EXPOSED');
+  const foreignAdminPhoto=await a.context.request.get(`${target.origin}/api/frightnight/zone-photo?zoneId=${ownZone.id}`);assert([403,404].includes(foreignAdminPhoto.status()),'FOREIGN_CURRENT_ADMIN_PHOTO_EXPOSED');
   const print=await resident.context.request.get(`${target.origin}/api/frightnight/qr?zoneId=${ownZone.id}`);assert(print.ok()&&(await print.text()).includes('<svg'),'PRINTABLE_QR_FAILED');
-  checked('resident review, status, private photo and real printable QR');
+  checked('resident review, status, private photo and real printable QR',{reciprocalCurrentPhotoAccess:'resident upload read by regie; regie upload read by resident',foreignActorDenied:'Storage and API for both current paths'});
   const adminState=await snapshot(admin);const candy=adminState.zones.find(z=>z.type==='candy'&&z.id!==ownZone.id);
   await app(admin,'zone.profile',{zoneId:candy.id,name:candy.name,description:candy.description,capacity:4,opensAt:candy.opensAt,closesAt:candy.closesAt,expectedVersion:candy.version});
   const sb=await snapshot(b);
@@ -388,6 +409,20 @@ try {
     } catch(error) {cleanupErrors.push(safeError(error));report.editionCleanup={scope:'own-captured-sibling-only',status:'failed',blindReset:false};}
   } else if(bootstrapAttempted) {
     cleanupErrors.push('SIBLING_BOOTSTRAP_OUTCOME_UNCERTAIN');report.editionCleanup={status:'failed',blindReset:false};
+  }
+  if(ownedPhotos.length) {
+    try {
+      assert(eventId&&slug.startsWith('frightnight-2027-test-acceptance-')&&slug!==target.slug,'PHOTO_CLEANUP_OWN_EDITION_REQUIRED');
+      for(const object of ownedPhotos) {
+        const parts=object.path.split('/');
+        assert(parts.length===4&&parts[0]===eventId&&object.eventId===eventId&&parts[1]===object.zoneId&&parts[2]===object.actorId&&/^[a-f0-9-]{36}\.webp$/.test(parts[3])&&actors.some(person=>person.id===object.actorId),'PHOTO_CLEANUP_EXACT_OWN_PATH_REQUIRED');
+        const binding=await sql(`select z.id from app_private.fn_zones z join app_private.fn_events f on f.event_id=z.event_id join app_private.events e on e.id=f.event_id join auth.users u on u.id=${literal(object.actorId)}::uuid where e.id=${literal(eventId)}::uuid and e.slug=${literal(slug)} and f.environment='staging' and f.is_test and z.id=${literal(object.zoneId)}::uuid and z.run_id=${literal(object.runId)}::uuid and z.synthetic and u.email like '%@example.invalid' and u.raw_user_meta_data->>'synthetic_frightnight_run'=${literal(run)}`);
+        assert(binding.length===1,'PHOTO_CLEANUP_EVENT_RUN_ACTOR_BINDING_REQUIRED');
+      }
+      const removed=await service.storage.from('frightnight-zone-photos').remove(ownedPhotos.map(object=>object.path));
+      assert(!removed.error,'PHOTO_CLEANUP_EXACT_REMOVAL_FAILED');
+      report.photoCleanup={exactOwnPathsRequested:ownedPhotos.length,prefixDeletion:false,listing:false};
+    } catch(error) {cleanupErrors.push(safeError(error));}
   }
   for(const context of contexts)await context.close().catch(()=>{});
   if(browser)await browser.close().catch(()=>{});

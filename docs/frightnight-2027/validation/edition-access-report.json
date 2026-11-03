@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-11-03T04:54:58.846659+00:00",
+  "recordedAt": "2026-11-03T05:04:13.939936+00:00",
   "scope": "Own disposable local PostgreSQL clone and independent backend fresh restore; no remote mutations or external Auth/provider request",
   "originalProbe": {
     "database": "codex_fn_edition_probe_20261103",
@@ -25,15 +25,15 @@
   },
   "evidence": {
     "evidence": "docs/frightnight-2027/validation/backend-database-report.json",
-    "verifiedAt": "2026-11-03T04:52:16.737974+00:00",
-    "pgTapPassed": 637,
+    "verifiedAt": "2026-11-03T05:03:35.705734+00:00",
+    "pgTapPassed": 646,
     "corePassed": 550,
-    "accessPassed": 87,
+    "accessPassed": 96,
     "sourceSha256": {
       "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
-      "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "cf3daf2166b7fba948b0cd5ea7bb88697eb60abcbc63fb2de749f99f584c8093",
+      "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
       "supabase/tests/127_frightnight_2027_core.sql": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
-      "supabase/tests/132_frightnight_2027_edition_access.sql": "432234fd40831724be373e8ebd33f94157d2dc3fcdd162be07599b2c3d8cacb8",
+      "supabase/tests/132_frightnight_2027_edition_access.sql": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
       "scripts/frightnight/db-concurrency.py": "b826b2152825abc1bd550f5417fd6fd0082157b9b6ffe7df50165679d414b56e"
     },
     "safety": {
@@ -46,8 +46,8 @@
     },
     "concurrency": {
       "passed": true,
-      "database": "frightnight_2027_acceptance",
-      "slug": "frightnight-2027-test-race-e80dc26c3b86",
+      "database": "frightnight_2027_photo_acceptance_0606",
+      "slug": "frightnight-2027-test-race-3d76eefc7e44",
       "families": 12,
       "simultaneousStarts": 12,
       "walking": 1,
@@ -74,10 +74,10 @@
       "sourceHistoryPreserved": true,
       "concurrentCheckoutEdit": {
         "families": 1,
-        "outcome": "rejected-after-checkout",
-        "quotedPersons": 2,
-        "activePersons": 2,
-        "amountCents": 700,
+        "outcome": "edited-before-checkout",
+        "quotedPersons": 4,
+        "activePersons": 4,
+        "amountCents": 1400,
         "pricePerPersonCents": 350,
         "freePlaces": 0,
         "legacyOutboxUnchanged": true
@@ -85,26 +85,26 @@
       "concurrentObservationAdmission": [
         {
           "round": 1,
-          "order": "observation-blocked-admission",
-          "appClaims": 0,
-          "effectivePersons": 2,
-          "truthfulPhysicalOvercapacityRetained": false,
+          "order": "admission-before-observation",
+          "appClaims": 1,
+          "effectivePersons": 4,
+          "truthfulPhysicalOvercapacityRetained": true,
           "newAdmissionAfterPhysicalFull": false
         },
         {
           "round": 2,
-          "order": "observation-blocked-admission",
-          "appClaims": 0,
-          "effectivePersons": 2,
-          "truthfulPhysicalOvercapacityRetained": false,
+          "order": "admission-before-observation",
+          "appClaims": 1,
+          "effectivePersons": 4,
+          "truthfulPhysicalOvercapacityRetained": true,
           "newAdmissionAfterPhysicalFull": false
         },
         {
           "round": 3,
-          "order": "observation-blocked-admission",
-          "appClaims": 0,
-          "effectivePersons": 2,
-          "truthfulPhysicalOvercapacityRetained": false,
+          "order": "admission-before-observation",
+          "appClaims": 1,
+          "effectivePersons": 4,
+          "truthfulPhysicalOvercapacityRetained": true,
           "newAdmissionAfterPhysicalFull": false
         },
         {
@@ -117,10 +117,10 @@
         },
         {
           "round": 5,
-          "order": "observation-blocked-admission",
-          "appClaims": 0,
-          "effectivePersons": 2,
-          "truthfulPhysicalOvercapacityRetained": false,
+          "order": "admission-before-observation",
+          "appClaims": 1,
+          "effectivePersons": 4,
+          "truthfulPhysicalOvercapacityRetained": true,
           "newAdmissionAfterPhysicalFull": false
         }
       ],
@@ -143,21 +143,21 @@
         }
       ],
       "concurrentStartCapacityCheckout": {
-        "capacityChange": "blocked-by-checkout-hold",
-        "checkout": "checkout-held-two",
-        "orders": 1,
-        "capacity": 100,
-        "available": 98,
+        "capacityChange": "reduced-before-checkout",
+        "checkout": "checkout-blocked-by-reduction",
+        "orders": 0,
+        "capacity": 1,
+        "available": 1,
         "overbooked": false,
         "existingProviderHoldLost": false
       },
-      "durationSeconds": 14.775
+      "durationSeconds": 14.796
     },
     "scope": "Independent local backend proof; runtime jobs/mailworker, hosted release and external provider not yet tested"
   },
   "sourceSha256": {
-    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "cf3daf2166b7fba948b0cd5ea7bb88697eb60abcbc63fb2de749f99f584c8093",
-    "supabase/tests/132_frightnight_2027_edition_access.sql": "432234fd40831724be373e8ebd33f94157d2dc3fcdd162be07599b2c3d8cacb8",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "supabase/tests/132_frightnight_2027_edition_access.sql": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
     "app/api/frightnight/edition/route.ts": "fc944e24017b81cee399261861a1dd8d1528b462534425f8e51cfeb510e0ad62",
     "lib/frightnight/edition-invitation.ts": "d8f484157f0a25dff11576d50dea9cc7653bfd1082950f72b6805506506cac97",
     "lib/frightnight/edition-invitation.test.ts": "aeaf90eaec472c17b0008174b8be1ca3805a6dbaf4c6ed3ea810e61403052d4b"
@@ -174,10 +174,17 @@
       "rolledBack": true
     },
     "repair": "same exact event/zone/actor path and owner/portals capability, plus active current context; existing three policies retained",
-    "targetedPgTapPassed": 87,
+    "targetedPgTapPassed": 96,
     "failed": 0,
     "rollback": true,
     "directStorageObjectProbe": "stopped at missing schema ACL in schema-only fixture; no grants widened, no direct Storage HTTP claim",
-    "jointCoreProof": "Fresh combined apply:550 core +87 access =637, all passed"
+    "jointCoreProof": "Fresh combined apply:550 core +96 access =646, all passed",
+    "exactCurrentPhotoException": "Own upload namespace or exact registered fn_zones.photo_path; same active context, owner/portals capability and event/zone path guards; no foreign folder prefix access",
+    "positiveStoredAssetProbe": {
+      "managerCanReadCurrentOwnerUpload": true,
+      "ownerCanReadCurrentManagerUpload": true,
+      "unknownOrPreviousForeignFilesDenied": true,
+      "rolledBack": true
+    }
   }
 }

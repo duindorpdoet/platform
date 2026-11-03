@@ -1,20 +1,20 @@
 {
   "scope": "isolated-local-postgresql",
   "remoteMutations": false,
-  "database": "frightnight_2027_acceptance",
+  "database": "frightnight_2027_photo_acceptance_0606",
   "container": "supabase_db_duindorp_event_close_20261101",
   "migration": "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
   "postgresVersion": "17.6",
   "schemaBaseline": "schema-only local thanks_closed_final_20261102; pg_cron/pg_net extension creation excluded because those are bound to original local databases",
-  "createdAt": "2026-11-03T02:34:18.190170+00:00",
+  "createdAt": "2026-11-03T05:02:50.645796+00:00",
   "providerTests": "deterministic database contract only; no external PSP requests",
   "mail": "new event-scoped sink only; no delivery worker or recipient-address column",
   "advisors": "CLI 2.117.0 attempted twice against isolated Docker DB; LegacyDbConnectError. Explicit ACL/search_path/RLS metadata safety query and pgTAP did execute; full advisors not claimed.",
   "sourceSha256": {
     "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
-    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "cf3daf2166b7fba948b0cd5ea7bb88697eb60abcbc63fb2de749f99f584c8093",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
     "supabase/tests/127_frightnight_2027_core.sql": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
-    "supabase/tests/132_frightnight_2027_edition_access.sql": "432234fd40831724be373e8ebd33f94157d2dc3fcdd162be07599b2c3d8cacb8",
+    "supabase/tests/132_frightnight_2027_edition_access.sql": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
     "scripts/frightnight/db-concurrency.py": "b826b2152825abc1bd550f5417fd6fd0082157b9b6ffe7df50165679d414b56e"
   },
   "pgtap": {
@@ -24,8 +24,8 @@
   },
   "concurrency": {
     "passed": true,
-    "database": "frightnight_2027_acceptance",
-    "slug": "frightnight-2027-test-race-e80dc26c3b86",
+    "database": "frightnight_2027_photo_acceptance_0606",
+    "slug": "frightnight-2027-test-race-3d76eefc7e44",
     "families": 12,
     "simultaneousStarts": 12,
     "walking": 1,
@@ -52,10 +52,10 @@
     "sourceHistoryPreserved": true,
     "concurrentCheckoutEdit": {
       "families": 1,
-      "outcome": "rejected-after-checkout",
-      "quotedPersons": 2,
-      "activePersons": 2,
-      "amountCents": 700,
+      "outcome": "edited-before-checkout",
+      "quotedPersons": 4,
+      "activePersons": 4,
+      "amountCents": 1400,
       "pricePerPersonCents": 350,
       "freePlaces": 0,
       "legacyOutboxUnchanged": true
@@ -63,26 +63,26 @@
     "concurrentObservationAdmission": [
       {
         "round": 1,
-        "order": "observation-blocked-admission",
-        "appClaims": 0,
-        "effectivePersons": 2,
-        "truthfulPhysicalOvercapacityRetained": false,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
         "newAdmissionAfterPhysicalFull": false
       },
       {
         "round": 2,
-        "order": "observation-blocked-admission",
-        "appClaims": 0,
-        "effectivePersons": 2,
-        "truthfulPhysicalOvercapacityRetained": false,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
         "newAdmissionAfterPhysicalFull": false
       },
       {
         "round": 3,
-        "order": "observation-blocked-admission",
-        "appClaims": 0,
-        "effectivePersons": 2,
-        "truthfulPhysicalOvercapacityRetained": false,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
         "newAdmissionAfterPhysicalFull": false
       },
       {
@@ -95,10 +95,10 @@
       },
       {
         "round": 5,
-        "order": "observation-blocked-admission",
-        "appClaims": 0,
-        "effectivePersons": 2,
-        "truthfulPhysicalOvercapacityRetained": false,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
         "newAdmissionAfterPhysicalFull": false
       }
     ],
@@ -121,15 +121,15 @@
       }
     ],
     "concurrentStartCapacityCheckout": {
-      "capacityChange": "blocked-by-checkout-hold",
-      "checkout": "checkout-held-two",
-      "orders": 1,
-      "capacity": 100,
-      "available": 98,
+      "capacityChange": "reduced-before-checkout",
+      "checkout": "checkout-blocked-by-reduction",
+      "orders": 0,
+      "capacity": 1,
+      "available": 1,
       "overbooked": false,
       "existingProviderHoldLost": false
     },
-    "durationSeconds": 14.775
+    "durationSeconds": 14.796
   },
   "localSafety": {
     "tables": 31,
@@ -140,7 +140,7 @@
       "isTest": true,
       "timezone": "Europe/Amsterdam",
       "environment": "staging",
-      "retentionUntil": "2027-11-03T02:12:59.064705+00:00"
+      "retentionUntil": "2027-11-03T05:03:35.578412+00:00"
     },
     "legacyJobs": null,
     "mailWorker": null,
@@ -152,9 +152,9 @@
     "unsafeFunctions": 0,
     "sinkHasRecipient": false
   },
-  "safetyLimitation": "Local schema-only fixture has no legacy cron/mailworker configuration; staging runtime assertion is still required.",
+  "safetyLimitation": "Schema-only local fixture has no legacy cron/mailworker configuration. Empty cron.job metadata fixture permits compilation of the exact release SQL; runtime staging jobs, mailworker and object-storage HTTP remain separately required.",
   "releaseSafetyQuerySha256": "69c98a7bcbe1f8472b8c5b5cf36b7f4eadbc9b7e75028e6ca8f4bdf21e64ebc9",
-  "verifiedAt": "2026-11-03T04:52:16.737974+00:00",
+  "verifiedAt": "2026-11-03T05:03:35.705734+00:00",
   "latestRegressionScope": [
     "paid active same-edition/evening members checked atomically for both joining parties and invitation creation",
     "pre-refund invitation rejects without any party, capacity, receipt, history or audit mutations",
@@ -181,11 +181,11 @@
   "additionalMigration": "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
   "editionAccessPgtap": {
     "file": "supabase/tests/132_frightnight_2027_edition_access.sql",
-    "passed": 87,
+    "passed": 96,
     "failed": 0,
     "rollback": true
   },
-  "totalPgtapPassed": 637,
+  "totalPgtapPassed": 646,
   "latestOccupancyRegressionScope": [
     "positive integer per-person tariff1..100000 and registration/order1..100000000 constraints, invalid configuration makes no mutation",
     "immutable registration identity snapshots union app travel/arrival claims, resident known-party observations and prospective party without duplicate persons",
@@ -203,7 +203,8 @@
     "narrow valid adult invite exception creates revocable household access rather than persistent entry",
     "financial provider truth callbacks remain service-only and independent of actor login state",
     "queued registration behind a verified event-lock barrier rechecks revoked or real-time expired entry after acquiring the lock:42501,zero registration/household/receipt",
-    "Storage ownership helper applies current Auth/edition context to all existing photo policies; banned,deleted,unconfirmed or revoked manager JWT cannot bypass"
+    "Storage ownership helper applies current Auth/edition context to all existing photo policies; banned,deleted,unconfirmed or revoked manager JWT cannot bypass",
+    "active owner and same-edition portals manager may read the exact current zone photo from either actor namespace; arbitrary foreign or former stored objects remain denied; actor bans/role revocation still take immediate effect"
   ],
   "latestReviewAndConfigurationRegressionScope": [
     "versioned changes_requested/rejected reason required3..1000; reason only owner/houseregie DTO and omitted from current/public/receipts including dual-role owner",
@@ -215,5 +216,41 @@
     "temporary full/paused ordinary house that stillfits causeswaiting;resume afterrelease/pauseexpiry selectsordinary;nearend or explicitstop selectsfinale",
     "router and walk map share lastcompletedvisit/Duinpad origin;released/skipped assignment isnotarrivalproof;geometry andedge minutes match",
     "versioned helpassign/reply/resolve,currentconfirmedstaffonly,participant seesassignmentbool not staffidentity,revokedstaffreplaydenied,boundedstaffchoices/noemail"
-  ]
+  ],
+  "evidenceArtifacts": {
+    "backend-pgtap.txt": {
+      "sha256": "ce4377dfb02e7da48bb7efe5a92afcb5b275eba3d84a6fe22f374c7e307c4a5b",
+      "scope": "ephemeral synthetic test data rolled back; local only"
+    },
+    "backend-edition-access-pgtap.txt": {
+      "sha256": "ead902d817aae8808fa6989a2ce61b88171403d647df7473c60f6446e964fb1b",
+      "scope": "ephemeral synthetic test data rolled back; local only"
+    }
+  },
+  "qaHelperPatch": {
+    "database": "frightnight_2027_dev",
+    "context": "local QA helper replacement only; no reset/schema/table/Auth/fixture mutation",
+    "verifiedAt": "2026-11-03T05:03:43.485445+00:00",
+    "countsUnchanged": true,
+    "before": {
+      "auth": 59,
+      "zones": 423,
+      "awards": 33,
+      "events": 37,
+      "orders": 299,
+      "destinations": 73,
+      "registrations": 1961
+    },
+    "after": {
+      "auth": 59,
+      "zones": 423,
+      "awards": 33,
+      "events": 37,
+      "orders": 299,
+      "destinations": 73,
+      "registrations": 1961
+    },
+    "sourceSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "helperSqlSha256": "feda5cf3572b95cd98b974dfd243d03de0d7d08146bed788e925008f48c2b7e0"
+  }
 }

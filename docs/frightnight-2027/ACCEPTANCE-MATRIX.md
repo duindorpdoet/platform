@@ -15,9 +15,9 @@ Bronnen: `05-testen/ACCEPTATIETESTS.md` (82 IDs) en `05-testen/MAANDENLANG-TESTE
 | Historisch herstel | Backup/restore-run41433832508 op ce6bbb52551c4005a24c04fe3a578a4c3860cc18 | Oud herstelbewijs; niet de nieuwe release of een nieuw 2027-scenario. |
 | Open / Extern geblokkeerd / Fysiek open | Geen volledig uitgevoerd passend bewijs | Uitvoeren op juiste scope of ontbrekende credential/werkelijk toestel/operationele installatie oplossen. |
 
-De actuele lokale productiebuild **fzribBblz0y5tNosd_-R-** is volledig gebouwd en gecontroleerd: **1514 appchecks**, zes optionele integratieskips en **6/6 Node-uitvoergrenzen**, plus **23/23 publieke browsers** en **24/24 download-/klok-/privacychecks**. Het [bronhashrapport](validation/application-verify-report.json) en [bewijsregister](evidence/README.md) noemen de concrete broncontext. De verse databaseproof telt **637/637** (550 kern + 87 toegang), met races en 31 afgeschermde tabellen.
+De actuele lokale productiebuild **Ok5RjR2fex_g9bgq4d5YE** is volledig gebouwd en gecontroleerd: **1514 appchecks**, zes optionele integratieskips en **6/6 Node-uitvoergrenzen**. Het [bronhashrapport](validation/application-verify-report.json) en [bewijsregister](evidence/README.md) noemen de concrete broncontext. De verse databaseproef telt **646/646** (550 kern + 96 toegang), met races en 31 afgeschermde tabellen. Werkelijke wederzijdse foto-upload/download via Storage HTTP blijft een gepubliceerde acceptatiegate.
 
-De volledige aanvullende passage slaagt voor **27/27 scenario’s** en het HUI-02-gebruikerspad voor **12/12 controles** en echte spel-/bakenbediening voor **10/10 controles** op dezelfde actuele build. De vorige lokale passage op **5AlZTx-My0ydPqjQnmPQY** slaagde voor **24/24** uitkomsten; dat resultaat claimt de daarna toegevoegde verkoop-/hulp-/herstelbediening niet. Eerdere contact-, quote- en regieproeven blijven met hun oorspronkelijke builds in het bewijsregister staan.
+De vorige build **fzribBblz0y5tNosd_-R-** heeft **96 geslaagde lokale browserchecks**: 23 publieke, 24 download-/klok-/privacy-, 27 aanvullende scenario-, 12 HUI-02- en 10 spel-/bakencontroles. De huidige build voegt uitsluitend een zichtbare regiefotolink toe; de gerichte browserherproef slaagt voor 23 publieke, 12 HUI-02- en 11 fotolinkpresentatiechecks met eigen buildbewijs. De fotolinkfixture bewijst geen Storage HTTP. De eerdere passage op **5AlZTx-My0ydPqjQnmPQY** behoudt haar 24 uitkomsten en broncontext. Eerdere contact-, quote- en regieproeven blijven eveneens met hun oorspronkelijke builds herkenbaar.
 
 De hosted scripts zijn uitsluitend na geverifieerde binding, backup/restore, behoud en deployment toegestaan. Zij gebruiken de werkelijk gepubliceerde SHA en een eigen nieuwe testscope. Geen lokale uitkomst vervangt een externe PSP-, echte camera-, fysieke straat-/baken- of gepubliceerde duurproef.
 
@@ -56,7 +56,7 @@ Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrij
 | ROU-01 | LDB | Milde selectie, verlaagde spanning en Duinpadfinale lokaal; volledige wandeling open. |
 | ROU-02 | LDB | Lagere intensiteit en strengste groepscomfort lokaal; alle effecten tijdens tocht op staging open. |
 | ROU-03 | LDB | Zonepauzebeleid lokaal; sluiten huidige zone met live deelnemer en alternatief open. |
-| ROU-04 | LRACE | Tien van twaalf gezinnen wachten veilig bij volle passende zones lokaal; UI-uitleg staging open. |
+| ROU-04 | LRACE | Elf van twaalf gezinnen wachten veilig bij volle passende zones lokaal; UI-uitleg staging open. |
 | ROU-05 | LDB, LRACE | Twaalf starts tegelijk, nul overboeking lokaal; herhalen op geverifieerde stagingeditie open. |
 | ROU-06 | LDB | Verlopen lease vereist hervatten; precies één herstelde bestemming. Stagingherhaling open. |
 | ROU-07 | LDB, LRACE, lokale browser | Bewonerswaarneming en appclaims tellen bekende personen éénmaal; extra bezoekers, verouderde waarneming, expliciete leegbevestiging en vijf echte races lokaal bewezen. Nieuwe stagingherhaling open. |

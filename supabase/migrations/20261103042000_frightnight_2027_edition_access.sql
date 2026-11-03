@@ -34,14 +34,16 @@ $$;
 revoke all on function app_private.fn_actor_active(uuid),app_private.fn_context_allowed(uuid,uuid) from public,anon,authenticated,service_role;
 
 -- Storage evaluates this predicate directly, outside the four guarded RPCs.
--- Keep the exact event/zone/actor path and owner/capability boundary, and reject
--- stale JWTs belonging to unconfirmed, banned or deleted accounts as well.
+-- Keep exact event/zone paths and the owner/capability boundary. An actor may
+-- use its upload namespace or the exact currently registered zone photograph,
+-- never another uploader's folder. Stale inactive Auth JWTs remain rejected.
 create or replace function app_private.fn_photo_access(p_name text) returns boolean
 language sql stable security definer set search_path='' as $$
  select auth.uid() is not null and exists(
   select 1 from app_private.fn_zones z join app_private.fn_events f on f.event_id=z.event_id
   where z.event_id::text=split_part(p_name,'/',1) and z.id::text=split_part(p_name,'/',2)
-   and auth.uid()::text=split_part(p_name,'/',3) and f.environment='staging' and f.is_test
+   and (auth.uid()::text=split_part(p_name,'/',3) or p_name=z.photo_path)
+   and f.environment='staging' and f.is_test
    and app_private.fn_context_allowed(z.event_id,auth.uid())
    and (z.owner_id=auth.uid() or app_private.fn_can(z.event_id,'portals_manage',auth.uid())))
 $$;

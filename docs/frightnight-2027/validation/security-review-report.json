@@ -1,6 +1,6 @@
 {
   "scope": "local-vitest-and-eslint",
-  "recordedAt": "2026-11-03T04:54:58.846659+00:00",
+  "recordedAt": "2026-11-03T05:07:55.021953+00:00",
   "baseRevision": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
   "remoteMutations": false,
   "eslint": {
@@ -49,9 +49,9 @@
     "lib/frightnight/csv.ts": "8fef02f180643a15767c31e0141d76b870c6a17794c71bd58295ba7fbdc593e6",
     "lib/frightnight/csv.test.ts": "f1bd1380e7fc20b35156e584f67fe88ef686739521e407462af06cfe15eb3fac",
     "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
-    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "cf3daf2166b7fba948b0cd5ea7bb88697eb60abcbc63fb2de749f99f584c8093",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
     "supabase/tests/127_frightnight_2027_core.sql": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
-    "supabase/tests/132_frightnight_2027_edition_access.sql": "432234fd40831724be373e8ebd33f94157d2dc3fcdd162be07599b2c3d8cacb8",
+    "supabase/tests/132_frightnight_2027_edition_access.sql": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
     "app/api/frightnight/edition/route.ts": "fc944e24017b81cee399261861a1dd8d1528b462534425f8e51cfeb510e0ad62",
     "lib/frightnight/edition-invitation.ts": "d8f484157f0a25dff11576d50dea9cc7653bfd1082950f72b6805506506cac97"
   },
@@ -63,15 +63,15 @@
   "serverReadReview": "Current actor RPC deadline code reviewed with root; separate root full-suite evidence applies to that boundary, not an external timeout or delivery test.",
   "backendProof": {
     "evidence": "docs/frightnight-2027/validation/backend-database-report.json",
-    "verifiedAt": "2026-11-03T04:52:16.737974+00:00",
-    "pgTapPassed": 637,
+    "verifiedAt": "2026-11-03T05:03:35.705734+00:00",
+    "pgTapPassed": 646,
     "corePassed": 550,
-    "accessPassed": 87,
+    "accessPassed": 96,
     "sourceSha256": {
       "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
-      "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "cf3daf2166b7fba948b0cd5ea7bb88697eb60abcbc63fb2de749f99f584c8093",
+      "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
       "supabase/tests/127_frightnight_2027_core.sql": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
-      "supabase/tests/132_frightnight_2027_edition_access.sql": "432234fd40831724be373e8ebd33f94157d2dc3fcdd162be07599b2c3d8cacb8",
+      "supabase/tests/132_frightnight_2027_edition_access.sql": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
       "scripts/frightnight/db-concurrency.py": "b826b2152825abc1bd550f5417fd6fd0082157b9b6ffe7df50165679d414b56e"
     },
     "safety": {
@@ -84,8 +84,8 @@
     },
     "concurrency": {
       "passed": true,
-      "database": "frightnight_2027_acceptance",
-      "slug": "frightnight-2027-test-race-e80dc26c3b86",
+      "database": "frightnight_2027_photo_acceptance_0606",
+      "slug": "frightnight-2027-test-race-3d76eefc7e44",
       "families": 12,
       "simultaneousStarts": 12,
       "walking": 1,
@@ -112,10 +112,10 @@
       "sourceHistoryPreserved": true,
       "concurrentCheckoutEdit": {
         "families": 1,
-        "outcome": "rejected-after-checkout",
-        "quotedPersons": 2,
-        "activePersons": 2,
-        "amountCents": 700,
+        "outcome": "edited-before-checkout",
+        "quotedPersons": 4,
+        "activePersons": 4,
+        "amountCents": 1400,
         "pricePerPersonCents": 350,
         "freePlaces": 0,
         "legacyOutboxUnchanged": true
@@ -123,26 +123,26 @@
       "concurrentObservationAdmission": [
         {
           "round": 1,
-          "order": "observation-blocked-admission",
-          "appClaims": 0,
-          "effectivePersons": 2,
-          "truthfulPhysicalOvercapacityRetained": false,
+          "order": "admission-before-observation",
+          "appClaims": 1,
+          "effectivePersons": 4,
+          "truthfulPhysicalOvercapacityRetained": true,
           "newAdmissionAfterPhysicalFull": false
         },
         {
           "round": 2,
-          "order": "observation-blocked-admission",
-          "appClaims": 0,
-          "effectivePersons": 2,
-          "truthfulPhysicalOvercapacityRetained": false,
+          "order": "admission-before-observation",
+          "appClaims": 1,
+          "effectivePersons": 4,
+          "truthfulPhysicalOvercapacityRetained": true,
           "newAdmissionAfterPhysicalFull": false
         },
         {
           "round": 3,
-          "order": "observation-blocked-admission",
-          "appClaims": 0,
-          "effectivePersons": 2,
-          "truthfulPhysicalOvercapacityRetained": false,
+          "order": "admission-before-observation",
+          "appClaims": 1,
+          "effectivePersons": 4,
+          "truthfulPhysicalOvercapacityRetained": true,
           "newAdmissionAfterPhysicalFull": false
         },
         {
@@ -155,10 +155,10 @@
         },
         {
           "round": 5,
-          "order": "observation-blocked-admission",
-          "appClaims": 0,
-          "effectivePersons": 2,
-          "truthfulPhysicalOvercapacityRetained": false,
+          "order": "admission-before-observation",
+          "appClaims": 1,
+          "effectivePersons": 4,
+          "truthfulPhysicalOvercapacityRetained": true,
           "newAdmissionAfterPhysicalFull": false
         }
       ],
@@ -181,15 +181,15 @@
         }
       ],
       "concurrentStartCapacityCheckout": {
-        "capacityChange": "blocked-by-checkout-hold",
-        "checkout": "checkout-held-two",
-        "orders": 1,
-        "capacity": 100,
-        "available": 98,
+        "capacityChange": "reduced-before-checkout",
+        "checkout": "checkout-blocked-by-reduction",
+        "orders": 0,
+        "capacity": 1,
+        "available": 1,
         "overbooked": false,
         "existingProviderHoldLost": false
       },
-      "durationSeconds": 14.775
+      "durationSeconds": 14.796
     },
     "scope": "Independent local backend proof; runtime jobs/mailworker, hosted release and external provider not yet tested"
   },
@@ -207,7 +207,7 @@
   "financialReview": {
     "reviewer": "release_audit",
     "sourceFrozen": true,
-    "conclusion": "Accepted immutable quotes, positive tariff, entitlement ordering and exact persisted refund acknowledgement after later actor/role withdrawal; new intents still active/context/finance gated. Latest637 database cases and concurrency proof include wait, physical occupancy, limits, grid, help and photo admission.",
+    "conclusion": "Accepted immutable quotes, positive tariff, entitlement ordering and exact persisted refund acknowledgement after later actor/role withdrawal; new intents still active/context/finance gated. Latest646 database cases and concurrency proof include wait, physical occupancy, limits, grid, help and photo admission.",
     "mailTestsPassed": 6,
     "remotePspTested": false,
     "currentCombinedTargetedPassed": 114
@@ -242,10 +242,11 @@
     "evidence": "docs/frightnight-2027/validation/application-verify-report.json",
     "unitPassed": 1514,
     "optionalSkipped": 6,
-    "productionBuild": "fzribBblz0y5tNosd_-R-",
+    "productionBuild": "Ok5RjR2fex_g9bgq4d5YE",
     "clientArtifactsScanned": 697,
+    "sourceFiles": 140,
     "exitCode": 0,
-    "phase": "Current application build; subsequent acceptance selector-only corrections proven by actual module browser repeats, not a runtime code change",
+    "phase": "Current full application verification includes the authorized zone-photo link; current targeted browser proof remains separately scoped",
     "hostedRelease": "not yet executed"
   },
   "previousLocalBrowserEvidence": {
@@ -260,17 +261,17 @@
     "scope": "Historical pre-admission/occupancy local production browser proof; new current build browser proof pending"
   },
   "currentLocalBrowserEvidence": {
-    "reportedBy": "frontend_v7; independent recorded real local GoTrue/PostgreSQL browser artifacts",
-    "productionBuild": "fzribBblz0y5tNosd_-R-",
+    "reportedBy": "frontend_v7; actual recorded local standalone browser outcomes",
+    "productionBuild": "Ok5RjR2fex_g9bgq4d5YE",
     "publicChecks": 23,
-    "downloadClockChecks": 24,
-    "edgeChecks": 27,
     "houseReviewChecks": 12,
-    "edgeEvidence": "docs/frightnight-2027/evidence/browser-authenticated/package-edge-report.json",
+    "photoLinkPresentationChecks": 11,
+    "photoLinkScope": "Presentation fixture in authenticated authorized zone list; not actual Storage HTTP delivery",
+    "publicEvidence": "docs/frightnight-2027/evidence/browser-public/public-review-report.json",
     "houseReviewEvidence": "docs/frightnight-2027/evidence/browser-authenticated/hui02-report.json",
-    "downloadEvidence": "docs/frightnight-2027/evidence/browser-authenticated/download-clock-report.json",
+    "photoLinkEvidence": "docs/frightnight-2027/evidence/browser-authenticated/photo-link-ui-report.json",
     "index": "docs/frightnight-2027/evidence/README.md",
-    "scope": "Local production preview only; no hosted, external PSP, SMTP, physical camera or hardware claim"
+    "scope": "Current46 local checks only; hosted release and real Storage HTTP remain pending"
   },
   "editionAccessReview": {
     "evidence": "docs/frightnight-2027/EDITION-ACCESS-REVIEW.md",
@@ -301,8 +302,27 @@
     ],
     "externalRequests": false,
     "photoPredicateGuarded": true,
-    "accessPgTapPassed": 87,
+    "accessPgTapPassed": 96,
     "storageObjectHttpTested": false,
     "localObjectProbeLimitation": "Schema-only fixture lacks Storage schema ACLs; no grants widened"
+  },
+  "photoUiFollowup": {
+    "file": "components/frightnight/admin-resource.tsx",
+    "sourceSha256": "e4fe3feb2da907f66a86296fd65d36222cdac367e8ce8e20212c06928463fe16",
+    "change": "Authorized current zone photograph link",
+    "validation": "Passed current full1514-test build plus11 local presentation checks; actual hosted Storage HTTP remains pending"
+  },
+  "previousBuildBrowserEvidence": {
+    "reportedBy": "frontend_v7; independent recorded real local GoTrue/PostgreSQL browser artifacts",
+    "productionBuild": "fzribBblz0y5tNosd_-R-",
+    "publicChecks": 23,
+    "downloadClockChecks": 24,
+    "edgeChecks": 27,
+    "houseReviewChecks": 12,
+    "edgeEvidence": "docs/frightnight-2027/evidence/browser-authenticated/package-edge-report.json",
+    "houseReviewEvidence": "docs/frightnight-2027/evidence/browser-authenticated/hui02-report.json",
+    "downloadEvidence": "docs/frightnight-2027/evidence/browser-authenticated/download-clock-report.json",
+    "index": "docs/frightnight-2027/evidence/README.md",
+    "scope": "Previous fzrib local build context; retained independently of current photo-link change"
   }
 }

@@ -1,9 +1,9 @@
 {
-  "recordedAt": "2026-11-03T04:51:04.386842+00:00",
+  "recordedAt": "2026-11-03T05:06:41.335103+00:00",
   "scope": "local final functional application and acceptance guard sources; not hosted staging or external providers",
   "baseRevision": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
-  "previousCheckpoint": "34263f609541deb235fe3f779a38272ef0450822",
-  "buildId": "fzribBblz0y5tNosd_-R-",
+  "previousCheckpoint": "1fb37f0bfda0157db08db905f51b37674f156d5e",
+  "buildId": "Ok5RjR2fex_g9bgq4d5YE",
   "command": "FRIGHTNIGHT_BUILD_NO_CACHE=true pnpm verify",
   "exitCode": 0,
   "lint": "passed",
@@ -55,7 +55,7 @@
     "app/toegankelijkheid/page.tsx": "2d82063448aa4847ae1976510acd647e743770041ce9f4b4aea47c1196e6f0e3",
     "app/voorwaarden/page.tsx": "8b975b8b07629a29366921faefc6d60e0b4759e50f8a0b4dd38e0cb734c79dfe",
     "components/frightnight/access-management.tsx": "85a6682090759fa633edcab09ebfb39a99fa4f88a3786de229a704195f0ecf85",
-    "components/frightnight/admin-resource.tsx": "8f90dbf8f7efb5589c6014c755aaa30a53f4402a9cb28aa9adcddf590874ecef",
+    "components/frightnight/admin-resource.tsx": "e4fe3feb2da907f66a86296fd65d36222cdac367e8ce8e20212c06928463fe16",
     "components/frightnight/announcements.tsx": "5ac32228a111e9ecf0190477ccf96c1d78fa18eb951e3563cb13c79be07133a9",
     "components/frightnight/calm-toggle.tsx": "580e52ab2e45cb5a150b479269ab3f76fab7d958829d45e22d90ac72146e9401",
     "components/frightnight/camera.tsx": "dfff4b8d497781e8b367eb8ae2bb38bffe65fdf006d58a1eaa65df80fcad0573",
@@ -159,18 +159,18 @@
     "scripts/acceptance/frightnight-load.mjs": "cbce6c599e68b3e4ed3e2343f7619b753cf6cca135ea2fe0772a525433e5f39b",
     "scripts/acceptance/frightnight-load.test.ts": "a8dce603c60ae86027a90e35e42484182bde1c35119f6c2b71ef94d5f010ab85",
     "scripts/acceptance/frightnight-regie.mjs": "9ecbcac989523e606374e32a4a34755e76de503545216e1d9c37b69d612fe49f",
-    "scripts/acceptance/frightnight-staging.mjs": "b52ae24b825c8d604982d53bea54cdc12d4a193438f3ed3ed5f4184b140dc170",
+    "scripts/acceptance/frightnight-staging.mjs": "0f204f2d24cae38afad9b04056494bdf8ca1a55f9803e724cd314631976a67bf",
     "scripts/deploy/configure-supabase.test.ts": "07066583714f34e9cb418d376a78b5ab6ccba4c503f7965dc41403fd6aa837e6"
   },
-  "logSha256": "316a54bbb80bb787446d0bbb269f05477f97691225efc8390a2311d13026f558",
+  "logSha256": "2b44da21076c09804670929dc47a48ee9a9041d24c8a305ad52af9b414029fd2",
   "limitations": [
     "Real OTP is tester initiated only.",
     "No external PSP, physical camera, physical beacon or hosted load result is implied.",
     "Published SHA acceptance is a separate release gate."
   ],
-  "rawLogSha256": "bd7e5916738b9916bdb8877a03e762be77637ede249f1901c958c6ef9014f793",
+  "rawLogSha256": "d37be655a415cc98bfc862da5b8af3d5a27d86b866a7b7d1987479f8ab0fffd9",
   "logNormalization": "CR removed and trailing whitespace stripped; test/build output unchanged.",
-  "followup": "Final application includes HUI02 private review feedback, editable sales/grid/group limits, help assignment and versioned handling, direct current-destination recovery, actual role navigation and readable seals/status. SQL and concurrency have separate exact two-migration hashes; actual browsers on this build and published staging are separate gates.",
+  "followup": "Final application adds a read-only, on-click current-zone photo link for authorised regie. Exact current-photo cross-owner Storage guards are covered by separate 646-check SQL and race proof. New actual Storage HTTP acceptance remains pending the verified hosted parent run.",
   "acceptanceGuardTests": {
     "command": "node --test scripts/acceptance/frightnight-edges.test.mjs",
     "passed": 6,
@@ -178,7 +178,7 @@
     "databaseWrites": 0,
     "networkDeliveries": 0
   },
-  "postBuildAcceptanceVerification": {
+  "previousBuildBrowserVerification": {
     "recordedAt": "2026-11-03T04:55:06.894574+00:00",
     "reason": "Only two acceptance selectors changed after the application build; no application source changed.",
     "changedSources": [
@@ -201,5 +201,15 @@
     },
     "evidenceIndex": "docs/frightnight-2027/evidence/README.md",
     "hostedStaging": "pending exact published SHA"
+  },
+  "currentBuildBrowserVerification": {
+    "buildId": "Ok5RjR2fex_g9bgq4d5YE",
+    "public": 23,
+    "residentReview": 12,
+    "photoLinkPresentation": 11,
+    "totalChecks": 46,
+    "scope": "Actual local public and authenticated HUI02 browsers; photo-link presentation uses a current-path response fixture with no Storage HTTP claim. All other earlier 96-check outcomes retain their previous build source scope.",
+    "hostedStaging": "pending exact published SHA",
+    "evidenceIndex": "docs/frightnight-2027/evidence/README.md"
   }
 }
