@@ -1,0 +1,16 @@
+{
+  "recordedAt": "2026-11-03T07:42:14.309930+00:00",
+  "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "runId": 41595824091,
+  "artifactId": 13212424382,
+  "artifactName": "frightnight-staging-3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "downloadedZipSha256": "c16153168b0169329ba6aa8d4758fb01e104cadd133310c2adb85d39b7c4a3a5",
+  "sourceArtifactDigest": "sha256:c16153168b0169329ba6aa8d4758fb01e104cadd133310c2adb85d39b7c4a3a5",
+  "result": "failed_on_incorrect_canonical_denial_fixture_after_public_gate_passed",
+  "cleanup": "own synthetic edition archived and closed; five new actors retired; zero Auth/history deletes; finance, audit, 2026 and legacy outbox preserved",
+  "notExecuted": [
+    "125-client hosted load",
+    "RET-05 postacceptance scenario restore"
+  ],
+  "qualification": "Canonical confirmed-actor admission is intended. Next candidate tests actual unauthorized private-edition admission; no policy weakening. The separate native offline image failure is also being corrected."
+}

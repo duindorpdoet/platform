@@ -12,7 +12,7 @@ export function scenarioBackupEnabled(env) {
 const quote=value=>'"'+value.replaceAll('"','""')+'"';
 export function scenarioBackupQuery(catalog) {
   const tables=catalog.filter(table=>table.schema==='app_private'&&/^fn_[a-z_]+$/.test(table.name)).sort((a,b)=>a.name.localeCompare(b.name));
-  if(tables.length!==31||tables.some(table=>!table.columns.includes('event_id'))||!['fn_events','fn_registrations','fn_zones','fn_orders','fn_mail_sink','fn_quests','fn_activities','fn_edition_entries'].every(name=>tables.some(table=>table.name===name)))throw new Error('FRIGHTNIGHT_SCENARIO_CATALOG_INCOMPLETE');
+  if(tables.length!==32||tables.some(table=>!table.columns.includes('event_id'))||!['fn_events','fn_registrations','fn_zones','fn_orders','fn_mail_sink','fn_quests','fn_activities','fn_edition_entries','fn_organization_thanks'].every(name=>tables.some(table=>table.name===name)))throw new Error('FRIGHTNIGHT_SCENARIO_CATALOG_INCOMPLETE');
   const rows=tables.map(table=>`select jsonb_build_object('table','app_private.${table.name}','rows',count(*),'sha256',encode(sha256(convert_to(coalesce(string_agg(h,'' order by h),''),'UTF8')),'hex')) item from
    (select encode(sha256(convert_to(to_jsonb(row(${table.columns.map(column=>'t.'+quote(column)).join(',')}))::text,'UTF8')),'hex') h from app_private.${quote(table.name)} t where t.event_id=(select id from app_private.events where slug='${slug}')) hashes`).join(' union all ');
   return `set local timezone='UTC';set local datestyle='ISO';set local extra_float_digits=3;
@@ -24,9 +24,9 @@ export function scenarioBackupQuery(catalog) {
 }
 export function assertScenarioSnapshot(value) {
   if(!value||value.slug!==slug||value.date!=='2027-10-30'||value.timezone!=='Europe/Amsterdam'||value.environment!=='staging'||value.isTest!==true||value.closed!==false||!Number.isSafeInteger(value.seedVersion)||value.seedVersion<1||value.unsafeSink!==0||!/^[a-f0-9]{64}$/.test(value.bindingDigest??''))throw new Error('ACTIVE_FRIGHTNIGHT_SCENARIO_REQUIRED');
-  if(!Array.isArray(value.tables)||value.tables.length!==31||new Set(value.tables.map(row=>row.table)).size!==31||value.tables.some(row=>!/^app_private\.fn_[a-z_]+$/.test(row.table)||!Number.isSafeInteger(row.rows)||row.rows<0||!/^[a-f0-9]{64}$/.test(row.sha256)))throw new Error('FRIGHTNIGHT_SCENARIO_FINGERPRINTS_REQUIRED');
+  if(!Array.isArray(value.tables)||value.tables.length!==32||new Set(value.tables.map(row=>row.table)).size!==32||value.tables.some(row=>!/^app_private\.fn_[a-z_]+$/.test(row.table)||!Number.isSafeInteger(row.rows)||row.rows<0||!/^[a-f0-9]{64}$/.test(row.sha256)))throw new Error('FRIGHTNIGHT_SCENARIO_FINGERPRINTS_REQUIRED');
   const counts=Object.fromEntries(value.tables.map(row=>[row.table,row.rows]));
-  if(counts['app_private.fn_events']!==1||[['fn_registrations',4],['fn_zones',5],['fn_quests',6],['fn_activities',2]].some(([name,minimum])=>(counts['app_private.'+name]??-1)<minimum))throw new Error('SEEDED_FRIGHTNIGHT_SCENARIO_REQUIRED');
+  if(counts['app_private.fn_events']!==1||[['fn_registrations',4],['fn_zones',5],['fn_quests',6],['fn_activities',2],['fn_organization_thanks',0]].some(([name,minimum])=>(counts['app_private.'+name]??-1)<minimum))throw new Error('SEEDED_FRIGHTNIGHT_SCENARIO_REQUIRED');
   return value;
 }
 export function compareScenarioRestore(before,after) {

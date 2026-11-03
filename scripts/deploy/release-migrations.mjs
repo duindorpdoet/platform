@@ -109,6 +109,8 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Authoritative run-scoped contract sandbox and immutable provider claims.
   // Applied core/admission migrations stay byte-for-byte unchanged.
   '20261103071355_frightnight_2027_payment_sandbox.sql',
+  // Scoped organization feedback and explicit close/pause consistency.
+  '20261103073433_frightnight_2027_feedback_closure.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

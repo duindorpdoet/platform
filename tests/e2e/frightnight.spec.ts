@@ -243,6 +243,13 @@ test("productieserviceworker wordt actief en levert offline noodinformatie met h
     await expect(page.getByRole("heading", { level: 1 })).toContainText("EVEN GEEN VERBINDING");
     await expect(page.locator("body")).toContainText("Duinpad / Oogstdorp");
     await expect(page.locator("body")).toContainText("lokale bediening");
+    // A precached asset must actually be served when the network is absent.
+    // Merely finding its cache entry does not prove that the offline page works.
+    await expect.poll(() => page.locator("main img").evaluate(image => {
+      const logo = image as HTMLImageElement;
+      return logo.complete && logo.naturalWidth > 0;
+    }), { timeout: 5_000 }).toBe(true);
+    await page.locator("main img").evaluate(image => (image as HTMLImageElement).decode());
     const cached = await page.evaluate(async () => {
       const paths: string[] = [];
       for (const key of await caches.keys()) {
@@ -259,6 +266,7 @@ test("productieserviceworker wordt actief en levert offline noodinformatie met h
     expect(privateResponse?.headers()["cache-control"]).toContain("private, no-store");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("EVEN GEEN VERBINDING");
     await expect(page.locator("body")).not.toContainText("cached private fixture");
+    await expect.poll(() => page.locator("main img").evaluate(image => (image as HTMLImageElement).naturalWidth > 0), { timeout: 5_000 }).toBe(true);
     await context.setOffline(false);
     await page.goto(baseURL!);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("DIT WORDTJOUW NACHT.");

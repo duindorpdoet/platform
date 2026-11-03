@@ -1,0 +1,60 @@
+{
+  "origin": "http://127.0.0.1:3140",
+  "edition": "frightnight-2027-test-acceptance-unarmed-58618a9e",
+  "startedAt": "2026-11-03T07:33:39.958Z",
+  "checks": [
+    {
+      "label": "Unarmed actual checkout reports missing Mollie test configuration before provider call",
+      "status": "passed"
+    },
+    {
+      "label": "Failure preserves unpaid state and immutable Mollie provider claim; sandbox cannot replace it",
+      "status": "passed"
+    },
+    {
+      "label": "Server refuses arming an edition with a Mollie order",
+      "status": "passed"
+    },
+    {
+      "label": "No external browser request, OTP, push or mail",
+      "status": "passed"
+    },
+    {
+      "label": "Cleanup preserves the own immutable Mollie order",
+      "status": "passed"
+    },
+    {
+      "label": "All Auth identities remain unchanged",
+      "status": "passed"
+    }
+  ],
+  "screenshots": [
+    "unarmed-mollie-390.png",
+    "unarmed-mollie-1440.png"
+  ],
+  "forbiddenRequests": 0,
+  "limits": [
+    "Local server configured for Mollie with no Mollie key; tests the explicit configuration failure, not an external PSP connection.",
+    "Own synthetic seed registration only; no OTP, new Auth, outbound mail or push."
+  ],
+  "buildId": "0umM3p5GQp-3HD2l5F-x1",
+  "eventId": "c92fffb3-fb07-4680-ac59-059b81525e37",
+  "runId": "74f2dee0-8187-4069-9b32-9a519f018872",
+  "status": "passed",
+  "cleanup": {
+    "ownEditionArchivedClosed": true,
+    "ownCapabilityRevoked": true,
+    "orderRetained": true,
+    "authCreated": 0,
+    "authDeleted": 0
+  },
+  "serverNetworkGuard": {
+    "externalNativeFetchAttempts": 0,
+    "allowedLocalRequests": 20,
+    "blockedHosts": [],
+    "scope": "QA-only preload active in both preview server processes; log stores no keys, URL paths or query data"
+  },
+  "testedAt": "2026-11-03T07:33:42.640Z",
+  "servedBuildId": "0umM3p5GQp-3HD2l5F-x1",
+  "servedBuildVerifiedAt": "2026-11-03T07:34:29.385Z"
+}

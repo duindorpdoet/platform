@@ -66,7 +66,21 @@ try {
     await context.setOffline(true);
     await page.goto(`${target.origin}/offline.html`);
     if (!(await page.locator('body').innerText()).includes('Duinpad')) throw new Error('FRIGHTNIGHT_PREAVAILABLE_HELP_FAILED');
-    report.checks.push({width,publicScreens:true,loginForm:true,privateApiDenied:true,privateCacheEmpty:true,noSend:true,preavailableHelp:true,reducedMotion:true});
+    const offlineLogo = await page.evaluate(async () => {
+      const logo = document.querySelector('img[src="/frightnight/logo.png"]');
+      if (!(logo instanceof HTMLImageElement)) return false;
+      let imageTimer;
+      try {
+        await Promise.race([
+          logo.decode(),
+          new Promise((_,reject) => { imageTimer=setTimeout(()=>reject(new Error('OFFLINE_LOGO_DECODE_TIMEOUT')),5000); }),
+        ]);
+        return logo.complete && logo.naturalWidth > 0 && logo.naturalHeight > 0;
+      } catch { return false; }
+      finally { clearTimeout(imageTimer); }
+    });
+    if (!offlineLogo) throw new Error('FRIGHTNIGHT_PREAVAILABLE_LOGO_FAILED');
+    report.checks.push({width,publicScreens:true,loginForm:true,privateApiDenied:true,privateCacheEmpty:true,noSend:true,preavailableHelp:true,offlineLogo:true,reducedMotion:true});
     await context.close();
   }
 } finally { await browser.close(); }

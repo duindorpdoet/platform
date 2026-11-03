@@ -92,6 +92,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetchDocument(event.request));
     return;
   }
+  if (SAFE_ASSETS.includes(url.pathname)) {
+    event.respondWith(fetchVersionedAsset(event.request));
+    return;
+  }
   if (isVersionedAsset(url.pathname)) event.respondWith(fetchVersionedAsset(event.request));
 });
 
@@ -100,7 +104,7 @@ function safeNewsUrl(value) { return typeof value === "string" && /^\/omgeving\/
 self.addEventListener("push", (event) => {
   let payload = {};
   try { payload = event.data?.json() ?? {}; } catch { /* Generic notification if a provider sent malformed data. */ }
-  const portal = payload.url === "/mijn-huis";
+  const portal = payload.url === "/mijn-huis" || payload.url === "/mijn-zone";
   const news = safeNewsUrl(payload.url);
   event.waitUntil(self.registration.showNotification(portal ? "FrightNight · Mijn zone" : "Duindorp FrightNight", {
     body: portal && typeof payload.body === "string" ? payload.body.slice(0, 240) : news ? "Er staat een nieuw bericht voor je klaar." : "Er staat een nieuwe melding in je persoonlijke omgeving klaar.",
@@ -113,7 +117,8 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const destination = event.notification.data?.url === "/mijn-huis" ? "/mijn-huis" : safeNewsUrl(event.notification.data?.url) || "/nachtpas";
+  const portal = event.notification.data?.url === "/mijn-huis" || event.notification.data?.url === "/mijn-zone";
+  const destination = portal ? "/mijn-zone" : safeNewsUrl(event.notification.data?.url) || "/nachtpas";
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);

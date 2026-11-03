@@ -1,0 +1,87 @@
+{
+  "recordedAt": "2026-11-03T07:46:48.230366+00:00",
+  "scope": "Independent local feedback/closure and release-boundary review; final hosted execution pending",
+  "remoteMutations": false,
+  "backendEvidence": "docs/frightnight-2027/validation/backend-feedback-closure-report.json",
+  "backendEvidenceSha256": "d469b9fe780fd7faa8339a5c6ebee206edb0a4dd1ad5401a0f27796df1282bb5",
+  "backendPgtapPassed": 737,
+  "independentReview": {
+    "approved": true,
+    "migrationSha256": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+    "actorBoundary": "General thanks uses the current actor registration, including an authorized second adult. Context and registration are checked before replay; revoked access cannot reuse a receipt. No browser-selected registration or role.",
+    "feedback": "One durable message per event/registration; eventlock, strict bounded text, unique constraint, RLS and revoked direct grants. Only content_manage/event_admin receive bounded feedback lists. No mail, route access or award.",
+    "closure": "Only a new successful closed transition clears the prior global pause. Original payload/hash and expectedVersion checks are retained; replay does not clear a later pause.",
+    "backup": "All32 private tables including fn_organization_thanks are required. Missing/replaced table and31/33 counts fail. Existing backup/restore/preservation gates remain mandatory."
+  },
+  "tests": {
+    "releaseVitest": {
+      "passed": 76,
+      "failed": 0,
+      "files": 6
+    },
+    "canonicalPrivateSelectionControlFlow": {
+      "passed": 7,
+      "failed": 0,
+      "files": 1
+    },
+    "nodeNoSendGuards": {
+      "passed": 12,
+      "failed": 0
+    },
+    "eslintPassed": true,
+    "syntaxPassed": true,
+    "foreignCleanupSql": "Actual read-only EXPLAIN on local QA; no write/reset/remote SQL"
+  },
+  "localScenarioQuery": {
+    "scope": "read-only local scenario query compilation and assertion; no restore or remote claim",
+    "recordedAt": "2026-11-03T07:43:17.504Z",
+    "tables": 32,
+    "slug": "frightnight-2027-test",
+    "seedVersion": 1,
+    "querySha256": "0c1254f2811c99b7162ef5084814e4012be11bc771ed250207bc6d3199808d8e",
+    "snapshotSha256": "22cb44b5b2a29ba1179036c4a6f0917abf18ee0a838f0b16eb01ee24abc12105",
+    "organizationThanksCaptured": true,
+    "remote": false,
+    "restore": false
+  },
+  "publishedBaseInterim": {
+    "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+    "runId": "41595824091",
+    "parentFailure": "CROSS_EDITION_SELECTION_ALLOWED: old assertion wrongly expected canonical denial",
+    "publicNativeWorkerGate": "passed; text/privacy/offlinehelp only",
+    "accountArtifactId": 13212424382,
+    "safeCleanup": {
+      "ownRunArchived": true,
+      "siblingClosed": true,
+      "legacyOutboxUnchanged": true,
+      "actorsRetired": 5,
+      "authDeleted": 0,
+      "historyDeleted": 0
+    },
+    "load125Executed": false,
+    "scenarioRestoreExecuted": false,
+    "offlineLogoImage": "known visual failure; final fixed-worker test required"
+  },
+  "rollbackBoundary": "After003, app-only rollback to3fc/0ddd does not support old payment bridges. Do not restore old grants or discard recent DB truth. First fully accepted compatible new app becomes the runtime rollbackpoint; until then pause the edition, use preavailable operational emergency information and make a compatible forward fix.",
+  "pending": [
+    "Full exact-head CI and normal fresh release of003/004 plus final worker fix.",
+    "Actual private child selection, Storage HTTP, REG/EDGE, load125 and RET05 on the final published SHA.",
+    "Positive native offline-logo decode on the final local build and final staging SHA."
+  ],
+  "sourceSha256": {
+    "scripts/deploy/frightnight-release.mjs": "521e01edf9471481fd3b3c918aa224ab342242214001f03a2fc4fa959d4fc5ac",
+    "scripts/deploy/frightnight-release.test.ts": "d1d4ae8e47306fe126196116b4e9f4aad0a402931e0050bdfe42b5238a1c648e",
+    "scripts/deploy/frightnight-scenario-backup.mjs": "75f4e76d26766ce69164bb023f71bae5a2c8b69965009b9f8a294f364d82174a",
+    "scripts/deploy/frightnight-scenario-backup.test.ts": "71cd847a413ab37e713aaaba61d2cd09810aefe4065f0e4be33fbd574bb199d8",
+    "scripts/deploy/configure-supabase.test.ts": "9536cfee82c630126e70d649eeb44336112df3cf4ed0d143e5019414c41a3e12",
+    "scripts/deploy/release-migrations.mjs": "975f0764b381d1458b74789d8a4e7f35f197b9fd9b01acb92c0cc47d4e06d742",
+    "scripts/deploy/release-migrations.test.ts": "2277b9981311bfad9b8bbde89266cbdde95b6854462a753edd8ade87eec02a6d",
+    "scripts/acceptance/frightnight-staging.mjs": "3464b56a4dfab58f993125d00963328a4f35374d200b6cce188f6e1d13f9bbeb",
+    "scripts/acceptance/frightnight-edition-boundary.mjs": "8d83ac178a074fecc0abe09592cec62165279c2435176cb38a2176219f59826b",
+    "scripts/acceptance/frightnight-edition-boundary.d.mts": "1f4fd1cdd08139dfb166edbc07605e6051e889d657db3f767e7f7dc6b7ef580e",
+    "scripts/acceptance/frightnight-edition-boundary.test.ts": "29abf44ddca9abe1ee38dc0ad71d169538c99ab7a3be82090f6baf49654cdde7",
+    "scripts/deploy/accept-frightnight.mjs": "4a5992a2dbd24044d7d656741e8aea8bddd61a647331cb87263e0dc72a47de56",
+    "supabase/migrations/20261103073433_frightnight_2027_feedback_closure.sql": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+    "supabase/tests/134_frightnight_2027_feedback_closure.sql": "647f819fc105e07ef532c6a6b54e23017e45028acf61a6ca18586c91a0feaddd"
+  }
+}

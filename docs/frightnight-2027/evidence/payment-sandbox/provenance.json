@@ -1,0 +1,52 @@
+{
+  "verifiedAt": "2026-11-03T07:34:29.390Z",
+  "scope": "local QA only; no hosted or real external PSP acceptance",
+  "buildId": "0umM3p5GQp-3HD2l5F-x1",
+  "checks": 42,
+  "screenshots": 18,
+  "reports": [
+    {
+      "name": "configured-contract",
+      "status": "passed",
+      "checks": 18,
+      "screenshots": 8,
+      "testedAt": "2026-11-03T07:33:20.486Z",
+      "buildId": "0umM3p5GQp-3HD2l5F-x1",
+      "sha256": "112143842ec20b0ed2e5b559730ab8c03640671238aee31b5586b8cdc8dc0489"
+    },
+    {
+      "name": "mollie-armed-contract",
+      "status": "passed",
+      "checks": 18,
+      "screenshots": 8,
+      "testedAt": "2026-11-03T07:33:32.631Z",
+      "buildId": "0umM3p5GQp-3HD2l5F-x1",
+      "sha256": "dced0379854a85cbf0c3d1893906449b6d5d6cc26d2ef8efaa47395bf0b701ce"
+    },
+    {
+      "name": "mollie-unarmed-no-key",
+      "status": "passed",
+      "checks": 6,
+      "screenshots": 2,
+      "testedAt": "2026-11-03T07:33:42.640Z",
+      "buildId": "0umM3p5GQp-3HD2l5F-x1",
+      "sha256": "5ece8b0f16db2026368221496d2b0e4f11f5e8a94e037c9efb9edea1810f9fc8"
+    }
+  ],
+  "sources": {
+    "components/frightnight/payment-sandbox.tsx": "c49b69313932a0744aba8d46429b0679a381ce438ab74a7ad93c0b1a98015ea5",
+    "components/frightnight/test-center.tsx": "4842984927165e9db55a4eae7daeb1938778681ffa729f997dbe880da60da602",
+    "lib/frightnight/model.ts": "1a57107ced073d65ee0ed09a1242422c1d1e9cce6beb16a1720e64f56ace57d0",
+    "lib/frightnight/server.ts": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+    "lib/frightnight/payment-server.ts": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+    "app/api/frightnight/command/route.ts": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4"
+  },
+  "helpers": {
+    "/tmp/frightnight-payment-sandbox-ui.mjs": "0eeb2cb8488481dcd3300d076ff18fdf2869b612a16baeedd58e1304e10bdfb9",
+    "/tmp/frightnight-unarmed-mollie-ui.mjs": "9ea0a8161c14ac94f612fcb46ef629fae89bef4c7610e62c413b4414308c4c8b",
+    "/tmp/frightnight-qa-payment-network-guard.mjs": "5a5489e2cd774b42b52c9fb20534348e2ab53bc4e8bb2b3ffc1889f366b9b254"
+  },
+  "setupCorrection": "The first 3137 attempt stopped on an exact-label test selector; its failed report remains separately in /tmp. No product change followed. All three final scenario reports passed against unchanged compiled application source.",
+  "sourceCommit": "f7f2f0057b57aa80458808e1cf6e968ec7be6b78"
+}

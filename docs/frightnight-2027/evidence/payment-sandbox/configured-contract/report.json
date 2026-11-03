@@ -1,0 +1,129 @@
+{
+  "origin": "http://127.0.0.1:3137",
+  "edition": "frightnight-2027-test-acceptance-sandbox-989ffb19",
+  "startedAt": "2026-11-03T07:33:14.039Z",
+  "checks": [
+    {
+      "label": "Canonical edition remains configured and cannot be armed",
+      "status": "passed"
+    },
+    {
+      "label": "Canonical configured provider remains the trusted runtime provider",
+      "status": "passed"
+    },
+    {
+      "label": "Fresh copy exposes authoritative zero counts and arm eligibility",
+      "status": "passed"
+    },
+    {
+      "label": "Wrong edition confirmation cannot submit",
+      "status": "passed"
+    },
+    {
+      "label": "Explicit acknowledgement is required and keyboard-operable",
+      "status": "passed"
+    },
+    {
+      "label": "UI sends only exact typed edition and current run, no provider or infrastructure choice",
+      "status": "passed"
+    },
+    {
+      "label": "Server readback confirms the exact run contract policy",
+      "status": "passed"
+    },
+    {
+      "label": "Armed policy persists from server after reload and cleared browser storage",
+      "status": "passed"
+    },
+    {
+      "label": "Actual participant checkout stays on the exact-run contract adapter without external navigation",
+      "status": "passed"
+    },
+    {
+      "label": "Real simulator command confirms one explicit contract payment with duplicate delivery scenario",
+      "status": "passed"
+    },
+    {
+      "label": "Contract confirmation authoritatively pays the owned synthetic registration",
+      "status": "passed"
+    },
+    {
+      "label": "Real regie refund UI uses the immutable contract order provider and changes only the synthetic registration",
+      "status": "passed"
+    },
+    {
+      "label": "Reset creates a new run and blocks provider use until explicitly rearmed",
+      "status": "passed"
+    },
+    {
+      "label": "New run clears the previous typed confirmation and acknowledgement",
+      "status": "passed"
+    },
+    {
+      "label": "UI sends only exact typed edition and current run, no provider or infrastructure choice",
+      "status": "passed"
+    },
+    {
+      "label": "Server readback confirms the exact run contract policy",
+      "status": "passed"
+    },
+    {
+      "label": "Reset and rearming preserve previous contract financial history",
+      "status": "passed"
+    },
+    {
+      "label": "No external PSP, OTP, mail or push browser requests",
+      "status": "passed"
+    }
+  ],
+  "screenshots": [
+    "sandbox-empty-390.png",
+    "sandbox-empty-1440.png",
+    "sandbox-armed-390.png",
+    "sandbox-armed-1440.png",
+    "sandbox-simulated-390.png",
+    "sandbox-simulated-1440.png",
+    "sandbox-new-run-blocked-390.png",
+    "sandbox-new-run-blocked-1440.png"
+  ],
+  "forbiddenRequests": 0,
+  "limits": [
+    "Local QA only; no hosted release, OTP, external PSP, mail or push delivery is claimed.",
+    "Reuses one existing synthetic local QA administrator; no Auth identity is created, banned or deleted."
+  ],
+  "buildId": "0umM3p5GQp-3HD2l5F-x1",
+  "head": "f7f2f0057b57aa80458808e1cf6e968ec7be6b78",
+  "sourceSha256": {
+    "components/frightnight/payment-sandbox.tsx": "c49b69313932a0744aba8d46429b0679a381ce438ab74a7ad93c0b1a98015ea5",
+    "components/frightnight/test-center.tsx": "4842984927165e9db55a4eae7daeb1938778681ffa729f997dbe880da60da602",
+    "lib/frightnight/model.ts": "1a57107ced073d65ee0ed09a1242422c1d1e9cce6beb16a1720e64f56ace57d0"
+  },
+  "configuredProvider": "contract",
+  "eventId": "8a9e0e7b-35dc-4809-b404-69460187a818",
+  "runId": "70ba5f9c-c286-4a79-a315-9c5c7ca13336",
+  "contractControls": "- region \"Betaalcontracten simuleren\":\n  - heading \"BETAALCONTRACTEN.\" [level=2]\n  - paragraph: Speel betaalstatussen na voor testinschrijvingen van deze editie. Dit verplaatst geen geld. Elke bestaande betaalpoging houdt haar eigen provider; Mollie-pogingen kunnen hier niet worden bevestigd.\n  - text: Testinschrijving van uitsluitend deze editie\n  - combobox \"Testinschrijving van uitsluitend deze editie\":\n    - option \"Kies testinschrijving\" [disabled] [selected]\n    - option \"Testgezin Duin · open\"\n    - option \"Testgezin Koper · unpaid\"\n    - option \"Testgezin Kraai · unpaid\"\n    - option \"Testgezin Lantaarn · unpaid\"\n  - text: Gesimuleerde betaalstatus\n  - combobox \"Gesimuleerde betaalstatus\":\n    - option \"Bevestigd betaald\" [selected]\n    - option \"Mislukt\"\n    - option \"Geannuleerd\"\n    - option \"Verlopen\"\n  - text: Bezorgscenario\n  - combobox \"Bezorgscenario\":\n    - option \"Normaal\" [selected]\n    - option \"Dubbele webhook\"\n    - option \"Vertraagde webhook\"\n  - button \"Contractadapter afspelen\"",
+  "status": "passed",
+  "cleanup": {
+    "ownEditionClosed": true,
+    "ownRunArchived": true,
+    "ownCapabilityRevoked": true,
+    "authCreated": 0,
+    "authDeleted": 0,
+    "actorsBanned": 0
+  },
+  "preservation": {
+    "allOtherEditions": true,
+    "financialRowsOutsideOwnEdition": true,
+    "allAuthIds": true,
+    "legacyMailContents": true
+  },
+  "serverNetworkGuard": {
+    "externalNativeFetchAttempts": 0,
+    "allowedLocalRequests": 56,
+    "blockedHosts": [],
+    "scope": "QA-only preload active in both preview server processes; log stores no keys, URL paths or query data"
+  },
+  "testedAt": "2026-11-03T07:33:20.486Z",
+  "servedBuildId": "0umM3p5GQp-3HD2l5F-x1",
+  "servedBuildVerifiedAt": "2026-11-03T07:34:29.346Z"
+}

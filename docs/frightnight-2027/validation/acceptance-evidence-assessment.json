@@ -17082,8 +17082,8 @@
         "requiredOutcome": "Juiste zichtbaarheid bij bewoner; één bezorgactie; stage verstuurt uitsluitend naar testadressen"
       },
       "implementation": {
-        "state": "implemented_staging_software",
-        "contract": "Unique durable general evaluation and visited-house thanks; owner visibility. Current implementation uses in-app records, no thanks email dispatcher.",
+        "state": "forward_correction_built_pending_final_browser_and_release",
+        "contract": "A general organization thank-you is a separate durable in-app record, unique per event/registration and available to the current authorized household member. Visited-house thanks remain visit-bound and visible only to their resident. Regie content capability receives a bounded organization/evaluation inbox. No thanks mail is dispatched.",
         "sources": [
           {
             "path": "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
@@ -17102,7 +17102,8 @@
             "sha256": "ffadb9296b26c079b97744c4aba1ed0575be75cc2ec4d805fecab6d69ce67038"
           }
         ],
-        "newConcreteCodeBlockerIdentified": false
+        "newConcreteCodeBlockerIdentified": true,
+        "correction": "Final independent review found the original generic evaluation was not a general thank-you. New forward migration 20261103073433_frightnight_2027_feedback_closure.sql and 004 UI now implement the missing distinct command; actual fresh SQL52 and whole737 passed. New production build, actual browser proof and hosted final release are pending."
       },
       "actuallyEvidenced": {
         "localSQL": [
@@ -17135,7 +17136,8 @@
         "localUnit": [],
         "localConcurrency": [],
         "isolatedAdapter": [],
-        "prePublicationOperations": []
+        "prePublicationOperations": [],
+        "historicalEvidenceQualification": "The historical REG-07 browser label saying general evaluation did not exercise a general organization thank-you. That prior label is not accepted as proof of the newly implemented general-thanks requirement."
       },
       "publishedApplication": {
         "status": "PENDING_EXACT_PUBLISHED_SHA_AND_ACTUAL_ARTIFACTS",
@@ -26740,7 +26742,7 @@
       "finalAcceptanceClaimed": false
     }
   ],
-  "updatedAt": "2026-11-03T06:29:15.099524+00:00",
+  "updatedAt": "2026-11-03T07:40:45.235967+00:00",
   "lastEvidenceAdditions": {
     "softwareBoundariesLocal": {
       "checks": 7,
@@ -26772,5 +26774,25 @@
     },
     "executionStopped": true,
     "nextWork": "Read-only review of real published acceptance artifacts only if requested."
-  }
+  },
+  "concreteFinalReviewCorrections": [
+    {
+      "item": "REG-07 organization thanks",
+      "state": "forward004_and_UI_built_SQL52_passed_browser_release_pending"
+    },
+    {
+      "item": "pause then close and final visit",
+      "state": "forward004_transactional_transition_and_replay_SQL_passed_browser_release_pending"
+    },
+    {
+      "item": "offline emergency logo",
+      "state": "real_native_before_failure_recorded_SAFE_ASSETS_handler_and_regression_built_new_build_pending"
+    },
+    {
+      "item": "hosted foreign-edition fixture",
+      "state": "canonical_public_entry_was_wrong_negative_fixture_true_private_foreign_edition_test_being_built"
+    }
+  ],
+  "publishedIntermediateRevision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "publishedIntermediateScope": "Actual public24 including SW/privacy/offline text passed; additional offline image failed. Parent stopped on an incorrect canonical-negative fixture after five own synthetic accounts; cleanup passed. Load and RET05 not executed."
 }

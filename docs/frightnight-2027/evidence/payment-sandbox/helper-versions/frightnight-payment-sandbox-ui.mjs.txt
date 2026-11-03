@@ -1,0 +1,184 @@
+import { createRequire } from 'node:module';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { randomUUID, createHash } from 'node:crypto';
+
+const root = '/home/codex/repos/duindorphalloween-frightnight-2027';
+const require = createRequire(root + '/package.json');
+const { chromium, expect } = require('@playwright/test');
+const { createServerClient } = require('@supabase/ssr');
+const base = process.env.FRIGHTNIGHT_SANDBOX_UI_ORIGIN ?? 'http://127.0.0.1:3137';
+if (!['http://127.0.0.1:3137', 'http://127.0.0.1:3140'].includes(base)) throw Error('SANDBOX_UI_LOCAL_ORIGIN_ONLY');
+const slug = 'frightnight-2027-test-acceptance-sandbox-' + randomUUID().slice(0, 8);
+const directory = '/tmp/frightnight-payment-sandbox-ui-evidence-' + new URL(base).port;
+await mkdir(directory, { recursive: true });
+const report = { origin: base, edition: slug, startedAt: new Date().toISOString(), checks: [], screenshots: [], forbiddenRequests: 0, limits: ['Local QA only; no hosted release, OTP, external PSP, mail or push delivery is claimed.', 'Reuses one existing synthetic local QA administrator; no Auth identity is created, banned or deleted.'] };
+const networkGuardPath = '/tmp/frightnight-qa-payment-network.jsonl';
+const networkBefore = (await readFile(networkGuardPath, 'utf8').catch(error => { if (error.code === 'ENOENT') return ''; throw error; })).split('\n').filter(Boolean).length;
+function assert(value, code) { if (!value) throw Error(code); }
+function check(value, label, detail = {}) { assert(value, label); report.checks.push({ label, status: 'passed', ...detail }); }
+const literal = value => "'" + String(value).replaceAll("'", "''") + "'";
+function sql(query, write = false) {
+  const input = write ? `begin;set local lock_timeout='3s';set local statement_timeout='15s';${query};commit;` : `select coalesce(json_agg(x),'[]') from(${query})x`;
+  const output = execFileSync('docker', ['exec', '-i', 'supabase_db_duindorp_event_close_20261101', 'psql', '-U', 'postgres', '-d', 'frightnight_2027_dev', '-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1'], { input, encoding: 'utf8', maxBuffer: 1048576 });
+  return write ? [] : JSON.parse(output.trim());
+}
+const outside = eid => sql(`select (select md5(coalesce(jsonb_agg(to_jsonb(f) order by event_id)::text,'')) from app_private.fn_events f ${eid ? `where event_id<>${literal(eid)}::uuid` : ''}) editions,(select md5(coalesce(jsonb_agg(to_jsonb(o) order by id)::text,'')) from app_private.fn_orders o ${eid ? `where event_id<>${literal(eid)}::uuid` : ''}) orders,(select md5(coalesce(jsonb_agg(to_jsonb(l) order by id)::text,'')) from app_private.fn_ledger l ${eid ? `where event_id<>${literal(eid)}::uuid` : ''}) ledger,(select md5(coalesce(jsonb_agg(id order by id)::text,'')) from auth.users) auth_ids,(select md5(coalesce(jsonb_agg(to_jsonb(m) order by id)::text,'')) from app_private.email_outbox m) legacy_mail`)[0];
+const baseline = outside();
+const browser = await chromium.launch({ headless: true, args: ['--disable-dev-shm-usage', '--no-sandbox'] });
+let context, page, eventId, actorId, originalRun;
+async function app(operation, payload = {}, allowFailure = false) {
+  const response = await context.request.post(base + '/api/frightnight/command', { headers: { Origin: base }, data: { commandId: randomUUID(), operation, payload } });
+  const value = await response.json();
+  if (!allowFailure) assert(response.ok(), `SANDBOX_UI_COMMAND_${operation}_${response.status()}_${value.error?.code}`);
+  return { status: response.status(), value: value.data, error: value.error };
+}
+async function select(selectedSlug) { const response = await context.request.post(base + '/api/frightnight/edition', { headers: { Origin: base }, data: { slug: selectedSlug } }); assert(response.ok(), 'SANDBOX_UI_EDITION_SELECTION_FAILED'); }
+async function snapshot() {
+  const response = await context.request.get(base + '/api/frightnight/snapshot');
+  assert(response.ok(), 'SANDBOX_UI_SNAPSHOT_FAILED');
+  const value = (await response.json()).data;
+  if (eventId) assert(value.event.id === eventId && value.event.slug === slug && value.event.environment === 'staging' && value.event.test, 'SANDBOX_UI_SCOPE_CHANGED');
+  return value;
+}
+async function screen(name) {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    await page.evaluate(() => { document.activeElement?.blur(); scrollTo(0, 0); });
+    assert(!await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), 'SANDBOX_UI_RESPONSIVE_OVERFLOW');
+    const file = `${name}-${width}.png`;
+    await page.screenshot({ path: directory + '/' + file, fullPage: true });
+    report.screenshots.push(file);
+  }
+}
+async function reload() { await page.goto(base + '/testcentrum', { waitUntil: 'domcontentloaded' }); await page.getByRole('region', { name: 'Contract-sandbox voor deze testrun', exact: true }).waitFor(); }
+async function arm() {
+  const panel = page.getByRole('region', { name: 'Contract-sandbox voor deze testrun', exact: true });
+  await panel.getByLabel('Typ de editiecode om de contract-sandbox te activeren', { exact: true }).fill(slug);
+  await panel.getByRole('checkbox').check();
+  const waiting = page.waitForResponse(response => new URL(response.url()).pathname === '/api/frightnight/command' && response.request().postDataJSON()?.operation === 'test.payment.sandbox');
+  await panel.getByRole('button', { name: 'Contract-sandbox voor deze run activeren', exact: true }).click();
+  const response = await waiting;
+  assert(response.ok(), 'SANDBOX_UI_ARM_FAILED');
+  const payload = response.request().postDataJSON().payload;
+  check(payload.confirmation === slug && payload.runId === originalRun && Object.keys(payload).length === 2, 'UI sends only exact typed edition and current run, no provider or infrastructure choice');
+  const s = await snapshot();
+  check(s.event.paymentPolicy === 'contract_sandbox' && s.event.sandboxRunId === originalRun && s.event.contractSandboxArmed && s.paymentSandbox.armed && s.paymentSandbox.effectiveProvider === 'contract', 'Server readback confirms the exact run contract policy');
+  await expect(panel.getByText(/De server heeft de contract-sandbox voor run/)).toBeVisible();
+}
+try {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  assert(/^http:\/\/127\.0\.0\.1:\d+\/?$/.test(url ?? ''), 'SANDBOX_UI_LOCAL_GATEWAY_ONLY');
+  const personas = JSON.parse(await readFile('/tmp/frightnight-local-gateway/personas.json', 'utf8'));
+  const session = personas.admin.session; actorId = personas.admin.id;
+  const jar = new Map();
+  const ssr = createServerClient(url, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { cookies: { getAll: () => [...jar.values()].map(item => ({ name: item.name, value: item.value })), setAll: items => items.forEach(item => jar.set(item.name, item)) } });
+  const authenticated = await ssr.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+  assert(!authenticated.error, 'SANDBOX_UI_SYNTHETIC_SESSION_FAILED');
+  context = await browser.newContext({ serviceWorkers: 'block', reducedMotion: 'reduce', viewport: { width: 390, height: 844 } });
+  await context.addCookies([...jar.values()].filter(item => item.value && item.options?.maxAge !== 0).map(item => ({ name: item.name, value: item.value, domain: '127.0.0.1', path: '/', secure: false, sameSite: 'Lax' })));
+  await context.route('**/*', route => {
+    const url = new URL(route.request().url());
+    if (/^https?:$/.test(url.protocol) && url.origin !== base || /\/auth\/v1\/(otp|magiclink|recover|signup|invite)|\/api\/(push|mail)\//.test(url.pathname)) { report.forbiddenRequests++; return route.abort(); }
+    return route.continue();
+  });
+  const health = await context.request.get(base + '/api/health');
+  assert(health.ok() && ['test', 'staging'].includes((await health.json()).environment), 'SANDBOX_UI_LOCAL_HEALTH_REQUIRED');
+  report.buildId = (await readFile(root + '/.next/BUILD_ID', 'utf8')).trim();
+  report.head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  report.sourceSha256 = Object.fromEntries(await Promise.all(['components/frightnight/payment-sandbox.tsx', 'components/frightnight/test-center.tsx', 'lib/frightnight/model.ts'].map(async path => [path, createHash('sha256').update(await readFile(root + '/' + path)).digest('hex')])));
+  await select('frightnight-2027-test');
+  let current = await snapshot();
+  report.configuredProvider = current.paymentSandbox.configuredProvider;
+  check(current.paymentSandbox.canonical && !current.paymentSandbox.canArm && current.event.paymentPolicy === 'configured', 'Canonical edition remains configured and cannot be armed');
+  page = await context.newPage(); await reload();
+  await expect(page.getByRole('region', { name: 'Contract-sandbox voor deze testrun', exact: true }).getByRole('button', { name: 'Contract-sandbox voor deze run activeren', exact: true })).toBeDisabled();
+  check(current.paymentSandbox.effectiveProvider === current.paymentSandbox.configuredProvider, 'Canonical configured provider remains the trusted runtime provider');
+  const copied = await app('test.copy', { slug }); eventId = copied.value.result.eventId;
+  assert(/^[0-9a-f-]{36}$/.test(eventId), 'SANDBOX_UI_NEW_EVENT_REQUIRED'); report.eventId = eventId;
+  await select(slug); current = await snapshot(); originalRun = current.event.runId; report.runId = originalRun;
+  check(current.paymentSandbox.canArm && !current.paymentSandbox.canonical && current.paymentSandbox.registrations === 0 && current.paymentSandbox.orders === 0 && current.paymentSandbox.mollieOrders === 0, 'Fresh copy exposes authoritative zero counts and arm eligibility');
+  await reload(); await screen('sandbox-empty');
+  const panel = page.getByRole('region', { name: 'Contract-sandbox voor deze testrun', exact: true });
+  const input = panel.getByLabel('Typ de editiecode om de contract-sandbox te activeren', { exact: true });
+  const button = panel.getByRole('button', { name: 'Contract-sandbox voor deze run activeren', exact: true });
+  await input.fill(slug + '-wrong'); await panel.getByRole('checkbox').check(); await expect(button).toBeDisabled();
+  check(true, 'Wrong edition confirmation cannot submit');
+  await input.fill(slug); await panel.getByRole('checkbox').uncheck(); await expect(button).toBeDisabled();
+  await panel.getByRole('checkbox').focus(); await page.keyboard.press('Space'); await expect(button).toBeEnabled();
+  check(true, 'Explicit acknowledgement is required and keyboard-operable');
+  await arm(); await screen('sandbox-armed');
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }); await reload();
+  check((await snapshot()).paymentSandbox.armed && await panel.getByRole('button', { name: 'Contract-sandbox voor deze run activeren', exact: true }).count() === 0, 'Armed policy persists from server after reload and cleared browser storage');
+  const seeded = page.waitForResponse(response => new URL(response.url()).pathname === '/api/frightnight/command' && response.request().postDataJSON()?.operation === 'test.seed');
+  await page.getByRole('button', { name: 'Scenario veilig aanmaken', exact: true }).click(); assert((await seeded).ok(), 'SANDBOX_UI_SEED_FAILED');
+  current = await snapshot(); assert(current.registrations.length > 0, 'SANDBOX_UI_SEEDED_REGISTRATION_REQUIRED');
+  const selectedRegistration = current.registrations.find(item => item.routeType === 'lantern');
+  assert(selectedRegistration, 'SANDBOX_UI_LANTERN_FIXTURE_REQUIRED');
+  sql(`do $$ begin if not exists(select 1 from app_private.fn_events f join app_private.events e on e.id=f.event_id where e.id=${literal(eventId)}::uuid and e.slug=${literal(slug)} and f.run_id=${literal(originalRun)}::uuid and f.is_test and f.environment='staging' and f.payment_policy='contract_sandbox' and f.contract_run_id=f.run_id) or not exists(select 1 from auth.users where id=${literal(actorId)}::uuid and email like '%@example.invalid') then raise exception 'SANDBOX_UI_OWN_SYNTHETIC_BINDING_REQUIRED';end if; update app_private.fn_registrations set owner_id=${literal(actorId)}::uuid where id=${literal(selectedRegistration.id)}::uuid and event_id=${literal(eventId)}::uuid and run_id=${literal(originalRun)}::uuid and synthetic and owner_id is null; if not found then raise exception 'SANDBOX_UI_UNOWNED_SEED_REQUIRED';end if;end $$`, true);
+  current = await snapshot();
+  const registration = current.registration;
+  assert(registration?.id === selectedRegistration.id, 'SANDBOX_UI_OWN_REGISTRATION_NOT_VISIBLE');
+  await app('registration.save', { expectedVersion: registration.version, label: registration.label, routeType: registration.routeType, adults: registration.adults, children: registration.children, maxIntensity: 2, avoidSmoke: false, avoidStrobes: false, stepFree: false, startSlot: current.startSlots.find(slot => slot.routeType === 'lantern' && slot.enabled !== false).startsAt, consent: true, termsVersion: '2027-test-v1' });
+  await page.goto(base + '/nachtpas'); await page.locator('.fn-environment-nav').waitFor();
+  const checkout = page.waitForResponse(response => new URL(response.url()).pathname === '/api/frightnight/command' && response.request().postDataJSON()?.operation === 'payment.checkout');
+  await page.getByRole('button', { name: 'Testbetaling openen', exact: true }).click();
+  const checkoutResponse = await checkout; const checkoutValue = (await checkoutResponse.json()).data;
+  check(checkoutResponse.ok() && checkoutValue.result.simulated && checkoutValue.result.provider === 'contract' && new URL(page.url()).origin === base, 'Actual participant checkout stays on the exact-run contract adapter without external navigation');
+  await reload();
+  const contracts = page.getByRole('region', { name: 'Betaalcontracten simuleren', exact: true });
+  report.contractControls = await contracts.ariaSnapshot();
+  await contracts.getByLabel('Testinschrijving van uitsluitend deze editie').selectOption(selectedRegistration.id);
+  await contracts.getByLabel('Bezorgscenario').selectOption('duplicate');
+  const simulated = page.waitForResponse(response => new URL(response.url()).pathname === '/api/frightnight/command' && response.request().postDataJSON()?.operation === 'test.payment');
+  await contracts.getByRole('button', { name: 'Contractadapter afspelen', exact: true }).click();
+  const simulatedResponse = await simulated; const simulatedValue = (await simulatedResponse.json()).data;
+  check(simulatedResponse.ok() && simulatedValue.result.simulated && simulatedValue.result.provider === 'contract' && simulatedValue.result.scenario === 'duplicate', 'Real simulator command confirms one explicit contract payment with duplicate delivery scenario');
+  await screen('sandbox-simulated');
+  check((await snapshot()).registration.paymentStatus === 'paid', 'Contract confirmation authoritatively pays the owned synthetic registration');
+  await page.goto(base + '/avondregie'); await page.locator('.fn-environment-nav').waitFor();
+  await page.getByRole('button', { name: 'betalingen', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Zoek in alle betalingen', exact: true }).fill(selectedRegistration.label);
+  const refundButton = page.getByRole('button', { name: 'Testrefund beoordelen', exact: true });
+  await refundButton.first().click();
+  await page.getByRole('textbox', { name: 'Reden', exact: true }).fill('Uitsluitend eigen synthetische contractbetaling in lokale sandboxproef');
+  await page.getByRole('checkbox', { name: 'Ik bevestig de volledige testrefund voor dit gezelschap.', exact: true }).check();
+  const refund = page.waitForResponse(response => new URL(response.url()).pathname === '/api/frightnight/command' && response.request().postDataJSON()?.operation === 'payment.refund');
+  await page.getByRole('button', { name: 'Testrefund bij provider aanvragen', exact: true }).click();
+  const refundResponse = await refund; const refundValue = (await refundResponse.json()).data;
+  check(refundResponse.ok() && refundValue.result.simulated && (await snapshot()).registration.paymentStatus === 'refunded', 'Real regie refund UI uses the immutable contract order provider and changes only the synthetic registration');
+  const finBefore = sql(`select count(*)::integer n from app_private.fn_orders where event_id=${literal(eventId)}::uuid and provider='contract'`)[0].n;
+  assert(finBefore > 0, 'SANDBOX_UI_CONTRACT_ORDER_REQUIRED');
+  await app('test.reset', { confirmation: slug, runId: originalRun }); current = await snapshot(); originalRun = current.event.runId;
+  check(!current.paymentSandbox.armed && current.paymentSandbox.effectiveProvider === null && current.paymentSandbox.blockedReason === 'SANDBOX_REARM_REQUIRED' && current.paymentSandbox.canArm, 'Reset creates a new run and blocks provider use until explicitly rearmed');
+  await reload();
+  await expect(contracts.getByRole('button', { name: 'Contractadapter afspelen', exact: true })).toBeDisabled();
+  await expect(panel.getByText('De sandboxbevestiging hoort bij een eerdere run. Bevestig deze lege run opnieuw voordat je betaalproeven uitvoert.', { exact: true })).toBeVisible();
+  check(await panel.getByRole('textbox').inputValue() === '' && !await panel.getByRole('checkbox').isChecked(), 'New run clears the previous typed confirmation and acknowledgement');
+  await screen('sandbox-new-run-blocked'); await arm();
+  check(sql(`select count(*)::integer n from app_private.fn_orders where event_id=${literal(eventId)}::uuid and provider='contract'`)[0].n === finBefore, 'Reset and rearming preserve previous contract financial history');
+  check(report.forbiddenRequests === 0, 'No external PSP, OTP, mail or push browser requests');
+  report.status = 'passed';
+} catch (error) { report.status = 'failed'; report.failure = error.message; process.exitCode = 1; }
+finally {
+  const cleanup = [];
+  if (eventId && context) {
+    try {
+      await select(slug); const current = await snapshot();
+      await app('test.reset', { confirmation: slug, runId: current.event.runId });
+      const archived = await snapshot();
+      await app('admin.settings', { closed: true, confirmation: slug, expectedVersion: archived.event.version, reason: 'Eigen lokale sandbox-UIproef archiveren met behoud van financiële historie' });
+      sql(`update app_private.event_capabilities c set revoked_at=coalesce(revoked_at,now()) where event_id=${literal(eventId)}::uuid and user_id=${literal(actorId)}::uuid and exists(select 1 from app_private.events e join app_private.fn_events f on f.event_id=e.id where e.id=c.event_id and e.slug=${literal(slug)} and f.environment='staging' and f.is_test and f.closed)`, true);
+      report.cleanup = { ownEditionClosed: true, ownRunArchived: true, ownCapabilityRevoked: true, authCreated: 0, authDeleted: 0, actorsBanned: 0 };
+    } catch (error) {
+      cleanup.push(error.message);
+      try { const current = await snapshot(); await app('admin.settings', { closed: true, confirmation: slug, expectedVersion: current.event.version, reason: 'Eigen lokale sandbox-UIproef na fout veilig afsluiten zonder verwijdering' }); } catch { cleanup.push('SANDBOX_UI_FAIL_CLOSED_FAILED'); }
+    }
+  }
+  if (context) { try { await select('frightnight-2027-test'); } catch { cleanup.push('SANDBOX_UI_CANONICAL_CONTEXT_RESTORE_FAILED'); } }
+  try { assert(JSON.stringify(outside(eventId)) === JSON.stringify(baseline), 'SANDBOX_UI_OUTSIDE_SCOPE_CHANGED'); report.preservation = { allOtherEditions: true, financialRowsOutsideOwnEdition: true, allAuthIds: true, legacyMailContents: true }; } catch (error) { cleanup.push(error.message); }
+  if (cleanup.length) { report.cleanupErrors = cleanup; report.status = 'failed'; process.exitCode = 1; }
+  if (context) await context.close(); await browser.close();
+  const networkEntries = (await readFile(networkGuardPath, 'utf8').catch(error => { if (error.code === 'ENOENT') return ''; throw error; })).split('\n').filter(Boolean).map(line => JSON.parse(line)).slice(networkBefore); const blockedServerRequests = networkEntries.filter(entry => entry.blocked === true); report.serverNetworkGuard = { externalNativeFetchAttempts: blockedServerRequests.length, allowedLocalRequests: networkEntries.filter(entry => entry.blocked === false).length, blockedHosts: [...new Set(blockedServerRequests.map(entry => entry.host))], scope: 'QA-only preload active in both preview server processes; log stores no keys, URL paths or query data' }; if (blockedServerRequests.length || !networkEntries.some(entry => entry.blocked === false)) { report.status = 'failed'; report.failure ??= blockedServerRequests.length ? 'EXTERNAL_SERVER_FETCH_ATTEMPTED' : 'QA_NETWORK_GUARD_NOT_OBSERVED'; process.exitCode = 1; } report.testedAt = new Date().toISOString(); await writeFile(directory + '/report.json', JSON.stringify(report, null, 2) + '\n');
+  console.log(JSON.stringify({ status: report.status, checks: report.checks.length, buildId: report.buildId, edition: slug, failure: report.failure, cleanupErrors: report.cleanupErrors }));
+}

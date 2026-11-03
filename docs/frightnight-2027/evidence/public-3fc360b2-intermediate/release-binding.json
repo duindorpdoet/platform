@@ -1,0 +1,34 @@
+{
+  "testedAt": "2026-11-03T07:35:32.335Z",
+  "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "expectedConfiguredProvider": "contract",
+  "health": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "workerSha256": "bc23b25f2082e11ef04cacbcbb40927a83b5c249a9999775fa4d60ea29625d70",
+  "nativeWorkerGate": "exact health and reviewed worker bytes verified before any allow context",
+  "readOnly": true,
+  "sourceAudit": {
+    "source": "/home/codex/repos/duindorphalloween-frightnight-2027/tests/e2e/frightnight.spec.ts",
+    "sha256": "c68fc6cec4e0b6144e58d1fe07559d85ffbc91807f9bc8b3676bd86df4140164",
+    "hostedSpecSha256": "81472c62bfdb6a60dc1fac8eb5c240849bab2e5a766fcdf0492d5000fca98474",
+    "expectedTests": 24,
+    "expectedRevision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+    "reviewedWorkerSha256": "bc23b25f2082e11ef04cacbcbb40927a83b5c249a9999775fa4d60ea29625d70",
+    "reviewedAt": "2026-11-03T06:59:53.186911+00:00",
+    "audit": "All original23 public checks plus actual production worker activation/controller, obsolete public/private browser-cache cleanup, real offline/public/private503 no-store/reconnect. No form fill/submission, Auth send, checkout, push subscribe, mail or server command. Cache fixtures are anonymous browser-local placeholders only.",
+    "nativeWorkerGate": "Native allow context is denied until global setup verifies exact released health, git-show worker bytes and the independently reviewed GET-only worker SHA. All browser/API request guards remain.",
+    "execution": "Prepared only. No remote request or execution for this revision before parent published-health release acknowledgment.",
+    "healthGate": "Exact SHA plus explicit contract|mollie configured-provider match; fixed staging binding and reviewed worker bytes remain mandatory before any native worker context.",
+    "expectedConfiguredProviderForPreparedRevision": "contract",
+    "preparedAt": "2026-11-03T07:23:02.683852+00:00"
+  },
+  "limits": "Anonymous public browser only. No forms, OTP, PSP, push, mail or database commands. Published text projection fixture is presentation-only."
+}

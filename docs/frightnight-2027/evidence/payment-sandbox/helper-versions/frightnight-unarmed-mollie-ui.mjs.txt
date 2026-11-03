@@ -1,0 +1,73 @@
+import { createRequire } from 'node:module';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+
+const root = '/home/codex/repos/duindorphalloween-frightnight-2027';
+const require = createRequire(root + '/package.json');
+const { chromium, expect } = require('@playwright/test');
+const { createServerClient } = require('@supabase/ssr');
+const base = 'http://127.0.0.1:3140';
+if (!/^http:\/\/127\.0\.0\.1:\d+\/?$/.test(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')) throw Error('UNARMED_LOCAL_GATEWAY_ONLY');
+const slug = 'frightnight-2027-test-acceptance-unarmed-' + randomUUID().slice(0, 8);
+const directory = '/tmp/frightnight-unarmed-mollie-ui-evidence';
+await mkdir(directory, { recursive: true });
+const report = { origin: base, edition: slug, startedAt: new Date().toISOString(), checks: [], screenshots: [], forbiddenRequests: 0, limits: ['Local server configured for Mollie with no Mollie key; tests the explicit configuration failure, not an external PSP connection.', 'Own synthetic seed registration only; no OTP, new Auth, outbound mail or push.'] };
+const networkGuardPath = '/tmp/frightnight-qa-payment-network.jsonl';
+const networkBefore = (await readFile(networkGuardPath, 'utf8').catch(error => { if (error.code === 'ENOENT') return ''; throw error; })).split('\n').filter(Boolean).length;
+const assert = (value, code) => { if (!value) throw Error(code); };
+const check = (value, label) => { assert(value, label); report.checks.push({ label, status: 'passed' }); };
+const literal = value => "'" + String(value).replaceAll("'", "''") + "'";
+function sql(query, write = false) {
+  const input = write ? `begin;set local lock_timeout='3s';set local statement_timeout='15s';${query};commit;` : `select coalesce(json_agg(x),'[]') from(${query})x`;
+  const output = execFileSync('docker', ['exec', '-i', 'supabase_db_duindorp_event_close_20261101', 'psql', '-U', 'postgres', '-d', 'frightnight_2027_dev', '-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1'], { input, encoding: 'utf8', maxBuffer: 1048576 });
+  return write ? [] : JSON.parse(output.trim());
+}
+const baselineAuth = sql('select md5(coalesce(jsonb_agg(id order by id)::text,\'\')) digest from auth.users')[0].digest;
+const browser = await chromium.launch({ headless: true, args: ['--disable-dev-shm-usage', '--no-sandbox'] });
+let context, eventId, actorId;
+async function app(operation, payload = {}, allowFailure = false) {
+  const response = await context.request.post(base + '/api/frightnight/command', { headers: { Origin: base }, data: { commandId: randomUUID(), operation, payload } });
+  const body = await response.json(); if (!allowFailure) assert(response.ok(), `UNARMED_COMMAND_${operation}_${response.status()}_${body.error?.code}`);
+  return { status: response.status(), data: body.data, error: body.error };
+}
+async function select(selectedSlug) { const response = await context.request.post(base + '/api/frightnight/edition', { headers: { Origin: base }, data: { slug: selectedSlug } }); assert(response.ok(), 'UNARMED_SELECTION_FAILED'); }
+async function snapshot() { const response = await context.request.get(base + '/api/frightnight/snapshot'); assert(response.ok(), 'UNARMED_SNAPSHOT_FAILED'); const value = (await response.json()).data; assert(!eventId || value.event.id === eventId && value.event.slug === slug && value.event.test && value.event.environment === 'staging', 'UNARMED_SCOPE_CHANGED'); return value; }
+try {
+  const personas = JSON.parse(await readFile('/tmp/frightnight-local-gateway/personas.json', 'utf8')); actorId = personas.admin.id;
+  const jar = new Map(); const ssr = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { cookies: { getAll: () => [...jar.values()].map(item => ({ name: item.name, value: item.value })), setAll: items => items.forEach(item => jar.set(item.name, item)) } });
+  const auth = await ssr.auth.setSession({ access_token: personas.admin.session.access_token, refresh_token: personas.admin.session.refresh_token }); assert(!auth.error, 'UNARMED_SYNTHETIC_AUTH_FAILED');
+  context = await browser.newContext({ serviceWorkers: 'block', reducedMotion: 'reduce', viewport: { width: 390, height: 844 } });
+  await context.addCookies([...jar.values()].filter(item => item.value && item.options?.maxAge !== 0).map(item => ({ name: item.name, value: item.value, domain: '127.0.0.1', path: '/', secure: false, sameSite: 'Lax' })));
+  await context.route('**/*', route => { const url = new URL(route.request().url()); if (/^https?:$/.test(url.protocol) && url.origin !== base || /\/auth\/v1\/(otp|magiclink|recover|signup|invite)|\/api\/(mail|push)\//.test(url.pathname)) { report.forbiddenRequests++; return route.abort(); } return route.continue(); });
+  const health = await context.request.get(base + '/api/health'); assert(health.ok() && (await health.json()).paymentProvider === 'mollie', 'UNARMED_MOLLIE_RUNTIME_REQUIRED');
+  report.buildId = (await readFile(root + '/.next/BUILD_ID', 'utf8')).trim();
+  await select('frightnight-2027-test'); const copy = await app('test.copy', { slug }); eventId = copy.data.result.eventId; report.eventId = eventId;
+  await select(slug); await app('test.seed'); let current = await snapshot(); report.runId = current.event.runId;
+  assert(current.paymentSandbox.configuredProvider === 'mollie' && current.paymentSandbox.effectiveProvider === 'mollie' && current.event.paymentPolicy === 'configured', 'UNARMED_CONFIGURED_POLICY_REQUIRED');
+  const registration = current.registrations.find(item => item.routeType === 'lantern'); assert(registration, 'UNARMED_SEED_REGISTRATION_REQUIRED');
+  sql(`do $$ begin if not exists(select 1 from app_private.fn_events f join app_private.events e on e.id=f.event_id where e.id=${literal(eventId)}::uuid and e.slug=${literal(slug)} and f.run_id=${literal(current.event.runId)}::uuid and f.is_test and f.environment='staging' and f.payment_policy='configured') or not exists(select 1 from auth.users where id=${literal(actorId)}::uuid and email like '%@example.invalid') then raise exception 'UNARMED_SYNTHETIC_SCOPE_REQUIRED';end if;update app_private.fn_registrations set owner_id=${literal(actorId)}::uuid where id=${literal(registration.id)}::uuid and event_id=${literal(eventId)}::uuid and run_id=${literal(current.event.runId)}::uuid and synthetic and owner_id is null;if not found then raise exception 'UNARMED_UNOWNED_SEED_REQUIRED';end if;end $$`, true);
+  current = await snapshot(); const own = current.registration;
+  await app('registration.save', { expectedVersion: own.version, label: own.label, routeType: own.routeType, adults: own.adults, children: own.children, maxIntensity: 2, avoidSmoke: false, avoidStrobes: false, stepFree: false, startSlot: current.startSlots.find(slot => slot.routeType === 'lantern' && slot.enabled !== false).startsAt, consent: true, termsVersion: '2027-test-v1' });
+  const page = await context.newPage(); await page.goto(base + '/nachtpas'); await page.locator('.fn-environment-nav').waitFor();
+  const waiting = page.waitForResponse(response => new URL(response.url()).pathname === '/api/frightnight/command' && response.request().postDataJSON()?.operation === 'payment.checkout');
+  await page.getByRole('button', { name: 'Testbetaling openen', exact: true }).click(); const response = await waiting; const body = await response.json();
+  check(response.status() === 503 && body.error?.code === 'PAYMENT_CONFIGURATION', 'Unarmed actual checkout reports missing Mollie test configuration before provider call');
+  await expect(page.getByRole('alert').filter({ hasText: 'Mollie testbetalingen zijn nog niet geconfigureerd.' })).toBeVisible();
+  current = await snapshot();
+  check(current.registration.paymentStatus !== 'paid' && current.paymentSandbox.mollieOrders === 1 && current.event.paymentPolicy === 'configured' && !current.paymentSandbox.armed && !current.paymentSandbox.canArm, 'Failure preserves unpaid state and immutable Mollie provider claim; sandbox cannot replace it');
+  const denied = await app('test.payment.sandbox', { confirmation: slug, runId: current.event.runId }, true);
+  check(denied.status === 403 && denied.error?.code === 'FORBIDDEN' && (await snapshot()).paymentSandbox.reason === 'MOLLIE_HISTORY_FORBIDDEN', 'Server refuses arming an edition with a Mollie order');
+  await page.goto(base + '/testcentrum'); await page.getByRole('region', { name: 'Contract-sandbox voor deze testrun', exact: true }).waitFor();
+  await expect(page.getByRole('region', { name: 'Betaalcontracten simuleren', exact: true }).getByRole('button', { name: 'Contractadapter afspelen', exact: true })).toBeDisabled();
+  for (const width of [390, 1440]) { await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 }); assert(!await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), 'UNARMED_UI_OVERFLOW'); const file = `unarmed-mollie-${width}.png`; await page.screenshot({ path: directory + '/' + file, fullPage: true }); report.screenshots.push(file); }
+  check(report.forbiddenRequests === 0, 'No external browser request, OTP, push or mail'); report.status = 'passed';
+} catch (error) { report.status = 'failed'; report.failure = error.message; process.exitCode = 1; }
+finally {
+  const cleanupErrors = [];
+  if (eventId && context) try { await select(slug); const current = await snapshot(); const before = sql(`select md5(coalesce(jsonb_agg(to_jsonb(o) order by id)::text,'')) digest from app_private.fn_orders o where event_id=${literal(eventId)}::uuid`)[0].digest; await app('test.reset', { confirmation: slug, runId: current.event.runId }); const archived = await snapshot(); await app('admin.settings', { closed: true, confirmation: slug, expectedVersion: archived.event.version, reason: 'Eigen lokale ongewapende Mollieconfiguratieproef gecontroleerd afsluiten' }); check(sql(`select md5(coalesce(jsonb_agg(to_jsonb(o) order by id)::text,'')) digest from app_private.fn_orders o where event_id=${literal(eventId)}::uuid`)[0].digest === before, 'Cleanup preserves the own immutable Mollie order'); sql(`update app_private.event_capabilities c set revoked_at=coalesce(revoked_at,now()) where event_id=${literal(eventId)}::uuid and user_id=${literal(actorId)}::uuid and exists(select 1 from app_private.events e join app_private.fn_events f on f.event_id=e.id where e.id=c.event_id and e.slug=${literal(slug)} and f.environment='staging' and f.is_test and f.closed)`, true); report.cleanup = { ownEditionArchivedClosed: true, ownCapabilityRevoked: true, orderRetained: true, authCreated: 0, authDeleted: 0 }; } catch (error) { cleanupErrors.push(error.message); try { const current = await snapshot(); await app('admin.settings', { closed: true, confirmation: slug, expectedVersion: current.event.version, reason: 'Eigen lokale Mollieconfiguratieproef na fout veilig afsluiten zonder verwijdering' }); } catch { cleanupErrors.push('UNARMED_FAIL_CLOSED_FAILED'); } }
+  if (context) { try { await select('frightnight-2027-test'); } catch { cleanupErrors.push('UNARMED_PARENT_CONTEXT_RESTORE_FAILED'); } }
+  try { check(sql('select md5(coalesce(jsonb_agg(id order by id)::text,\'\')) digest from auth.users')[0].digest === baselineAuth, 'All Auth identities remain unchanged'); } catch (error) { cleanupErrors.push(error.message); }
+  if (cleanupErrors.length) { report.status = 'failed'; report.cleanupErrors = cleanupErrors; process.exitCode = 1; }
+  if (context) await context.close(); await browser.close(); const networkEntries = (await readFile(networkGuardPath, 'utf8').catch(error => { if (error.code === 'ENOENT') return ''; throw error; })).split('\n').filter(Boolean).map(line => JSON.parse(line)).slice(networkBefore); const blockedServerRequests = networkEntries.filter(entry => entry.blocked === true); report.serverNetworkGuard = { externalNativeFetchAttempts: blockedServerRequests.length, allowedLocalRequests: networkEntries.filter(entry => entry.blocked === false).length, blockedHosts: [...new Set(blockedServerRequests.map(entry => entry.host))], scope: 'QA-only preload active in both preview server processes; log stores no keys, URL paths or query data' }; if (blockedServerRequests.length || !networkEntries.some(entry => entry.blocked === false)) { report.status = 'failed'; report.failure ??= blockedServerRequests.length ? 'EXTERNAL_SERVER_FETCH_ATTEMPTED' : 'QA_NETWORK_GUARD_NOT_OBSERVED'; process.exitCode = 1; } report.testedAt = new Date().toISOString(); await writeFile(directory + '/report.json', JSON.stringify(report, null, 2) + '\n'); console.log(JSON.stringify({ status: report.status, checks: report.checks.length, buildId: report.buildId, failure: report.failure, cleanupErrors: report.cleanupErrors }));
+}

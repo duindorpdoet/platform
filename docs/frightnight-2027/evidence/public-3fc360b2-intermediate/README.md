@@ -1,0 +1,9 @@
+Gepubliceerd tussenbewijs: 3fc360b2
+
+De 24 bestaande anonieme browsercontroles zijn op 3 november 2026 werkelijk tegen de gepubliceerde staging-SHA `3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac` uitgevoerd: 24 geslaagd in 27,1 seconden. Exacte healthbinding en serviceworkerbytes zijn vooraf gecontroleerd. De native worker werd actief; offline noodtekst, bescherming van privépagina's en reconnect werkten. Acht volledige online screenshots tonen de echte website, verhaal, voorwaarden en ongebruikte inlogpagina op 390 en 1440 pixels, na laden en decoderen van alle zichtbare afbeeldingen.
+
+De aanvullende volledige offline beeldcontrole vond vervolgens een concreet probleem. Het logo stond wel in Cache Storage, maar de worker beantwoordde het afbeeldingsverzoek niet uit die cache. Bij echte browseruitval bleef de noodtekst bruikbaar en was de afbeelding defect: `complete: true`, `naturalWidth: 0`, `ERR_INTERNET_DISCONNECTED`. Dat is vastgelegd in `offline-asset-diagnosis.json` en de foutafbeelding. De extra visuele ronde is daarom als mislukt gerapporteerd; dit is geen volledige PWA-acceptatie.
+
+Een aangescherpte permanente regressie faalde ook werkelijk tegen de oude lokale worker, met een begrensde wachttijd van vijf seconden op het gedecodeerde offline logo. Het rapport staat in `local-before-logo-regression.json`. Een latere kandidaat moet de precache-assets werkelijk bedienen en de nieuwe regressie plus volledige offline captures opnieuw doorlopen. Deze map bewijst uitsluitend deze tussenversie.
+
+Alle controles waren anoniem, met expliciete SHA-toestemming, dezelfde vaste staging-origin, blokkerende guards voor mutaties, Auth, OTP, PSP, mail, push en externe hosts. Er zijn geen verboden requests geprobeerd en geen browserpaginafouten gezien. Geen accounts of serverdata zijn door deze proeven gewijzigd.

@@ -1,0 +1,16 @@
+// Local QA preload only. Never import this into application or release code.
+import { appendFileSync } from 'node:fs';
+const nativeFetch = globalThis.fetch.bind(globalThis);
+const log = '/tmp/frightnight-qa-payment-network.jsonl';
+globalThis.fetch = async (input, init) => {
+  const address = input instanceof Request ? input.url : String(input);
+  let url;
+  try { url = new URL(address); } catch { throw new Error('QA_NETWORK_ABSOLUTE_URL_REQUIRED'); }
+  const allowed = url.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(url.hostname)
+    && ['63561', '63562', '63563', '3137', '3140'].includes(url.port);
+  appendFileSync(log, JSON.stringify({ at: new Date().toISOString(), pid: process.pid,
+    host: url.hostname, method: init?.method ?? (input instanceof Request ? input.method : 'GET'),
+    blocked: !allowed }) + '\n', { mode: 0o600 });
+  if (!allowed) throw new Error('QA_EXTERNAL_NETWORK_BLOCKED');
+  return nativeFetch(input, init);
+};

@@ -1,0 +1,53 @@
+ok 1 - new organization thanks table has RLS
+ok 2 - browser cannot directly read or write organizational feedback
+ok 3 - general thanks private implementation is not service callable
+ok 4 - anonymous general feedback is refused
+ok 5 - general feedback cannot enter a foreign private edition
+ok 6 - own registration is projected by the server
+ok 7 - empty organizational thanks is refused
+ok 8 - organizational thanks is bounded to five hundred characters
+ok 9 - browser cannot target another registration or actor
+ok 10 - general thanks explicitly records durable in-app delivery
+ok 11 - general thanks never claims external email
+ok 12 - own sent state survives a fresh server read
+ok 13 - family cannot read organizational feedback or evaluations
+ok 14 - exact receipt retry returns the stable result
+ok 15 - same text with a new command key remains one organizational delivery
+ok 16 - same receipt key cannot change payload
+ok 17 - a second different general message cannot create a second delivery
+ok 18 - general and core commands share one idempotency-key namespace
+ok 19 - banned actor cannot replay a former organizational thanks receipt
+ok 20 - all retries leave exactly one organizational message
+ok 21 - all retries leave one general delivery audit
+ok 22 - receipts do not persist message content or broad snapshots
+ok 23 - authorized adult sees the shared once-only general thanks state
+ok 24 - authorized second adult can confirm the same organizational thanks
+ok 25 - revoked second adult cannot replay its former general thanks receipt
+ok 26 - another family cannot infer or read the first family message
+ok 27 - second family has no organization inbox
+ok 28 - event administrator sees the actual organizational message
+ok 29 - regie reads durable general thanks content
+ok 30 - organization inbox is strictly edition scoped
+ok 31 - explicit content manager receives only the edition inbox
+ok 32 - revoked feedback capability removes inbox immediately
+ok 33 - stale close cannot clear a current global pause
+ok 34 - failed close preserves global pause
+ok 35 - actual close transition clears the prior global pause atomically
+ok 36 - closing does not reopen new evening admission
+ok 37 - new starts stay denied after pause-clearing close
+ok 38 - new activity bookings stay denied after close
+ok 39 - already running family has its controlled Duinpad return
+ok 40 - paused-then-closed running family can really finish the final scan
+ok 41 - finale scan finishes without fabricated ordinary visits
+ok 42 - closure never gifts ordinary visits
+ok 43 - organization sees existing evaluations durably in its bounded inbox
+ok 44 - old close receipt remains replayable after a later policy change
+ok 45 - old close replay cannot clear a later legitimate pause
+ok 46 - old close replay cannot reclose a reopened edition
+ok 47 - close wrapper retains original payload hash exactly
+ok 48 - organization feedback snapshot is bounded independently of total messages
+ok 49 - thanks/closure never enqueue legacy external mail
+ok 50 - thanks/closure preserve historical payments
+ok 51 - thanks/closure create or delete no Auth identity
+ok 52 - old event phase remains unchanged
+1..52

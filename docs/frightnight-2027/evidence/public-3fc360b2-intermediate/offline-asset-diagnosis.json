@@ -1,0 +1,36 @@
+{
+  "testedAt": "2026-11-03T07:38:03.755Z",
+  "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "status": "confirmed-product-failure",
+  "health": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "native": {
+    "controlled": true,
+    "images": [
+      {
+        "path": "/frightnight/logo.png",
+        "complete": true,
+        "naturalWidth": 0
+      }
+    ],
+    "logoCached": true,
+    "offlineHtmlCached": true,
+    "helpVisible": true
+  },
+  "failed": [
+    {
+      "path": "/frightnight/logo.png",
+      "error": "net::ERR_INTERNET_DISCONNECTED"
+    }
+  ],
+  "blocked": [],
+  "limits": "Fresh anonymous native-worker browser, actual browser offline, read-only same-origin guard; no Auth/forms/provider actions"
+}

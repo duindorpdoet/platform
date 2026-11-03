@@ -1,0 +1,39 @@
+{
+  "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "edition": "frightnight-2027-test-acceptance-41595824091-92d89cdf",
+  "scope": "fresh-synthetic-2027-only",
+  "checks": [
+    {
+      "label": "new confirmed synthetic Auth sessions and signed sibling context",
+      "status": "passed",
+      "actors": 5
+    }
+  ],
+  "screenshots": [],
+  "externalPsp": "not exercised; deterministic contract adapter",
+  "physicalCamera": "not exercised; manual QR alternative used",
+  "load": "two concurrent families; no high-volume load claim",
+  "credentials": "memory only; no passwords, sessions or QR secrets in artifacts",
+  "failure": "CROSS_EDITION_SELECTION_ALLOWED",
+  "editionCleanup": {
+    "scopeVerified": true,
+    "ownRunArchived": true,
+    "siblingClosed": true,
+    "ordersPreserved": true,
+    "ledgerPreserved": true,
+    "auditPreserved": true,
+    "historical2026Preserved": true,
+    "legacyOutboxUnchanged": true,
+    "authDeleted": 0
+  },
+  "fixtureCleanup": {
+    "capabilitiesRevoked": true,
+    "syntheticAccountsRetired": 5,
+    "authDeleted": 0,
+    "historyDeleted": 0
+  },
+  "completedAt": "2026-11-03T07:38:28.243Z",
+  "status": "failed"
+}

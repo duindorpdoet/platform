@@ -1,0 +1,44 @@
+{
+  "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "eventSlug": "frightnight-2027-test",
+  "scope": "public-no-send",
+  "screenshots": [
+    "festival-1440.png",
+    "login-1440.png",
+    "nachtpas-entry-1440.png",
+    "zone-entry-1440.png",
+    "regie-entry-1440.png",
+    "test-entry-1440.png",
+    "festival-390.png",
+    "login-390.png",
+    "nachtpas-entry-390.png",
+    "zone-entry-390.png",
+    "regie-entry-390.png",
+    "test-entry-390.png"
+  ],
+  "checks": [
+    {
+      "width": 1440,
+      "publicScreens": true,
+      "loginForm": true,
+      "privateApiDenied": true,
+      "privateCacheEmpty": true,
+      "noSend": true,
+      "preavailableHelp": true,
+      "reducedMotion": true
+    },
+    {
+      "width": 390,
+      "publicScreens": true,
+      "loginForm": true,
+      "privateApiDenied": true,
+      "privateCacheEmpty": true,
+      "noSend": true,
+      "preavailableHelp": true,
+      "reducedMotion": true
+    }
+  ],
+  "authenticatedRoleAcceptance": "not performed by this gate",
+  "otpOrProviderDelivery": "not performed by this gate"
+}

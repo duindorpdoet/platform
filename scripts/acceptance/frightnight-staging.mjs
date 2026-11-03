@@ -11,6 +11,7 @@ import { management } from '../deploy/redesign-preflight.mjs';
 import { assertFrightnightRelease, assertFrightnightHostedRelease, assertFrightnightContractArm, assertFrightnightContractSnapshot, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL } from '../deploy/frightnight-release.mjs';
 import { runRegieAcceptance } from './frightnight-regie.mjs';
 import { runEdgeAcceptance } from './frightnight-edges.mjs';
+import { verifyEditionBoundary } from './frightnight-edition-boundary.mjs';
 
 const target = assertFrightnightRelease(process.env);
 if (!/^[a-f0-9]{40}$/.test(process.env.GITHUB_SHA ?? '') || process.env.FRIGHTNIGHT_VERIFIED_RELEASE_SHA !== process.env.GITHUB_SHA) throw new Error('VERIFIED_BACKUP_PRESERVATION_AND_RELEASE_REQUIRED');
@@ -31,6 +32,7 @@ let eventId;
 let fixtureAdmin;
 let preservationBefore;
 let bootstrapAttempted=false;
+let foreignEdition;
 let failed;
 const literal = value => `'${String(value).replaceAll("'","''")}'`;
 const assert = (condition,code) => {if(!condition)throw new Error(code);};
@@ -190,7 +192,17 @@ try {
   const forbidden=await app(a,'admin.settings',{expectedVersion:1,paused:true},randomUUID(),true);assert(forbidden.status===403,'FAMILY_ADMIN_AUTHORIZATION_FAILED');
   assert((await app(support,'test.seed',{},randomUUID(),true)).status===403,'LIMITED_ROLE_ESCALATED');
   assert((await app(a,'zone.status',{zoneId:ownZone.id,status:'open',expectedVersion:ownZone.version},randomUUID(),true)).status===403,'FOREIGN_HOUSE_AUTHORIZATION_FAILED');
-  const cross=await a.context.request.post(`${target.origin}/api/frightnight/edition`,{headers:{Origin:target.origin},data:{slug:target.slug}});assert(cross.status()===403,'CROSS_EDITION_SELECTION_ALLOWED');
+  foreignEdition={slug:slug+'-foreign',eventId:null,runId:null};
+  const foreign=await app(admin,'test.copy',{slug:foreignEdition.slug});
+  foreignEdition.eventId=foreign.value.result.eventId;
+  const foreignState=(await rpc(admin,'frightnight_snapshot',{p_slug:foreignEdition.slug})).value;
+  assert(foreignState.event.id===foreignEdition.eventId&&foreignState.event.slug===foreignEdition.slug&&foreignState.event.test&&foreignState.event.environment==='staging','FOREIGN_FIXTURE_SCOPE_MISMATCH');
+  foreignEdition.runId=foreignState.event.runId;
+  const boundary=await verifyEditionBoundary({canonicalSlug:target.slug,parentSlug:slug,parentEventId:eventId,foreignSlug:foreignEdition.slug,foreignEventId:foreignEdition.eventId,
+    select:async selectedSlug=>{const response=await a.context.request.post(`${target.origin}/api/frightnight/edition`,{headers:{Origin:target.origin},data:{slug:selectedSlug}});const body=await response.json();return {status:response.status(),selected:body.data?.selected};},
+    readContext:async()=>{const own=await snapshot(a);const cookie=(await a.context.cookies()).find(item=>item.name==='frightnight-edition');assert(cookie?.httpOnly&&cookie.secure,'SIGNED_PRIVATE_COOKIE_REQUIRED');return {eventId:own.event.id,slug:own.event.slug,signedCookie:cookie.value};}});
+  assert((await rpc(a,'frightnight_snapshot',{p_slug:foreignEdition.slug},true)).status===403,'FOREIGN_PRIVATE_RPC_ALLOWED');
+  report.editionBoundary=boundary;
   checked('family, house, limited-role and cross-edition authorization');
   // Real HTTP checkout, failure/retry, cancellation/expiry and idempotent
   // provider confirmation all run through the configured contract adapter.
@@ -397,6 +409,27 @@ try {
   failed=error;report.failure=safeError(error);
 } finally {
   const cleanupErrors=[];
+  if(foreignEdition) {
+    try {
+      const own=foreignEdition;
+      assert(own.slug===slug+'-foreign'&&/^[a-f0-9-]{36}$/.test(own.eventId??'')&&/^[a-f0-9-]{36}$/.test(own.runId??'')&&fixtureAdmin?.session,'FOREIGN_FIXTURE_OUTCOME_UNCERTAIN');
+      const bound=await sql(`select f.version from app_private.fn_events f join app_private.events e on e.id=f.event_id where e.id=${literal(own.eventId)}::uuid and e.slug=${literal(own.slug)} and f.run_id=${literal(own.runId)}::uuid and f.environment='staging' and f.is_test
+        and exists(select 1 from app_private.event_capabilities c join auth.users u on u.id=c.user_id where c.event_id=e.id and c.user_id=${literal(fixtureAdmin.id)}::uuid and c.capability='event_admin' and c.revoked_at is null and u.email=${literal(fixtureAdmin.email)} and u.email like '%@example.invalid' and u.raw_user_meta_data->>'synthetic_frightnight_run'=${literal(run)})
+        and not exists(select 1 from app_private.event_capabilities c where c.event_id=e.id and c.revoked_at is null and(c.user_id<>${literal(fixtureAdmin.id)}::uuid or c.capability<>'event_admin'))
+        and not exists(select 1 from app_private.fn_edition_entries where event_id=e.id)
+        and not exists(select 1 from app_private.fn_registrations where event_id=e.id)
+        and not exists(select 1 from app_private.fn_zones where event_id=e.id)
+        and not exists(select 1 from app_private.fn_orders where event_id=e.id)
+        and not exists(select 1 from app_private.fn_ledger where event_id=e.id)`);
+      assert(bound.length===1,'FOREIGN_EMPTY_SCOPE_NOT_PROVEN');
+      const closed=await rpc(fixtureAdmin,'frightnight_command',{p_slug:own.slug,p_command:'admin.settings',p_payload:{closed:true,expectedVersion:bound[0].version,confirmation:own.slug,reason:'Uitsluitend eigen lege private toegangsproef afsluiten'},p_key:randomUUID()});
+      assert(closed.value.snapshot?.event.id===own.eventId&&closed.value.snapshot.event.closed,'FOREIGN_FIXTURE_CLOSE_FAILED');
+      await sql(`update app_private.event_capabilities c set revoked_at=now() where c.event_id=${literal(own.eventId)}::uuid and c.user_id=${literal(fixtureAdmin.id)}::uuid and c.capability='event_admin' and c.revoked_at is null and exists(select 1 from app_private.fn_events f join app_private.events e on e.id=f.event_id where f.event_id=c.event_id and e.slug=${literal(own.slug)} and f.run_id=${literal(own.runId)}::uuid and f.environment='staging' and f.is_test and f.closed)`,true);
+      const revoked=await sql(`select count(*)::integer n from app_private.event_capabilities c join app_private.fn_events f on f.event_id=c.event_id join app_private.events e on e.id=f.event_id where c.event_id=${literal(own.eventId)}::uuid and c.user_id=${literal(fixtureAdmin.id)}::uuid and c.capability='event_admin' and c.revoked_at is not null and e.slug=${literal(own.slug)} and f.run_id=${literal(own.runId)}::uuid and f.environment='staging' and f.is_test and f.closed`);
+      assert(revoked.length===1&&revoked[0].n===1,'FOREIGN_FIXTURE_CAPABILITY_REVOKE_UNCONFIRMED');
+      report.foreignEditionCleanup={scopeVerified:true,emptySiblingClosed:true,ownCapabilityRevoked:true,historyDeleted:0,blindReset:false};
+    } catch(error) {cleanupErrors.push(safeError(error));report.foreignEditionCleanup={status:'failed',blindReset:false};}
+  }
   if(eventId) {
     try {
       assert(slug!==target.slug&&slug.startsWith('frightnight-2027-test-acceptance-'),'SIBLING_CLEANUP_CANONICAL_FORBIDDEN');
