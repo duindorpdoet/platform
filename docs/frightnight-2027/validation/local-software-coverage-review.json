@@ -1,0 +1,2916 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-03T08:46:02.430051+00:00",
+  "purpose": "Read-only separation of actually executed local software evidence from exact integrated scenarios for which no executed evidence was found. A planned permanent assertion is not a passing result.",
+  "sourceCommit": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "publishedRevision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "candidateRevision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "candidateCiRun": "41604478761",
+  "candidateCiStatusAtReview": "in_progress",
+  "runtimeSourceEquality": {
+    "baseRevision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+    "candidateRevision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+    "changedFilesInAppLibComponentsPublicSupabase": [],
+    "appAndSqlByteEquality": true,
+    "method": "git diff --name-only on runtime/schema paths; no build executed"
+  },
+  "sourceCoveragePlan": {
+    "path": "docs/frightnight-2027/validation/staging-coverage-plan.json",
+    "sha256": "3974eba7ea9276217ed1c02bcbcf5bb31debea0a36a110b30c44dccc86bc29bf"
+  },
+  "existingAssessmentPreserved": {
+    "path": "docs/frightnight-2027/validation/acceptance-evidence-assessment.json",
+    "sha256": "ebd20aacaa6360409a862159a4b37157bc2080afa28f8fbd012575e4fe707b4d",
+    "unchanged": true
+  },
+  "actions": {
+    "readOnlyEvidenceInspection": true,
+    "newTestsExecuted": false,
+    "buildsExecuted": false,
+    "remoteRequests": 0,
+    "databaseMutations": 0,
+    "otp": 0,
+    "email": 0,
+    "newAcceptancePassClaimed": false,
+    "finalQuietObserverStarted": false,
+    "newTestsExecutedDuringThisReadOnlyUpdate": false,
+    "newPreviouslyRecordedLocalResultsLinked": true
+  },
+  "localSupplementReports": {
+    "software": {
+      "artifact": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-3f372313/report.json",
+      "artifactSha256": "ab3fa9dbeaa1f59ee8f145633afddfbdce744c42e9cdf5b3e9e7494a04784b1a",
+      "status": "passed",
+      "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+      "servedBuildId": "_1OR884fyGsZ8DqPkdSnD",
+      "completedAt": "2026-11-03T06:25:20.469Z",
+      "matchingWholeFiles": {
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": {
+          "testedSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+          "currentSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6"
+        },
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": {
+          "testedSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+          "currentSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+        },
+        "components/frightnight/resident.tsx": {
+          "testedSha256": "600788fbf32faba6676dcb4ab6245b3243550cd71fe4efd4b157f1c53c35574e",
+          "currentSha256": "600788fbf32faba6676dcb4ab6245b3243550cd71fe4efd4b157f1c53c35574e"
+        },
+        "components/frightnight/admin-resource.tsx": {
+          "testedSha256": "ffadb9296b26c079b97744c4aba1ed0575be75cc2ec4d805fecab6d69ce67038",
+          "currentSha256": "ffadb9296b26c079b97744c4aba1ed0575be75cc2ec4d805fecab6d69ce67038"
+        },
+        "components/frightnight/games.tsx": {
+          "testedSha256": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e",
+          "currentSha256": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e"
+        },
+        "components/frightnight/client.tsx": {
+          "testedSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "currentSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18"
+        }
+      },
+      "changedWholeFiles": {
+        "components/frightnight/participant.tsx": {
+          "testedSha256": "ae54b364271c0bb2ca13b12681028df2a24d625248025e7553adbdc562d059dd",
+          "currentSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65"
+        },
+        "components/frightnight/operations.tsx": {
+          "testedSha256": "7e5ebae9317fd31f16c5041ac23c7a7c9b54409d94d4405b65e75e8a79449da7",
+          "currentSha256": "899eb59eb5018038d34866dc2350163cc78f23a7dffc9c7a678c7fc943ab48d2"
+        },
+        "lib/frightnight/model.ts": {
+          "testedSha256": "8c06aeb0a25fa153030699abb4ecfa03dcda4004e73b57d8fc3dc2f1bcf3d08f",
+          "currentSha256": "71143fbc22e1c2ec0089ae7ac7cfd3ed3c46d72bdcba1ccc4f94fb8cac4d1184"
+        },
+        "lib/frightnight/server.ts": {
+          "testedSha256": "db37464a55546f46eab4b297e04476b0ac776a97cb24b89de08add2d231360f1",
+          "currentSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb"
+        },
+        "lib/frightnight/payment-server.ts": {
+          "testedSha256": "3a27c994986a91adb7299dde16488a6effd28a1f5a5a959be1347e1b863381a0",
+          "currentSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421"
+        },
+        "app/api/frightnight/command/route.ts": {
+          "testedSha256": "d2a1e15e98c19e2d8c52f0e8c12f3b8fb2e356abd7f8bc1401b9371242b9d5c0",
+          "currentSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c"
+        }
+      },
+      "testedGitBlobMatchesRecordedHash": {
+        "components/frightnight/resident.tsx": true,
+        "components/frightnight/admin-resource.tsx": true,
+        "components/frightnight/participant.tsx": true,
+        "components/frightnight/games.tsx": true,
+        "components/frightnight/client.tsx": true,
+        "components/frightnight/operations.tsx": true,
+        "lib/frightnight/model.ts": true,
+        "lib/frightnight/server.ts": true,
+        "lib/frightnight/payment-server.ts": true,
+        "app/api/frightnight/command/route.ts": true
+      },
+      "checks": [
+        {
+          "label": "INS-01 actual four-person mild registration UI, server quote and identical-command replay",
+          "status": "passed"
+        },
+        {
+          "label": "ACT-01 two independent families race last whole-family seats; one controlled full refusal, exact capacity and independent authenticated UI/server persistence",
+          "status": "passed",
+          "raceStatuses": [
+            200,
+            409
+          ],
+          "persons": [
+            4,
+            2
+          ],
+          "capacity": 4,
+          "winnerPersons": 4
+        },
+        {
+          "label": "ACT-02 real cancel and replay release seats once; rebook, explicit activity staff UI checkin persists once; unassigned owner, foreign activity and revoked staff denied",
+          "status": "passed",
+          "ownerDenial": 403,
+          "foreignDenial": 403,
+          "revokedDenial": 403,
+          "checkedInSeats": 4
+        },
+        {
+          "label": "ROU-03 actual zone owner pauses released ordinary destination; stale real QR scan rejected without visit/award; participant recovery UI releases one suitable replacement",
+          "status": "passed",
+          "scanStatus": 409,
+          "scanError": "ZONE_UNAVAILABLE_RESUME"
+        },
+        {
+          "label": "REG-03 real organization pause UI blocks a valid current QR command and disables scanning; resume rechecks one current destination without progress",
+          "status": "passed",
+          "pausedScanStatus": 409,
+          "error": "EVENT_PAUSED"
+        },
+        {
+          "label": "SAM-04 non-inviting independent paid household completes actual shared current QR through UI with200; both personal visits/awards advance once and current stays shared",
+          "status": "passed",
+          "acceptedActor": "family-b-non-inviter",
+          "persons": 6,
+          "personalVisitDelta": [
+            1,
+            1
+          ],
+          "personalAwardDelta": [
+            1,
+            1
+          ]
+        },
+        {
+          "label": "ROU-12 all ordinary zones explicitly closed; both households receive one Duinpad finale without all houses/quests; no award until actual final QR scan",
+          "status": "passed",
+          "ordinaryZonesClosed": 4,
+          "questsCompleted": 0,
+          "finishedAfterRealFinalScan": true
+        }
+      ]
+    },
+    "group": {
+      "artifact": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-c3312b85/report.json",
+      "artifactSha256": "8d90cd99cb649114e592e08d78f7164495c4fd55192d5c5c3c2615ae724ed423",
+      "status": "passed",
+      "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+      "servedBuildId": "_1OR884fyGsZ8DqPkdSnD",
+      "completedAt": "2026-11-03T06:28:24.631Z",
+      "matchingWholeFiles": {
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": {
+          "testedSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+          "currentSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6"
+        },
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": {
+          "testedSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+          "currentSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+        },
+        "components/frightnight/games.tsx": {
+          "testedSha256": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e",
+          "currentSha256": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e"
+        },
+        "components/frightnight/client.tsx": {
+          "testedSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "currentSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18"
+        }
+      },
+      "changedWholeFiles": {
+        "components/frightnight/participant.tsx": {
+          "testedSha256": "ae54b364271c0bb2ca13b12681028df2a24d625248025e7553adbdc562d059dd",
+          "currentSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65"
+        },
+        "components/frightnight/operations.tsx": {
+          "testedSha256": "7e5ebae9317fd31f16c5041ac23c7a7c9b54409d94d4405b65e75e8a79449da7",
+          "currentSha256": "899eb59eb5018038d34866dc2350163cc78f23a7dffc9c7a678c7fc943ab48d2"
+        },
+        "lib/frightnight/model.ts": {
+          "testedSha256": "8c06aeb0a25fa153030699abb4ecfa03dcda4004e73b57d8fc3dc2f1bcf3d08f",
+          "currentSha256": "71143fbc22e1c2ec0089ae7ac7cfd3ed3c46d72bdcba1ccc4f94fb8cac4d1184"
+        },
+        "lib/frightnight/server.ts": {
+          "testedSha256": "db37464a55546f46eab4b297e04476b0ac776a97cb24b89de08add2d231360f1",
+          "currentSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb"
+        },
+        "lib/frightnight/payment-server.ts": {
+          "testedSha256": "3a27c994986a91adb7299dde16488a6effd28a1f5a5a959be1347e1b863381a0",
+          "currentSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421"
+        },
+        "app/api/frightnight/command/route.ts": {
+          "testedSha256": "d2a1e15e98c19e2d8c52f0e8c12f3b8fb2e356abd7f8bc1401b9371242b9d5c0",
+          "currentSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c"
+        }
+      },
+      "testedGitBlobMatchesRecordedHash": {
+        "components/frightnight/participant.tsx": true,
+        "components/frightnight/games.tsx": true,
+        "components/frightnight/client.tsx": true,
+        "components/frightnight/operations.tsx": true,
+        "lib/frightnight/model.ts": true,
+        "lib/frightnight/server.ts": true,
+        "lib/frightnight/payment-server.ts": true,
+        "app/api/frightnight/command/route.ts": true
+      },
+      "checks": [
+        {
+          "label": "INS-01 actual four-person mild registration UI, server quote and identical-command replay",
+          "status": "passed"
+        },
+        {
+          "label": "SAM-06 setup two independently paid journeys perform actual different ordinary QR visits before joining",
+          "status": "passed",
+          "oldPersonalVisits": [
+            1,
+            1
+          ],
+          "oldPersonalAwards": [
+            1,
+            1
+          ],
+          "distinctVisitedZones": true
+        },
+        {
+          "label": "SAM-01 actual visible invitation creation and second-household code/consent acceptance show both recognizable member labels and one shared destination in both account UIs",
+          "status": "passed",
+          "distinctPaidRegistrations": true,
+          "persons": 6,
+          "members": 2
+        },
+        {
+          "label": "SAM-06 joining mid-route preserves each different personal visit and award set exactly, with no retroactive gift and one shared current",
+          "status": "passed",
+          "personalVisitCounts": [
+            1,
+            1
+          ],
+          "historyPreserved": true
+        },
+        {
+          "label": "ROU-02 actual current-preference form lowers2→1 and adds smoke/strobe avoidance; server unions both households and replaces too-intense current with suitable shared ordinary destination",
+          "status": "passed",
+          "persons": 6,
+          "groupMaxIntensity": 1,
+          "groupAvoidSmoke": true,
+          "groupAvoidStrobes": true,
+          "personalQuotesUnchanged": true,
+          "oldHistoryPreserved": true
+        },
+        {
+          "label": "SAM-07 visible leave button restores two coherent independent server journeys and own-only member UIs; both distinct personal histories and exactly one current claim each remain",
+          "status": "passed",
+          "personalPersons": [
+            4,
+            2
+          ],
+          "currentClaims": [
+            1,
+            1
+          ],
+          "historyPreserved": true,
+          "limits": "Sequential actual UI; mandatory hosted complete/leave race remains separate."
+        }
+      ]
+    },
+    "games": {
+      "artifact": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-4bf3460b/report.json",
+      "artifactSha256": "d3f6dcf6ec842d537c81905d94ccbdf8ae07779957c0306f26a63ceb0419bba2",
+      "status": "passed",
+      "revision": "090773a0a15a49316128e08004e026f1541c6e04",
+      "servedBuildId": "Ok5RjR2fex_g9bgq4d5YE",
+      "completedAt": "2026-11-03T05:27:39.931Z",
+      "matchingWholeFiles": {
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": {
+          "testedSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+          "currentSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6"
+        },
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": {
+          "testedSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+          "currentSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+        },
+        "components/frightnight/games.tsx": {
+          "testedSha256": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e",
+          "currentSha256": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e"
+        },
+        "components/frightnight/client.tsx": {
+          "testedSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "currentSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18"
+        }
+      },
+      "changedWholeFiles": {
+        "components/frightnight/participant.tsx": {
+          "testedSha256": "ae54b364271c0bb2ca13b12681028df2a24d625248025e7553adbdc562d059dd",
+          "currentSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65"
+        },
+        "components/frightnight/operations.tsx": {
+          "testedSha256": "7e5ebae9317fd31f16c5041ac23c7a7c9b54409d94d4405b65e75e8a79449da7",
+          "currentSha256": "899eb59eb5018038d34866dc2350163cc78f23a7dffc9c7a678c7fc943ab48d2"
+        },
+        "lib/frightnight/model.ts": {
+          "testedSha256": "8c06aeb0a25fa153030699abb4ecfa03dcda4004e73b57d8fc3dc2f1bcf3d08f",
+          "currentSha256": "71143fbc22e1c2ec0089ae7ac7cfd3ed3c46d72bdcba1ccc4f94fb8cac4d1184"
+        },
+        "lib/frightnight/server.ts": {
+          "testedSha256": "db37464a55546f46eab4b297e04476b0ac776a97cb24b89de08add2d231360f1",
+          "currentSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb"
+        },
+        "lib/frightnight/payment-server.ts": {
+          "testedSha256": "3a27c994986a91adb7299dde16488a6effd28a1f5a5a959be1347e1b863381a0",
+          "currentSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421"
+        },
+        "app/api/frightnight/command/route.ts": {
+          "testedSha256": "d2a1e15e98c19e2d8c52f0e8c12f3b8fb2e356abd7f8bc1401b9371242b9d5c0",
+          "currentSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c"
+        }
+      },
+      "testedGitBlobMatchesRecordedHash": {
+        "components/frightnight/participant.tsx": true,
+        "components/frightnight/games.tsx": true,
+        "components/frightnight/client.tsx": true,
+        "components/frightnight/operations.tsx": true,
+        "lib/frightnight/model.ts": true,
+        "lib/frightnight/server.ts": true,
+        "lib/frightnight/payment-server.ts": true,
+        "app/api/frightnight/command/route.ts": true
+      },
+      "checks": [
+        {
+          "label": "INS-01 actual four-person mild registration UI, server quote and identical-command replay",
+          "status": "passed"
+        },
+        {
+          "label": "INS-08 actual prestart full-block refusal, valid block change and independent-context persistence preserve paid quote",
+          "status": "passed"
+        },
+        {
+          "label": "INS-09 actual quote-lock explanation/disabled fields and server rejection preserve four paid places and amount",
+          "status": "passed"
+        },
+        {
+          "label": "REG-04 own help UI submission, authorized durable reply/resolve and second independent context; foreign family denied",
+          "status": "passed",
+          "independentContexts": 2
+        },
+        {
+          "label": "KID-01 actual riddle UI rejects wrong answer, accepts retry and persists one award",
+          "status": "passed",
+          "module": "supplemental-games-beacon",
+          "questId": "riddle-1"
+        },
+        {
+          "label": "KID-01 actual riddle UI rejects wrong answer, accepts retry and persists one award",
+          "status": "passed",
+          "module": "supplemental-games-beacon",
+          "questId": "riddle-2"
+        },
+        {
+          "label": "KID-01 actual riddle UI rejects wrong answer, accepts retry and persists one award",
+          "status": "passed",
+          "module": "supplemental-games-beacon",
+          "questId": "riddle-3"
+        },
+        {
+          "label": "KID-01 actual symbols game rejects wrong sequence and accepts corrected four choices",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        },
+        {
+          "label": "KID-01 actual colours game rejects wrong submission and persists corrected windows",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        },
+        {
+          "label": "KID-01 actual pairs game exposes mismatch retry and accepts all three matched pairs",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        },
+        {
+          "label": "KID-02 six completed quests survive reload and an independent context; exact command replays add no awards",
+          "status": "passed",
+          "module": "supplemental-games-beacon",
+          "quests": 6,
+          "independentContexts": 2
+        },
+        {
+          "label": "BAK-02 separate zero-quest family completes actual start, ordinary visit and Duinpad final scan",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        },
+        {
+          "label": "BAK-02 all three digital steps and independent beacon completion persist without six quests; reload/replay award once",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        },
+        {
+          "label": "BAK-02 same zero-quest family downloads private SVG Nachtpas after digital beacon",
+          "status": "passed"
+        },
+        {
+          "label": "QR-03 actual manual start within chosen evening succeeds before a later advisory start block",
+          "status": "passed",
+          "chosenBlockIsAppointment": false
+        }
+      ]
+    },
+    "camera": {
+      "artifact": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-8e73e11c/report.json",
+      "artifactSha256": "92b8bbd41be04068a97de23f3b3ce9507fdb0a7333a37931763129378a728ee4",
+      "status": "passed",
+      "revision": "aad96668a3744b0dbfe09111956537ee53d9ff8d",
+      "servedBuildId": "_1OR884fyGsZ8DqPkdSnD",
+      "completedAt": "2026-11-03T05:47:22.881Z",
+      "matchingWholeFiles": {
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": {
+          "testedSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+          "currentSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6"
+        },
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": {
+          "testedSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+          "currentSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+        },
+        "components/frightnight/camera.tsx": {
+          "testedSha256": "dfff4b8d497781e8b367eb8ae2bb38bffe65fdf006d58a1eaa65df80fcad0573",
+          "currentSha256": "dfff4b8d497781e8b367eb8ae2bb38bffe65fdf006d58a1eaa65df80fcad0573"
+        },
+        "components/frightnight/games.tsx": {
+          "testedSha256": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e",
+          "currentSha256": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e"
+        },
+        "components/frightnight/client.tsx": {
+          "testedSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "currentSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18"
+        }
+      },
+      "changedWholeFiles": {
+        "components/frightnight/participant.tsx": {
+          "testedSha256": "ae54b364271c0bb2ca13b12681028df2a24d625248025e7553adbdc562d059dd",
+          "currentSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65"
+        },
+        "components/frightnight/operations.tsx": {
+          "testedSha256": "7e5ebae9317fd31f16c5041ac23c7a7c9b54409d94d4405b65e75e8a79449da7",
+          "currentSha256": "899eb59eb5018038d34866dc2350163cc78f23a7dffc9c7a678c7fc943ab48d2"
+        },
+        "lib/frightnight/model.ts": {
+          "testedSha256": "8c06aeb0a25fa153030699abb4ecfa03dcda4004e73b57d8fc3dc2f1bcf3d08f",
+          "currentSha256": "71143fbc22e1c2ec0089ae7ac7cfd3ed3c46d72bdcba1ccc4f94fb8cac4d1184"
+        },
+        "lib/frightnight/server.ts": {
+          "testedSha256": "db37464a55546f46eab4b297e04476b0ac776a97cb24b89de08add2d231360f1",
+          "currentSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb"
+        },
+        "lib/frightnight/payment-server.ts": {
+          "testedSha256": "3a27c994986a91adb7299dde16488a6effd28a1f5a5a959be1347e1b863381a0",
+          "currentSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421"
+        },
+        "app/api/frightnight/command/route.ts": {
+          "testedSha256": "d2a1e15e98c19e2d8c52f0e8c12f3b8fb2e356abd7f8bc1401b9371242b9d5c0",
+          "currentSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c"
+        }
+      },
+      "testedGitBlobMatchesRecordedHash": {
+        "components/frightnight/camera.tsx": true,
+        "components/frightnight/participant.tsx": true,
+        "components/frightnight/games.tsx": true,
+        "components/frightnight/client.tsx": true,
+        "components/frightnight/operations.tsx": true,
+        "lib/frightnight/model.ts": true,
+        "lib/frightnight/server.ts": true,
+        "lib/frightnight/payment-server.ts": true,
+        "app/api/frightnight/command/route.ts": true
+      },
+      "checks": [
+        {
+          "label": "INS-01 actual four-person mild registration UI, server quote and identical-command replay",
+          "status": "passed"
+        },
+        {
+          "label": "QR02 real Chromium camera permission denied and native NotAllowedError expose readable editable manual fallback without route or reward mutation",
+          "status": "passed",
+          "nativeCameraPermission": "denied",
+          "nativeMediaError": "NotAllowedError",
+          "virtualChromiumDevice": true,
+          "javaScriptMediaMock": false
+        },
+        {
+          "label": "QR02 same denied-camera dialog accepts actual start-board code and server releases exactly one current destination without claiming a visit",
+          "status": "passed",
+          "serverConfirmed": true,
+          "permissionRemainsDenied": true,
+          "physicalCameraVerified": false
+        }
+      ]
+    },
+    "invalidLogin": {
+      "artifact": "/tmp/frightnight-login-invalid-evidence/report.json",
+      "artifactSha256": "ca51e14f03aff80f34a96f4bb5d86cab5d9f33e83a0f26cf13df4522e78a63d9",
+      "status": "passed",
+      "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+      "servedBuildId": null,
+      "completedAt": "2026-11-03T06:21:41.076Z",
+      "matchingWholeFiles": {
+        "components/frightnight/login.tsx": {
+          "testedSha256": "cf0ef612867472511438220eb371eb20a30ff01c68df922aa1b31e0a31e6a0f8",
+          "currentSha256": "cf0ef612867472511438220eb371eb20a30ff01c68df922aa1b31e0a31e6a0f8"
+        },
+        "components/auth/email-otp-form.tsx": {
+          "testedSha256": "a298e1473d1b9d0a293003bfb0e48479cdec1f4f0f125573416a3e07988bfce3",
+          "currentSha256": "a298e1473d1b9d0a293003bfb0e48479cdec1f4f0f125573416a3e07988bfce3"
+        },
+        "app/inloggen/page.tsx": {
+          "testedSha256": "d7754da140958bc50081cdfcc0643fba7ea89072b43ae0efd42ba04917641908",
+          "currentSha256": "d7754da140958bc50081cdfcc0643fba7ea89072b43ae0efd42ba04917641908"
+        }
+      },
+      "changedWholeFiles": {},
+      "testedGitBlobMatchesRecordedHash": {},
+      "checks": [
+        {
+          "width": 390,
+          "label": "empty email prevents code request",
+          "status": "passed"
+        },
+        {
+          "width": 390,
+          "label": "malformed email rejected before Auth",
+          "value": "geen-adres",
+          "validity": {
+            "valid": false,
+            "typeMismatch": true,
+            "valueMissing": false,
+            "message": "Please include an '@' in the email address. 'geen-adres' is missing an '@'."
+          },
+          "status": "passed"
+        },
+        {
+          "width": 390,
+          "label": "malformed email rejected before Auth",
+          "value": "ongeldig@",
+          "validity": {
+            "valid": false,
+            "typeMismatch": true,
+            "valueMissing": false,
+            "message": "Please enter a part following '@'. 'ongeldig@' is incomplete."
+          },
+          "status": "passed"
+        },
+        {
+          "width": 390,
+          "label": "malformed email rejected before Auth",
+          "value": "dubbel@@voorbeeld.invalid",
+          "validity": {
+            "valid": false,
+            "typeMismatch": true,
+            "valueMissing": false,
+            "message": "A part following '@' should not contain the symbol '@'."
+          },
+          "status": "passed"
+        },
+        {
+          "width": 1440,
+          "label": "empty email prevents code request",
+          "status": "passed"
+        },
+        {
+          "width": 1440,
+          "label": "malformed email rejected before Auth",
+          "value": "geen-adres",
+          "validity": {
+            "valid": false,
+            "typeMismatch": true,
+            "valueMissing": false,
+            "message": "Please include an '@' in the email address. 'geen-adres' is missing an '@'."
+          },
+          "status": "passed"
+        },
+        {
+          "width": 1440,
+          "label": "malformed email rejected before Auth",
+          "value": "ongeldig@",
+          "validity": {
+            "valid": false,
+            "typeMismatch": true,
+            "valueMissing": false,
+            "message": "Please enter a part following '@'. 'ongeldig@' is incomplete."
+          },
+          "status": "passed"
+        },
+        {
+          "width": 1440,
+          "label": "malformed email rejected before Auth",
+          "value": "dubbel@@voorbeeld.invalid",
+          "validity": {
+            "valid": false,
+            "typeMismatch": true,
+            "valueMissing": false,
+            "message": "A part following '@' should not contain the symbol '@'."
+          },
+          "status": "passed"
+        }
+      ]
+    }
+  },
+  "featureSourceEqualityMethod": "Recompute recorded whole-file hashes against current committed candidate. Where monolithic participant.tsx changed, verify the recorded old git blob first, then compare exact TypeScript AST function getText() SHA256; no normalization or semantic equivalence is assumed.",
+  "participantFunctionAlignment": {
+    "file": "components/frightnight/participant.tsx",
+    "currentRevision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+    "revisions": {
+      "090773a0a15a49316128e08004e026f1541c6e04": {
+        "StatusBar": {
+          "oldSha256": "0975e797987c4bbb8d153a08d7cd760ab53624d26fcaea5027a438a0a4acdc45",
+          "currentSha256": "0975e797987c4bbb8d153a08d7cd760ab53624d26fcaea5027a438a0a4acdc45",
+          "unchanged": true,
+          "line": 23
+        },
+        "Gate": {
+          "oldSha256": "031044682d15b7b35936f7cf5bcd4e2a0cd5ebb490f841fc9b1637aa66c228b0",
+          "currentSha256": "031044682d15b7b35936f7cf5bcd4e2a0cd5ebb490f841fc9b1637aa66c228b0",
+          "unchanged": true,
+          "line": 26
+        },
+        "EnvironmentNav": {
+          "oldSha256": "194a6f3b803d0e5bd6cf6edc33f8c62735551c97b4adeb5a65b2c03eef9688e5",
+          "currentSha256": "194a6f3b803d0e5bd6cf6edc33f8c62735551c97b4adeb5a65b2c03eef9688e5",
+          "unchanged": true,
+          "line": 29
+        },
+        "RegistrationForm": {
+          "oldSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "currentSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "unchanged": true,
+          "line": 35
+        },
+        "ContactForm": {
+          "oldSha256": "a5aa8783bb64b8bd2f477c31b632f93079cda6677bf0a97982e3b943e6f92afa",
+          "currentSha256": "a5aa8783bb64b8bd2f477c31b632f93079cda6677bf0a97982e3b943e6f92afa",
+          "unchanged": true,
+          "line": 48
+        },
+        "Payment": {
+          "oldSha256": "28d4b28b6623bcb46b9a276634275b422266b2937e5a8eec5fd4bb1092cd9ab2",
+          "currentSha256": "28d4b28b6623bcb46b9a276634275b422266b2937e5a8eec5fd4bb1092cd9ab2",
+          "unchanged": true,
+          "line": 56
+        },
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        },
+        "Pass": {
+          "oldSha256": "4291fc66cfd9c392386f40d6cea2ed4aff79b3375f53e40f293ea8f0def4e924",
+          "currentSha256": "4291fc66cfd9c392386f40d6cea2ed4aff79b3375f53e40f293ea8f0def4e924",
+          "unchanged": true,
+          "line": 68
+        },
+        "Beacon": {
+          "oldSha256": "71eb9e6292d1a5583c9b014db957e23493267987344a83641f997eac6199f3b3",
+          "currentSha256": "71eb9e6292d1a5583c9b014db957e23493267987344a83641f997eac6199f3b3",
+          "unchanged": true,
+          "line": 72
+        },
+        "Thanks": {
+          "oldSha256": "7bca46caf04932702e0bf1283fcc0b89727286334cb678dbdd75eb56d9eced13",
+          "currentSha256": "82012a1c9f2c1c8db90ea0e52c1fcddbf83dc433f7d077eb88213fe82e6267e4",
+          "unchanged": false,
+          "line": 77
+        },
+        "Together": {
+          "oldSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "currentSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "unchanged": true,
+          "line": 90
+        },
+        "RegistrationAccess": {
+          "oldSha256": "9c37fa7ee2900efed0d1d81fc8ae8ddc0c7cca5f9f97cb1a958ef86d6a10f868",
+          "currentSha256": "9c37fa7ee2900efed0d1d81fc8ae8ddc0c7cca5f9f97cb1a958ef86d6a10f868",
+          "unchanged": true,
+          "line": 94
+        },
+        "Square": {
+          "oldSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "currentSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "unchanged": true,
+          "line": 98
+        },
+        "FestivalHelp": {
+          "oldSha256": "01b57a4f0f1d1661d68aedfffe4946b8e5ba599634f284aed1847a5d49881088",
+          "currentSha256": "01b57a4f0f1d1661d68aedfffe4946b8e5ba599634f284aed1847a5d49881088",
+          "unchanged": true,
+          "line": 102
+        },
+        "ParticipantApp": {
+          "oldSha256": "9611b6ea756cfd2846bbd12bd5a3929dbf010cf79f78cffce485b16fc2df3a7b",
+          "currentSha256": "9611b6ea756cfd2846bbd12bd5a3929dbf010cf79f78cffce485b16fc2df3a7b",
+          "unchanged": true,
+          "line": 105
+        }
+      },
+      "0ddd9558f3fd70ce479fd1d02d2d5168586ca167": {
+        "StatusBar": {
+          "oldSha256": "0975e797987c4bbb8d153a08d7cd760ab53624d26fcaea5027a438a0a4acdc45",
+          "currentSha256": "0975e797987c4bbb8d153a08d7cd760ab53624d26fcaea5027a438a0a4acdc45",
+          "unchanged": true,
+          "line": 23
+        },
+        "Gate": {
+          "oldSha256": "031044682d15b7b35936f7cf5bcd4e2a0cd5ebb490f841fc9b1637aa66c228b0",
+          "currentSha256": "031044682d15b7b35936f7cf5bcd4e2a0cd5ebb490f841fc9b1637aa66c228b0",
+          "unchanged": true,
+          "line": 26
+        },
+        "EnvironmentNav": {
+          "oldSha256": "194a6f3b803d0e5bd6cf6edc33f8c62735551c97b4adeb5a65b2c03eef9688e5",
+          "currentSha256": "194a6f3b803d0e5bd6cf6edc33f8c62735551c97b4adeb5a65b2c03eef9688e5",
+          "unchanged": true,
+          "line": 29
+        },
+        "RegistrationForm": {
+          "oldSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "currentSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "unchanged": true,
+          "line": 35
+        },
+        "ContactForm": {
+          "oldSha256": "a5aa8783bb64b8bd2f477c31b632f93079cda6677bf0a97982e3b943e6f92afa",
+          "currentSha256": "a5aa8783bb64b8bd2f477c31b632f93079cda6677bf0a97982e3b943e6f92afa",
+          "unchanged": true,
+          "line": 48
+        },
+        "Payment": {
+          "oldSha256": "28d4b28b6623bcb46b9a276634275b422266b2937e5a8eec5fd4bb1092cd9ab2",
+          "currentSha256": "28d4b28b6623bcb46b9a276634275b422266b2937e5a8eec5fd4bb1092cd9ab2",
+          "unchanged": true,
+          "line": 56
+        },
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        },
+        "Pass": {
+          "oldSha256": "4291fc66cfd9c392386f40d6cea2ed4aff79b3375f53e40f293ea8f0def4e924",
+          "currentSha256": "4291fc66cfd9c392386f40d6cea2ed4aff79b3375f53e40f293ea8f0def4e924",
+          "unchanged": true,
+          "line": 68
+        },
+        "Beacon": {
+          "oldSha256": "71eb9e6292d1a5583c9b014db957e23493267987344a83641f997eac6199f3b3",
+          "currentSha256": "71eb9e6292d1a5583c9b014db957e23493267987344a83641f997eac6199f3b3",
+          "unchanged": true,
+          "line": 72
+        },
+        "Thanks": {
+          "oldSha256": "7bca46caf04932702e0bf1283fcc0b89727286334cb678dbdd75eb56d9eced13",
+          "currentSha256": "82012a1c9f2c1c8db90ea0e52c1fcddbf83dc433f7d077eb88213fe82e6267e4",
+          "unchanged": false,
+          "line": 77
+        },
+        "Together": {
+          "oldSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "currentSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "unchanged": true,
+          "line": 90
+        },
+        "RegistrationAccess": {
+          "oldSha256": "9c37fa7ee2900efed0d1d81fc8ae8ddc0c7cca5f9f97cb1a958ef86d6a10f868",
+          "currentSha256": "9c37fa7ee2900efed0d1d81fc8ae8ddc0c7cca5f9f97cb1a958ef86d6a10f868",
+          "unchanged": true,
+          "line": 94
+        },
+        "Square": {
+          "oldSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "currentSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "unchanged": true,
+          "line": 98
+        },
+        "FestivalHelp": {
+          "oldSha256": "01b57a4f0f1d1661d68aedfffe4946b8e5ba599634f284aed1847a5d49881088",
+          "currentSha256": "01b57a4f0f1d1661d68aedfffe4946b8e5ba599634f284aed1847a5d49881088",
+          "unchanged": true,
+          "line": 102
+        },
+        "ParticipantApp": {
+          "oldSha256": "9611b6ea756cfd2846bbd12bd5a3929dbf010cf79f78cffce485b16fc2df3a7b",
+          "currentSha256": "9611b6ea756cfd2846bbd12bd5a3929dbf010cf79f78cffce485b16fc2df3a7b",
+          "unchanged": true,
+          "line": 105
+        }
+      },
+      "aad96668a3744b0dbfe09111956537ee53d9ff8d": {
+        "StatusBar": {
+          "oldSha256": "0975e797987c4bbb8d153a08d7cd760ab53624d26fcaea5027a438a0a4acdc45",
+          "currentSha256": "0975e797987c4bbb8d153a08d7cd760ab53624d26fcaea5027a438a0a4acdc45",
+          "unchanged": true,
+          "line": 23
+        },
+        "Gate": {
+          "oldSha256": "031044682d15b7b35936f7cf5bcd4e2a0cd5ebb490f841fc9b1637aa66c228b0",
+          "currentSha256": "031044682d15b7b35936f7cf5bcd4e2a0cd5ebb490f841fc9b1637aa66c228b0",
+          "unchanged": true,
+          "line": 26
+        },
+        "EnvironmentNav": {
+          "oldSha256": "194a6f3b803d0e5bd6cf6edc33f8c62735551c97b4adeb5a65b2c03eef9688e5",
+          "currentSha256": "194a6f3b803d0e5bd6cf6edc33f8c62735551c97b4adeb5a65b2c03eef9688e5",
+          "unchanged": true,
+          "line": 29
+        },
+        "RegistrationForm": {
+          "oldSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "currentSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "unchanged": true,
+          "line": 35
+        },
+        "ContactForm": {
+          "oldSha256": "a5aa8783bb64b8bd2f477c31b632f93079cda6677bf0a97982e3b943e6f92afa",
+          "currentSha256": "a5aa8783bb64b8bd2f477c31b632f93079cda6677bf0a97982e3b943e6f92afa",
+          "unchanged": true,
+          "line": 48
+        },
+        "Payment": {
+          "oldSha256": "28d4b28b6623bcb46b9a276634275b422266b2937e5a8eec5fd4bb1092cd9ab2",
+          "currentSha256": "28d4b28b6623bcb46b9a276634275b422266b2937e5a8eec5fd4bb1092cd9ab2",
+          "unchanged": true,
+          "line": 56
+        },
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        },
+        "Pass": {
+          "oldSha256": "4291fc66cfd9c392386f40d6cea2ed4aff79b3375f53e40f293ea8f0def4e924",
+          "currentSha256": "4291fc66cfd9c392386f40d6cea2ed4aff79b3375f53e40f293ea8f0def4e924",
+          "unchanged": true,
+          "line": 68
+        },
+        "Beacon": {
+          "oldSha256": "71eb9e6292d1a5583c9b014db957e23493267987344a83641f997eac6199f3b3",
+          "currentSha256": "71eb9e6292d1a5583c9b014db957e23493267987344a83641f997eac6199f3b3",
+          "unchanged": true,
+          "line": 72
+        },
+        "Thanks": {
+          "oldSha256": "7bca46caf04932702e0bf1283fcc0b89727286334cb678dbdd75eb56d9eced13",
+          "currentSha256": "82012a1c9f2c1c8db90ea0e52c1fcddbf83dc433f7d077eb88213fe82e6267e4",
+          "unchanged": false,
+          "line": 77
+        },
+        "Together": {
+          "oldSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "currentSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "unchanged": true,
+          "line": 90
+        },
+        "RegistrationAccess": {
+          "oldSha256": "9c37fa7ee2900efed0d1d81fc8ae8ddc0c7cca5f9f97cb1a958ef86d6a10f868",
+          "currentSha256": "9c37fa7ee2900efed0d1d81fc8ae8ddc0c7cca5f9f97cb1a958ef86d6a10f868",
+          "unchanged": true,
+          "line": 94
+        },
+        "Square": {
+          "oldSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "currentSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "unchanged": true,
+          "line": 98
+        },
+        "FestivalHelp": {
+          "oldSha256": "01b57a4f0f1d1661d68aedfffe4946b8e5ba599634f284aed1847a5d49881088",
+          "currentSha256": "01b57a4f0f1d1661d68aedfffe4946b8e5ba599634f284aed1847a5d49881088",
+          "unchanged": true,
+          "line": 102
+        },
+        "ParticipantApp": {
+          "oldSha256": "9611b6ea756cfd2846bbd12bd5a3929dbf010cf79f78cffce485b16fc2df3a7b",
+          "currentSha256": "9611b6ea756cfd2846bbd12bd5a3929dbf010cf79f78cffce485b16fc2df3a7b",
+          "unchanged": true,
+          "line": 105
+        }
+      }
+    }
+  },
+  "actuallyExecutedLocalEvidenceById": [
+    {
+      "id": "ENV-02",
+      "classification": "actually_executed_local_SQL_on_unchanged_core_reverified_in_four_migration737_run",
+      "noNewImplementationFailureClaimed": true,
+      "exactPassingAssertions": [
+        "ok 121 - mail retry is event-scoped and sink-only",
+        "ok 122 - retry updates sink attempts without a dispatcher",
+        "ok 130 - create/status/link/retry never changes legacy mail outbox"
+      ],
+      "freshRunReport": "docs/frightnight-2027/validation/backend-feedback-closure-report.json",
+      "coreSourceSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+      "scopeCaveat": "SQL policy/token/retention behavior is real executed evidence; no physical optical/field or hosted execution is implied."
+    },
+    {
+      "id": "INS-01",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "software",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-3f372313/report.json",
+      "reportSha256": "ab3fa9dbeaa1f59ee8f145633afddfbdce744c42e9cdf5b3e9e7494a04784b1a",
+      "unchangedParticipantFunctionBytes": {
+        "RegistrationForm": {
+          "oldSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "currentSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "unchanged": true,
+          "line": 35
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/resident.tsx",
+        "components/frightnight/admin-resource.tsx",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "INS-01 actual four-person mild registration UI, server quote and identical-command replay",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "INS-02",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "invalidLogin",
+      "report": "/tmp/frightnight-login-invalid-evidence/report.json",
+      "reportSha256": "ca51e14f03aff80f34a96f4bb5d86cab5d9f33e83a0f26cf13df4522e78a63d9",
+      "unchangedParticipantFunctionBytes": {},
+      "matchingWholeFiles": [
+        "components/frightnight/login.tsx",
+        "components/auth/email-otp-form.tsx",
+        "app/inloggen/page.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": []
+    },
+    {
+      "id": "INS-08",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "games",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-4bf3460b/report.json",
+      "reportSha256": "d3f6dcf6ec842d537c81905d94ccbdf8ae07779957c0306f26a63ceb0419bba2",
+      "unchangedParticipantFunctionBytes": {
+        "RegistrationForm": {
+          "oldSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "currentSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "unchanged": true,
+          "line": 35
+        },
+        "ContactForm": {
+          "oldSha256": "a5aa8783bb64b8bd2f477c31b632f93079cda6677bf0a97982e3b943e6f92afa",
+          "currentSha256": "a5aa8783bb64b8bd2f477c31b632f93079cda6677bf0a97982e3b943e6f92afa",
+          "unchanged": true,
+          "line": 48
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "INS-08 actual prestart full-block refusal, valid block change and independent-context persistence preserve paid quote",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "INS-09",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "games",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-4bf3460b/report.json",
+      "reportSha256": "d3f6dcf6ec842d537c81905d94ccbdf8ae07779957c0306f26a63ceb0419bba2",
+      "unchangedParticipantFunctionBytes": {
+        "RegistrationForm": {
+          "oldSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "currentSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "unchanged": true,
+          "line": 35
+        },
+        "Payment": {
+          "oldSha256": "28d4b28b6623bcb46b9a276634275b422266b2937e5a8eec5fd4bb1092cd9ab2",
+          "currentSha256": "28d4b28b6623bcb46b9a276634275b422266b2937e5a8eec5fd4bb1092cd9ab2",
+          "unchanged": true,
+          "line": 56
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "INS-09 actual quote-lock explanation/disabled fields and server rejection preserve four paid places and amount",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "QR-02",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "camera",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-8e73e11c/report.json",
+      "reportSha256": "92b8bbd41be04068a97de23f3b3ce9507fdb0a7333a37931763129378a728ee4",
+      "unchangedParticipantFunctionBytes": {
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/camera.tsx",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": []
+    },
+    {
+      "id": "QR-10",
+      "classification": "actually_executed_local_SQL_on_unchanged_core_reverified_in_four_migration737_run",
+      "noNewImplementationFailureClaimed": true,
+      "exactPassingAssertions": [
+        "ok 9 - printing after a zone rotation preserves the exact newly returned credential",
+        "ok 10 - rotated zone rejects the previous printed credential"
+      ],
+      "freshRunReport": "docs/frightnight-2027/validation/backend-feedback-closure-report.json",
+      "coreSourceSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+      "scopeCaveat": "SQL policy/token/retention behavior is real executed evidence; no physical optical/field or hosted execution is implied."
+    },
+    {
+      "id": "ROU-02",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "group",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-c3312b85/report.json",
+      "reportSha256": "8d90cd99cb649114e592e08d78f7164495c4fd55192d5c5c3c2615ae724ed423",
+      "unchangedParticipantFunctionBytes": {
+        "RegistrationForm": {
+          "oldSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "currentSha256": "2279c6492f5dc396cb8beea9ddec9a9baf16db7b2ca3cc38e355d8364be72e22",
+          "unchanged": true,
+          "line": 35
+        },
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        },
+        "Together": {
+          "oldSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "currentSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "unchanged": true,
+          "line": 90
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "ROU-02 actual current-preference form lowers2→1 and adds smoke/strobe avoidance; server unions both households and replaces too-intense current with suitable shared ordinary destination",
+          "status": "passed",
+          "persons": 6,
+          "groupMaxIntensity": 1,
+          "groupAvoidSmoke": true,
+          "groupAvoidStrobes": true,
+          "personalQuotesUnchanged": true,
+          "oldHistoryPreserved": true
+        }
+      ]
+    },
+    {
+      "id": "ROU-03",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "software",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-3f372313/report.json",
+      "reportSha256": "ab3fa9dbeaa1f59ee8f145633afddfbdce744c42e9cdf5b3e9e7494a04784b1a",
+      "unchangedParticipantFunctionBytes": {
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/resident.tsx",
+        "components/frightnight/admin-resource.tsx",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "ROU-03 actual zone owner pauses released ordinary destination; stale real QR scan rejected without visit/award; participant recovery UI releases one suitable replacement",
+          "status": "passed",
+          "scanStatus": 409,
+          "scanError": "ZONE_UNAVAILABLE_RESUME"
+        }
+      ]
+    },
+    {
+      "id": "ROU-04",
+      "classification": "actually_executed_local_SQL_on_unchanged_core_reverified_in_four_migration737_run",
+      "noNewImplementationFailureClaimed": true,
+      "exactPassingAssertions": [
+        "ok 490 - full suitable candy and free finale produce a waiting state",
+        "ok 495 - resuming after controlled capacity release selects the ordinary house",
+        "ok 497 - timed pause expiry and explicit resume restore a suitable ordinary destination"
+      ],
+      "freshRunReport": "docs/frightnight-2027/validation/backend-feedback-closure-report.json",
+      "coreSourceSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+      "scopeCaveat": "SQL policy/token/retention behavior is real executed evidence; no physical optical/field or hosted execution is implied."
+    },
+    {
+      "id": "ROU-12",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "software",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-3f372313/report.json",
+      "reportSha256": "ab3fa9dbeaa1f59ee8f145633afddfbdce744c42e9cdf5b3e9e7494a04784b1a",
+      "unchangedParticipantFunctionBytes": {
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/resident.tsx",
+        "components/frightnight/admin-resource.tsx",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "ROU-12 all ordinary zones explicitly closed; both households receive one Duinpad finale without all houses/quests; no award until actual final QR scan",
+          "status": "passed",
+          "ordinaryZonesClosed": 4,
+          "questsCompleted": 0,
+          "finishedAfterRealFinalScan": true
+        }
+      ]
+    },
+    {
+      "id": "SAM-01",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "group",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-c3312b85/report.json",
+      "reportSha256": "8d90cd99cb649114e592e08d78f7164495c4fd55192d5c5c3c2615ae724ed423",
+      "unchangedParticipantFunctionBytes": {
+        "Together": {
+          "oldSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "currentSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "unchanged": true,
+          "line": 90
+        },
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "SAM-01 actual visible invitation creation and second-household code/consent acceptance show both recognizable member labels and one shared destination in both account UIs",
+          "status": "passed",
+          "distinctPaidRegistrations": true,
+          "persons": 6,
+          "members": 2
+        }
+      ]
+    },
+    {
+      "id": "SAM-04",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "software",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-3f372313/report.json",
+      "reportSha256": "ab3fa9dbeaa1f59ee8f145633afddfbdce744c42e9cdf5b3e9e7494a04784b1a",
+      "unchangedParticipantFunctionBytes": {
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        },
+        "Together": {
+          "oldSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "currentSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "unchanged": true,
+          "line": 90
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/resident.tsx",
+        "components/frightnight/admin-resource.tsx",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "SAM-04 non-inviting independent paid household completes actual shared current QR through UI with200; both personal visits/awards advance once and current stays shared",
+          "status": "passed",
+          "acceptedActor": "family-b-non-inviter",
+          "persons": 6,
+          "personalVisitDelta": [
+            1,
+            1
+          ],
+          "personalAwardDelta": [
+            1,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SAM-06",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "group",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-c3312b85/report.json",
+      "reportSha256": "8d90cd99cb649114e592e08d78f7164495c4fd55192d5c5c3c2615ae724ed423",
+      "unchangedParticipantFunctionBytes": {
+        "Together": {
+          "oldSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "currentSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "unchanged": true,
+          "line": 90
+        },
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "SAM-06 setup two independently paid journeys perform actual different ordinary QR visits before joining",
+          "status": "passed",
+          "oldPersonalVisits": [
+            1,
+            1
+          ],
+          "oldPersonalAwards": [
+            1,
+            1
+          ],
+          "distinctVisitedZones": true
+        },
+        {
+          "label": "SAM-06 joining mid-route preserves each different personal visit and award set exactly, with no retroactive gift and one shared current",
+          "status": "passed",
+          "personalVisitCounts": [
+            1,
+            1
+          ],
+          "historyPreserved": true
+        }
+      ]
+    },
+    {
+      "id": "SAM-07",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "group",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-c3312b85/report.json",
+      "reportSha256": "8d90cd99cb649114e592e08d78f7164495c4fd55192d5c5c3c2615ae724ed423",
+      "unchangedParticipantFunctionBytes": {
+        "Together": {
+          "oldSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "currentSha256": "bf9a79f0accf6a8721f92af7f475769a6f6388a0b5fbe2a746fa31f37194ea15",
+          "unchanged": true,
+          "line": 90
+        },
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "SAM-07 visible leave button restores two coherent independent server journeys and own-only member UIs; both distinct personal histories and exactly one current claim each remain",
+          "status": "passed",
+          "personalPersons": [
+            4,
+            2
+          ],
+          "currentClaims": [
+            1,
+            1
+          ],
+          "historyPreserved": true,
+          "limits": "Sequential actual UI; mandatory hosted complete/leave race remains separate."
+        }
+      ]
+    },
+    {
+      "id": "HUI-04",
+      "classification": "actually_executed_local_SQL_on_unchanged_core_reverified_in_four_migration737_run",
+      "noNewImplementationFailureClaimed": true,
+      "exactPassingAssertions": [
+        "ok 15 - timed pause blocks new arrivals before its end",
+        "ok 17 - expired pause does not reopen a zone outside its hours"
+      ],
+      "freshRunReport": "docs/frightnight-2027/validation/backend-feedback-closure-report.json",
+      "coreSourceSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+      "scopeCaveat": "SQL policy/token/retention behavior is real executed evidence; no physical optical/field or hosted execution is implied."
+    },
+    {
+      "id": "ACT-01",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "software",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-3f372313/report.json",
+      "reportSha256": "ab3fa9dbeaa1f59ee8f145633afddfbdce744c42e9cdf5b3e9e7494a04784b1a",
+      "unchangedParticipantFunctionBytes": {
+        "Square": {
+          "oldSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "currentSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "unchanged": true,
+          "line": 98
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/resident.tsx",
+        "components/frightnight/admin-resource.tsx",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "ACT-01 two independent families race last whole-family seats; one controlled full refusal, exact capacity and independent authenticated UI/server persistence",
+          "status": "passed",
+          "raceStatuses": [
+            200,
+            409
+          ],
+          "persons": [
+            4,
+            2
+          ],
+          "capacity": 4,
+          "winnerPersons": 4
+        }
+      ]
+    },
+    {
+      "id": "ACT-02",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "software",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-3f372313/report.json",
+      "reportSha256": "ab3fa9dbeaa1f59ee8f145633afddfbdce744c42e9cdf5b3e9e7494a04784b1a",
+      "unchangedParticipantFunctionBytes": {
+        "Square": {
+          "oldSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "currentSha256": "6294625016d5f9b97b733d28a760f8a61f20e2f01792a73af4813e608852cae7",
+          "unchanged": true,
+          "line": 98
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/resident.tsx",
+        "components/frightnight/admin-resource.tsx",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "ACT-02 real cancel and replay release seats once; rebook, explicit activity staff UI checkin persists once; unassigned owner, foreign activity and revoked staff denied",
+          "status": "passed",
+          "ownerDenial": 403,
+          "foreignDenial": 403,
+          "revokedDenial": 403,
+          "checkedInSeats": 4
+        }
+      ]
+    },
+    {
+      "id": "KID-01",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "games",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-4bf3460b/report.json",
+      "reportSha256": "d3f6dcf6ec842d537c81905d94ccbdf8ae07779957c0306f26a63ceb0419bba2",
+      "unchangedParticipantFunctionBytes": {},
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "KID-01 actual riddle UI rejects wrong answer, accepts retry and persists one award",
+          "status": "passed",
+          "module": "supplemental-games-beacon",
+          "questId": "riddle-1"
+        },
+        {
+          "label": "KID-01 actual riddle UI rejects wrong answer, accepts retry and persists one award",
+          "status": "passed",
+          "module": "supplemental-games-beacon",
+          "questId": "riddle-2"
+        },
+        {
+          "label": "KID-01 actual riddle UI rejects wrong answer, accepts retry and persists one award",
+          "status": "passed",
+          "module": "supplemental-games-beacon",
+          "questId": "riddle-3"
+        },
+        {
+          "label": "KID-01 actual symbols game rejects wrong sequence and accepts corrected four choices",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        },
+        {
+          "label": "KID-01 actual colours game rejects wrong submission and persists corrected windows",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        },
+        {
+          "label": "KID-01 actual pairs game exposes mismatch retry and accepts all three matched pairs",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        }
+      ]
+    },
+    {
+      "id": "KID-02",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "games",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-4bf3460b/report.json",
+      "reportSha256": "d3f6dcf6ec842d537c81905d94ccbdf8ae07779957c0306f26a63ceb0419bba2",
+      "unchangedParticipantFunctionBytes": {},
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "KID-02 six completed quests survive reload and an independent context; exact command replays add no awards",
+          "status": "passed",
+          "module": "supplemental-games-beacon",
+          "quests": 6,
+          "independentContexts": 2
+        }
+      ]
+    },
+    {
+      "id": "BAK-02",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "games",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-4bf3460b/report.json",
+      "reportSha256": "d3f6dcf6ec842d537c81905d94ccbdf8ae07779957c0306f26a63ceb0419bba2",
+      "unchangedParticipantFunctionBytes": {
+        "Beacon": {
+          "oldSha256": "71eb9e6292d1a5583c9b014db957e23493267987344a83641f997eac6199f3b3",
+          "currentSha256": "71eb9e6292d1a5583c9b014db957e23493267987344a83641f997eac6199f3b3",
+          "unchanged": true,
+          "line": 72
+        },
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        },
+        "Pass": {
+          "oldSha256": "4291fc66cfd9c392386f40d6cea2ed4aff79b3375f53e40f293ea8f0def4e924",
+          "currentSha256": "4291fc66cfd9c392386f40d6cea2ed4aff79b3375f53e40f293ea8f0def4e924",
+          "unchanged": true,
+          "line": 68
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "BAK-02 separate zero-quest family completes actual start, ordinary visit and Duinpad final scan",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        },
+        {
+          "label": "BAK-02 all three digital steps and independent beacon completion persist without six quests; reload/replay award once",
+          "status": "passed",
+          "module": "supplemental-games-beacon"
+        },
+        {
+          "label": "BAK-02 same zero-quest family downloads private SVG Nachtpas after digital beacon",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "REG-03",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "software",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-3f372313/report.json",
+      "reportSha256": "ab3fa9dbeaa1f59ee8f145633afddfbdce744c42e9cdf5b3e9e7494a04784b1a",
+      "unchangedParticipantFunctionBytes": {
+        "Journey": {
+          "oldSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "currentSha256": "d1371f08fdd95077ad4a4ed668bfdd44b91dde80ec5f90249dccf8472f7da8f8",
+          "unchanged": true,
+          "line": 61
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/resident.tsx",
+        "components/frightnight/admin-resource.tsx",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "REG-03 real organization pause UI blocks a valid current QR command and disables scanning; resume rechecks one current destination without progress",
+          "status": "passed",
+          "pausedScanStatus": 409,
+          "error": "EVENT_PAUSED"
+        }
+      ]
+    },
+    {
+      "id": "REG-04",
+      "classification": "actually_executed_local_UI_with_matching_relevant_feature_bytes",
+      "noNewImplementationFailureClaimed": true,
+      "reportKey": "games",
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-4bf3460b/report.json",
+      "reportSha256": "d3f6dcf6ec842d537c81905d94ccbdf8ae07779957c0306f26a63ceb0419bba2",
+      "unchangedParticipantFunctionBytes": {
+        "FestivalHelp": {
+          "oldSha256": "01b57a4f0f1d1661d68aedfffe4946b8e5ba599634f284aed1847a5d49881088",
+          "currentSha256": "01b57a4f0f1d1661d68aedfffe4946b8e5ba599634f284aed1847a5d49881088",
+          "unchanged": true,
+          "line": 102
+        }
+      },
+      "matchingWholeFiles": [
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+        "components/frightnight/games.tsx",
+        "components/frightnight/client.tsx"
+      ],
+      "wholeApplicationByteEqualityClaimed": false,
+      "scopeCaveat": "Participant full file changed only around other functions such as Thanks; listed tested function bodies are byte-identical. Provider/outer wrapper files changed in003/004 and are separately covered by fresh737SQL and actual new payment/feedback local reports; this is not an old full-app SHA pass.",
+      "actualChecks": [
+        {
+          "label": "REG-04 own help UI submission, authorized durable reply/resolve and second independent context; foreign family denied",
+          "status": "passed",
+          "independentContexts": 2
+        }
+      ]
+    },
+    {
+      "id": "OFF-06",
+      "classification": "actually_executed_local_UI_offline_emergency_document_with_incomplete_recorded_source_binding",
+      "noNewImplementationFailureClaimed": true,
+      "artifact": "docs/frightnight-2027/evidence/browser-authenticated/download-clock-report.json",
+      "artifactSha256": "40954b9142827b3f8f8d3d6456f8e46b641dd1134997c5dfb815eab3aaf11e9e",
+      "testedAt": "2026-11-03T04:51:45.098Z",
+      "servedBuildId": "fzribBblz0y5tNosd_-R-",
+      "exactPassingAssertions": [
+        {
+          "check": "Actual emergencyAdmin download succeeds with private no-store",
+          "passed": true
+        },
+        {
+          "check": "Actual emergencyAdmin download labels real current generation time independently of test clock",
+          "passed": true
+        },
+        {
+          "check": "Actual emergencyAdmin download separately labels exact authoritative edition test clock",
+          "passed": true
+        },
+        {
+          "check": "Actual emergencyAdmin does not confuse2026 runtime with2027 scenario time",
+          "passed": true
+        },
+        {
+          "check": "Actual emergencyAdmin download omits owner contact data and uses readable pass award labels",
+          "passed": true
+        },
+        {
+          "check": "Actual emergencyParticipant download succeeds with private no-store",
+          "passed": true
+        },
+        {
+          "check": "Actual emergencyParticipant download labels real current generation time independently of test clock",
+          "passed": true
+        },
+        {
+          "check": "Actual emergencyParticipant download separately labels exact authoritative edition test clock",
+          "passed": true
+        },
+        {
+          "check": "Actual emergencyParticipant does not confuse2026 runtime with2027 scenario time",
+          "passed": true
+        },
+        {
+          "check": "Actual emergencyParticipant download omits owner contact data and uses readable pass award labels",
+          "passed": true
+        },
+        {
+          "check": "Latest emergency cards remain organization-only with local confirmation fields",
+          "passed": true
+        },
+        {
+          "check": "Latest downloaded SVG renders offline without server or asset dependency",
+          "passed": true
+        },
+        {
+          "check": "Latest HTML print alternative is readable offline",
+          "passed": true
+        },
+        {
+          "check": "Latest participant emergency package is readable offline",
+          "passed": true
+        }
+      ],
+      "scopeCaveat": "Actual execution is recorded. This older report does not record app source hashes, so its exact current-source binding is incomplete. The operational backend-outage/physical assistance drill remains distinct; absence of that drill does not erase the offline-document test."
+    },
+    {
+      "id": "RET-03",
+      "classification": "actually_executed_local_SQL_on_unchanged_core_reverified_in_four_migration737_run",
+      "noNewImplementationFailureClaimed": true,
+      "exactPassingAssertions": [
+        "ok 159 - expired test edition can be archived in its explicit scope",
+        "ok 160 - cleanup of expired sibling preserves protected source edition"
+      ],
+      "freshRunReport": "docs/frightnight-2027/validation/backend-feedback-closure-report.json",
+      "coreSourceSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+      "scopeCaveat": "SQL policy/token/retention behavior is real executed evidence; no physical optical/field or hosted execution is implied."
+    }
+  ],
+  "freshFourMigrationSqlProof": {
+    "path": "docs/frightnight-2027/validation/backend-feedback-closure-report.json",
+    "sha256": "d469b9fe780fd7faa8339a5c6ebee206edb0a4dd1ad5401a0f27796df1282bb5",
+    "verifiedAt": "2026-11-03T07:39:29.548576+00:00",
+    "passed": 737,
+    "pgtap": [
+      {
+        "file": "supabase/tests/127_frightnight_2027_core.sql",
+        "passed": 550,
+        "failed": 0,
+        "rollback": true
+      },
+      {
+        "file": "supabase/tests/132_frightnight_2027_edition_access.sql",
+        "passed": 96,
+        "failed": 0,
+        "rollback": true
+      },
+      {
+        "file": "supabase/tests/133_frightnight_2027_payment_sandbox.sql",
+        "passed": 39,
+        "failed": 0,
+        "rollback": true
+      },
+      {
+        "file": "supabase/tests/134_frightnight_2027_feedback_closure.sql",
+        "passed": 52,
+        "failed": 0,
+        "rollback": true
+      }
+    ],
+    "sourceHashRevalidation": {
+      "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": {
+        "testedSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+        "candidateSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+        "matches": true
+      },
+      "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": {
+        "testedSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+        "candidateSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+        "matches": true
+      },
+      "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": {
+        "testedSha256": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+        "candidateSha256": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+        "matches": true
+      },
+      "supabase/migrations/20261103073433_frightnight_2027_feedback_closure.sql": {
+        "testedSha256": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+        "candidateSha256": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+        "matches": true
+      },
+      "supabase/tests/127_frightnight_2027_core.sql": {
+        "testedSha256": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
+        "candidateSha256": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
+        "matches": true
+      },
+      "supabase/tests/132_frightnight_2027_edition_access.sql": {
+        "testedSha256": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
+        "candidateSha256": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
+        "matches": true
+      },
+      "supabase/tests/133_frightnight_2027_payment_sandbox.sql": {
+        "testedSha256": "a5e019e4ce935800beb11a72e94cab60b71bee80e778c792f46a50333feee20e",
+        "candidateSha256": "a5e019e4ce935800beb11a72e94cab60b71bee80e778c792f46a50333feee20e",
+        "matches": true
+      },
+      "supabase/tests/134_frightnight_2027_feedback_closure.sql": {
+        "testedSha256": "647f819fc105e07ef532c6a6b54e23017e45028acf61a6ca18586c91a0feaddd",
+        "candidateSha256": "647f819fc105e07ef532c6a6b54e23017e45028acf61a6ca18586c91a0feaddd",
+        "matches": true
+      },
+      "lib/frightnight/payment-server.ts": {
+        "testedSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+        "candidateSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+        "matches": true
+      },
+      "lib/frightnight/payments.ts": {
+        "testedSha256": "f4a0f1e84f3bf1b5d34498b339c4445f2fb01a5c7783e66a38f83b67039a4e41",
+        "candidateSha256": "f4a0f1e84f3bf1b5d34498b339c4445f2fb01a5c7783e66a38f83b67039a4e41",
+        "matches": true
+      },
+      "lib/frightnight/server.ts": {
+        "testedSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+        "candidateSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+        "matches": true
+      },
+      "app/api/frightnight/command/route.ts": {
+        "testedSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+        "candidateSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+        "matches": true
+      },
+      "scripts/frightnight/db-concurrency.py": {
+        "testedSha256": "b826b2152825abc1bd550f5417fd6fd0082157b9b6ffe7df50165679d414b56e",
+        "candidateSha256": "b826b2152825abc1bd550f5417fd6fd0082157b9b6ffe7df50165679d414b56e",
+        "matches": true
+      },
+      "scripts/frightnight/db-payment-sandbox-concurrency.py": {
+        "testedSha256": "3ca697b48c10458df1289c7c948accdc8175d8b8337e8bce0b55bdbe529d851e",
+        "candidateSha256": "3ca697b48c10458df1289c7c948accdc8175d8b8337e8bce0b55bdbe529d851e",
+        "matches": true
+      },
+      "scripts/deploy/frightnight-release.mjs": {
+        "testedSha256": "521e01edf9471481fd3b3c918aa224ab342242214001f03a2fc4fa959d4fc5ac",
+        "candidateSha256": "521e01edf9471481fd3b3c918aa224ab342242214001f03a2fc4fa959d4fc5ac",
+        "matches": true
+      },
+      "scripts/deploy/frightnight-scenario-backup.mjs": {
+        "testedSha256": "75f4e76d26766ce69164bb023f71bae5a2c8b69965009b9f8a294f364d82174a",
+        "candidateSha256": "75f4e76d26766ce69164bb023f71bae5a2c8b69965009b9f8a294f364d82174a",
+        "matches": true
+      }
+    },
+    "scope": "Actual local PostgreSQL transactions plus real local races and safety query; not a remote125-phone load result or external PSP result."
+  },
+  "currentFeedbackAndOfflineAssetUiProof": {
+    "path": "docs/frightnight-2027/evidence/feedback-closure-offline-assets/provenance.json",
+    "sha256": "e57c5d998bf05c1b2d5507b663c627b24a51daca055c6f649d097ec6d8efcdf8",
+    "sourceCommit": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+    "buildId": "hanzA2t5Xaby269LUnhWK",
+    "recordedAt": "2026-11-03T07:49:22.201Z",
+    "sourceHashRevalidation": {
+      "public/sw.js": {
+        "testedSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+        "candidateSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+        "matches": true
+      },
+      "tests/e2e/frightnight.spec.ts": {
+        "testedSha256": "6a03d7da08019da89fbc0ebf737fde25010d2111c3aab964663eb6c156dd42b0",
+        "candidateSha256": "6a03d7da08019da89fbc0ebf737fde25010d2111c3aab964663eb6c156dd42b0",
+        "matches": true
+      },
+      "lib/editorial/service-worker.test.ts": {
+        "testedSha256": "4eb6f37a4ef8900cf3e7c132e802b71100eb68fb3022d2631f91accda72b8632",
+        "candidateSha256": "4eb6f37a4ef8900cf3e7c132e802b71100eb68fb3022d2631f91accda72b8632",
+        "matches": true
+      },
+      "components/frightnight/participant.tsx": {
+        "testedSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+        "candidateSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+        "matches": true
+      },
+      "components/frightnight/operations.tsx": {
+        "testedSha256": "899eb59eb5018038d34866dc2350163cc78f23a7dffc9c7a678c7fc943ab48d2",
+        "candidateSha256": "899eb59eb5018038d34866dc2350163cc78f23a7dffc9c7a678c7fc943ab48d2",
+        "matches": true
+      },
+      "components/frightnight/organization-feedback.tsx": {
+        "testedSha256": "421aebd111834f9ef20189010e686ed2cbb500f0e1c957e7ce4ab67a6585e1e7",
+        "candidateSha256": "421aebd111834f9ef20189010e686ed2cbb500f0e1c957e7ce4ab67a6585e1e7",
+        "matches": true
+      },
+      "lib/frightnight/model.ts": {
+        "testedSha256": "71143fbc22e1c2ec0089ae7ac7cfd3ed3c46d72bdcba1ccc4f94fb8cac4d1184",
+        "candidateSha256": "71143fbc22e1c2ec0089ae7ac7cfd3ed3c46d72bdcba1ccc4f94fb8cac4d1184",
+        "matches": true
+      },
+      "scripts/acceptance/frightnight-edges.mjs": {
+        "testedSha256": "c91e3c4cb6838693a3784f3f95dd118f5fc8e9a62d72cdaedacc465e0233b855",
+        "candidateSha256": "c91e3c4cb6838693a3784f3f95dd118f5fc8e9a62d72cdaedacc465e0233b855",
+        "matches": true
+      },
+      "scripts/deploy/accept-frightnight.mjs": {
+        "testedSha256": "4a5992a2dbd24044d7d656741e8aea8bddd61a647331cb87263e0dc72a47de56",
+        "candidateSha256": "4a5992a2dbd24044d7d656741e8aea8bddd61a647331cb87263e0dc72a47de56",
+        "matches": true
+      },
+      "supabase/migrations/20261103073433_frightnight_2027_feedback_closure.sql": {
+        "testedSha256": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+        "candidateSha256": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+        "matches": true
+      }
+    },
+    "packageEdges": {
+      "checks": 27,
+      "testedAt": "2026-11-03T07:48:25.078Z",
+      "sourceCommitAtStart": "38cbf47b705ad0aadd01fdef7056222e73c374a1"
+    },
+    "public": {
+      "passed": 24,
+      "failed": 0,
+      "completedAt": "2026-11-03T07:47:05.058Z"
+    },
+    "nativeLogo": {
+      "checks": 10,
+      "testedAt": "2026-11-03T07:47:30.631Z",
+      "dimensions": {
+        "complete": true,
+        "width": 1536,
+        "height": 1024
+      }
+    },
+    "limits": "Local production build/QA database evidence. No hosted release, external PSP, hardware or physical-device claim. Existing f7f2 payment42 proof retains its own build and source binding.",
+    "mapBackgroundLimitation": {
+      "interceptedRequests": 33,
+      "host": "tiles.openfreemap.org",
+      "kinds": [
+        "planet tiles",
+        "sprite JSON",
+        "sprite PNG"
+      ],
+      "delivered": 0,
+      "meaning": "The extra local harness intentionally blocked the public map background. Route state, fallback, privacy, feedback and closure tests still passed; successful map-provider delivery is not established by this run."
+    }
+  },
+  "currentProviderSelectionUiProof": {
+    "path": "docs/frightnight-2027/evidence/payment-sandbox/provenance.json",
+    "sha256": "133c7cb9df2631dac7fdc8113219de3423a9024dff225c75f7260a449be21a9f",
+    "sourceCommit": "f7f2f0057b57aa80458808e1cf6e968ec7be6b78",
+    "buildId": "0umM3p5GQp-3HD2l5F-x1",
+    "verifiedAt": "2026-11-03T07:34:29.390Z",
+    "reports": [
+      {
+        "name": "configured-contract",
+        "status": "passed",
+        "checks": 18,
+        "screenshots": 8,
+        "testedAt": "2026-11-03T07:33:20.486Z",
+        "buildId": "0umM3p5GQp-3HD2l5F-x1",
+        "sha256": "112143842ec20b0ed2e5b559730ab8c03640671238aee31b5586b8cdc8dc0489"
+      },
+      {
+        "name": "mollie-armed-contract",
+        "status": "passed",
+        "checks": 18,
+        "screenshots": 8,
+        "testedAt": "2026-11-03T07:33:32.631Z",
+        "buildId": "0umM3p5GQp-3HD2l5F-x1",
+        "sha256": "dced0379854a85cbf0c3d1893906449b6d5d6cc26d2ef8efaa47395bf0b701ce"
+      },
+      {
+        "name": "mollie-unarmed-no-key",
+        "status": "passed",
+        "checks": 6,
+        "screenshots": 2,
+        "testedAt": "2026-11-03T07:33:42.640Z",
+        "buildId": "0umM3p5GQp-3HD2l5F-x1",
+        "sha256": "5ece8b0f16db2026368221496d2b0e4f11f5e8a94e037c9efb9edea1810f9fc8"
+      }
+    ],
+    "sourceHashRevalidation": {
+      "components/frightnight/payment-sandbox.tsx": {
+        "testedSha256": "c49b69313932a0744aba8d46429b0679a381ce438ab74a7ad93c0b1a98015ea5",
+        "candidateSha256": "c49b69313932a0744aba8d46429b0679a381ce438ab74a7ad93c0b1a98015ea5",
+        "matches": true
+      },
+      "components/frightnight/test-center.tsx": {
+        "testedSha256": "4842984927165e9db55a4eae7daeb1938778681ffa729f997dbe880da60da602",
+        "candidateSha256": "4842984927165e9db55a4eae7daeb1938778681ffa729f997dbe880da60da602",
+        "matches": true
+      },
+      "lib/frightnight/model.ts": {
+        "testedSha256": "1a57107ced073d65ee0ed09a1242422c1d1e9cce6beb16a1720e64f56ace57d0",
+        "candidateSha256": "71143fbc22e1c2ec0089ae7ac7cfd3ed3c46d72bdcba1ccc4f94fb8cac4d1184",
+        "matches": false
+      },
+      "lib/frightnight/server.ts": {
+        "testedSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+        "candidateSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+        "matches": true
+      },
+      "lib/frightnight/payment-server.ts": {
+        "testedSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+        "candidateSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+        "matches": true
+      },
+      "app/api/frightnight/command/route.ts": {
+        "testedSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+        "candidateSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+        "matches": true
+      },
+      "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": {
+        "testedSha256": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+        "candidateSha256": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+        "matches": true
+      }
+    },
+    "limits": "local QA only; no hosted or real external PSP acceptance"
+  },
+  "beacon03ActuallyExecutedNoInternetAdapter": {
+    "path": "docs/frightnight-2027/validation/beacon-offline-report.json",
+    "sha256": "8151ad0937830fef4f436f3ea4aeca8b7440cc6160fa04766ec93857ab7e5073",
+    "verifiedAt": "2026-11-03T05:43:19.681Z",
+    "source": {
+      "path": "lib/frightnight/beacon.ts",
+      "sha256": "f6be40c082bb0a22f1ea8ef2ff7567c6ceea33511dee5e41a128649f3b68d7f3",
+      "unchanged": true
+    },
+    "currentSourceMatches": true,
+    "execution": {
+      "image": "mcr.microsoft.com/playwright:v1.63.0-noble",
+      "imageId": "sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27",
+      "containerId": "acdb7516b90268f11c8e456eae30fb04364f5e01d850bd272cac08ec2e50c861",
+      "nodeVersion": "v24.18.0",
+      "networkMode": "none",
+      "readOnlyRootFilesystem": true,
+      "privileged": false,
+      "capabilitiesDropped": [
+        "ALL"
+      ],
+      "securityOptions": [
+        "no-new-privileges"
+      ],
+      "user": "0:0",
+      "allBindMountsReadOnly": true,
+      "bindMountTargets": [
+        "/opt/node",
+        "/probe.mjs",
+        "/source/beacon.ts"
+      ],
+      "exitCode": 0,
+      "externalInterfaces": []
+    },
+    "results": [
+      {
+        "mode": "rehearsal",
+        "stableAcknowledgement": true,
+        "receipt": "d7a8897734d9aa588e9285b1e29e7d37",
+        "simulated": true,
+        "hardwareEnabled": false,
+        "normalState": "acknowledged",
+        "faultState": "unavailable",
+        "stableFaultReceipt": true
+      },
+      {
+        "mode": "finale",
+        "stableAcknowledgement": true,
+        "receipt": "737c213d7f361e5bd437179a2ab7d062",
+        "simulated": true,
+        "hardwareEnabled": false,
+        "normalState": "acknowledged",
+        "faultState": "unavailable",
+        "stableFaultReceipt": true
+      }
+    ],
+    "limits": [
+      "Local execution of the unchanged staging adapter only.",
+      "No physical controller, light, sound or hardware interface was exercised.",
+      "No database, payment provider, mail, OTP or remote service was contacted."
+    ]
+  },
+  "exactIntegratedSoftwareCasesWithoutExecutedEvidenceFound": [],
+  "whyOtherPendingHostedCasesNeedNotBeRepeatedLocally": [
+    "ACT01/02 real last-seat activity and assigned-staff checks",
+    "KID01/02 all6 actual games with mistakes/replay/independent context",
+    "BAK02 zero-quest actual finale and3digital UIsteps",
+    "REG04 actual help reply in2independent contexts",
+    "ROU02/03/12 and SAM01/04/06 actual scoped local UI scenarios",
+    "ROU04 waiting/release/near-end and RET03 expired cleanup actual SQL; HUI04 timed pause policy/UI; QR10 crypto token rotation and stable reprint token SQL"
+  ],
+  "criticalBoundaries": [
+    "The source commit is d843; published runtime remains5cc at this review. d843 contains the committed private-cache fixture fix and changes no runtime/schema bytes.",
+    "Old report whole-file hashes were first verified against the original git revisions. Participant feature comparisons use exact TypeScript AST function bytes, not semantic similarity. Its Thanks function changed under004; no old Thanks or entire old-build equality is claimed.",
+    "Server/provider/command-wrapper files changed under003/004. Old feature-body equality alone does not prove those wrappers; current local737SQL and the actual new payment42/feedback27 UI reports are separately linked.",
+    "An older emergency download report actually opened the private packet offline, but lacks recorded app source hashes. It is executed evidence with incomplete current-source provenance, not an unexecuted scenario.",
+    "No complete parent/REG/EDGE/load/RET05 hosted success is inferred. Parent5cc failed its strict cache-control fixture before full acceptance and cleanup succeeded; d843 is its candidate fixture fix.",
+    "Physical camera/Android/iOS recognition, reviewed street-safe walking, actual Mollie credential/provider/webhook/refund acceptance, physical independent light operation and field emergency drills remain distinct.",
+    "Observer must await explicit root GO after all final writes and cleanup, then use fresh baseline32tables and two new natural successful cycles each of jobs45/81/184 with all fn counts/content digests and legacy outbox unchanged.",
+    "The five previously listed integrated gaps are historical identification records and now RESOLVED_LOCAL with exact report/source binding. They must not be repeated as never-executed cases; no hosted status was upgraded."
+  ],
+  "previouslyIdentifiedSoftwareCases": [
+    {
+      "priority": 1,
+      "ids": [
+        "OFF-04"
+      ],
+      "exactUnexercisedBoundary": "An actual browser queues a current visit, then another authorized context refunds its registration, revokes adult membership, or closes the target before recovery; assert no stale award and authoritative recovery.",
+      "existingRelatedEvidence": "Actual local queue/reconnect/stale-version/503 tests and separate current auth/refund/zone SQL denials exist; the combined offline permission-change variants are not executed evidence.",
+      "safeIndependentProbe": "Local guarded fresh synthetic sibling, no OTP/provider/mail; use actual authenticated contexts and existing server commands.",
+      "identifiedAt": "2026-11-03T08:42:24.686938+00:00",
+      "resolvedAt": "2026-11-03T08:58:09.196038+00:00",
+      "status": "RESOLVED_BY_ACTUALLY_EXECUTED_LOCAL_INTEGRATED_EVIDENCE",
+      "hostedPassClaimed": false,
+      "resolutionEvidence": [
+        {
+          "id": "OFF-04",
+          "group": "offline",
+          "report": {
+            "path": "docs/frightnight-2027/evidence/local-final-offline-coverage/report.json",
+            "sha256": "71fd47bb145557d5856c79e0ef22543daaadaf700f7c78478925dfa450db42c9"
+          },
+          "actualPassingAssertions": [
+            {
+              "label": "Offline queued visit awards nothing while another context refunds its exact own contract order",
+              "status": "passed"
+            },
+            {
+              "label": "OFF04 refund rejects queued identical visit on reconnect; no award or replacement destination",
+              "status": "passed",
+              "rejection": {
+                "status": 403,
+                "code": "FORBIDDEN",
+                "commandId": "293b2742-d469-49bc-9224-7e047edd2e4e"
+              }
+            },
+            {
+              "label": "OFF04 shared-adult revocation rejects old queued visit and removes former household from refreshed UI without changing owner route",
+              "status": "passed",
+              "rejection": {
+                "status": 403,
+                "code": "FORBIDDEN",
+                "commandId": "5f0d24ae-3ed9-49b1-a9a9-69cc3f5704ae"
+              }
+            }
+          ],
+          "limits": [
+            "Not a hosted acceptance result or physical Android/iOS/PWA test.",
+            "Real refresh uses only a fresh own synthetic actor; no existing QA persona sessions are refreshed, signed out, banned or deleted.",
+            "Only authoritative server responses confirm visits; no offline award or destination is accepted.",
+            "Browser map assets attempted 12 external OpenFreeMap GETs; all were blocked by the local harness. This run proves the map fallback, not external basemap delivery."
+          ]
+        }
+      ],
+      "specificScopeLimit": "Actual queued-refund and queued-shared-adult-revocation variants are now exercised. Previously executed owner-zone-close/pause scan guard and stale route-version tests remain complementary; this does not claim every combinatorial outage/race variant was run."
+    },
+    {
+      "priority": 2,
+      "ids": [
+        "OFF-08",
+        "RET-04"
+      ],
+      "exactUnexercisedBoundary": "Close/reopen the installed private PWA/browser with expired or refreshed session and a deliberate private-cache wipe, then recover only own server progress.",
+      "existingRelatedEvidence": "Actual identity cookie switch, back navigation, server reread and private-cache clearing exist. That is not the exact installed-PWA/session-refresh combination.",
+      "safeIndependentProbe": "Local own invalid fixture Auth contexts only; no actual tester OTP or historical identity.",
+      "identifiedAt": "2026-11-03T08:42:24.686938+00:00",
+      "resolvedAt": "2026-11-03T08:58:09.196038+00:00",
+      "status": "RESOLVED_BY_ACTUALLY_EXECUTED_LOCAL_INTEGRATED_EVIDENCE",
+      "hostedPassClaimed": false,
+      "resolutionEvidence": [
+        {
+          "id": "OFF-08",
+          "group": "offline",
+          "report": {
+            "path": "docs/frightnight-2027/evidence/local-final-offline-coverage/report.json",
+            "sha256": "71fd47bb145557d5856c79e0ef22543daaadaf700f7c78478925dfa450db42c9"
+          },
+          "actualPassingAssertions": [
+            {
+              "label": "Private persistent cache stores only the current actor bounded snapshot and 30-minute lifetime",
+              "status": "passed"
+            },
+            {
+              "label": "OFF08 closed and reopened browser offline receives safe no-store fallback, never a cached private document",
+              "status": "passed"
+            },
+            {
+              "label": "OFF08 actual local GoTrue refresh after full browser close restores same own route without replay, new award or destination",
+              "status": "passed"
+            },
+            {
+              "label": "Native PWA CacheStorage contains no private document or API response after reopen",
+              "status": "passed"
+            }
+          ],
+          "limits": [
+            "Not a hosted acceptance result or physical Android/iOS/PWA test.",
+            "Real refresh uses only a fresh own synthetic actor; no existing QA persona sessions are refreshed, signed out, banned or deleted.",
+            "Only authoritative server responses confirm visits; no offline award or destination is accepted.",
+            "Browser map assets attempted 12 external OpenFreeMap GETs; all were blocked by the local harness. This run proves the map fallback, not external basemap delivery."
+          ]
+        },
+        {
+          "id": "RET-04",
+          "group": "offline",
+          "report": {
+            "path": "docs/frightnight-2027/evidence/local-final-offline-coverage/report.json",
+            "sha256": "71fd47bb145557d5856c79e0ef22543daaadaf700f7c78478925dfa450db42c9"
+          },
+          "actualPassingAssertions": [
+            {
+              "label": "RET04 actual logout clears all private actor snapshots, signed edition and Supabase browser cookies",
+              "status": "passed"
+            },
+            {
+              "label": "RET04 fully reopened logged-out browser shows login gate and no former actor private cache",
+              "status": "passed"
+            },
+            {
+              "label": "RET04 second real identity after logout/restart sees only its refunded registration; prior actor remains absent",
+              "status": "passed"
+            }
+          ],
+          "limits": [
+            "Not a hosted acceptance result or physical Android/iOS/PWA test.",
+            "Real refresh uses only a fresh own synthetic actor; no existing QA persona sessions are refreshed, signed out, banned or deleted.",
+            "Only authoritative server responses confirm visits; no offline award or destination is accepted.",
+            "Browser map assets attempted 12 external OpenFreeMap GETs; all were blocked by the local harness. This run proves the map fallback, not external basemap delivery."
+          ]
+        }
+      ]
+    },
+    {
+      "priority": 3,
+      "ids": [
+        "SEC-02"
+      ],
+      "exactUnexercisedBoundary": "Use the actual resident actor to attempt a second resident-owned zone mutation and payment-list read; preserve both owners and deny data.",
+      "existingRelatedEvidence": "Current source has real owner/role/RLS guards and participant-to-foreign-zone denials; no exact resident-A→resident-B/payment negative identity matrix was found.",
+      "safeIndependentProbe": "Local disposable/synthetic owned sibling with two controlled resident fixture identities, API/RPC denials and hashes only.",
+      "identifiedAt": "2026-11-03T08:42:24.686938+00:00",
+      "resolvedAt": "2026-11-03T08:58:09.196038+00:00",
+      "status": "RESOLVED_BY_ACTUALLY_EXECUTED_LOCAL_INTEGRATED_EVIDENCE",
+      "hostedPassClaimed": false,
+      "resolutionEvidence": [
+        {
+          "id": "SEC-02",
+          "group": "owner",
+          "report": {
+            "path": "docs/frightnight-2027/evidence/local-final-owner-coverage/report.json",
+            "sha256": "d67a7e750386b9abc2fabebe4f2b9f8208b8c4f90dbe99d94ae0092dd6a365bc"
+          },
+          "actualPassingAssertions": [
+            {
+              "label": "SEC-02 two actual distinct resident owners cannot mutate the other zone or list payments; both snapshots and UIs expose own zone only, denied writes preserve both rows",
+              "status": "passed",
+              "denials": [
+                {
+                  "actor": "resident",
+                  "operation": "zone.status",
+                  "status": 403,
+                  "code": "FORBIDDEN"
+                },
+                {
+                  "actor": "resident",
+                  "operation": "zone.apply",
+                  "status": 403,
+                  "code": "FORBIDDEN"
+                },
+                {
+                  "actor": "resident",
+                  "operation": "payments.list",
+                  "status": 403,
+                  "code": "FORBIDDEN"
+                },
+                {
+                  "actor": "activity",
+                  "operation": "zone.status",
+                  "status": 403,
+                  "code": "FORBIDDEN"
+                },
+                {
+                  "actor": "activity",
+                  "operation": "zone.apply",
+                  "status": 403,
+                  "code": "FORBIDDEN"
+                },
+                {
+                  "actor": "activity",
+                  "operation": "payments.list",
+                  "status": 403,
+                  "code": "FORBIDDEN"
+                }
+              ]
+            }
+          ],
+          "limits": [
+            "No hosted acceptance result",
+            "No physical hardware or external provider",
+            "Seeded addresses and walking edges are synthetic, not reviewed street paths"
+          ]
+        }
+      ]
+    },
+    {
+      "priority": 4,
+      "ids": [
+        "HUI-03"
+      ],
+      "exactUnexercisedBoundary": "While a family is genuinely en route, the owner materially edits type/intensity/effects/hours/capacity; verify review reset, invalid input refusal and old scan denied without gift.",
+      "existingRelatedEvidence": "Actual HUI review/resubmit UI, own timed pause, routing approval exclusion and profile validation SQL exist. The full en-route material-profile-change combination is not an actual named case.",
+      "safeIndependentProbe": "Local fresh synthetic own house and family; no address provider/hardware/PSP required.",
+      "identifiedAt": "2026-11-03T08:42:24.686938+00:00",
+      "resolvedAt": "2026-11-03T08:58:09.196038+00:00",
+      "status": "RESOLVED_BY_ACTUALLY_EXECUTED_LOCAL_INTEGRATED_EVIDENCE",
+      "hostedPassClaimed": false,
+      "resolutionEvidence": [
+        {
+          "id": "HUI-03",
+          "group": "owner",
+          "report": {
+            "path": "docs/frightnight-2027/evidence/local-final-owner-coverage/report.json",
+            "sha256": "d67a7e750386b9abc2fabebe4f2b9f8208b8c4f90dbe99d94ae0092dd6a365bc"
+          },
+          "actualPassingAssertions": [
+            {
+              "label": "HUI-03 actual owner API refuses invalid type/intensity/capacity/hours and capacity below the current two-person claim without any zone/progress mutation",
+              "status": "passed",
+              "invalidResults": [
+                {
+                  "field": "type",
+                  "status": 422,
+                  "code": "INVALID_COMMAND"
+                },
+                {
+                  "field": "intensity",
+                  "status": 422,
+                  "code": "INVALID_COMMAND"
+                },
+                {
+                  "field": "capacity",
+                  "status": 422,
+                  "code": "INVALID_COMMAND"
+                },
+                {
+                  "field": "hours",
+                  "status": 422,
+                  "code": "INVALID_COMMAND"
+                },
+                {
+                  "field": "claimedCapacity",
+                  "status": 422,
+                  "code": "INVALID_COMMAND"
+                }
+              ]
+            },
+            {
+              "label": "HUI-03 real owner profile UI changes type/intensity/effects/hours/capacity while family is walking; resubmission closes review, old actual QR fails without visit/award, explicit participant recovery releases one suitable ordinary destination",
+              "status": "passed",
+              "oldScanStatus": 409,
+              "oldScanError": "ZONE_UNAVAILABLE_RESUME",
+              "personalVisitsAfter": 0,
+              "personalAwardsAfter": 0,
+              "oneCurrent": true
+            },
+            {
+              "label": "HUI-03 server normalizes Snoepzone to zero fright intensity even when API supplies five; no approval or route award is created",
+              "status": "passed"
+            }
+          ],
+          "limits": [
+            "No hosted acceptance result",
+            "No physical hardware or external provider",
+            "Seeded addresses and walking edges are synthetic, not reviewed street paths"
+          ]
+        }
+      ]
+    },
+    {
+      "priority": 5,
+      "ids": [
+        "ENV-04"
+      ],
+      "exactUnexercisedBoundary": "A running app/handler with invalid transaction-mail policy must fail closed before any delivery fallback, with safe configuration restored.",
+      "existingRelatedEvidence": "Actual schema/configuration unit tests and sink-only SQL paths exist. No running-app invalid-policy fault injection is recorded.",
+      "safeIndependentProbe": "Separate local process/config fixture and deterministic sink; never alter live staging policy or call a real recipient.",
+      "identifiedAt": "2026-11-03T08:42:24.686938+00:00",
+      "resolvedAt": "2026-11-03T08:58:09.196038+00:00",
+      "status": "RESOLVED_BY_ACTUALLY_EXECUTED_LOCAL_INTEGRATED_EVIDENCE",
+      "hostedPassClaimed": false,
+      "resolutionEvidence": [
+        {
+          "id": "ENV-04",
+          "group": "mail",
+          "report": {
+            "path": "docs/frightnight-2027/evidence/local-final-mail-policy/report.json",
+            "sha256": "a58b4691b673364657f0c567e2aad932c23826a4ecfc17d59d897643138a66b2"
+          },
+          "actualPassingAssertions": [
+            {
+              "label": "missing runtime mail policy defaults to durable sink, actual paid command and retry",
+              "status": "passed",
+              "variablePresent": false,
+              "sinkRecordsAdded": 1,
+              "unintendedLegacyOutboxRows": 0,
+              "legacyOutboxContentUnchanged": true,
+              "unsafeSinkRecords": 0,
+              "duplicateFinancialEffect": false
+            },
+            {
+              "label": "valid allowlist runtime policy still cannot escape database staging sink",
+              "status": "passed",
+              "sinkRecordsAdded": 1,
+              "unsafeSinkRecords": 0,
+              "unintendedLegacyOutboxRows": 0,
+              "legacyOutboxContentUnchanged": true
+            },
+            {
+              "label": "invalid live runtime mail policy blocks real snapshot and payment handler before mutation",
+              "status": "passed",
+              "snapshotStatus": 422,
+              "commandStatus": 422,
+              "visibleFailure": true,
+              "apiErrorCode": "VALIDATION_ERROR",
+              "databaseAggregatesUnchanged": true,
+              "unintendedLegacyOutboxRows": 0,
+              "additionalSinkRecords": 0
+            }
+          ],
+          "limits": [
+            "Local hanz variant processes only; missing policy defaults to sink, valid allowlist stays database-sink, invalid live policy rejects before any mutation.",
+            "Not hosted acceptance or SMTP/Mollie provider proof.",
+            "Missing and invalid configuration have deliberately different safe behavior; missing mode is not claimed to return an error."
+          ]
+        }
+      ]
+    }
+  ],
+  "localIntegratedGapResolutionGroups": {
+    "owner": {
+      "report": {
+        "path": "docs/frightnight-2027/evidence/local-final-owner-coverage/report.json",
+        "sha256": "d67a7e750386b9abc2fabebe4f2b9f8208b8c4f90dbe99d94ae0092dd6a365bc"
+      },
+      "provenance": {
+        "path": "docs/frightnight-2027/evidence/local-final-owner-coverage/provenance.json",
+        "sha256": "2e5d13042a54b6bd43ee5bc12d2048f9eb42d3e8bd07f97838cbaf792c0008e2"
+      },
+      "harness": {
+        "path": "docs/frightnight-2027/evidence/local-final-owner-coverage/harness.mjs.txt",
+        "sha256": "34cf2d20f63befe8a757b769d5d46a0f68dedf6693ec3723583fecaa7d78e593"
+      },
+      "sourceCommit": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+      "servedBuildId": "hanzA2t5Xaby269LUnhWK",
+      "completedAt": "2026-11-03T08:55:10.700Z",
+      "checks": [
+        {
+          "label": "Fixture: existing four local invalid personas; fresh private scoped edition; contract-only paid two-person family and actual ordinary destination",
+          "status": "passed",
+          "newAuthUsers": 0,
+          "persons": 2
+        },
+        {
+          "label": "SEC-02 two actual distinct resident owners cannot mutate the other zone or list payments; both snapshots and UIs expose own zone only, denied writes preserve both rows",
+          "status": "passed",
+          "denials": [
+            {
+              "actor": "resident",
+              "operation": "zone.status",
+              "status": 403,
+              "code": "FORBIDDEN"
+            },
+            {
+              "actor": "resident",
+              "operation": "zone.apply",
+              "status": 403,
+              "code": "FORBIDDEN"
+            },
+            {
+              "actor": "resident",
+              "operation": "payments.list",
+              "status": 403,
+              "code": "FORBIDDEN"
+            },
+            {
+              "actor": "activity",
+              "operation": "zone.status",
+              "status": 403,
+              "code": "FORBIDDEN"
+            },
+            {
+              "actor": "activity",
+              "operation": "zone.apply",
+              "status": 403,
+              "code": "FORBIDDEN"
+            },
+            {
+              "actor": "activity",
+              "operation": "payments.list",
+              "status": 403,
+              "code": "FORBIDDEN"
+            }
+          ]
+        },
+        {
+          "label": "HUI-03 actual owner API refuses invalid type/intensity/capacity/hours and capacity below the current two-person claim without any zone/progress mutation",
+          "status": "passed",
+          "invalidResults": [
+            {
+              "field": "type",
+              "status": 422,
+              "code": "INVALID_COMMAND"
+            },
+            {
+              "field": "intensity",
+              "status": 422,
+              "code": "INVALID_COMMAND"
+            },
+            {
+              "field": "capacity",
+              "status": 422,
+              "code": "INVALID_COMMAND"
+            },
+            {
+              "field": "hours",
+              "status": 422,
+              "code": "INVALID_COMMAND"
+            },
+            {
+              "field": "claimedCapacity",
+              "status": 422,
+              "code": "INVALID_COMMAND"
+            }
+          ]
+        },
+        {
+          "label": "HUI-03 real owner profile UI changes type/intensity/effects/hours/capacity while family is walking; resubmission closes review, old actual QR fails without visit/award, explicit participant recovery releases one suitable ordinary destination",
+          "status": "passed",
+          "oldScanStatus": 409,
+          "oldScanError": "ZONE_UNAVAILABLE_RESUME",
+          "personalVisitsAfter": 0,
+          "personalAwardsAfter": 0,
+          "oneCurrent": true
+        },
+        {
+          "label": "HUI-03 server normalizes Snoepzone to zero fright intensity even when API supplies five; no approval or route award is created",
+          "status": "passed"
+        }
+      ],
+      "sourceHashRevalidation": {
+        "components/frightnight/resident.tsx": {
+          "testedSha256": "600788fbf32faba6676dcb4ab6245b3243550cd71fe4efd4b157f1c53c35574e",
+          "candidateFileSha256": "600788fbf32faba6676dcb4ab6245b3243550cd71fe4efd4b157f1c53c35574e",
+          "committedCandidateSha256": "600788fbf32faba6676dcb4ab6245b3243550cd71fe4efd4b157f1c53c35574e",
+          "unchanged": true
+        },
+        "components/frightnight/participant.tsx": {
+          "testedSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+          "candidateFileSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+          "committedCandidateSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+          "unchanged": true
+        },
+        "components/frightnight/client.tsx": {
+          "testedSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "candidateFileSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "committedCandidateSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "unchanged": true
+        },
+        "lib/frightnight/server.ts": {
+          "testedSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+          "candidateFileSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+          "committedCandidateSha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+          "unchanged": true
+        },
+        "lib/frightnight/payment-server.ts": {
+          "testedSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+          "candidateFileSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+          "committedCandidateSha256": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+          "unchanged": true
+        },
+        "app/api/frightnight/command/route.ts": {
+          "testedSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+          "candidateFileSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+          "committedCandidateSha256": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+          "unchanged": true
+        },
+        "app/api/frightnight/admin/list/route.ts": {
+          "testedSha256": "eb63b65367592cba70fc5c1ec8410c6cea2668748344192e144d58b3aeeee141",
+          "candidateFileSha256": "eb63b65367592cba70fc5c1ec8410c6cea2668748344192e144d58b3aeeee141",
+          "committedCandidateSha256": "eb63b65367592cba70fc5c1ec8410c6cea2668748344192e144d58b3aeeee141",
+          "unchanged": true
+        },
+        "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": {
+          "testedSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+          "candidateFileSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+          "committedCandidateSha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+          "unchanged": true
+        },
+        "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": {
+          "testedSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+          "candidateFileSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+          "committedCandidateSha256": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+          "unchanged": true
+        },
+        "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": {
+          "testedSha256": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+          "candidateFileSha256": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+          "committedCandidateSha256": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+          "unchanged": true
+        },
+        "supabase/migrations/20261103073433_frightnight_2027_feedback_closure.sql": {
+          "testedSha256": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+          "candidateFileSha256": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+          "committedCandidateSha256": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+          "unchanged": true
+        }
+      },
+      "cleanup": {
+        "ownRunArchived": true,
+        "ownEditionClosed": true,
+        "financialHistoryUnchanged": true,
+        "onlyOwnEntriesAndCapRevoked": true,
+        "authUntouched": true
+      },
+      "preservation": {
+        "canonical32TablesCountsAndContentUnchanged": true,
+        "legacyOutboxCountAndContentUnchanged": true,
+        "events2026Unchanged": true,
+        "oldHouseholdsAndMembersUnchanged": true,
+        "allPriorAuthIdsPreserved": true
+      },
+      "limits": [
+        "No hosted acceptance result",
+        "No physical hardware or external provider",
+        "Seeded addresses and walking edges are synthetic, not reviewed street paths"
+      ],
+      "screenshots": 10,
+      "auth": {
+        "created": 0,
+        "banned": 0,
+        "deleted": 0,
+        "passwordChanges": 0,
+        "otp": 0
+      }
+    },
+    "offline": {
+      "report": {
+        "path": "docs/frightnight-2027/evidence/local-final-offline-coverage/report.json",
+        "sha256": "71fd47bb145557d5856c79e0ef22543daaadaf700f7c78478925dfa450db42c9"
+      },
+      "sourceBinding": {
+        "path": "docs/frightnight-2027/evidence/local-final-offline-coverage/source-binding.json",
+        "sha256": "d44f68d95a4bb62a4c69b5efd8bfef6117aacac41e6431f08f4bf836c8c8fe34"
+      },
+      "harness": {
+        "path": "docs/frightnight-2027/evidence/local-final-offline-coverage/harness-source.mjs.txt",
+        "sha256": "870579d1fb44ea94c1505f9752c926c0432cda38a217d1e1e96b6c807102d24f"
+      },
+      "cleanupFollowup": {
+        "path": "docs/frightnight-2027/evidence/local-final-offline-coverage/cleanup-followup.json",
+        "sha256": "7e3a434629e27282711dafdddb40fcbc029ab04d67015fd66e5d57f6a4a3a307"
+      },
+      "sourceCommit": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+      "servedBuildId": "hanzA2t5Xaby269LUnhWK",
+      "completedAt": "2026-11-03T08:55:09.053Z",
+      "checks": [
+        {
+          "label": "Private child is server-armed for only its current run contract adapter",
+          "status": "passed"
+        },
+        {
+          "label": "Two independent fresh households have actual paid contract registrations and current routes",
+          "status": "passed"
+        },
+        {
+          "label": "Offline queued visit awards nothing while another context refunds its exact own contract order",
+          "status": "passed"
+        },
+        {
+          "label": "OFF04 refund rejects queued identical visit on reconnect; no award or replacement destination",
+          "status": "passed",
+          "rejection": {
+            "status": 403,
+            "code": "FORBIDDEN",
+            "commandId": "293b2742-d469-49bc-9224-7e047edd2e4e"
+          }
+        },
+        {
+          "label": "OFF04 shared-adult revocation rejects old queued visit and removes former household from refreshed UI without changing owner route",
+          "status": "passed",
+          "rejection": {
+            "status": 403,
+            "code": "FORBIDDEN",
+            "commandId": "5f0d24ae-3ed9-49b1-a9a9-69cc3f5704ae"
+          }
+        },
+        {
+          "label": "Private persistent cache stores only the current actor bounded snapshot and 30-minute lifetime",
+          "status": "passed"
+        },
+        {
+          "label": "OFF08 closed and reopened browser offline receives safe no-store fallback, never a cached private document",
+          "status": "passed"
+        },
+        {
+          "label": "OFF08 actual local GoTrue refresh after full browser close restores same own route without replay, new award or destination",
+          "status": "passed"
+        },
+        {
+          "label": "Native PWA CacheStorage contains no private document or API response after reopen",
+          "status": "passed"
+        },
+        {
+          "label": "RET04 actual logout clears all private actor snapshots, signed edition and Supabase browser cookies",
+          "status": "passed"
+        },
+        {
+          "label": "RET04 fully reopened logged-out browser shows login gate and no former actor private cache",
+          "status": "passed"
+        },
+        {
+          "label": "RET04 second real identity after logout/restart sees only its refunded registration; prior actor remains absent",
+          "status": "passed"
+        }
+      ],
+      "sourceHashRevalidation": {
+        "components/frightnight/client.tsx": {
+          "testedSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "candidateFileSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "committedCandidateSha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+          "unchanged": true
+        },
+        "components/frightnight/session.tsx": {
+          "testedSha256": "44b8f4457a36898738c4258ab7f32a09b96f69f48e3f622cc613583dd3f04aff",
+          "candidateFileSha256": "44b8f4457a36898738c4258ab7f32a09b96f69f48e3f622cc613583dd3f04aff",
+          "committedCandidateSha256": "44b8f4457a36898738c4258ab7f32a09b96f69f48e3f622cc613583dd3f04aff",
+          "unchanged": true
+        },
+        "components/frightnight/participant.tsx": {
+          "testedSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+          "candidateFileSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+          "committedCandidateSha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+          "unchanged": true
+        },
+        "lib/frightnight/offline.ts": {
+          "testedSha256": "5dc4565a4e197bfa91d47d5930df22bcbd40a2822038fc09773dcdbb46aa8a0d",
+          "candidateFileSha256": "5dc4565a4e197bfa91d47d5930df22bcbd40a2822038fc09773dcdbb46aa8a0d",
+          "committedCandidateSha256": "5dc4565a4e197bfa91d47d5930df22bcbd40a2822038fc09773dcdbb46aa8a0d",
+          "unchanged": true
+        },
+        "lib/pwa/private-snapshot.ts": {
+          "testedSha256": "000d7c73f2c05af1ec6b672088b492394ebec6b964acdc1a5ee611c9d81eba89",
+          "candidateFileSha256": "000d7c73f2c05af1ec6b672088b492394ebec6b964acdc1a5ee611c9d81eba89",
+          "committedCandidateSha256": "000d7c73f2c05af1ec6b672088b492394ebec6b964acdc1a5ee611c9d81eba89",
+          "unchanged": true
+        },
+        "public/sw.js": {
+          "testedSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+          "candidateFileSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+          "committedCandidateSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+          "unchanged": true
+        }
+      },
+      "cleanup": {
+        "ownSiblingClosed": true,
+        "syntheticRunArchived": true,
+        "ownFinancialHistoryPreserved": true,
+        "ownAdminCapabilityRevoked": true
+      },
+      "cleanupRetirement": {
+        "onlyOwnNewActors": 3,
+        "allRecordsRetained": true,
+        "activeSessionsRemaining": 0,
+        "sharedQAPersonasMutated": false
+      },
+      "preservation": {
+        "canonicalAnd2026EventRows": true,
+        "canonicalAnd2026FinancialHistory": true,
+        "allPreexistingAuthIds": true,
+        "legacyOutboxRowsAndContents": true,
+        "newAuthRecordsRetained": 3,
+        "onlyOwnNewActorsRetired": 3
+      },
+      "limits": [
+        "Not a hosted acceptance result or physical Android/iOS/PWA test.",
+        "Real refresh uses only a fresh own synthetic actor; no existing QA persona sessions are refreshed, signed out, banned or deleted.",
+        "Only authoritative server responses confirm visits; no offline award or destination is accepted.",
+        "Browser map assets attempted 12 external OpenFreeMap GETs; all were blocked by the local harness. This run proves the map fallback, not external basemap delivery."
+      ],
+      "screenshots": 12,
+      "initialHarnessOutcome": {
+        "status": "failed",
+        "reason": "OWN_ACTOR_SIGNOUT_FAILED: B had already completed the actual logout being tested",
+        "functionalChecksPassed": 12,
+        "originalReport": "initial-report.json"
+      }
+    },
+    "mail": {
+      "report": {
+        "path": "docs/frightnight-2027/evidence/local-final-mail-policy/report.json",
+        "sha256": "a58b4691b673364657f0c567e2aad932c23826a4ecfc17d59d897643138a66b2"
+      },
+      "sourceBinding": {
+        "path": "docs/frightnight-2027/evidence/local-final-mail-policy/source-binding.json",
+        "sha256": "e8a29b9f7cb6103dab09a7019806ca85aa18450686e7cff8a61e0846d9d3e64c"
+      },
+      "harness": {
+        "path": "docs/frightnight-2027/evidence/local-final-mail-policy/harness.mjs",
+        "sha256": "6105dd3e6ffa30e3c18f2ef1d830704c720ed72417ca4b692eae35cda696eb5a"
+      },
+      "networkGuard": {
+        "path": "docs/frightnight-2027/evidence/local-final-mail-policy/network-guard.mjs",
+        "sha256": "ced3277f32e2d9da6ab1db5bbd670bf18476212b8451d2f79f2e71c8582670ab"
+      },
+      "sourceCommit": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+      "servedBuildId": "hanzA2t5Xaby269LUnhWK",
+      "completedAt": "2026-11-03T08:51:50.951Z",
+      "checks": [
+        {
+          "label": "missing runtime mail policy defaults to durable sink, actual paid command and retry",
+          "status": "passed",
+          "variablePresent": false,
+          "sinkRecordsAdded": 1,
+          "unintendedLegacyOutboxRows": 0,
+          "legacyOutboxContentUnchanged": true,
+          "unsafeSinkRecords": 0,
+          "duplicateFinancialEffect": false
+        },
+        {
+          "label": "valid allowlist runtime policy still cannot escape database staging sink",
+          "status": "passed",
+          "sinkRecordsAdded": 1,
+          "unsafeSinkRecords": 0,
+          "unintendedLegacyOutboxRows": 0,
+          "legacyOutboxContentUnchanged": true
+        },
+        {
+          "label": "invalid live runtime mail policy blocks real snapshot and payment handler before mutation",
+          "status": "passed",
+          "snapshotStatus": 422,
+          "commandStatus": 422,
+          "visibleFailure": true,
+          "apiErrorCode": "VALIDATION_ERROR",
+          "databaseAggregatesUnchanged": true,
+          "unintendedLegacyOutboxRows": 0,
+          "additionalSinkRecords": 0
+        }
+      ],
+      "sourceHashRevalidation": {
+        "lib/config/server-env.ts": {
+          "testedSha256": "d195c386a8010aef67a6de1d0350b20c04a6c05b3438ec2cb105932bedad2b31",
+          "candidateFileSha256": "d195c386a8010aef67a6de1d0350b20c04a6c05b3438ec2cb105932bedad2b31",
+          "committedCandidateSha256": "d195c386a8010aef67a6de1d0350b20c04a6c05b3438ec2cb105932bedad2b31",
+          "unchanged": true
+        }
+      },
+      "compiledServer": {
+        "path": ".next/standalone/server.js",
+        "testedSha256": "75237852bbffc8329566ca0dd39bb06841b16cd3670389d0944a80a27f1cad92",
+        "currentLocalBuildSha256": "75237852bbffc8329566ca0dd39bb06841b16cd3670389d0944a80a27f1cad92",
+        "unchanged": true
+      },
+      "cleanup": {
+        "status": "passed",
+        "exactOwnEditionOnly": true,
+        "archivedAndClosed": true,
+        "authDeleted": 0,
+        "historicalDataDeleted": 0,
+        "financialAndMailHistoryPreserved": true
+      },
+      "network": {
+        "nativeFetchGuard": true,
+        "calls": 54,
+        "blockedExternalAttempts": 0,
+        "externalDeliveries": 0,
+        "note": "Only loopback native fetch permitted; no SMTP/PSP provider proof is claimed."
+      },
+      "limits": [
+        "Local hanz variant processes only; missing policy defaults to sink, valid allowlist stays database-sink, invalid live policy rejects before any mutation.",
+        "Not hosted acceptance or SMTP/Mollie provider proof.",
+        "Missing and invalid configuration have deliberately different safe behavior; missing mode is not claimed to return an error."
+      ]
+    }
+  },
+  "localIntegratedGapResolutionUpdatedAt": "2026-11-03T08:58:09.196038+00:00",
+  "historicalIdentificationPreserved": true,
+  "noRemainingGapClaimBeyondReviewedScope": "No specifically identified missing local integrated case from the five-case review remains unexecuted. This is not a claim that all87 criteria or every variant is passed; pending permanent hosted/load/retention/natural-job/provider/physical scopes remain separate."
+}

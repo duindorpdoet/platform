@@ -1,0 +1,201 @@
+{
+  "scope": "LOCAL ONLY; existing synthetic QA administrator/resident; fresh private child; no Auth mutation or OTP",
+  "origin": "http://127.0.0.1:3137",
+  "run": "huistale-81b50d4b",
+  "slug": "frightnight-2027-test-acceptance-huistale-81b50d4b",
+  "startedAt": "2026-11-03T09:17:59.725Z",
+  "requests": [
+    {
+      "operation": "test.copy",
+      "status": 200,
+      "code": null,
+      "result": {
+        "slug": "frightnight-2027-test-acceptance-huistale-81b50d4b",
+        "eventId": "384277d0-a488-4036-bb10-ac9d800af94e",
+        "message": "Nieuwe testeditie gemaakt met instellingen en spellen. Seed een eigen synthetisch scenario; bestaande accounts, betalingen en toestemming zijn niet gekopieerd.",
+        "copiedPeople": 0,
+        "copiedPayments": 0,
+        "copiedConfiguration": true
+      }
+    },
+    {
+      "operation": "zone.apply",
+      "status": 200,
+      "code": null,
+      "result": {
+        "zoneId": "bf0bb43b-3a28-417f-a37d-985c5933ccf1",
+        "message": "Aanmelding ontvangen. De organisatie controleert adres en toegankelijkheid voordat deze zone bezoekers krijgt."
+      }
+    },
+    {
+      "operation": "admin.zone.review",
+      "requestExpectedVersion": 1,
+      "status": 409,
+      "code": "ZONE_CONFIRMATION_REQUIRED",
+      "result": null
+    },
+    {
+      "operation": "zone.confirm",
+      "requestExpectedVersion": 1,
+      "status": 200,
+      "code": null,
+      "result": {}
+    },
+    {
+      "operation": "zone.location.confirm",
+      "requestExpectedVersion": 2,
+      "status": 200,
+      "code": null,
+      "result": {}
+    },
+    {
+      "operation": "admin.zone.review",
+      "requestExpectedVersion": 3,
+      "status": 409,
+      "code": "REVIEW_REASON_REQUIRED",
+      "result": null
+    },
+    {
+      "operation": "admin.zone.review",
+      "requestExpectedVersion": 3,
+      "status": 409,
+      "code": "VERSION_CONFLICT",
+      "result": null
+    },
+    {
+      "operation": "test.reset",
+      "status": 200,
+      "code": null,
+      "result": {
+        "archived": true
+      }
+    },
+    {
+      "operation": "admin.settings",
+      "requestExpectedVersion": 2,
+      "status": 200,
+      "code": null,
+      "result": {}
+    }
+  ],
+  "checks": [
+    {
+      "label": "Same old version appears in UI request and subsequent stale approval",
+      "passed": true
+    },
+    {
+      "label": "UI changes-requested increments zone version exactly once",
+      "passed": true
+    },
+    {
+      "label": "Original parent stale HTTP409 assertion",
+      "passed": true
+    },
+    {
+      "label": "Stale approval preserves requested reason/status/version",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    "hui02-stale-review-390.png",
+    "hui02-stale-review-1440.png"
+  ],
+  "forbiddenRequests": [],
+  "buildId": "hanzA2t5Xaby269LUnhWK",
+  "sourceHead": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "sourceSha256": {
+    "scripts/acceptance/frightnight-staging.mjs": "fc2ad9445c16a4339c8263cdf90366e44c727065fc44dfd7cdfdf232e0f0e644",
+    "components/frightnight/admin-resource.tsx": "ffadb9296b26c079b97744c4aba1ed0575be75cc2ec4d805fecab6d69ce67038",
+    "components/frightnight/zone-review.tsx": "5095b48d801635660164676854146eca4e24221efdf2d524383038554e5da9dd",
+    "lib/frightnight/server.ts": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6"
+  },
+  "eventId": "384277d0-a488-4036-bb10-ac9d800af94e",
+  "runId": "4fa55a31-19b8-4897-8ca2-933b8cf9f035",
+  "initialUnconfirmedReview": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "ZONE_CONFIRMATION_REQUIRED",
+        "message": "Laat de bewoner eerst contactgegevens en de ligging bevestigen. Daarna kan de organisatie het huis goedkeuren.",
+        "requestId": "4322767b-61cf-4b3e-845d-21de7e94d46c"
+      }
+    }
+  },
+  "preReview": {
+    "version": 3,
+    "reviewStatus": "submitted",
+    "reviewReason": null,
+    "status": "closed"
+  },
+  "missingReason": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "REVIEW_REASON_REQUIRED",
+        "message": "Geef een duidelijke beoordelingsreden van 3 tot en met 1.000 tekens. De vorige beoordeling is behouden.",
+        "requestId": "6135d7d7-7a60-4c14-be0d-2dae9602f3f5"
+      }
+    }
+  },
+  "afterMissingReason": {
+    "version": 3,
+    "reviewStatus": "submitted",
+    "reviewReason": null,
+    "status": "closed"
+  },
+  "ui": {
+    "request": {
+      "zoneId": "bf0bb43b-3a28-417f-a37d-985c5933ccf1",
+      "expectedVersion": 3,
+      "decision": "changes_requested",
+      "reason": "Maak het looppad bij de ingang duidelijk vrij. Synthetische beoordeling huistale-81b50d4b."
+    },
+    "status": 200,
+    "error": null,
+    "result": {
+      "zoneId": "bf0bb43b-3a28-417f-a37d-985c5933ccf1",
+      "version": 4,
+      "reviewStatus": "changes_requested"
+    }
+  },
+  "afterUi": {
+    "version": 4,
+    "reviewStatus": "changes_requested",
+    "reviewReason": "Maak het looppad bij de ingang duidelijk vrij. Synthetische beoordeling huistale-81b50d4b.",
+    "status": "closed"
+  },
+  "staleApproval": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "VERSION_CONFLICT",
+        "message": "De gegevens zijn intussen gewijzigd. Vernieuw de pagina en controleer de actuele situatie.",
+        "requestId": "992bd40c-2282-49a4-a52d-bf66e07e41a4"
+      }
+    }
+  },
+  "afterStaleApproval": {
+    "version": 4,
+    "reviewStatus": "changes_requested",
+    "reviewReason": "Maak het looppad bij de ingang duidelijk vrij. Synthetische beoordeling huistale-81b50d4b.",
+    "status": "closed"
+  },
+  "parentAssertionWouldPass": true,
+  "staleMutationPrevented": true,
+  "status": "passed",
+  "cleanup": {
+    "ownSiblingClosed": true,
+    "ownSyntheticRunArchived": true,
+    "ownAdminCapabilityRevoked": true,
+    "authMutations": 0
+  },
+  "preservation": {
+    "legacyOutboxUnchanged": true,
+    "allAuthIdsUnchanged": true,
+    "allFinancialRowsUnchanged": true
+  },
+  "cleanupErrors": [],
+  "testedAt": "2026-11-03T09:18:02.187Z",
+  "harnessSha256": "b1f2d5639eec0aa705ec3e3723749258bdc0309bb4d00dada7f0b4ee4a53f63d"
+}

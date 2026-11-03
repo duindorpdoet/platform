@@ -1,0 +1,22 @@
+{
+  "testedAt": "2026-11-03T08:35:21.140Z",
+  "origin": "http://127.0.0.1:3137",
+  "status": 200,
+  "cacheControl": "private, no-store, max-age=0",
+  "csp": "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  "contentType": "text/html; charset=utf-8",
+  "helperAccepted": true,
+  "helperSha256": "559e70b9e39d5e59205e4eee7fe990717888bd8ae0298bf699dfd31fcccc6d8c",
+  "branding": {
+    "frightnight": true,
+    "html": true,
+    "legacyPoorten": false,
+    "notDeliveredBadge": true,
+    "kingText": true,
+    "embeddedWebp": true
+  },
+  "readOnly": true,
+  "authCodesSent": 0,
+  "mailSent": 0,
+  "mutations": 0
+}

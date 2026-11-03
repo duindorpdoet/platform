@@ -1,0 +1,8 @@
+{
+  "testedAt": "2026-11-03T09:36:38.065Z",
+  "initialSetupFailure": "local GoTrue token and one cleanup read timed out504/context deadline exceeded under concurrent verification",
+  "scope": "Only exact newly created own synthetic actor; unpredictable run metadata, email prefix and creation window re-proven before update",
+  "ownRetirementCompleted": true,
+  "authRecordsPreserved": true,
+  "sharedPersonasMutated": false
+}

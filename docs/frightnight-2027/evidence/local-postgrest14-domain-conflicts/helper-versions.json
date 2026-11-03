@@ -1,0 +1,33 @@
+{
+  "verifiedAt": "2026-11-03T09:38:20.547Z",
+  "versions": [
+    {
+      "reportFile": "native-before-after-report.json",
+      "sourceFile": "native-before-after-harness.mjs.txt",
+      "originalName": "/tmp/frightnight-postgrest14-regression.mjs",
+      "sha256": "71ca8fc0ce60400fe18bcdac7ca9a4817f057a471ad25e41a333781b52f49616",
+      "byteIdenticalToExecutedSource": true
+    },
+    {
+      "reportFile": "engine-dollarquote-setup-report.json",
+      "sourceFile": "engine-dollarquote-setup-harness.mjs.txt",
+      "originalName": "/tmp/frightnight-postgrest14-engine-control.mjs",
+      "sha256": "b981635d4a5ab012be3b790edb2c9f4fdbbbed8de2d8fc609ced297ee5035533",
+      "byteIdenticalToExecutedSource": true
+    },
+    {
+      "reportFile": "engine-auth-timeout-setup-report.json",
+      "sourceFile": "engine-auth-timeout-harness.mjs.txt",
+      "originalName": "/tmp/frightnight-postgrest14-engine-control.mjs",
+      "sha256": "61d8c11357dc7ba759acd3ef1006b8fcbb3340e9d1c4b2a27e9eca06edc37945",
+      "byteIdenticalToExecutedSource": true
+    },
+    {
+      "reportFile": "engine-control-report.json",
+      "sourceFile": "engine-control-harness.mjs.txt",
+      "originalName": "/tmp/frightnight-postgrest14-engine-service-control.mjs",
+      "sha256": "20e16269138ce3352a38ce1293571f60f315041d9c72b8b405997656eab7f890",
+      "byteIdenticalToExecutedSource": true
+    }
+  ]
+}

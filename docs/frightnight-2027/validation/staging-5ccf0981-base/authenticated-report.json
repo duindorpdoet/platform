@@ -1,0 +1,69 @@
+{
+  "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "edition": "frightnight-2027-test-acceptance-41601540208-9ff47c93",
+  "scope": "fresh-synthetic-2027-only",
+  "checks": [
+    {
+      "label": "new confirmed synthetic Auth sessions and signed sibling context",
+      "status": "passed",
+      "actors": 5
+    },
+    {
+      "label": "family, house, limited-role and cross-edition authorization",
+      "status": "passed"
+    },
+    {
+      "label": "contract checkout, failed/expired retry, duplicate confirmation and reconciliation",
+      "status": "passed"
+    }
+  ],
+  "screenshots": [],
+  "externalPsp": "not exercised; deterministic contract adapter",
+  "physicalCamera": "not exercised; manual QR alternative used",
+  "load": "two concurrent families; no high-volume load claim",
+  "credentials": "memory only; no passwords, sessions or QR secrets in artifacts",
+  "contractSandboxes": [
+    {
+      "slug": "frightnight-2027-test-acceptance-41601540208-9ff47c93",
+      "eventId": "34f1993c-9cc9-492a-89c5-65a39a1486b8",
+      "runId": "d90f2d39-bcd1-4279-89a5-5bf006941b98",
+      "provider": "contract",
+      "serviceArm": true,
+      "actorReadback": true
+    }
+  ],
+  "editionBoundary": {
+    "canonicalEntry": true,
+    "privateSiblingDenied": true,
+    "signedParentContextUnchanged": true
+  },
+  "failure": "MAIL_CAPTURE_PREVIEW_BOUNDARY_FAILED",
+  "foreignEditionCleanup": {
+    "scopeVerified": true,
+    "emptySiblingClosed": true,
+    "ownCapabilityRevoked": true,
+    "historyDeleted": 0,
+    "blindReset": false
+  },
+  "editionCleanup": {
+    "scopeVerified": true,
+    "ownRunArchived": true,
+    "siblingClosed": true,
+    "ordersPreserved": true,
+    "ledgerPreserved": true,
+    "auditPreserved": true,
+    "historical2026Preserved": true,
+    "legacyOutboxUnchanged": true,
+    "authDeleted": 0
+  },
+  "fixtureCleanup": {
+    "capabilitiesRevoked": true,
+    "syntheticAccountsRetired": 5,
+    "authDeleted": 0,
+    "historyDeleted": 0
+  },
+  "completedAt": "2026-11-03T08:27:44.618Z",
+  "status": "failed"
+}

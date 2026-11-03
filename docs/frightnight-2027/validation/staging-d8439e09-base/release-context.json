@@ -1,0 +1,157 @@
+{
+  "runId": 41607150306,
+  "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "recordedAt": "2026-11-03T09:17:43.219113+00:00",
+  "environment": "staging",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "backup": {
+    "jobId": 125819844230,
+    "status": "passed",
+    "tables": 268,
+    "objects": 12,
+    "restoreFingerprints": "passed",
+    "migrationDryRun": "passed",
+    "artifact": {
+      "id": 13217009236,
+      "name": "redesign-backup-staging-41607150306-1",
+      "size_in_bytes": 33912123,
+      "created_at": "2026-11-03T09:04:37Z",
+      "expires_at": "2026-12-03T09:04:35Z",
+      "digest": "sha256:38f2fc9f078984c244c2a9707bf426b8d2c0445a3d0006be1714d49332e550bb"
+    }
+  },
+  "deployment": {
+    "jobId": 125822826064,
+    "status": "passed",
+    "releasePath": "/srv/sites/duindorphalloweenstg/releases/d8439e09c670-41607150306-1",
+    "health": {
+      "observedAt": "2026-11-03T09:11:17.561Z",
+      "http": 200,
+      "status": "ok",
+      "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+      "eventSlug": "frightnight-2027-test",
+      "paymentProvider": "contract"
+    },
+    "preservation": {
+      "environment": "staging",
+      "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+      "baselineRevision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+      "baselineRunId": "41607150306",
+      "existingDataPreserved": true,
+      "tablesCompared": 268,
+      "reconciliation": {
+        "failures": [],
+        "addedMigrationVersions": [],
+        "addedCronRuns": 0,
+        "updatedActiveCronRuns": 0,
+        "addedMailEvents": 0
+      },
+      "coverageReconciliation": {
+        "failures": [],
+        "reconciledTables": [],
+        "addedPolicies": 0,
+        "addedCoverageAuditEvents": 0
+      },
+      "jointRoutePolicyReconciliation": {
+        "failures": [],
+        "reconciledTables": [],
+        "addedPolicyReleases": 0
+      },
+      "jointRouteSettingsReconciliation": {
+        "failures": [],
+        "reconciledTables": [],
+        "initializedSettingsRows": 0
+      },
+      "p12RoutePolicyReconciliation": {
+        "failures": [],
+        "reconciledTables": [],
+        "changedSettingsRows": 0,
+        "changedPortalRows": 0,
+        "changedWindowRows": 0
+      }
+    },
+    "safety": {
+      "frightnightSafety": "passed",
+      "tables": 32,
+      "editionConfigured": true,
+      "mailMode": "sink",
+      "legacyJobsPreserved": true,
+      "readOnly": true
+    },
+    "timers": {
+      "vpsTimerInventory": "passed",
+      "crontab": "absent",
+      "systemTimers": 16,
+      "userTimers": 0,
+      "systemCronFiles": 16,
+      "unreviewedScopedTimers": 0,
+      "unreadableTimerCommands": 0,
+      "readOnly": true
+    },
+    "auth": {
+      "authPolicy": "explicit-staging-allowlist",
+      "recipientCount": 3,
+      "verifiedOwnerAllowed": true,
+      "existingTestersPreserved": true,
+      "readOnly": true,
+      "authenticationRequests": 0,
+      "mailDelivery": 0
+    },
+    "initialization": {
+      "frightnightInitialized": true,
+      "seeded": false,
+      "seedVersion": 1,
+      "ownerlessSyntheticOnly": true,
+      "legacyDataPreserved": true,
+      "mailMode": "sink",
+      "externalDelivery": false,
+      "syntheticWalkingFixture": true,
+      "jwtImpersonation": false
+    }
+  },
+  "acceptance": {
+    "jobId": 125825688804,
+    "status": "failed",
+    "failure": "HUI02_STALE_REVIEW_ACCEPTED",
+    "interpretation": "Assertion expected HTTP409; actual stale-review status/body was not retained. No accepted mutation claim. Exact local reproduction and implementation review pending.",
+    "passedChecks": 5,
+    "cleanup": "passed; own scopes closed; Auth/history/orders/ledger/audit/2026/outbox retained",
+    "artifact": {
+      "id": 13218216949,
+      "name": "frightnight-staging-d8439e09c67083548d8b09ac4110d24820a52dd0",
+      "size_in_bytes": 5929277,
+      "digest": "sha256:a2e97e39c6030ade2841eccee039f690e0f077d5eed54b7b85d3011575029875",
+      "created_at": "2026-11-03T09:15:03Z",
+      "expires_at": "2026-11-17T09:15:02Z"
+    },
+    "authenticatedReportSha256": "b7976d8fef1c40c309aa286d70a6c1ef35e54c2fcaf3f6b0c3423bb4e458bf26",
+    "publicReportSha256": "5ea7376aedcace7b55cd51d0ca0d73a563e764fa4bf238100a248cb630d507eb"
+  },
+  "downstreamJobs": [
+    {
+      "conclusion": "skipped",
+      "id": 125827506273,
+      "name": "Verify bounded synthetic load and membership races after release acceptance",
+      "status": "completed"
+    },
+    {
+      "conclusion": "skipped",
+      "id": 125827506805,
+      "name": "Preserve and restore the published 2027 test scenario",
+      "status": "completed"
+    }
+  ],
+  "unexecuted": [
+    "Storage HTTP reciprocity/foreign denials",
+    "Full REG/EDGE hosted modules",
+    "125-client load",
+    "Post-scenario encrypted restore"
+  ],
+  "safety": "Only sanitized synthetic identifiers, aggregate metadata and reports; no credentials, OTP, QR secrets or encrypted backup archive.",
+  "mailAcceptance": {
+    "jobId": 125825688710,
+    "status": "passed",
+    "authenticationRequests": 0,
+    "mailDelivery": 0
+  }
+}

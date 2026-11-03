@@ -1,0 +1,24 @@
+{
+  "testedAt": "2026-11-03T08:33:25.156Z",
+  "origin": "http://127.0.0.1:3137",
+  "status": 200,
+  "cacheControl": "private, no-store, max-age=0",
+  "csp": "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  "contentType": "text/html; charset=utf-8",
+  "branding": {
+    "frightnight": true,
+    "html": true,
+    "legacyPoorten": false
+  },
+  "readOnly": true,
+  "authCodesSent": 0,
+  "mailSent": 0,
+  "sourceContext": {
+    "publishedRevision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+    "localBuildId": "hanzA2t5Xaby269LUnhWK",
+    "routeSha256": "c9f8dc9dbf7e667b66d7e076932832805a8504625dd639aa606adeb21f408380",
+    "nextConfigSha256": "eee524f5a81e33d2343d3f774b82d35427f086b758c8a8c9a301bc5e429bd892",
+    "authenticatedExistingSyntheticActor": true,
+    "newRemoteAccounts": 0
+  }
+}

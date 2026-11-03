@@ -1,0 +1,18 @@
+# Aanvullende lokale offline- en browserherstartproeven
+
+Werkelijk uitgevoerd op 3 november 2026, 08:53–08:54 UTC tegen de lokale productiebuild `hanzA2t5Xaby269LUnhWK` op loopback 3137. Broncheckpoint `d8439e09c67083548d8b09ac4110d24820a52dd0`; de zes relevante bronhashes staan in `report.json`. Dit is aanvullend lokaal bewijs, geen gepubliceerde acceptatie.
+
+Twaalf inhoudelijke controles zijn geslaagd in één nieuwe private sibling `frightnight-2027-test-acceptance-offline-1606b8e1`, met drie nieuwe `.invalid` accounts en echte lokale GoTrue-/PostgreSQL-sessies. Beide gezinnen kregen een echte serverbevestigde contractbetaling en één bestemming. Geen OTP of externe PSP-, mail- of pushaanroep vond plaats.
+
+- **OFF04, refund:** huidige bezoekscan daadwerkelijk offline in de beperkte wachtrij geplaatst; organisatiecontext deed een contractrefund. Opnieuw proberen stuurde exact dezelfde command-ID en bestemming. De server weigerde met 403; geen bezoek, Lichtvonk, zegel of volgende bestemming werd toegekend. De actuele terugbetaalde status en hulpomgeving bleven bereikbaar.
+- **OFF04, toegang ingetrokken:** bevoegde tweede volwassene plaatste dezelfde soort bezoekscan offline. De eigenaar trok die toegang in. De server weigerde het oude wachtrijverzoek met 403. Na actualiseren verdwenen inschrijving en bestemming uit de ingetrokken context; route en voortgang van de eigenaar bleven gelijk.
+- **OFF08:** een echt persistent Chromium-profiel volledig gesloten en heropend. Offline privé-navigatie gaf een 503 met `no-store` en uitsluitend de vaste Duinpad-noodinformatie. Een echte GoTrue-refresh van alleen het nieuwe eigen account herstelde online dezelfde bestemming en voortgang, zonder replay of beloning. De native serviceworker beheerde geen privédocumenten of API-responses in CacheStorage.
+- **RET04:** werkelijk uitgelogd via de app; alle private snapshots, Supabase-browsercookies en editiecontext verdwenen. Browser opnieuw volledig gesloten en heropend: inlogscherm zonder oud gezin. Daarna een andere echte testidentiteit geladen: uitsluitend diens eigen terugbetaalde inschrijving en cache, zonder gegevens van de vorige actor.
+
+De opruiming archiveerde uitsluitend de eigen synthetische run, sloot de sibling en trok de eigen editiecapability in. Alle eigen financiële historie, alle eerdere Auth-IDs, canonical/2026-event- en financiële records en de volledige legacy-outbox bleven behouden. De drie nieuwe Auth-records zijn behouden en alleen deze accounts zijn na de proef buiten gebruik gesteld. Het tijdelijke browserprofiel is verwijderd.
+
+`initial-report.json` bewaart een cleanup-harnessassert: de testsessie van B was tijdens de werkelijke uitlogproef al verwijderd, zodat een tweede AdminAPI-signOut geen geldige sessie meer vond. Er is geen blind retry uitgevoerd. `cleanup-followup.json` bewijst nul sessies, de exacte nieuwe eigen actor en de afgeronde retirement zonder financiële-, mail- of Auth-ID-verwijdering. `report.json` bevat de uiteindelijke uitkomst.
+
+De serverguard zag 161 toegestane lokale fetches en nul externe pogingen. De browser probeerde twaalf OpenFreeMap-GETs; de harness blokkeerde die allemaal. De getoonde kaartfallback is dus bewezen, externe kaartbezorging niet. De proef bewijst geen fysieke telefoon, elapsed-time retentie of geïnstalleerde Android/iOS-app.
+
+Twaalf volledige screenshots tonen de genoemde toestanden op 390 en 1440 pixels. `harness-source.mjs.txt` en `cleanup-source.mjs.txt` zijn de werkelijk gebruikte scripts; `manifest.json` bevat de artefacthashes. Er zijn geen sleutels, wachtwoorden, sessies of browserprofielbestanden opgenomen.

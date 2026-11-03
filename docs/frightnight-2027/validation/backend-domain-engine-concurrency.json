@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "scope": "isolated-local-postgresql-real-two-transaction-engine-conflict",
+  "database": "frightnight_2027_domain_frozen",
+  "genuineEngineSqlstate": "40001",
+  "genuineEngineMessage": "could not serialize access due to concurrent update",
+  "businessSqlstate": "PT409",
+  "engineTransactionEffects": 0,
+  "ownSiblingClosed": true,
+  "legacyOutboxAndPaymentsUnchanged": true,
+  "authDeleted": 0,
+  "externalCalls": 0,
+  "seconds": 0.907
+}

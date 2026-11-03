@@ -1,0 +1,120 @@
+t
+t
+t
+ok 1 - browser cannot mint a private edition entry
+ok 2 - trusted application can record validated entry
+ok 3 - entry table has no direct browser access
+ok 4 - entry table has RLS
+ok 5 - there are no broad entry client policies
+ok 6 - all moved implementations are revoked from every client role
+ok 7 - context helper is private
+
+ok 8 - confirmed active canonical visitor can enter public registration
+ok 9 - outsider cannot read a private copy
+ok 10 - outsider cannot manufacture participation
+ok 11 - outsider cannot manufacture zone ownership
+ok 12 - other commands cannot bypass private admission
+ok 13 - denied registration left no rows
+ok 14 - denied zone left no rows
+ok 15 - denied command created no household
+ok 16 - expired invitation cannot mint access
+ok 17 - more than eight hours is refused
+ok 18 - raw or malformed invitation proof is refused
+ok 19 - private admission does not grant canonical privileges
+ok 20 - unconfirmed actor cannot receive admission
+ok 21 - banned actor cannot receive admission
+ok 22 - exact eight-hour bound is accepted without extending it
+ok 23 - active personal entry admits an otherwise empty actor
+ok 24 - an entry grants no administrative role
+ok 25 - entry is bound to one exact edition
+ok 26 - expired entry immediately stops private reads
+ok 27 - expired entry cannot manufacture new membership
+t
+
+ok 28 - invited actor can create own pending registration
+ok 29 - existing own registration keeps its legitimate access
+
+ok 30 - prospective second adult has no access before consent
+ok 31 - adult token without explicit consent grants nothing
+ok 32 - adult token cannot cross edition boundaries
+ok 33 - adult token cannot be exchanged for a new own registration
+ok 34 - secret consenting second adult can join the existing unpaid household
+ok 35 - adult joins exact registration rather than capturing another identity
+ok 36 - shared adult does not receive owner private phone
+ok 37 - adult acceptance creates no lingering independent entry
+
+ok 38 - owner can withdraw adult membership
+
+ok 39 - withdrawn adult loses private copy access
+ok 40 - consumed withdrawn invitation cannot restore access
+
+ok 41 - four-argument admin-list compatibility preserves scoped support
+ok 42 - revoked sole capability stops admission
+ok 43 - assigned activity staff can select its private edition
+ok 44 - withdrawn sole staff assignment stops admission
+t
+
+ok 45 - personally admitted resident can submit own zone
+ok 46 - existing zone owner retains legitimate access
+ok 47 - only the explicit authenticated storage predicate remains executable
+ok 48 - all three existing storage policies retain the guarded predicate
+ok 49 - active own-zone storage path remains allowed after temporary entry expiry
+ok 50 - owner cannot use a different actor storage path
+ok 51 - zone path cannot substitute another edition
+ok 52 - banned owner old JWT cannot read, insert or delete a private photo
+ok 53 - deleted owner old JWT cannot use private storage
+ok 54 - unconfirmed owner old JWT cannot use private storage
+ok 55 - reactivated confirmed owner retains the same legitimate photo path
+
+ok 56 - other confirmed actor cannot claim a foreign house photo with its own actor segment
+
+ok 57 - active same-edition portals manager can use its own delegated storage path
+ok 58 - active manager can read the exact current photo uploaded by the owner
+ok 59 - manager cannot read an unknown file in the owner namespace
+ok 60 - manager cannot read a previous owner file after current photo replacement
+
+ok 61 - active owner can read the exact current photo uploaded by a manager
+ok 62 - owner cannot read other previous or unknown manager files
+ok 63 - registered foreign uploader does not permit cross-edition path substitution
+ok 64 - registered foreign uploader does not permit another zone path
+ok 65 - banned owner cannot use the exact current manager-uploaded photo exception
+
+ok 66 - knowing the exact current photo does not authorize another confirmed participant
+
+ok 67 - banned manager old JWT does not retain photo access through its capability
+ok 68 - deleted manager old JWT does not retain photo access through its capability
+ok 69 - unconfirmed manager old JWT does not retain photo access through its capability
+ok 70 - revoked same-edition role is not replaced by a portals role from another edition
+
+ok 71 - manager revocation does not remove independent active owner access
+ok 72 - closed copy cannot admit a new visitor
+
+ok 73 - unconfirmed actor cannot use snapshot with an old or forged claim
+ok 74 - unconfirmed actor cannot use command with an old or forged claim
+ok 75 - unconfirmed actor cannot use walking path with an old or forged claim
+ok 76 - unconfirmed actor cannot use admin list with an old or forged claim
+
+ok 77 - banned actor cannot use snapshot with an old or forged claim
+ok 78 - banned actor cannot use command with an old or forged claim
+ok 79 - banned actor cannot use walking path with an old or forged claim
+ok 80 - banned actor cannot use admin list with an old or forged claim
+
+ok 81 - deleted actor cannot use snapshot with an old or forged claim
+ok 82 - deleted actor cannot use command with an old or forged claim
+ok 83 - deleted actor cannot use walking path with an old or forged claim
+ok 84 - deleted actor cannot use admin list with an old or forged claim
+
+ok 85 - current owner financial read retains its ordinary contract
+t
+ok 86 - banned actor cannot start checkout through a service bridge
+ok 87 - banned actor cannot read financial state through a service bridge
+ok 88 - banned actor cannot create simulated payment intent
+ok 89 - banned actor cannot claim a refund through a service bridge
+ok 90 - refund acknowledgement without an exact pre-existing claim remains forbidden
+ok 91 - genuine provider receipt still reconciles after actor ban
+ok 92 - provider financial truth was preserved
+ok 93 - provider receipt ledger remains exactly once
+ok 94 - provider scope lookup does not depend on actor admission
+ok 95 - expired or absent entry cannot use checkout service bridge
+ok 96 - admission and financial contract create no legacy outbox row
+1..96

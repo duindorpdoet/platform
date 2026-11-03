@@ -1,0 +1,200 @@
+{
+  "scope": "LOCAL ONLY; fresh own private edition and three new .invalid Auth actors; actual GoTrue/PostgreSQL and production Chromium",
+  "origin": "http://127.0.0.1:3137",
+  "edition": "frightnight-2027-test-acceptance-offline-1606b8e1",
+  "run": "offline-1606b8e1",
+  "startedAt": "2026-11-03T08:53:39.138Z",
+  "checks": [
+    {
+      "label": "Private child is server-armed for only its current run contract adapter",
+      "status": "passed"
+    },
+    {
+      "label": "Two independent fresh households have actual paid contract registrations and current routes",
+      "status": "passed"
+    },
+    {
+      "label": "Offline queued visit awards nothing while another context refunds its exact own contract order",
+      "status": "passed"
+    },
+    {
+      "label": "OFF04 refund rejects queued identical visit on reconnect; no award or replacement destination",
+      "status": "passed",
+      "rejection": {
+        "status": 403,
+        "code": "FORBIDDEN",
+        "commandId": "293b2742-d469-49bc-9224-7e047edd2e4e"
+      }
+    },
+    {
+      "label": "OFF04 shared-adult revocation rejects old queued visit and removes former household from refreshed UI without changing owner route",
+      "status": "passed",
+      "rejection": {
+        "status": 403,
+        "code": "FORBIDDEN",
+        "commandId": "5f0d24ae-3ed9-49b1-a9a9-69cc3f5704ae"
+      }
+    },
+    {
+      "label": "Private persistent cache stores only the current actor bounded snapshot and 30-minute lifetime",
+      "status": "passed"
+    },
+    {
+      "label": "OFF08 closed and reopened browser offline receives safe no-store fallback, never a cached private document",
+      "status": "passed"
+    },
+    {
+      "label": "OFF08 actual local GoTrue refresh after full browser close restores same own route without replay, new award or destination",
+      "status": "passed"
+    },
+    {
+      "label": "Native PWA CacheStorage contains no private document or API response after reopen",
+      "status": "passed"
+    },
+    {
+      "label": "RET04 actual logout clears all private actor snapshots, signed edition and Supabase browser cookies",
+      "status": "passed"
+    },
+    {
+      "label": "RET04 fully reopened logged-out browser shows login gate and no former actor private cache",
+      "status": "passed"
+    },
+    {
+      "label": "RET04 second real identity after logout/restart sees only its refunded registration; prior actor remains absent",
+      "status": "passed"
+    }
+  ],
+  "screenshots": [
+    "refund-reconnect-help-390.png",
+    "refund-reconnect-help-1440.png",
+    "revoked-adult-private-cleared-390.png",
+    "revoked-adult-private-cleared-1440.png",
+    "before-browser-close-390.png",
+    "before-browser-close-1440.png",
+    "reopened-offline-safe-390.png",
+    "reopened-offline-safe-1440.png",
+    "reopened-refreshed-own-route-390.png",
+    "reopened-refreshed-own-route-1440.png",
+    "new-identity-after-restart-390.png",
+    "new-identity-after-restart-1440.png"
+  ],
+  "browserExternalAttempts": [
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/planet",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/sprites/ofm_f384/ofm.json",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/sprites/ofm_f384/ofm.png",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/planet",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/sprites/ofm_f384/ofm.json",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/sprites/ofm_f384/ofm.png",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/planet",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/sprites/ofm_f384/ofm.json",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/sprites/ofm_f384/ofm.png",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/planet",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/sprites/ofm_f384/ofm.json",
+      "method": "GET"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "path": "/sprites/ofm_f384/ofm.png",
+      "method": "GET"
+    }
+  ],
+  "forbiddenSendAttempts": 0,
+  "limits": [
+    "Not a hosted acceptance result or physical Android/iOS/PWA test.",
+    "Real refresh uses only a fresh own synthetic actor; no existing QA persona sessions are refreshed, signed out, banned or deleted.",
+    "Only authoritative server responses confirm visits; no offline award or destination is accepted.",
+    "Browser map assets attempted 12 external OpenFreeMap GETs; all were blocked by the local harness. This run proves the map fallback, not external basemap delivery."
+  ],
+  "buildId": "hanzA2t5Xaby269LUnhWK",
+  "servedBuildId": "hanzA2t5Xaby269LUnhWK",
+  "sourceHead": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "sourceSha256": {
+    "components/frightnight/client.tsx": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+    "components/frightnight/session.tsx": "44b8f4457a36898738c4258ab7f32a09b96f69f48e3f622cc613583dd3f04aff",
+    "components/frightnight/participant.tsx": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+    "lib/frightnight/offline.ts": "5dc4565a4e197bfa91d47d5930df22bcbd40a2822038fc09773dcdbb46aa8a0d",
+    "lib/pwa/private-snapshot.ts": "000d7c73f2c05af1ec6b672088b492394ebec6b964acdc1a5ee611c9d81eba89",
+    "public/sw.js": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66"
+  },
+  "eventId": "d7847dfb-18b4-4a7d-b17c-c9bf483ef022",
+  "runId": "5747fe6e-e1c1-4140-80a6-dcf0ad4a0713",
+  "status": "passed",
+  "cleanup": {
+    "ownSiblingClosed": true,
+    "syntheticRunArchived": true,
+    "ownFinancialHistoryPreserved": true,
+    "ownAdminCapabilityRevoked": true
+  },
+  "preservation": {
+    "canonicalAnd2026EventRows": true,
+    "canonicalAnd2026FinancialHistory": true,
+    "allPreexistingAuthIds": true,
+    "legacyOutboxRowsAndContents": true,
+    "newAuthRecordsRetained": 3,
+    "onlyOwnNewActorsRetired": 3
+  },
+  "temporaryPersistentProfileRemoved": true,
+  "nativeServerGuard": {
+    "allowedLocalRequests": 161,
+    "externalAttempts": 0
+  },
+  "cleanupErrors": [],
+  "testedAt": "2026-11-03T08:54:13.332Z",
+  "harnessSha256": "870579d1fb44ea94c1505f9752c926c0432cda38a217d1e1e96b6c807102d24f",
+  "initialHarnessOutcome": {
+    "status": "failed",
+    "reason": "OWN_ACTOR_SIGNOUT_FAILED: B had already completed the actual logout being tested",
+    "functionalChecksPassed": 12,
+    "originalReport": "initial-report.json"
+  },
+  "cleanupFollowup": "cleanup-followup.json",
+  "cleanupRetirement": {
+    "onlyOwnNewActors": 3,
+    "allRecordsRetained": true,
+    "activeSessionsRemaining": 0,
+    "sharedQAPersonasMutated": false
+  },
+  "completedAt": "2026-11-03T08:55:09.053Z"
+}

@@ -1,0 +1,217 @@
+{
+  "scope": "LOCAL ONLY; isolated new clone, native PostgREST14.5 HTTP; no shared gateway/QA mutation",
+  "run": "pgrst14-7c30e07e",
+  "slug": "frightnight-2027-test-acceptance-pgrst14-7c30e07e",
+  "database": "frightnight_pgrst14_7c30e07e",
+  "container": "frightnight-pgrst14-7c30e07e",
+  "origin": "http://127.0.0.1:63564",
+  "startedAt": "2026-11-03T09:30:07.673Z",
+  "checks": [
+    {
+      "label": "Native14.5 repeats one stale business40001 HTTPrequest until clone-only6th-transaction cap",
+      "passed": true
+    },
+    {
+      "label": "Exact005 returns nativeHTTP409/PT409 VERSION_CONFLICT in one transaction and preserves requested review",
+      "passed": true
+    },
+    {
+      "label": "Current-version legitimate review remains successful after005",
+      "passed": true
+    }
+  ],
+  "requests": [
+    {
+      "rpc": "frightnight_bootstrap",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 20
+    },
+    {
+      "rpc": "frightnight_entry_grant",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 23
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "zone.apply",
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 41
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 13
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "zone.confirm",
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 15
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 12
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "zone.location.confirm",
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 14
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 18
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "admin.zone.review",
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 39
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 12
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "admin.zone.review",
+      "probe": true,
+      "status": 499,
+      "code": "PT499",
+      "message": "LOCAL_RETRY_LIMIT",
+      "milliseconds": 182
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 14
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "admin.zone.review",
+      "probe": true,
+      "status": 409,
+      "code": "PT409",
+      "message": "VERSION_CONFLICT",
+      "milliseconds": 18
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 126
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "admin.zone.review",
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 29
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 14
+    }
+  ],
+  "limits": [
+    "Local native HTTP and PostgreSQL only, no external Auth/OTP/PSP/mail/push.",
+    "Before test bounds the known PostgREST14 retry loop at the sixth transaction using an isolated pre-request counter.",
+    "The counter and stop are test instrumentation in this clone only; production business functions remain untouched until exact forward005."
+  ],
+  "cloneBytes": 4078704,
+  "imageDigest": "public.ecr.aws/supabase/postgrest@sha256:b574528fe109c8343c1247155734d03df8c34b462f342dca0ccc20244fc36ef9",
+  "restVersion": "PostgREST 14.5",
+  "eventId": "a9c109f4-76be-4967-b72d-4738d91401fc",
+  "zoneBefore": {
+    "id": "61dafb91-629e-4da0-b262-0e65e8fe78c1",
+    "version": 4,
+    "reviewStatus": "changes_requested",
+    "reviewReason": "Controleer uitsluitend deze eigen synthetische ingang.",
+    "status": "closed"
+  },
+  "before": {
+    "status": 499,
+    "code": "PT499",
+    "message": "LOCAL_RETRY_LIMIT",
+    "transactionAttempts": 6
+  },
+  "migrationSha256": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570",
+  "after": {
+    "status": 409,
+    "code": "PT409",
+    "message": "VERSION_CONFLICT",
+    "transactionAttempts": 1
+  },
+  "zoneAfter": {
+    "id": "61dafb91-629e-4da0-b262-0e65e8fe78c1",
+    "version": 4,
+    "reviewStatus": "changes_requested",
+    "reviewReason": "Controleer uitsluitend deze eigen synthetische ingang.",
+    "status": "closed"
+  },
+  "status": "passed",
+  "dedicatedRestRemoved": true,
+  "ownDisposableCloneRemoved": true,
+  "auth": {
+    "newOwnActors": 2,
+    "recordsRetained": true,
+    "sharedPersonasMutated": false
+  },
+  "privateEnvRemoved": true,
+  "cleanupErrors": [],
+  "testedAt": "2026-11-03T09:30:14.127Z",
+  "harnessSha256": "71ca8fc0ce60400fe18bcdac7ca9a4817f057a471ad25e41a333781b52f49616"
+}

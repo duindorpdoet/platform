@@ -1,0 +1,133 @@
+{
+  "scope": "LOCAL ONLY; isolated new clone, native PostgREST14.5 HTTP; no shared gateway/QA mutation",
+  "run": "pgrst14-4318e108",
+  "slug": "frightnight-2027-test-acceptance-pgrst14-4318e108",
+  "database": "frightnight_pgrst14_4318e108",
+  "container": "frightnight-pgrst14-4318e108",
+  "origin": "http://127.0.0.1:63564",
+  "startedAt": "2026-11-03T09:32:05.735Z",
+  "checks": [],
+  "requests": [
+    {
+      "rpc": "frightnight_bootstrap",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 13
+    },
+    {
+      "rpc": "frightnight_entry_grant",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 12
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "zone.apply",
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 42
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 11
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "zone.confirm",
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 13
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 10
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "zone.location.confirm",
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 12
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 12
+    },
+    {
+      "rpc": "frightnight_command",
+      "operation": "admin.zone.review",
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 30
+    },
+    {
+      "rpc": "frightnight_snapshot",
+      "operation": null,
+      "probe": false,
+      "status": 200,
+      "code": null,
+      "message": null,
+      "milliseconds": 13
+    }
+  ],
+  "limits": [
+    "Local native HTTP and PostgreSQL only, no external Auth/OTP/PSP/mail/push.",
+    "Before test bounds the known PostgREST14 retry loop at the sixth transaction using an isolated pre-request counter.",
+    "The counter and stop are test instrumentation in this clone only; production business functions remain untouched until exact forward005."
+  ],
+  "cloneBytes": 4079535,
+  "cloneAlreadyHas005": false,
+  "imageDigest": "public.ecr.aws/supabase/postgrest@sha256:b574528fe109c8343c1247155734d03df8c34b462f342dca0ccc20244fc36ef9",
+  "restVersion": "PostgREST 14.5",
+  "eventId": "bfcbea83-c386-4908-a00b-a38207df0e90",
+  "zoneBefore": {
+    "id": "b68c20b3-249b-4a58-b21f-2ceb70588a3b",
+    "version": 4,
+    "reviewStatus": "changes_requested",
+    "reviewReason": "Controleer uitsluitend deze eigen synthetische ingang.",
+    "status": "closed"
+  },
+  "migrationSha256": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570",
+  "status": "failed",
+  "failure": "Command failed: docker exec -i supabase_db_duindorp_event_close_20261101 psql -U postgres -d frightnight_pgrst14_4318e108 -X -q -A -t -v ON_ERROR_STOP=1",
+  "dedicatedRestRemoved": true,
+  "ownDisposableCloneRemoved": true,
+  "auth": {
+    "newOwnActors": 2,
+    "recordsRetained": true,
+    "sharedPersonasMutated": false
+  },
+  "privateEnvRemoved": true,
+  "cleanupErrors": [],
+  "testedAt": "2026-11-03T09:32:12.046Z",
+  "harnessSha256": "b981635d4a5ab012be3b790edb2c9f4fdbbbed8de2d8fc609ced297ee5035533"
+}

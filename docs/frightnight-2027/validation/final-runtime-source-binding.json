@@ -1,0 +1,32 @@
+{
+  "recordedAt": "2026-11-03T09:10:25.290574+00:00",
+  "candidateRevision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "referenceRevision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "localBuildId": "hanzA2t5Xaby269LUnhWK",
+  "referenceProof": "docs/frightnight-2027/validation/final-candidate-source-binding.json",
+  "referenceProofSha256": "d3f5ef39efda7a4b5b2f5e0753197138145cf51d843908fd7fb96da02cda4dd7",
+  "runtimePathsCompared": [
+    "app",
+    "components",
+    "lib",
+    "public",
+    "supabase",
+    "next.config.ts",
+    "pnpm-lock.yaml"
+  ],
+  "committedRuntimeFileCount": 1082,
+  "runtimeCommitDiff": [],
+  "runtimeWorktreeChanges": [],
+  "onlyChangedFiles": [
+    "package.json",
+    "scripts/acceptance/frightnight-private-cache.d.mts",
+    "scripts/acceptance/frightnight-private-cache.mjs",
+    "scripts/acceptance/frightnight-private-cache.test.mjs",
+    "scripts/acceptance/frightnight-staging.mjs"
+  ],
+  "packageChangeOnlyAcceptanceGuardTestScript": true,
+  "limits": [
+    "This compares frozen source contents and the documented hanz reference binding; it is not a new local rebuild or hosted acceptance.",
+    "The full exact d843 CI41604478761 independently rebuilt and passed all required tests."
+  ]
+}

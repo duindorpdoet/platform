@@ -1,0 +1,222 @@
+{
+  "recordedAt": "2026-11-03T09:27:22.437Z",
+  "scope": "Read-only managed logs; no request payload, actor identity, IP, auth headers or SQL query text collected",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "release": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "runId": 41607150306,
+  "window": {
+    "from": "2026-11-03T09:14:40Z",
+    "until": "2026-11-03T09:15:03Z"
+  },
+  "edgeCommandResponses": [
+    {
+      "http_status": "200",
+      "rpc_path": "/rest/v1/rpc/frightnight_command",
+      "timestamp": "2026-11-03T09:14:48.943000"
+    },
+    {
+      "http_status": "200",
+      "rpc_path": "/rest/v1/rpc/frightnight_command",
+      "timestamp": "2026-11-03T09:14:55.492000"
+    },
+    {
+      "http_status": "200",
+      "rpc_path": "/rest/v1/rpc/frightnight_command",
+      "timestamp": "2026-11-03T09:14:56.329000"
+    }
+  ],
+  "postgresErrors": [
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:40.000000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:42.572000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:43.582000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:44.580000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:45.581000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:46.577000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:47.569000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:48.582000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:49.569000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:50.568000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:51.535000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:52.578000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:53.579000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:54.570000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:55.569000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:56.571000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:57.582000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:58.581000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "40001",
+      "timestamp": "2026-11-03T09:14:59.581000"
+    },
+    {
+      "severity": "ERROR",
+      "sqlstate": "42501",
+      "timestamp": "2026-11-03T09:15:00.149000"
+    }
+  ],
+  "postgresContexts": [
+    {
+      "application": "PostgREST 14.5",
+      "functions": [
+        "app_private.fn_command_impl",
+        "app_private.fn_command_access_impl",
+        "api.frightnight_command"
+      ],
+      "records": 1,
+      "sqlstate": "42501"
+    },
+    {
+      "application": "PostgREST 14.5",
+      "functions": [
+        "app_private.fn_command_impl",
+        "app_private.fn_command_access_impl",
+        "api.frightnight_command"
+      ],
+      "records": 19,
+      "sqlstate": "40001"
+    }
+  ],
+  "domainErrors": [
+    {
+      "raised_locations": [
+        "line 257 at RAISE",
+        "line 23 at RETURN",
+        "line 18 at RETURN"
+      ],
+      "records": 19,
+      "sqlstate": "40001",
+      "version_conflicts": 19
+    },
+    {
+      "raised_locations": [
+        "line 16 at RAISE",
+        "line 23 at RETURN",
+        "line 18 at RETURN"
+      ],
+      "records": 1,
+      "sqlstate": "42501",
+      "version_conflicts": 0
+    }
+  ],
+  "loopPids": [
+    {
+      "backend_pid": "1361450",
+      "first_seen": "2026-11-03T09:14:40.000000",
+      "last_seen": "2026-11-03T09:15:00.149000",
+      "records": 20,
+      "sqlstates": [
+        "42501",
+        "40001"
+      ]
+    }
+  ],
+  "currentLoopClearance": [
+    {
+      "loop_clearance": {
+        "targetPid": 1361450,
+        "observedAt": "2026-11-03T09:25:50.215+00:00",
+        "activeFnCalls": 0,
+        "targetBackend": null,
+        "activeOldFnCalls": 0
+      }
+    }
+  ],
+  "primarySource": {
+    "title": "Supabase KB: SQLSTATE40001 in RPC causes infinite retries",
+    "url": "https://supabase.com/kb/troubleshooting/high-cpu-and-infinite-transaction-retries-when-using-custom-error-codes-in-rpc-functions",
+    "finding": "Custom SQLSTATE40001 signals transient serialization failure. PostgREST14 retries indefinitely; PostgREST16 fixes this. Supabase recommends standard P0001 or PT409 for intentional business errors."
+  },
+  "interpretation": "Nineteen actual VERSION_CONFLICT errors in the same managed RPC stack and one-second cadence match documented PostgREST14 behavior. The parent did not retain its final Next HTTP status. A deadline/503 outcome remains an inference until native14.5 HTTP reproduction. No approved mutation committed. BackendPID1361450 ended after42501 and no active FN calls remained at09:25:50UTC; no termination/restart was performed.",
+  "localTransport": {
+    "observedAt": "2026-11-03T09:27:30.060Z",
+    "image": "public.ecr.aws/supabase/postgrest:v16.2",
+    "httpServer": "postgrest/16.2",
+    "origin": "http://127.0.0.1:63563",
+    "scope": "existing isolated local QA only; no container/config alteration"
+  },
+  "managedTransport": {
+    "application": "PostgREST 14.5",
+    "source": "actual managed postgres error log attributes"
+  },
+  "cancelledUnchangedRepeat": {
+    "runId": 41610352325,
+    "status": "cancelled before deployment/parent writes",
+    "backupJobId": 125830559039,
+    "backupStatus": "cancelled",
+    "artifacts": [],
+    "acceptanceClaim": false
+  }
+}

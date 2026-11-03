@@ -1,0 +1,29 @@
+{
+  "scope": "LOCAL ONLY; isolated new clone, native PostgREST14.5 HTTP; no shared gateway/QA mutation",
+  "run": "pgrst14-c22e6886",
+  "slug": "frightnight-2027-test-acceptance-pgrst14-c22e6886",
+  "database": "frightnight_pgrst14_c22e6886",
+  "container": "frightnight-pgrst14-c22e6886",
+  "origin": "http://127.0.0.1:63564",
+  "startedAt": "2026-11-03T09:33:49.496Z",
+  "checks": [],
+  "requests": [],
+  "limits": [
+    "Local native HTTP and PostgreSQL only, no external Auth/OTP/PSP/mail/push.",
+    "Before test bounds the known PostgREST14 retry loop at the sixth transaction using an isolated pre-request counter.",
+    "The counter and stop are test instrumentation in this clone only; production business functions remain untouched until exact forward005."
+  ],
+  "status": "failed",
+  "failure": "OWN_RETRY_ACTOR_PASSWORD_AUTH_FAILED",
+  "auth": {
+    "newOwnActors": 2,
+    "recordsRetained": true,
+    "sharedPersonasMutated": false
+  },
+  "privateEnvRemoved": true,
+  "cleanupErrors": [
+    "EXACT_OWN_CAPTURED_ACTOR_METADATA_REQUIRED"
+  ],
+  "testedAt": "2026-11-03T09:34:41.868Z",
+  "harnessSha256": "61d8c11357dc7ba759acd3ef1006b8fcbb3340e9d1c4b2a27e9eca06edc37945"
+}

@@ -1,0 +1,43 @@
+{
+  "recordedAt": "2026-11-03T08:14:43.300603+00:00",
+  "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "runId": 41598730479,
+  "url": "https://github.com/duindorpdoet/platform/actions/runs/41598730479",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 125792539821,
+      "name": "Resolve release mail-test policy",
+      "conclusion": "success",
+      "waiver": false
+    },
+    {
+      "id": 125792646495,
+      "name": "Application and browser tests",
+      "conclusion": "success",
+      "unitPassed": 1558,
+      "unitOptionalSkipped": 6,
+      "unitFilesPassed": 166,
+      "unitFilesOptionalSkipped": 2,
+      "nodeGuardPassed": 12,
+      "clientArtifactsScanned": 697,
+      "nativePublicBrowserPassed": 24
+    },
+    {
+      "id": 125792646522,
+      "name": "Database migrations, contracts and lint",
+      "conclusion": "success",
+      "pgTAPFiles": 136,
+      "pgTAPAssertions": 4611,
+      "pgTAPResult": "PASS",
+      "requiredHttpAuthMailConcurrencyLoadEditorialSteps": "all success"
+    }
+  ],
+  "requiredWorkflowStepsFailed": 0,
+  "requiredWorkflowStepsSkipped": 0,
+  "limitations": [
+    "A CI database is local and isolated; this does not prove hosted migration, Storage, 125-client load, RET05 or external Mollie.",
+    "The normal fresh staging deployment41601540208 is still in progress."
+  ]
+}

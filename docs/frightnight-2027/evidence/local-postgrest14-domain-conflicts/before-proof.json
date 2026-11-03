@@ -1,0 +1,14 @@
+{
+  "testedAt": "2026-11-03T09:30:12.459Z",
+  "status": 499,
+  "code": "PT499",
+  "message": "LOCAL_RETRY_LIMIT",
+  "transactionAttempts": 6,
+  "zone": {
+    "id": "61dafb91-629e-4da0-b262-0e65e8fe78c1",
+    "version": 4,
+    "reviewStatus": "changes_requested",
+    "reviewReason": "Controleer uitsluitend deze eigen synthetische ingang.",
+    "status": "closed"
+  }
+}

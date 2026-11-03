@@ -1,0 +1,111 @@
+{
+  "scope": "published-fivecc-readonly-database-metadata",
+  "publishedRevision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "account": "Duindorpdoet",
+  "health": {
+    "checkedAt": "2026-11-03T08:25:49.165895+00:00",
+    "status": 200,
+    "health": {
+      "status": "ok",
+      "service": "duindorphalloween",
+      "environment": "staging",
+      "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+      "registrationMode": "staging_test",
+      "eventSlug": "frightnight-2027-test",
+      "brand": "frightnight-2027-v7",
+      "paymentProvider": "contract"
+    },
+    "origin": "https://staging-halloween.duindorpdoet.nl",
+    "projectRef": "nocteiuvohesvqbowchw"
+  },
+  "metadata": {
+    "tables": {
+      "count": 32,
+      "rlsEnabled": 32,
+      "unexpectedAnonRights": 0,
+      "editionEntriesPresent": true,
+      "unexpectedServiceRights": 0,
+      "organizationThanksPresent": true,
+      "unexpectedAuthenticatedRights": 0
+    },
+    "timezone": "UTC",
+    "canonical": {
+      "date": "2027-10-30",
+      "slug": "frightnight-2027-test",
+      "test": true,
+      "version": 2,
+      "timezone": "Europe/Amsterdam",
+      "runPresent": true,
+      "environment": "staging",
+      "paymentPolicy": "configured",
+      "retentionDays": 365,
+      "retentionUntil": "2027-11-03T06:48:30.114879+00:00",
+      "sandboxRunUnarmed": true
+    },
+    "functions": {
+      "count": 57,
+      "anonExecute": 0,
+      "unexpectedAuthenticatedExecute": 0,
+      "unsafeSecurityDefinerSearchPath": 0,
+      "privateImplementationClientExecute": 0
+    },
+    "migrations": [
+      {
+        "name": "frightnight_2027_isolated_core",
+        "version": "20261103012453"
+      },
+      {
+        "name": "frightnight_2027_edition_access",
+        "version": "20261103042000"
+      },
+      {
+        "name": "frightnight_2027_payment_sandbox",
+        "version": "20261103071355"
+      },
+      {
+        "name": "frightnight_2027_feedback_closure",
+        "version": "20261103073433"
+      }
+    ],
+    "observedAt": "2026-11-03T08:26:04.629133+00:00",
+    "unsafeSink": 0,
+    "unsafeEvents": 0,
+    "actorRpcCount": 4,
+    "photoPolicies": 3,
+    "legacyBindings": 0,
+    "newServiceBoundaries": {
+      "claimServiceOnly": true,
+      "legacyTestOwnerOnly": true,
+      "testClaimServiceOnly": true,
+      "legacyCreateOwnerOnly": true,
+      "contractArmServiceOnly": true
+    },
+    "privateSourceBoundaries": {
+      "contextLocksBeforeAdmission": true,
+      "commandRetainsAdmissionWrapper": true,
+      "snapshotRetainsPolicyProjection": true,
+      "actorActiveBanAndConfirmationGuard": true,
+      "privateAdmissionChecksCurrentContext": true,
+      "photoCurrentContextAndExactCurrentPhoto": true,
+      "generalThanksChecksContextAndOwnRegistration": true
+    }
+  },
+  "migrationSourceSha256": {
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "supabase/migrations/20261103073433_frightnight_2027_feedback_closure.sql": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8"
+  },
+  "metadataQuerySha256": "5bd796aac3882ff4339c8e20f19973107567f03120c6ce1fd1ae996eaa2edf6c",
+  "verifiedAt": "2026-11-03T08:26:24.730276+00:00",
+  "passedMetadataChecks": true,
+  "remoteMutations": 0,
+  "manualDispatches": 0,
+  "quietWindowObserverStarted": false,
+  "limits": [
+    "This is metadata/ACL/search_path and guard-source-presence evidence; it is not a replacement for actual cross-account/browser/provider acceptance.",
+    "No Auth identities, recipient addresses, stored message text, cron commands, endpoint configuration or secrets are returned.",
+    "Parent/load/RET05 may still mutate their own fixtures; final two-new-natural-cycle preservation observation has not begun."
+  ]
+}
