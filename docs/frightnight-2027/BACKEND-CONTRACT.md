@@ -1,5 +1,7 @@
 # FrightNight 2027 serverkern
 
+Het contract voor de gerichte PostgREST-14-conflictlaag staat in [POSTGREST-COMPATIBILITY.md](POSTGREST-COMPATIBILITY.md). Deze voorwaartse transportcorrectie bewaart de bestaande transacties en bevoegdheidsgrenzen.
+
 De nieuwe kern staat uitsluitend in `app_private.fn_*` met gecontroleerde functies in `api`. Zij gebruikt bestaande Auth-identiteiten en editiecapabilities. Nieuwe registraties vereisen expliciete instemming met `2027-test-v1`; versie, echte servertijd en actor worden bewaard. Zij krijgen een apart huishouden; synthetische seedgezinnen krijgen geen Auth-account, contactgegevens of historische household-koppeling. Geen nieuwe tabellen zijn aangesloten op oude betaaltriggers, routegroepen, mail-outbox, cron of pushworkers.
 
 ## Uitvoering en bevoegdheid

@@ -1,0 +1,66 @@
+{
+  "startedAt": "2026-11-03T07:47:29.386Z",
+  "origin": "http://127.0.0.1:3137",
+  "buildId": "hanzA2t5Xaby269LUnhWK",
+  "checks": [
+    {
+      "label": "Actual served worker bytes match the frozen source",
+      "status": "passed"
+    },
+    {
+      "label": "Exact bounded deployment installation/controller callback succeeds natively",
+      "status": "passed"
+    },
+    {
+      "label": "Exact bounded deployment logo.decode callback succeeds offline",
+      "status": "passed"
+    },
+    {
+      "label": "Offline information fits 390px",
+      "status": "passed"
+    },
+    {
+      "label": "Offline information fits 1440px",
+      "status": "passed"
+    },
+    {
+      "label": "Actual private navigation remains uncached 503 no-store",
+      "status": "passed"
+    },
+    {
+      "label": "Same public logo also decodes on the private emergency fallback",
+      "status": "passed"
+    },
+    {
+      "label": "Native caches contain no private page or API data",
+      "status": "passed"
+    },
+    {
+      "label": "Real public navigation recovers after reconnect",
+      "status": "passed"
+    },
+    {
+      "label": "No forbidden request attempted",
+      "status": "passed"
+    }
+  ],
+  "screenshots": [
+    "offline-logo-decoded-390.png",
+    "offline-logo-decoded-1440.png"
+  ],
+  "blocked": [],
+  "limits": "Local actual native Chromium service worker and browser offline; exact deployment callback executed; no Auth/forms/provider/push actions.",
+  "workerSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+  "deploymentSourceSha256": "4a5992a2dbd24044d7d656741e8aea8bddd61a647331cb87263e0dc72a47de56",
+  "callbacks": {
+    "installation": "1c95b27cc6b8cb1ee35261e9aaff72aec788893c4dfba5a326b738d22c41262e",
+    "offlineLogo": "94b8ce6431cace085e0e267128875b77b8d9b7a07a2f8355d2a179839681378e"
+  },
+  "logo": {
+    "complete": true,
+    "width": 1536,
+    "height": 1024
+  },
+  "status": "passed",
+  "testedAt": "2026-11-03T07:47:30.631Z"
+}

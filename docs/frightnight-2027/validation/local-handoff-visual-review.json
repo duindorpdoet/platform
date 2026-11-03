@@ -1,0 +1,172 @@
+{
+  "reviewedAt": "2026-11-03T09:50:21.549Z",
+  "scope": "Read-only existing artifact review; zero network or mutations",
+  "candidateRevision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+  "selections": [
+    {
+      "role": "public",
+      "stem": "public-hosted-d8439e09/published-home",
+      "build": "published-d843",
+      "note": "Replace with9b public result after root GO; all public images actually decoded.",
+      "images": [
+        {
+          "path": "docs/frightnight-2027/evidence/public-hosted-d8439e09/published-home-390.png",
+          "width": 390,
+          "height": 7757,
+          "sha256": "b818407d89db65ec4dbcd4b00e73adb40c7927ed661fcdc9ba0e4454f9f0c4f2",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        },
+        {
+          "path": "docs/frightnight-2027/evidence/public-hosted-d8439e09/published-home-1440.png",
+          "width": 1440,
+          "height": 6244,
+          "sha256": "60829a78c08ee0efbba366e9a666875b723cca86e08f12d4b7b1d74fcc6019f9",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        }
+      ]
+    },
+    {
+      "role": "participant-current-route",
+      "stem": "local-final-offline-coverage/reopened-refreshed-own-route",
+      "build": "hanzA2t5Xaby269LUnhWK",
+      "note": "Actual server route after complete browser restart/real own token refresh; recognitionscode is an occupancy reference, never a private scan token. External basemap requests intentionally blocked; fallback only.",
+      "images": [
+        {
+          "path": "docs/frightnight-2027/evidence/local-final-offline-coverage/reopened-refreshed-own-route-390.png",
+          "width": 390,
+          "height": 1827,
+          "sha256": "13159732b6e858195d4ead518354f02cf8bb6e5e3f45a9cc1f42d41b2573914d",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        },
+        {
+          "path": "docs/frightnight-2027/evidence/local-final-offline-coverage/reopened-refreshed-own-route-1440.png",
+          "width": 1440,
+          "height": 1867,
+          "sha256": "3a37fda4b83c3ae3fe28aed214f2487de62b506b77d61655d352e00a92dcc3ee",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        }
+      ]
+    },
+    {
+      "role": "participant-pass",
+      "stem": "feedback-closure-offline-assets/package-edges/hosted-edge-finished-pass",
+      "build": "hanzA2t5Xaby269LUnhWK",
+      "note": "Readable visit seals, durable general thanks and finale; no private QR or invitation shown.",
+      "images": [
+        {
+          "path": "docs/frightnight-2027/evidence/feedback-closure-offline-assets/package-edges/hosted-edge-finished-pass-390.png",
+          "width": 390,
+          "height": 3277,
+          "sha256": "540d8dc41d3bd9a89b13fc6ec662c2f7fbbdcc44ed4b9b5a1e880773bebcafa1",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        },
+        {
+          "path": "docs/frightnight-2027/evidence/feedback-closure-offline-assets/package-edges/hosted-edge-finished-pass-1440.png",
+          "width": 1440,
+          "height": 3223,
+          "sha256": "7eb0f7dace18f4812250c780c4d0500a22736872e3cbe5cd3778d54f55149603",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        }
+      ]
+    },
+    {
+      "role": "resident",
+      "stem": "local-final-owner-coverage/resident-a-own-only",
+      "build": "hanzA2t5Xaby269LUnhWK",
+      "note": "Own synthetic zone and occupancy; reference identifies known appgroup, not authorization or QR secret.",
+      "images": [
+        {
+          "path": "docs/frightnight-2027/evidence/local-final-owner-coverage/resident-a-own-only-390.png",
+          "width": 390,
+          "height": 4491,
+          "sha256": "e374ecd95c1d9523da8cc903eca0c2aa18c8152297d84e48774efb353e4ea505",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        },
+        {
+          "path": "docs/frightnight-2027/evidence/local-final-owner-coverage/resident-a-own-only-1440.png",
+          "width": 1440,
+          "height": 4230,
+          "sha256": "40f7dc6dbb4f5acd82ca46c527015f047efcb23fc8dd8771f114a560cc79721a",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        }
+      ]
+    },
+    {
+      "role": "operations",
+      "stem": "feedback-closure-offline-assets/package-edges/hosted-edge-organization-feedback",
+      "build": "hanzA2t5Xaby269LUnhWK",
+      "note": "Current Bedankjes tab and durable organization feedback/evaluation; no account email or token.",
+      "images": [
+        {
+          "path": "docs/frightnight-2027/evidence/feedback-closure-offline-assets/package-edges/hosted-edge-organization-feedback-390.png",
+          "width": 390,
+          "height": 1368,
+          "sha256": "b034f2a4c0c62b6c83595bbf08afed8840ffaa5db363675daed4ac375ba9b5f1",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        },
+        {
+          "path": "docs/frightnight-2027/evidence/feedback-closure-offline-assets/package-edges/hosted-edge-organization-feedback-1440.png",
+          "width": 1440,
+          "height": 1367,
+          "sha256": "64a18cb8fff82ce07d7b113e04f89c09adcadbb4db8875897dcb96d88dd7085b",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        }
+      ]
+    },
+    {
+      "role": "testcenter",
+      "stem": "payment-sandbox/configured-contract/sandbox-armed",
+      "build": "0umM3p5GQp-3HD2l5F-x1",
+      "note": "Actual armed sandbox before seed, therefore no startCode, zoneCodes or issued invitation; visible edition/run IDs confer no access. payment-sandbox.tsx and test-center.tsx match9b exactly; old model/build context remains explicit.",
+      "images": [
+        {
+          "path": "docs/frightnight-2027/evidence/payment-sandbox/configured-contract/sandbox-armed-390.png",
+          "width": 390,
+          "height": 5741,
+          "sha256": "92140a91df8105cc17dcf22167a12bdfa0bce13187e5afedbf14f966b2bae87a",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        },
+        {
+          "path": "docs/frightnight-2027/evidence/payment-sandbox/configured-contract/sandbox-armed-1440.png",
+          "width": 1440,
+          "height": 4213,
+          "sha256": "b6936509ad6051612ca13abb62201dfc98d7ac7cc614a719ff1528f7284b4b43",
+          "visuallyReviewed": true,
+          "visibleSecretsOrPrivateQR": false
+        }
+      ]
+    }
+  ],
+  "findings": [
+    "Generic evidence/README screenshot table still links older eRS authenticated overview/Testcentrum screens; newer qualified screenshots should be preferred, and final hosted role captures should replace local examples only after actual acceptance.",
+    "Add one instruction that mobile Avondregie tabs and wide tables scroll horizontally; Tab focus remains available. The currently documented role/calm instructions do not explain this hidden-column navigation."
+  ],
+  "limits": [
+    "Visual screenshot inspection confirms visible assets, not a retrospective claim of native decode() in older private captures.",
+    "Latest public d843 captures actually scroll/wait/decode all visible images; final9b hosted capture is not yet authorized or executed.",
+    "Role screenshots use synthetic records and local builds. No physical device, camera, external map delivery or full all-form keyboard-audit claim."
+  ],
+  "testcenterComponentBinding": [
+    {
+      "path": "components/frightnight/payment-sandbox.tsx",
+      "sha256": "c49b69313932a0744aba8d46429b0679a381ce438ab74a7ad93c0b1a98015ea5",
+      "matchesCapturedAndCurrent": true
+    },
+    {
+      "path": "components/frightnight/test-center.tsx",
+      "sha256": "4842984927165e9db55a4eae7daeb1938778681ffa729f997dbe880da60da602",
+      "matchesCapturedAndCurrent": true
+    }
+  ]
+}

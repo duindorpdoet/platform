@@ -1,0 +1,64 @@
+{
+  "recordedAt": "2026-11-03T09:33:49.967Z",
+  "scope": "Independent source/callgraph/security review of forward005; no remote mutation",
+  "review": "ACK",
+  "migrationSha256": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570",
+  "domainMessages": 16,
+  "wrappers": 7,
+  "privateFunctionsWithExternalExecute": 0,
+  "tableCount": 32,
+  "authenticatedApiCount": 4,
+  "nativeEngineSerialization": "preserved; read real two-transaction REPEATABLE_READ harness and backend report",
+  "oldAppliedMigrations": "all four hashes locked by release tests",
+  "tests": {
+    "releaseFiles": 4,
+    "passed": 57,
+    "eslint": "passed"
+  },
+  "backendReport": "backend-domain-conflicts-report.json",
+  "backendReportSha256": "18aa8bc42e621717833502b024cba934ccc255c18baaf5444e850ebb0077229b",
+  "backendPgtapPassed": 787,
+  "loopClearance": "PID1361450 absent; old/current active authenticator FNcalls0 at09:25:50UTC; no terminate/restart",
+  "sourceSha256": {
+    "supabase/migrations/20261103092502_frightnight_2027_domain_conflicts.sql": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570",
+    "supabase/tests/135_frightnight_2027_domain_conflicts.sql": "865800076fd4a14ea3a937fdf7901f65d346c414ae06f53a1976b3c939f761e4",
+    "scripts/frightnight/db-domain-conflicts.py": "441f3bc862618f5f6e88df416453d12d6aa21758f38cf1414c8cd2602f79bb35",
+    "scripts/deploy/release-migrations.mjs": "a4363eedab10594b2dbbd591cb12f08f38129ad172b7e8792e13bc6d1e8a2dd6",
+    "scripts/deploy/release-migrations.test.ts": "767da1d91b3bb84e02d75e3a32ef3460a114c3e742a398f7389f9d1894573ad1",
+    "lib/frightnight/server.ts": "8385460c972383212eb3fcf799ff77aef9e661c7f1c6f6aa4eeb331fcd6862f6",
+    "lib/frightnight/server-rpc-error.test.ts": "7aa6b70424358b04501dae695b65c84c8f4f16f333f3436e3d5ec35773876e91"
+  },
+  "managedLogReportSha256": "ec2d7433ae78eb3bcf4b396e92cbe8e15e4b662c326f7a1b90c0ada49d68be7b",
+  "pending": [
+    "Final exact complete CI",
+    "Fresh normal full staging release and preserve/restore proof",
+    "Actual complete hosted parent/Storage/REG/EDGE/load125/RET05",
+    "Final natural cycles after all writes"
+  ],
+  "candidateRevision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+  "applicationVerification": {
+    "report": "../application-domain-conflicts-verify-report.json",
+    "reportSha256": "6d3f0161480ea03fbee07ceab758d449484e7f9ee794f0b00839d3fac2b46c47",
+    "buildId": "MsI5gXW47qxHlPk_-YyXo",
+    "exitCode": 0,
+    "unitPassed": 1565,
+    "unitOptionalSkipped": 6,
+    "nodeGuardPassed": 17,
+    "clientArtifactsScanned": 697,
+    "sourceFilesBound": 1423,
+    "exactRawLogSha256": "667244cf3ea53cc2b326876389a03b625f16de59be0a454898145b596a236a72",
+    "normalizedLfLogSha256": "72db57f838d4edf433a0204b67ebb6bc2cb1378ae2ce770e3e7d2ef7884b4ad6"
+  },
+  "native14Review": {
+    "source": "../../evidence/local-postgrest14-domain-conflicts/README.md",
+    "beforeAfterReportSha256": "baedb15049af48a7dd7382d47a2d68b2fb09db26bc3be25e77ce1440348e710c",
+    "businessConflictProof": "passed",
+    "beforeAttempts": 6,
+    "afterAttempts": 1,
+    "afterHttpStatus": 409,
+    "additionalEngineHttpControl": "failed",
+    "additionalEngineHttpControlCountedAsPass": false,
+    "engineCoverage": "Separate genuine two-transaction backend SQL proof; no claim that failed strict native log assertion passed."
+  },
+  "latestReadOnlyReviewAt": "2026-11-03T10:22:13.302828+00:00"
+}

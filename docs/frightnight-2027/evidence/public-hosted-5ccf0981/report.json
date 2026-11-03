@@ -1,0 +1,83 @@
+{
+  "testedAt": "2026-11-03T08:25:57.991Z",
+  "recordedAt": "2026-11-03T08:27:34.297Z",
+  "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "status": "passed",
+  "scope": "Actual published anonymous public pages and native PWA only; no account role, provider payment, load or physical-device acceptance claim.",
+  "publicTests": {
+    "passed": 24,
+    "failed": 0,
+    "flaky": 0,
+    "durationMs": 26628.029,
+    "startedAt": "2026-11-03T08:25:07.679Z"
+  },
+  "visualChecks": {
+    "passed": 19,
+    "total": 19,
+    "screenshots": [
+      "published-home-390.png",
+      "published-story-open-390.png",
+      "published-terms-390.png",
+      "published-login-no-send-390.png",
+      "published-home-1440.png",
+      "published-story-open-1440.png",
+      "published-terms-1440.png",
+      "published-login-no-send-1440.png",
+      "published-offline-pwa-390.png",
+      "published-offline-pwa-1440.png"
+    ],
+    "visibleImages": "Every visible image was complete with naturalWidth > 0 and decoded before each screenshot; the page was scrolled to load lazy assets first.",
+    "offline": "Native worker active and controlling, real browser offline reload, logo decoded, independent Duinpad emergency information, public cache privacy, real reconnect."
+  },
+  "healthBefore": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "healthAfter": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "workerSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+  "sourceHashes": {
+    "public/sw.js": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+    "tests/e2e/frightnight.spec.ts": "6a03d7da08019da89fbc0ebf737fde25010d2111c3aab964663eb6c156dd42b0",
+    "scripts/deploy/frightnight-release.mjs": "521e01edf9471481fd3b3c918aa224ab342242214001f03a2fc4fa959d4fc5ac"
+  },
+  "harnessHashes": {
+    "playwright.config.ts": "a066627f085ff21806d63b3cb2890b3f8b1261bc7f958208a3eba200fd9a448d",
+    "global-setup.ts": "5ef24aca7b5eac4950c249e99b04d3bd4dc61dd8116360924561dee7b200b7bf",
+    "guarded-test.ts": "b4c8a0e17cb00f463189968b146fe3707aacd1a00871ccacee8a358658c94fc5",
+    "frightnight.spec.ts": "c9c26916e0df3a5e5212f99b5f49aac6ba2f30455d056231267e07896948a2d8",
+    "visuals.mjs": "671116e028699bbcb45d6b8e6ffde60d1795ec7dae0b4b51c1ca0b2cf76d7022"
+  },
+  "guardEvidence": {
+    "exactHealthAndWorkerBytesBeforeNativeContext": true,
+    "forbiddenBrowserOrApiRequests": 0,
+    "formsPrevented": true,
+    "authCodesSent": 0,
+    "serverMutations": 0,
+    "externalProviderRequests": 0,
+    "pushSubscriptions": 0,
+    "mailSent": 0,
+    "pageErrors": 0
+  },
+  "limits": [
+    "Anonymous Chromium only; no physical Android/iOS installation or camera decoding claim.",
+    "The content projection presentation fixture is separate from real organization publishing/database acceptance.",
+    "Authenticated roles, route/concurrency/payment/mail/load/retention acceptance are separate evidence.",
+    "Intermediate 3fc offline image failure remains recorded separately and is not retrospectively marked passed."
+  ]
+}

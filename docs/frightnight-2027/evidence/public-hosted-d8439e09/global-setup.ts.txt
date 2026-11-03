@@ -1,0 +1,25 @@
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+import { assertFrightnightHostedRelease } from '/home/codex/repos/duindorphalloween-frightnight-2027/scripts/deploy/frightnight-release.mjs';
+export default async function setup() {
+  const revision = process.env.FRIGHTNIGHT_VERIFIED_RELEASE_SHA;
+  if (revision !== 'd8439e09c67083548d8b09ac4110d24820a52dd0' || process.env.FRIGHTNIGHT_PUBLIC_READONLY_ACK !== revision) throw new Error('EXPLICIT_DEPLOYED_SHA_ACK_REQUIRED_BEFORE_ANY_STAGING_REQUEST');
+  const expectedProvider = process.env.FRIGHTNIGHT_PUBLIC_EXPECTED_PROVIDER;
+  if (!['contract','mollie'].includes(expectedProvider ?? '')) throw new Error('EXPLICIT_CONFIGURED_PROVIDER_REQUIRED_BEFORE_ANY_STAGING_REQUEST');
+  const audit = JSON.parse(await readFile('/tmp/frightnight-public-hosted/source-audit.json','utf8'));
+  const source = await readFile(audit.source,'utf8');
+  if (createHash('sha256').update(source).digest('hex') !== audit.sha256) throw new Error('PUBLIC_SPEC_CHANGED_REVIEW_SAFETY_AGAIN');
+  const response = await fetch('https://staging-halloween.duindorpdoet.nl/api/health',{cache:'no-store',redirect:'error',signal:AbortSignal.timeout(10000)});
+  if (!response.ok) throw new Error('LIVE_PUBLIC_RELEASE_HEALTH_REQUIRED');
+  const health=await response.json(); assertFrightnightHostedRelease(health,revision,expectedProvider);
+  const expected=execFileSync('git',['show',revision+':public/sw.js'],{cwd:'/home/codex/repos/duindorphalloween-frightnight-2027',encoding:'utf8'});
+  const worker=await fetch('https://staging-halloween.duindorpdoet.nl/sw.js',{cache:'no-store',redirect:'error',signal:AbortSignal.timeout(10000)});
+  if(!worker.ok)throw new Error('EXACT_PUBLISHED_WORKER_REQUIRED_BEFORE_NATIVE_CONTEXT');
+  const actual=await worker.text(),workerSha256=createHash('sha256').update(actual).digest('hex');
+  if(workerSha256!==createHash('sha256').update(expected).digest('hex')||workerSha256!=='fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66'||!expected.includes('if (event.request.method !== "GET") return;'))throw new Error('EXACT_REVIEWED_GET_ONLY_WORKER_REQUIRED');
+  process.env.FRIGHTNIGHT_PUBLIC_VERIFIED_WORKER_SHA=revision;
+  const directory=process.env.FRIGHTNIGHT_PUBLIC_EVIDENCE_DIR!; await mkdir(directory,{recursive:true});
+  await writeFile(join(directory,'release-binding.json'),JSON.stringify({testedAt:new Date().toISOString(),revision,expectedConfiguredProvider:expectedProvider,health,workerSha256,nativeWorkerGate:"exact health and reviewed worker bytes verified before any allow context",readOnly:true,sourceAudit:audit,limits:'Anonymous public browser only. No forms, OTP, PSP, push, mail or database commands. Published text projection fixture is presentation-only.'},null,2)+'\n');
+}

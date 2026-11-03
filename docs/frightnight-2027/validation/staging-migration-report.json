@@ -1,29 +1,53 @@
 {
-  "verifiedAt": "2026-11-03T06:48:38.556662+00:00",
-  "scope": "Actual read-only schema metadata after normal release migration; not published application acceptance",
+  "recordedAt": "2026-11-03T10:17:17.710354+00:00",
+  "scope": "Actual 005 application and independent metadata; current app is still d843. This is not 9b publication.",
   "environment": "staging",
   "projectRef": "nocteiuvohesvqbowchw",
-  "releaseRunId": 41591028787,
-  "jobId": 125769871954,
-  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "revision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+  "runId": 41615887268,
+  "jobId": 125851451038,
   "releaseMigrationStep": "success",
-  "metadata": {
-    "fn_schema_present": true,
-    "new_migrations_present": 2,
-    "fn_private_tables": 31,
-    "fn_rls_tables": 31
-  },
+  "appliedAt": "2026-11-03T10:11:13Z",
+  "appliedVersions": [
+    "20261103012453",
+    "20261103042000",
+    "20261103071355",
+    "20261103073433",
+    "20261103092502"
+  ],
   "frozenMigrationSourceSha256": {
-    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
-    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+    "20261103012453": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "20261103042000": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "20261103071355": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "20261103073433": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+    "20261103092502": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570"
   },
+  "existingTablesPreserved": 268,
+  "addedMigrationVersions": [
+    "20261103092502"
+  ],
+  "addedMailEvents": 0,
+  "reconciliationFailures": 0,
+  "privateTables": 32,
+  "rlsTables": 32,
+  "functions": 65,
+  "authenticatedApiFunctions": 4,
+  "privateTransportImplementationsWithExternalExecute": 0,
+  "metadataEvidence": "post005-database-metadata-9b0b215f-report.json",
   "runtimeDeployment": {
-    "status": "published healthy",
-    "verifiedAt": "2026-11-03T06:50:32.669053+00:00",
-    "http": 200,
-    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
-    "releasePath": "/srv/sites/duindorphalloweenstg/releases/0ddd9558f3fd-41591028787-1",
-    "hostedScenarioAcceptance": "pending"
+    "status": "failed before publication: ENOSPC copying dependencies",
+    "currentRevision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+    "health": {
+      "observedAt": "2026-11-03T10:12:43.704932+00:00",
+      "http": 200,
+      "status": "ok",
+      "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+      "environment": "staging",
+      "eventSlug": "frightnight-2027-test",
+      "brand": "frightnight-2027-v7",
+      "paymentProvider": "contract"
+    },
+    "attemptedReleasePath": "/srv/sites/duindorphalloweenstg/releases/9b0b215f9227-41615887268-1"
   },
   "productionChanged": false
 }

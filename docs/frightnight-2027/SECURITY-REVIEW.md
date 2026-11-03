@@ -1,5 +1,7 @@
 # Gerichte server- en releasereview
 
+Latere runtimebevinding en herstelgrens: [PostgREST-14-conflicttransport](POSTGREST-COMPATIBILITY.md), met geschoonde logcorrelatie, beëindigde eigen retrylus en de verplichte nieuwe volledige releasegates. De historische deelreviews hieronder blijven aan hun eigen bronnen en uitvoeringen gebonden.
+
 Datum: 3 november 2026. Basis: lokale implementatie op werkboom van `ce6bbb52551c4005a24c04fe3a578a4c3860cc18`. Deze review voerde geen remote mutaties, migraties, authenticatiecodes, mails of PSP-transacties uit. Definitieve release-SHA en gepubliceerde acceptatie staan in IMPLEMENTATION-STATUS.md.
 
 ## Gevonden en verholpen

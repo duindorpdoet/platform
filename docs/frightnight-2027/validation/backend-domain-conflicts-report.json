@@ -1,0 +1,281 @@
+{
+  "scope": "fresh isolated local five-migration domain transport regression",
+  "database": "frightnight_2027_domain_frozen",
+  "container": "supabase_db_duindorp_event_close_20261101",
+  "createdAt": "2026-11-03T09:28:45.541572+00:00",
+  "verifiedAt": "2026-11-03T09:30:52.291249+00:00",
+  "remoteMutations": false,
+  "pgtap": [
+    {
+      "file": "supabase/tests/127_frightnight_2027_core.sql",
+      "passed": 550,
+      "failed": 0,
+      "rollback": true
+    },
+    {
+      "file": "supabase/tests/132_frightnight_2027_edition_access.sql",
+      "passed": 96,
+      "failed": 0,
+      "rollback": true
+    },
+    {
+      "file": "supabase/tests/133_frightnight_2027_payment_sandbox.sql",
+      "passed": 39,
+      "failed": 0,
+      "rollback": true
+    },
+    {
+      "file": "supabase/tests/134_frightnight_2027_feedback_closure.sql",
+      "passed": 52,
+      "failed": 0,
+      "rollback": true
+    },
+    {
+      "file": "supabase/tests/135_frightnight_2027_domain_conflicts.sql",
+      "passed": 50,
+      "failed": 0,
+      "rollback": true
+    }
+  ],
+  "totalPgtapPassed": 787,
+  "immutableAppliedMigrationsUnchanged": {
+    "20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "20261103073433_frightnight_2027_feedback_closure.sql": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8"
+  },
+  "sourceSha256": {
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "supabase/migrations/20261103073433_frightnight_2027_feedback_closure.sql": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8",
+    "supabase/migrations/20261103092502_frightnight_2027_domain_conflicts.sql": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570",
+    "supabase/tests/127_frightnight_2027_core.sql": "265a3364cf8e329ee031be6fb3fbef9cea50ec4ca7ea3ac47c92db17c2a7414b",
+    "supabase/tests/132_frightnight_2027_edition_access.sql": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
+    "supabase/tests/133_frightnight_2027_payment_sandbox.sql": "bde57354f7cc535e67a573911f3cf39d38efffc1fb85950e3ad258001f3ccd8b",
+    "supabase/tests/134_frightnight_2027_feedback_closure.sql": "8e7391159ec27a3cbc70851d1a7c69deda4a63891ec074f20b1ce66522868cde",
+    "supabase/tests/135_frightnight_2027_domain_conflicts.sql": "865800076fd4a14ea3a937fdf7901f65d346c414ae06f53a1976b3c939f761e4",
+    "scripts/frightnight/db-domain-conflicts.py": "441f3bc862618f5f6e88df416453d12d6aa21758f38cf1414c8cd2602f79bb35",
+    "scripts/frightnight/db-concurrency.py": "b826b2152825abc1bd550f5417fd6fd0082157b9b6ffe7df50165679d414b56e",
+    "scripts/frightnight/db-payment-sandbox-concurrency.py": "3ca697b48c10458df1289c7c948accdc8175d8b8337e8bce0b55bdbe529d851e",
+    "scripts/deploy/frightnight-release.mjs": "521e01edf9471481fd3b3c918aa224ab342242214001f03a2fc4fa959d4fc5ac",
+    "lib/frightnight/server.ts": "8385460c972383212eb3fcf799ff77aef9e661c7f1c6f6aa4eeb331fcd6862f6"
+  },
+  "coreConcurrency": {
+    "passed": true,
+    "database": "frightnight_2027_domain_frozen",
+    "slug": "frightnight-2027-test-race-cd1be64110cc",
+    "families": 12,
+    "simultaneousStarts": 12,
+    "walking": 1,
+    "waiting": 11,
+    "overbooked": 0,
+    "concurrentReplayRequests": 2,
+    "visits": 1,
+    "awards": 1,
+    "legacyPayments": 0,
+    "legacyGroups": 0,
+    "sinkMessages": 12,
+    "concurrentRefundScan": "accepted-before-refund",
+    "refundedPartyActiveClaims": 0,
+    "refundLedger": 1,
+    "distinctRefundRequests": 2,
+    "fullRefundClaims": 1,
+    "duplicateRefundRejected": 1,
+    "alreadyRefundedCreatesIntent": false,
+    "oldRefundedInvitationRejectedWithoutMutation": true,
+    "oldRefundedInvitationDenial": "INVITATION_INVALID_FINISHED_FINALE",
+    "concurrentJoinRefund": "joined-before-refund",
+    "joinRefundActiveClaims": 0,
+    "joinRefundLedger": 1,
+    "sourceHistoryPreserved": true,
+    "concurrentCheckoutEdit": {
+      "families": 1,
+      "outcome": "rejected-after-checkout",
+      "quotedPersons": 2,
+      "activePersons": 2,
+      "amountCents": 700,
+      "pricePerPersonCents": 350,
+      "freePlaces": 0,
+      "legacyOutboxUnchanged": true
+    },
+    "concurrentObservationAdmission": [
+      {
+        "round": 1,
+        "order": "observation-blocked-admission",
+        "appClaims": 0,
+        "effectivePersons": 2,
+        "truthfulPhysicalOvercapacityRetained": false,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 2,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 3,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 4,
+        "order": "observation-blocked-admission",
+        "appClaims": 0,
+        "effectivePersons": 2,
+        "truthfulPhysicalOvercapacityRetained": false,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 5,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
+        "newAdmissionAfterPhysicalFull": false
+      }
+    ],
+    "queuedEditionEntry": [
+      {
+        "entry": "revoked",
+        "eventLockBarrierVerified": true,
+        "denial": "42501:EDITION_ACCESS_REQUIRED",
+        "registrationsCreated": 0,
+        "householdsCreated": 0,
+        "receiptsCreated": 0
+      },
+      {
+        "entry": "expired",
+        "eventLockBarrierVerified": true,
+        "denial": "42501:EDITION_ACCESS_REQUIRED",
+        "registrationsCreated": 0,
+        "householdsCreated": 0,
+        "receiptsCreated": 0
+      }
+    ],
+    "concurrentStartCapacityCheckout": {
+      "capacityChange": "reduced-before-checkout",
+      "checkout": "checkout-blocked-by-reduction",
+      "orders": 0,
+      "capacity": 1,
+      "available": 1,
+      "overbooked": false,
+      "existingProviderHoldLost": false
+    },
+    "durationSeconds": 14.734
+  },
+  "providerConcurrency": {
+    "passed": true,
+    "scope": "isolated-local-docker",
+    "database": "frightnight_2027_domain_frozen",
+    "rounds": [
+      {
+        "round": 1,
+        "arm": {
+          "armed": true
+        },
+        "provider": "contract",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      },
+      {
+        "round": 2,
+        "arm": {
+          "denied": "MOLLIE_HISTORY_FORBIDDEN"
+        },
+        "provider": "mollie",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      },
+      {
+        "round": 3,
+        "arm": {
+          "armed": true
+        },
+        "provider": "contract",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      },
+      {
+        "round": 4,
+        "arm": {
+          "armed": true
+        },
+        "provider": "contract",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      },
+      {
+        "round": 5,
+        "arm": {
+          "armed": true
+        },
+        "provider": "contract",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      }
+    ],
+    "protectedLegacyUnchanged": true,
+    "externalCalls": 0,
+    "otp": 0,
+    "mail": 0
+  },
+  "engineConcurrency": {
+    "passed": true,
+    "scope": "isolated-local-postgresql-real-two-transaction-engine-conflict",
+    "database": "frightnight_2027_domain_frozen",
+    "genuineEngineSqlstate": "40001",
+    "genuineEngineMessage": "could not serialize access due to concurrent update",
+    "businessSqlstate": "PT409",
+    "engineTransactionEffects": 0,
+    "ownSiblingClosed": true,
+    "legacyOutboxAndPaymentsUnchanged": true,
+    "authDeleted": 0,
+    "externalCalls": 0,
+    "seconds": 0.907
+  },
+  "localSafety": {
+    "tables": 32,
+    "edition": {
+      "date": "2027-10-30",
+      "slug": "frightnight-2027-test",
+      "phase": "draft",
+      "isTest": true,
+      "timezone": "Europe/Amsterdam",
+      "environment": "staging",
+      "retentionUntil": "2027-11-03T09:30:52.039132+00:00"
+    },
+    "legacyJobs": null,
+    "mailWorker": null,
+    "unsafeSink": 0,
+    "unsafeEvents": 0,
+    "unsafeTables": 0,
+    "actorFunctions": 4,
+    "legacyBindings": 0,
+    "unsafeFunctions": 0,
+    "sinkHasRecipient": false
+  },
+  "metadata": {
+    "tables": 32,
+    "functions": 65,
+    "newPrivateDelegates": 7,
+    "privateDelegateUnexpectedExec": 0
+  },
+  "safetyQuerySha256": "69c98a7bcbe1f8472b8c5b5cf36b7f4eadbc9b7e75028e6ca8f4bdf21e64ebc9",
+  "safetyScopeLimit": "Fresh LOCAL schema-only DB; empty cron.job metadata only validates SQL syntax/ACL/schema. No hosted job health, PSP, SMTP or external-load claim.",
+  "nativePostgrest14Proof": "Separate frontend-owned isolated14.5 before/after HTTP report; pending here until its actual artifact is available.",
+  "businessConflictSqlstate": "PT409",
+  "genuineEngineSerializationSqlstate": "40001",
+  "queryOrRecipientPayloadsExposed": false
+}

@@ -1,0 +1,81 @@
+{
+  "createdAt": "2026-11-03T08:55:57.703Z",
+  "artifacts": [
+    {
+      "name": "README.md",
+      "sha256": "af1464e5e231ada2526fffea4840e10501c86269dd13fdc12ae2ae30a2e598a5"
+    },
+    {
+      "name": "before-browser-close-1440.png",
+      "sha256": "3a37fda4b83c3ae3fe28aed214f2487de62b506b77d61655d352e00a92dcc3ee"
+    },
+    {
+      "name": "before-browser-close-390.png",
+      "sha256": "66242109ec7ffcd2dfdc52c35ef46ee9cb41495e182713a04c662b5df1554539"
+    },
+    {
+      "name": "cleanup-followup.json",
+      "sha256": "7e3a434629e27282711dafdddb40fcbc029ab04d67015fd66e5d57f6a4a3a307"
+    },
+    {
+      "name": "cleanup-source.mjs.txt",
+      "sha256": "98f05867a634c3651e29657d2a8e307b725ccb9d86e8a5b8d0e8599fea528bf5"
+    },
+    {
+      "name": "harness-source.mjs.txt",
+      "sha256": "870579d1fb44ea94c1505f9752c926c0432cda38a217d1e1e96b6c807102d24f"
+    },
+    {
+      "name": "initial-report.json",
+      "sha256": "4a7344ca701267df8bdc024f83de4712401d346419da718a427f08228ed90cf2"
+    },
+    {
+      "name": "new-identity-after-restart-1440.png",
+      "sha256": "fb46f515c94e1b0047b4b87deeac49fe7686983113f1755b46cd9b57a0a79721"
+    },
+    {
+      "name": "new-identity-after-restart-390.png",
+      "sha256": "dbe4ba09da03c6c67f747b82352ebd8d10cbd9657a20f6f2875f76858f32240e"
+    },
+    {
+      "name": "refund-reconnect-help-1440.png",
+      "sha256": "e4ce25ce933906871c66537fa76c7013737c19228184830027999b4c5a29d431"
+    },
+    {
+      "name": "refund-reconnect-help-390.png",
+      "sha256": "dd1fce2cec733cfbe93670821916397b397b401ee343c276df24adf5b84e0866"
+    },
+    {
+      "name": "reopened-offline-safe-1440.png",
+      "sha256": "143bf4753536f94c1110fadb6c572d8f77da17fb54c80b88dc24128783837cbf"
+    },
+    {
+      "name": "reopened-offline-safe-390.png",
+      "sha256": "c485f85dc4dfc6bd224f27e4dfe47bde36476037b7cf540148e7ea441dba197e"
+    },
+    {
+      "name": "reopened-refreshed-own-route-1440.png",
+      "sha256": "3a37fda4b83c3ae3fe28aed214f2487de62b506b77d61655d352e00a92dcc3ee"
+    },
+    {
+      "name": "reopened-refreshed-own-route-390.png",
+      "sha256": "13159732b6e858195d4ead518354f02cf8bb6e5e3f45a9cc1f42d41b2573914d"
+    },
+    {
+      "name": "report.json",
+      "sha256": "71fd47bb145557d5856c79e0ef22543daaadaf700f7c78478925dfa450db42c9"
+    },
+    {
+      "name": "revoked-adult-private-cleared-1440.png",
+      "sha256": "9206c3e5f5f1e3149ea122e76280ae58e319f059e99867bbeec1679f7b722464"
+    },
+    {
+      "name": "revoked-adult-private-cleared-390.png",
+      "sha256": "3576d8e50e9cbb663e7b4064959e65c1d0c736bfa0810b1f2c9b0eefc609aecd"
+    },
+    {
+      "name": "source-binding.json",
+      "sha256": "d44f68d95a4bb62a4c69b5efd8bfef6117aacac41e6431f08f4bf836c8c8fe34"
+    }
+  ]
+}

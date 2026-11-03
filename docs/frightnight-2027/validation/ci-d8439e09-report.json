@@ -1,0 +1,43 @@
+{
+  "recordedAt": "2026-11-03T08:57:44.316766+00:00",
+  "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "runId": 41604478761,
+  "url": "https://github.com/duindorpdoet/platform/actions/runs/41604478761",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 125810796172,
+      "name": "Resolve release mail-test policy",
+      "conclusion": "success",
+      "waiver": false
+    },
+    {
+      "id": 125810929251,
+      "name": "Application and browser tests",
+      "conclusion": "success",
+      "unitPassed": 1558,
+      "unitOptionalSkipped": 6,
+      "unitFilesPassed": 166,
+      "unitFilesOptionalSkipped": 2,
+      "nodeGuardPassed": 17,
+      "clientArtifactsScanned": 697,
+      "nativePublicBrowserPassed": 24
+    },
+    {
+      "id": 125810929247,
+      "name": "Database migrations, contracts and lint",
+      "conclusion": "success",
+      "pgTAPFiles": 136,
+      "pgTAPAssertions": 4611,
+      "pgTAPResult": "PASS",
+      "requiredHttpAuthMailConcurrencyLoadEditorialSteps": "all success"
+    }
+  ],
+  "requiredWorkflowStepsFailed": 0,
+  "requiredWorkflowStepsSkipped": 0,
+  "limitations": [
+    "CI database is local and isolated; this does not prove hosted acceptance, Storage HTTP,125-client staging load, RET05, physical hardware or external Mollie.",
+    "Staging branch moved without force from verified5cc to this exact fully-green revision after main/production were verified unchanged; fresh normal deployment is pending."
+  ]
+}

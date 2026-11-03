@@ -1,0 +1,55 @@
+{
+  "scope": "LOCAL ONLY; isolated new clone, native PostgREST14.5 HTTP; no shared gateway/QA mutation",
+  "run": "pgrst14-0ec59cac",
+  "slug": "frightnight-2027-test-acceptance-pgrst14-0ec59cac",
+  "database": "frightnight_pgrst14_0ec59cac",
+  "container": "frightnight-pgrst14-0ec59cac",
+  "origin": "http://127.0.0.1:63564",
+  "startedAt": "2026-11-03T09:37:15.680Z",
+  "checks": [],
+  "requests": [
+    {
+      "rpc": "frightnight_local_engine_conflict",
+      "operation": null,
+      "probe": true,
+      "status": 499,
+      "code": "PT499",
+      "message": "LOCAL_RETRY_LIMIT",
+      "milliseconds": 726
+    }
+  ],
+  "limits": [
+    "Local native HTTP and PostgreSQL only, no external Auth/OTP/PSP/mail/push.",
+    "Before test bounds the known PostgREST14 retry loop at the sixth transaction using an isolated pre-request counter.",
+    "The counter and stop are test instrumentation in this clone only; production business functions remain untouched until exact forward005."
+  ],
+  "cloneBytes": 4080236,
+  "cloneAlreadyHas005": false,
+  "imageDigest": "public.ecr.aws/supabase/postgrest@sha256:b574528fe109c8343c1247155734d03df8c34b462f342dca0ccc20244fc36ef9",
+  "restVersion": "PostgREST 14.5",
+  "migrationSha256": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570",
+  "genuineEngineControl": {
+    "status": 499,
+    "code": "PT499",
+    "message": "LOCAL_RETRY_LIMIT",
+    "transactionAttempts": 6,
+    "engine40001Logs": 0,
+    "concurrentCommittedUpdates": 60,
+    "exactClassifierUsed": "app_private.fn_is_domain_conflict(SQLSTATE,SQLERRM)",
+    "temporaryApiProbeIsolation": "serializable",
+    "productionRpcDefinitionsChanged": false
+  },
+  "status": "failed",
+  "failure": "GENUINE_ENGINE_FAILURE_MUST_RETAIN_NATIVE_RETRY",
+  "dedicatedRestRemoved": true,
+  "ownDisposableCloneRemoved": true,
+  "auth": {
+    "newOwnActors": 0,
+    "recordsRetained": true,
+    "sharedPersonasMutated": false
+  },
+  "privateEnvRemoved": true,
+  "cleanupErrors": [],
+  "testedAt": "2026-11-03T09:37:21.627Z",
+  "harnessSha256": "20e16269138ce3352a38ce1293571f60f315041d9c72b8b405997656eab7f890"
+}

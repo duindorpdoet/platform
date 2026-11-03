@@ -1,0 +1,16 @@
+{
+  "observedAt": "2026-11-03T09:11:39.149394+00:00",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "httpStatus": 200,
+  "health": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "independentRootReadOnly": true
+}

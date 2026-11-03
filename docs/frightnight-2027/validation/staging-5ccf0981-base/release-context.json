@@ -1,0 +1,104 @@
+{
+  "runId": 41601540208,
+  "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "environment": "staging",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "site": "duindorphalloweenstg",
+  "recordedAt": "2026-11-03T08:31:37.541097+00:00",
+  "backup": {
+    "jobId": 125801384327,
+    "status": "passed",
+    "tables": 267,
+    "objects": 12,
+    "restoreFingerprints": "passed",
+    "migrationDryRun": "passed",
+    "artifact": {
+      "id": 13215321182,
+      "name": "redesign-backup-staging-41601540208-1",
+      "size": 33866971,
+      "expiresAt": "2026-12-03T08:17:20Z",
+      "sha256": "6eea778e76ffe0362c1ea8cf993e0248abb554d345ca674ef8f8ed51aca5e758"
+    }
+  },
+  "deployment": {
+    "jobId": 125803259020,
+    "status": "passed",
+    "releasePath": "/srv/sites/duindorphalloweenstg/releases/5ccf09815ad4-41601540208-1",
+    "health": {
+      "observedAt": "2026-11-03T08:24:29.748Z",
+      "http": 200,
+      "status": "ok",
+      "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+      "eventSlug": "frightnight-2027-test",
+      "paymentProvider": "contract"
+    },
+    "preservation": {
+      "tablesCompared": 267,
+      "existingDataPreserved": true,
+      "addedMigrationVersions": [
+        "20261103071355",
+        "20261103073433"
+      ],
+      "addedCronRuns": 3,
+      "addedMailEvents": 0
+    },
+    "safety": {
+      "tables": 32,
+      "mailMode": "sink",
+      "legacyJobsPreserved": true
+    },
+    "timers": {
+      "systemTimers": 16,
+      "systemCronFiles": 16,
+      "unreviewedScopedTimers": 0,
+      "readOnly": true
+    },
+    "auth": {
+      "recipientCount": 3,
+      "verifiedOwnerAllowed": true,
+      "existingTestersPreserved": true,
+      "authenticationRequests": 0,
+      "mailDelivery": 0
+    }
+  },
+  "mailAcceptance": {
+    "jobId": 125805957425,
+    "status": "passed"
+  },
+  "acceptance": {
+    "jobId": 125805957282,
+    "status": "failed",
+    "failure": "MAIL_CAPTURE_PREVIEW_BOUNDARY_FAILED",
+    "passedChecks": 3,
+    "cleanup": "passed: scoped runs closed, financial/audit/Auth/history retained",
+    "artifact": {
+      "id": 13214624200,
+      "name": "frightnight-staging-5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+      "size_in_bytes": 5929162,
+      "digest": "sha256:c5fc3ef21065fa292849c85e723ee020c653efce0ee4db20f94fbffe394b4e91",
+      "created_at": "2026-11-03T08:27:46Z",
+      "expires_at": "2026-11-17T08:27:44Z"
+    },
+    "authenticatedReportSha256": "919bc78f979919753c7cef2d2963cbc13048ba9f75365788ef9b8ab29f403d6f",
+    "publicReportSha256": "4362069f561dfc6220dd1d0cc31aeb8d5d6d0eab0afa5c4728a414095907231a"
+  },
+  "load": {
+    "jobId": 125807442865,
+    "status": "skipped",
+    "performanceClaim": false
+  },
+  "scenarioRestore": {
+    "jobId": 125807443505,
+    "status": "skipped",
+    "postScenarioRestoreClaim": false
+  },
+  "safety": "Evidence contains only synthetic identifiers, aggregate proof and sanitized reports. No sessions/passwords/OTP/QR secrets or backup archive included.",
+  "fixtureDiagnosis": {
+    "exactComparisonRejectedCompatibleHeader": true,
+    "successfulAuthorizedLocalPreview": true,
+    "probeFile": "mail-preview-header-probe.json",
+    "probeSha256": "4ded87ce72975aba095b2c00f58de196a9a44c98010ad8bb1dd726d3cc9a4985",
+    "productHeaderChanged": false,
+    "appliedMigrationsChanged": false
+  }
+}

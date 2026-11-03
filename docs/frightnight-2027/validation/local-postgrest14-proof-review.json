@@ -1,0 +1,47 @@
+{
+  "reviewedAt": "2026-11-03T09:41:47.583Z",
+  "reviewScope": "read-only artifact/hash and truthful-claim inspection; no new test execution",
+  "evidenceDirectory": "docs/frightnight-2027/evidence/local-postgrest14-domain-conflicts",
+  "manifestSha256": "07767980a8538bd633939012449b289dfb765ef293e7bd169732da4a0543d1f8",
+  "manifestEntriesVerified": 14,
+  "executedHelperVersionsVerified": 4,
+  "sourceCommit": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+  "appFilesVerifiedAgainstCommit": 2,
+  "mainNativeProof": {
+    "status": "passed",
+    "checks": 3,
+    "versionBeforeStale": 4,
+    "versionAfterStale": 4,
+    "before": {
+      "status": 499,
+      "code": "PT499",
+      "message": "LOCAL_RETRY_LIMIT",
+      "transactionAttempts": 6
+    },
+    "after": {
+      "status": 409,
+      "code": "PT409",
+      "message": "VERSION_CONFLICT",
+      "transactionAttempts": 1
+    },
+    "cleanupErrors": []
+  },
+  "extraEngineProof": {
+    "status": "failed",
+    "claim": "Not counted as a passed native engine40001 control; strict log capture assertion was not satisfied. Backend SQL proof governs that coverage."
+  },
+  "setupFailuresPreserved": true,
+  "ownAuthRetirementFollowupPreserved": true,
+  "dedicatedPostgrestContainersRemaining": 0,
+  "dedicatedCloneDatabasesRemaining": 0,
+  "releaseGateBypassed": false,
+  "hostedBrowserPreparation": {
+    "preparedOnly": true,
+    "pinnedRevision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+    "networkRequests": 0,
+    "expectedPublicTests": 24,
+    "expectedAdditionalVisualNativeChecks": 19,
+    "workerSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+    "requiresExactPublishedHealthAndRootGo": true
+  }
+}

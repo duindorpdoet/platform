@@ -1,0 +1,48 @@
+import { test as base, expect, type BrowserContext, type APIRequestContext } from '@playwright/test';
+import { appendFile } from 'node:fs/promises';
+import { join } from 'node:path';
+const origin = 'https://staging-halloween.duindorpdoet.nl';
+const installed = new WeakSet<BrowserContext>();
+const directory = process.env.FRIGHTNIGHT_PUBLIC_EVIDENCE_DIR!;
+export async function guardContext(context: BrowserContext) {
+  if (installed.has(context)) return;
+  installed.add(context);
+  await context.addInitScript(() => {
+    document.addEventListener('submit', event => { event.preventDefault(); event.stopImmediatePropagation(); }, true);
+  });
+  await context.route('**/*', async route => {
+    const request = route.request(); const url = new URL(request.url());
+    const write = !['GET', 'HEAD', 'OPTIONS'].includes(request.method());
+    const forbidden = /\/auth\/v1\/(otp|magiclink|recover|signup|invite|token|authorize|verify|logout)(\/|$)/.test(url.pathname)
+      || /^\/api\/(?:frightnight\/(?:command|edition|push|logout)|push|mail|payments?|mollie)(\/|$)/.test(url.pathname);
+    if (write || forbidden || (url.protocol.startsWith('http') && url.origin !== origin)) {
+      await appendFile(join(directory, 'blocked-requests.jsonl'), JSON.stringify({ method: request.method(), host: url.hostname, path: url.pathname, reason: write ? 'all-browser-writes-forbidden' : forbidden ? 'auth-payment-push-mail-forbidden' : 'external-origin-forbidden' })+'\n');
+      await route.abort('blockedbyclient'); return;
+    }
+    await route.continue();
+  });
+  await context.routeWebSocket('**/*', socket => socket.close());
+}
+export const test = base.extend({
+  browser: [async ({ browser }, use) => {
+    const original = browser.newContext.bind(browser);
+    browser.newContext = async options => {
+      const nativeWorker = options?.serviceWorkers === 'allow';
+      if (nativeWorker && (process.env.FRIGHTNIGHT_PUBLIC_VERIFIED_WORKER_SHA !== '5ccf09815ad4e923708b0adebd7fad5cf4de08e2' || process.env.FRIGHTNIGHT_PUBLIC_READONLY_ACK !== process.env.FRIGHTNIGHT_PUBLIC_VERIFIED_WORKER_SHA)) throw new Error('NATIVE_WORKER_CONTEXT_REQUIRES_LIVE_HEALTH_AND_BYTE_GATE');
+      const context = await original({ ...options, serviceWorkers: nativeWorker ? 'allow' : 'block' }); await guardContext(context); return context;
+    };
+    await use(browser);
+    browser.newContext = original;
+  }, { scope: 'worker' }],
+  context: async ({ context }, use) => { await guardContext(context); await use(context); },
+  request: async ({ request }, use) => {
+    const safe = new Proxy(request, { get(target, property) {
+      if (['post','put','patch','delete'].includes(String(property))) return () => { throw new Error('HOSTED_PUBLIC_API_WRITES_FORBIDDEN'); };
+      if (property === 'fetch') return (url: string, options: { method?: string } = {}) => { if (!['GET','HEAD','OPTIONS'].includes(options.method ?? 'GET')) throw new Error('HOSTED_PUBLIC_API_WRITES_FORBIDDEN'); if (new URL(url,origin).origin !== origin) throw new Error('HOSTED_PUBLIC_EXTERNAL_API_FORBIDDEN'); return target.fetch(url,{...options,maxRedirects:0}); };
+      if (['get','head'].includes(String(property))) return (url: string, options?: object) => { if (new URL(url,origin).origin !== origin) throw new Error('HOSTED_PUBLIC_EXTERNAL_API_FORBIDDEN'); return target[property as 'get'|'head'](url,{...options,maxRedirects:0}); };
+      const value = Reflect.get(target, property, target); return typeof value === 'function' ? value.bind(target) : value;
+    } }) as APIRequestContext;
+    await use(safe);
+  },
+});
+export { expect };
