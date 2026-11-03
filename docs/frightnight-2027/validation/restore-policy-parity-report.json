@@ -1,0 +1,93 @@
+{
+  "verifiedAt": "2026-11-03T05:37:41.833Z",
+  "image": "supabase/postgres:17.6.1.171",
+  "network": "none",
+  "cronLauncher": false,
+  "remoteWrites": false,
+  "sourceSha256": {
+    "scripts/deploy/redesign-backup.mjs": "7373fc660e7313537f6906b4a883f3f8eb8e610abc3e627c7d3ba0b47e6fe60e",
+    "scripts/deploy/redesign-backup.d.mts": "22b6ada20a4c9680ed671b5d02e98105f2cf8fd7501a6ec07baf29f391d313e8",
+    "scripts/deploy/redesign-backup.test.ts": "f2d795777df0f133dc0e805802258dc80278e01bd396e1e8a269f83c4f65e0d8",
+    "scripts/deploy/redesign-backup-split.test.ts": "90bc4ddabc564b8148877e25eeed97946c4c05d9a665a730f8bd902ae704e418",
+    "scripts/deploy/redesign-backup-environment.test.ts": "d2d078a571070c7a161d6101e7a3bf41cb38e33c6ce2a4adc2fca44c75f248b8"
+  },
+  "reports": [
+    {
+      "delegated": false,
+      "actor": {
+        "actor": "postgres",
+        "sessionActor": "postgres",
+        "superuser": false,
+        "owner": "supabase_storage_admin",
+        "ownerMember": false,
+        "rls": true
+      },
+      "capability": {
+        "supautilsLoaded": false,
+        "postgresStorageObjects": false
+      },
+      "policyCreated": false,
+      "policyDenied": true,
+      "denials": {
+        "alterTable": true,
+        "alterOwner": true,
+        "unlistedPolicy": true,
+        "assumeOwner": true
+      }
+    },
+    {
+      "delegated": true,
+      "actor": {
+        "actor": "postgres",
+        "sessionActor": "postgres",
+        "superuser": false,
+        "owner": "supabase_storage_admin",
+        "ownerMember": false,
+        "rls": true
+      },
+      "capability": {
+        "supautilsLoaded": true,
+        "postgresStorageObjects": true
+      },
+      "policyCreated": true,
+      "policyDenied": false,
+      "denials": {
+        "alterTable": true,
+        "alterOwner": true,
+        "unlistedPolicy": true,
+        "assumeOwner": true
+      }
+    }
+  ],
+  "scope": "Empty disposable networkless Postgres container; real source configuration read-only; no remote DDL, migration or delivery.",
+  "trigger": {
+    "runId": 41583941440,
+    "jobId": 125745014369,
+    "revision": "090773a0a15a49316128e08004e026f1541c6e04",
+    "failure": "Isolated migration dry-run lacked hosted supautils policy delegation; must be owner of table objects",
+    "restoredTablesBeforeFailure": 236,
+    "remoteMigrationApplied": false,
+    "applicationDeployed": false
+  },
+  "sourceMetadata": {
+    "projectRef": "nocteiuvohesvqbowchw",
+    "sessionSupautilsLoaded": true,
+    "postgresStorageObjectsPolicyGrant": true,
+    "postgresSuperuser": false,
+    "postgresStorageOwnerMember": false,
+    "storageObjectsOwner": "supabase_storage_admin",
+    "configurationChangedRemotely": false
+  },
+  "references": [
+    "https://github.com/supabase/supautils#manage-policies",
+    "https://github.com/supabase/postgres/blob/d8666db883fd1bc3bc06654c8db1f8dc39812b82/ansible/files/postgresql_config/supautils.conf.j2#L2"
+  ],
+  "tests": {
+    "files": 3,
+    "passed": 31,
+    "failed": 0,
+    "eslintPassed": true,
+    "typescriptPassed": true,
+    "remoteBackupRerun": "pending new exact-head CI and release authorization"
+  }
+}

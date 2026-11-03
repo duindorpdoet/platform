@@ -7,20 +7,20 @@ $ vitest run
 
 
  Test Files  163 passed | 2 skipped (165)
-      Tests  1514 passed | 6 skipped (1520)
-   Start at  06:04:17
-   Duration  19.34s (tests 56%, transform 23%, import 20%, worker 1%)
+      Tests  1515 passed | 6 skipped (1521)
+   Start at  06:36:50
+   Duration  19.14s (tests 60%, transform 21%, import 18%, worker 1%)
 
-    Isolate  165 workers spawned · ~118ms startup each (spawn + environment, per file)
-             at least ~1.65s faster with isolate: false — reuses workers across files instead of one per file
+    Isolate  165 workers spawned · ~112ms startup each (spawn + environment, per file)
+             at least ~1.56s faster with isolate: false — reuses workers across files instead of one per file
 
 $ node --test scripts/acceptance/frightnight-edges.test.mjs
-✔ edge acceptance rejects production and local origins before any database request (4.965812ms)
-✔ edge acceptance requires a separate own acceptance parent (0.324502ms)
-✔ edge acceptance rejects existing real actors before reading or writing fixtures (0.394368ms)
-✔ edge acceptance requires all existing actors to belong to the exact new parent run (0.309929ms)
-✔ edge acceptance requires exact verified published revision before any database request (0.212721ms)
-✔ edge acceptance refuses external payment providers before fixture creation (0.163018ms)
+✔ edge acceptance rejects production and local origins before any database request (5.007262ms)
+✔ edge acceptance requires a separate own acceptance parent (0.366405ms)
+✔ edge acceptance rejects existing real actors before reading or writing fixtures (0.42913ms)
+✔ edge acceptance requires all existing actors to belong to the exact new parent run (0.375789ms)
+✔ edge acceptance requires exact verified published revision before any database request (0.249287ms)
+✔ edge acceptance refuses external payment providers before fixture creation (0.157619ms)
 ℹ tests 6
 ℹ suites 0
 ℹ pass 6
@@ -28,25 +28,25 @@ $ node --test scripts/acceptance/frightnight-edges.test.mjs
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 66.246577
+ℹ duration_ms 66.81637
 $ node scripts/copy-maplibre-worker.mjs
 $ next build --webpack
 ▲ Next.js 16.3.5 (webpack)
 - Environments: .env.local
-✓ Running next.config.ts took 23ms
+✓ Running next.config.ts took 30ms
 - Experiments (use with caution):
   · cpus: 2
 
   Creating an optimized production build ...
-✓ Compiled successfully in 20.8s
+✓ Compiled successfully in 20.3s
   Running TypeScript ...
-  Finished TypeScript in 17.2s ...
+  Finished TypeScript in 5.4s ...
   Collecting page data using 2 workers ...
   Generating static pages using 2 workers (0/59) ...
   Generating static pages using 2 workers (14/59)
   Generating static pages using 2 workers (29/59)
   Generating static pages using 2 workers (44/59)
-✓ Generating static pages using 2 workers (59/59) in 403ms
+✓ Generating static pages using 2 workers (59/59) in 500ms
   Finalizing page optimization ...
   Collecting build traces ...
 

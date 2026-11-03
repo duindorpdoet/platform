@@ -1,7 +1,7 @@
 {
   "origin": "http://127.0.0.1:3137",
-  "buildId": "Ok5RjR2fex_g9bgq4d5YE",
-  "startedAt": "2026-11-03T05:07:15.248Z",
+  "buildId": "_1OR884fyGsZ8DqPkdSnD",
+  "startedAt": "2026-11-03T05:38:18.203Z",
   "checks": [
     {
       "label": "Exact own-zone photo endpoint on 390px",
@@ -36,6 +36,10 @@
       "status": "passed"
     },
     {
+      "label": "Empty reviewReason displays em dash rather than literal null",
+      "status": "passed"
+    },
+    {
       "label": "No per-row image downloads or photo polling",
       "status": "passed"
     },
@@ -54,5 +58,5 @@
   ],
   "limits": "Read-only presentation fixture on a real local authenticated admin context. Only photoPath presence in a real authorized zone-list response is replaced. No Storage HTTP access, photo upload, provider or hosted-release success is claimed.",
   "status": "passed",
-  "testedAt": "2026-11-03T05:07:17.446Z"
+  "testedAt": "2026-11-03T05:38:20.957Z"
 }

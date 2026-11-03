@@ -29,7 +29,7 @@ export function sourceReadPrefix(snapshot) {
   return "begin isolation level repeatable read read only;"+(snapshot?`set transaction snapshot ${literal(snapshot)};`:'')+
     "set local statement_timeout='5min';set local lock_timeout='3s';set local jit=off;set local timezone='UTC';set local datestyle='ISO';";
 }
-const sourceReadPhases=new Set(['snapshot-export','catalog','migration-history','preservation','roles','role-memberships','storage-objects','vault-fingerprint','storage-before','storage-after','frightnight-scenario']);
+const sourceReadPhases=new Set(['snapshot-export','catalog','migration-history','preservation','roles','role-memberships','storage-objects','vault-fingerprint','storage-before','storage-after','frightnight-scenario','storage-policy-capability']);
 export async function withSourceReadPhase(phase,read,report=value=>console.log(JSON.stringify(value)),now=()=>performance.now()) {
   if(!sourceReadPhases.has(phase))throw new Error('INVALID_BACKUP_READ_PHASE');
   const started=now();report({backupRead:phase,status:'started'});
@@ -163,15 +163,32 @@ async function api(env,request,path,body) {
   if(!response.ok)throw new Error(`BACKUP_API_${response.status}`);
   return response.json();
 }
-export async function startIsolatedRestore(image,container,rootKey,execute=capture) {
+// Supabase delegates policy DDL on managed tables through supautils rather than
+// table ownership. Copy only this observed capability, never arbitrary source
+// configuration, role memberships or superuser privileges.
+export function storagePolicyCapability(settings) {
+  if(!settings||typeof settings.sessionPreload!=='string'||typeof settings.policyGrants!=='string')throw new Error('INVALID_STORAGE_POLICY_CAPABILITY');
+  let grants;try{grants=JSON.parse(settings.policyGrants||'{}');}catch{throw new Error('INVALID_STORAGE_POLICY_CAPABILITY');}
+  if(!grants||typeof grants!=='object'||Array.isArray(grants)||('postgres' in grants&&(!Array.isArray(grants.postgres)||grants.postgres.some(table=>typeof table!=='string'))))throw new Error('INVALID_STORAGE_POLICY_CAPABILITY');
+  const capability={supautilsLoaded:settings.sessionPreload.split(',').map(name=>name.trim()).includes('supautils'),postgresStorageObjects:Array.isArray(grants.postgres)&&grants.postgres.includes('storage.objects')};
+  if(capability.postgresStorageObjects&&!capability.supautilsLoaded)throw new Error('SOURCE_STORAGE_POLICY_MODULE_REQUIRED');
+  return capability;
+}
+export function isolatedStoragePolicyArguments(capability) {
+  if(capability===undefined)return [];
+  if(!capability||Object.keys(capability).sort().join(',')!=='postgresStorageObjects,supautilsLoaded'||typeof capability.supautilsLoaded!=='boolean'||typeof capability.postgresStorageObjects!=='boolean'||(capability.postgresStorageObjects&&!capability.supautilsLoaded))throw new Error('INVALID_STORAGE_POLICY_CAPABILITY');
+  return capability.supautilsLoaded&&capability.postgresStorageObjects?['-c','session_preload_libraries=supautils','-c','supautils.policy_grants={"postgres":["storage.objects"]}']:[];
+}
+export async function startIsolatedRestore(image,container,rootKey,execute=capture,policyCapability) {
   if(!/^supabase\/postgres:\d+\.\d+\.\d+\.\d+$/.test(image)||!/^duindorp-restore-[a-z0-9-]+$/.test(container)||!/^([a-f0-9]{64})$/.test(rootKey))throw new Error('INVALID_ISOLATED_RESTORE_CONTEXT');
+  const policyArguments=isolatedStoragePolicyArguments(policyCapability);
   let created=false;
   try {
     // The project root key travels only over stdin into this private tmpfs.
     // It never appears in argv, Docker configuration, logs or a plaintext file
     // on the runner disk. Cron and every outbound network remain disabled.
     const waitForKey='while [ ! -f /run/duindorp-vault/ready ]; do sleep 0.1; done; exec /usr/local/bin/docker-entrypoint.sh "$@"';
-    await execute('docker',['run','--detach','--name',container,'--network','none','--tmpfs','/run/duindorp-vault:rw,exec,nosuid,nodev,size=64k,mode=0700','--env','POSTGRES_USER=supabase_admin','--env','POSTGRES_DB=postgres','--env','POSTGRES_PASSWORD='+randomBytes(32).toString('hex'),'--entrypoint','sh',image,'-c',waitForKey,'isolated-restore','postgres','-c','shared_preload_libraries=pg_stat_statements,pg_cron,pg_net,supabase_vault','-c','vault.getkey_script=/run/duindorp-vault/getkey','-c','cron.database_name=postgres','-c','cron.launch_active_jobs=off']);
+    await execute('docker',['run','--detach','--name',container,'--network','none','--tmpfs','/run/duindorp-vault:rw,exec,nosuid,nodev,size=64k,mode=0700','--env','POSTGRES_USER=supabase_admin','--env','POSTGRES_DB=postgres','--env','POSTGRES_PASSWORD='+randomBytes(32).toString('hex'),'--entrypoint','sh',image,'-c',waitForKey,'isolated-restore','postgres','-c','shared_preload_libraries=pg_stat_statements,pg_cron,pg_net,supabase_vault','-c','vault.getkey_script=/run/duindorp-vault/getkey','-c','cron.database_name=postgres','-c','cron.launch_active_jobs=off',...policyArguments]);
     created=true;
     const installKey="umask 077; cat > /run/duindorp-vault/root.key; printf '#!/bin/sh\\ncat /run/duindorp-vault/root.key\\n' > /run/duindorp-vault/getkey; chown -R postgres:postgres /run/duindorp-vault; chmod 700 /run/duindorp-vault/getkey; chmod 600 /run/duindorp-vault/root.key; touch /run/duindorp-vault/ready";
     await execute('docker',['exec','-i',container,'sh','-c',installKey],rootKey+'\n');
@@ -193,8 +210,8 @@ function sourceSignature(value,key) {
   return createHmac('sha256',key).update(sourceExportKind+'\0').update(JSON.stringify(value)).digest();
 }
 async function writeSourceExport({env,key,context,directory,save,environment,revision},source) {
-  const {image,appliedMigrations,reviewedMigrations,coverageBefore,routePolicyBefore,routeSettingsBefore,p12PolicyBefore}=source;
-  await save('source-state.aes',{image,appliedMigrations,reviewedMigrations,coverageBefore,routePolicyBefore,routeSettingsBefore,p12PolicyBefore});
+  const {image,appliedMigrations,reviewedMigrations,coverageBefore,routePolicyBefore,routeSettingsBefore,p12PolicyBefore,policyCapability}=source;
+  await save('source-state.aes',{image,appliedMigrations,reviewedMigrations,coverageBefore,routePolicyBefore,routeSettingsBefore,p12PolicyBefore,policyCapability});
   const files=[];
   for(const name of (await readdir(directory)).filter(name=>name.endsWith('.aes')).sort())files.push({name,...await fileDigest(join(directory,name))});
   const proof={version:1,kind:sourceExportKind,environment,revision,context,projectRef:env.SUPABASE_PROJECT_REF,image,
@@ -227,6 +244,7 @@ async function readSourceExport({env,key,context,directory,environment,revision}
   }
   const value=async name=>JSON.parse(openBackup(await readFile(join(directory,name)),key,context+':'+name).toString('utf8'));
   const source=await value('source-state.aes');
+  isolatedStoragePolicyArguments(source.policyCapability);
   const digests=await migrationDigests(source.reviewedMigrations);
   if(JSON.stringify(proof.migrations)!==JSON.stringify(digests)||JSON.stringify(proof.appliedMigrations)!==JSON.stringify(source.appliedMigrations)||source.image!==proof.image)throw new Error('SOURCE_EXPORT_MIGRATION_MISMATCH');
   for(const [field,name] of Object.entries({catalog:'catalog.aes',before:'inventory.aes',roles:'roles.aes',memberships:'role-memberships.aes',objects:'objects.aes',vaultKey:'vault-root-key.aes',vaultBefore:'vault-inventory.aes'}))source[field]=await value(name);
@@ -339,7 +357,8 @@ async function exportSource({env,key,context,directory,save,request,captureComma
     const roles=JSON.parse(await sourceQuery('roles',"select jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper,'eventTriggerOwner',exists(select 1 from pg_event_trigger where evtowner=pg_roles.oid))) from pg_roles where rolname not like 'pg_%'",snapshot));
     const memberships=JSON.parse(await sourceQuery('role-memberships',"select coalesce(jsonb_agg(jsonb_build_object('role',r.rolname,'member',m.rolname,'adminOption',a.admin_option,'inheritOption',a.inherit_option,'setOption',a.set_option)),'[]') from pg_auth_members a join pg_roles r on r.oid=a.roleid join pg_roles m on m.oid=a.member",snapshot));
     const objects=JSON.parse(await sourceQuery('storage-objects',"select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]') from storage.objects o",snapshot));
-    const settings={project,auth:await apiCall('/config/auth'),rest:await apiCall('/postgrest'),backups:await apiCall('/database/backups')};
+    const policyCapability=storagePolicyCapability(JSON.parse(await sourceQuery('storage-policy-capability',"select jsonb_build_object('sessionPreload',current_setting('session_preload_libraries'),'policyGrants',coalesce(current_setting('supautils.policy_grants',true),'{}'))",snapshot)));
+    const settings={project,auth:await apiCall('/config/auth'),rest:await apiCall('/postgrest'),backups:await apiCall('/database/backups'),policyCapability};
     const vaultKey=await apiCall('/pgsodium');
     if(!/^[a-f0-9]{64}$/.test(vaultKey.root_key??''))throw new Error('VAULT_RESTORE_KEY_REQUIRED');
     const vaultBefore=JSON.parse(await sourceQuery('vault-fingerprint',vaultFingerprint,snapshot));
@@ -366,7 +385,7 @@ async function exportSource({env,key,context,directory,save,request,captureComma
     }
     await save('object-checks.aes',objectChecks);
     holder.child.stdin.end('commit;\n');await holder.done;
-    return {image,appliedMigrations,reviewedMigrations,catalog,before,coverageBefore,routePolicyBefore,routeSettingsBefore,p12PolicyBefore,roles,memberships,objects,vaultKey,vaultBefore,frightnightScenario};
+    return {image,appliedMigrations,reviewedMigrations,catalog,before,coverageBefore,routePolicyBefore,routeSettingsBefore,p12PolicyBefore,roles,memberships,objects,vaultKey,vaultBefore,frightnightScenario,policyCapability};
   } finally {
     clearInterval(keepAlive);
     holder.child.stdin.end();holder.child.kill();
@@ -383,11 +402,16 @@ async function restoreSource({env,key,context,directory,save,captureCommand,spaw
   try {
     // No network is attached to the restore database. Its cron launcher is
     // disabled, so restored jobs/messages cannot contact live services.
-    await startRestore(image,container,vaultKey.root_key);
+    await startRestore(image,container,vaultKey.root_key,undefined,source.policyCapability);
     localStarted=true;
     const localQuery=sql=>captureCommand('docker',['exec','-i',container,'psql','-X','-qAt','-U','supabase_admin','-d','postgres','-v','ON_ERROR_STOP=1'],"set timezone='UTC';set datestyle='ISO';"+sql+';');
     console.log('Isolated PostgreSQL version: '+await localQuery("select current_setting('server_version')"));
     console.log('Isolated preload libraries: '+await localQuery("select current_setting('shared_preload_libraries')"));
+    if(source.policyCapability?.postgresStorageObjects) {
+      const observed=storagePolicyCapability(JSON.parse(await localQuery("select jsonb_build_object('sessionPreload',current_setting('session_preload_libraries'),'policyGrants',coalesce(current_setting('supautils.policy_grants',true),'{}'))")));
+      if(!observed.supautilsLoaded||!observed.postgresStorageObjects)throw new Error('RESTORE_STORAGE_POLICY_CAPABILITY_MISMATCH');
+      console.log('Isolated Storage policy capability matches the observed source delegation; table ownership is retained.');
+    }
     for(const role of roles)await localQuery(`do $role$ begin if not exists(select 1 from pg_roles where rolname=${literal(role.name)}) then execute ${literal('create role '+quote(role.name)+' nologin '+(role.inherit?'inherit':'noinherit')+(role.bypassrls?' bypassrls':''))};end if;end $role$`);
     for(const membership of memberships)await localQuery('grant '+quote(membership.role)+' to '+quote(membership.member)+' with admin '+membership.adminOption+', inherit '+membership.inheritOption+', set '+membership.setOption);
     // Managed Supabase roles can own event triggers after their superuser
@@ -434,7 +458,7 @@ async function restoreSource({env,key,context,directory,save,captureCommand,spaw
     const legacyPrint=JSON.parse(await localQuery("select jsonb_build_object('activeCredentials',count(*),'hashOnly',count(*) filter(where not exists(select 1 from app_private.portal_print_material m where m.credential_id=c.id))) from app_private.portal_credentials c where c.revoked_at is null and c.valid_from<=now() and (c.valid_until is null or c.valid_until>now())"));
     const files=[];
     for(const name of (await readdir(directory)).filter(name=>name.endsWith('.aes')).sort())files.push({name,...await fileDigest(join(directory,name))});
-    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,vaultVerified:true,vaultSecrets:vaultBefore.length,tables:catalog.length,objects:objects.length,migrations,coverageReconciliation,jointRoutePolicyReconciliation,jointRouteSettingsReconciliation,p12RoutePolicyReconciliation,backfill,legacyPrint,files,
+    const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,storagePolicyDelegationVerified:source.policyCapability?.postgresStorageObjects===true,vaultVerified:true,vaultSecrets:vaultBefore.length,tables:catalog.length,objects:objects.length,migrations,coverageReconciliation,jointRoutePolicyReconciliation,jointRouteSettingsReconciliation,p12RoutePolicyReconciliation,backfill,legacyPrint,files,
       limits:['Provider runtime secrets remain in the existing secret store.','No live database configuration, migration, credential, or row was changed by this job.','Isolated SQL restore is not an Auth/mail/browser acceptance result.']};
     if(scenarioProof)proof.frightnightScenario=scenarioProof;
     proof.signature=createHmac('sha256',key).update(JSON.stringify(proof)).digest('hex');

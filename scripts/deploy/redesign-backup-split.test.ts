@@ -8,7 +8,7 @@ import {runReleaseBackup} from './redesign-backup.mjs';
 import {REVIEWED_RELEASE_MIGRATIONS} from './release-migrations.mjs';
 
 const secret=Buffer.alloc(32,91).toString('base64'),key=backupKey(secret),kind='duindorp-release-source-export-v1';
-async function fixture(withObject=false) {
+async function fixture(withObject=false,policyCapability?:unknown) {
   const root=await mkdtemp(join(tmpdir(),'duindorp-split-backup-')),directory=join(root,'duindorp-release-backup');
   const {mkdir}=await import('node:fs/promises');await mkdir(directory,{mode:0o700});
   const env={RELEASE_BACKUP_MODE:'restore',APP_ENVIRONMENT:'production',GITHUB_SHA:'a'.repeat(40),GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1',SUPABASE_PROJECT_REF:'dtubngvxfbupgvgfrjko',CHILD_CODE_ENCRYPTION_KEY:secret,RUNNER_TEMP:root};
@@ -18,7 +18,7 @@ async function fixture(withObject=false) {
   const objectBytes=Buffer.from('PRIVATE_SYNTHETIC_STORAGE_OBJECT'),object={id:'00000000-0000-4000-8000-000000000001',metadata:{size:objectBytes.length}};
   const values:Record<string,unknown>={'catalog.aes':[{schema:'app_private',name:'events',columns:['id']}],'inventory.aes':[{table:'app_private.events',rows:0,sha256:'b'.repeat(64)}],
     'roles.aes':[],'role-memberships.aes':[],'settings.aes':{private:'PRIVATE_SETTINGS'},'objects.aes':withObject?[object]:[],'vault-root-key.aes':{root_key:'c'.repeat(64)},'vault-inventory.aes':[],
-    'database.aes':{private:'PRIVATE_DATABASE'},'object-checks.aes':withObject?[{id:object.id,file:'object-0.aes',sha256:createHash('sha256').update(objectBytes).digest('hex'),bytes:objectBytes.length}]:[],'source-state.aes':{image,appliedMigrations,reviewedMigrations:[...REVIEWED_RELEASE_MIGRATIONS],coverageBefore:{},routePolicyBefore:{},routeSettingsBefore:{},p12PolicyBefore:{}}};
+    'database.aes':{private:'PRIVATE_DATABASE'},'object-checks.aes':withObject?[{id:object.id,file:'object-0.aes',sha256:createHash('sha256').update(objectBytes).digest('hex'),bytes:objectBytes.length}]:[],'source-state.aes':{image,appliedMigrations,reviewedMigrations:[...REVIEWED_RELEASE_MIGRATIONS],coverageBefore:{},routePolicyBefore:{},routeSettingsBefore:{},p12PolicyBefore:{},policyCapability}};
   if(withObject)values['object-0.aes']=objectBytes;
   const files=[];
   for(const [name,value] of Object.entries(values)) {
@@ -35,9 +35,22 @@ it('accepts a fully authenticated exact-context source only before starting a ne
   const f=await fixture(true);try {
     await expect(runReleaseBackup(f.env,{request:f.request,captureCommand:f.captureCommand,startRestore:f.startRestore})).rejects.toThrow('RESTORE_GATE_REACHED');
     expect(f.request).not.toHaveBeenCalled();expect(f.captureCommand).toHaveBeenCalledExactlyOnceWith('docker',['pull',f.proof.image]);
-    expect(f.startRestore).toHaveBeenCalledExactlyOnceWith(f.proof.image,'duindorp-restore-123-1','c'.repeat(64));
+    expect(f.startRestore).toHaveBeenCalledExactlyOnceWith(f.proof.image,'duindorp-restore-123-1','c'.repeat(64),undefined,undefined);
     expect(await readdir(f.directory)).not.toContain('proof.json');
     expect(JSON.stringify(f.proof)).not.toContain('PRIVATE');
+  }finally{await rm(f.root,{recursive:true,force:true});}
+});
+it('authenticates the captured policy capability inside the encrypted source before applying its bounded restore configuration',async()=>{
+  const capability={supautilsLoaded:true,postgresStorageObjects:true},f=await fixture(false,capability);try {
+    await expect(runReleaseBackup(f.env,{request:f.request,captureCommand:f.captureCommand,startRestore:f.startRestore})).rejects.toThrow('RESTORE_GATE_REACHED');
+    expect(f.startRestore).toHaveBeenCalledExactlyOnceWith(f.proof.image,'duindorp-restore-123-1','c'.repeat(64),undefined,capability);
+    expect(f.request).not.toHaveBeenCalled();
+  }finally{await rm(f.root,{recursive:true,force:true});}
+});
+it.each([{supautilsLoaded:false,postgresStorageObjects:true},{supautilsLoaded:true,postgresStorageObjects:'true'},{supautilsLoaded:true,postgresStorageObjects:true,role:'supabase_admin'}])('rejects malformed or extended signed policy capability before any restore process: %j',async capability=>{
+  const f=await fixture(false,capability);try {
+    await expect(runReleaseBackup(f.env,{request:f.request,captureCommand:f.captureCommand,startRestore:f.startRestore})).rejects.toThrow('INVALID_STORAGE_POLICY_CAPABILITY');
+    expect(f.request).not.toHaveBeenCalled();expect(f.captureCommand).not.toHaveBeenCalled();expect(f.startRestore).not.toHaveBeenCalled();
   }finally{await rm(f.root,{recursive:true,force:true});}
 });
 it.each(['APP_ENVIRONMENT','GITHUB_SHA','GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','SUPABASE_PROJECT_REF'] as const)('rejects a source from another %s before any Docker or provider call',async field=>{
@@ -83,6 +96,7 @@ it('keeps the default monolithic pooler path and reaches restore without requiri
       if(input.includes("'worldPolicyInitialization'"))return JSON.stringify({rows:inventory,worldPolicyInitialization:{},jointRoutePolicyRelease:{},jointRouteSettingsInitialization:{},p12RoutePolicy:{}});
       if(input.includes("'columns'"))return JSON.stringify([{schema:'app_private',name:'events',columns:['id']}]);
       if(input.includes('from supabase_migrations.schema_migrations'))return JSON.stringify(migrations);
+      if(input.includes("'sessionPreload'"))return JSON.stringify({sessionPreload:'supautils',policyGrants:'{"postgres":["storage.objects"]}'});
       return '[]';
     });
     const processCommand=(_command:string,args:string[])=>{
@@ -95,7 +109,7 @@ it('keeps the default monolithic pooler path and reaches restore without requiri
     };
     const env={...f.env,RELEASE_BACKUP_MODE:undefined,SUPABASE_ACCESS_TOKEN:'PRIVATE',SUPABASE_SERVICE_ROLE_KEY:'PRIVATE',SUPABASE_DB_PASSWORD:'PRIVATE'};
     await expect(runReleaseBackup(env,{request,captureCommand,processCommand,startRestore:f.startRestore})).rejects.toThrow('RESTORE_GATE_REACHED');
-    expect(reads).toHaveLength(7);expect(f.startRestore).toHaveBeenCalledOnce();
+    expect(reads).toHaveLength(8);expect(f.startRestore).toHaveBeenCalledExactlyOnceWith('supabase/postgres:17.6.1.167','duindorp-restore-123-1','c'.repeat(64),undefined,{supautilsLoaded:true,postgresStorageObjects:true});
     expect((await readdir(f.directory)).every(name=>name.endsWith('.aes'))).toBe(true);
   }finally{await rm(f.root,{recursive:true,force:true});}
 });

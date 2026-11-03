@@ -1,0 +1,25 @@
+{
+  "verifiedAt": "2026-11-03T05:27:18.849800+00:00",
+  "localOnly": true,
+  "passed": 2,
+  "cases": [
+    {
+      "run": "supp-20261103-806c1c1f",
+      "expectedFailure": "LOCAL_INJECTED_SETUP_RESPONSE_LOSS",
+      "unexpectedAcceptanceSuccess": false,
+      "ownScopeClosed": true,
+      "oldDataAndFinancialHistoryPreserved": true,
+      "newAuthActorsPreservedAndRetired": true,
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-806c1c1f/report.json"
+    },
+    {
+      "run": "supp-20261103-d492f7cf",
+      "expectedFailure": "LOCAL_INJECTED_CLEANUP_FAILURE",
+      "unexpectedAcceptanceSuccess": false,
+      "ownScopeClosed": true,
+      "oldDataAndFinancialHistoryPreserved": true,
+      "newAuthActorsPreservedAndRetired": true,
+      "report": "/tmp/frightnight-supplemental-hosted/evidence/supp-20261103-d492f7cf/report.json"
+    }
+  ]
+}

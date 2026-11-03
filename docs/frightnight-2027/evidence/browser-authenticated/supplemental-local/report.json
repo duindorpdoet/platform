@@ -1,0 +1,207 @@
+{
+  "scope": "LOCAL ONLY; real GoTrue/PostgreSQL production UI; not a staging result",
+  "origin": "http://127.0.0.1:3137",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "revision": "090773a0a15a49316128e08004e026f1541c6e04",
+  "run": "supp-20261103-4bf3460b",
+  "edition": "frightnight-2027-test-acceptance-supplement-supp-20261103-4bf3460b",
+  "eventId": "d006258b-2371-4b35-bb78-e61fc9cc3845",
+  "startedAt": "2026-11-03T05:27:19.310Z",
+  "checks": [
+    {
+      "label": "INS-01 actual four-person mild registration UI, server quote and identical-command replay",
+      "status": "passed"
+    },
+    {
+      "label": "INS-08 actual prestart full-block refusal, valid block change and independent-context persistence preserve paid quote",
+      "status": "passed"
+    },
+    {
+      "label": "INS-09 actual quote-lock explanation/disabled fields and server rejection preserve four paid places and amount",
+      "status": "passed"
+    },
+    {
+      "label": "REG-04 own help UI submission, authorized durable reply/resolve and second independent context; foreign family denied",
+      "status": "passed",
+      "independentContexts": 2
+    },
+    {
+      "label": "KID-01 actual riddle UI rejects wrong answer, accepts retry and persists one award",
+      "status": "passed",
+      "module": "supplemental-games-beacon",
+      "questId": "riddle-1"
+    },
+    {
+      "label": "KID-01 actual riddle UI rejects wrong answer, accepts retry and persists one award",
+      "status": "passed",
+      "module": "supplemental-games-beacon",
+      "questId": "riddle-2"
+    },
+    {
+      "label": "KID-01 actual riddle UI rejects wrong answer, accepts retry and persists one award",
+      "status": "passed",
+      "module": "supplemental-games-beacon",
+      "questId": "riddle-3"
+    },
+    {
+      "label": "KID-01 actual symbols game rejects wrong sequence and accepts corrected four choices",
+      "status": "passed",
+      "module": "supplemental-games-beacon"
+    },
+    {
+      "label": "KID-01 actual colours game rejects wrong submission and persists corrected windows",
+      "status": "passed",
+      "module": "supplemental-games-beacon"
+    },
+    {
+      "label": "KID-01 actual pairs game exposes mismatch retry and accepts all three matched pairs",
+      "status": "passed",
+      "module": "supplemental-games-beacon"
+    },
+    {
+      "label": "KID-02 six completed quests survive reload and an independent context; exact command replays add no awards",
+      "status": "passed",
+      "module": "supplemental-games-beacon",
+      "quests": 6,
+      "independentContexts": 2
+    },
+    {
+      "label": "BAK-02 separate zero-quest family completes actual start, ordinary visit and Duinpad final scan",
+      "status": "passed",
+      "module": "supplemental-games-beacon"
+    },
+    {
+      "label": "BAK-02 all three digital steps and independent beacon completion persist without six quests; reload/replay award once",
+      "status": "passed",
+      "module": "supplemental-games-beacon"
+    },
+    {
+      "label": "BAK-02 same zero-quest family downloads private SVG Nachtpas after digital beacon",
+      "status": "passed"
+    },
+    {
+      "label": "QR-03 actual manual start within chosen evening succeeds before a later advisory start block",
+      "status": "passed",
+      "chosenBlockIsAppointment": false
+    }
+  ],
+  "screenshots": [
+    "supplement-start-block-independent-context-1440.png",
+    "supplement-quote-lock-390.png",
+    "supplement-help-independent-context-1440.png",
+    "supplement-games-pairs-retry-390.png",
+    "supplement-games-six-completed-390.png",
+    "supplement-games-six-completed-1440.png",
+    "supplement-beacon-independent-final-390.png"
+  ],
+  "sourceSha256": {
+    "runner.mjs": "5ebff99a564b35bbde2d7a29a1d39fd9876d74dcabdb2d8e1f13d8bfc09567b1",
+    "guards.mjs": "451cf2b8efc2c32ac8500683283b8c5f0401cb199ad9f2b94e7647a586e94d7f",
+    "games-beacon.mjs": "a55024dea17aee5c18de7bbe67c9f0a43eff7cb071c737d3ce51de0b38b13835",
+    "scenarios.mjs": "0b533a62090deb67942fabe51ddae53d993543776cee309f81cd2090d5faac0b",
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+  },
+  "limitations": [
+    "No camera hardware or two physical phones",
+    "No external PSP or mail delivery",
+    "No elapsed-year retention or physical beacon proof"
+  ],
+  "localBuildId": "Ok5RjR2fex_g9bgq4d5YE",
+  "appSourceSha256": {
+    "components/frightnight/participant.tsx": "ae54b364271c0bb2ca13b12681028df2a24d625248025e7553adbdc562d059dd",
+    "components/frightnight/games.tsx": "c1e2ca3f06704010bfe6788fe8f93b5adc101bdf468a78045ef87c88a6d4880e",
+    "components/frightnight/client.tsx": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+    "components/frightnight/operations.tsx": "7e5ebae9317fd31f16c5041ac23c7a7c9b54409d94d4405b65e75e8a79449da7",
+    "lib/frightnight/model.ts": "8c06aeb0a25fa153030699abb4ecfa03dcda4004e73b57d8fc3dc2f1bcf3d08f",
+    "lib/frightnight/server.ts": "db37464a55546f46eab4b297e04476b0ac776a97cb24b89de08add2d231360f1",
+    "lib/frightnight/payment-server.ts": "3a27c994986a91adb7299dde16488a6effd28a1f5a5a959be1347e1b863381a0",
+    "app/api/frightnight/command/route.ts": "d2a1e15e98c19e2d8c52f0e8c12f3b8fb2e356abd7f8bc1401b9371242b9d5c0"
+  },
+  "servedBuildId": "Ok5RjR2fex_g9bgq4d5YE",
+  "gamesBeacon": {
+    "startedAt": "2026-11-03T05:27:30.298Z",
+    "edition": "frightnight-2027-test-acceptance-supplement-supp-20261103-4bf3460b",
+    "eventId": "d006258b-2371-4b35-bb78-e61fc9cc3845",
+    "status": "passed",
+    "checks": [
+      {
+        "id": "KID-01",
+        "label": "actual riddle UI rejects wrong answer, accepts retry and persists one award",
+        "questId": "riddle-1"
+      },
+      {
+        "id": "KID-01",
+        "label": "actual riddle UI rejects wrong answer, accepts retry and persists one award",
+        "questId": "riddle-2"
+      },
+      {
+        "id": "KID-01",
+        "label": "actual riddle UI rejects wrong answer, accepts retry and persists one award",
+        "questId": "riddle-3"
+      },
+      {
+        "id": "KID-01",
+        "label": "actual symbols game rejects wrong sequence and accepts corrected four choices"
+      },
+      {
+        "id": "KID-01",
+        "label": "actual colours game rejects wrong submission and persists corrected windows"
+      },
+      {
+        "id": "KID-01",
+        "label": "actual pairs game exposes mismatch retry and accepts all three matched pairs"
+      },
+      {
+        "id": "KID-02",
+        "label": "six completed quests survive reload and an independent context; exact command replays add no awards",
+        "quests": 6,
+        "independentContexts": 2
+      },
+      {
+        "id": "BAK-02",
+        "label": "separate zero-quest family completes actual start, ordinary visit and Duinpad final scan"
+      },
+      {
+        "id": "BAK-02",
+        "label": "all three digital steps and independent beacon completion persist without six quests; reload/replay award once"
+      }
+    ],
+    "screenshots": [
+      "supplement-games-pairs-retry-390.png",
+      "supplement-games-six-completed-390.png",
+      "supplement-games-six-completed-1440.png",
+      "supplement-beacon-independent-final-390.png"
+    ],
+    "limits": [
+      "Digital browser beacon only; physical/local beacon hardware is not exercised.",
+      "Two browser contexts are not two physical phones.",
+      "No OTP, external PSP, outbound mail or push is requested by this module."
+    ],
+    "completedAt": "2026-11-03T05:27:37.536Z"
+  },
+  "status": "passed",
+  "cleanup": {
+    "ownSiblingArchived": true,
+    "closed": true,
+    "financialHistoryUnchanged": true,
+    "householdsPreserved": true
+  },
+  "preservation": {
+    "allPriorEditionsUnchanged": true,
+    "canonicalUnchanged": true,
+    "legacyOutboxRowsUnchanged": true,
+    "legacyOutboxContentUnchanged": true,
+    "oldAuthIdsPreserved": true
+  },
+  "cleanupErrors": [],
+  "auth": {
+    "created": 3,
+    "preserved": true,
+    "retired": true,
+    "retiredActors": 3,
+    "otpRequests": 0,
+    "passwordsOrSessionsInEvidence": false
+  },
+  "completedAt": "2026-11-03T05:27:39.931Z"
+}

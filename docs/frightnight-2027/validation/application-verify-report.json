@@ -1,9 +1,9 @@
 {
-  "recordedAt": "2026-11-03T05:06:41.335103+00:00",
+  "recordedAt": "2026-11-03T05:39:20.259470+00:00",
   "scope": "local final functional application and acceptance guard sources; not hosted staging or external providers",
   "baseRevision": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
-  "previousCheckpoint": "1fb37f0bfda0157db08db905f51b37674f156d5e",
-  "buildId": "Ok5RjR2fex_g9bgq4d5YE",
+  "previousCheckpoint": "090773a0a15a49316128e08004e026f1541c6e04",
+  "buildId": "_1OR884fyGsZ8DqPkdSnD",
   "command": "FRIGHTNIGHT_BUILD_NO_CACHE=true pnpm verify",
   "exitCode": 0,
   "lint": "passed",
@@ -11,7 +11,7 @@
   "unitTests": {
     "filesPassed": 163,
     "filesSkipped": 2,
-    "passed": 1514,
+    "passed": 1515,
     "skipped": 6,
     "skips": "Optional local integration environments absent. Separate required CI integration gates remain mandatory."
   },
@@ -55,7 +55,7 @@
     "app/toegankelijkheid/page.tsx": "2d82063448aa4847ae1976510acd647e743770041ce9f4b4aea47c1196e6f0e3",
     "app/voorwaarden/page.tsx": "8b975b8b07629a29366921faefc6d60e0b4759e50f8a0b4dd38e0cb734c79dfe",
     "components/frightnight/access-management.tsx": "85a6682090759fa633edcab09ebfb39a99fa4f88a3786de229a704195f0ecf85",
-    "components/frightnight/admin-resource.tsx": "e4fe3feb2da907f66a86296fd65d36222cdac367e8ce8e20212c06928463fe16",
+    "components/frightnight/admin-resource.tsx": "ffadb9296b26c079b97744c4aba1ed0575be75cc2ec4d805fecab6d69ce67038",
     "components/frightnight/announcements.tsx": "5ac32228a111e9ecf0190477ccf96c1d78fa18eb951e3563cb13c79be07133a9",
     "components/frightnight/calm-toggle.tsx": "580e52ab2e45cb5a150b479269ab3f76fab7d958829d45e22d90ac72146e9401",
     "components/frightnight/camera.tsx": "dfff4b8d497781e8b367eb8ae2bb38bffe65fdf006d58a1eaa65df80fcad0573",
@@ -162,15 +162,15 @@
     "scripts/acceptance/frightnight-staging.mjs": "0f204f2d24cae38afad9b04056494bdf8ca1a55f9803e724cd314631976a67bf",
     "scripts/deploy/configure-supabase.test.ts": "07066583714f34e9cb418d376a78b5ab6ccba4c503f7965dc41403fd6aa837e6"
   },
-  "logSha256": "2b44da21076c09804670929dc47a48ee9a9041d24c8a305ad52af9b414029fd2",
+  "logSha256": "2c8b9fd848b1eb375285bbb363eed0a4a690285375a3b84406dd1e317e640976",
   "limitations": [
     "Real OTP is tester initiated only.",
     "No external PSP, physical camera, physical beacon or hosted load result is implied.",
     "Published SHA acceptance is a separate release gate."
   ],
-  "rawLogSha256": "d37be655a415cc98bfc862da5b8af3d5a27d86b866a7b7d1987479f8ab0fffd9",
+  "rawLogSha256": "ac08a75043464211c90ae50a1fc5f6f88a3e015d79c7b1953de0880864398d72",
   "logNormalization": "CR removed and trailing whitespace stripped; test/build output unchanged.",
-  "followup": "Final application adds a read-only, on-click current-zone photo link for authorised regie. Exact current-photo cross-owner Storage guards are covered by separate 646-check SQL and race proof. New actual Storage HTTP acceptance remains pending the verified hosted parent run.",
+  "followup": "Only application change after Ok5 is the null-cell formatter in AdminResource. The restore helper changed independently after the app unit phase and has separate frozen final targeted checks and actual isolated privilege parity proof; exact-head full CI remains required.",
   "acceptanceGuardTests": {
     "command": "node --test scripts/acceptance/frightnight-edges.test.mjs",
     "passed": 6,
@@ -202,7 +202,7 @@
     "evidenceIndex": "docs/frightnight-2027/evidence/README.md",
     "hostedStaging": "pending exact published SHA"
   },
-  "currentBuildBrowserVerification": {
+  "previousPhotoBuildBrowserVerification": {
     "buildId": "Ok5RjR2fex_g9bgq4d5YE",
     "public": 23,
     "residentReview": 12,
@@ -211,5 +211,34 @@
     "scope": "Actual local public and authenticated HUI02 browsers; photo-link presentation uses a current-path response fixture with no Storage HTTP claim. All other earlier 96-check outcomes retain their previous build source scope.",
     "hostedStaging": "pending exact published SHA",
     "evidenceIndex": "docs/frightnight-2027/evidence/README.md"
+  },
+  "additionalSourceUnchangedBrowserVerification": {
+    "buildId": "Ok5RjR2fex_g9bgq4d5YE",
+    "revision": "090773a0a15a49316128e08004e026f1541c6e04",
+    "uiChecks": 15,
+    "pureGuardTests": 6,
+    "cleanupFaultPaths": 2,
+    "scope": "Local actual GoTrue/PostgreSQL only; no hosted credential context or provider/camera/hardware claim.",
+    "evidence": "docs/frightnight-2027/evidence/browser-authenticated/supplemental-local/report.json",
+    "reportSha256": "d3f6dcf6ec842d537c81905d94ccbdf8ae07779957c0306f26a63ceb0419bba2",
+    "relevance": "Participant/games/client/operations/server hashes in that actual report remain unchanged. Later app change is only the nullable-cell formatter in AdminResource."
+  },
+  "currentBuildBrowserVerification": {
+    "buildId": "_1OR884fyGsZ8DqPkdSnD",
+    "public": 23,
+    "residentReview": 12,
+    "photoLinkPresentation": 12,
+    "totalChecks": 47,
+    "scope": "Actual local public and HUI02 browsers; photo-link presentation uses a photoPath fixture, including absent-reason dash. No actual Storage HTTP claim.",
+    "evidenceIndex": "docs/frightnight-2027/evidence/README.md",
+    "hostedStaging": "pending exact published SHA"
+  },
+  "postBuildReleaseHelperVerification": {
+    "evidence": "docs/frightnight-2027/validation/restore-policy-parity-report.json",
+    "targetedTests": 31,
+    "eslint": "passed",
+    "typecheck": "passed",
+    "independentReview": "accepted by backend_2027",
+    "scope": "Only existing observed managed policy delegation is reproduced in a networkless restore. Positive policy and negative table-owner/other-policy/SET ROLE checks actually executed. No remote grants, migration, seed or deploy."
   }
 }

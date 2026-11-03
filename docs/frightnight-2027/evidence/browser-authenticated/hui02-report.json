@@ -1,8 +1,8 @@
 {
   "origin": "http://127.0.0.1:3137",
   "context": "Local production build with real GoTrue sessions/Postgres. Executes the permanent parent HUI02 browser block plus one-character approval regression, using only a fresh own synthetic edition and .invalid accounts. No hosted release or Storage HTTP access claim.",
-  "buildId": "Ok5RjR2fex_g9bgq4d5YE",
-  "startedAt": "2026-11-03T05:06:27.866Z",
+  "buildId": "_1OR884fyGsZ8DqPkdSnD",
+  "startedAt": "2026-11-03T05:38:18.185Z",
   "checks": [
     {
       "label": "HUI02_REASON_REQUIRED",
@@ -61,6 +61,6 @@
   "syntheticRunArchived": true,
   "status": "passed",
   "localParentClosed": true,
-  "completedAt": "2026-11-03T05:06:35.349Z",
-  "testedAt": "2026-11-03T05:06:35.349Z"
+  "completedAt": "2026-11-03T05:38:26.240Z",
+  "testedAt": "2026-11-03T05:38:26.240Z"
 }

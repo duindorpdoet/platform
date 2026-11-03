@@ -1,0 +1,32 @@
+{
+  "recordedAt": "2026-11-03T05:28:19.560076+00:00",
+  "scope": "LOCAL ONLY; hosted pending; no tracked source changes by this agent",
+  "revision": "090773a0a15a49316128e08004e026f1541c6e04",
+  "servedBuildId": "Ok5RjR2fex_g9bgq4d5YE",
+  "uiChecks": 15,
+  "pureGuardTests": 6,
+  "injectedCleanupFaultPaths": 2,
+  "cleanupErrors": [],
+  "latestReport": "evidence/supp-20261103-4bf3460b/report.json",
+  "independentReadOnlyReview": {
+    "agent": "frontend_v7",
+    "accepted": true,
+    "scope": "target/SHA/contract/sink/noOTP/exact own scope/baseline Auth protection/ambiguous setup/recovery close",
+    "remoteApproval": false
+  },
+  "sources": {
+    "runner.mjs": "5ebff99a564b35bbde2d7a29a1d39fd9876d74dcabdb2d8e1f13d8bfc09567b1",
+    "guards.mjs": "451cf2b8efc2c32ac8500683283b8c5f0401cb199ad9f2b94e7647a586e94d7f",
+    "guards.test.mjs": "2309537c71a9a8933799973d8e89adcd2ca0e9276f8bbfaeee9b692345731f2f",
+    "games-beacon.mjs": "a55024dea17aee5c18de7bbe67c9f0a43eff7cb071c737d3ce51de0b38b13835",
+    "scenarios.mjs": "0b533a62090deb67942fabe51ddae53d993543776cee309f81cd2090d5faac0b"
+  },
+  "artifacts": {
+    "evidence/supp-20261103-4bf3460b/report.json": "d3f6dcf6ec842d537c81905d94ccbdf8ae07779957c0306f26a63ceb0419bba2",
+    "evidence/cleanup-fault-proof.json": "46867b25baa719ffbb234cebeb175c7ba67bcd67b26a79216c78dfc7c1089fcd",
+    "evidence/failed-local-recovery.json": "fe65f39c532fe385c23cccdd211017e1e35d6af6001e8ce20dfde870fa1dd56c",
+    "feasibility-61.json": "7590fc6a914c39c320815669ee8c2d3e9e8e98e27494df41452fef7519d685db",
+    "README.txt": "5ae897e6a7eaf4d1aa5ec549257d2b9de470ba7bdf8f2754d11aefaf9b5b9b1e"
+  },
+  "hostedCredentialRoute": "not available; no extraction/new workflow permitted"
+}

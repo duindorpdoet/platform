@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-11-03T05:07:55.023710+00:00",
+  "recordedAt": "2026-11-03T05:39:40.870864+00:00",
   "scope": "Local code and SQL compilation; new post-release scenario restore and VPS inventory still require actual staging jobs",
   "tests": {
     "previousCombinedProof": {
@@ -24,13 +24,13 @@
     },
     "rootFullVerify": {
       "evidence": "docs/frightnight-2027/validation/application-verify-report.json",
-      "unitPassed": 1514,
+      "unitPassed": 1515,
       "optionalSkipped": 6,
-      "productionBuild": "Ok5RjR2fex_g9bgq4d5YE",
+      "productionBuild": "_1OR884fyGsZ8DqPkdSnD",
       "clientArtifactsScanned": 697,
       "sourceFiles": 140,
       "exitCode": 0,
-      "phase": "Current full application verification includes the authorized zone-photo link; current targeted browser proof remains separately scoped",
+      "phase": "Latest complete application verification includes null-review rendering correction; the final31 release-policy tests ran separately after the full-suite unit phase. New exact-head CI remains required.",
       "hostedRelease": "not yet executed"
     },
     "eslintPassed": true,
@@ -61,7 +61,7 @@
   "sourceSha256": {
     "scripts/deploy/frightnight-scenario-backup.mjs": "17c78a29863333e605cd3cd92a45c325be44a591034875d68046f965999b294f",
     "scripts/deploy/frightnight-scenario-backup.test.ts": "44793a9f56575ce096a7baca268a9890a3e472d7cf0d75e9f391ab464fc2b27a",
-    "scripts/deploy/redesign-backup.mjs": "30149c566c557e0404b3c02df750740125ce29571dfd55e227903b6ec891fb46",
+    "scripts/deploy/redesign-backup.mjs": "7373fc660e7313537f6906b4a883f3f8eb8e610abc3e627c7d3ba0b47e6fe60e",
     "scripts/deploy/frightnight-system-cron.mjs": "8e0c1d95189ebff82ea2c0fba2e912e1663c55e3cb331c42b8f6485e2670f64b",
     "scripts/deploy/frightnight-system-cron.test.ts": "906c8dc10af61c10232a9af055066f517dd98862988c486db7ff603b3616e41b",
     "scripts/deploy/audit-frightnight-vps-timers.mjs": "da652b682d38d9d75fe9304177e536bafdbf86c73b940f840ba792caca0cb493",
@@ -287,27 +287,27 @@
   },
   "rootFullValidation": {
     "evidence": "docs/frightnight-2027/validation/application-verify-report.json",
-    "unitPassed": 1514,
+    "unitPassed": 1515,
     "optionalSkipped": 6,
-    "productionBuild": "Ok5RjR2fex_g9bgq4d5YE",
+    "productionBuild": "_1OR884fyGsZ8DqPkdSnD",
     "clientArtifactsScanned": 697,
     "sourceFiles": 140,
     "exitCode": 0,
-    "phase": "Current full application verification includes the authorized zone-photo link; current targeted browser proof remains separately scoped",
+    "phase": "Latest complete application verification includes null-review rendering correction; the final31 release-policy tests ran separately after the full-suite unit phase. New exact-head CI remains required.",
     "hostedRelease": "not yet executed"
   },
   "currentLocalBrowserEvidence": {
     "reportedBy": "frontend_v7; actual recorded local standalone browser outcomes",
-    "productionBuild": "Ok5RjR2fex_g9bgq4d5YE",
+    "productionBuild": "_1OR884fyGsZ8DqPkdSnD",
     "publicChecks": 23,
     "houseReviewChecks": 12,
-    "photoLinkPresentationChecks": 11,
+    "photoLinkPresentationChecks": 12,
     "photoLinkScope": "Presentation fixture in authenticated authorized zone list; not actual Storage HTTP delivery",
     "publicEvidence": "docs/frightnight-2027/evidence/browser-public/public-review-report.json",
     "houseReviewEvidence": "docs/frightnight-2027/evidence/browser-authenticated/hui02-report.json",
     "photoLinkEvidence": "docs/frightnight-2027/evidence/browser-authenticated/photo-link-ui-report.json",
     "index": "docs/frightnight-2027/evidence/README.md",
-    "scope": "Current46 local checks only; hosted release and real Storage HTTP remain pending"
+    "scope": "Current47 local checks only; hosted release and real Storage HTTP remain pending"
   },
   "hostedHouseReviewModule": "Permanent parent HUI02 block plus one-letter approval regression12/12 local browser checks; actual hosted execution not yet performed",
   "hostedPhotoFollowup": {
@@ -320,9 +320,9 @@
   },
   "photoUiFollowup": {
     "file": "components/frightnight/admin-resource.tsx",
-    "sourceSha256": "e4fe3feb2da907f66a86296fd65d36222cdac367e8ce8e20212c06928463fe16",
+    "sourceSha256": "ffadb9296b26c079b97744c4aba1ed0575be75cc2ec4d805fecab6d69ce67038",
     "change": "Authorized current zone photograph link",
-    "validation": "Passed current full1514-test build plus11 local presentation checks; actual hosted Storage HTTP remains pending"
+    "validation": "Latest full1515-test build plus12 local presentation checks, including null reason placeholder; actual hosted Storage HTTP remains pending"
   },
   "previousBuildBrowserEvidence": {
     "reportedBy": "frontend_v7; independent recorded real local GoTrue/PostgreSQL browser artifacts",
@@ -336,5 +336,15 @@
     "downloadEvidence": "docs/frightnight-2027/evidence/browser-authenticated/download-clock-report.json",
     "index": "docs/frightnight-2027/evidence/README.md",
     "scope": "Previous fzrib local build context; retained independently of current photo-link change"
+  },
+  "restorePolicyParityFollowup": {
+    "evidence": "docs/frightnight-2027/validation/restore-policy-parity-report.json",
+    "passed": 31,
+    "files": 3,
+    "disposableContainerProof": true,
+    "independentBackendReview": "accepted source7373fc660e7313537f6906b4a883f3f8eb8e610abc3e627c7d3ba0b47e6fe60e",
+    "remoteRetryPassed": false,
+    "originalReleaseRun": 41583941440,
+    "scope": "Source-observed targeted Storage policy delegation; no ownership, role, RLS or migration changes."
   }
 }

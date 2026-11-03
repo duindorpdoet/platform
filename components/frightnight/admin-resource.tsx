@@ -66,7 +66,7 @@ export function AdminResource({ controller: c, resource, title, onAnnouncementEd
     if (key === "preferences" && item && typeof item === "object") { const preferences = item as Row; return `${preferences.persons} personen · max. ${preferences.maxIntensity} pompoenen${preferences.avoidSmoke ? " · geen rook" : ""}${preferences.avoidStrobes ? " · geen flitsen" : ""}${preferences.stepFree ? " · zonder treden" : ""}`; }
     if (key === "occupancy" && item && typeof item === "object") { const load = item as Row; return `${load.effectivePersons} totaal · ${load.appPersons} app · ${load.extraPersons} extra · ${load.overlapPersons} overlap · ${load.available} vrij${load.observationStale ? " · waarneming verouderd, bevestiging nodig" : load.admissionBlocked ? " · nieuwe toegang geblokkeerd" : ""}`; }
     if (typeof item === "boolean") return item ? "Ja" : "Nee";
-    return typeof item === "object" ? JSON.stringify(item) : String(item ?? "—");
+    return item !== null && typeof item === "object" ? JSON.stringify(item) : String(item ?? "—");
   };
   const actions = ["payments", "bookings", "parties", "sink", "zones", "incidents", "announcements"].includes(resource);
   return <section className="fn-panel"><h2>{title}</h2><div className="fn-toolbar"><label className="fn-search"><Search size={18} /><input aria-label={`Zoek in alle ${names[resource]}`} placeholder={`Zoek in alle ${names[resource]}`} maxLength={120} value={query} onChange={event => setQuery(event.target.value)} /></label>

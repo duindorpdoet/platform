@@ -3,13 +3,16 @@ import type { WorldPolicyInitialization } from './world-policy-reconciliation.mj
 type Fingerprint = { table: string; rows: number; sha256: string };
 type CatalogEntry = { schema: string; name: string; columns: string[] };
 export function sourceReadPrefix(snapshot?: string): string;
-type SourceReadPhase = 'snapshot-export' | 'catalog' | 'migration-history' | 'preservation' | 'roles' | 'role-memberships' | 'storage-objects' | 'vault-fingerprint' | 'storage-before' | 'storage-after' | 'frightnight-scenario';
+type SourceReadPhase = 'snapshot-export' | 'catalog' | 'migration-history' | 'preservation' | 'roles' | 'role-memberships' | 'storage-objects' | 'vault-fingerprint' | 'storage-before' | 'storage-after' | 'frightnight-scenario' | 'storage-policy-capability';
+type StoragePolicyCapability = {supautilsLoaded: boolean; postgresStorageObjects: boolean};
+export function storagePolicyCapability(settings: {sessionPreload: string; policyGrants: string}): StoragePolicyCapability;
+export function isolatedStoragePolicyArguments(capability?: StoragePolicyCapability): string[];
 export function withSourceReadPhase<T>(phase: SourceReadPhase, read: () => Promise<T>, report?: (metadata: {backupRead: SourceReadPhase; status: 'started' | 'passed' | 'failed'; durationMs?: number}) => void, now?: () => number): Promise<T>;
 export function fingerprintQuery(catalog: CatalogEntry[]): string;
 export function preservationQuery(catalog: CatalogEntry[], coverageBefore?: Pick<WorldPolicyInitialization, 'auditBoundary'>): string;
 export function preservationManagementRequest(catalog: CatalogEntry[], coverageBefore?: Pick<WorldPolicyInitialization, 'auditBoundary'>): {read_only: false; query: string};
 export function fingerprintManagementRequest(catalog: CatalogEntry[]): {read_only: false; query: string};
-export function startIsolatedRestore(image: string, container: string, rootKey: string, execute?: (command: string,args: string[],input?: string,env?: Record<string,string>)=>Promise<string>): Promise<void>;
+export function startIsolatedRestore(image: string, container: string, rootKey: string, execute?: (command: string,args: string[],input?: string,env?: Record<string,string>)=>Promise<string>,policyCapability?: StoragePolicyCapability): Promise<void>;
 export function compareFingerprints(before: Fingerprint[], after: Fingerprint[]): string[];
 export function encryptStream(source: Readable, filename: string, key: Uint8Array, context: string): Promise<void>;
 export function verifyBackupFile(filename: string, key: Uint8Array, context: string): Promise<{sha256:string;bytes:number}>;
@@ -19,5 +22,5 @@ export function runReleaseBackup(env?: Record<string,string|undefined>, dependen
  request?: typeof fetch;
  captureCommand?: (command: string,args: string[],input?: string,env?: Record<string,string|undefined>,inheritEnvironment?: boolean)=>Promise<string>;
  processCommand?: (command: string,args: string[],env?: Record<string,string|undefined>,inheritEnvironment?: boolean)=>{child: import('node:child_process').ChildProcessWithoutNullStreams;done: Promise<void>};
- startRestore?: (image: string,container: string,rootKey: string)=>Promise<void>;
+ startRestore?: (image: string,container: string,rootKey: string,execute?: undefined,policyCapability?: StoragePolicyCapability)=>Promise<void>;
 }): Promise<void>;
