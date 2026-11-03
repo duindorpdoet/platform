@@ -33,7 +33,7 @@ export async function frightnightActor() {
 export function rpcError(error: { code?: string; message?: string }): never {
   // Only controlled domain errors are suitable for the browser. Never expose SQL details.
   const match = /^(FN_[A-Z_]+)(?::\s*(.*))?$/.exec(error.message ?? "");
-  if (match) {
+  if (match && error.code !== "PT409") {
     const code = match[1];
     const status = /FORBIDDEN|UNAUTHORIZED|CAPABILITY/.test(code) ? 403 : /NOT_FOUND/.test(code) ? 404 : 409;
     throw new ApiError(status, code, match[2]?.slice(0, 250) || "Deze actie past niet bij de actuele toestand. Vernieuw je Nachtpas.");
@@ -84,7 +84,7 @@ export function rpcError(error: { code?: string; message?: string }): never {
   if (messages[domainCode]) throw new ApiError(409, domainCode, messages[domainCode]);
   if (error.code === "22023" || error.code === "23514" || error.code === "22P02" || error.code === "23502") throw new ApiError(422, "INVALID_COMMAND", "Controleer de ingevulde gegevens en de actuele editie. De actie is niet opgeslagen.");
   if (error.code === "P0001") throw new ApiError(409, "COMMAND_REJECTED", (error.message ?? "De actie is geweigerd.").slice(0, 250));
-  if (error.code === "23505" || error.code === "40001" || error.code === "40P01") throw new ApiError(409, "CONCURRENT_CHANGE", "Er is tegelijk iets gewijzigd. Vernieuw en probeer opnieuw.");
+  if (error.code === "PT409" || error.code === "23505" || error.code === "40001" || error.code === "40P01") throw new ApiError(409, "CONCURRENT_CHANGE", "Er is tegelijk iets gewijzigd. Vernieuw en probeer opnieuw.");
   if (error.code === "57014" || error.code === "55P03") throw new ApiError(503, "TEMPORARILY_BUSY", "De server is even druk. Je vorige voortgang blijft bewaard.");
   throw new ApiError(503, "BACKEND_UNAVAILABLE", "Je gegevens zijn tijdelijk niet bereikbaar. Probeer later opnieuw of ga naar het hulppunt op het Duinpad.");
 }
