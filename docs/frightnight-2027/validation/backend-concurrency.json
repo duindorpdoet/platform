@@ -1,7 +1,7 @@
 {
   "passed": true,
   "database": "frightnight_2027_acceptance",
-  "slug": "frightnight-2027-test-race-92b13c9206af",
+  "slug": "frightnight-2027-test-race-946bd38cacfd",
   "families": 12,
   "simultaneousStarts": 12,
   "walking": 2,
@@ -20,5 +20,10 @@
   "fullRefundClaims": 1,
   "duplicateRefundRejected": 1,
   "alreadyRefundedCreatesIntent": false,
-  "durationSeconds": 6.708
+  "oldRefundedInvitationRejectedWithoutMutation": true,
+  "concurrentJoinRefund": "rejected-after-refund",
+  "joinRefundActiveClaims": 0,
+  "joinRefundLedger": 1,
+  "sourceHistoryPreserved": true,
+  "durationSeconds": 7.446
 }

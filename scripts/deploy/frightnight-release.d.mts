@@ -1,5 +1,6 @@
 export const FRIGHTNIGHT_STAGING: Readonly<{origin:string;projectRef:string;slug:string}>;
 export function assertFrightnightRelease(env: Record<string,string|undefined>): typeof FRIGHTNIGHT_STAGING;
+export function assertFrightnightHostedContract(health:Record<string,unknown>|null|undefined,revision:string):void;
 export const FRIGHTNIGHT_SAFETY_SQL: string;
 export type FrightnightSafety = {
  tables:number; unsafeTables:number; unsafeFunctions:number; actorFunctions:number; unsafeEvents:number; unsafeSink:number; sinkHasRecipient:boolean; legacyBindings:number;

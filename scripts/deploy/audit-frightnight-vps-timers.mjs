@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { userInfo } from 'node:os';
 import { join } from 'node:path';
 import { assertFrightnightRelease } from './frightnight-release.mjs';
+import { inventorySystemCron,timerScope,unreviewedSystemCron } from './frightnight-system-cron.mjs';
 
 assertFrightnightRelease(process.env);
 if (userInfo().username !== 'duindorphalloweenstg' || process.env.RUNNER_NAME !== 'dg-sites-vps-01-duindorphalloweenstg-01'
@@ -14,7 +15,7 @@ function read(command,args) {
   const result=spawnSync(command,args,{encoding:'utf8',timeout:5000,maxBuffer:2_000_000});
   return {ok:result.status===0,status:result.status,errorCode:result.error?.code,stdout:result.stdout??'',stderr:result.stderr??''};
 }
-const scope=source=>/duindorphalloweenstg|staging-halloween\.duindorpdoet\.nl|nocteiuvohesvqbowchw|frightnight|app_private\.fn_/i.test(source)?'staging-or-frightnight':/duindorphalloweenprod|halloween\.duindorpdoet\.nl|dtubngvxfbupgvgfrjko/i.test(source)?'other-site':'unclassified-system';
+const scope=timerScope;
 const cron=read('crontab',['-l']);
 const cronAbsent=cron.status===1&&/no crontab for/i.test(cron.stderr);
 const cronLines=cron.ok?cron.stdout.split('\n').map(line=>line.trim()).filter(line=>line&&!line.startsWith('#')&&!/^[A-Z_][A-Z0-9_]*\s*=/.test(line)):[];
@@ -42,9 +43,11 @@ for(const user of [false,true]) {
 // generic executable name does not reveal the site it affects.
 const scoped=[...report.crontab.entries,...report.userTimers,...report.systemTimers.filter(entry=>entry.scope==='staging-or-frightnight')];
 const reviewed=new Set((process.env.FRIGHTNIGHT_REVIEWED_TIMER_SHA256??'').split(',').filter(Boolean));
-report.unreviewedScopedTimers=scoped.filter(entry=>!reviewed.has(entry.sha256??entry.commandSha256)).length;
+report.systemCron=await inventorySystemCron();
+report.unreviewedSystemCron=unreviewedSystemCron(report.systemCron.files,reviewed).length;
+report.unreviewedScopedTimers=scoped.filter(entry=>!reviewed.has(entry.sha256??entry.commandSha256)).length+report.unreviewedSystemCron;
 report.unreadableTimerCommands=[...report.systemTimers,...report.userTimers].filter(entry=>!entry.commandReadable).length;
 report.complete=['read','absent'].includes(report.crontab.status)&&report.systemTimerStatus==='read'&&['read','no-active-user-manager'].includes(report.userTimerStatus)&&report.unreviewedScopedTimers===0&&report.unreadableTimerCommands===0;
 await writeFile(join(directory,'vps-timers.json'),JSON.stringify(report,null,2)+'\n',{mode:0o600});
-console.log(JSON.stringify({vpsTimerInventory:report.complete?'passed':'review-required',crontab:report.crontab.status,systemTimers:report.systemTimers.length,userTimers:report.userTimers.length,unreviewedScopedTimers:report.unreviewedScopedTimers,unreadableTimerCommands:report.unreadableTimerCommands,readOnly:true}));
+console.log(JSON.stringify({vpsTimerInventory:report.complete?'passed':'review-required',crontab:report.crontab.status,systemTimers:report.systemTimers.length,userTimers:report.userTimers.length,systemCronFiles:report.systemCron.files.length,unreviewedScopedTimers:report.unreviewedScopedTimers,unreadableTimerCommands:report.unreadableTimerCommands,readOnly:true}));
 if(!report.complete)throw new Error('VPS_TIMER_INVENTORY_REQUIRES_REVIEW_BEFORE_SEED');

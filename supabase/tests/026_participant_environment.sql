@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/future-legacy-appointment.inc
 create extension if not exists pgtap with schema extensions;
 select plan(35);
 

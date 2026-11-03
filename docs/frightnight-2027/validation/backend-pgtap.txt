@@ -51,7 +51,7 @@ ok 50 - walk validation bounds coordinate count at five thousand
 ok 51 - current-destination endpoint returns the actual reviewed edge source
 ok 52 - first valid scan reserves suitable low-intensity zone
 ok 53 - capacity measured in whole persons
-ok 54 - exact command replay returns original result
+ok 54 - exact command replay keeps the original command result
 ok 55 - same key with different body conflicts
 ok 56 - stale scan cannot advance next destination
 ok 57 - second family cannot reserve already full zone
@@ -158,4 +158,108 @@ ok 157 - copy does not duplicate people, orders or historical permissions
 ok 158 - forged browser test flag cannot reset a legacy edition
 ok 159 - expired test edition can be archived in its explicit scope
 ok 160 - cleanup of expired sibling preserves protected source edition
-1..160
+ok 161 - announcement exact-key replay is idempotent
+ok 162 - announcement replay never duplicates durable records
+ok 163 - announcement key cannot change its original audience or content
+ok 164 - content manager sees all own-edition audience messages without a registration
+ok 165 - content manager can paginate every own-edition message
+ok 166 - content permission does not expose participant management data
+ok 167 - registration A sees all, own-registration and own-route messages
+ok 168 - registration A cannot read another route or current-zone target
+ok 169 - participant cannot publish an announcement
+ok 170 - registration B sees its current zone but cannot read A-targeted message
+ok 171 - roots registration sees only its own route audience
+ok 172 - administrator changes a durable message audience transactionally
+ok 173 - stale announcement update cannot widen its audience
+ok 174 - exactly one audience change increments the stored version
+ok 175 - changing audience immediately removes old participant visibility
+ok 176 - replaying an old actor receipt cannot redisclose an announcement after audience removal
+ok 177 - changing audience immediately grants only the new participant visibility
+ok 178 - administrator cannot target a registration from another owned edition
+ok 179 - administrator cannot target a zone from another owned edition
+ok 180 - announcement ID cannot be updated through another edition
+ok 181 - unrecognized audience cannot fall back to all participants
+ok 182 - announcements never enqueue email or retry a payment capture
+ok 183 - targeted announcements do not touch the legacy outbox
+ok 184 - case-insensitive literal search is applied before count and pagination
+ok 185 - filtered first page remains bounded
+ok 186 - filtered count yields a valid continuation cursor
+ok 187 - second filtered page contains a different matching row
+ok 188 - lifecycle and route filters narrow registration totals before pagination
+ok 189 - payment filter is distinct from registration lifecycle status
+ok 190 - SQL-like search text is literal and cannot widen results
+ok 191 - oversized search is rejected before querying data
+ok 192 - oversized offset fails clearly instead of looping the same bounded page
+ok 193 - caller cannot add an event-scope filter or unknown query field
+ok 194 - filter values must have the documented string type
+ok 195 - zones cannot acquire a fabricated route-type binding
+ok 196 - zone status uses effective policy and filters archived closed runs from totals
+ok 197 - payment search and status use own-event registration join before totals
+ok 198 - content published filter counts only matching text and publication state
+ok 199 - programme and terms drafts are absent from the public server projection
+ok 200 - published programme and terms supplements are returned by the public server projection
+ok 201 - published programme and terms cannot leak into a different edition
+ok 202 - audit search total uses matching action rather than page length
+ok 203 - sink search and route filter cannot expose other registrations or editions
+ok 204 - booking query joins only same-event activities and registrations
+ok 205 - party search uses scoped current membership without duplicate count
+ok 206 - incident status and route filter are applied before count and page
+ok 207 - search cannot discover matching records from another edition
+ok 208 - adding search and filters cannot bypass participant capability guard
+ok 209 - search finds a record beyond any prior hundred-row snapshot limit
+ok 210 - searched page contains the remote match rather than first unfiltered rows
+ok 211 - regie personal-data snapshot remains capped at one hundred even above five hundred registrations
+ok 212 - regie receives authoritative count above its bounded snapshot length
+ok 213 - dashboard registration count covers the full event without broadening DTOs
+ok 214 - paid total follows confirmed server payment state independently of page length
+ok 215 - event administrator receives each authorized operational total
+ok 216 - finance totals do not imply route, resident or support authority
+ok 217 - content manager cannot read event participation or support counts
+ok 218 - participant cannot read event-wide operational counts
+ok 219 - finance mail preview can find an exact capture UUID without scanning arbitrary pages
+ok 220 - assigned activity staff totals include only bookings of their own activity
+ok 221 - search cannot leak other activity counts to a limited staff member
+ok 222 - current-zone message visibility ends when the destination is released
+ok 223 - anonymous command cannot create a durable audience message
+ok 224 - anonymous actor cannot enumerate filtered admin data
+ok 225 - fixture participant start receipt originally contains administrative projection
+ok 226 - participant receipt replay cannot recover revoked administrative data
+ok 227 - capability-safe replay preserves the immutable original command result
+ok 228 - another member advancing the route does not mutate the original command result
+ok 229 - old command replay never returns the formerly current destination as current
+ok 230 - replayed snapshot reflects the actual current shared destination
+ok 231 - replayed transition adds no third visit after the other member progresses
+ok 232 - valid pre-refund invitation cannot join a party with another refunded member
+ok 233 - refused refunded-target join leaves all claims, histories, members, invitations, receipts and audit unchanged
+ok 234 - paid member cannot issue a new invitation while another group member is refunded
+ok 235 - refused invite cannot create a token or mutate the refunded party
+ok 236 - paid member cannot merge an unpaid source group into a valid paid destination
+ok 237 - rejected source group leaves both sides and invitation consumption unchanged
+ok 238 - valid invitation rejects any unpaid target member even when the inviter remains paid
+ok 239 - unpaid-target denial has zero party, reservation, receipt or reward effects
+ok 240 - paid but inactive compensation-state member cannot enter a joint route
+ok 241 - a paid but inactive issuer cannot publish a new group invitation
+ok 242 - join validates the evening window of every target member rather than one representative
+ok 243 - paid family can safely leave a party containing a refunded family
+ok 244 - remaining refunded party receives no new reservation during leave recalculation
+ok 245 - unpaid remainder stays paused rather than resuming a route
+ok 246 - paid departing family retains its own valid independent destination
+ok 247 - owner contact name is normalized and survives a fresh server read
+ok 248 - owner contact telephone survives a fresh server read
+ok 249 - contact write returns its authoritative registration version
+ok 250 - stale contact form cannot overwrite a later edit
+ok 251 - contact mutation requires an explicit expected version
+ok 252 - contact telephone accepts only bounded ordinary telephone characters
+ok 253 - contact name is bounded at one hundred and twenty characters
+ok 254 - another registered family cannot address an owner contact record by UUID
+ok 255 - invited shared adult has no owner contact fields in their registration DTO
+ok 256 - shared adult cannot change the signup owner contact
+ok 257 - ordinary registration edits preserve the independent owner contact fields
+ok 258 - contact retry preserves its original result without a second mutation
+ok 259 - stored contact receipt retains only stable result and registration binding, with no telephone or administrative roster
+ok 260 - all newly stored receipts omit contact fields and full administrative snapshots
+ok 261 - contact editing never changes the Auth identity email
+ok 262 - contact editing sends no email or transactional sink capture
+ok 263 - contact audit captures no submitted name or telephone value
+ok 264 - administrative registration listing excludes owner contact fields
+1..264

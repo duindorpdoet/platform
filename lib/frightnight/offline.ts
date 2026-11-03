@@ -16,7 +16,14 @@ export function rememberFestival(snapshot: FrightnightSnapshot) {
   try {
     const old = readFestival(snapshot.actor.id);
     const minimal: FrightnightSnapshot = {
-      event: snapshot.event, actor: { id: snapshot.actor.id, capabilities: [] }, registration: snapshot.registration,
+      event: snapshot.event, actor: { id: snapshot.actor.id, capabilities: [] }, registration: snapshot.registration ? {
+        id: snapshot.registration.id, label: snapshot.registration.label, routeType: snapshot.registration.routeType,
+        adults: snapshot.registration.adults, children: snapshot.registration.children, persons: snapshot.registration.persons,
+        maxIntensity: snapshot.registration.maxIntensity, avoidSmoke: snapshot.registration.avoidSmoke,
+        avoidStrobes: snapshot.registration.avoidStrobes, stepFree: snapshot.registration.stepFree,
+        startSlot: snapshot.registration.startSlot, status: snapshot.registration.status,
+        paymentStatus: snapshot.registration.paymentStatus, amountCents: snapshot.registration.amountCents, version: snapshot.registration.version,
+      } : null,
       journey: snapshot.journey ? { ...snapshot.journey, party: { ...snapshot.journey.party, members: [] } } : null,
       current: snapshot.current, progress: snapshot.progress, startSlots: [], activities: [], bookings: [], notifications: [], announcements: [], quests: [], ownZones: [], ownIncidents: [], ownThanks: [], registrationAccess: [], pushEnabled: false,
     };

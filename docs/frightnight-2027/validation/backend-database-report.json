@@ -11,19 +11,19 @@
   "mail": "new event-scoped sink only; no delivery worker or recipient-address column",
   "advisors": "CLI 2.117.0 attempted twice against isolated Docker DB; LegacyDbConnectError. Explicit ACL/search_path/RLS metadata safety query and pgTAP did execute; full advisors not claimed.",
   "sourceSha256": {
-    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "cf19e615d16efe5b530b074f36f2f8ff45f5c74fc4ffb4249343e219c0694b59",
-    "supabase/tests/127_frightnight_2027_core.sql": "e502027f255a2395f2bf686bf932dba664d6e644102cb130052b25459a670319",
-    "scripts/frightnight/db-concurrency.py": "301c42ae70cfdc228713876359a4be36c8780b4e155304b660bde365e0421765"
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "f994e74783163229acc9347d356623ceb0820e1e1079f5ecd95d07331f599c20",
+    "supabase/tests/127_frightnight_2027_core.sql": "f8c85ef1bc109e91eddc3f16c14baff3c2f7050a7c6805103515362726953b1e",
+    "scripts/frightnight/db-concurrency.py": "4255bb572941c1a78d079007634b690ea0d5031c152841f802374289d0309a5f"
   },
   "pgtap": {
-    "passed": 160,
+    "passed": 264,
     "failed": 0,
     "rollback": true
   },
   "concurrency": {
     "passed": true,
     "database": "frightnight_2027_acceptance",
-    "slug": "frightnight-2027-test-race-92b13c9206af",
+    "slug": "frightnight-2027-test-race-946bd38cacfd",
     "families": 12,
     "simultaneousStarts": 12,
     "walking": 2,
@@ -42,7 +42,12 @@
     "fullRefundClaims": 1,
     "duplicateRefundRejected": 1,
     "alreadyRefundedCreatesIntent": false,
-    "durationSeconds": 6.708
+    "oldRefundedInvitationRejectedWithoutMutation": true,
+    "concurrentJoinRefund": "rejected-after-refund",
+    "joinRefundActiveClaims": 0,
+    "joinRefundLedger": 1,
+    "sourceHistoryPreserved": true,
+    "durationSeconds": 7.446
   },
   "localSafety": {
     "tables": 30,
@@ -66,6 +71,15 @@
     "sinkHasRecipient": false
   },
   "safetyLimitation": "Local schema-only fixture has no legacy cron/mailworker configuration; staging runtime assertion is still required.",
-  "releaseSafetyQuerySha256": "10d295e33e202ede4802576df992395ff92e0e94dd91ecf8632eee9aab8b71a6",
-  "verifiedAt": "2026-11-03T02:51:45.004595+00:00"
+  "releaseSafetyQuerySha256": "b87ae92ada08dcff22ca97d46b3da124dab86f77a1951ade8f927da6e69f3a96",
+  "verifiedAt": "2026-11-03T03:27:59.052731+00:00",
+  "latestRegressionScope": [
+    "paid active same-edition/evening members checked atomically for both joining parties and invitation creation",
+    "pre-refund invitation rejects without any party, capacity, receipt, history or audit mutations",
+    "simultaneous join/refund leaves no reservation after refund and preserves personal history",
+    "event totals over 500 registrations with bounded DTOs and capability-specific metrics",
+    "owner-only versioned contact fields absent from shared-adult and admin DTOs; Auth and mail unchanged",
+    "idempotency receipts persist immutable result and registration binding without contact data or full snapshots",
+    "programme/terms draft publication and cross-edition isolation"
+  ]
 }

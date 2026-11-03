@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useSyncExternalStore, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { motion, useScroll, useSpring, useTransform } from 'motion/react';
 import { ArrowDown, ArrowUpRight, ArrowRight, Ticket, Sun, Moon, Sparkles, MapPin, Menu, X, ChevronDown, ScanLine, Footprints, Pause, Play, Crown } from 'lucide-react';
 
 import { Brand, Pumpkins, Program } from './shared';
 import { PublishedContent } from './published-content';
+import { useCalmPreference } from './motion-preference';
 
 
 
@@ -20,23 +21,15 @@ const intensityCopy = [
   ['De nacht op zijn spannendst.', 'Onze hoogste intensiteit. Je kunt een zone altijd overslaan of een rustiger avontuur kiezen.'],
 ];
 
-function subscribeToCalm(notify: () => void) {
-  const query = window.matchMedia('(prefers-reduced-motion: reduce)');
-  query.addEventListener('change', notify);
-  return () => query.removeEventListener('change', notify);
-}
-const currentCalm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const serverCalm = () => false;
 export default function FestivalHome() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [intensity, setIntensity] = useState(2);
   const [peek, setPeek] = useState<'mild' | 'scary' | null>(null);
   const closeMenu = () => setMenuOpen(false);
-  const prefersCalm = useSyncExternalStore(subscribeToCalm, currentCalm, serverCalm);
-  const [effectsPaused, setEffectsPaused] = useState(false);
+  const { calm, paused: effectsPaused, system: prefersCalm, setPaused: setEffectsPaused } = useCalmPreference();
   const [kingAwake, setKingAwake] = useState(false);
+  const [storyOpen, setStoryOpen] = useState(false);
 
-  const calm = Boolean(prefersCalm) || effectsPaused;
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 800], [0, -65]);
   const heroLift = useSpring(heroY, { stiffness: 100, damping: 24 });
@@ -64,7 +57,7 @@ export default function FestivalHome() {
           <div className="pp-night-vignette" aria-hidden="true"/>
           <div className="pp-embers" aria-hidden="true">{[0,1,2,3,4,5,6,7].map(n=><i className="pp-ember" key={n} style={{left:`${8+n*12}%`,'--delay':`${-n*1.7}s`,'--drift':`${n%2===0?35:-45}px`} as CSSProperties}/>)}</div>
           <span className="pp-print-coordinate" aria-hidden="true">NACHTEDITIE / 07</span>
-          <button type="button" className="pp-motion-toggle" disabled={Boolean(prefersCalm)} onClick={()=>setEffectsPaused(v=>!v)}>{calm?<Play size={12}/>:<Pause size={12}/>} {prefersCalm?'Rustige weergave':effectsPaused?'Speel sfeereffecten':'Pauzeer sfeereffecten'}</button>
+          <button type="button" className="pp-motion-toggle" aria-pressed={calm} disabled={prefersCalm} onClick={()=>setEffectsPaused(!effectsPaused)}>{calm?<Play size={12}/>:<Pause size={12}/>} {prefersCalm?'Rustige weergave':effectsPaused?'Speel sfeereffecten':'Pauzeer sfeereffecten'}</button>
           <div className="pp-hero-copy">
             <div className="pp-kicker"><span className="pp-dot" /> DUINDORP KOMT TOT LEVEN <span>2027</span></div>
             <h1 id="pp-title"><motion.span initial={false} animate={{opacity:1,y:0,rotate:0}} transition={{duration:calm?0:.75,ease:'easeOut'}}>DIT WORDT</motion.span><motion.span className="pp-hero-orange" initial={false} animate={{opacity:1,x:0,rotate:-1.5}} transition={{duration:calm?0:.8,delay:calm?0:.12,ease:'easeOut'}}>JOUW NACHT<span className="pp-title-dot">.</span></motion.span></h1>
@@ -122,15 +115,19 @@ export default function FestivalHome() {
 
         <section className="pp-story" id="pp-story" aria-labelledby="pp-story-title">
           <div className="pp-story-image"><img src="/frightnight/zone-garden.webp" alt="Een mysterieuze tuin met raven, pompoenen en warme lantaarns" loading="lazy"/><motion.img className="pp-story-king" src="/frightnight/king-head.webp" alt="" aria-hidden="true" loading="lazy" initial={false} whileInView={{opacity:1,x:0,rotate:-3}} viewport={{once:true,amount:.2}} transition={{duration:calm?0:.9,ease:'easeOut'}}/><span className="pp-story-tag">ER SCHUILT IETS IN DE BUURT.</span></div>
-          <div className="pp-story-copy"><span className="pp-section-number">03 / DE VLOEK</span><h2 id="pp-story-title">DE KONING<br />WIL HET DONKER.<br /><span>WIJ HET LICHT.</span></h2><p>De Pompoenkoning heeft zijn wortels door Duindorp geslagen. Alleen samen krijgen we het Duinlicht terug. Elke bezochte zone brengt een Lichtvonk dichter bij het baken.</p><button type="button" className="pp-button pp-button-orange" onClick={() => document.getElementById('pp-story')?.scrollIntoView({behavior:calm?'instant':'smooth'})}>Lees hoe het begon <ArrowUpRight size={19} /></button></div>
+          <div className="pp-story-copy"><span className="pp-section-number">03 / DE VLOEK</span><h2 id="pp-story-title">DE KONING<br />WIL HET DONKER.<br /><span>WIJ HET LICHT.</span></h2><p>De Pompoenkoning heeft zijn wortels door Duindorp geslagen. Alleen samen krijgen we het Duinlicht terug. Elke bezochte zone brengt een Lichtvonk dichter bij het baken.</p><button id="pp-story-toggle" type="button" className="pp-button pp-button-orange" aria-expanded={storyOpen} aria-controls="pp-story-details" onClick={() => setStoryOpen(value => !value)}>{storyOpen ? 'Verhaal sluiten' : 'Lees hoe het begon'} <ChevronDown size={19} /></button></div>
+          <div id="pp-story-details" className="pp-story-details" role="region" aria-labelledby="pp-story-details-title" hidden={!storyOpen}>
+            <div className="pp-story-chapters"><span className="pp-section-number">DE VLOEK VAN DE POMPOENKONING</span><h3 id="pp-story-details-title">EEN KROON VOL DUISTER.<br />EEN BUURT VOL LICHT.</h3><article><h4>I / Het verborgen licht</h4><p>Lang geleden hield het Duinlicht de nacht in evenwicht. Maar diep onder de duinen groeiden de wortels van de Pompoenkoning. Hij verstopte het licht in zijn kroon, en de wijk viel langzaam in zijn schaduw.</p></article><article><h4>II / De Kraaienbode</h4><p>De Kraaienbode heeft kleine Lichtvonken ontdekt bij de huizen. Soms wachten er snoep en verwondering. Soms moet je een Frightzone trotseren. Jij bepaalt hoeveel spanning je aankunt.</p></article><article><h4>III / Het Lichtbaken</h4><p>Verzamel de vonken in je Nachtpas. Keer na je tocht terug naar het Duinpad en breng het Lichtbaken tot leven. Alleen dan laat de kroon haar licht weer vrij. Ieder gezelschap kan slagen; alle huizen en opdrachten afronden hoeft niet.</p></article><Link className="pp-button pp-button-orange" href="/nachtpas">Mijn avontuur begint hier <ArrowUpRight size={18} /></Link></div>
+            <aside className="pp-story-characters" aria-label="De personages"><img src="/frightnight/kraaienbode.webp" alt="De Kraaienbode met zijn lantaarn" loading="lazy" /><h3>WIE NEEMT JULLIE MEE?</h3><dl><dt>De Pompoenkoning</dt><dd>Hij houdt het Duinlicht verborgen in zijn kroon.</dd><dt>De Kraaienbode</dt><dd>Hij wijst jullie op de Lichtvonken die in de buurt zijn achtergebleven.</dd><dt>De Oogstmeester en de Wortelrakkers</dt><dd>Ook zij horen bij het verhaal van het Oogstdorp: samen maken, ontdekken en licht verzamelen.</dd></dl></aside>
+          </div>
         </section>
 
         <motion.section className="pp-intensity pp-section" {...reveal} aria-labelledby="pp-intensity-title">
           <div><span className="pp-section-number">04 / JIJ BEPAALT DE SPANNING</span><h2 id="pp-intensity-title">KIPPENVEL<br />OP MAAT.</h2><p>Een Snoepzone of een Frightzone? De pompoenen laten zien wat je kunt verwachten. Kies hieronder een niveau om het verschil te ontdekken.</p></div>
-          <div className="pp-intensity-picker"><motion.img className="pp-meter-king" src="/frightnight/king-head.webp" alt="" aria-hidden="true" loading="lazy" animate={{rotate:calm?0:(intensity-3)*3,scale:calm?1:1+intensity*.018}} transition={{type:'spring',stiffness:160,damping:16}}/><div className="pp-intensity-caption"><span>DE DURFMETER</span><span>JIJ KIEST DE SPANNING.</span></div><div className="pp-intensity-buttons" aria-label="Bekijk een spanningsniveau">{[1, 2, 3, 4, 5].map(level => <button type="button" key={level} aria-pressed={intensity === level} onClick={() => setIntensity(level)}><img src="/frightnight/king-head.webp" alt="" aria-hidden="true" /><strong>{level}</strong></button>)}</div><motion.div className="pp-intensity-result" initial={false} animate={{opacity:1,y:0}} transition={{duration:calm?0:.25}} key={intensity} aria-live="polite"><small>NIVEAU {intensity} VAN 5</small><h3>{intensityCopy[intensity - 1][0]}</h3><p>{intensityCopy[intensity - 1][1]}</p></motion.div><span className="pp-intensity-footnote">Overslaan mag altijd. Jullie avontuur past zich aan.</span></div>
+          <div className="pp-intensity-picker"><motion.img className="pp-meter-king" src="/frightnight/king-head.webp" alt="" aria-hidden="true" loading="lazy" animate={{rotate:calm?0:(intensity-3)*3,scale:calm?1:1+intensity*.018}} transition={calm?{duration:0}:{type:'spring',stiffness:160,damping:16}}/><div className="pp-intensity-caption"><span>DE DURFMETER</span><span>JIJ KIEST DE SPANNING.</span></div><div className="pp-intensity-buttons" aria-label="Bekijk een spanningsniveau">{[1, 2, 3, 4, 5].map(level => <button type="button" key={level} aria-pressed={intensity === level} onClick={() => setIntensity(level)}><img src="/frightnight/king-head.webp" alt="" aria-hidden="true" /><strong>{level}</strong></button>)}</div><motion.div className="pp-intensity-result" initial={false} animate={{opacity:1,y:0}} transition={{duration:calm?0:.25}} key={intensity} aria-live="polite"><small>NIVEAU {intensity} VAN 5</small><h3>{intensityCopy[intensity - 1][0]}</h3><p>{intensityCopy[intensity - 1][1]}</p></motion.div><span className="pp-intensity-footnote">Overslaan mag altijd. Jullie avontuur past zich aan.</span></div>
         </motion.section>
 
-        <PublishedContent /><motion.section id="pp-practical" className="pp-practical pp-section" {...reveal} aria-labelledby="pp-practical-title"><div><span className="pp-section-number">05 / GOED OM TE WETEN</span><h2 id="pp-practical-title">GOED VOORBEREID.<br />LEKKER OP PAD.</h2></div><div className="pp-faqs">
+        <PublishedContent contentKeys={['programme', 'practical', 'story', 'emergency']} /><motion.section id="pp-practical" className="pp-practical pp-section" {...reveal} aria-labelledby="pp-practical-title"><div><span className="pp-section-number">05 / GOED OM TE WETEN</span><h2 id="pp-practical-title">GOED VOORBEREID.<br />LEKKER OP PAD.</h2></div><div className="pp-faqs">
           <details><summary>Waar beginnen en eindigen we?<ChevronDown size={20} /></summary><p>Jullie beginnen bij het startpunt op het Duinpad. Daar scan je de eerste QR. De laatste Frightzone en het eindpunt zijn opnieuw bij het Duinpad.</p></details>
           <details><summary>Moeten we met een vaste groep lopen?<ChevronDown size={20} /></summary><p>Nee. Iedere inschrijving loopt zelfstandig. Via Samen in de app kunnen jullie vrijwillig een ander gezin uitnodigen om samen te lopen.</p></details>
           <details><summary>Hoe werkt onze route?<ChevronDown size={20} /></summary><p>De app toont één actuele bestemming. Na de QR-scan bij de zone verschijnt de volgende. De route houdt rekening met open zones, pauzes, drukte en jullie gekozen spanning.</p></details>

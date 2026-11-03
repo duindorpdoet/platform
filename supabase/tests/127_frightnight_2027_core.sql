@@ -103,7 +103,7 @@ select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-00000000
 select is(api.frightnight_walk('frightnight-2027-test',(select (value#>>'{snapshot,current,id}')::uuid from fn_test_state where key='start-b'))->>'source','organisation-verified','current-destination endpoint returns the actual reviewed edge source');
 select is((select value#>>'{snapshot,current,zone,type}' from fn_test_state where key='start-b'),'candy','first valid scan reserves suitable low-intensity zone');
 select is((select sum(persons) from app_private.fn_destinations d join app_private.fn_zones z on z.id=d.zone_id where d.state='current' and z.type='candy'),2::bigint,'capacity measured in whole persons');
-select is((pg_temp.fn_cmd('journey.start',jsonb_build_object('expectedVersion',1,'code',(select value->>'startCode' from fn_test_state where key='seed')),'f7270000-0000-0000-0000-000000000111')->'snapshot'),(select value->'snapshot' from fn_test_state where key='start-b'),'exact command replay returns original result');
+select is((pg_temp.fn_cmd('journey.start',jsonb_build_object('expectedVersion',1,'code',(select value->>'startCode' from fn_test_state where key='seed')),'f7270000-0000-0000-0000-000000000111')->'result'),(select value->'result' from fn_test_state where key='start-b'),'exact command replay keeps the original command result');
 select throws_ok($$select pg_temp.fn_cmd('journey.start','{"expectedVersion":999}','f7270000-0000-0000-0000-000000000111')$$,'40001','IDEMPOTENCY_CONFLICT','same key with different body conflicts');
 select throws_ok($$select pg_temp.fn_cmd('journey.complete',jsonb_build_object('expectedVersion',1,'destinationId',(select value#>>'{snapshot,current,id}' from fn_test_state where key='start-b'),'code','wrong'))$$,'40001','VERSION_CONFLICT','stale scan cannot advance next destination');
 select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000002","role":"authenticated"}',true);
@@ -277,5 +277,243 @@ select throws_ok($$select api.frightnight_command('fn-legacy-protected-2026','te
 update app_private.fn_events set retention_until=now()-interval '1 day' where event_id=(select id from app_private.events where slug='frightnight-2027-test-copy');
 select lives_ok($$select api.frightnight_command('frightnight-2027-test-copy','test.cleanup',jsonb_build_object('confirmation','frightnight-2027-test-copy','runId',(select run_id from app_private.fn_events where event_id=(select id from app_private.events where slug='frightnight-2027-test-copy'))),gen_random_uuid())$$,'expired test edition can be archived in its explicit scope');
 select is((select closed from app_private.fn_events where event_id=(select id from app_private.events where slug='frightnight-2027-test')),false,'cleanup of expired sibling preserves protected source edition');
+-- REG-02: durable, event-scoped audience changes and actor authorization.
+create function pg_temp.fn_message_visible(mid uuid) returns boolean language sql as $$select exists(select 1 from jsonb_array_elements(api.frightnight_snapshot('frightnight-2027-test')->'announcements') m where (m->>'id')::uuid=mid)$$;
+insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data) values
+ ('f7270000-0000-0000-0000-000000000007','fn-roots@example.invalid',now(),'{}','{}'),
+ ('f7270000-0000-0000-0000-000000000008','fn-content@example.invalid',now(),'{}','{}');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000007","role":"authenticated"}',true);
+select pg_temp.fn_cmd('registration.save','{"label":"Roots audience family","routeType":"roots","adults":1,"children":0,"consent":true,"termsVersion":"2027-test-v1","maxIntensity":4}');
+insert into app_private.event_capabilities(event_id,user_id,capability) select event_id,'f7270000-0000-0000-0000-000000000008','content_manage' from app_private.fn_events f join app_private.events e on e.id=f.event_id where e.slug='frightnight-2027-test';
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+insert into fn_test_state select 'message-all',pg_temp.fn_cmd('admin.announcement','{"text":"All participant message","audience":"all"}')->'result';
+insert into fn_test_state select 'message-a',pg_temp.fn_cmd('admin.announcement',jsonb_build_object('text','Only registration A','audience','registration','registrationId',(select id from app_private.fn_registrations where owner_id='f7270000-0000-0000-0000-000000000002')),'f7270000-0000-0000-0000-000000000211')->'result';
+select lives_ok($$select pg_temp.fn_cmd('admin.announcement',jsonb_build_object('text','Only registration A','audience','registration','registrationId',(select id from app_private.fn_registrations where owner_id='f7270000-0000-0000-0000-000000000002')),'f7270000-0000-0000-0000-000000000211')$$,'announcement exact-key replay is idempotent');
+select is((select count(*) from app_private.fn_announcements),2::bigint,'announcement replay never duplicates durable records');
+select throws_ok($$select pg_temp.fn_cmd('admin.announcement','{"text":"Different text","audience":"all"}','f7270000-0000-0000-0000-000000000211')$$,'40001','IDEMPOTENCY_CONFLICT','announcement key cannot change its original audience or content');
+insert into fn_test_state select 'message-lantern',pg_temp.fn_cmd('admin.announcement','{"text":"Lantern participants","audience":"lantern"}')->'result';
+-- A controlled current-zone fixture for B after earlier finale tests. This tests
+-- message visibility only; it is not walking-path or route-transition evidence.
+update app_private.fn_parties set state='walking',version=version+1 where id=(select m.party_id from app_private.fn_members m join app_private.fn_registrations r on r.id=m.registration_id where r.owner_id='f7270000-0000-0000-0000-000000000003');
+insert into app_private.fn_destinations(event_id,party_id,zone_id,sequence,persons,membership_version,arrival_at,lease_until,walk_minutes,reason)
+ select r.event_id,p.id,z.id,coalesce((select max(sequence) from app_private.fn_destinations where party_id=p.id),0)+1,r.adults+r.children,p.membership_version,app_private.fn_now(r.event_id)+interval '1 minute',app_private.fn_now(r.event_id)+interval '20 minutes',1,'Controlled current-zone notification fixture'
+ from app_private.fn_registrations r join app_private.fn_members m on m.registration_id=r.id join app_private.fn_parties p on p.id=m.party_id join app_private.fn_events f on f.event_id=r.event_id join app_private.fn_zones z on z.event_id=r.event_id and z.run_id=f.run_id and z.type='candy' where r.owner_id='f7270000-0000-0000-0000-000000000003';
+insert into fn_test_state select 'message-zone',pg_temp.fn_cmd('admin.announcement',jsonb_build_object('text','Current zone B only','audience','zone','zoneId',(select d.zone_id from app_private.fn_destinations d join app_private.fn_members m on m.party_id=d.party_id join app_private.fn_registrations r on r.id=m.registration_id where r.owner_id='f7270000-0000-0000-0000-000000000003' and d.state='current')))->'result';
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000008","role":"authenticated"}',true);
+insert into fn_test_state select 'message-roots',pg_temp.fn_cmd('admin.announcement','{"text":"Roots participants","audience":"roots"}')->'result';
+select is(jsonb_array_length(api.frightnight_snapshot('frightnight-2027-test')->'announcements'),5,'content manager sees all own-edition audience messages without a registration');
+select is((api.frightnight_admin_list('frightnight-2027-test','announcements',0,2)->>'total')::integer,5,'content manager can paginate every own-edition message');
+select throws_ok($$select api.frightnight_admin_list('frightnight-2027-test','registrations',0,2)$$,'42501','NOT_AUTHORIZED','content permission does not expose participant management data');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000002","role":"authenticated"}',true);
+select ok(pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-all')) and pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-a')) and pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-lantern')),'registration A sees all, own-registration and own-route messages');
+select ok(not pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-roots')) and not pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-zone')),'registration A cannot read another route or current-zone target');
+select throws_ok($$select pg_temp.fn_cmd('admin.announcement','{"text":"Forged message","audience":"all"}')$$,'42501','NOT_AUTHORIZED','participant cannot publish an announcement');
+insert into fn_test_state select 'participant-message-receipt',pg_temp.fn_cmd('notification.read','{"notificationId":"f7270000-0000-0000-0000-000000000299"}','f7270000-0000-0000-0000-000000000298');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000003","role":"authenticated"}',true);
+select ok(not pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-a')) and pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-zone')),'registration B sees its current zone but cannot read A-targeted message');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000007","role":"authenticated"}',true);
+select ok(pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-roots')) and not pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-lantern')),'roots registration sees only its own route audience');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+select lives_ok($$select pg_temp.fn_cmd('admin.announcement',jsonb_build_object('id',(select value->>'announcementId' from fn_test_state where key='message-a'),'expectedVersion',1,'text','Now registration B only','audience','registration','registrationId',(select id from app_private.fn_registrations where owner_id='f7270000-0000-0000-0000-000000000003')))$$,'administrator changes a durable message audience transactionally');
+select throws_ok($$select pg_temp.fn_cmd('admin.announcement',jsonb_build_object('id',(select value->>'announcementId' from fn_test_state where key='message-a'),'expectedVersion',1,'text','Stale audience update','audience','all'))$$,'40001','VERSION_CONFLICT','stale announcement update cannot widen its audience');
+select is((select version from app_private.fn_announcements where id=(select (value->>'announcementId')::uuid from fn_test_state where key='message-a')),2,'exactly one audience change increments the stored version');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000002","role":"authenticated"}',true);
+select ok(not pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-a')),'changing audience immediately removes old participant visibility');
+select ok(not exists(select 1 from jsonb_array_elements(pg_temp.fn_cmd('notification.read','{"notificationId":"f7270000-0000-0000-0000-000000000299"}','f7270000-0000-0000-0000-000000000298')#>'{snapshot,announcements}') m where m->>'id'=(select value->>'announcementId' from fn_test_state where key='message-a')),'replaying an old actor receipt cannot redisclose an announcement after audience removal');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000003","role":"authenticated"}',true);
+select ok(pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-a')),'changing audience immediately grants only the new participant visibility');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+insert into app_private.fn_registrations(id,event_id,label,route_type,adults,children,max_intensity,amount_cents,run_id,synthetic) select 'f7270000-0000-0000-0000-000000000221',f.event_id,'Foreign audience target','roots',1,0,3,350,f.run_id,true from app_private.fn_events f join app_private.events e on e.id=f.event_id where e.slug='frightnight-2027-test-copy';
+insert into app_private.fn_zones(id,event_id,name,address,type,intensity,capacity,opens_at,closes_at,token_hash,run_id,synthetic) select 'f7270000-0000-0000-0000-000000000222',f.event_id,'Foreign zone','Synthetic foreign target','candy',0,5,'2027-10-30T13:00Z','2027-10-30T20:00Z',extensions.digest('foreign-test-zone','sha256'),f.run_id,true from app_private.fn_events f join app_private.events e on e.id=f.event_id where e.slug='frightnight-2027-test-copy';
+select throws_ok($$select pg_temp.fn_cmd('admin.announcement','{"text":"Foreign registration","audience":"registration","registrationId":"f7270000-0000-0000-0000-000000000221"}')$$,'42501','ANNOUNCEMENT_TARGET_SCOPE_REQUIRED','administrator cannot target a registration from another owned edition');
+select throws_ok($$select pg_temp.fn_cmd('admin.announcement','{"text":"Foreign zone","audience":"zone","zoneId":"f7270000-0000-0000-0000-000000000222"}')$$,'42501','ANNOUNCEMENT_TARGET_SCOPE_REQUIRED','administrator cannot target a zone from another owned edition');
+select throws_ok($$select api.frightnight_command('frightnight-2027-test-copy','admin.announcement',jsonb_build_object('id',(select value->>'announcementId' from fn_test_state where key='message-all'),'expectedVersion',1,'text','Cross-edition update','audience','all'),gen_random_uuid())$$,'42501','ANNOUNCEMENT_SCOPE_REQUIRED','announcement ID cannot be updated through another edition');
+select throws_ok($$select pg_temp.fn_cmd('admin.announcement','{"text":"Bad audience","audience":"everyone-in-history"}')$$,'22023','INVALID_ANNOUNCEMENT','unrecognized audience cannot fall back to all participants');
+select is((select count(*) from app_private.fn_mail_sink),4::bigint,'announcements never enqueue email or retry a payment capture');
+select is((select count(*) from app_private.email_outbox),(select (value->>'outbox')::bigint from fn_test_state where key='legacy-counts'),'targeted announcements do not touch the legacy outbox');
+-- REG-01: filtered total and pagination share one bounded event/actor set.
+insert into app_private.fn_registrations(event_id,label,route_type,adults,children,max_intensity,amount_cents,run_id,synthetic) select f.event_id,'Filter% '||v.label,v.route,1,0,1,350,f.run_id,true from app_private.fn_events f join app_private.events e on e.id=f.event_id cross join(values('Alpha','lantern'),('Beta','roots'))v(label,route) where e.slug='frightnight-2027-test';
+select is((api.frightnight_admin_list('frightnight-2027-test','registrations',0,1,'FILTER%','{}')->>'total')::integer,2,'case-insensitive literal search is applied before count and pagination');
+select is(jsonb_array_length(api.frightnight_admin_list('frightnight-2027-test','registrations',0,1,'Filter%','{}')->'items'),1,'filtered first page remains bounded');
+select is((api.frightnight_admin_list('frightnight-2027-test','registrations',0,1,'Filter%','{}')->>'nextCursor')::integer,1,'filtered count yields a valid continuation cursor');
+select isnt(api.frightnight_admin_list('frightnight-2027-test','registrations',1,1,'Filter%','{}')#>>'{items,0,id}',api.frightnight_admin_list('frightnight-2027-test','registrations',0,1,'Filter%','{}')#>>'{items,0,id}','second filtered page contains a different matching row');
+select is((api.frightnight_admin_list('frightnight-2027-test','registrations',0,50,'Filter%','{"status":"draft","routeType":"roots"}')->>'total')::integer,1,'lifecycle and route filters narrow registration totals before pagination');
+select is((api.frightnight_admin_list('frightnight-2027-test','registrations',0,50,'Family A','{"paymentStatus":"refunded"}')->>'total')::integer,1,'payment filter is distinct from registration lifecycle status');
+select is((api.frightnight_admin_list('frightnight-2027-test','registrations',0,50,$$' OR true --$$,'{}')->>'total')::integer,0,'SQL-like search text is literal and cannot widen results');
+select throws_ok($$select api.frightnight_admin_list('frightnight-2027-test','registrations',0,50,repeat('x',121),'{}')$$,'22023','INVALID_ADMIN_QUERY','oversized search is rejected before querying data');
+select throws_ok($$select api.frightnight_admin_list('frightnight-2027-test','registrations',100001,50,'','{}')$$,'22023','INVALID_ADMIN_QUERY','oversized offset fails clearly instead of looping the same bounded page');
+select throws_ok($$select api.frightnight_admin_list('frightnight-2027-test','registrations',0,50,'','{"eventId":"other"}')$$,'22023','INVALID_ADMIN_FILTER','caller cannot add an event-scope filter or unknown query field');
+select throws_ok($$select api.frightnight_admin_list('frightnight-2027-test','registrations',0,50,'','{"status":42}')$$,'22023','INVALID_ADMIN_FILTER','filter values must have the documented string type');
+select throws_ok($$select api.frightnight_admin_list('frightnight-2027-test','zones',0,50,'','{"routeType":"lantern"}')$$,'22023','INVALID_ADMIN_FILTER','zones cannot acquire a fabricated route-type binding');
+select is((api.frightnight_admin_list('frightnight-2027-test','zones',0,10,'Oogstdorp','{"status":"open"}')->>'total')::integer,1,'zone status uses effective policy and filters archived closed runs from totals');
+select is((api.frightnight_admin_list('frightnight-2027-test','payments',0,10,'Family A','{"status":"refunded","routeType":"lantern"}')->>'total')::integer,1,'payment search and status use own-event registration join before totals');
+select pg_temp.fn_cmd('admin.content.save','{"key":"filter-live","body":"Needle content","published":true}');
+select pg_temp.fn_cmd('admin.content.save','{"key":"filter-draft","body":"Needle content","published":false}');
+select is((api.frightnight_admin_list('frightnight-2027-test','content',0,1,'Needle','{"status":"published"}')->>'total')::integer,1,'content published filter counts only matching text and publication state');
+select pg_temp.fn_cmd('admin.content.save','{"key":"programme","body":"Additional programme draft","published":false}');
+select pg_temp.fn_cmd('admin.content.save','{"key":"terms","body":"Supplement to fixed 2027-test-v1","published":false}');
+select is((select count(*) from jsonb_array_elements(api.frightnight_public_content('frightnight-2027-test')) x where x->>'key' in('programme','terms')),0::bigint,'programme and terms drafts are absent from the public server projection');
+select pg_temp.fn_cmd('admin.content.save','{"key":"programme","body":"Additional programme published","published":true}');
+select pg_temp.fn_cmd('admin.content.save','{"key":"terms","body":"Supplement to fixed 2027-test-v1","published":true}');
+select is((select count(*) from jsonb_array_elements(api.frightnight_public_content('frightnight-2027-test')) x where x->>'key' in('programme','terms')),2::bigint,'published programme and terms supplements are returned by the public server projection');
+select is((select count(*) from jsonb_array_elements(api.frightnight_public_content('frightnight-2027-test-copy')) x where x->>'key' in('programme','terms')),0::bigint,'published programme and terms cannot leak into a different edition');
+
+select is((api.frightnight_admin_list('frightnight-2027-test','audit',0,1,'announcement.saved','{}')->>'total')::bigint,(select count(*) from app_private.fn_audit where action='announcement.saved' and event_id=(select id from app_private.events where slug='frightnight-2027-test')),'audit search total uses matching action rather than page length');
+select is((api.frightnight_admin_list('frightnight-2027-test','sink',0,1,'Family A','{"status":"sink","routeType":"lantern"}')->>'total')::integer,1,'sink search and route filter cannot expose other registrations or editions');
+select is((api.frightnight_admin_list('frightnight-2027-test','bookings',0,10,'Family A','{"status":"cancelled","routeType":"lantern"}')->>'total')::integer,1,'booking query joins only same-event activities and registrations');
+select is((api.frightnight_admin_list('frightnight-2027-test','parties',0,10,'Family A','{"routeType":"lantern"}')->>'total')::integer,1,'party search uses scoped current membership without duplicate count');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000002","role":"authenticated"}',true);
+select pg_temp.fn_cmd('help.submit','{"category":"filterhelp","text":"Filter incident A"}');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000003","role":"authenticated"}',true);
+select pg_temp.fn_cmd('help.submit','{"category":"filterhelp","text":"Filter incident B"}');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+update app_private.fn_incidents set status='resolved' where text='Filter incident B';
+select is((api.frightnight_admin_list('frightnight-2027-test','incidents',0,1,'Filter incident','{"status":"resolved","routeType":"lantern"}')->>'total')::integer,1,'incident status and route filter are applied before count and page');
+select is((api.frightnight_admin_list('frightnight-2027-test','registrations',0,10,'Foreign audience target','{}')->>'total')::integer,0,'search cannot discover matching records from another edition');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000003","role":"authenticated"}',true);
+select throws_ok($$select api.frightnight_admin_list('frightnight-2027-test','registrations',0,10,'Family A','{}')$$,'42501','NOT_AUTHORIZED','adding search and filters cannot bypass participant capability guard');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+insert into app_private.fn_registrations(id,event_id,label,route_type,adults,children,max_intensity,amount_cents,run_id,synthetic)
+ select ('ffffffff-ffff-ffff-ffff-'||lpad(n::text,12,'0'))::uuid,f.event_id,case when n=1 then 'Rare needle after first hundred' else 'Bulk filter fixture '||n end,'lantern',1,0,1,350,f.run_id,true from app_private.fn_events f join app_private.events e on e.id=f.event_id cross join generate_series(1,505)n where e.slug='frightnight-2027-test';
+select is((api.frightnight_admin_list('frightnight-2027-test','registrations',0,1,'Rare needle after first hundred','{}')->>'total')::integer,1,'search finds a record beyond any prior hundred-row snapshot limit');
+select is(api.frightnight_admin_list('frightnight-2027-test','registrations',0,1,'Rare needle after first hundred','{}')#>>'{items,0,label}','Rare needle after first hundred','searched page contains the remote match rather than first unfiltered rows');
+select is(jsonb_array_length(api.frightnight_snapshot('frightnight-2027-test')->'registrations'),100,'regie personal-data snapshot remains capped at one hundred even above five hundred registrations');
+select ok((api.frightnight_snapshot('frightnight-2027-test')#>>'{metrics,registrations}')::integer>500,'regie receives authoritative count above its bounded snapshot length');
+select is((api.frightnight_snapshot('frightnight-2027-test')#>>'{metrics,registrations}')::bigint,(select count(*) from app_private.fn_registrations where event_id=(select id from app_private.events where slug='frightnight-2027-test') and status<>'archived'),'dashboard registration count covers the full event without broadening DTOs');
+select is((api.frightnight_snapshot('frightnight-2027-test')#>>'{metrics,paid}')::bigint,(select count(*) from app_private.fn_registrations where event_id=(select id from app_private.events where slug='frightnight-2027-test') and status<>'archived' and payment_status='paid'),'paid total follows confirmed server payment state independently of page length');
+select ok((api.frightnight_snapshot('frightnight-2027-test')->'metrics') ?& array['started','completed','openZones','openIncidents'],'event administrator receives each authorized operational total');
+insert into app_private.event_capabilities(event_id,user_id,capability) select id,'f7270000-0000-0000-0000-000000000006','payments_manage' from app_private.events where slug='frightnight-2027-test';
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000006","role":"authenticated"}',true);
+select ok((api.frightnight_snapshot('frightnight-2027-test')->'metrics') ?& array['registrations','paid'] and not((api.frightnight_snapshot('frightnight-2027-test')->'metrics') ?| array['started','completed','openZones','openIncidents']),'finance totals do not imply route, resident or support authority');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000008","role":"authenticated"}',true);
+select ok(not(api.frightnight_snapshot('frightnight-2027-test')?'metrics'),'content manager cannot read event participation or support counts');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000002","role":"authenticated"}',true);
+select ok(not(api.frightnight_snapshot('frightnight-2027-test')?'metrics'),'participant cannot read event-wide operational counts');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+
+select is((api.frightnight_admin_list('frightnight-2027-test','sink',0,1,(select id::text from app_private.fn_mail_sink order by id limit 1),'{}')->>'total')::integer,1,'finance mail preview can find an exact capture UUID without scanning arbitrary pages');
+insert into app_private.fn_activity_staff(event_id,activity_id,user_id) select event_id,activity_id,'f7270000-0000-0000-0000-000000000004' from app_private.fn_bookings limit 1;
+insert into app_private.fn_bookings(event_id,activity_id,registration_id,seats,status)
+ select r.event_id,a.id,r.id,1,'booked' from app_private.fn_registrations r join app_private.fn_activities a on a.event_id=r.event_id where r.owner_id='f7270000-0000-0000-0000-000000000003' and not exists(select 1 from app_private.fn_activity_staff fs where fs.activity_id=a.id) order by a.id limit 1;
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000004","role":"authenticated"}',true);
+select is((api.frightnight_admin_list('frightnight-2027-test','bookings',0,1,'Family ','{}')->>'total')::integer,1,'assigned activity staff totals include only bookings of their own activity');
+select is((api.frightnight_admin_list('frightnight-2027-test','bookings',0,1,'Family B','{}')->>'total')::integer,0,'search cannot leak other activity counts to a limited staff member');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+update app_private.fn_destinations set state='released' where state='current' and party_id=(select m.party_id from app_private.fn_members m join app_private.fn_registrations r on r.id=m.registration_id where r.owner_id='f7270000-0000-0000-0000-000000000003');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000003","role":"authenticated"}',true);
+select ok(not pg_temp.fn_message_visible((select (value->>'announcementId')::uuid from fn_test_state where key='message-zone')),'current-zone message visibility ends when the destination is released');
+select set_config('request.jwt.claims','{}',true);
+select throws_ok($$select pg_temp.fn_cmd('admin.announcement','{"text":"Anonymous broadcast","audience":"all"}')$$,'42501','LOGIN_REQUIRED','anonymous command cannot create a durable audience message');
+select throws_ok($$select api.frightnight_admin_list('frightnight-2027-test','registrations',0,10,'','{}')$$,'42501','LOGIN_REQUIRED','anonymous actor cannot enumerate filtered admin data');
+
+-- Receipts retain an immutable command result, but every replay reprojects the
+-- complete current snapshot through current capabilities and party state.
+create function pg_temp.fn_replay_cmd(who uuid,cmd text,body jsonb default '{}',k uuid default gen_random_uuid()) returns jsonb language plpgsql as $$begin
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',who,'role','authenticated')::text,true);
+ return api.frightnight_command('frightnight-2027-test-replay',cmd,body,k);
+end$$;
+create function pg_temp.fn_replay_pay(who uuid) returns void language plpgsql as $$declare o jsonb;begin
+ o:=api.frightnight_payment_create('frightnight-2027-test-replay',who,gen_random_uuid());
+ perform api.frightnight_payment_bind('frightnight-2027-test-replay',(o->>'order_id')::uuid,'ct_'||(o->>'order_id'),null);
+ perform api.frightnight_payment_confirm('frightnight-2027-test-replay','ct_'||(o->>'order_id'),'paid',(o->>'amount_cents')::integer,'EUR','test-paid:'||(o->>'order_id'),jsonb_build_object('order_id',o->>'order_id','event_id',o->>'event_id','testmode',true,'environment','staging'));
+end$$;
+select api.frightnight_bootstrap('frightnight-2027-test-replay','f7270000-0000-0000-0000-000000000001','staging','nocteiuvohesvqbowchw:staging:duindorphalloweenstg');
+insert into fn_test_state select 'replay-seed',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000001','test.seed')->'result';
+select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000001','test.walk.fixture');
+select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','registration.save','{"label":"Replay family A","routeType":"lantern","adults":1,"children":0,"maxIntensity":2,"consent":true,"termsVersion":"2027-test-v1"}');
+select pg_temp.fn_replay_pay('f7270000-0000-0000-0000-000000000002');
+select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000003','registration.save','{"label":"Replay family B","routeType":"lantern","adults":1,"children":0,"maxIntensity":2,"consent":true,"termsVersion":"2027-test-v1"}');
+select pg_temp.fn_replay_pay('f7270000-0000-0000-0000-000000000003');
+insert into app_private.event_capabilities(event_id,user_id,capability) select id,'f7270000-0000-0000-0000-000000000002','event_admin' from app_private.events where slug='frightnight-2027-test-replay';
+insert into fn_test_state select 'replay-admin-start',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','journey.start',jsonb_build_object('code',(select value->>'startCode' from fn_test_state where key='replay-seed'),'expectedVersion',1),'f7270000-0000-0000-0000-000000000301');
+select ok((select value->'snapshot' from fn_test_state where key='replay-admin-start')?'registrations','fixture participant start receipt originally contains administrative projection');
+update app_private.event_capabilities set revoked_at=now() where user_id='f7270000-0000-0000-0000-000000000002' and event_id=(select id from app_private.events where slug='frightnight-2027-test-replay');
+insert into fn_test_state select 'replay-revoked-start',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','journey.start',jsonb_build_object('code',(select value->>'startCode' from fn_test_state where key='replay-seed'),'expectedVersion',1),'f7270000-0000-0000-0000-000000000301');
+select ok(not((select value->'snapshot' from fn_test_state where key='replay-revoked-start') ?| array['registrations','zones','audit','health']),'participant receipt replay cannot recover revoked administrative data');
+select is((select value->'result' from fn_test_state where key='replay-revoked-start'),(select value->'result' from fn_test_state where key='replay-admin-start'),'capability-safe replay preserves the immutable original command result');
+select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000003','journey.start',jsonb_build_object('code',(select value->>'startCode' from fn_test_state where key='replay-seed'),'expectedVersion',1));
+insert into fn_test_state select 'replay-invite',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','party.invite')->'result';
+select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000003','party.join',jsonb_build_object('token',(select value->>'token' from fn_test_state where key='replay-invite'),'consent',true));
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000002","role":"authenticated"}',true);
+insert into fn_test_state select 'replay-first-body',jsonb_build_object('expectedVersion',(s#>>'{journey,version}')::integer,'destinationId',s#>>'{current,id}','code',(select z->>'code' from fn_test_state t cross join lateral jsonb_array_elements(t.value->'zoneCodes')z where t.key='replay-seed' and z->>'zoneId'=s#>>'{current,zoneId}')) from(select api.frightnight_snapshot('frightnight-2027-test-replay')s)q;
+insert into fn_test_state select 'replay-first-response',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','journey.complete',(select value from fn_test_state where key='replay-first-body'),'f7270000-0000-0000-0000-000000000302');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000003","role":"authenticated"}',true);
+select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000003','journey.complete',jsonb_build_object('expectedVersion',(s#>>'{journey,version}')::integer,'destinationId',s#>>'{current,id}','code',(select z->>'code' from fn_test_state t cross join lateral jsonb_array_elements(t.value->'zoneCodes')z where t.key='replay-seed' and z->>'zoneId'=s#>>'{current,zoneId}'))) from(select api.frightnight_snapshot('frightnight-2027-test-replay')s)q;
+insert into fn_test_state select 'replay-after-shared-advance',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','journey.complete',(select value from fn_test_state where key='replay-first-body'),'f7270000-0000-0000-0000-000000000302');
+select is((select value->'result' from fn_test_state where key='replay-after-shared-advance'),(select value->'result' from fn_test_state where key='replay-first-response'),'another member advancing the route does not mutate the original command result');
+select isnt((select value#>>'{snapshot,current,id}' from fn_test_state where key='replay-after-shared-advance'),(select value#>>'{snapshot,current,id}' from fn_test_state where key='replay-first-response'),'old command replay never returns the formerly current destination as current');
+select is((select value#>>'{snapshot,current,id}' from fn_test_state where key='replay-after-shared-advance'),api.frightnight_snapshot('frightnight-2027-test-replay')#>>'{current,id}','replayed snapshot reflects the actual current shared destination');
+select is((select jsonb_array_length(value#>'{snapshot,progress,visits}') from fn_test_state where key='replay-after-shared-advance'),2,'replayed transition adds no third visit after the other member progresses');
+
+-- A valid invitation issued before another member is refunded must not reopen
+-- a route/capacity claim. These are isolated provider-contract transactions.
+create function pg_temp.fn_party_guard_digest() returns jsonb language sql as $$select to_jsonb(encode(extensions.digest(jsonb_build_object(
+ 'members',(select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text) from app_private.fn_members t where event_id=(select id from app_private.events where slug='frightnight-2027-test-replay')),
+ 'parties',(select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text) from app_private.fn_parties t where event_id=(select id from app_private.events where slug='frightnight-2027-test-replay')),
+ 'destinations',(select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text) from app_private.fn_destinations t where event_id=(select id from app_private.events where slug='frightnight-2027-test-replay')),
+ 'visits',(select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text) from app_private.fn_visits t where event_id=(select id from app_private.events where slug='frightnight-2027-test-replay')),
+ 'awards',(select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text) from app_private.fn_awards t where event_id=(select id from app_private.events where slug='frightnight-2027-test-replay')),
+ 'invites',(select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text) from app_private.fn_invites t where event_id=(select id from app_private.events where slug='frightnight-2027-test-replay')),
+ 'receipts',(select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text) from app_private.fn_receipts t where event_id=(select id from app_private.events where slug='frightnight-2027-test-replay')),
+ 'audit',(select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text) from app_private.fn_audit t where event_id=(select id from app_private.events where slug='frightnight-2027-test-replay'))
+)::text,'sha256'),'hex'))$$;
+select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000007','registration.save','{"label":"Paid independent family C","routeType":"lantern","adults":1,"children":0,"maxIntensity":2,"consent":true,"termsVersion":"2027-test-v1"}');
+select pg_temp.fn_replay_pay('f7270000-0000-0000-0000-000000000007');
+insert into fn_test_state select 'guard-old-invitation',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','party.invite')->'result';
+insert into fn_test_state select 'guard-target-party',to_jsonb(m.party_id) from app_private.fn_members m join app_private.fn_registrations r on r.id=m.registration_id join app_private.events e on e.id=r.event_id where r.owner_id='f7270000-0000-0000-0000-000000000002' and e.slug='frightnight-2027-test-replay';
+select api.frightnight_payment_confirm('frightnight-2027-test-replay',o.provider_ref,'refunded',o.amount_cents,o.currency,'party-member-refund:'||o.id,jsonb_build_object('order_id',o.id,'event_id',o.event_id,'testmode',true,'environment','staging')) from app_private.fn_orders o join app_private.fn_registrations r on r.id=o.registration_id join app_private.events e on e.id=o.event_id where r.owner_id='f7270000-0000-0000-0000-000000000003' and e.slug='frightnight-2027-test-replay';
+insert into fn_test_state select 'guard-refunded-before',pg_temp.fn_party_guard_digest();
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000007','party.join',jsonb_build_object('token',(select value->>'token' from fn_test_state where key='guard-old-invitation'),'consent',true))$$,'22023','SAME_PAID_ROUTE_REQUIRED','valid pre-refund invitation cannot join a party with another refunded member');
+select is(pg_temp.fn_party_guard_digest(),(select value from fn_test_state where key='guard-refunded-before'),'refused refunded-target join leaves all claims, histories, members, invitations, receipts and audit unchanged');
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','party.invite')$$,'22023','SAME_PAID_ROUTE_REQUIRED','paid member cannot issue a new invitation while another group member is refunded');
+select is(pg_temp.fn_party_guard_digest(),(select value from fn_test_state where key='guard-refunded-before'),'refused invite cannot create a token or mutate the refunded party');
+insert into fn_test_state select 'guard-c-invitation',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000007','party.invite')->'result';
+insert into fn_test_state select 'guard-source-before',pg_temp.fn_party_guard_digest();
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','party.join',jsonb_build_object('token',(select value->>'token' from fn_test_state where key='guard-c-invitation'),'consent',true))$$,'22023','SAME_PAID_ROUTE_REQUIRED','paid member cannot merge an unpaid source group into a valid paid destination');
+select is(pg_temp.fn_party_guard_digest(),(select value from fn_test_state where key='guard-source-before'),'rejected source group leaves both sides and invitation consumption unchanged');
+update app_private.fn_registrations r set payment_status='unpaid',status='active' from app_private.events e where e.id=r.event_id and e.slug='frightnight-2027-test-replay' and owner_id='f7270000-0000-0000-0000-000000000003';
+insert into fn_test_state select 'guard-unpaid-before',pg_temp.fn_party_guard_digest();
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000007','party.join',jsonb_build_object('token',(select value->>'token' from fn_test_state where key='guard-old-invitation'),'consent',true))$$,'22023','SAME_PAID_ROUTE_REQUIRED','valid invitation rejects any unpaid target member even when the inviter remains paid');
+select is(pg_temp.fn_party_guard_digest(),(select value from fn_test_state where key='guard-unpaid-before'),'unpaid-target denial has zero party, reservation, receipt or reward effects');
+update app_private.fn_registrations r set payment_status='paid',status='draft' from app_private.events e where e.id=r.event_id and e.slug='frightnight-2027-test-replay' and owner_id='f7270000-0000-0000-0000-000000000003';
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000007','party.join',jsonb_build_object('token',(select value->>'token' from fn_test_state where key='guard-old-invitation'),'consent',true))$$,'22023','SAME_PAID_ROUTE_REQUIRED','paid but inactive compensation-state member cannot enter a joint route');
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000003','party.invite')$$,'42501','PAID_REGISTRATION_REQUIRED','a paid but inactive issuer cannot publish a new group invitation');
+update app_private.fn_registrations r set status='active',route_type='roots' from app_private.events e where e.id=r.event_id and e.slug='frightnight-2027-test-replay' and owner_id='f7270000-0000-0000-0000-000000000003';
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000007','party.join',jsonb_build_object('token',(select value->>'token' from fn_test_state where key='guard-old-invitation'),'consent',true))$$,'22023','SAME_PAID_ROUTE_REQUIRED','join validates the evening window of every target member rather than one representative');
+update app_private.fn_registrations r set payment_status='refunded',status='cancelled',route_type='lantern' from app_private.events e where e.id=r.event_id and e.slug='frightnight-2027-test-replay' and owner_id='f7270000-0000-0000-0000-000000000003';
+select lives_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','party.leave')$$,'paid family can safely leave a party containing a refunded family');
+select is((select count(*) from app_private.fn_destinations where party_id=(select (value#>>'{}')::uuid from fn_test_state where key='guard-target-party') and state='current'),0::bigint,'remaining refunded party receives no new reservation during leave recalculation');
+select is((select state from app_private.fn_parties where id=(select (value#>>'{}')::uuid from fn_test_state where key='guard-target-party')),'paused','unpaid remainder stays paused rather than resuming a route');
+select ok((select value#>>'{snapshot,current,id}' is not null from(select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','notification.read','{"notificationId":"f7270000-0000-0000-0000-000000000399"}')value)x),'paid departing family retains its own valid independent destination');
+
+-- Edition contact data belongs only to the signup owner; shared access and
+-- operational listings never gain these fields. No Auth or email mutation.
+insert into fn_test_state select 'contact-before',jsonb_build_object('auth',(select encode(extensions.digest(coalesce(email,''),'sha256'),'hex') from auth.users where id='f7270000-0000-0000-0000-000000000002'),'sink',(select count(*) from app_private.fn_mail_sink));
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000002","role":"authenticated"}',true);
+insert into fn_test_state select 'contact-body',jsonb_build_object('registrationId',s#>>'{registration,id}','expectedVersion',(s#>>'{registration,version}')::integer,'contactName','  Test contact  ','contactPhone','+31 (0)70-123 45 67') from(select api.frightnight_snapshot('frightnight-2027-test-replay')s)q;
+insert into fn_test_state select 'contact-response',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','contact.save',(select value from fn_test_state where key='contact-body'),'f7270000-0000-0000-0000-000000000350');
+select is(api.frightnight_snapshot('frightnight-2027-test-replay')#>>'{registration,contactName}','Test contact','owner contact name is normalized and survives a fresh server read');
+select is(api.frightnight_snapshot('frightnight-2027-test-replay')#>>'{registration,contactPhone}','+31 (0)70-123 45 67','owner contact telephone survives a fresh server read');
+select is((select value#>>'{result,version}' from fn_test_state where key='contact-response'),api.frightnight_snapshot('frightnight-2027-test-replay')#>>'{registration,version}','contact write returns its authoritative registration version');
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','contact.save',(select value from fn_test_state where key='contact-body'))$$,'40001','VERSION_CONFLICT','stale contact form cannot overwrite a later edit');
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','contact.save','{"contactName":"Versionless"}')$$,'40001','VERSION_CONFLICT','contact mutation requires an explicit expected version');
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','contact.save',jsonb_build_object('expectedVersion',(api.frightnight_snapshot('frightnight-2027-test-replay')#>>'{registration,version}')::integer,'contactName','Test contact','contactPhone','<script>invalid</script>'))$$,'22023','INVALID_CONTACT','contact telephone accepts only bounded ordinary telephone characters');
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','contact.save',jsonb_build_object('expectedVersion',(api.frightnight_snapshot('frightnight-2027-test-replay')#>>'{registration,version}')::integer,'contactName',repeat('x',121)))$$,'22023','INVALID_CONTACT','contact name is bounded at one hundred and twenty characters');
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000007','contact.save',jsonb_build_object('registrationId',(select value->>'registrationId' from fn_test_state where key='contact-body'),'expectedVersion',1,'contactName','Other family'))$$,'42501','CONTACT_OWNER_REQUIRED','another registered family cannot address an owner contact record by UUID');
+insert into fn_test_state select 'contact-invite',pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','registration.invite')->'result';
+select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000004','registration.accept',jsonb_build_object('token',(select value->>'token' from fn_test_state where key='contact-invite'),'consent',true));
+select ok(not((api.frightnight_snapshot('frightnight-2027-test-replay')->'registration') ?| array['contactName','contactPhone']),'invited shared adult has no owner contact fields in their registration DTO');
+select throws_ok($$select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000004','contact.save',jsonb_build_object('expectedVersion',(api.frightnight_snapshot('frightnight-2027-test-replay')#>>'{registration,version}')::integer,'contactName','Shared overwrite'))$$,'42501','CONTACT_OWNER_REQUIRED','shared adult cannot change the signup owner contact');
+select pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','registration.save','{"label":"Replay family A","routeType":"lantern","adults":1,"children":0,"maxIntensity":2}');
+select is(api.frightnight_snapshot('frightnight-2027-test-replay')#>>'{registration,contactPhone}','+31 (0)70-123 45 67','ordinary registration edits preserve the independent owner contact fields');
+select is((pg_temp.fn_replay_cmd('f7270000-0000-0000-0000-000000000002','contact.save',(select value from fn_test_state where key='contact-body'),'f7270000-0000-0000-0000-000000000350')->'result'),(select value->'result' from fn_test_state where key='contact-response'),'contact retry preserves its original result without a second mutation');
+select is((select result from app_private.fn_receipts where actor_id='f7270000-0000-0000-0000-000000000002' and command_key='f7270000-0000-0000-0000-000000000350'),jsonb_build_object('result',(select value->'result' from fn_test_state where key='contact-response'),'snapshot',jsonb_build_object('registration',jsonb_build_object('id',(select value->'registrationId' from fn_test_state where key='contact-body')))),'stored contact receipt retains only stable result and registration binding, with no telephone or administrative roster');
+select ok(not exists(select 1 from app_private.fn_receipts where result::text like '%contactPhone%' or result#>'{snapshot,registrations}' is not null),'all newly stored receipts omit contact fields and full administrative snapshots');
+select is((select encode(extensions.digest(coalesce(email,''),'sha256'),'hex') from auth.users where id='f7270000-0000-0000-0000-000000000002'),(select value->>'auth' from fn_test_state where key='contact-before'),'contact editing never changes the Auth identity email');
+select is((select count(*) from app_private.fn_mail_sink),(select (value->>'sink')::bigint from fn_test_state where key='contact-before'),'contact editing sends no email or transactional sink capture');
+select ok(not exists(select 1 from app_private.fn_audit where action='contact.save' and (details::text like '%Test contact%' or details::text like '%123 45 67%')),'contact audit captures no submitted name or telephone value');
+select set_config('request.jwt.claims','{"sub":"f7270000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+select ok(not exists(select 1 from jsonb_array_elements(api.frightnight_admin_list('frightnight-2027-test-replay','registrations',0,100)->'items') x where x ?| array['contactName','contactPhone']),'administrative registration listing excludes owner contact fields');
+
 select * from finish();
 rollback;

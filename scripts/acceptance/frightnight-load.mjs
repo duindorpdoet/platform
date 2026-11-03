@@ -301,11 +301,11 @@ export async function runStagingLoad(env = process.env, maximum = 125) {
             return actual;
           }, queued);
           if (stopped) return;
-          check(recovered.confirmed && recovered.attempts === 2 && JSON.stringify(recovered.value) === JSON.stringify(lostResponse), 'INTEGRITY_QUEUED_REPLAY_DIVERGED');
+          check(recovered.confirmed && recovered.attempts === 2 && JSON.stringify(recovered.value?.result) === JSON.stringify(lostResponse?.result), 'INTEGRITY_QUEUED_REPLAY_DIVERGED');
           stage.queueRecovery = { state: recovered.state, attempts: recovered.attempts, responseLostAfterCommit: true, sameCommandAndVersion: true, backendFaultInjected: false };
         } else if (tick === 3 && index === 0) {
           const replies = await Promise.all([command(person, 'journey.complete', body, key), command(person, 'journey.complete', body, key)]);
-          if (replies.every(Boolean)) check(JSON.stringify(replies[0].value) === JSON.stringify(replies[1].value), 'INTEGRITY_SCAN_REPLAY_DIVERGED');
+          if (replies.every(Boolean)) check(JSON.stringify(replies[0].value?.result) === JSON.stringify(replies[1].value?.result), 'INTEGRITY_SCAN_REPLAY_DIVERGED');
         } else await command(person, 'journey.complete', body, key);
       })), tick === 6);
     }
@@ -363,7 +363,7 @@ export async function runStagingLoad(env = process.env, maximum = 125) {
       const [first, duplicate, left] = await Promise.all([request(a,'journey.complete',shared,sharedKey,true),request(a,'journey.complete',shared,sharedKey,true),request(b,'party.leave')]);
       gateRace(); check(left.status === 200, 'INTEGRITY_MEMBER_LEAVE_REJECTED');
       check(first.status === duplicate.status && [200,409].includes(first.status), 'INTEGRITY_RACING_REPLAY_DIVERGED');
-      if (first.status === 200) check(JSON.stringify(first.value) === JSON.stringify(duplicate.value), 'INTEGRITY_RACING_RECEIPT_DIVERGED');
+      if (first.status === 200) check(JSON.stringify(first.value?.result) === JSON.stringify(duplicate.value?.result), 'INTEGRITY_RACING_RECEIPT_DIVERGED');
       await Promise.all([request(a),request(b)]); gateRace();
       check(a.snapshot.journey.id !== b.snapshot.journey.id && a.snapshot.journey.party.persons === 4 && b.snapshot.journey.party.persons === 5, 'INTEGRITY_LEAVE_MEMBERSHIP');
       const sharedVisits = a.snapshot.progress.visits.filter(v => v.zoneId === joint.zoneId).length;
@@ -371,7 +371,7 @@ export async function runStagingLoad(env = process.env, maximum = 125) {
       const own = a.snapshot.current, bHistory = JSON.stringify(b.snapshot.progress), ownKey = randomUUID(); check(own, 'RACE_INDEPENDENT_DESTINATION_REQUIRED');
       const body = { expectedVersion:a.snapshot.journey.version,destinationId:own.id,code:edition.codes.get(own.zoneId) };
       const replies = await Promise.all([request(a,'journey.complete',body,ownKey),request(a,'journey.complete',body,ownKey)]); gateRace();
-      check(replies.every(r => r.status === 200) && JSON.stringify(replies[0].value) === JSON.stringify(replies[1].value), 'INTEGRITY_INDEPENDENT_REPLAY_DIVERGED');
+      check(replies.every(r => r.status === 200) && JSON.stringify(replies[0].value?.result) === JSON.stringify(replies[1].value?.result), 'INTEGRITY_INDEPENDENT_REPLAY_DIVERGED');
       await Promise.all([request(a),request(b)]); gateRace();
       check(JSON.stringify(b.snapshot.progress) === bHistory, 'INTEGRITY_OTHER_FAMILY_HISTORY_CHANGED');
       const ownProof = await sql(`select jsonb_build_object('visits',(select count(*) from app_private.fn_visits where destination_id=${uuid(own.id)}),'awards',(select count(*) from app_private.fn_awards where event_id=${uuid(edition.id)} and registration_id=${uuid(a.snapshot.registration.id)} and award_key=${sqlLiteral('visit:'+own.zoneId)})) proof`);

@@ -13,6 +13,7 @@ import { reconcileWorldPolicyInitialization,worldPolicyInitializationQuery } fro
 import { jointRoutePolicyReleaseQuery,reconcileJointRoutePolicyRelease } from './joint-route-policy-reconciliation.mjs';
 import { jointRouteSettingsInitializationQuery,reconcileJointRouteSettingsInitialization } from './joint-route-settings-reconciliation.mjs';
 import { p12RoutePolicyQuery,reconcileP12RoutePolicy,jointRouteSettingsBeforeP12Policy } from './p12-route-policy-reconciliation.mjs';
+import { scenarioBackupEnabled,scenarioBackupQuery,assertScenarioSnapshot,compareScenarioRestore } from './frightnight-scenario-backup.mjs';
 
 const quote=value=>'"'+value.replaceAll('"','""')+'"';
 const literal=value=>"'"+value.replaceAll("'","''")+"'";
@@ -28,7 +29,7 @@ export function sourceReadPrefix(snapshot) {
   return "begin isolation level repeatable read read only;"+(snapshot?`set transaction snapshot ${literal(snapshot)};`:'')+
     "set local statement_timeout='5min';set local lock_timeout='3s';set local jit=off;set local timezone='UTC';set local datestyle='ISO';";
 }
-const sourceReadPhases=new Set(['snapshot-export','catalog','migration-history','preservation','roles','role-memberships','storage-objects','vault-fingerprint','storage-before','storage-after']);
+const sourceReadPhases=new Set(['snapshot-export','catalog','migration-history','preservation','roles','role-memberships','storage-objects','vault-fingerprint','storage-before','storage-after','frightnight-scenario']);
 export async function withSourceReadPhase(phase,read,report=value=>console.log(JSON.stringify(value)),now=()=>performance.now()) {
   if(!sourceReadPhases.has(phase))throw new Error('INVALID_BACKUP_READ_PHASE');
   const started=now();report({backupRead:phase,status:'started'});
@@ -243,6 +244,7 @@ async function readSourceExport({env,key,context,directory,environment,revision}
 }
 
 export async function runReleaseBackup(env=process.env,dependencies={}) {
+  scenarioBackupEnabled(env);
   const mode=env.RELEASE_BACKUP_MODE??'all';
   if(!['all','export','restore'].includes(mode))throw new Error('INVALID_RELEASE_BACKUP_MODE');
   if(env.RELEASE_READ_TRANSPORT&&!['session-pooler','direct'].includes(env.RELEASE_READ_TRANSPORT))throw new Error('INVALID_RELEASE_BACKUP_TRANSPORT');
@@ -324,6 +326,8 @@ async function exportSource({env,key,context,directory,save,request,captureComma
   try {
     console.log('Private repeatable-read database snapshot opened.');
     const catalog=JSON.parse(await sourceQuery('catalog',catalogSQL,snapshot));
+    const frightnightScenario=scenarioBackupEnabled(env)?assertScenarioSnapshot(JSON.parse(await sourceQuery('frightnight-scenario',scenarioBackupQuery(catalog),snapshot))):undefined;
+    if(frightnightScenario)await save('frightnight-scenario.aes',frightnightScenario);
     const repositoryMigrations=(await readdir('supabase/migrations')).filter(name=>name.endsWith('.sql')).sort();
     const reviewedMigrations=reviewedRepositoryMigrations(repositoryMigrations);
     const reviewedSet=new Set(reviewedMigrations);
@@ -362,7 +366,7 @@ async function exportSource({env,key,context,directory,save,request,captureComma
     }
     await save('object-checks.aes',objectChecks);
     holder.child.stdin.end('commit;\n');await holder.done;
-    return {image,appliedMigrations,reviewedMigrations,catalog,before,coverageBefore,routePolicyBefore,routeSettingsBefore,p12PolicyBefore,roles,memberships,objects,vaultKey,vaultBefore};
+    return {image,appliedMigrations,reviewedMigrations,catalog,before,coverageBefore,routePolicyBefore,routeSettingsBefore,p12PolicyBefore,roles,memberships,objects,vaultKey,vaultBefore,frightnightScenario};
   } finally {
     clearInterval(keepAlive);
     holder.child.stdin.end();holder.child.kill();
@@ -399,6 +403,7 @@ async function restoreSource({env,key,context,directory,save,captureCommand,spaw
     const restored=(await localQuery('begin;'+fingerprintQuery(catalog)+';commit')).split('\n').map(JSON.parse);
     const restoreDifferences=compareFingerprints(before,restored);
     if(restoreDifferences.length)throw new Error('RESTORE_DATA_MISMATCH: '+restoreDifferences.join(', '));
+    const scenarioProof=source.frightnightScenario?compareScenarioRestore(source.frightnightScenario,JSON.parse(await localQuery('begin read only;'+scenarioBackupQuery(catalog)+';commit;'))):undefined;
     const vaultAfter=JSON.parse(await localQuery(vaultFingerprint));
     if(JSON.stringify(vaultBefore)!==JSON.stringify(vaultAfter))throw new Error('VAULT_RESTORE_DATA_MISMATCH');
     console.log(`Isolated restore preserved all ${catalog.length} table fingerprints.`);
@@ -431,6 +436,7 @@ async function restoreSource({env,key,context,directory,save,captureCommand,spaw
     for(const name of (await readdir(directory)).filter(name=>name.endsWith('.aes')).sort())files.push({name,...await fileDigest(join(directory,name))});
     const proof={version:1,environment,revision,context,image,appliedMigrations,recordedAt:new Date().toISOString(),restoreVerified:true,migrationDryRunVerified:true,storageVerified:true,vaultVerified:true,vaultSecrets:vaultBefore.length,tables:catalog.length,objects:objects.length,migrations,coverageReconciliation,jointRoutePolicyReconciliation,jointRouteSettingsReconciliation,p12RoutePolicyReconciliation,backfill,legacyPrint,files,
       limits:['Provider runtime secrets remain in the existing secret store.','No live database configuration, migration, credential, or row was changed by this job.','Isolated SQL restore is not an Auth/mail/browser acceptance result.']};
+    if(scenarioProof)proof.frightnightScenario=scenarioProof;
     proof.signature=createHmac('sha256',key).update(JSON.stringify(proof)).digest('hex');
     await writeFile(join(directory,'proof.json'),JSON.stringify(proof,null,2)+'\n',{flag:'wx',mode:0o600});
     console.log(JSON.stringify({backupAndRestore:'passed',environment,revision,tables:catalog.length,objects:objects.length,migrationDryRun:'passed'}));

@@ -1,4 +1,7 @@
 begin;
+\ir fixtures/future-legacy-appointment.inc
+-- Realtime fixture windows and starts belong to this test day, not the expired 2026 calendar.
+update app_private.events set local_date=(clock_timestamp() at time zone timezone)::date where slug='duindorp-halloween-2026';
 create extension if not exists pgtap with schema extensions;
 create function pg_temp.rehearsal_short_code(stopid uuid) returns text language sql security definer set search_path='' as $$
  select 'TEST-'||right(coalesce(s.portal_id,p.portal_id)::text,2) from app_private.run_stops s left join app_private.route_plan_stops p on p.id=s.plan_stop_id where s.id=stopid

@@ -15,6 +15,7 @@ create table app_private.fn_registrations (
  id uuid primary key default gen_random_uuid(), event_id uuid not null references app_private.fn_events(event_id),
  owner_id uuid references auth.users(id), household_id uuid references app_private.households(id),
  terms_version text, consented_at timestamptz, consent_actor uuid references auth.users(id),
+ contact_name text check(length(contact_name) between 1 and 120), contact_phone text check(length(contact_phone)<=25 and contact_phone~'^[0-9+(). /-]*$'),
  label text not null check(length(label) between 1 and 100), route_type text not null check(route_type in('lantern','roots')),
  adults integer not null check(adults between 1 and 20), children integer not null check(children between 0 and 20),
  max_intensity integer not null check(max_intensity between 1 and 5), avoid_smoke boolean not null default false,
@@ -152,7 +153,10 @@ create table app_private.fn_push_subscriptions (
  consent_at timestamptz not null default now(), revoked_at timestamptz, primary key(event_id,actor_id,endpoint_hash)
 );
 create table app_private.fn_announcements (
- id uuid primary key default gen_random_uuid(), event_id uuid not null references app_private.fn_events(event_id), text text not null check(length(text) between 1 and 2000), created_at timestamptz not null default now()
+ id uuid primary key default gen_random_uuid(), event_id uuid not null references app_private.fn_events(event_id), text text not null check(length(text) between 1 and 2000),
+ audience text not null default 'all' check(audience in('all','lantern','roots','registration','zone')), target_id uuid, version integer not null default 1,
+ created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+ check((audience in('registration','zone'))=(target_id is not null)), unique(event_id,id)
 );
 create table app_private.fn_incidents (
  id uuid primary key default gen_random_uuid(), event_id uuid not null references app_private.fn_events(event_id),
@@ -184,6 +188,9 @@ create table app_private.fn_audit (
  id bigint generated always as identity primary key, event_id uuid not null references app_private.fn_events(event_id),
  actor_id uuid references auth.users(id), action text not null, details jsonb not null default '{}', created_at timestamptz not null default now()
 );
+create index fn_announcements_event_time on app_private.fn_announcements(event_id,created_at desc,id desc);
+create index fn_incidents_event_status on app_private.fn_incidents(event_id,status,created_at desc,id);
+create index fn_audit_event_time on app_private.fn_audit(event_id,created_at desc,id desc);
 -- A single short event lock serializes commands and capacity accounting. This is a
 -- deliberate correctness-first limit; no network/provider work occurs under it.
 create function app_private.fn_now(p_event uuid) returns timestamptz language sql stable set search_path='' as $$ select coalesce(test_clock,now()) from app_private.fn_events where event_id=p_event $$;
@@ -202,6 +209,12 @@ create function app_private.fn_choose(p_event uuid,p_party uuid,p_return boolean
 declare pref jsonb; t timestamptz; deadline timestamptz; finale uuid; previous uuid; chosen uuid; walk integer; seq integer; did uuid; occupied integer; considered integer:=0; capacity_rejected integer:=0; z record;
 begin
  pref:=app_private.fn_party_preferences(p_party); t:=app_private.fn_now(p_event);
+ -- Joins, departures and refunds share the caller's event lock. No path may
+ -- reserve for a party containing an inactive, unpaid or foreign member.
+ if not exists(select 1 from app_private.fn_members where party_id=p_party and event_id=p_event) or exists(select 1 from app_private.fn_members m left join app_private.fn_registrations r on r.id=m.registration_id and r.event_id=p_event where m.party_id=p_party and (m.event_id<>p_event or r.id is null or r.status<>'active' or r.payment_status<>'paid')) then
+  update app_private.fn_destinations set state='released' where party_id=p_party and event_id=p_event and state='current';
+  update app_private.fn_parties set state='paused',reason='Een inschrijving is niet actief en betaald. Stem eerst af met het hulppunt.' where id=p_party and event_id=p_event; return null;
+ end if;
  if exists(select 1 from app_private.fn_events where event_id=p_event and paused) and not p_return then
   update app_private.fn_parties set state='paused',reason='De organisatie heeft de tocht gepauzeerd. Volg de aanwijzingen van de begeleiding.' where id=p_party; return null;
  end if;
@@ -245,12 +258,13 @@ create function app_private.fn_slot_available(p_event uuid,p_slot timestamptz,p_
  from app_private.fn_start_slots s where s.event_id=p_event and s.starts_at=p_slot
 $$;
 create function api.frightnight_snapshot(p_slug text) returns jsonb language plpgsql stable security definer set search_path='' as $$
-declare actor uuid:=auth.uid(); eid uuid; rid uuid; pid uuid; reg jsonb; journey jsonb; current_destination jsonb; result jsonb; is_admin boolean; is_zone_admin boolean;
+declare actor uuid:=auth.uid(); eid uuid; rid uuid; pid uuid; reg jsonb; journey jsonb; current_destination jsonb; result jsonb; totals jsonb:='{}'; is_admin boolean; is_zone_admin boolean;
 begin
  if actor is null then raise exception 'LOGIN_REQUIRED' using errcode='42501'; end if;
  select e.id into eid from app_private.events e join app_private.fn_events f on f.event_id=e.id where e.slug=p_slug and f.environment='staging' and f.is_test;
  if eid is null then raise exception 'EDITION_NOT_AVAILABLE' using errcode='22023'; end if;
  rid:=app_private.fn_registration(eid,actor); reg:=app_private.fn_registration_json(rid);
+ if exists(select 1 from app_private.fn_registrations where id=rid and owner_id=actor) then reg:=reg||(select jsonb_build_object('contactName',contact_name,'contactPhone',contact_phone) from app_private.fn_registrations where id=rid and owner_id=actor); end if;
  is_admin:=app_private.fn_can(eid,'groups_manage',actor) or app_private.fn_can(eid,'registration_manage',actor);
  is_zone_admin:=app_private.fn_can(eid,'portals_manage',actor);
  select party_id into pid from app_private.fn_members where event_id=eid and registration_id=rid;
@@ -266,7 +280,7 @@ begin
  'activities',coalesce((select jsonb_agg(jsonb_build_object('id',a.id,'name',a.name,'startsAt',a.starts_at,'endsAt',a.ends_at,'capacity',a.capacity,'available',a.capacity-coalesce((select sum(b.seats) from app_private.fn_bookings b where b.activity_id=a.id and b.status in('booked','checked_in')),0)) order by a.starts_at) from app_private.fn_activities a where a.event_id=eid and a.run_id=f.run_id),'[]'),
  'bookings',coalesce((select jsonb_agg(jsonb_build_object('id',b.id,'activityId',b.activity_id,'seats',b.seats,'status',b.status)) from app_private.fn_bookings b where b.registration_id=rid),'[]'),
  'notifications',coalesce((select jsonb_agg(jsonb_build_object('id',n.id,'title',n.title,'message',n.message,'readAt',n.read_at,'createdAt',n.created_at) order by n.created_at desc) from (select * from app_private.fn_notifications nn where nn.registration_id=rid order by nn.created_at desc limit 100)n),'[]'),
- 'announcements',coalesce((select jsonb_agg(jsonb_build_object('id',a.id,'text',a.text,'createdAt',a.created_at) order by a.created_at desc) from (select * from app_private.fn_announcements aa where aa.event_id=eid order by aa.created_at desc limit 30)a),'[]'),
+ 'announcements',coalesce((select jsonb_agg(jsonb_build_object('id',a.id,'text',a.text,'audience',a.audience,'targetId',a.target_id,'version',a.version,'createdAt',a.created_at,'updatedAt',a.updated_at) order by a.created_at desc,a.id) from (select * from app_private.fn_announcements aa where aa.event_id=eid and (app_private.fn_can(eid,'content_manage',actor) or (rid is not null and (aa.audience='all' or aa.audience=reg->>'routeType' or (aa.audience='registration' and aa.target_id=rid) or (aa.audience='zone' and aa.target_id=(current_destination->>'zoneId')::uuid)))) order by aa.created_at desc,aa.id limit 30)a),'[]'),
  'quests',coalesce((select jsonb_agg(jsonb_build_object('id',q.id,'title',q.title,'question',q.question,'type',q.type,'completed',exists(select 1 from app_private.fn_awards a where a.registration_id=rid and a.award_key='quest:'||q.id)) order by q.id) from app_private.fn_quests q where q.event_id=eid),'[]'),
  'ownIncidents',coalesce((select jsonb_agg(jsonb_build_object('id',ii.id,'category',ii.category,'text',ii.text,'status',ii.status,'response',ii.response_text,'createdAt',ii.created_at)) from (select * from app_private.fn_incidents where event_id=eid and actor_id=actor order by created_at desc limit 50)ii),'[]'),
  'ownThanks',coalesce((select jsonb_agg(jsonb_build_object('zoneId',zz.id,'count',(select count(*) from app_private.fn_thanks tt where tt.zone_id=zz.id),'messages',coalesce((select jsonb_agg(mt.message) from (select message from app_private.fn_thanks tt where tt.zone_id=zz.id order by created_at desc limit 20)mt),'[]'))) from app_private.fn_zones zz where zz.event_id=eid and zz.owner_id=actor),'[]'),
@@ -277,6 +291,16 @@ begin
  if is_admin or app_private.fn_can(eid,'live_support',actor) then result:=result||jsonb_build_object('incidents',coalesce((select jsonb_agg(jsonb_build_object('id',i.id,'category',i.category,'text',i.text,'status',i.status) order by i.created_at desc) from (select * from app_private.fn_incidents ii where ii.event_id=eid order by ii.created_at desc limit 100)i),'[]')); end if;
  if app_private.has_capability(eid,'event_admin',actor) then result:=result||jsonb_build_object('audit',coalesce((select jsonb_agg(t.obj) from (select jsonb_build_object('id',a.id,'action',a.action,'createdAt',a.created_at) obj from app_private.fn_audit a where a.event_id=eid order by a.id desc limit 100)t),'[]'),
  'health',jsonb_build_object('mailMode','sink','mailSinkCount',(select count(*) from app_private.fn_mail_sink where event_id=eid),'activeReservations',(select count(*) from app_private.fn_destinations where event_id=eid and state='current'),'expiredReservations',(select count(*) from app_private.fn_destinations where event_id=eid and state='current' and lease_until<app_private.fn_now(eid)),'syntheticWalkFixture',exists(select 1 from app_private.fn_walk_edges where event_id=eid and source='synthetic-fixture'),'engine','deterministic-v1','hardwareEnabled',false)); end if;
+ -- Authoritative event totals are separate from bounded personal-data DTOs.
+ if is_admin or app_private.fn_can(eid,'payments_manage',actor) then
+  select jsonb_build_object('registrations',count(*),'paid',count(*)filter(where payment_status='paid')) into totals from app_private.fn_registrations where event_id=eid and status<>'archived';
+ end if;
+ if is_admin then
+  select totals||jsonb_build_object('started',count(*)filter(where p.started_at is not null),'completed',count(*)filter(where p.state='finished')) into totals from app_private.fn_registrations r join app_private.fn_members m on m.event_id=r.event_id and m.registration_id=r.id join app_private.fn_parties p on p.event_id=m.event_id and p.id=m.party_id where r.event_id=eid and r.status<>'archived';
+ end if;
+ if is_zone_admin then totals:=totals||jsonb_build_object('openZones',(select count(*) from app_private.fn_zones z join app_private.fn_events f on f.event_id=z.event_id and f.run_id=z.run_id where z.event_id=eid and z.review_status='approved' and app_private.fn_zone_status(z.id) in('open','busy'))); end if;
+ if app_private.fn_can(eid,'live_support',actor) then totals:=totals||jsonb_build_object('openIncidents',(select count(*) from app_private.fn_incidents where event_id=eid and status='open')); end if;
+ if totals<>'{}'::jsonb then result:=result||jsonb_build_object('metrics',totals); end if;
  return result;
 end $$;
 create function app_private.fn_seed(p_event uuid,p_actor uuid) returns jsonb language plpgsql security definer set search_path='' as $$
@@ -329,7 +353,7 @@ begin
 end $$;
 create function api.frightnight_command(p_slug text,p_command text,p_payload jsonb,p_key uuid) returns jsonb language plpgsql security definer set search_path='' as $$
 declare actor uuid:=auth.uid(); eid uuid; f app_private.fn_events; r app_private.fn_registrations; p app_private.fn_parties; d app_private.fn_destinations; z app_private.fn_zones; other app_private.fn_registrations; target app_private.fn_parties;
- rid uuid; pid uuid; oid uuid; did uuid; tok text; request_digest bytea; previous app_private.fn_receipts; result jsonb:='{}'; response jsonb; now_business timestamptz; pref jsonb; cnt integer; a app_private.fn_activities; invitation app_private.fn_invites; endtime timestamptz; starttime timestamptz; q app_private.fn_quests; adult_invitation app_private.fn_registration_invites; x record;
+ rid uuid; pid uuid; oid uuid; did uuid; tok text; request_digest bytea; previous app_private.fn_receipts; result jsonb:='{}'; response jsonb; now_business timestamptz; pref jsonb; cnt integer; a app_private.fn_activities; invitation app_private.fn_invites; endtime timestamptz; starttime timestamptz; q app_private.fn_quests; adult_invitation app_private.fn_registration_invites; announcement app_private.fn_announcements; message_audience text; message_target uuid; x record;
 begin
  if actor is null then raise exception 'LOGIN_REQUIRED' using errcode='42501'; end if;
  if p_key is null or p_payload is null or jsonb_typeof(p_payload)<>'object' then raise exception 'INVALID_COMMAND' using errcode='22023'; end if;
@@ -350,7 +374,7 @@ begin
   elsif not exists(select 1 from app_private.fn_zones zz where zz.event_id=eid and zz.id=(p_payload->>'zoneId')::uuid and (zz.owner_id=actor or app_private.fn_can(eid,'portals_manage',actor))) then raise exception 'NOT_AUTHORIZED' using errcode='42501'; end if;
  end if;
  select * into previous from app_private.fn_receipts where event_id=eid and actor_id=actor and command_key=p_key;
- if found then if previous.result#>>'{snapshot,registration,id}' is distinct from rid::text then raise exception 'NOT_AUTHORIZED' using errcode='42501'; end if; if previous.request_hash<>request_digest then raise exception 'IDEMPOTENCY_CONFLICT' using errcode='40001'; end if; return previous.result; end if;
+ if found then if previous.result#>>'{snapshot,registration,id}' is distinct from rid::text then raise exception 'NOT_AUTHORIZED' using errcode='42501'; end if; if previous.request_hash<>request_digest then raise exception 'IDEMPOTENCY_CONFLICT' using errcode='40001'; end if; return jsonb_set(previous.result,'{snapshot}',api.frightnight_snapshot(p_slug))||jsonb_build_object('ok',true); end if;
  now_business:=app_private.fn_now(eid); rid:=app_private.fn_registration(eid,actor);
  select * into r from app_private.fn_registrations where id=rid;
  select party_id into pid from app_private.fn_members where event_id=eid and registration_id=rid;
@@ -449,21 +473,29 @@ begin
   if not app_private.is_household_member(other.household_id,actor) then insert into app_private.household_members(household_id,user_id,relation_role) values(other.household_id,actor,'adult'); end if;
   update app_private.fn_registration_invites set consumed_by=actor where id=adult_invitation.id;
   result:=jsonb_build_object('registrationId',other.id,'purpose','shared-registration');
+ elsif p_command='contact.save' then
+  if rid is null or r.owner_id is distinct from actor or (p_payload->>'registrationId' is not null and (p_payload->>'registrationId')::uuid is distinct from rid) then raise exception 'CONTACT_OWNER_REQUIRED' using errcode='42501'; end if;
+  if (p_payload->>'expectedVersion')::integer is distinct from r.version then raise exception 'VERSION_CONFLICT' using errcode='40001'; end if;
+  if length(trim(coalesce(p_payload->>'contactName',''))) not between 1 and 120 or (p_payload?'contactPhone' and (length(trim(coalesce(p_payload->>'contactPhone','')))>25 or trim(coalesce(p_payload->>'contactPhone',''))!~'^[0-9+(). /-]*$')) then raise exception 'INVALID_CONTACT' using errcode='22023'; end if;
+  update app_private.fn_registrations set contact_name=trim(p_payload->>'contactName'),contact_phone=case when p_payload?'contactPhone' then nullif(trim(p_payload->>'contactPhone'),'') else contact_phone end,version=version+1 where event_id=eid and id=rid and owner_id=actor returning version into cnt;
+  result:=jsonb_build_object('registrationId',rid,'version',cnt);
  elsif p_command='registration.revoke' then
   if rid is null or r.owner_id<>actor or (p_payload->>'userId')::uuid=r.owner_id then raise exception 'REGISTRATION_OWNER_REQUIRED' using errcode='42501'; end if;
   update app_private.household_members set revoked_at=now(),revoked_by=actor where household_id=r.household_id and user_id=(p_payload->>'userId')::uuid and revoked_at is null;
   update app_private.fn_registration_invites set revoked_at=now() where event_id=eid and registration_id=rid and consumed_by=(p_payload->>'userId')::uuid;
  elsif p_command='party.invite' then
-  if rid is null or r.payment_status<>'paid' or p.state in('finished','merged','archived') then raise exception 'PAID_REGISTRATION_REQUIRED' using errcode='42501'; end if;
+  if rid is null or r.payment_status<>'paid' or r.status<>'active' or p.id is null or p.event_id<>eid or p.state in('finished','merged','archived') then raise exception 'PAID_REGISTRATION_REQUIRED' using errcode='42501'; end if;
+  if not exists(select 1 from app_private.fn_members where party_id=pid and event_id=eid) or exists(select 1 from app_private.fn_members m left join app_private.fn_registrations rg on rg.id=m.registration_id and rg.event_id=eid where m.party_id=pid and (m.event_id<>eid or rg.id is null or rg.status<>'active' or rg.payment_status<>'paid' or rg.route_type<>r.route_type)) then raise exception 'SAME_PAID_ROUTE_REQUIRED' using errcode='22023'; end if;
   tok:=encode(extensions.gen_random_bytes(24),'hex'); insert into app_private.fn_invites(event_id,party_id,token_hash,expires_at) values(eid,pid,extensions.digest(tok,'sha256'),now()+interval '24 hours'); result:=jsonb_build_object('token',tok,'expiresAt',now()+interval '24 hours');
  elsif p_command='party.join' then
-  if rid is null or r.payment_status<>'paid' or r.status<>'active' or p.state in('finished','merged','archived') or (p_payload->>'consent')::boolean is distinct from true then raise exception 'PAID_CONSENT_REQUIRED' using errcode='42501'; end if;
+  if rid is null or r.payment_status<>'paid' or r.status<>'active' or p.id is null or p.event_id<>eid or p.state in('finished','merged','archived') or (p_payload->>'consent')::boolean is distinct from true then raise exception 'PAID_CONSENT_REQUIRED' using errcode='42501'; end if;
   select * into invitation from app_private.fn_invites where event_id=eid and token_hash=extensions.digest(coalesce(p_payload->>'token',''),'sha256') and revoked_at is null and consumed_by is null and expires_at>now() for update;
   if invitation.id is null or invitation.party_id=pid then raise exception 'INVITATION_INVALID' using errcode='22023'; end if;
-  select * into target from app_private.fn_parties where id=invitation.party_id;
-  if target.state in('finished','merged','archived') then raise exception 'INVITATION_INVALID' using errcode='22023'; end if;
-  select rg.* into other from app_private.fn_members m join app_private.fn_registrations rg on rg.id=m.registration_id where m.party_id=target.id limit 1;
-  if other.route_type<>r.route_type or exists(select 1 from app_private.fn_members m join app_private.fn_registrations rg on rg.id=m.registration_id where m.party_id=pid and (rg.route_type<>other.route_type or rg.payment_status<>'paid')) then raise exception 'SAME_PAID_ROUTE_REQUIRED' using errcode='22023'; end if;
+  select * into target from app_private.fn_parties where id=invitation.party_id and event_id=eid for update;
+  if target.id is null or target.state in('finished','merged','archived') then raise exception 'INVITATION_INVALID' using errcode='22023'; end if;
+  -- Validate both complete parties before releasing claims, moving members or
+  -- consuming the invitation. The event lock also serializes payment refunds.
+  if not exists(select 1 from app_private.fn_members where party_id=target.id and event_id=eid) or exists(select 1 from app_private.fn_members m left join app_private.fn_registrations rg on rg.id=m.registration_id and rg.event_id=eid where m.party_id in(pid,target.id) and (m.event_id<>eid or rg.id is null or rg.status<>'active' or rg.payment_status<>'paid' or rg.route_type<>r.route_type)) then raise exception 'SAME_PAID_ROUTE_REQUIRED' using errcode='22023'; end if;
   pref:=app_private.fn_party_preferences(pid); result:=app_private.fn_party_preferences(target.id);
   if (pref->>'persons')::integer+(result->>'persons')::integer>f.max_party then raise exception 'PARTY_TOO_LARGE' using errcode='22023'; end if;
   update app_private.fn_destinations set state='released' where party_id in(pid,target.id) and state='current';
@@ -559,7 +591,27 @@ begin
    for x in select id from app_private.fn_parties where event_id=eid and state in('walking','waiting','paused') loop update app_private.fn_destinations set state='released' where party_id=x.id and state='current'; update app_private.fn_parties set version=version+1 where id=x.id; perform app_private.fn_choose(eid,x.id,true); end loop;
   end if;
  elsif p_command='admin.announcement' then
-  insert into app_private.fn_announcements(event_id,text) values(eid,trim(p_payload->>'text')) returning id into oid; result:=jsonb_build_object('announcementId',oid);
+  message_audience:=coalesce(p_payload->>'audience','all');
+  if message_audience not in('all','lantern','roots','registration','zone') or length(trim(coalesce(p_payload->>'text',''))) not between 1 and 2000 then raise exception 'INVALID_ANNOUNCEMENT' using errcode='22023'; end if;
+  if message_audience='registration' then
+   message_target:=(p_payload->>'registrationId')::uuid;
+   if p_payload->>'zoneId' is not null or not exists(select 1 from app_private.fn_registrations where event_id=eid and id=message_target and status<>'archived') then raise exception 'ANNOUNCEMENT_TARGET_SCOPE_REQUIRED' using errcode='42501'; end if;
+  elsif message_audience='zone' then
+   message_target:=(p_payload->>'zoneId')::uuid;
+   if p_payload->>'registrationId' is not null or not exists(select 1 from app_private.fn_zones where event_id=eid and id=message_target) then raise exception 'ANNOUNCEMENT_TARGET_SCOPE_REQUIRED' using errcode='42501'; end if;
+  elsif p_payload->>'registrationId' is not null or p_payload->>'zoneId' is not null then raise exception 'INVALID_ANNOUNCEMENT_TARGET' using errcode='22023';
+  end if;
+  if p_payload->>'id' is null then
+   if p_payload->>'expectedVersion' is not null then raise exception 'ANNOUNCEMENT_ID_REQUIRED' using errcode='22023'; end if;
+   insert into app_private.fn_announcements(event_id,text,audience,target_id) values(eid,trim(p_payload->>'text'),message_audience,message_target) returning * into announcement;
+  else
+   select * into announcement from app_private.fn_announcements where event_id=eid and id=(p_payload->>'id')::uuid for update;
+   if announcement.id is null then raise exception 'ANNOUNCEMENT_SCOPE_REQUIRED' using errcode='42501'; end if;
+   if (p_payload->>'expectedVersion')::integer is distinct from announcement.version then raise exception 'VERSION_CONFLICT' using errcode='40001'; end if;
+   update app_private.fn_announcements set text=trim(p_payload->>'text'),audience=message_audience,target_id=message_target,version=version+1,updated_at=now() where event_id=eid and id=announcement.id returning * into announcement;
+  end if;
+  insert into app_private.fn_audit(event_id,actor_id,action,details) values(eid,actor,'announcement.saved',jsonb_build_object('announcementId',announcement.id,'version',announcement.version,'audience',announcement.audience,'targetId',announcement.target_id,'commandId',p_key));
+  result:=jsonb_build_object('announcementId',announcement.id,'version',announcement.version,'audience',announcement.audience);
  elsif p_command='help.submit' then
   insert into app_private.fn_incidents(event_id,actor_id,category,text) values(eid,actor,left(coalesce(p_payload->>'category','help'),50),trim(p_payload->>'text')) returning id into oid; result:=jsonb_build_object('incidentId',oid,'message','Melding ontvangen. Bel bij direct gevaar 112; het hulppunt is op het Duinpad.');
  elsif p_command='admin.incident.resolve' then
@@ -691,7 +743,10 @@ begin
  response:=jsonb_build_object('ok',true,'result',result,'snapshot',api.frightnight_snapshot(p_slug));
  -- Secret QR/invite values exist only in a private actor-bound command receipt;
  -- they are never included in snapshots, audit, public content or telemetry.
- insert into app_private.fn_receipts(event_id,actor_id,command_key,request_hash,result) values(eid,actor,p_key,request_digest,response);
+ -- Persist only the immutable result and registration binding needed for replay
+ -- authorization. Administrative rosters/contact fields are freshly projected
+ -- for each response, never copied into this idempotency ledger.
+ insert into app_private.fn_receipts(event_id,actor_id,command_key,request_hash,result) values(eid,actor,p_key,request_digest,jsonb_build_object('result',result,'snapshot',jsonb_build_object('registration',jsonb_build_object('id',response#>'{snapshot,registration,id}'))));
  return response;
 end $$;
 create table app_private.fn_refunds (
@@ -844,43 +899,55 @@ end $$;
 create function api.frightnight_public_content(p_slug text) returns jsonb language sql stable security definer set search_path='' as $$
  select coalesce(jsonb_agg(jsonb_build_object('key',c.content_key,'body',c.body,'version',c.version) order by c.content_key),'[]') from app_private.fn_content c join app_private.events e on e.id=c.event_id join app_private.fn_events f on f.event_id=e.id where e.slug=p_slug and f.environment='staging' and f.is_test and c.published
 $$;
-create function api.frightnight_admin_list(p_slug text,p_resource text,p_cursor integer default 0,p_limit integer default 50) returns jsonb language plpgsql stable security definer set search_path='' as $$
-declare eid uuid; actor uuid:=auth.uid(); items jsonb; total bigint; lim integer:=least(greatest(coalesce(p_limit,50),1),100); offst integer:=greatest(coalesce(p_cursor,0),0); cap text;
+create function api.frightnight_admin_list(p_slug text,p_resource text,p_cursor integer default 0,p_limit integer default 50,p_search text default '',p_filters jsonb default '{}') returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare eid uuid; actor uuid:=auth.uid(); items jsonb; total bigint; lim integer:=least(greatest(coalesce(p_limit,50),1),100); offst integer:=greatest(coalesce(p_cursor,0),0); cap text; search text:=lower(trim(coalesce(p_search,''))); filters jsonb:=coalesce(p_filters,'{}'); allowed text[]; st text; rt text; ps text;
 begin
  if actor is null then raise exception 'LOGIN_REQUIRED' using errcode='42501'; end if;
  select e.id into eid from app_private.events e join app_private.fn_events f on f.event_id=e.id where e.slug=p_slug and f.environment='staging' and f.is_test;
- cap:=case when p_resource='zones' then 'portals_manage' when p_resource in('registrations','parties') then 'registration_manage' when p_resource in('payments','sink') then 'payments_manage' when p_resource='incidents' then 'live_support' when p_resource='content' then 'content_manage' else 'event_admin' end;
+ cap:=case when p_resource='zones' then 'portals_manage' when p_resource in('registrations','parties') then 'registration_manage' when p_resource in('payments','sink') then 'payments_manage' when p_resource='incidents' then 'live_support' when p_resource in('content','announcements') then 'content_manage' else 'event_admin' end;
  if eid is null or not(app_private.fn_can(eid,cap,actor) or (p_resource='bookings' and exists(select 1 from app_private.fn_activity_staff where event_id=eid and user_id=actor))) then raise exception 'NOT_AUTHORIZED' using errcode='42501'; end if;
+ if offst>100000 or length(search)>120 or jsonb_typeof(filters)<>'object' or octet_length(filters::text)>2048 then raise exception 'INVALID_ADMIN_QUERY' using errcode='22023'; end if;
+ allowed:=case when p_resource='registrations' then array['status','routeType','paymentStatus'] when p_resource in('payments','incidents','bookings','parties','sink') then array['status','routeType'] when p_resource in('zones','content') then array['status'] when p_resource in('audit','announcements') then array[]::text[] else null end;
+ if allowed is null then raise exception 'UNKNOWN_RESOURCE' using errcode='22023'; end if;
+ if exists(select 1 from jsonb_each(filters) x where not x.key=any(allowed) or jsonb_typeof(x.value)<>'string' or length(x.value#>>'{}')>100) then raise exception 'INVALID_ADMIN_FILTER' using errcode='22023'; end if;
+ st:=nullif(filters->>'status',''); rt:=nullif(filters->>'routeType',''); ps:=nullif(filters->>'paymentStatus','');
+ if rt is not null and rt not in('lantern','roots') then raise exception 'INVALID_ADMIN_FILTER' using errcode='22023'; end if;
+ if ps is not null and ps not in('unpaid','open','paid','failed','cancelled','expired','refunded') then raise exception 'INVALID_ADMIN_FILTER' using errcode='22023'; end if;
+ if st is not null and not(st=any(case p_resource when 'registrations' then array['draft','active','cancelled','archived'] when 'zones' then array['open','busy','paused','closed'] when 'payments' then array['open','paid','failed','cancelled','expired','refunded'] when 'incidents' then array['open','resolved'] when 'bookings' then array['booked','cancelled','checked_in'] when 'parties' then array['ready','walking','waiting','paused','finished','merged','archived'] when 'sink' then array['sink'] when 'content' then array['draft','published'] else array[]::text[] end)) then raise exception 'INVALID_ADMIN_FILTER' using errcode='22023'; end if;
  if p_resource='zones' then
-  select count(*) into total from app_private.fn_zones where event_id=eid;
-  select coalesce(jsonb_agg(app_private.fn_zone_json(t.id,true)),'[]') into items from (select id from app_private.fn_zones where event_id=eid order by id limit lim offset offst)t;
+  with matched as materialized(select z.id::text sort_id,z.opens_at sort_time,z.id from app_private.fn_zones z where z.event_id=eid and (st is null or app_private.fn_zone_status(z.id)=st) and (search='' or position(search in lower(z.name||' '||z.address))>0))
+  select (select count(*) from matched),coalesce((select jsonb_agg(app_private.fn_zone_json(t.id,true) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
  elsif p_resource='registrations' then
-  select count(*) into total from app_private.fn_registrations where event_id=eid and status<>'archived';
-  select coalesce(jsonb_agg(app_private.fn_registration_json(t.id)),'[]') into items from (select id from app_private.fn_registrations where event_id=eid and status<>'archived' order by created_at desc,id limit lim offset offst)t;
+  with matched as materialized(select r.id::text sort_id,r.created_at sort_time,r.id from app_private.fn_registrations r where r.event_id=eid and (st is not null or r.status<>'archived') and (st is null or r.status=st) and (rt is null or r.route_type=rt) and (ps is null or r.payment_status=ps) and (search='' or position(search in lower(r.label||' '||r.id::text))>0))
+  select (select count(*) from matched),coalesce((select jsonb_agg(app_private.fn_registration_json(t.id) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
  elsif p_resource='payments' then
-  select count(*) into total from app_private.fn_orders where event_id=eid;
-  select coalesce(jsonb_agg(app_private.fn_order_json(t.id)),'[]') into items from (select id from app_private.fn_orders where event_id=eid order by created_at desc,id limit lim offset offst)t;
+  with matched as materialized(select o.id::text sort_id,o.created_at sort_time,o.id,r.label,r.route_type from app_private.fn_orders o join app_private.fn_registrations r on r.event_id=o.event_id and r.id=o.registration_id where o.event_id=eid and (st is null or o.status=st) and (rt is null or r.route_type=rt) and (search='' or position(search in lower(r.label||' '||o.id::text||' '||coalesce(o.provider_ref,'')))>0))
+  select (select count(*) from matched),coalesce((select jsonb_agg(app_private.fn_order_json(t.id)||jsonb_build_object('registrationLabel',t.label,'routeType',t.route_type) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
  elsif p_resource='audit' then
-  select count(*) into total from app_private.fn_audit where event_id=eid;
-  select coalesce(jsonb_agg(jsonb_build_object('id',t.id,'action',t.action,'details',t.details,'createdAt',t.created_at)),'[]') into items from (select id,action,details,created_at from app_private.fn_audit where event_id=eid order by id desc limit lim offset offst)t;
+  with matched as materialized(select lpad(a.id::text,20,'0') sort_id,a.created_at sort_time,a.id,a.action,a.details,a.created_at from app_private.fn_audit a where a.event_id=eid and (search='' or position(search in lower(a.action))>0))
+  select (select count(*) from matched),coalesce((select jsonb_agg(jsonb_build_object('id',t.id,'action',t.action,'details',t.details,'createdAt',t.created_at) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
  elsif p_resource='incidents' then
-  select count(*) into total from app_private.fn_incidents where event_id=eid;
-  select coalesce(jsonb_agg(jsonb_build_object('id',t.id,'category',t.category,'text',t.text,'status',t.status,'response',t.response_text,'createdAt',t.created_at)),'[]') into items from (select * from app_private.fn_incidents where event_id=eid order by created_at desc,id limit lim offset offst)t;
+  with matched as materialized(select i.id::text sort_id,i.created_at sort_time,i.id,i.category,i.text,i.status,i.response_text,i.created_at from app_private.fn_incidents i left join app_private.fn_registrations r on r.id=app_private.fn_registration(eid,i.actor_id) and r.event_id=i.event_id where i.event_id=eid and (st is null or i.status=st) and (rt is null or r.route_type=rt) and (search='' or position(search in lower(i.category||' '||i.text||' '||coalesce(i.response_text,'')))>0))
+  select (select count(*) from matched),coalesce((select jsonb_agg(jsonb_build_object('id',t.id,'category',t.category,'text',t.text,'status',t.status,'response',t.response_text,'createdAt',t.created_at) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
  elsif p_resource='bookings' then
-  select count(*) into total from app_private.fn_bookings b where event_id=eid and (app_private.has_capability(eid,'event_admin',actor) or exists(select 1 from app_private.fn_activity_staff fs where fs.event_id=eid and fs.activity_id=b.activity_id and fs.user_id=actor));
-  select coalesce(jsonb_agg(jsonb_build_object('id',t.id,'activityId',t.activity_id,'registrationId',t.registration_id,'seats',t.seats,'status',t.status)),'[]') into items from (select * from app_private.fn_bookings b where event_id=eid and (app_private.has_capability(eid,'event_admin',actor) or exists(select 1 from app_private.fn_activity_staff fs where fs.event_id=eid and fs.activity_id=b.activity_id and fs.user_id=actor)) order by id limit lim offset offst)t;
+  with matched as materialized(select b.id::text sort_id,a.starts_at sort_time,b.id,b.activity_id,b.registration_id,b.seats,b.status,r.label,r.route_type,a.name from app_private.fn_bookings b join app_private.fn_registrations r on r.event_id=b.event_id and r.id=b.registration_id join app_private.fn_activities a on a.event_id=b.event_id and a.id=b.activity_id where b.event_id=eid and (app_private.has_capability(eid,'event_admin',actor) or exists(select 1 from app_private.fn_activity_staff fs where fs.event_id=eid and fs.activity_id=b.activity_id and fs.user_id=actor)) and (st is null or b.status=st) and (rt is null or r.route_type=rt) and (search='' or position(search in lower(r.label||' '||a.name))>0))
+  select (select count(*) from matched),coalesce((select jsonb_agg(jsonb_build_object('id',t.id,'activityId',t.activity_id,'registrationId',t.registration_id,'registrationLabel',t.label,'routeType',t.route_type,'activityName',t.name,'seats',t.seats,'status',t.status) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
  elsif p_resource='parties' then
-  select count(*) into total from app_private.fn_parties where event_id=eid;
-  select coalesce(jsonb_agg(jsonb_build_object('id',t.id,'state',t.state,'version',t.version,'preferences',app_private.fn_party_preferences(t.id))),'[]') into items from (select * from app_private.fn_parties where event_id=eid order by id limit lim offset offst)t;
+  with matched as materialized(select p.id::text sort_id,coalesce(p.started_at,'epoch'::timestamptz) sort_time,p.id,p.state,p.version from app_private.fn_parties p where p.event_id=eid and (st is null or p.state=st) and (rt is null or exists(select 1 from app_private.fn_members m join app_private.fn_registrations r on r.event_id=m.event_id and r.id=m.registration_id where m.party_id=p.id and r.route_type=rt)) and (search='' or exists(select 1 from app_private.fn_members m join app_private.fn_registrations r on r.event_id=m.event_id and r.id=m.registration_id where m.party_id=p.id and position(search in lower(r.label))>0)))
+  select (select count(*) from matched),coalesce((select jsonb_agg(jsonb_build_object('id',t.id,'state',t.state,'version',t.version,'preferences',app_private.fn_party_preferences(t.id)) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
  elsif p_resource='sink' then
-  select count(*) into total from app_private.fn_mail_sink where event_id=eid;
-  select coalesce(jsonb_agg(jsonb_build_object('id',t.id,'template',t.template,'payload',t.payload,'mode',t.delivery_mode,'attempts',t.attempts,'createdAt',t.created_at)),'[]') into items from (select * from app_private.fn_mail_sink where event_id=eid order by created_at desc,id limit lim offset offst)t;
+  with matched as materialized(select m.id::text sort_id,m.created_at sort_time,m.id,m.template,m.payload,m.delivery_mode,m.attempts,m.created_at from app_private.fn_mail_sink m left join app_private.fn_registrations r on r.event_id=m.event_id and r.id=m.registration_id where m.event_id=eid and (st is null or m.delivery_mode=st) and (rt is null or r.route_type=rt) and (search='' or position(search in lower(m.id::text||' '||m.template||' '||coalesce(r.label,'')))>0))
+  select (select count(*) from matched),coalesce((select jsonb_agg(jsonb_build_object('id',t.id,'template',t.template,'payload',t.payload,'mode',t.delivery_mode,'attempts',t.attempts,'createdAt',t.created_at) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
  elsif p_resource='content' then
-  select count(*) into total from app_private.fn_content where event_id=eid;
-  select coalesce(jsonb_agg(jsonb_build_object('key',t.content_key,'body',t.body,'published',t.published,'version',t.version)),'[]') into items from (select * from app_private.fn_content where event_id=eid order by content_key limit lim offset offst)t;
- else raise exception 'UNKNOWN_RESOURCE' using errcode='22023'; end if;
- return jsonb_build_object('items',items,'total',total,'nextCursor',case when offst+lim<total then offst+lim else null end,'limit',lim);
+  with matched as materialized(select c.content_key sort_id,'epoch'::timestamptz sort_time,c.content_key,c.body,c.published,c.version from app_private.fn_content c where c.event_id=eid and (st is null or c.published=(st='published')) and (search='' or position(search in lower(c.content_key||' '||c.body::text))>0))
+  select (select count(*) from matched),coalesce((select jsonb_agg(jsonb_build_object('key',t.content_key,'body',t.body,'published',t.published,'version',t.version) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
+ elsif p_resource='announcements' then
+  with matched as materialized(select a.id::text sort_id,a.created_at sort_time,a.id,a.text,a.audience,a.target_id,a.version,a.created_at,a.updated_at from app_private.fn_announcements a where a.event_id=eid and (search='' or position(search in lower(a.text))>0))
+  select (select count(*) from matched),coalesce((select jsonb_agg(jsonb_build_object('id',t.id,'text',t.text,'audience',t.audience,'targetId',t.target_id,'version',t.version,'createdAt',t.created_at,'updatedAt',t.updated_at) order by t.sort_time desc,t.sort_id desc) from(select * from matched order by sort_time desc,sort_id desc limit lim offset offst)t),'[]'::jsonb) into total,items;
+ end if;
+ return jsonb_build_object('items',items,'total',total,'nextCursor',case when offst+lim<total then offst+lim else null end,'limit',lim,'search',trim(coalesce(p_search,'')),'filters',filters);
 end $$;
+
 -- Photographs remain private, with ownership checked again by Storage RLS.
 -- Bucket creation is part of post-preservation, service-only bootstrap.
 create function app_private.fn_photo_access(p_name text) returns boolean language sql stable security definer set search_path='' as $$
@@ -905,7 +972,7 @@ grant execute on function api.frightnight_payment_create(text,uuid,uuid),api.fri
 
 grant execute on function app_private.fn_photo_access(text) to authenticated;
 
-grant execute on function api.frightnight_admin_list(text,text,integer,integer) to authenticated;
+grant execute on function api.frightnight_admin_list(text,text,integer,integer,text,jsonb) to authenticated;
 
 grant execute on function api.frightnight_payment_scope(text) to service_role;
 

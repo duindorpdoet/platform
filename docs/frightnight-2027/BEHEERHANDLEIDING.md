@@ -4,6 +4,8 @@ Gebruik uitsluitend **https://staging-halloween.duindorpdoet.nl**. De canonieke 
 
 ## Inloggen en rollen
 
+Met **Rustige weergave** beperk je de beweging. De voorkeur blijft bij normaal toegestane browseropslag bewaard na verversen en navigeren en wordt tussen tabs gedeeld. Er wordt alleen een openbare aan/uitvoorkeur opgeslagen. De systeemvoorkeur voor minder beweging blijft voorgaan. Blokkeert de browser opslag, dan werkt de keuze in het geheugen zolang de app geladen blijft.
+
 Open `/inloggen`, vul je eigen toegestane testadres in en vraag zelf een code aan. Gebruik die code in dezelfde browser. Je bestaande account blijft bestaan; er is geen gedeeld wachtwoord en geen keuzemenu waarmee je jezelf beheerder maakt. De automatisering vraagt geen OTP aan. Een nieuwe menselijke tester moet eerst bewust worden toegestaan binnen de bestaande stagingmail-/authpolicy; stuur geen uitnodigingscampagne naar oude deelnemers.
 
 | Testrol | Ingang | Toegang en voorbereiding |
@@ -83,6 +85,18 @@ De vaste grens blijft `FRIGHTNIGHT_ENABLED=true`, projectref `nocteiuvohesvqbowc
 
 ## Backup, rollback en incident
 
+Na geslaagde browser-, sink- en belastingacceptatie volgt de verplichte workflowjob `frightnight-scenario-backup`. Deze herhaalt de bestaande versleutelde backup en netwerkloze herstelproef op de gepubliceerde SHA, nu inclusief het actieve 2027-scenario. De editie-/testrondebinding en fingerprints van alle dertig `fn_*`-tabellen worden binnen dezelfde database-snapshot gelezen en na herstel exact vergeleken. Het ondertekende bewijs bevat alleen editiecode, seedversie, aantallen en een digest; geen actoren, privévelden of QR-geheimen. De aparte artifactnaam begint met `frightnight-scenario-backup-staging-` en blijft dertig dagen bewaard. Een groene backup vóór de migratie vervangt deze scenarioherstelproef niet. Zolang deze nieuwe job niet werkelijk geslaagd is, blijft RET-05 open.
+
 Het laatst vooraf aangetroffen groene herstelpunt is app-SHA `ce6bbb52551c4005a24c04fe3a578a4c3860cc18`, stagingrun **41433832508**, backupartifact **13135987607**, naam `redesign-backup-staging-41433832508-1` (GitHub-retentie tot **2 december 2026**). Daar zijn versleuteling, geïsoleerd herstel, migratiedryrun, 236 bestaande tabellen en twaalf Storage-objecten gelogd. Dit bewijst niet de actuele nieuwe release. Elke nieuwe stagingrelease moet een eigen versleuteld herstelpunt en behoudsvergelijking opleveren vóór migratie/seed.
 
 Bij een FrightNight-incident: pauzeer alleen de betreffende testeditie en leg SHA, run, tijd en correlatie-ID vast. Gebruik de bestaande immutable-release-interface voor `duindorphalloweenstg` om de laatst groene app plus bijbehorende runtimeconfig terug te zetten; controleer health, publieke pagina's en rol-/no-storegrenzen. Laat additieve schema's en historie staan. Herstel een databasebackup eerst geïsoleerd, vergelijk veranderingen en kies waar mogelijk een gerichte forward-fix. Zet geen volledige oude backup over latere 2026- of Auth-writes heen. Geen productiepromotion, DROP/TRUNCATE, remote reset, auth-delete of globale uitschakeling van bestaande cron/mail als routineoplossing. Zie de bestaande [rollbackbasis](../operations/ROLLBACK.md) met deze strengere staging-/editiegrens.
+
+## Aanvullingen in de definitieve bouw
+
+Onder **Nachtpas → Gegevens** kan alleen de eigenaar de contactnaam en een optioneel telefoonnummer bewaren. Een wijziging vanaf een verouderd tabblad wordt geweigerd; vernieuw en controleer de huidige gegevens. Deze contactvelden staan niet in gedeelde gezelschappen, generieke regieroosters, offlinecache of souvenirs. Een andere volwassene krijgt via expliciete toestemming routebediening, zonder dat deze contactvelden daarmee worden gedeeld.
+
+**Download mijn Nachtpas** levert een zelfstandige scherpe SVG met het echte ingesloten logo. Het bestand bevat eigen aantallen en zegels, geen scancode, telefoonnummer of toekomstige adressen. Voor afdrukken via de browser blijft `/api/frightnight/pass?format=html` beschikbaar na eigen login. Het is een aandenken aan de laatst bevestigde stand, geen extra toegangsbewijs.
+
+Het operationele noodpakket geeft eventbeheerders en huizenbeheerders afdrukbare kaartjes voor maximaal honderd goedgekeurde zones uit de begrensde snapshot. Voor grotere edities vult de avondpost deze aan met de bevoegde zone-export. Print vóór de proef; bevestig huisstatus, comfort, aantal personen en veilige paden lokaal of per portofoon en houd een papieren tijdenlog bij. Het kaartje is geen actuele toegangstoezegging. Deelnemers krijgen deze toekomstige adressen niet.
+
+In **Avondregie → Instellingen → Editie-inhoud** zijn programma en voorwaarden als concept of gepubliceerd te bewaren. Gepubliceerde aanvullingen verschijnen via een afzonderlijke lichte publieke uitlezing; de vaste tijdvensters en testinstemming `2027-test-v1` blijven herkenbaar. Regie-overzichttellingen komen uit editiebrede serveraggregaten, met alleen de tellingen waarvoor de rol bevoegd is.

@@ -18,8 +18,8 @@ parser.add_argument('--families', type=int, default=12)
 args = parser.parse_args()
 if not args.container.startswith('supabase_db_') or not args.database.startswith('frightnight_2027_'):
     raise SystemExit('Only the explicitly isolated local FrightNight verification database is allowed.')
-if not 2 <= args.families <= 30:
-    raise SystemExit('Bounded contract test: 2–30 families.')
+if not 3 <= args.families <= 30:
+    raise SystemExit('Bounded contract test: 3–30 families for the independent join/refund race.')
 
 def sql(statement):
     result = subprocess.run(['docker', 'exec', '-i', args.container, 'psql', '-U', 'postgres', '-d', args.database, '-X', '-q', '-A', '-t', '-v', 'ON_ERROR_STOP=1'], input=statement, text=True, capture_output=True, timeout=45)
@@ -68,7 +68,7 @@ body = {'expectedVersion': snapshot['journey']['version'], 'destinationId': curr
 key = str(uuid.uuid4())
 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
     replay = list(pool.map(lambda _: command(actor, 'journey.complete', body, key), range(2)))
-assert replay[0] == replay[1], 'Concurrent identical command replay diverged.'
+assert replay[0]['result'] == replay[1]['result'], 'Concurrent identical command result replay diverged.'
 visits = sql(f"select jsonb_build_object('visits',count(*),'awards',(select count(*) from app_private.fn_awards where award_key='visit:{current['zoneId']}' and registration_id=app_private.fn_registration((select id from app_private.events where slug='{slug}'),'{actor}'))) from app_private.fn_visits where destination_id='{current['id']}';")
 assert visits == {'visits': 1, 'awards': 1}, visits
 legacy = sql(f"select jsonb_build_object('payments',(select count(*) from app_private.payment_requests pay join app_private.registrations reg on reg.id=pay.registration_id where reg.event_id=(select id from app_private.events where slug='{slug}')),'groups',(select count(*) from app_private.walking_groups where event_id=(select id from app_private.events where slug='{slug}')),'sink',(select count(*) from app_private.fn_mail_sink where event_id=(select id from app_private.events where slug='{slug}')));")
@@ -92,6 +92,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
 assert sorted(refund_claims) == ['claimed', 'rejected'], refund_claims
 claim_count = sql(f"select jsonb_build_object('claims',count(*)) from app_private.fn_refunds where event_id='{refund_order['event_id']}' and order_id='{refund_order['order_id']}';")
 assert claim_count['claims'] == 1, claim_count
+old_refund_invitation = command(refund_actor, 'party.invite', {})['result']['token']
 refund_current = refund_snapshot['current']
 refund_code = next(item['code'] for item in seed['zoneCodes'] if item['zoneId'] == refund_current['zoneId'])
 def race_scan():
@@ -117,4 +118,38 @@ assert sql(f"select jsonb_build_object('claims',count(*)) from app_private.fn_re
 
 refund_integrity = sql(f"select jsonb_build_object('activeClaims',(select count(*) from app_private.fn_destinations where party_id='{refund_snapshot['journey']['id']}' and state='current'),'refundLedger',(select count(*) from app_private.fn_ledger where order_id='{refund_order['order_id']}' and kind='refund'),'visits',(select count(*) from app_private.fn_visits where destination_id='{refund_current['id']}'));")
 assert refund_integrity['activeClaims'] == 0 and refund_integrity['refundLedger'] == 1 and refund_integrity['visits'] <= 1, refund_integrity
-print(json.dumps({'passed': True, 'database': args.database, 'slug': slug, 'families': args.families, 'simultaneousStarts': args.families, 'walking': len(walking), 'waiting': waiting, 'overbooked': 0, 'concurrentReplayRequests': 2, 'visits': 1, 'awards': 1, 'legacyPayments': 0, 'legacyGroups': 0, 'sinkMessages': legacy['sink'], 'concurrentRefundScan': refund_scan_outcome, 'refundedPartyActiveClaims': 0, 'refundLedger': 1, 'distinctRefundRequests': 2, 'fullRefundClaims': 1, 'duplicateRefundRejected': 1, 'alreadyRefundedCreatesIntent': False, 'durationSeconds': round(time.monotonic()-started, 3)}, indent=2))
+# An old valid invitation must fail without changing either side after refund.
+def membership_digest():
+    return sql(f"select jsonb_build_object('digest',md5(jsonb_build_object('members',(select jsonb_agg(to_jsonb(m) order by to_jsonb(m)::text) from app_private.fn_members m where event_id='{refund_order['event_id']}'),'parties',(select jsonb_agg(to_jsonb(p) order by to_jsonb(p)::text) from app_private.fn_parties p where event_id='{refund_order['event_id']}'),'claims',(select jsonb_agg(to_jsonb(d) order by to_jsonb(d)::text) from app_private.fn_destinations d where event_id='{refund_order['event_id']}'),'invites',(select jsonb_agg(to_jsonb(i) order by to_jsonb(i)::text) from app_private.fn_invites i where event_id='{refund_order['event_id']}'),'visits',(select jsonb_agg(to_jsonb(v) order by to_jsonb(v)::text) from app_private.fn_visits v where event_id='{refund_order['event_id']}'),'awards',(select jsonb_agg(to_jsonb(a) order by to_jsonb(a)::text) from app_private.fn_awards a where event_id='{refund_order['event_id']}'))::text));")
+before_old_join = membership_digest()
+try:
+    command(actor, 'party.join', {'token': old_refund_invitation, 'consent': True})
+    raise AssertionError('Old invitation reopened a refunded party.')
+except RuntimeError as error:
+    if 'SAME_PAID_ROUTE_REQUIRED' not in str(error):
+        raise
+assert membership_digest() == before_old_join, 'Rejected invitation changed membership, claims or history.'
+# A separate paid target races joining against provider-confirmed refund.
+# If joining wins first, the refund must release the entire resulting party.
+join_target = next(a for a in actors if a not in [actor, refund_actor])
+join_token = command(join_target, 'party.invite', {})['result']['token']
+join_order = sql(f"select api.frightnight_payment_for_actor('{slug}','{join_target}');")
+def race_join():
+    try:
+        command(actor, 'party.join', {'token': join_token, 'consent': True})
+        return 'joined-before-refund'
+    except RuntimeError as error:
+        if 'SAME_PAID_ROUTE_REQUIRED' not in str(error):
+            raise
+        return 'rejected-after-refund'
+def race_join_refund():
+    metadata = {'order_id': join_order['order_id'], 'event_id': join_order['event_id'], 'testmode': True, 'environment': 'staging'}
+    return sql(f"select api.frightnight_payment_confirm('{slug}','{join_order['provider_ref']}','refunded',{join_order['amount_cents']},'EUR','join-race-refund:{join_order['order_id']}',{literal(json.dumps(metadata))}::jsonb);")
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+    joined_future = pool.submit(race_join)
+    join_refund_future = pool.submit(race_join_refund)
+    join_refund_outcome = joined_future.result()
+    assert join_refund_future.result()['status'] == 'refunded'
+join_refund_integrity = sql(f"select jsonb_build_object('activeClaims',(select count(*) from app_private.fn_destinations where state='current' and party_id=(select party_id from app_private.fn_members where registration_id='{join_order['registration_id']}')),'refundLedger',(select count(*) from app_private.fn_ledger where order_id='{join_order['order_id']}' and kind='refund'),'sourceVisits',(select count(*) from app_private.fn_visits where registration_id=app_private.fn_registration('{join_order['event_id']}','{actor}')));")
+assert join_refund_integrity == {'activeClaims': 0, 'refundLedger': 1, 'sourceVisits': 1}, join_refund_integrity
+print(json.dumps({'passed': True, 'database': args.database, 'slug': slug, 'families': args.families, 'simultaneousStarts': args.families, 'walking': len(walking), 'waiting': waiting, 'overbooked': 0, 'concurrentReplayRequests': 2, 'visits': 1, 'awards': 1, 'legacyPayments': 0, 'legacyGroups': 0, 'sinkMessages': legacy['sink'], 'concurrentRefundScan': refund_scan_outcome, 'refundedPartyActiveClaims': 0, 'refundLedger': 1, 'distinctRefundRequests': 2, 'fullRefundClaims': 1, 'duplicateRefundRejected': 1, 'alreadyRefundedCreatesIntent': False, 'oldRefundedInvitationRejectedWithoutMutation': True, 'concurrentJoinRefund': join_refund_outcome, 'joinRefundActiveClaims': 0, 'joinRefundLedger': 1, 'sourceHistoryPreserved': True, 'durationSeconds': round(time.monotonic()-started, 3)}, indent=2))

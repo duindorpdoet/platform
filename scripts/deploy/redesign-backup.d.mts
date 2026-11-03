@@ -3,7 +3,7 @@ import type { WorldPolicyInitialization } from './world-policy-reconciliation.mj
 type Fingerprint = { table: string; rows: number; sha256: string };
 type CatalogEntry = { schema: string; name: string; columns: string[] };
 export function sourceReadPrefix(snapshot?: string): string;
-type SourceReadPhase = 'snapshot-export' | 'catalog' | 'migration-history' | 'preservation' | 'roles' | 'role-memberships' | 'storage-objects' | 'vault-fingerprint' | 'storage-before' | 'storage-after';
+type SourceReadPhase = 'snapshot-export' | 'catalog' | 'migration-history' | 'preservation' | 'roles' | 'role-memberships' | 'storage-objects' | 'vault-fingerprint' | 'storage-before' | 'storage-after' | 'frightnight-scenario';
 export function withSourceReadPhase<T>(phase: SourceReadPhase, read: () => Promise<T>, report?: (metadata: {backupRead: SourceReadPhase; status: 'started' | 'passed' | 'failed'; durationMs?: number}) => void, now?: () => number): Promise<T>;
 export function fingerprintQuery(catalog: CatalogEntry[]): string;
 export function preservationQuery(catalog: CatalogEntry[], coverageBefore?: Pick<WorldPolicyInitialization, 'auditBoundary'>): string;

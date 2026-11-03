@@ -1,0 +1,315 @@
+{
+  "recordedAt": "2026-11-03T03:16:34.910012+00:00",
+  "scope": "Local isolated rollback regression of all 24 legacy files that failed initial clean CLI CI41569583125",
+  "initialCi": {
+    "runId": 41569583125,
+    "revision": "7bd44ad80bdbc56e904df07e807c4ea6c0ed0a75",
+    "applicationAndPublicBrowser": "passed",
+    "database": "failed; expired local fixture credentials and calendars"
+  },
+  "fixes": "Only local seed/test fixture dates and expected test instants. Production legacy functions, current time checks, SQL constraints, and CI gates unchanged. Immutable publications are copied as new synthetic test appointments.",
+  "targeted": {
+    "files": 24,
+    "passedFiles": 24,
+    "passedChecks": 621,
+    "failedChecks": 0,
+    "results": [
+      {
+        "file": "003_journey_transaction.sql",
+        "exitCode": 0,
+        "passed": 9,
+        "failed": 0,
+        "planned": 9,
+        "success": true,
+        "seconds": 0.183,
+        "errors": []
+      },
+      {
+        "file": "007_closed_portal_system_skip.sql",
+        "exitCode": 0,
+        "passed": 21,
+        "failed": 0,
+        "planned": 21,
+        "success": true,
+        "seconds": 0.225,
+        "errors": []
+      },
+      {
+        "file": "012_last_stop_completion.sql",
+        "exitCode": 0,
+        "passed": 10,
+        "failed": 0,
+        "planned": 10,
+        "success": true,
+        "seconds": 0.271,
+        "errors": []
+      },
+      {
+        "file": "026_participant_environment.sql",
+        "exitCode": 0,
+        "passed": 35,
+        "failed": 0,
+        "planned": 35,
+        "success": true,
+        "seconds": 0.225,
+        "errors": []
+      },
+      {
+        "file": "028_dynamic_dispatch_and_finale.sql",
+        "exitCode": 0,
+        "passed": 21,
+        "failed": 0,
+        "planned": 21,
+        "success": true,
+        "seconds": 3.525,
+        "errors": []
+      },
+      {
+        "file": "029_schedule_publication_and_correction.sql",
+        "exitCode": 0,
+        "passed": 16,
+        "failed": 0,
+        "planned": 16,
+        "success": true,
+        "seconds": 0.649,
+        "errors": []
+      },
+      {
+        "file": "030_time_control_and_emergency.sql",
+        "exitCode": 0,
+        "passed": 23,
+        "failed": 0,
+        "planned": 23,
+        "success": true,
+        "seconds": 6.525,
+        "errors": []
+      },
+      {
+        "file": "035_journey_preference_dispatch.sql",
+        "exitCode": 0,
+        "passed": 6,
+        "failed": 0,
+        "planned": 6,
+        "success": true,
+        "seconds": 0.911,
+        "errors": []
+      },
+      {
+        "file": "055_social_share_studio.sql",
+        "exitCode": 0,
+        "passed": 28,
+        "failed": 0,
+        "planned": 28,
+        "success": true,
+        "seconds": 0.173,
+        "errors": []
+      },
+      {
+        "file": "059_redesign_contracts.sql",
+        "exitCode": 0,
+        "passed": 91,
+        "failed": 0,
+        "planned": 91,
+        "success": true,
+        "seconds": 0.99,
+        "errors": []
+      },
+      {
+        "file": "060_family_arrivals_and_thanks.sql",
+        "exitCode": 0,
+        "passed": 22,
+        "failed": 0,
+        "planned": 22,
+        "success": true,
+        "seconds": 0.297,
+        "errors": []
+      },
+      {
+        "file": "065_start_ops_server_boundaries.sql",
+        "exitCode": 0,
+        "passed": 42,
+        "failed": 0,
+        "planned": 42,
+        "success": true,
+        "seconds": 0.686,
+        "errors": []
+      },
+      {
+        "file": "067_live_new_house_and_time_guards.sql",
+        "exitCode": 0,
+        "passed": 25,
+        "failed": 0,
+        "planned": 25,
+        "success": true,
+        "seconds": 1.723,
+        "errors": []
+      },
+      {
+        "file": "068_large_group_full_journey.sql",
+        "exitCode": 0,
+        "passed": 17,
+        "failed": 0,
+        "planned": 17,
+        "success": true,
+        "seconds": 2.404,
+        "errors": []
+      },
+      {
+        "file": "069_linked_start_house.sql",
+        "exitCode": 0,
+        "passed": 8,
+        "failed": 0,
+        "planned": 8,
+        "success": true,
+        "seconds": 1.434,
+        "errors": []
+      },
+      {
+        "file": "074_portal_sequence_without_street_routing.sql",
+        "exitCode": 0,
+        "passed": 22,
+        "failed": 0,
+        "planned": 22,
+        "success": true,
+        "seconds": 0.965,
+        "errors": []
+      },
+      {
+        "file": "075_no_street_arrival_sequence.sql",
+        "exitCode": 0,
+        "passed": 27,
+        "failed": 0,
+        "planned": 27,
+        "success": true,
+        "seconds": 1.041,
+        "errors": []
+      },
+      {
+        "file": "083_missing_world_awards.sql",
+        "exitCode": 0,
+        "passed": 14,
+        "failed": 0,
+        "planned": 14,
+        "success": true,
+        "seconds": 0.245,
+        "errors": []
+      },
+      {
+        "file": "084_world_route_settlement.sql",
+        "exitCode": 0,
+        "passed": 13,
+        "failed": 0,
+        "planned": 13,
+        "success": true,
+        "seconds": 0.278,
+        "errors": []
+      },
+      {
+        "file": "086_planboard_live_dispatch.sql",
+        "exitCode": 0,
+        "passed": 9,
+        "failed": 0,
+        "planned": 9,
+        "success": true,
+        "seconds": 1.496,
+        "errors": []
+      },
+      {
+        "file": "098_completion_target_overrun.sql",
+        "exitCode": 0,
+        "passed": 40,
+        "failed": 0,
+        "planned": 40,
+        "success": true,
+        "seconds": 1.202,
+        "errors": []
+      },
+      {
+        "file": "101_world_coverage_closure.sql",
+        "exitCode": 0,
+        "passed": 38,
+        "failed": 0,
+        "planned": 38,
+        "success": true,
+        "seconds": 0.407,
+        "errors": []
+      },
+      {
+        "file": "112_persistent_portal_print_material.sql",
+        "exitCode": 0,
+        "passed": 28,
+        "failed": 0,
+        "planned": 28,
+        "success": true,
+        "seconds": 0.183,
+        "errors": []
+      },
+      {
+        "file": "115_joint_route_policy_v2.sql",
+        "exitCode": 0,
+        "passed": 56,
+        "failed": 0,
+        "planned": 56,
+        "success": true,
+        "seconds": 2.957,
+        "errors": []
+      }
+    ]
+  },
+  "cleanCliCiAfterFix": "pending; local harness cannot replace required clean GitHub CI",
+  "harness": {
+    "database": "frightnight_2027_legacy_ci_v2",
+    "currentSchema": "schema-only current baseline plus current FrightNight source migration",
+    "data": "previous verified synthetic local fixture dump; Auth17 all.invalid; nine households exactly current seed labels/IDs; no outbox/email events/mail worker config",
+    "acl": "original dump ACL restored; net and cron unavailable in this isolated DB",
+    "fullAttempt": {
+      "files": 133,
+      "passedFiles": 114,
+      "failedFiles": 19,
+      "passedChecks": 3793,
+      "failedChecks": 28,
+      "sourceUnchangedDuringRun": true,
+      "limitations": "19 failures are not declared source failures or passed tests: this harness lacks Cron/Vault/invitation keys and exact migration history, and a rejected repeat seed advanced a local identity counter before its later block failed. These files passed in initial clean GitHub CI. No runtime/source privileges or constraints weakened."
+    },
+    "fixtureProof": {
+      "auth.users": {
+        "rows": 17,
+        "allInvalid": true
+      },
+      "app_private.households": {
+        "rows": 9,
+        "allLabelsMatchCurrentSeed": true,
+        "allContactsInvalidAuthFixtures": true,
+        "allIdsCurrentSeedPrefix": true
+      },
+      "app_private.email_outbox": {
+        "rows": 0
+      },
+      "app_private.email_events": {
+        "rows": 0
+      },
+      "app_private.mail_worker_configs": {
+        "rows": 0
+      },
+      "sourceDumpSha256": "0b0d198cbc2496b51bbc47035f1a5350dbe2ad4529661910323cb7668ed8c2c5"
+    }
+  },
+  "remoteMutations": false,
+  "sourceSha256": {
+    "supabase/seed.sql": "930c875bd3e9fb18e62f18c72dbabbe0ae3b4f2b134422cb137dd6c145aa44e6",
+    "supabase/tests/fixtures/future-legacy-calendar.inc": "b84442804990dbf4803683524ae5786bac718e3f54093efd83e6c59e7fc7e88c",
+    "supabase/tests/fixtures/future-legacy-appointment.inc": "a97ff8c8e876a012840a966f2ed4f6d5d48a3c00c837f4cd7eed7a1e790af229",
+    "supabase/tests/026_participant_environment.sql": "767d27913e80bf7943731fd6fd39f481fcdfeec0609a2594418b56367d4dbed7",
+    "supabase/tests/028_dynamic_dispatch_and_finale.sql": "ea9e2550dbf3c67931ba1a32b7c53e39929eca5e143ffec720f3b174fbf1601c",
+    "supabase/tests/029_schedule_publication_and_correction.sql": "efc0a00914e2910225c0fc07a2d36dc8dce0a63f185b35e9850af73f232ebd6b",
+    "supabase/tests/055_social_share_studio.sql": "bbbe19a07bf0388b35ed2452a6667149e56fe6af8a9a80d5548215ff6f08e25f",
+    "supabase/tests/065_start_ops_server_boundaries.sql": "505a648d98da9a38fe68536a24fc482d7426aabcf80923597db5d5b99b2690b5",
+    "supabase/tests/067_live_new_house_and_time_guards.sql": "801f55ab25787c402f69f1808d2f7baf533a9ff4e3c79a2496e687b14e0cf872",
+    "supabase/tests/068_large_group_full_journey.sql": "dc3af7f5e170aa7c3c1e88f77aad61c3e14abe1d868ad0e7fb3a87612b80218b",
+    "supabase/tests/074_portal_sequence_without_street_routing.sql": "11556014abedb17c0998f42d96b45fc22067391c168a3b3e15b676ec40ca3fb2",
+    "supabase/tests/075_no_street_arrival_sequence.sql": "7128974a34c594c46b4f5428234279c9df5e46fb255ea984838098e781047175",
+    "supabase/tests/086_planboard_live_dispatch.sql": "9daebdb21c386d57a7a88f4f642c118282c0893cf6f1ae7858b71c5aa0995e76",
+    "supabase/tests/098_completion_target_overrun.sql": "6c8bde1c7890f4fd6e55eb6131bc67cf55ef6be92ad36384bbbe6516d9e4df47",
+    "supabase/tests/115_joint_route_policy_v2.sql": "cfdb0fcd51b22b0e32f905e039369838b642ed8620173bf7fcf34c4dbc38dce8"
+  }
+}

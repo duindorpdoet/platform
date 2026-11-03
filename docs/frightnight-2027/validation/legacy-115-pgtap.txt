@@ -1,0 +1,57 @@
+ok 1 - server projects the current explicit route policy
+ok 2 - world coverage does not request an Anders visit
+ok 3 - a browser cannot manufacture finale approval evidence
+ok 4 - browser cannot supply trusted validator inputs
+ok 5 - ordinary baseline and physical P-38 finale remain valid
+ok 6 - the configured physical finale cannot move away from P-38
+ok 7 - rejected location replacement preserves the real P-38 finale
+ok 8 - a real last walk of 925 seconds passes server policy without an intermediate house
+ok 9 - a real last walk of 1114 seconds is also allowed
+ok 10 - there is no replacement 20-minute maximum to P-38
+ok 11 - the separate ordinary leg limit remains independently enforced
+ok 12 - the total walking budget is explicit and separate from the removed finale leg limit
+ok 13 - twenty minutes of actual travel cannot fit five minutes before the booked finale
+ok 14 - direct apply reloads real travel and refuses a fabricated zero-minute walk
+ok 15 - historic desired visit caps do not become joint route limits
+ok 16 - a historical zero input cap cannot reject a genuine feasible visit
+ok 17 - reading a proposal does not change a historical route mode
+ok 18 - an explicitly accepted joint calendar also owns a previously legacy route
+ok 19 - run_start and the worker will use the newly approved joint calendar
+ok 20 - changing only a theme label does not invalidate route policy
+ok 21 - a different world label cannot exclude an otherwise suitable physical visit
+ok 22 - a client diagnostic cannot override an independently feasible linked first house
+ok 23 - the first physical visit is sequence one even when the JSON array is permuted
+ok 24 - a changed P-38 time must carry the exact before/after appointment for review
+ok 25 - review flags cannot override actual finale reception headway
+ok 26 - failed calendar validation creates no approval or schedule change
+ok 27 - an approved real finale change atomically stores the schedule and physical calendar
+ok 28 - the reserved schedule now has precisely the approved P-38 time
+ok 29 - the planboard and approved reservation have the same finale arrival
+ok 30 - one immutable server approval records the exact changed appointment
+ok 31 - acceptance stores trusted walking policy rather than browser metrics
+ok 32 - new semantic hashes keep every accepted route current immediately after the atomic change
+ok 33 - finale approval never republishes or edits confirmed start publications
+ok 34 - finale approval never sends or queues participant mail
+ok 35 - start locations, times, states and ordinary time limits remain unchanged
+ok 36 - retrying the approved joint change returns the same durable result
+ok 37 - idempotent retry does not create duplicate approvals
+ok 38 - a planned house or administrative gathering is not an actual physical visit
+ok 39 - a confirmed visit to one portal is also history for its physical alias
+ok 40 - an unrelated group does not inherit another child history
+ok 41 - arrival history never crosses event boundaries
+ok 42 - reassigning a household preserves its actual child arrivals across physical aliases
+ok 43 - a present non-departed transferred child protects its history even without changing the assignment
+ok 44 - a departed child outside the current assignments no longer restricts another group
+ok 45 - an already bound run rechecks the transferred child physical history before dispatch
+ok 46 - history protection creates no duplicate physical stop
+ok 47 - history protection does not reserve a duplicate ordinary or finale stop
+ok 48 - history protection asks for explicit replanning and preserves the accepted intentions
+ok 49 - retrying still cannot dispatch the already visited house
+ok 50 - repeated runtime checks show one concrete history advisory
+ok 51 - runtime fixture has a genuine stored entrance-pin walk longer than fifteen minutes
+ok 52 - live dispatch accepts the actual long last walk when it reaches the approved P-38 slot
+ok 53 - the actual long last walk dispatches P-38 directly without an extra ordinary stop
+ok 54 - dispatch records the full actual final walking duration
+ok 55 - approval evidence can explicitly represent an initially missing finale reservation
+ok 56 - the record of explicit finale approval cannot be overwritten
+1..56

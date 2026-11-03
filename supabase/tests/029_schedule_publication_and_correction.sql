@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/future-legacy-calendar.inc
 create extension if not exists pgtap with schema extensions;
 select plan(16);
 create function pg_temp.publish_current_schedule(_ids uuid[],_reason text) returns jsonb language plpgsql security definer set search_path='' as $$
@@ -20,12 +21,12 @@ insert into schedule_state default values;
 grant select, update on schedule_state to authenticated;
 
 update app_private.event_route_settings set
-  first_start_at = timestamptz '2026-10-31 17:30:00+01',
-  global_ordinary_stop_at = timestamptz '2026-10-31 20:30:00+01',
+  first_start_at = pg_temp.fixture_time('2026-10-31 17:30:00+01'),
+  global_ordinary_stop_at = pg_temp.fixture_time('2026-10-31 20:30:00+01'),
   final_portal_id = '12000000-0000-0000-0000-000000000030',
-  finale_opens_at = timestamptz '2026-10-31 19:00:00+01',
-  finale_last_arrival_at = timestamptz '2026-10-31 21:30:00+01',
-  finale_closes_at = timestamptz '2026-10-31 22:00:00+01',
+  finale_opens_at = pg_temp.fixture_time('2026-10-31 19:00:00+01'),
+  finale_last_arrival_at = pg_temp.fixture_time('2026-10-31 21:30:00+01'),
+  finale_closes_at = pg_temp.fixture_time('2026-10-31 22:00:00+01'),
   finale_show_seconds = 360,
   finale_turnover_seconds = 0,
   finale_max_concurrent_groups = 2,
@@ -38,7 +39,7 @@ where event_id = (select id from app_private.events where slug = 'duindorp-hallo
 -- explicit correction starts at 18:20 and cannot borrow their occupied slot.
 insert into app_private.start_slots(id,event_id,name,location_name,private_address,latitude,longitude,location_verified_at,starts_at,max_groups,max_children,start_point_id)
 select '20000000-0000-0000-0000-000000000011',event_id,'Teststart 1 18:20',location_name,private_address,latitude,longitude,location_verified_at,
-  timestamptz '2026-10-31 18:20:00+01',1,max_children,start_point_id
+  pg_temp.fixture_time('2026-10-31 18:20:00+01'),1,max_children,start_point_id
 from app_private.start_slots where id='20000000-0000-0000-0000-000000000001';
 
 with inserted as (
@@ -47,8 +48,8 @@ with inserted as (
     expected_finale_arrival_at, preference_match, created_by
   ) values (
     '23000000-0000-0000-0000-000000000001', 1, 'draft',
-    '20000000-0000-0000-0000-000000000011', timestamptz '2026-10-31 20:00:00+01',
-    timestamptz '2026-10-31 20:15:00+01', 'neutral', 'f0000000-0000-0000-0000-000000000001'
+    '20000000-0000-0000-0000-000000000011', pg_temp.fixture_time('2026-10-31 20:00:00+01'),
+    pg_temp.fixture_time('2026-10-31 20:15:00+01'), 'neutral', 'f0000000-0000-0000-0000-000000000001'
   ) returning id
 )
 update schedule_state set first_id = inserted.id from inserted;
@@ -98,7 +99,7 @@ select is(
 );
 select is(
   api.registration_preferences_snapshot('duindorp-halloween-2026') #>> '{confirmedSchedule,startsAt}',
-  '2026-10-31T17:20:00+00:00',
+  (to_jsonb(pg_temp.fixture_time('2026-10-31T17:20:00+00:00'))#>>'{}'),
   'Mijn inschrijving exposes the exact confirmed start in an unambiguous timestamp'
 );
 
@@ -106,7 +107,7 @@ set local role postgres;
 select is(
   (select count(*)::integer from app_private.walking_groups g cross join lateral app_private.current_start_publication(g.id) publication
    where g.id in ('23000000-0000-0000-0000-000000000002','23000000-0000-0000-0000-000000000003','23000000-0000-0000-0000-000000000004')
-     and publication.starts_at = timestamptz '2026-10-31 18:30:00+01'),
+     and publication.starts_at = pg_temp.fixture_time('2026-10-31 18:30:00+01')),
   3, 'publishing one correction preserves every other legacy published departure'
 );
 select is(
@@ -128,7 +129,7 @@ insert into app_private.start_slots(
   location_verified_at, starts_at, max_groups, max_children, start_point_id
 )
 select '20000000-0000-0000-0000-000000000012', event.id, 'Teststart 2 17:30', 'Teststart 2',
-  'TWEEDE BESLOTEN TESTADRES', 52.1, 4.27, now(), timestamptz '2026-10-31 17:30:00+01',
+  'TWEEDE BESLOTEN TESTADRES', 52.1, 4.27, now(), pg_temp.fixture_time('2026-10-31 17:30:00+01'),
   10, 100, '20000000-0000-0000-0000-000000000002'
 from app_private.events event where event.slug = 'duindorp-halloween-2026';
 
@@ -140,7 +141,7 @@ select lives_ok(
     api.admin_save_group_schedule(
       '23000000-0000-0000-0000-000000000001',
       '20000000-0000-0000-0000-000000000012',
-      timestamptz '2026-10-31 20:00:00+01', timestamptz '2026-10-31 20:15:00+01',
+      pg_temp.fixture_time('2026-10-31 20:00:00+01'), pg_temp.fixture_time('2026-10-31 20:15:00+01'),
       null, 'good', 'Startpunt gecorrigeerd na afstemming met het gezin'
     ) ->> 'id'
   )::uuid $$,

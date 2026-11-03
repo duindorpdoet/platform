@@ -261,6 +261,58 @@ jobs:
           retention-days: 30
           compression-level: 0
           if-no-files-found: error
+
+  frightnight-scenario-backup:
+    name: Preserve and restore the published 2027 test scenario
+    needs: [deploy, account-app-acceptance, mail-acceptance, frightnight-load-acceptance]
+    if: github.ref == 'refs/heads/staging'
+    environment: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APP_ENVIRONMENT: staging
+      APP_URL: https://staging-halloween.duindorpdoet.nl
+      EVENT_SLUG: frightnight-2027-test
+      FRIGHTNIGHT_ENABLED: "true"
+      FRIGHTNIGHT_PROJECT_REF: nocteiuvohesvqbowchw
+      FRIGHTNIGHT_PAYMENT_PROVIDER: ${{ vars.FRIGHTNIGHT_PAYMENT_PROVIDER || 'contract' }}
+      FRIGHTNIGHT_MAIL_MODE: sink
+      FRIGHTNIGHT_HARDWARE_ENABLED: "false"
+      MOLLIE_TEST_API_KEY: ${{ secrets.MOLLIE_TEST_API_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      CHILD_CODE_ENCRYPTION_KEY: ${{ secrets.CHILD_CODE_ENCRYPTION_KEY }}
+      RELEASE_READ_TRANSPORT: ${{ github.ref == 'refs/heads/staging' && 'session-pooler' || '' }}
+      FRIGHTNIGHT_SCENARIO_BACKUP: "true"
+      FRIGHTNIGHT_VERIFIED_RELEASE_SHA: ${{ needs.deploy.outputs.verified_revision }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install locked backup tools
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Recheck the exact published staging revision without sending mail
+        run: node scripts/deploy/verify-deployment.mjs staging https://staging-halloween.duindorpdoet.nl
+      - name: Encrypt the active test scenario and prove a networkless exact restore
+        run: node scripts/deploy/redesign-backup.mjs
+      - name: Retain only encrypted scenario artifacts and signed sanitized proof
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: frightnight-scenario-backup-staging-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/duindorp-release-backup/
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
   deploy:
     name: Validate, migrate, deploy and accept
     outputs:

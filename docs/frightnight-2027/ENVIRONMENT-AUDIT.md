@@ -85,6 +85,8 @@ De bestaande `/api/jobs/mail` verwerkt tevens Redactiekamerpublicatie, portalpus
 
 ## Retentie, afsluiting en timers
 
+De nieuwe dedicated-runnergate inventariseert vóór seed eigen crontab, systeem-/gebruikerssystemdtimers en bereikbare `/etc/crontab`, `/etc/anacrontab`, `/etc/cron.d` en de gebruikelijke hourly/daily/weekly/monthly-mappen. Zij bewaart alleen naam, leesstatus, scope en hash. Staging-/FrightNight-systeemcron vereist een exact beoordeelde hash; gewone apt-/logrotatietaken vereisen geen stagingreviewhash. Bestandslezingen zijn begrensd. Onleesbare bestanden/mappen en private root-/andere-gebruikercrontabs blijven expliciete grenzen; er wordt geen sudo of permissieomzeiling gebruikt. Deze nieuwe VPS-uitvoering is op deze auditdatum nog niet als geslaagd bewezen.
+
 | Categorie | Aangetroffen gedrag | Gevolg voor maandenlang testen |
 | --- | --- | --- |
 | Operationele oude eventdata | `api.retention_preview` is preview-only, standaard 30 dagen | Geen generieke delete uitvoeren |

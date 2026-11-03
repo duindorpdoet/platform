@@ -1,0 +1,177 @@
+{
+  "testedAt": "2026-11-03T03:30:36.178Z",
+  "buildId": "C6R3bIB_R-40R-R5IjGPU",
+  "checks": [
+    {
+      "check": "Contact fixture actor selects exact own test edition through explicit invitation",
+      "passed": true
+    },
+    {
+      "check": "Contact fixture actor selects exact own test edition through explicit invitation",
+      "passed": true
+    },
+    {
+      "check": "Contact fixture actor selects exact own test edition through explicit invitation",
+      "passed": true
+    },
+    {
+      "check": "Owner receives private contact fields",
+      "passed": true
+    },
+    {
+      "check": "Actual owner contact form saves on server",
+      "passed": true
+    },
+    {
+      "check": "Owner contact save persists normalized private values and increments version",
+      "passed": true
+    },
+    {
+      "check": "Contact save preserves participant identity, places and payment",
+      "passed": true
+    },
+    {
+      "check": "Second actual browser tab cannot overwrite newer contact version",
+      "passed": true
+    },
+    {
+      "check": "Stale contact command leaves newer server value intact",
+      "passed": true
+    },
+    {
+      "check": "Second tab can recover authoritative contact form",
+      "passed": true
+    },
+    {
+      "check": "Another real family snapshot never contains owner contact data",
+      "passed": true
+    },
+    {
+      "check": "Cross-family contact update is denied by server and database",
+      "passed": true
+    },
+    {
+      "check": "Consented additional adult shares the route without private owner contacts",
+      "passed": true
+    },
+    {
+      "check": "Private contact form is absent for additional adult",
+      "passed": true
+    },
+    {
+      "check": "Additional adult cannot mutate owner contact data",
+      "passed": true
+    },
+    {
+      "check": "Actual organization emergency download contains print-ready approved-zone cards with local confirmation fields",
+      "passed": true
+    },
+    {
+      "check": "Participant emergency download does not disclose future zone-card addresses",
+      "passed": true
+    },
+    {
+      "check": "Default Nachtpas download is genuine SVG with attachment filename",
+      "passed": true
+    },
+    {
+      "check": "SVG embeds actual supplied logo and server progress without private contact data or script",
+      "passed": true
+    },
+    {
+      "check": "Explicit HTML Nachtpas print alternative remains available",
+      "passed": true
+    },
+    {
+      "check": "Standalone downloaded SVG renders as a scalable browser image",
+      "passed": true
+    },
+    {
+      "check": "Downloaded SVG image has no external asset dependency",
+      "passed": true
+    },
+    {
+      "check": "Contact screen fits 390px",
+      "passed": true
+    },
+    {
+      "check": "Contact screen fits 1440px",
+      "passed": true
+    },
+    {
+      "check": "Authoritative registration total spans more than500 records while personal list remains bounded to100",
+      "passed": true
+    },
+    {
+      "check": "Event admin receives the six authorized metric totals",
+      "passed": true
+    },
+    {
+      "check": "Actual operations dashboard displays server-wide total, not bounded array100",
+      "passed": true
+    },
+    {
+      "check": "Finance actor only receives registration and payment totals",
+      "passed": true
+    },
+    {
+      "check": "Participant and shared adult receive no regie totals",
+      "passed": true
+    },
+    {
+      "check": "Actual metrics dashboard fits 390px",
+      "passed": true
+    },
+    {
+      "check": "Actual metrics dashboard fits 1440px",
+      "passed": true
+    },
+    {
+      "check": "Actual content management offers programme and terms additions",
+      "passed": true
+    },
+    {
+      "check": "Actual programme addition saves as draft through organization form",
+      "passed": true
+    },
+    {
+      "check": "Actual public database projection omits programme draft",
+      "passed": true
+    },
+    {
+      "check": "Actual organization form publishes programme addition",
+      "passed": true
+    },
+    {
+      "check": "Actual public database projection contains only published programme addition",
+      "passed": true
+    },
+    {
+      "check": "Actual terms addition saves as draft through organization form",
+      "passed": true
+    },
+    {
+      "check": "Actual public database projection omits terms draft",
+      "passed": true
+    },
+    {
+      "check": "Actual organization form publishes terms addition",
+      "passed": true
+    },
+    {
+      "check": "Actual public database projection contains only published terms addition",
+      "passed": true
+    },
+    {
+      "check": "Affected actual authenticated browser screens have no page errors",
+      "passed": true
+    },
+    {
+      "check": "Only own local test edition is closed after probes; records, auth and financial history preserved",
+      "passed": true
+    }
+  ],
+  "pageErrors": [],
+  "limits": "Actual local GoTrue/test database. No real OTP, external PSP, provider walking verification or remote staging evidence.",
+  "edition": "frightnight-2027-test-contact-mw04r74m"
+}

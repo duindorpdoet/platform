@@ -79,7 +79,7 @@ export async function frightnightSnapshot(): Promise<FrightnightSnapshot> {
   const actor = await frightnightActor();
   const client = await createClient();
   if (!client) throw new ApiError(503, "BACKEND_UNAVAILABLE", "De server is tijdelijk niet beschikbaar.");
-  const { data, error } = await client.schema("api").rpc("frightnight_snapshot", { p_slug: await activeFrightnightSlug(actor.userId) });
+  const { data, error } = await client.schema("api").rpc("frightnight_snapshot", { p_slug: await activeFrightnightSlug(actor.userId) }).abortSignal(AbortSignal.timeout(7500));
   if (error) rpcError(error);
   return data as FrightnightSnapshot;
 }
@@ -90,7 +90,7 @@ export async function frightnightCommand(operation: string, payload: Record<stri
   if (!client) throw new ApiError(503, "BACKEND_UNAVAILABLE", "De server is tijdelijk niet beschikbaar.");
   const { data, error } = await client.schema("api").rpc("frightnight_command", {
     p_slug: await activeFrightnightSlug(actor.userId), p_command: operation, p_payload: payload, p_key: z.uuid().parse(commandId),
-  });
+  }).abortSignal(AbortSignal.timeout(7500));
   if (error) rpcError(error);
   return data;
 }

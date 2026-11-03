@@ -11,10 +11,13 @@ describe("private offline informatie en beperkte wachtrij", () => {
     vi.useRealTimers();
   });
   it("bewaart alleen de eigen vrijgegeven informatie zonder beheerrechten of toekomstadressen", () => {
-    rememberFestival(snapshot());
+    const value = snapshot(); value.registration!.contactName = "Privécontactpersoon"; value.registration!.contactPhone = "+31612345678";
+    rememberFestival(value);
     const stored = readFestival("actor-a")!;
     expect(stored.snapshot.actor.capabilities).toEqual([]); expect(stored.snapshot.zones).toBeUndefined(); expect(stored.snapshot.registrations).toBeUndefined();
     expect(stored.snapshot.notifications).toEqual([]); expect(stored.snapshot.current?.zone.address).toBe("Synthetische testlocatie");
+    expect(stored.snapshot.registration?.contactName).toBeUndefined(); expect(stored.snapshot.registration?.contactPhone).toBeUndefined();
+    expect(JSON.stringify(stored)).not.toContain("Privécontactpersoon"); expect(JSON.stringify(stored)).not.toContain("+31612345678");
     expect(readFestival("actor-b")).toBeNull();
   });
   it("laat snapshots na dertig minuten vervallen", () => {

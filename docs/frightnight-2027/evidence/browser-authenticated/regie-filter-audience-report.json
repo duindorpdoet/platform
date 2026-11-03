@@ -1,0 +1,303 @@
+{
+  "testedAt": "2026-11-03T03:12:23.593Z",
+  "buildId": "3DJIV2_RRsuC8OdOesRkc",
+  "checks": [
+    {
+      "check": "fixture actor consents to exact isolated REG01/02 edition",
+      "passed": true
+    },
+    {
+      "check": "fixture actor consents to exact isolated REG01/02 edition",
+      "passed": true
+    },
+    {
+      "check": "65 synthetic records for each of five resources created only in fresh local test edition",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations counts all 65 matches before first 50-row page",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations second page has 15 rows and correct global total",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations search resets page and finds a record from beyond first 50",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations filter is confirmed by server",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations filtered total is calculated before pagination",
+      "passed": true,
+      "total": 44,
+      "expected": 44
+    },
+    {
+      "check": "REG01 registrations filter is confirmed by server",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations combined evening/status total is exact",
+      "passed": true,
+      "total": 22,
+      "expected": 22
+    },
+    {
+      "check": "REG01 registrations fits 390px",
+      "passed": true
+    },
+    {
+      "check": "REG01 registrations fits 1440px",
+      "passed": true
+    },
+    {
+      "check": "REG01 zones global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 zones counts all 65 matches before first 50-row page",
+      "passed": true
+    },
+    {
+      "check": "REG01 zones second page has 15 rows and correct global total",
+      "passed": true
+    },
+    {
+      "check": "REG01 zones global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 zones search resets page and finds a record from beyond first 50",
+      "passed": true
+    },
+    {
+      "check": "REG01 zones global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 zones filter is confirmed by server",
+      "passed": true
+    },
+    {
+      "check": "REG01 zones filtered total is calculated before pagination",
+      "passed": true,
+      "total": 17,
+      "expected": 17
+    },
+    {
+      "check": "REG01 zones fits 390px",
+      "passed": true
+    },
+    {
+      "check": "REG01 zones fits 1440px",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments counts all 65 matches before first 50-row page",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments second page has 15 rows and correct global total",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments search resets page and finds a record from beyond first 50",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments filter is confirmed by server",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments filtered total is calculated before pagination",
+      "passed": true,
+      "total": 33,
+      "expected": 33
+    },
+    {
+      "check": "REG01 payments filter is confirmed by server",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments combined evening/status total is exact",
+      "passed": true,
+      "total": 11,
+      "expected": 11
+    },
+    {
+      "check": "REG01 payments fits 390px",
+      "passed": true
+    },
+    {
+      "check": "REG01 payments fits 1440px",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents counts all 65 matches before first 50-row page",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents second page has 15 rows and correct global total",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents search resets page and finds a record from beyond first 50",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents filter is confirmed by server",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents filtered total is calculated before pagination",
+      "passed": true,
+      "total": 44,
+      "expected": 44
+    },
+    {
+      "check": "REG01 incidents filter is confirmed by server",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents combined evening/status total is exact",
+      "passed": true,
+      "total": 22,
+      "expected": 22
+    },
+    {
+      "check": "REG01 incidents fits 390px",
+      "passed": true
+    },
+    {
+      "check": "REG01 incidents fits 1440px",
+      "passed": true
+    },
+    {
+      "check": "REG01 announcements global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 announcements counts all 65 matches before first 50-row page",
+      "passed": true
+    },
+    {
+      "check": "REG01 announcements second page has 15 rows and correct global total",
+      "passed": true
+    },
+    {
+      "check": "REG01 announcements global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 announcements search resets page and finds a record from beyond first 50",
+      "passed": true
+    },
+    {
+      "check": "REG01 announcements global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG01 announcements fits 390px",
+      "passed": true
+    },
+    {
+      "check": "REG01 announcements fits 1440px",
+      "passed": true
+    },
+    {
+      "check": "REG01 personal search values never appear in request URLs",
+      "passed": true
+    },
+    {
+      "check": "REG02 organization creates durable general message through UI",
+      "passed": true
+    },
+    {
+      "check": "REG02 general message is visible to both intended real account actors",
+      "passed": true
+    },
+    {
+      "check": "REG01 announcements global search is an authorized bounded POST",
+      "passed": true
+    },
+    {
+      "check": "REG02 same message updates audience roots with expected version",
+      "passed": true
+    },
+    {
+      "check": "REG02 route audience disappears for lantern actor and remains for roots actor",
+      "passed": true
+    },
+    {
+      "check": "REG02 same message updates audience registration with expected version",
+      "passed": true
+    },
+    {
+      "check": "REG02 explicit registration target is enforced server-side, including known UUID fallback",
+      "passed": true
+    },
+    {
+      "check": "REG02 same message updates audience zone with expected version",
+      "passed": true
+    },
+    {
+      "check": "REG02 zone target matches only the actor current authoritative destination",
+      "passed": true
+    },
+    {
+      "check": "REG02 zone message disappears when that authoritative destination is released",
+      "passed": true
+    },
+    {
+      "check": "REG02 message manager fits 390px",
+      "passed": true
+    },
+    {
+      "check": "REG02 message manager fits 1440px",
+      "passed": true
+    }
+  ],
+  "pageErrors": [],
+  "limits": "Actual local GoTrue/test database. No real OTP, external PSP, provider walking verification or remote staging evidence.",
+  "edition": "frightnight-2027-test-regie-mw043v7w"
+}

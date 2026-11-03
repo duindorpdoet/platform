@@ -1,0 +1,85 @@
+{
+  "recordedAt": "2026-11-03T03:40:05.040725+00:00",
+  "scope": "Local code and SQL compilation; new post-release scenario restore and VPS inventory still require actual staging jobs",
+  "tests": {
+    "releaseAndSecurityPassed": 548,
+    "failed": 0,
+    "eslintPassed": true,
+    "workflowYamlValid": true,
+    "workflowJobs": 13,
+    "allDeployTestsPassed": 483,
+    "deployTestFiles": 40,
+    "releaseSecurityDownloadsOfflineCsvPassed": 548,
+    "combinedFiles": 49,
+    "durationMs": 1530,
+    "command": "pnpm exec vitest run scripts/deploy lib/frightnight/payments.test.ts lib/frightnight/payment-server.test.ts lib/frightnight/request-body.test.ts lib/frightnight/qr-export.test.ts lib/frightnight/transactional-mail.test.ts lib/frightnight/mail-preview.test.ts lib/frightnight/downloads.test.ts lib/frightnight/offline.test.ts lib/frightnight/csv.test.ts"
+  },
+  "localScenarioSql": {
+    "scope": "Read-only SQL compilation against local QA database; no restore or remote test claim",
+    "proof": {
+      "slug": "frightnight-2027-test",
+      "seedVersion": 1,
+      "tables": 30,
+      "registrations": 6,
+      "zones": 6,
+      "sha256": "3c02607320eee9174efdf78a7d9cc1254f1ce30706a9dfd29fd9761d5077f330"
+    },
+    "actualRestore": false,
+    "remote": false
+  },
+  "stagingScenarioRestore": "not yet executed",
+  "vpsSystemCronInventory": "not yet executed",
+  "hostedRegieModule": "integrated and reviewed; not yet executed",
+  "sourceSha256": {
+    "scripts/deploy/frightnight-scenario-backup.mjs": "b99281f8357301f1fc508cb0d872431f7ce13eefa3fcb3ded212ea2954353d6f",
+    "scripts/deploy/frightnight-scenario-backup.test.ts": "ef754952a8a6e8498e93b98f615552de4222474fc1ce67b76f1264ff62fbb5fb",
+    "scripts/deploy/redesign-backup.mjs": "30149c566c557e0404b3c02df750740125ce29571dfd55e227903b6ec891fb46",
+    "scripts/deploy/frightnight-system-cron.mjs": "8e0c1d95189ebff82ea2c0fba2e912e1663c55e3cb331c42b8f6485e2670f64b",
+    "scripts/deploy/frightnight-system-cron.test.ts": "906c8dc10af61c10232a9af055066f517dd98862988c486db7ff603b3616e41b",
+    "scripts/deploy/audit-frightnight-vps-timers.mjs": "da652b682d38d9d75fe9304177e536bafdbf86c73b940f840ba792caca0cb493",
+    ".github/workflows/deploy-staging.yml": "69d9affd2e4cf36bbe0fddaea0f0cd5cb5b6fa9911399c0c5a984102b1cd56c8",
+    "scripts/acceptance/frightnight-staging.mjs": "99a448548594bc322321ba484f71f2c8bce27b07909e405cfe798af85a6136e6",
+    "scripts/acceptance/frightnight-regie.mjs": "9ecbcac989523e606374e32a4a34755e76de503545216e1d9c37b69d612fe49f",
+    "scripts/deploy/frightnight-release.mjs": "64010f4ca56caad4e0ee8edb492f6e50c4bf5a88b13cb49f861258f961c69d86",
+    "scripts/deploy/frightnight-release.test.ts": "2192540fcc29a28c71c53da128ab800903d9cd25800de893060a9f5a5acc0219",
+    "lib/frightnight/csv.ts": "8fef02f180643a15767c31e0141d76b870c6a17794c71bd58295ba7fbdc593e6",
+    "lib/frightnight/downloads.ts": "563ebafa3d66980d88fbbf37919b7910f64c43b7762efd3ef3759551bc169313"
+  },
+  "hostedContactAndDownloads": "Owner contact UI and second-tab read, foreign-actor denial, SVG/HTML privacy, actual download time versus edition clock, operator emergency cards and participant address privacy included; not yet executed.",
+  "hostedCleanup": {
+    "scope": "Only captured new sibling and exact run; fail closed without fresh .invalid actor and household evidence",
+    "newHouseholds": "Only households absent from pre-fixture baseline with the fixture actor as primary contact and active owner membership; every active member must be a fresh actor from the same synthetic run",
+    "preservation": "Real actor RPC archives synthetic run and closes sibling before contexts retire; orders, ledger, audit, old Auth, 2026 households and canonical event fingerprint retained",
+    "actualExecution": false,
+    "independentReadOnlyReview": {
+      "reviewer": "backend_2027",
+      "accepted": true,
+      "sourceSha256": "99a448548594bc322321ba484f71f2c8bce27b07909e405cfe798af85a6136e6",
+      "basis": "Captured sibling/run only, verified new household membership and preserved historical identifiers, real JWT reset/close and financial/audit retention; actual hosted cleanup still not executed"
+    }
+  },
+  "cleanupSqlCompilation": {
+    "scope": "Exact source template SQL parsed under read-only transactions in own disposable local synthetic DB; no HTTP, Auth, cleanup mutation or remote proof",
+    "sourceSha256": "99a448548594bc322321ba484f71f2c8bce27b07909e405cfe798af85a6136e6",
+    "results": [
+      {
+        "name": "binding",
+        "parsed": true,
+        "readOnly": true,
+        "mutationExecuted": false
+      },
+      {
+        "name": "mark-own-synthetic",
+        "parsed": true,
+        "readOnly": true,
+        "mutationExecuted": false
+      },
+      {
+        "name": "scoped-cap-revoke",
+        "parsed": true,
+        "readOnly": true,
+        "mutationExecuted": false
+      }
+    ]
+  }
+}

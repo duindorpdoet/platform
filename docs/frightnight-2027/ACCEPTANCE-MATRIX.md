@@ -15,7 +15,9 @@ Bronnen: `05-testen/ACCEPTATIETESTS.md` (82 IDs) en `05-testen/MAANDENLANG-TESTE
 | Historisch herstel | Backup/restore-run41433832508 op ce6bbb52551c4005a24c04fe3a578a4c3860cc18 | Oud herstelbewijs; niet de nieuwe release of een nieuw 2027-scenario. |
 | Open / Extern geblokkeerd / Fysiek open | Geen volledig uitgevoerd passend bewijs | Uitvoeren op juiste scope of ontbrekende credential/werkelijk toestel/operationele installatie oplossen. |
 
-Publieke Playwright-suite: zestien nieuwe scenario's zijn aanwezig in [frightnight.spec.ts](../../tests/e2e/frightnight.spec.ts). De laatste lokale productiebuild **eRSyuhMgvmTFYkX3lfRR3** is opnieuw getoetst: publieke suite **16/16**, [zes echte lokale Authrollen en identiteits-/BFCachecontrole](evidence/browser-authenticated/report.json) met **28 checks**, [uitval/conflict/replay en gelijktijdige scans](evidence/browser-authenticated/mutation-report.json) met **27 checks**, [nieuwe beheer-/betaal-/mailpreviewflow](evidence/browser-authenticated/new-ui-report.json) met **22 checks** en [huisbevestiging/beoordeling/pauze](evidence/browser-authenticated/resident-review-report.json) met **6 checks**; alle genoemde checks slaagden. De eerdere lokale checkout-originfout is in deze nieuwe ronde hersteld. Screenshots en beperkingen staan in het [bewijsregister](evidence/README.md). Dit is geen gepubliceerde stagingacceptatie. De hosted scripts [accept-frightnight.mjs](../../scripts/deploy/accept-frightnight.mjs), [frightnight-staging.mjs](../../scripts/acceptance/frightnight-staging.mjs) en de begrensde load-CLI zijn pas ná geverifieerde binding/backup/restore/behoud/deploy toegestaan.
+Publieke Playwright-suite: zestien nieuwe scenario's zijn aanwezig in [frightnight.spec.ts](../../tests/e2e/frightnight.spec.ts). De lokale productiebuild **eRSyuhMgvmTFYkX3lfRR3** is opnieuw getoetst: publieke suite **16/16**, [zes echte lokale Authrollen en identiteits-/BFCachecontrole](evidence/browser-authenticated/report.json) met **28 checks**, [uitval/conflict/replay en gelijktijdige scans](evidence/browser-authenticated/mutation-report.json) met **27 checks**, [nieuwe beheer-/betaal-/mailpreviewflow](evidence/browser-authenticated/new-ui-report.json) met **22 checks** en [huisbevestiging/beoordeling/pauze](evidence/browser-authenticated/resident-review-report.json) met **6 checks**; alle genoemde checks slaagden. De aansluitende build **3DJIV2_RRsuC8OdOesRkc** heeft **70/70** [regiezoek-/filter-/doelgroepproeven](evidence/browser-authenticated/regie-filter-audience-report.json) op 390/1440 px doorlopen. De eerdere lokale checkout-originfout is in deze nieuwe ronde hersteld. Screenshots en beperkingen staan in het [bewijsregister](evidence/README.md). Dit is geen gepubliceerde stagingacceptatie. De hosted scripts [accept-frightnight.mjs](../../scripts/deploy/accept-frightnight.mjs), [frightnight-staging.mjs](../../scripts/acceptance/frightnight-staging.mjs) en de begrensde load-CLI zijn pas ná geverifieerde binding/backup/restore/behoud/deploy toegestaan.
+
+Laatste lokale vervolgproef op productiebuild **VpdIRkZaItVoBhFIowORv**: **23/23 publieke browserchecks** met blijvende rustige voorkeur en **24/24 download-/klokchecks**. [Public-reviewrapport](evidence/browser-public/public-review-report.json), [download-/klokrapport](evidence/browser-authenticated/download-clock-report.json). Daarvoor zijn **42/42** [contact-/privacy-/metrics-/publicatiechecks](evidence/browser-authenticated/contact-metrics-svg-report.json) op build **C6R3bIB_R-40R-R5IjGPU** geslaagd. De volledige laatste lokale verify telt **1476** geslaagde tests en zes optionele skips; [bronhashrapport](validation/application-verify-report.json). Deze resultaten vervangen geen hosted of fysieke eindacceptatie.
 
 ## Registratie per pakket-ID
 
@@ -35,7 +37,7 @@ Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrij
 | INS-05 | LU | Adapter valideert statusvormen; echte PSP mislukken/open/annuleren/verlopen niet uitgevoerd. |
 | INS-06 | LDB, LU | Dubbele/out-of-order providerbevestiging zonder dubbele ledger lokaal; vijf echte webhookreplays open. |
 | INS-07 | LDB | Holds, verlopen hold, late betaling en herboeken lokaal. Gelijktijdige laatste startplaatsen op staging open. |
-| INS-08 | LDB | Voorkeurwijziging en herboeken lokaal; contact/startwijziging en tweede toestel open. |
+| INS-08 | LDB, lokale browser | Eigen contactwijziging, tweede tab en stale conflict lokaal groen; voorkeuren/herboeken lokaal getoetst. Gepubliceerde contact-/startwijziging en tweede toestel open. |
 | INS-09 | Open | Expliciete serverbeperking aanwezig; volledige betaalde personen-/tochtwijziging nog accepteren. |
 | INS-10 | LDB, LRACE, LU | Refundledger/scanrace en providerbindings lokaal; echte PSP-testrefund niet uitgevoerd. |
 | QR-01 | Fysiek open | Geen echte Android-/iOS-cameratest uitgevoerd. HTTPS-camera-implementatie is geen toestelbewijs. |
@@ -43,7 +45,7 @@ Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrij
 | QR-03 | Open | Editieklok en tijdgrenzen aanwezig; beide starttijdscenario's op staging uitvoeren. |
 | QR-04 | LDB | Na venster gecontroleerd herstel naar Duinpad lokaal; late start met echte looptijden open. |
 | QR-05 | LDB | Verkeerde start-/zonecode en oude routeversie lokaal; alle oude-editiecodevarianten open. |
-| QR-06 | LDB, LRACE | Exacte receipt en één bezoek/award onder twee gelijktijdige replayrequests lokaal. |
+| QR-06 | LDB, LRACE | Stabiel commandresultaat en één bezoek/award onder twee gelijktijdige replayrequests lokaal. Een replay projecteert daarnaast de actuele toegestane snapshot opnieuw, zodat ingetrokken rechten of gewijzigde routes niet terugkeren. |
 | QR-07 | LRACE | Twee gelijktijdige identieke scans lokaal: één bezoek/award; echte tabs/apparaten op staging open. |
 | QR-08 | Open | Autoritatieve serveropslag aanwezig; refresh en tweede zelfstandig toestel open. |
 | QR-09 | LDB | Deelnemer heeft eigen snapshot zonder regierooster; volledige response-/kaartinspectie op staging open. |
@@ -84,11 +86,11 @@ Alle rijen hebben eindstatus **open op nieuwe staging**. De bewijskolom beschrij
 | BAK-01 | LU | Stagingbakenadapter ondersteunt rehearsal zonder hardware; geen fysiek lichtbewijs. |
 | BAK-02 | LDB | Finalescan en digitale bakenaward na enkele huizen lokaal; drie UIstappen/Nachtpas op staging open. |
 | BAK-03 | LU | Adapter zonder netwerkuitgang; hardwareuitvoer false. Fysieke onafhankelijke bediening niet gekeurd. |
-| REG-01 | LDB | Databasepaginering en capabilitycheck lokaal; alle zoekfilters/totalen onder groter volume open. |
-| REG-02 | Open | Duurzame in-appberichten aanwezig; doelgroepwijziging en aparte kanaalstatus nog accepteren. |
+| REG-01 | LDB, lokale browser | 65 rijen per resource; 50/15-paginering, zoekmatch buiten pagina één, exacte gefilterde totalen en POST-zoektermen lokaal op 390/1440 px groen. Gepubliceerde herhaling open. |
+| REG-02 | LDB, lokale browser | Alle vijf doelgroepen, versieconflict, vreemde editie en doelgroepwijziging lokaal groen; na vertrek uit een bestemming verdwijnt het zonebericht. De duurzame in-appstatus en aparte niet-verzonden capture zijn zichtbaar. Gepubliceerde herhaling open. |
 | REG-03 | LDB | Globale pauze blokkeert overgang lokaal; actieve browsers hervatten en actuele keuze open. |
 | REG-04 | Open | Duurzame hulp/antwoordcommands aanwezig; privacy en tweede toestel nog uitvoeren. |
-| REG-05 | Open | CSV-escaping aanwezig; volledige =,+,-,@-/quotesproef plus exportautorisatie nog uitvoeren. |
+| REG-05 | LU | Pure CSV-proeven neutraliseren =,+,-,@ ook na witruimte/control/BOM en escapen quotes. Hosted gate bevat een echte viergezins-download plus participant403; die uitvoering is nog open. |
 | REG-06 | LDB | Archiveren/gesloten sibling behoudt bron lokaal; regiepreview/sluiten actieve editie open. |
 | REG-07 | LDB | Bedankje vereist eigen bezoek lokaal; herhaling, bewonerszicht en sinkstatus op staging open. |
 | SEC-01 | LDB | Geen directe private tabeltoegang, eigen snapshots en Storagepredicate lokaal; REST/realtimecrossactor open. |

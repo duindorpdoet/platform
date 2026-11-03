@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { apiSuccess, apiFailure, assertTrustedOrigin, correlationId } from "@/lib/http/api";
+import { apiSuccess, apiFailure, ApiError, assertTrustedOrigin, correlationId } from "@/lib/http/api";
 import { frightnightCommand, smallJson } from "@/lib/frightnight/server";
 import { paymentCheckout, paymentReconcile, paymentRefund, simulatePayment } from "@/lib/frightnight/payment-server";
 import { StagingBeaconAdapter } from "@/lib/frightnight/beacon";
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     console.info("frightnight_command", { requestId, operation, milliseconds: Math.round(performance.now() - started), status: "ok" });
     return apiSuccess(result);
   } catch (error) {
-    console.info("frightnight_command", { requestId, operation, milliseconds: Math.round(performance.now() - started), status: "rejected" });
+    console.info("frightnight_command", { requestId, operation, milliseconds: Math.round(performance.now() - started), status: "rejected", code: error instanceof ApiError ? error.code : error instanceof z.ZodError ? "VALIDATION_ERROR" : "INTERNAL_ERROR" });
     return apiFailure(error, requestId);
   }
 }

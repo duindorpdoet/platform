@@ -1,0 +1,106 @@
+{
+  "testedAt": "2026-11-03T03:37:44.141Z",
+  "buildId": "VpdIRkZaItVoBhFIowORv",
+  "checks": [
+    {
+      "check": "Actual svg download succeeds with private no-store",
+      "passed": true
+    },
+    {
+      "check": "Actual svg download labels real current generation time independently of test clock",
+      "passed": true
+    },
+    {
+      "check": "Actual svg download separately labels exact authoritative edition test clock",
+      "passed": true
+    },
+    {
+      "check": "Actual svg does not confuse2026 runtime with2027 scenario time",
+      "passed": true
+    },
+    {
+      "check": "Actual svg download omits owner contact data",
+      "passed": true
+    },
+    {
+      "check": "Actual html download succeeds with private no-store",
+      "passed": true
+    },
+    {
+      "check": "Actual html download labels real current generation time independently of test clock",
+      "passed": true
+    },
+    {
+      "check": "Actual html download separately labels exact authoritative edition test clock",
+      "passed": true
+    },
+    {
+      "check": "Actual html does not confuse2026 runtime with2027 scenario time",
+      "passed": true
+    },
+    {
+      "check": "Actual html download omits owner contact data",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyAdmin download succeeds with private no-store",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyAdmin download labels real current generation time independently of test clock",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyAdmin download separately labels exact authoritative edition test clock",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyAdmin does not confuse2026 runtime with2027 scenario time",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyAdmin download omits owner contact data",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyParticipant download succeeds with private no-store",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyParticipant download labels real current generation time independently of test clock",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyParticipant download separately labels exact authoritative edition test clock",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyParticipant does not confuse2026 runtime with2027 scenario time",
+      "passed": true
+    },
+    {
+      "check": "Actual emergencyParticipant download omits owner contact data",
+      "passed": true
+    },
+    {
+      "check": "Latest emergency cards remain organization-only with local confirmation fields",
+      "passed": true
+    },
+    {
+      "check": "Latest downloaded SVG renders offline without server or asset dependency",
+      "passed": true
+    },
+    {
+      "check": "Latest HTML print alternative is readable offline",
+      "passed": true
+    },
+    {
+      "check": "Latest participant emergency package is readable offline",
+      "passed": true
+    }
+  ],
+  "pageErrors": [],
+  "limits": "Actual local GoTrue/test database. No real OTP, external PSP, provider walking verification or remote staging evidence.",
+  "edition": "frightnight-2027-test-contact-mw04r74m",
+  "mutations": "none; read-only downloads from previous own closed local fixture edition"
+}

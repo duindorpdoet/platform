@@ -45,7 +45,7 @@ describe("explicit release read transport workflow contract", () => {
     const source = read(`.github/workflows/deploy-${environment}.yml`);
     const entries = jobs(source);
     const enabled = [...entries].filter(([, body]) => body.includes("RELEASE_READ_TRANSPORT:")).map(([name]) => name).sort();
-    expect(enabled).toEqual(environment === "production" ? ["backup-export", "deploy"] : ["backup-restore", "deploy"]);
+    expect(enabled).toEqual(environment === "production" ? ["backup-export", "deploy"] : ["backup-restore", "deploy", "frightnight-scenario-backup"]);
     expect(source.slice(0, source.indexOf("\njobs:\n"))).not.toContain("RELEASE_READ_TRANSPORT");
     for (const name of enabled) {
       const body = entries.get(name)!;

@@ -13,13 +13,13 @@ beforeEach(() => {
   stubs.rpc.mockResolvedValue({ data: { items: [{ id, template: "frightnight-payment-confirmed", mode: "sink", payload: { brandVersion: 7, orderId: id, amountCents: 1050 } }] }, error: null });
 });
 describe("editie- en actorbegrensde mailpreview zonder bezorging", () => {
-  it("rendert alleen de huidige actorpagina met private no-store en beperkende CSP", async () => {
+  it("zoekt het exacte mail-ID in de eigen editie, onafhankelijk van een gefilterde pagina-offset", async () => {
     const result = await GET(request());
     expect(result.status).toBe(200); expect(result.headers.get("cache-control")).toBe("private, no-store");
     expect(result.headers.get("content-security-policy")).toContain("default-src 'none'");
     const html = await result.text();
     expect(html).toContain("€ 10,50"); expect(html).toContain('alt="De Pompoenkoning"'); expect(html).toContain("data:image/webp;base64,");
-    expect(stubs.rpc).toHaveBeenCalledExactlyOnceWith("frightnight_admin_list", { p_slug: "frightnight-2027-test-own", p_resource: "sink", p_cursor: 50, p_limit: 100 });
+    expect(stubs.rpc).toHaveBeenCalledExactlyOnceWith("frightnight_admin_list", { p_slug: "frightnight-2027-test-own", p_resource: "sink", p_cursor: 0, p_limit: 100, p_search: id, p_filters: {} });
   });
   it("weigert onbekende sessie en deelnemer vóór de lijst wordt gelezen", async () => {
     stubs.snapshot.mockRejectedValueOnce(new ApiError(401, "SIGN_IN_REQUIRED", "Log in"));

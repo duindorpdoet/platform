@@ -14,13 +14,12 @@ export async function GET(request: Request) {
     if (!snapshot.actor.capabilities.some(capability => capability === "event_admin" || capability === "payments_manage")) throw new ApiError(403, "PAYMENTS_REQUIRED", "Je hebt geen toegang tot deze mailcapture.");
     const query = new URL(request.url).searchParams;
     const id = z.uuid().parse(query.get("id"));
-    const cursor = z.coerce.number().int().min(0).max(1_000_000).parse(query.get("cursor") ?? 0);
     const client = await createClient();
     if (!client) throw new ApiError(503, "BACKEND_UNAVAILABLE", "Het mailvoorbeeld is tijdelijk niet bereikbaar.");
-    const { data, error } = await client.schema("api").rpc("frightnight_admin_list", { p_slug: snapshot.event.slug, p_resource: "sink", p_cursor: cursor, p_limit: 100 });
+    const { data, error } = await client.schema("api").rpc("frightnight_admin_list", { p_slug: snapshot.event.slug, p_resource: "sink", p_cursor: 0, p_limit: 100, p_search: id, p_filters: {} });
     if (error) rpcError(error);
     const row = (data as { items?: { id: string; template: string; mode: string; payload: unknown }[] })?.items?.find(item => item.id === id);
-    if (!row || row.mode !== "sink") throw new ApiError(404, "MAIL_CAPTURE_NOT_FOUND", "Dit mailvoorbeeld is niet beschikbaar op deze pagina van jouw testeditie.");
+    if (!row || row.mode !== "sink") throw new ApiError(404, "MAIL_CAPTURE_NOT_FOUND", "Dit mailvoorbeeld is niet beschikbaar in jouw testeditie.");
     let rendered;
     try { rendered = renderFrightnightTransactionalMail(row.template, row.payload, { eventSlug: snapshot.event.slug, logoDataUri: await getLogo() || undefined }); }
     catch { throw new ApiError(409, "MAIL_CAPTURE_INVALID", "Deze capture past niet bij een ondersteund bericht of bevat ongeldige gegevens."); }

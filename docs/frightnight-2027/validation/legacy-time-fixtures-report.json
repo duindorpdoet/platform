@@ -1,0 +1,35 @@
+{
+  "scope": "isolated-local-legacy-fixtures",
+  "verifiedAt": "2026-11-03T03:14:36.368319+00:00",
+  "database": "frightnight_2027_legacy_ci_v2",
+  "container": "supabase_db_duindorp_event_close_20261101",
+  "remoteMutations": false,
+  "runtimeClockOverride": false,
+  "productionCodeModified": false,
+  "schema": "Current schema-only baseline plus independently checked synthetic local dump and exact original ACL metadata; no remote connection and no historical DB modified.",
+  "cases": [
+    {
+      "file": "055",
+      "passed": 28,
+      "failed": 0,
+      "rollback": true
+    },
+    {
+      "file": "115",
+      "passed": 56,
+      "failed": 0,
+      "rollback": true
+    }
+  ],
+  "sourceSha256": {
+    "supabase/tests/055_social_share_studio.sql": "bbbe19a07bf0388b35ed2452a6667149e56fe6af8a9a80d5548215ff6f08e25f",
+    "supabase/tests/115_joint_route_policy_v2.sql": "cfdb0fcd51b22b0e32f905e039369838b642ed8620173bf7fcf34c4dbc38dce8",
+    "supabase/tests/fixtures/future-legacy-calendar.inc": "b84442804990dbf4803683524ae5786bac718e3f54093efd83e6c59e7fc7e88c",
+    "supabase/tests/helpers/joint-route-fixture.inc": "62d92f5c5da989df95ce2cd8164de36dcbdb2af0cbf1986380722cd834a2fcf9",
+    "supabase/tests/helpers/registration-management.inc": "91291a77e89f2d4654c16c5f66f533daa1d1fa4602300dde2fd81b92b4c3dfa4"
+  },
+  "changes": {
+    "055": "Future pre-event fixture and active countdown interval; additional explicit expired-countdown assertion using real transaction clock.",
+    "115": "Future fixture calendar and matching expected instants keep new reservation created_at earlier than expiry, without changing product clock or constraints."
+  }
+}

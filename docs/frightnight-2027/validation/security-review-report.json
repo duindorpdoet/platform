@@ -1,13 +1,19 @@
 {
   "scope": "local-vitest-and-eslint",
-  "recordedAt": "2026-11-03T02:55:31.148Z",
+  "recordedAt": "2026-11-03T03:40:05.040725+00:00",
   "baseRevision": "ce6bbb52551c4005a24c04fe3a578a4c3860cc18",
   "remoteMutations": false,
   "tests": {
     "command": "pnpm exec vitest run lib/frightnight/payments.test.ts lib/frightnight/payment-server.test.ts lib/frightnight/request-body.test.ts lib/frightnight/qr-export.test.ts lib/frightnight/transactional-mail.test.ts lib/frightnight/mail-preview.test.ts",
     "passed": 53,
     "failed": 0,
-    "durationMs": 402
+    "durationMs": 349,
+    "latestCombinedCommand": "pnpm exec vitest run scripts/deploy lib/frightnight/payments.test.ts lib/frightnight/payment-server.test.ts lib/frightnight/request-body.test.ts lib/frightnight/qr-export.test.ts lib/frightnight/transactional-mail.test.ts lib/frightnight/mail-preview.test.ts lib/frightnight/downloads.test.ts lib/frightnight/offline.test.ts lib/frightnight/csv.test.ts",
+    "latestCombinedPassed": 548,
+    "latestCombinedDurationMs": 1530,
+    "latestCombinedFiles": 49,
+    "latestCombinedDeployPassed": 483,
+    "latestCombinedSecurityDownloadsOfflineCsvPassed": 65
   },
   "eslint": {
     "passed": true,
@@ -43,8 +49,44 @@
     "app/api/frightnight/zone-photo/route.ts": "62d8a43bfd0058cbeb547d659fcd80cd7884d7b4ec9456b897c45bb4ce5e84b1",
     "lib/frightnight/transactional-mail.ts": "017b63a4d31cb52910a341c692c2e2f7e7f671f1aa3a7ba59b88468e070e3e3a",
     "lib/frightnight/transactional-mail.test.ts": "775ca7afe141c99899fe9ba7ac3ebf856108cbbe1769c099a31a0c034f38fd41",
-    "lib/frightnight/mail-preview.test.ts": "1e79553d3d51e210b629ea130dba3aeb34d1777b15531c9e603be4277fafcbac",
-    "app/api/frightnight/mail-preview/route.ts": "45921be4e7b5915bacaf43b4667f111cdef41ada0486a6dfe9e374fb81a53b0a",
-    "public/frightnight/king-head.webp": "cf591d4d35eb89339cf0ac12002f9440a4ecc09d3dc15fc242f1e32450855a60"
+    "lib/frightnight/mail-preview.test.ts": "6ff4ac511e608f5690662855c93c339e98bfa0a981e972837d3bc97594a6c419",
+    "app/api/frightnight/mail-preview/route.ts": "c9f8dc9dbf7e667b66d7e076932832805a8504625dd639aa606adeb21f408380",
+    "public/frightnight/king-head.webp": "cf591d4d35eb89339cf0ac12002f9440a4ecc09d3dc15fc242f1e32450855a60",
+    "lib/frightnight/server.ts": "980ebbf445ea2b0bbcb9d04eff6e4a9bf539572a9ffd86b30bbe62c30bb9710b",
+    "lib/frightnight/downloads.ts": "563ebafa3d66980d88fbbf37919b7910f64c43b7762efd3ef3759551bc169313",
+    "lib/frightnight/downloads.test.ts": "63d4ac2c9d9f2b4b9c08d800fa52a9371ecec7d36de3cb52e86ca14d316f4961",
+    "lib/frightnight/offline.ts": "f50541a5d109ee33c8eac221ea447cd3a48c1a153fb49ff950b9475bc3c77255",
+    "lib/frightnight/offline.test.ts": "06a2e463a9eefd838509b2ff7d478c55c11c65b2ba072da5673f580eaae148fc",
+    "app/api/frightnight/pass/route.ts": "a91a971b8b9712fc0dfe216bac5d4b2fefb47de1a793a045e98596c22b250f85",
+    "lib/frightnight/csv.ts": "8fef02f180643a15767c31e0141d76b870c6a17794c71bd58295ba7fbdc593e6",
+    "lib/frightnight/csv.test.ts": "f1bd1380e7fc20b35156e584f67fe88ef686739521e407462af06cfe15eb3fac"
+  },
+  "followup": {
+    "mailPreviewLookup": "Exact validated capture UUID via authenticated edition-scoped p_search; ignores stale page cursor and still checks row.id.",
+    "targetedReleaseSafetyTests": 21,
+    "targetedReleaseSafetyAndMailPreviewTests": 25
+  },
+  "serverReadReview": "Current actor RPC deadline code reviewed with root; separate root full-suite evidence applies to that boundary, not an external timeout or delivery test.",
+  "backendProof": {
+    "pgTapPassed": 264,
+    "migrationSha256": "f994e74783163229acc9347d356623ceb0820e1e1079f5ecd95d07331f599c20",
+    "verifiedAt": "2026-11-03T03:27:59.052731+00:00",
+    "scope": "independent backend local report; no remote or provider claim"
+  },
+  "rootFullValidation": {
+    "evidence": "docs/frightnight-2027/validation/application-verify-report.json",
+    "reportedBy": "root; separate recorded full verify evidence",
+    "unitPassed": 1476,
+    "optionalSkipped": 6,
+    "productionBuild": "VpdIRkZaItVoBhFIowORv",
+    "hostedRelease": "not yet executed"
+  },
+  "downloadAndOfflineFollowup": {
+    "command": "pnpm exec vitest run scripts/deploy lib/frightnight/payments.test.ts lib/frightnight/payment-server.test.ts lib/frightnight/request-body.test.ts lib/frightnight/qr-export.test.ts lib/frightnight/transactional-mail.test.ts lib/frightnight/mail-preview.test.ts lib/frightnight/downloads.test.ts lib/frightnight/offline.test.ts lib/frightnight/csv.test.ts",
+    "securityDownloadsOfflineCsvPassed": 65,
+    "allCombinedPassed": 548,
+    "failed": 0,
+    "durationMs": 1530,
+    "scope": "Local security, private role-bounded emergency cards, participant address privacy, standalone SVG, real download time versus edition clock, offline contact exclusion and formula-safe CSV; no hosted delivery or physical device claim"
   }
 }

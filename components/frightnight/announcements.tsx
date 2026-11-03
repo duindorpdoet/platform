@@ -1,0 +1,27 @@
+"use client";
+import { useRef, useState } from "react";
+import { Bell } from "lucide-react";
+import type { FestivalController } from "./client";
+import { AdminResource } from "./admin-resource";
+type Audience = "all" | "lantern" | "roots" | "registration" | "zone";
+type Announcement = { id: string; text: string; audience: Audience; targetId: string | null; version: number; createdAt: string; updatedAt: string };
+const audiences: [Audience, string][] = [["all", "Iedereen in deze editie"], ["lantern", "Alleen de Lantaarnentocht"], ["roots", "Alleen de Worteltocht"], ["registration", "Eén gezelschap"], ["zone", "Onderweg naar één zone"]];
+export function Announcements({ controller: c }: { controller: FestivalController }) {
+  const [listRevision, setListRevision] = useState(0); const [editing, setEditing] = useState<Announcement | null>(null); const [text, setText] = useState(""); const [audience, setAudience] = useState<Audience>("all"); const [target, setTarget] = useState(""); const [manualTarget, setManualTarget] = useState("");
+  const field = useRef<HTMLTextAreaElement>(null); const s = c.snapshot!;
+  const permitted = s.actor.capabilities.some(capability => capability === "event_admin" || capability === "content_manage");
+  if (!permitted) return null;
+  const targets = audience === "registration" ? (s.registrations ?? []).map(item => ({ id: item.id, name: item.label })) : audience === "zone" ? (s.zones ?? []).map(item => ({ id: item.id, name: item.name })) : [];
+  function clear() { setEditing(null); setText(""); setAudience("all"); setTarget(""); setManualTarget(""); }
+  function edit(announcement: Announcement) {
+    setEditing(announcement); setText(announcement.text); setAudience(announcement.audience);
+    const known = announcement.audience === "registration" ? s.registrations?.some(item => item.id === announcement.targetId) : s.zones?.some(item => item.id === announcement.targetId);
+    setTarget(announcement.targetId ? known ? announcement.targetId : "manual" : ""); setManualTarget(announcement.targetId ?? "");
+    requestAnimationFrame(() => field.current?.focus());
+  }
+  return <><section className="fn-panel"><Bell size={27} /><span className="ui-kicker">Duurzame in-appberichten</span><h2>EEN BERICHT VOOR DE NACHT.</h2><p>Kies wie dit bericht mag zien. De server controleert de doelgroep binnen deze editie. E-mail en push blijven afzonderlijke kanalen met hun eigen toestemming en bezorgstatus.</p><form onSubmit={async event => {
+    event.preventDefault(); const targetId = target === "manual" ? manualTarget.trim() : target;
+    const result = await c.command("admin.announcement", { text: text.trim(), audience, ...(audience === "registration" ? { registrationId: targetId } : {}), ...(audience === "zone" ? { zoneId: targetId } : {}), ...(editing ? { id: editing.id, expectedVersion: editing.version } : {}) }, editing?.version);
+    if (result) { clear(); setListRevision(value => value + 1); }
+  }}><h3>{editing ? "Bestaand bericht en doelgroep wijzigen" : "Nieuw organisatiebericht"}</h3>{editing && <p className="ui-note">Je wijzigt versie {editing.version}. Bij een gelijktijdige wijziging vraagt de server je de actuele versie opnieuw te openen.</p>}<label className="ui-field">Bericht aan deze editie<textarea ref={field} required minLength={3} value={text} onChange={event => setText(event.target.value)} rows={4} maxLength={2000} /></label><label className="ui-field">Doelgroep<select value={audience} onChange={event => { setAudience(event.target.value as Audience); setTarget(""); setManualTarget(""); }}>{audiences.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>{(audience === "registration" || audience === "zone") && <><label className="ui-field">{audience === "registration" ? "Gezelschap voor dit bericht" : "Zone voor dit bericht"}<select required value={target} onChange={event => setTarget(event.target.value)}><option value="" disabled>Kies een bekende ontvanger</option>{targets.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}<option value="manual">Ander bekend ID invoeren</option></select></label>{target === "manual" && <label className="ui-field">{audience === "registration" ? "Inschrijvings-ID" : "Zone-ID"}<input value={manualTarget} onChange={event => setManualTarget(event.target.value)} required pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" autoComplete="off" /><small>Gebruik uitsluitend een bekend ID uit deze editie. De server weigert ontvangers van andere edities.</small></label>}</>}{audience === "zone" && <p className="fn-caption">Alleen deelnemers met deze ene actuele bestemming zien het bericht. Het verdwijnt wanneer hun bestemming verandert.</p>}<label className="fn-check"><input type="checkbox" required key={`${editing?.id ?? "new"}:${editing?.version ?? 0}:${audience}:${target}:${manualTarget}` } /> Ik heb de tekst en de bedoelde ontvangers gecontroleerd.</label><div className="fn-actions"><button className="ui-button primary" disabled={c.busy || !text.trim()}>{editing ? "Bericht en doelgroep bijwerken" : "Bericht publiceren"}</button>{editing && <button className="ui-button" type="button" disabled={c.busy} onClick={clear}>Wijzigen annuleren</button>}</div></form></section><AdminResource key="announcements" controller={c} resource="announcements" title="ORGANISATIEBERICHTEN VAN DEZE EDITIE." refreshVersion={listRevision} onAnnouncementEdit={row => edit(row as Announcement)} /></>;
+}

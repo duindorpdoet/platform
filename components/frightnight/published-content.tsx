@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 type Content = { key: string; body: string | { title?: string; text?: string }; version: number };
-export function PublishedContent() {
+const publicKeys = ['programme', 'practical', 'story', 'emergency'];
+export function PublishedContent({ contentKeys = publicKeys }: { contentKeys?: readonly string[] }) {
   const [content, setContent] = useState<Content[]>([]);
   const [stale, setStale] = useState(false);
   useEffect(() => {
@@ -16,7 +17,9 @@ export function PublishedContent() {
     }).catch(() => {}).finally(() => clearTimeout(timer));
     return () => { clearTimeout(timer); abort.abort(); };
   }, []);
-  if (!content.length) return null;
-  const labels: Record<string, string> = { programme: "Het actuele programma", practical: "Goed om te weten", story: "Het verhaal gaat verder", emergency: "Veilig op pad" };
-  return <aside className="fn-published" aria-label="Gepubliceerde informatie van de organisatie"><span className="ui-kicker"><Bell size={15} /> Bericht uit het Oogstdorp</span>{content.map(item => <article key={item.key}><h3>{typeof item.body === "object" && item.body.title ? item.body.title : labels[item.key] ?? "Van de organisatie"}</h3><p>{typeof item.body === "string" ? item.body : item.body.text}</p></article>)}{stale && <p className="fn-caption">Dit is de laatst beschikbare organisatie-informatie. De vaste programma- en noodinformatie blijft hierboven beschikbaar.</p>}</aside>;
+  const visible = content.filter(item => contentKeys.includes(item.key));
+  if (!visible.length) return null;
+  const terms = contentKeys.length === 1 && contentKeys[0] === 'terms';
+  const labels: Record<string, string> = { programme: "Aanvulling op het programma", practical: "Goed om te weten", story: "Het verhaal gaat verder", emergency: "Veilig op pad", terms: "Aanvulling van de organisatie" };
+  return <aside className="fn-published" aria-label={terms ? "Gepubliceerde voorwaardenaanvulling" : "Gepubliceerde informatie van de organisatie"}><span className="ui-kicker"><Bell size={15} /> {terms ? 'Aanvullende testinformatie' : 'Bericht uit het Oogstdorp'}</span>{terms && <p className="fn-caption">Deze gepubliceerde aanvulling hoort bij de vaste testvoorwaarden hierboven. De tochtvensters en instemmingsversie 2027-test-v1 blijven gelden.</p>}{visible.map(item => <article key={item.key}><h3>{typeof item.body === "object" && item.body.title ? item.body.title : labels[item.key] ?? "Van de organisatie"}</h3><p>{typeof item.body === "string" ? item.body : item.body.text}</p></article>)}{stale && <p className="fn-caption">Dit is de laatst beschikbare organisatie-informatie. De vaste {terms ? 'testvoorwaarden' : 'programma- en noodinformatie'} hierboven blijven beschikbaar.</p>}</aside>;
 }

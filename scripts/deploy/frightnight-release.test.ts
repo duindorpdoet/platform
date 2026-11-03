@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { assertFrightnightRelease, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL, type FrightnightSafety } from './frightnight-release.mjs';
+import { assertFrightnightRelease, assertFrightnightHostedContract, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL, type FrightnightSafety } from './frightnight-release.mjs';
 
 const env = {APP_ENVIRONMENT:'staging',APP_URL:'https://staging-halloween.duindorpdoet.nl',SUPABASE_PROJECT_REF:'nocteiuvohesvqbowchw',NEXT_PUBLIC_SUPABASE_URL:'https://nocteiuvohesvqbowchw.supabase.co',EVENT_SLUG:'frightnight-2027-test',FRIGHTNIGHT_ENABLED:'true',FRIGHTNIGHT_PROJECT_REF:'nocteiuvohesvqbowchw',FRIGHTNIGHT_PAYMENT_PROVIDER:'contract',FRIGHTNIGHT_MAIL_MODE:'sink',FRIGHTNIGHT_HARDWARE_ENABLED:'false'};
 const safety = ():FrightnightSafety => ({tables:23,unsafeTables:0,unsafeFunctions:0,actorFunctions:4,unsafeEvents:0,unsafeSink:0,sinkHasRecipient:false,legacyBindings:0,
@@ -9,6 +9,13 @@ const safety = ():FrightnightSafety => ({tables:23,unsafeTables:0,unsafeFunction
  legacyJobs:['duindorp-halloween-route-dispatch','duindorp-poortkamer-maintenance','duindorp-halloween-mail-outbox'].map(name=>({name,active:true,schedule:'* * * * *'}))});
 
 describe('explicit 2027 staging release binding',()=>{
+ it('requires the actual runtime contract provider before creating hosted fixtures',()=>{
+  const revision='a'.repeat(40),health={revision,status:'ok',service:'duindorphalloween',environment:'staging',eventSlug:env.EVENT_SLUG,brand:'frightnight-2027-v7',paymentProvider:'contract'};
+  expect(()=>assertFrightnightHostedContract(health,revision)).not.toThrow();
+  for(const change of [{paymentProvider:'mollie'},{paymentProvider:undefined},{revision:'b'.repeat(40)},{environment:'production'},{eventSlug:'duindorp-halloween-2026'},{brand:'legacy'}])expect(()=>assertFrightnightHostedContract({...health,...change},revision)).toThrow('LIVE_CONTRACT_RELEASE_BINDING_REQUIRED_BEFORE_FIXTURES');
+  const source=readFileSync('scripts/acceptance/frightnight-staging.mjs','utf8');
+  expect(source.indexOf('assertFrightnightHostedContract(health,process.env.GITHUB_SHA)')).toBeLessThan(source.indexOf("const admin=await actor('regie')"));
+ });
  it('accepts only a safe staging configuration',()=>expect(assertFrightnightRelease(env).slug).toBe('frightnight-2027-test'));
  it.each([
   {APP_ENVIRONMENT:'production'},{APP_URL:'https://halloween.duindorpdoet.nl'},{SUPABASE_PROJECT_REF:'dtubngvxfbupgvgfrjko'},
@@ -52,6 +59,8 @@ describe('read-only schema, sink and legacy-job release proof',()=>{
   expect(FRIGHTNIGHT_SAFETY_SQL).not.toMatch(/\b(dispatch_mail_worker|worker_claim_outbox)\s*\(/i);
   expect(FRIGHTNIGHT_SAFETY_SQL).not.toContain('from auth.users');
   expect(FRIGHTNIGHT_SAFETY_SQL).toContain('has_function_privilege');
+  expect(FRIGHTNIGHT_SAFETY_SQL).toContain("to_regprocedure('api.frightnight_admin_list(text,text,integer,integer,text,jsonb)')");
+  expect(FRIGHTNIGHT_SAFETY_SQL).not.toContain("to_regprocedure('api.frightnight_admin_list(text,text,integer,integer)')");
   expect(FRIGHTNIGHT_SAFETY_SQL).toContain('legacyBindings');
  });
  it('replaces automatic OTP and historical-actor acceptance while retaining mandatory gates',()=>{

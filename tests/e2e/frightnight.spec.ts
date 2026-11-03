@@ -32,10 +32,64 @@ test("publieke kerninhoud en echte navigatie blijven beschikbaar zonder JavaScri
 test("systeemvoorkeur stopt decoratieve beweging zonder taken te verbergen", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
+  await expect(page.getByRole("button", { name: "Rustige weergave", exact: true })).toBeDisabled();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   expect(await page.locator(".pp-ember").first().evaluate(element => getComputedStyle(element).animationName)).toBe("none");
   await page.getByRole("link", { name: "Ik durf het aan" }).click();
   await expect(page).toHaveURL(/tocht=scary/);
+});
+
+test("eigen rustige weergave blijft na herladen en navigatie bewaard", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  const pause = page.getByRole("button", { name: "Pauzeer sfeereffecten", exact: true });
+  await pause.focus(); await page.keyboard.press("Enter");
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
+  expect(await page.evaluate(() => localStorage.getItem("frightnight-calm-v1"))).toBe("1");
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Speel sfeereffecten", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("link", { name: "Mijn Nachtpas", exact: true }).click();
+  await expect(page.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("html")).toHaveClass(/fn-calm/);
+  await page.getByRole("link", { name: "Naar het festival", exact: true }).click();
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
+  await page.goto("/mijn-zone");
+  const resume = page.getByRole("button", { name: "Sfeer hervatten", exact: true });
+  await resume.focus(); await page.keyboard.press("Space");
+  await expect(page.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("link", { name: "Naar het festival", exact: true }).click();
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "full");
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Pauzeer sfeereffecten", exact: true })).toHaveAttribute("aria-pressed", "false");
+});
+
+test("rustige weergave wordt direct met een andere tab gedeeld", async ({ page, context }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" }); await page.goto("/");
+  const other = await context.newPage(); await other.emulateMedia({ reducedMotion: "no-preference" }); await other.goto("/nachtpas");
+  await expect(other.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("button", { name: "Pauzeer sfeereffecten", exact: true }).click();
+  await expect(other.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "true");
+  await expect(other.locator("html")).toHaveClass(/fn-calm/);
+  await other.getByRole("button", { name: "Sfeer hervatten", exact: true }).click();
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "full");
+  await other.close();
+});
+
+test("opslagweigering laat de rustige bediening en taken bruikbaar", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.addInitScript(() => {
+    for (const method of ["getItem", "setItem"]) Object.defineProperty(Storage.prototype, method, { configurable: true, value() { throw new DOMException("Storage blocked", "SecurityError"); } });
+  });
+  const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/");
+  await page.getByRole("button", { name: "Pauzeer sfeereffecten", exact: true }).click();
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
+  await page.getByRole("button", { name: "Lees hoe het begon" }).click();
+  await expect(page.getByRole("region", { name: /EEN KROON VOL DUISTER/ })).toBeVisible();
+  await page.getByRole("link", { name: "Mijn Nachtpas", exact: true }).click();
+  await expect(page.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("link", { name: "Inloggen met e-mailcode" })).toBeVisible();
+  expect(errors).toEqual([]);
 });
 
 test("zichtbare sfeerpauze en mobiel menu werken met toetsenbord", async ({ page }) => {
@@ -48,6 +102,63 @@ test("zichtbare sfeerpauze en mobiel menu werken met toetsenbord", async ({ page
   await page.getByRole("button", { name: "Pauzeer sfeereffecten" }).click();
   await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
   await expect(page.getByRole("link", { name: "Deze tocht kies ik" })).toBeVisible();
+});
+
+for (const width of [390, 1440]) {
+  test(`het verhaal opent en sluit met toetsenbord op ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    await page.goto("/");
+    const toggle = page.locator("#pp-story-toggle");
+    const story = page.getByRole("region", { name: /EEN KROON VOL DUISTER/ });
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("#pp-story-details")).toBeHidden();
+    await toggle.focus(); await page.keyboard.press("Enter");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(story).toBeVisible();
+    await expect(story.getByRole("heading", { name: "I / Het verborgen licht", exact: true })).toBeVisible();
+    await expect(story).toContainText("Hij verstopte het licht in zijn kroon");
+    await expect(story).toContainText("De Oogstmeester en de Wortelrakkers");
+    await expect(story.getByRole("img", { name: "De Kraaienbode met zijn lantaarn" })).toBeVisible();
+    await expect(story.getByRole("link", { name: "Mijn avontuur begint hier" })).toHaveAttribute("href", "/nachtpas");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(toggle).toBeFocused(); await page.keyboard.press("Space");
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("#pp-story-details")).toBeHidden();
+    await expect(toggle).toBeFocused();
+  });
+}
+
+test("de gepubliceerde tekstprojectie vult programma en voorwaarden afzonderlijk aan", async ({ page }) => {
+  // Presentation contract only: this endpoint fixture represents rows already
+  // published by the server. Database publication/edition rules have SQL tests.
+  await page.route("**/api/frightnight/public", route => route.fulfill({ json: { data: { content: [
+    { key: "programme", body: "Programma-aanvulling uit de gepubliceerde projectie.", version: 2 },
+    { key: "terms", body: "Voorwaardenaanvulling uit de gepubliceerde projectie.", version: 3 },
+  ], stale: false } } }));
+  await page.goto("/voorwaarden");
+  const terms = page.getByRole("complementary", { name: "Gepubliceerde voorwaardenaanvulling" });
+  await expect(terms).toContainText("Voorwaardenaanvulling uit de gepubliceerde projectie.");
+  await expect(page.locator("body")).not.toContainText("Programma-aanvulling uit de gepubliceerde projectie.");
+  await expect(page.locator("main")).toContainText("17:00 tot 18:30");
+  await expect(page.locator("main")).toContainText("18:30 tot 21:00");
+  await expect(page.locator("main")).toContainText("Versie: 2027-test-v1");
+  await page.goto("/");
+  await expect(page.getByRole("complementary", { name: "Gepubliceerde informatie van de organisatie" })).toContainText("Programma-aanvulling uit de gepubliceerde projectie.");
+  await expect(page.locator("body")).not.toContainText("Voorwaardenaanvulling uit de gepubliceerde projectie.");
+  await expect(page.locator(".pp-programme-strip")).toContainText("17:00 — 18:30");
+});
+
+test("vaste voorwaarden en programma blijven bruikbaar als de aanvullende inhoud uitvalt", async ({ page }) => {
+  await page.route("**/api/frightnight/public", route => route.abort("connectionfailed"));
+  await page.goto("/voorwaarden");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("ZO WERKT DE TEST.");
+  await expect(page.locator("main")).toContainText("Versie: 2027-test-v1");
+  await expect(page.getByRole("complementary", { name: "Gepubliceerde voorwaardenaanvulling" })).toHaveCount(0);
+  await page.goto("/");
+  await expect(page.locator("#pp-programme")).toContainText("Oogstdorp opent");
+  await expect(page.locator(".pp-programme-strip")).toContainText("18:30 — 21:00");
+  await page.getByRole("button", { name: "Lees hoe het begon" }).click();
+  await expect(page.getByRole("region", { name: /EEN KROON VOL DUISTER/ })).toBeVisible();
 });
 
 for (const path of ["/nachtpas", "/mijn-zone", "/avondregie", "/testcentrum"]) {
