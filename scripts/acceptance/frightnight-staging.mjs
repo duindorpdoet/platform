@@ -8,13 +8,12 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { management } from '../deploy/redesign-preflight.mjs';
-import { assertFrightnightRelease, assertFrightnightHostedContract, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL } from '../deploy/frightnight-release.mjs';
+import { assertFrightnightRelease, assertFrightnightHostedRelease, assertFrightnightContractArm, assertFrightnightContractSnapshot, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL } from '../deploy/frightnight-release.mjs';
 import { runRegieAcceptance } from './frightnight-regie.mjs';
 import { runEdgeAcceptance } from './frightnight-edges.mjs';
 
 const target = assertFrightnightRelease(process.env);
 if (!/^[a-f0-9]{40}$/.test(process.env.GITHUB_SHA ?? '') || process.env.FRIGHTNIGHT_VERIFIED_RELEASE_SHA !== process.env.GITHUB_SHA) throw new Error('VERIFIED_BACKUP_PRESERVATION_AND_RELEASE_REQUIRED');
-if (process.env.FRIGHTNIGHT_PAYMENT_PROVIDER !== 'contract') throw new Error('ACCEPTANCE_REQUIRES_EXPLICIT_CONTRACT_PROVIDER_NO_EXTERNAL_PAYMENT');
 for (const name of ['NEXT_PUBLIC_SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','SUPABASE_ACCESS_TOKEN']) if (!process.env[name]) throw new Error(`ACCEPTANCE_MISSING_${name}`);
 const sbUrl = `https://${target.projectRef}.supabase.co`;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -48,6 +47,21 @@ async function rpc(actor,name,args,allowFailure=false) {
   const value=await response.json();
   if(!response.ok&&!allowFailure)throw new Error(`RPC_${name}_${response.status}_${String(value.code ?? 'rejected')}`);
   return {status:response.status,value};
+}
+async function armContract({slug:editionSlug,eventId:editionId,actor:controller}) {
+  assert(controller===fixtureAdmin&&actors.includes(controller)&&controller.email.endsWith('@example.invalid'),'OWN_SYNTHETIC_SANDBOX_CONTROLLER_REQUIRED');
+  assert((editionSlug===slug||editionSlug.startsWith(slug+'-'))&&editionSlug.length<=100&&/^[a-z0-9-]+$/.test(editionSlug),'OWN_PRIVATE_SANDBOX_EDITION_REQUIRED');
+  const before=await rpc(controller,'frightnight_snapshot',{p_slug:editionSlug});
+  const event=before.value?.event;
+  assert(event?.id===editionId&&event?.slug===editionSlug&&event?.test===true&&event?.environment==='staging','CONTRACT_SANDBOX_SCOPE_REQUIRED');
+  const binding={slug:editionSlug,eventId:editionId,runId:event.runId};
+  assert(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(binding.runId),'CURRENT_SANDBOX_RUN_REQUIRED');
+  const armed=await rpc(null,'frightnight_contract_arm',{p_slug:editionSlug,p_actor:controller.id,p_run_id:binding.runId,p_confirmation:`${target.projectRef}:staging:duindorphalloweenstg:${editionSlug}:${binding.runId}`});
+  assertFrightnightContractArm(armed.value,binding);
+  const after=await rpc(controller,'frightnight_snapshot',{p_slug:editionSlug});
+  assertFrightnightContractSnapshot(after.value,binding);
+  report.contractSandboxes??=[];report.contractSandboxes.push({...binding,provider:'contract',serviceArm:true,actorReadback:true});
+  return {...binding,provider:'contract'};
 }
 async function app(actor,operation,payload={},key=randomUUID(),allowFailure=false) {
   const response=await actor.context.request.post(`${target.origin}/api/frightnight/command`,{headers:{Origin:target.origin},data:{commandId:key,operation,payload}});
@@ -130,7 +144,7 @@ try {
   const healthResponse=await fetch(`${target.origin}/api/health`,{signal:AbortSignal.timeout(10000)});
   const health=await healthResponse.json();
   assert(healthResponse.ok,'LIVE_RELEASE_HEALTH_UNAVAILABLE');
-  assertFrightnightHostedContract(health,process.env.GITHUB_SHA);
+  assertFrightnightHostedRelease(health,process.env.GITHUB_SHA,process.env.FRIGHTNIGHT_PAYMENT_PROVIDER);
   const safety=await sql(FRIGHTNIGHT_SAFETY_SQL);assertFrightnightSafety(safety[0].frightnight_safety);
   const before=await fingerprint2026();preservationBefore=before;
   browser=await chromium.launch();
@@ -151,7 +165,9 @@ try {
     insert into app_private.event_capabilities(event_id,user_id,capability,granted_by) values(${literal(eventId)}::uuid,${literal(support.id)}::uuid,'live_support',${literal(admin.id)}::uuid)`,true);
   for(const person of [a,b,resident]) await rpc(null,'frightnight_entry_grant',{p_slug:slug,p_actor:person.id,p_expires_at:new Date(Date.now()+3_600_000).toISOString(),p_invitation_digest:createHash('sha256').update(`${run}:${slug}:${person.id}`).digest('hex')});
   await select(admin);await select(support);
+  const contractBinding=await armContract({slug,eventId,actor:admin});
   const seed=await app(admin,'test.seed');
+  assertFrightnightContractSnapshot(seed.value.snapshot,contractBinding);
   const startCode=seed.value.result.startCode;
   const codes=new Map(seed.value.result.zoneCodes.map(z=>[z.zoneId,z.code]));
   await app(admin,'test.walk.fixture');
@@ -359,13 +375,14 @@ try {
   checked('pre-downloadable operational approved-zone cards and participant future-address privacy');
   for(const [person,path,name] of [[a,'/nachtpas','participant'],[resident,'/mijn-zone','resident'],[admin,'/avondregie','operations'],[admin,'/testcentrum','test-center']])await capture(person,path,name);
   checked('complete authenticated mobile/desktop screens and personal downloads');
-  await runRegieAcceptance({base:target.origin,slug,eventId,run,admin,a,b,resident,support,sql,app,assert,checked,literal,report,directory});
-  await runEdgeAcceptance({base:target.origin,slug,eventId,run,admin,a,b,resident,support,sql,app,assert,checked,literal,report,directory});
+  await runRegieAcceptance({base:target.origin,slug,eventId,run,admin,a,b,resident,support,sql,app,assert,checked,literal,report,directory,armContract});
+  await runEdgeAcceptance({base:target.origin,slug,eventId,run,admin,a,b,resident,support,sql,app,assert,checked,literal,report,directory,armContract});
   await app(admin,'payment.refund',{registrationId:(await snapshot(a)).registration.id,reason:'Gecontroleerde contractterugbetaling van eigen synthetische acceptatie'});
   assert((await snapshot(a)).registration.paymentStatus==='refunded','CONTRACT_REFUND_FAILED');
   const preview=await app(admin,'test.reset.preview');assert(preview.value.result.slug===slug&&preview.value.result.syntheticRegistrations>=6,'RESET_PREVIEW_SCOPE_MISSING');
   const oldRun=preview.value.result.runId;await app(admin,'test.reset',{confirmation:slug,runId:oldRun});
   assert((await app(admin,'test.reset',{confirmation:slug,runId:oldRun},randomUUID(),true)).status===403,'STALE_RESET_SCOPE_ACCEPTED');
+  await armContract({slug,eventId,actor:admin});
   await app(admin,'test.seed');
   assert((await snapshot(admin)).event.runId!==oldRun,'RESET_DID_NOT_ISOLATE_RUN');
   const final=await fingerprint2026();

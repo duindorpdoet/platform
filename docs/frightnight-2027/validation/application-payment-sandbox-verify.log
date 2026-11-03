@@ -1,0 +1,175 @@
+$ pnpm lint && pnpm typecheck && pnpm test && pnpm test:acceptance-guards && pnpm build && pnpm test:artifacts
+$ eslint . --max-warnings=0
+$ tsc --noEmit
+$ vitest run
+
+ RUN  v5.0.0 /home/codex/repos/duindorphalloween-frightnight-2027
+
+
+ Test Files  165 passed | 2 skipped (167)
+      Tests  1548 passed | 6 skipped (1554)
+   Start at  08:30:08
+   Duration  22.04s (tests 53%, transform 25%, import 21%, worker 2%)
+
+    Isolate  167 workers spawned · ~164ms startup each (spawn + environment, per file)
+             at least ~2.33s faster with isolate: false — reuses workers across files instead of one per file
+
+$ node --test scripts/acceptance/frightnight-edges.test.mjs
+✔ edge acceptance rejects production and local origins before any database request (4.072817ms)
+✔ edge acceptance requires a separate own acceptance parent (0.289138ms)
+✔ edge acceptance rejects existing real actors before reading or writing fixtures (0.388929ms)
+✔ edge acceptance requires all existing actors to belong to the exact new parent run (0.321947ms)
+✔ edge acceptance requires exact verified published revision before any database request (0.245691ms)
+✔ edge acceptance refuses an unknown configured payment provider before fixture creation (0.183678ms)
+✔ edge acceptance requires the authoritative child-sandbox helper for both configured providers (0.320515ms)
+✔ Mollie configuration never bypasses the fresh synthetic actor binding (0.184038ms)
+✔ regie acceptance requires a server sandbox helper before any fixture read (1.229061ms)
+✔ Mollie-configured edge stops before seed/checkout on sandbox wrong-event (1.999629ms)
+✔ Mollie-configured edge stops before seed/checkout on sandbox stale-run (0.668423ms)
+✔ Mollie-configured edge stops before seed/checkout on sandbox missing-readback (0.616734ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 75.383391
+$ node scripts/copy-maplibre-worker.mjs
+$ next build --webpack
+▲ Next.js 16.3.5 (webpack)
+- Environments: .env.local
+✓ Running next.config.ts took 27ms
+- Experiments (use with caution):
+  · cpus: 2
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 22.7s
+  Running TypeScript ...
+  Finished TypeScript in 20.4s ...
+  Collecting page data using 2 workers ...
+  Generating static pages using 2 workers (0/59) ...
+  Generating static pages using 2 workers (14/59)
+  Generating static pages using 2 workers (29/59)
+  Generating static pages using 2 workers (44/59)
+✓ Generating static pages using 2 workers (59/59) in 444ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ƒ /admin/poortkamer/[id]
+├ ƒ /api/account
+├ ƒ /api/actors
+├ ƒ /api/actors/admin
+├ ƒ /api/actors/claim
+├ ƒ /api/actors/command
+├ ƒ /api/actors/finale-recovery
+├ ƒ /api/actors/receipts/[id]
+├ ƒ /api/admin/routes/policy
+├ ƒ /api/admin/routes/proposal
+├ ƒ /api/analytics/events
+├ ƒ /api/deelstudio/context
+├ ƒ /api/deelstudio/events
+├ ƒ /api/deelstudio/generate
+├ ƒ /api/deelstudio/public/[id]/image
+├ ƒ /api/duinpad/[action]
+├ ƒ /api/editorial/admin
+├ ƒ /api/editorial/media
+├ ƒ /api/editorial/media/[id]/[variant]
+├ ƒ /api/editorial/news
+├ ƒ /api/editorial/preferences
+├ ƒ /api/editorial/unsubscribe
+├ ƒ /api/event-evening/closure
+├ ƒ /api/event-evening/portal-certificates
+├ ƒ /api/frightnight/access
+├ ƒ /api/frightnight/admin/list
+├ ƒ /api/frightnight/admin/walk
+├ ƒ /api/frightnight/command
+├ ƒ /api/frightnight/edition
+├ ƒ /api/frightnight/edition/invite
+├ ƒ /api/frightnight/emergency
+├ ƒ /api/frightnight/geocode
+├ ƒ /api/frightnight/logout
+├ ƒ /api/frightnight/mail-preview
+├ ƒ /api/frightnight/pass
+├ ƒ /api/frightnight/payments/webhook
+├ ƒ /api/frightnight/public
+├ ƒ /api/frightnight/push/public-key
+├ ƒ /api/frightnight/qr
+├ ƒ /api/frightnight/snapshot
+├ ƒ /api/frightnight/walk
+├ ƒ /api/frightnight/zone-photo
+├ ƒ /api/health
+├ ƒ /api/jobs/mail
+├ ƒ /api/mail/settings
+├ ƒ /api/poortenboek/[action]
+├ ƒ /api/poortkamer/invitation
+├ ƒ /api/poortkamer/push-test
+├ ƒ /api/portal-assets
+├ ƒ /api/public/contact
+├ ƒ /api/public/portal-registration
+├ ƒ /api/public/sponsor
+├ ƒ /api/push/subscription
+├ ƒ /api/push/test
+├ ƒ /api/redesign/[action]
+├ ƒ /api/webhooks/resend
+├ ƒ /api/webhooks/sendgrid
+├ ƒ /app
+├ ○ /app/hulp
+├ ƒ /app/meldingen
+├ ƒ /auth/callback
+├ ○ /avondregie
+├ ○ /contact
+├ ○ /deel-de-magie
+├ ƒ /delen/[id]
+├ ○ /faq
+├ ƒ /huis-aanmelden
+├ ƒ /inloggen
+├ ○ /kaart
+├ ƒ /meelopen
+├ ƒ /mijn-groep
+├ ƒ /mijn-huis
+├ ƒ /mijn-inschrijving
+├ ○ /mijn-zone
+├ ƒ /nachtpas
+├ ƒ /nachtpost/afmelden
+├ ƒ /nieuws
+├ ƒ /nieuws/[slug]
+├ ƒ /omgeving/[[...view]]
+├ ƒ /omgeving/acteur
+├ ƒ /omgeving/communicatie
+├ ƒ /omgeving/kiezen
+├ ƒ /omgeving/nieuws/[[...path]]
+├ ○ /ontdek
+├ ƒ /poortenboek/[[...section]]
+├ ƒ /poortenboek/demo
+├ ƒ /poortenboek/inloggen
+├ ƒ /poortenboek/ouder
+├ ○ /privacy
+├ ○ /sponsoren
+├ ○ /testcentrum
+├ ○ /toegankelijkheid
+├ ƒ /uitnodiging/acteur
+├ ƒ /uitnodiging/inschrijving/[token]
+├ ƒ /uitnodiging/poort/[token]
+├ ○ /verhaal
+├ ○ /voorwaarden
+├ ○ /werelden
+└   /werelden/[slug]
+  ├ ● /werelden/heksenrijk
+  ├ ● /werelden/dodenrijk
+  ├ ● /werelden/circuswereld
+  └ ● [+3 more paths]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+$ node scripts/acceptance/scan-client-artifacts.mjs
+{"status":"pass","checks":["PRIV-08"],"filesScanned":697}

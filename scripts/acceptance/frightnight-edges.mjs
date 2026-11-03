@@ -5,13 +5,14 @@ import { join } from 'node:path';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 
-export async function runEdgeAcceptance({ base, slug: parentSlug, eventId: parentEventId, run, admin, a, b, resident, support, sql, app, assert, checked, literal, report, directory }) {
+export async function runEdgeAcceptance({ base, slug: parentSlug, eventId: parentEventId, run, admin, a, b, resident, support, sql, app, assert, checked, literal, report, directory, armContract }) {
   assert(base === 'https://staging-halloween.duindorpdoet.nl', 'EDGE_STAGING_ORIGIN_REQUIRED');
   assert(/^[a-f0-9]{40}$/.test(process.env.GITHUB_SHA ?? '') && process.env.FRIGHTNIGHT_VERIFIED_RELEASE_SHA === process.env.GITHUB_SHA, 'EDGE_VERIFIED_RELEASE_REQUIRED');
-  assert(process.env.FRIGHTNIGHT_PAYMENT_PROVIDER === 'contract', 'EDGE_CONTRACT_ONLY_REQUIRED');
+  assert(['contract', 'mollie'].includes(process.env.FRIGHTNIGHT_PAYMENT_PROVIDER), 'EDGE_CONFIGURED_PROVIDER_REQUIRED');
   assert(parentSlug.startsWith('frightnight-2027-test-acceptance-') && UUID.test(parentEventId), 'EDGE_PARENT_SCOPE_REQUIRED');
   const people = [admin, a, b, resident, support];
   assert(people.every(person => UUID.test(person.id) && person.email?.endsWith('@example.invalid') && person.context), 'EDGE_EXISTING_INVALID_ACTORS_REQUIRED');
+  assert(typeof armContract === 'function', 'EDGE_CONTRACT_ARM_HELPER_REQUIRED');
   const ids = people.map(person => `${literal(person.id)}::uuid`).join(',');
   const actorProof = await sql(`select count(*)::integer n from auth.users where id in(${ids}) and email like '%@example.invalid' and raw_user_meta_data->>'synthetic_frightnight_run'=${literal(run)}`);
   assert(Number(actorProof[0]?.n) === people.length, 'EDGE_ACTOR_RUN_BINDING_REQUIRED');
@@ -118,15 +119,23 @@ export async function runEdgeAcceptance({ base, slug: parentSlug, eventId: paren
   }
   try {
     const health = await admin.context.request.get(`${base}/api/health`);
-    assert(health.ok() && (await health.json()).paymentProvider === 'contract', 'EDGE_EFFECTIVE_CONTRACT_PROVIDER_REQUIRED');
+    assert(health.ok() && (await health.json()).paymentProvider === process.env.FRIGHTNIGHT_PAYMENT_PROVIDER, 'EDGE_CONFIGURED_PROVIDER_MISMATCH');
     const copied = await command(admin, 'test.copy', { slug });
     eventId = copied.value.result.eventId;
     assert(UUID.test(eventId) && eventId !== parentEventId, 'EDGE_FRESH_SIBLING_REQUIRED');
     await select(admin);
+    const unseeded = await state(admin);
+    runId = unseeded.event.runId;
+    assert(UUID.test(runId), 'EDGE_RUN_REQUIRED');
+    detail.eventId = eventId; detail.runId = runId;
+    const binding = await armContract({ slug, eventId, actor: admin });
+    assert(binding?.slug === slug && binding.eventId === eventId && binding.runId === runId && binding.provider === 'contract', 'EDGE_CONTRACT_ARM_BINDING_MISMATCH');
+    const armed = await state(admin);
+    assert(armed.event.runId === runId && armed.event.paymentPolicy === 'contract_sandbox' && armed.event.sandboxRunId === runId && armed.event.contractSandboxArmed === true, 'EDGE_CONTRACT_ARM_READBACK_REQUIRED');
+    detail.paymentSandbox = { configuredProvider: process.env.FRIGHTNIGHT_PAYMENT_PROVIDER, provider: binding.provider, runId, serverReadback: true };
     await command(admin, 'test.seed');
     await clock('2027-10-30T15:05:00Z');
-    runId = (await state(admin)).event.runId;
-    assert(UUID.test(runId), 'EDGE_RUN_REQUIRED');
+    assert((await state(admin)).event.runId === runId, 'EDGE_ARMED_RUN_CHANGED_DURING_SEED');
     detail.eventId = eventId; detail.runId = runId;
     const inviteResponse = await admin.context.request.post(`${base}/api/frightnight/edition/invite`, { headers: { Origin: base } });
     assert(inviteResponse.ok(), 'EDGE_EDITION_INVITATION_FAILED');

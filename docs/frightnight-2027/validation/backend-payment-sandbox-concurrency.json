@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "scope": "isolated-local-docker",
+  "database": "frightnight_2027_sandbox_frozen",
+  "rounds": [
+    {
+      "round": 1,
+      "arm": {
+        "denied": "MOLLIE_HISTORY_FORBIDDEN"
+      },
+      "provider": "mollie",
+      "orders": 1,
+      "durableClaims": 1,
+      "externalCalls": 0
+    },
+    {
+      "round": 2,
+      "arm": {
+        "armed": true
+      },
+      "provider": "contract",
+      "orders": 1,
+      "durableClaims": 1,
+      "externalCalls": 0
+    },
+    {
+      "round": 3,
+      "arm": {
+        "denied": "MOLLIE_HISTORY_FORBIDDEN"
+      },
+      "provider": "mollie",
+      "orders": 1,
+      "durableClaims": 1,
+      "externalCalls": 0
+    },
+    {
+      "round": 4,
+      "arm": {
+        "denied": "MOLLIE_HISTORY_FORBIDDEN"
+      },
+      "provider": "mollie",
+      "orders": 1,
+      "durableClaims": 1,
+      "externalCalls": 0
+    },
+    {
+      "round": 5,
+      "arm": {
+        "denied": "MOLLIE_HISTORY_FORBIDDEN"
+      },
+      "provider": "mollie",
+      "orders": 1,
+      "durableClaims": 1,
+      "externalCalls": 0
+    }
+  ],
+  "protectedLegacyUnchanged": true,
+  "externalCalls": 0,
+  "otp": 0,
+  "mail": 0
+}

@@ -1,0 +1,38 @@
+{
+  "scope": "Exactly one additional actual readonly PDOK adapter GET on public Tesselseplein; no person/owner/account/database information",
+  "startedAt": "2026-11-03T07:01:59.994Z",
+  "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "sourceSha256": "811c6d86ffa3b1e395d8977299ac93c3806b89294252755b5cabcc9b520f1f2d",
+  "maximumExternalCalls": 1,
+  "externalCalls": 1,
+  "authRequests": 0,
+  "databaseRequests": 0,
+  "query": "Tesselseplein",
+  "limits": [
+    "BAG street/address candidates only; no resident, owner or household was looked up.",
+    "Provider coordinates are not a surveyed entrance, safety approval or actual walking accessibility.",
+    "No staging data was written or authenticated API called."
+  ],
+  "request": {
+    "url": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=Tesselseplein+Den+Haag&fq=type%3Aadres&rows=3",
+    "method": "GET",
+    "redirect": "error",
+    "timeoutMilliseconds": 3000
+  },
+  "httpStatus": 200,
+  "responseSha256": "1ca3a21dd67e0d894c758d3a7b13e54c7c2fb7f1b0e3e1170aee7c537f57fc86",
+  "responseBytes": 3948,
+  "docsCount": 3,
+  "durationMs": 314,
+  "acceptedCandidates": 3,
+  "acceptedCandidate": {
+    "id": "adr-1be06273f0f2a2ac5fbf3dfa6b6a52c5",
+    "publicStreet": "Tesselseplein",
+    "latitude": 52.09037839,
+    "longitude": 4.25858946,
+    "coordinateSystem": "WGS84 longitude/latitude parsed from PDOK POINT"
+  },
+  "status": "passed_actual_positive_geocoding_adapter",
+  "sourceUnchanged": true,
+  "completedAt": "2026-11-03T07:02:00.320Z"
+}

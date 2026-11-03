@@ -96,6 +96,7 @@ describe('503 queue recovery preserves authoritative commands', () => {
 describe('load execution binding and no-send surface', () => {
   it('accepts only the exact verified staging release with explicit contract-only load scope', () => {
     expect(assertLoadBinding(env).projectRef).toBe('nocteiuvohesvqbowchw');
+    expect(assertLoadBinding({...env,FRIGHTNIGHT_PAYMENT_PROVIDER:'mollie',MOLLIE_TEST_API_KEY:'test_'+'a'.repeat(30)}).projectRef).toBe('nocteiuvohesvqbowchw');
     for (const change of [{ APP_ENVIRONMENT: 'production' }, { SUPABASE_PROJECT_REF: 'dtubngvxfbupgvgfrjko' }, { FRIGHTNIGHT_PAYMENT_PROVIDER: 'mollie' }, { FRIGHTNIGHT_VERIFIED_RELEASE_SHA: 'b'.repeat(40) }, { FRIGHTNIGHT_LOAD_APPROVAL: '' }]) expect(() => assertLoadBinding({ ...env, ...change })).toThrow();
   });
   it('uses new confirmed password sessions and archiving; never OTP, real provider, auth-delete or legacy reset', () => {
@@ -106,6 +107,9 @@ describe('load execution binding and no-send surface', () => {
     expect(source).toContain("p_command: 'test.reset'");
     expect(source).toContain("synthetic_frightnight_load");
     expect(source).toContain('round <= 5');
+    expect(source.indexOf("'frightnight_contract_arm'")).toBeLessThan(source.indexOf("p_command: 'test.seed'"));
+    expect(source.indexOf('assertFrightnightContractOrder(order, edition.contractBinding)')).toBeLessThan(source.indexOf("'frightnight_payment_bind'"));
+    expect(source).toContain('p_configured_provider: env.FRIGHTNIGHT_PAYMENT_PROVIDER');
     expect(source).toContain("request(b,'party.leave')");
     expect(source).toContain("waitingOnLock");
     expect(source).not.toMatch(/pg_stat_activity[\s\S]{0,100}query\s*[,)]/);

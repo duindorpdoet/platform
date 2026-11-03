@@ -1,0 +1,274 @@
+{
+  "scope": "One actual bounded read-only external adapter batch; public street query and public street coordinates only; no actor/DB/key/provider account",
+  "startedAt": "2026-11-03T07:00:51.983Z",
+  "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "nodeVersion": "v24.18.0",
+  "sourceSha256": {
+    "lib/frightnight/geocoding.ts": "811c6d86ffa3b1e395d8977299ac93c3806b89294252755b5cabcc9b520f1f2d",
+    "lib/frightnight/walking.ts": "81287837bc973d4bb22862ffb0b7aa42a9f96f236e059353439249e2b12836fa"
+  },
+  "requests": [
+    {
+      "number": 1,
+      "provider": "api.pdok.nl",
+      "url": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=Duinpad+Den+Haag&fq=type%3Aadres&rows=3",
+      "method": "GET",
+      "redirect": "error",
+      "cache": "no-store",
+      "startedAt": "2026-11-03T07:00:51.998Z",
+      "status": 200,
+      "responseType": "application/json;charset=utf-8",
+      "bytes": 3954,
+      "responseSha256": "95221d1d96ec9b86cc3986fd336375969e6f76b3d3e13eeb51e5500c475bc989",
+      "schemaObserved": {
+        "responseDocsArray": true,
+        "docsCount": 3,
+        "requiredDocStrings": true
+      },
+      "durationMs": 399
+    },
+    {
+      "number": 2,
+      "provider": "routing.openstreetmap.de",
+      "url": "https://routing.openstreetmap.de/routed-foot/route/v1/foot/4.252100,52.093400;4.255700,52.093500?overview=full&geometries=geojson&alternatives=false&steps=false",
+      "method": "GET",
+      "redirect": "error",
+      "cache": "no-store",
+      "startedAt": "2026-11-03T07:00:52.400Z",
+      "status": 200,
+      "responseType": "application/json; charset=UTF-8",
+      "bytes": 1301,
+      "responseSha256": "442e9b46c588f5cbcfc8771bc27ad9d610912a9dd1798df561f8100e5668b245",
+      "schemaObserved": {
+        "code": "Ok",
+        "routeCount": 1,
+        "geometryType": "LineString",
+        "points": 31,
+        "distanceMetres": 624.9,
+        "durationSeconds": 499.9
+      },
+      "durationMs": 99
+    }
+  ],
+  "maxExternalRequests": 3,
+  "providerAccounts": 0,
+  "authRequests": 0,
+  "databaseRequests": 0,
+  "limits": [
+    "No authenticated/staging endpoint or database action was used.",
+    "A zero bounded-region address result is not a verified Duinpad address or pin.",
+    "Pedestrian provider geometry is not physical street safety, accessibility or organisation approval.",
+    "In-process immediate cache/coalescing does not prove24-hour TTL or VPS multi-process behavior.",
+    "No network fault was injected; fallback cannot be claimed unless an actual adapter error occurred."
+  ],
+  "pdok": {
+    "adapterResult": "schema_validated",
+    "query": "Duinpad (public street) Den Haag",
+    "candidatesWithinConfiguredRegion": 0,
+    "immediateIdenticalQueryCacheHit": true,
+    "extraCacheNetworkRequests": 0,
+    "verifiedStreetPin": false
+  },
+  "walking": {
+    "adapterResult": "schema_validated",
+    "from": {
+      "latitude": 52.0934,
+      "longitude": 4.2521
+    },
+    "to": {
+      "latitude": 52.0935,
+      "longitude": 4.2557
+    },
+    "available": true,
+    "source": "OpenStreetMap · OSRM voetgangersroute. Volg veilige openbare paden en aanwijzingen ter plaatse.",
+    "minutes": 9,
+    "geometryType": "LineString",
+    "points": 31,
+    "geometrySha256": "e838d066aac717536d1620aae52f1091b0a324702131f286aac1e5d5d518ba22",
+    "coordinates": [
+      [
+        4.251456,
+        52.093688
+      ],
+      [
+        4.250341,
+        52.092748
+      ],
+      [
+        4.25087,
+        52.092454
+      ],
+      [
+        4.251951,
+        52.091842
+      ],
+      [
+        4.252031,
+        52.091839
+      ],
+      [
+        4.25213,
+        52.091838
+      ],
+      [
+        4.25225,
+        52.091842
+      ],
+      [
+        4.252329,
+        52.09185
+      ],
+      [
+        4.252408,
+        52.091861
+      ],
+      [
+        4.252516,
+        52.091892
+      ],
+      [
+        4.252593,
+        52.091927
+      ],
+      [
+        4.252736,
+        52.092
+      ],
+      [
+        4.252871,
+        52.092073
+      ],
+      [
+        4.252936,
+        52.092118
+      ],
+      [
+        4.252991,
+        52.092172
+      ],
+      [
+        4.253028,
+        52.09226
+      ],
+      [
+        4.253182,
+        52.092513
+      ],
+      [
+        4.253212,
+        52.092544
+      ],
+      [
+        4.253249,
+        52.092573
+      ],
+      [
+        4.253299,
+        52.092604
+      ],
+      [
+        4.253408,
+        52.092657
+      ],
+      [
+        4.253481,
+        52.092699
+      ],
+      [
+        4.253526,
+        52.09274
+      ],
+      [
+        4.253599,
+        52.092808
+      ],
+      [
+        4.253769,
+        52.093046
+      ],
+      [
+        4.254003,
+        52.093231
+      ],
+      [
+        4.254192,
+        52.093348
+      ],
+      [
+        4.25438,
+        52.093444
+      ],
+      [
+        4.254662,
+        52.093552
+      ],
+      [
+        4.255112,
+        52.093705
+      ],
+      [
+        4.255496,
+        52.093803
+      ]
+    ],
+    "inflightIdenticalCallsCoalesced": true,
+    "immediateIdenticalRouteCacheHit": true,
+    "extraCoalesceAndCacheNetworkRequests": 0
+  },
+  "sourceUnchanged": true,
+  "externalCalls": 3,
+  "status": "passed_actual_external_adapters_including_positive_address",
+  "completedAt": "2026-11-03T07:02:00.320Z",
+  "firstBatch": {
+    "report": "/tmp/frightnight-provider-adapter-probe/first-batch-report.json",
+    "sha256": "646e223125a3d2f1b6078d8a7f85e713a241e7b9f86696cbeeeb930a122115e5",
+    "externalCalls": 2,
+    "maximumExternalCalls": 2,
+    "completedAt": "2026-11-03T07:00:52.502Z"
+  },
+  "positiveGeocodingFollowup": {
+    "scope": "Exactly one additional actual readonly PDOK adapter GET on public Tesselseplein; no person/owner/account/database information",
+    "startedAt": "2026-11-03T07:01:59.994Z",
+    "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+    "sourceSha256": "811c6d86ffa3b1e395d8977299ac93c3806b89294252755b5cabcc9b520f1f2d",
+    "maximumExternalCalls": 1,
+    "externalCalls": 1,
+    "authRequests": 0,
+    "databaseRequests": 0,
+    "query": "Tesselseplein",
+    "limits": [
+      "BAG street/address candidates only; no resident, owner or household was looked up.",
+      "Provider coordinates are not a surveyed entrance, safety approval or actual walking accessibility.",
+      "No staging data was written or authenticated API called."
+    ],
+    "request": {
+      "url": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=Tesselseplein+Den+Haag&fq=type%3Aadres&rows=3",
+      "method": "GET",
+      "redirect": "error",
+      "timeoutMilliseconds": 3000
+    },
+    "httpStatus": 200,
+    "responseSha256": "1ca3a21dd67e0d894c758d3a7b13e54c7c2fb7f1b0e3e1170aee7c537f57fc86",
+    "responseBytes": 3948,
+    "docsCount": 3,
+    "durationMs": 314,
+    "acceptedCandidates": 3,
+    "acceptedCandidate": {
+      "id": "adr-1be06273f0f2a2ac5fbf3dfa6b6a52c5",
+      "publicStreet": "Tesselseplein",
+      "latitude": 52.09037839,
+      "longitude": 4.25858946,
+      "coordinateSystem": "WGS84 longitude/latitude parsed from PDOK POINT"
+    },
+    "status": "passed_actual_positive_geocoding_adapter",
+    "sourceUnchanged": true,
+    "completedAt": "2026-11-03T07:02:00.320Z",
+    "reportPath": "/tmp/frightnight-provider-adapter-probe/positive-geocode-report.json",
+    "reportSha256": "6defc17f0ad887fbca54c09b6d5bda6b92357854c07b09fb23b22e5244a4ef9d"
+  },
+  "boundedAuthorizations": [
+    "Initial run limited to1PDOK+1OSRM GET.",
+    "Explicitly authorized followup limited to1PDOK GET for positive Tesselseplein result."
+  ],
+  "furtherExecutionStopped": true
+}

@@ -1,0 +1,67 @@
+{
+  "recordedAt": "2026-11-03T07:30:28.672722+00:00",
+  "scope": "Independent local provider-policy and release-guard review; no new remote migration or provider request",
+  "baseRevision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "remoteMutations": false,
+  "externalProviderRequests": 0,
+  "credentialsChanged": false,
+  "globalProviderChanged": false,
+  "independentReview": {
+    "approved": true,
+    "migrationSha256": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "preservation": "Existing table fingerprints retain captured pre-migration columns. Only newly added provider metadata is backfilled; no old compared field is changed.",
+    "guards": [
+      "Canonical runtime health must equal the trusted configured provider contract or mollie before actor creation.",
+      "Every synthetic child is armed through the service-only RPC for its captured current event/run, then independently read back through the actor JWT before seed.",
+      "Canonical, foreign, closed, seeded, stale or Mollie-history scopes fail closed; reset needs explicit re-arm.",
+      "Every load order must already have persisted provider contract and provider_claimed=true before bind/confirmation.",
+      "New checkout, read, retry, reconcile, refund and webhook choose the persisted immutable order provider.",
+      "The two deployed migration files remain byte-identical; old implicit provider bridges are owner-only."
+    ]
+  },
+  "tests": {
+    "targetedVitest": {
+      "passed": 131,
+      "failed": 0,
+      "files": 9
+    },
+    "nodeAcceptanceGuards": {
+      "passed": 12,
+      "failed": 0
+    },
+    "eslintPassed": true,
+    "typecheckPassed": true,
+    "backendEvidence": "docs/frightnight-2027/validation/backend-payment-sandbox-report.json",
+    "backendEvidenceSha256": "7f63d7af50c3dde9ffddd72f4841697c73fc9a5e8bd2077491754791dcb51bee",
+    "backendPgtapPassed": 685,
+    "backendMetadata": {
+      "tables": 31,
+      "actorFunctions": 4,
+      "unsafe": 0
+    }
+  },
+  "pending": [
+    "Full exact-head CI and fresh staging release of this forward migration.",
+    "Hosted account/REG/EDGE/Storage/load/RET05 on the final published SHA.",
+    "Real Mollie credential, external testcheckout/webhook/reconciliation/refund proof."
+  ],
+  "sourceSha256": {
+    "scripts/deploy/frightnight-release.mjs": "c1127a1f618d1132367742930043e8e377f47213dcc6c040e2a449a4140c6bc5",
+    "scripts/deploy/frightnight-release.d.mts": "1639303ab39dd100ee7007e9472eeb18f1d5107c4d67f0fa0cddaf93f898a764",
+    "scripts/deploy/frightnight-release.test.ts": "13022aee81a56ff27e162d18509ec9719319d6945c77f43b0b72c31f60cb971c",
+    "scripts/deploy/release-migrations.mjs": "2c5d66a0ee4d75ce6da33d04317d2a5a81a1a7c7be3575482a7723466eccdf69",
+    "scripts/deploy/release-migrations.test.ts": "39512a56c1afce54c5fcab1ca0b9360f818c804fa45144c9e42a73dd5e9aede6",
+    "scripts/acceptance/frightnight-staging.mjs": "2884147c82e62cdd4b971ee9cffb58142d49586b6193ad8fed5f917717998589",
+    "scripts/acceptance/frightnight-load.mjs": "09506a83072aeea25319f3d67b62135ce9e97917617a48f1475f7cac6fbe9700",
+    "scripts/acceptance/frightnight-load.test.ts": "0a922f94832d0d45f1f7d411dd56ef2c3c1a0756e2dbee70f4cac424cb4caab2",
+    "scripts/acceptance/frightnight-regie.mjs": "4f3f98587f723cc729bf0e82d667e9e2b38cae7ae70d1b48653f3c815deddbb1",
+    "scripts/acceptance/frightnight-edges.mjs": "1f2611d3ca7fad20dbc8ddd584339ae90dd86292a11cc307c6df3a4b3db39025",
+    "scripts/acceptance/frightnight-edges.test.mjs": "05d45189684e839335c4c390d1e9b9c8fb97b0ddf3f1d1b171479a1435ecfb4c",
+    "lib/frightnight/payment-server.ts": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+    "lib/frightnight/payments.ts": "f4a0f1e84f3bf1b5d34498b339c4445f2fb01a5c7783e66a38f83b67039a4e41",
+    "lib/frightnight/server.ts": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+    "app/api/frightnight/command/route.ts": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "supabase/tests/133_frightnight_2027_payment_sandbox.sql": "a5e019e4ce935800beb11a72e94cab60b71bee80e778c792f46a50333feee20e"
+  }
+}

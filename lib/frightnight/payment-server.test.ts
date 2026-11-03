@@ -8,7 +8,7 @@ vi.mock("./payments", async importOriginal => ({ ...await importOriginal<typeof 
 import { paymentRefund } from "./payment-server";
 import { ApiError } from "@/lib/http/api";
 
-const order = { order_id: "1b30219e-e56d-4e0c-8361-d1c290776ac0", event_id: "2b30219e-e56d-4e0c-8361-d1c290776ac0", registration_id: "3b30219e-e56d-4e0c-8361-d1c290776ac0", amount_cents: 1050, currency: "EUR", status: "paid", provider_ref: "ct_order" };
+const order = { provider: "contract", provider_claimed: true, order_id: "1b30219e-e56d-4e0c-8361-d1c290776ac0", event_id: "2b30219e-e56d-4e0c-8361-d1c290776ac0", registration_id: "3b30219e-e56d-4e0c-8361-d1c290776ac0", amount_cents: 1050, currency: "EUR", status: "paid", provider_ref: "ct_1b30219e-e56d-4e0c-8361-d1c290776ac0" };
 const payment = { id: order.provider_ref, status: "paid", amountCents: 1050, currency: "EUR", mode: "test", orderId: order.order_id, eventId: order.event_id };
 beforeEach(() => {
   vi.resetAllMocks();

@@ -1,0 +1,275 @@
+{
+  "scope": "isolated-local-postgresql-and-deterministic-payment-contract",
+  "remoteMutations": false,
+  "database": "frightnight_2027_sandbox_frozen",
+  "container": "supabase_db_duindorp_event_close_20261101",
+  "createdAt": "2026-11-03T07:22:59.606869+00:00",
+  "verifiedAt": "2026-11-03T07:24:14.282137+00:00",
+  "baseRevision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "appliedMigrations": [
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql"
+  ],
+  "sourceSha256": {
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "supabase/tests/127_frightnight_2027_core.sql": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
+    "supabase/tests/132_frightnight_2027_edition_access.sql": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
+    "supabase/tests/133_frightnight_2027_payment_sandbox.sql": "a5e019e4ce935800beb11a72e94cab60b71bee80e778c792f46a50333feee20e",
+    "lib/frightnight/payment-server.ts": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+    "lib/frightnight/payments.ts": "f4a0f1e84f3bf1b5d34498b339c4445f2fb01a5c7783e66a38f83b67039a4e41",
+    "lib/frightnight/server.ts": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+    "app/api/frightnight/command/route.ts": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+    "lib/frightnight/payment-provider-boundary.test.ts": "ac90038dda4813760ebf1abeab7547c907e035e99265af65021d74554fdf3550",
+    "lib/frightnight/payment-sandbox-projection.test.ts": "6affbb9dc2813830a8978a3524afca67ef767c5b426ee6088534d57ae33fbb84",
+    "lib/frightnight/payment-server.test.ts": "e8aced5440dc63d7a51d1c052fddc4263b82fed60e250d4a7ff4572f46cb876a",
+    "lib/frightnight/payments.test.ts": "1e57ebda6164061d9df54b9abd96080b3805b32720ce57f6b792887ee6d0c4db",
+    "scripts/frightnight/db-concurrency.py": "b826b2152825abc1bd550f5417fd6fd0082157b9b6ffe7df50165679d414b56e",
+    "scripts/frightnight/db-payment-sandbox-concurrency.py": "3ca697b48c10458df1289c7c948accdc8175d8b8337e8bce0b55bdbe529d851e",
+    "scripts/deploy/frightnight-release.mjs": "c1127a1f618d1132367742930043e8e377f47213dcc6c040e2a449a4140c6bc5"
+  },
+  "pgtap": [
+    {
+      "file": "supabase/tests/127_frightnight_2027_core.sql",
+      "passed": 550,
+      "failed": 0,
+      "rollback": true
+    },
+    {
+      "file": "supabase/tests/132_frightnight_2027_edition_access.sql",
+      "passed": 96,
+      "failed": 0,
+      "rollback": true
+    },
+    {
+      "file": "supabase/tests/133_frightnight_2027_payment_sandbox.sql",
+      "passed": 39,
+      "failed": 0,
+      "rollback": true
+    }
+  ],
+  "totalPgtapPassed": 685,
+  "typescript": {
+    "targetedPaymentTests": 62,
+    "passed": 62,
+    "failed": 0,
+    "lint": true,
+    "typecheck": true,
+    "providerTransports": "deterministic mocks only, no real PSP requests"
+  },
+  "providerArmClaimConcurrency": {
+    "passed": true,
+    "scope": "isolated-local-docker",
+    "database": "frightnight_2027_sandbox_frozen",
+    "rounds": [
+      {
+        "round": 1,
+        "arm": {
+          "denied": "MOLLIE_HISTORY_FORBIDDEN"
+        },
+        "provider": "mollie",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      },
+      {
+        "round": 2,
+        "arm": {
+          "armed": true
+        },
+        "provider": "contract",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      },
+      {
+        "round": 3,
+        "arm": {
+          "denied": "MOLLIE_HISTORY_FORBIDDEN"
+        },
+        "provider": "mollie",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      },
+      {
+        "round": 4,
+        "arm": {
+          "denied": "MOLLIE_HISTORY_FORBIDDEN"
+        },
+        "provider": "mollie",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      },
+      {
+        "round": 5,
+        "arm": {
+          "denied": "MOLLIE_HISTORY_FORBIDDEN"
+        },
+        "provider": "mollie",
+        "orders": 1,
+        "durableClaims": 1,
+        "externalCalls": 0
+      }
+    ],
+    "protectedLegacyUnchanged": true,
+    "externalCalls": 0,
+    "otp": 0,
+    "mail": 0
+  },
+  "coreConcurrency": {
+    "passed": true,
+    "database": "frightnight_2027_sandbox_frozen",
+    "slug": "frightnight-2027-test-race-824d15e23083",
+    "families": 12,
+    "simultaneousStarts": 12,
+    "walking": 1,
+    "waiting": 11,
+    "overbooked": 0,
+    "concurrentReplayRequests": 2,
+    "visits": 1,
+    "awards": 1,
+    "legacyPayments": 0,
+    "legacyGroups": 0,
+    "sinkMessages": 12,
+    "concurrentRefundScan": "rejected-after-refund",
+    "refundedPartyActiveClaims": 0,
+    "refundLedger": 1,
+    "distinctRefundRequests": 2,
+    "fullRefundClaims": 1,
+    "duplicateRefundRejected": 1,
+    "alreadyRefundedCreatesIntent": false,
+    "oldRefundedInvitationRejectedWithoutMutation": true,
+    "oldRefundedInvitationDenial": "SAME_PAID_ROUTE_REQUIRED",
+    "concurrentJoinRefund": "rejected-after-refund",
+    "joinRefundActiveClaims": 0,
+    "joinRefundLedger": 1,
+    "sourceHistoryPreserved": true,
+    "concurrentCheckoutEdit": {
+      "families": 1,
+      "outcome": "rejected-after-checkout",
+      "quotedPersons": 2,
+      "activePersons": 2,
+      "amountCents": 700,
+      "pricePerPersonCents": 350,
+      "freePlaces": 0,
+      "legacyOutboxUnchanged": true
+    },
+    "concurrentObservationAdmission": [
+      {
+        "round": 1,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 2,
+        "order": "observation-blocked-admission",
+        "appClaims": 0,
+        "effectivePersons": 2,
+        "truthfulPhysicalOvercapacityRetained": false,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 3,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 4,
+        "order": "observation-blocked-admission",
+        "appClaims": 0,
+        "effectivePersons": 2,
+        "truthfulPhysicalOvercapacityRetained": false,
+        "newAdmissionAfterPhysicalFull": false
+      },
+      {
+        "round": 5,
+        "order": "admission-before-observation",
+        "appClaims": 1,
+        "effectivePersons": 4,
+        "truthfulPhysicalOvercapacityRetained": true,
+        "newAdmissionAfterPhysicalFull": false
+      }
+    ],
+    "queuedEditionEntry": [
+      {
+        "entry": "revoked",
+        "eventLockBarrierVerified": true,
+        "denial": "42501:EDITION_ACCESS_REQUIRED",
+        "registrationsCreated": 0,
+        "householdsCreated": 0,
+        "receiptsCreated": 0
+      },
+      {
+        "entry": "expired",
+        "eventLockBarrierVerified": true,
+        "denial": "42501:EDITION_ACCESS_REQUIRED",
+        "registrationsCreated": 0,
+        "householdsCreated": 0,
+        "receiptsCreated": 0
+      }
+    ],
+    "concurrentStartCapacityCheckout": {
+      "capacityChange": "blocked-by-checkout-hold",
+      "checkout": "checkout-held-two",
+      "orders": 1,
+      "capacity": 100,
+      "available": 98,
+      "overbooked": false,
+      "existingProviderHoldLost": false
+    },
+    "durationSeconds": 14.741
+  },
+  "localSafety": {
+    "tables": 31,
+    "edition": {
+      "date": "2027-10-30",
+      "slug": "frightnight-2027-test",
+      "phase": "draft",
+      "isTest": true,
+      "timezone": "Europe/Amsterdam",
+      "environment": "staging",
+      "retentionUntil": "2027-11-03T07:23:47.88362+00:00"
+    },
+    "legacyJobs": null,
+    "mailWorker": null,
+    "unsafeSink": 0,
+    "unsafeEvents": 0,
+    "unsafeTables": 0,
+    "actorFunctions": 4,
+    "legacyBindings": 0,
+    "unsafeFunctions": 0,
+    "sinkHasRecipient": false
+  },
+  "releaseSafetyQuerySha256": "69c98a7bcbe1f8472b8c5b5cf36b7f4eadbc9b7e75028e6ca8f4bdf21e64ebc9",
+  "localQA": {
+    "database": "frightnight_2027_dev",
+    "migrationAppliedTransactionally": true,
+    "reset": false
+  },
+  "limits": [
+    "No remote migration, seed, Auth request, mail delivery or PSP call performed by this verification.",
+    "Metadata safety SQL genuinely compiled/executed; the schema-only local fixture has no operational legacy cron/mailworker configuration, so two-cycle hosted mail/timer proof remains pending.",
+    "Actual hosted UI/contract tests under both global provider modes remain separate; local new builds and browser checks are performed by the frontend agent.",
+    "Mollie provider requests/refunds require real test credentials and are not claimed by contract tests."
+  ],
+  "invariants": [
+    "Canonical arming denied; only currently authorized, fresh private staging run can be armed.",
+    "Repeated arm has one audit effect; reset requires explicit re-arm and never silently falls back to Mollie.",
+    "Older contract history survives re-arm; any Mollie history forbids switching policy.",
+    "Provider is claimed before an external effect and immutable afterward; cross-provider binding denied.",
+    "Old ambiguous unbound orders require reconciliation instead of reinterpretation.",
+    "Owner-only legacy fixture bridges cannot be called by service role.",
+    "Checkout/reconcile/refund/webhook adapter follows persisted order provider across global configuration changes.",
+    "Both arm-first/claim-first race outcomes create exactly one durable provider claim and no external call."
+  ]
+}

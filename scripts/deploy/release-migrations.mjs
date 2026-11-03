@@ -106,6 +106,9 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Personal admission for private test copies; guarded actor RPCs retain
   // signatures and provider acknowledgements remain independent of admission.
   '20261103042000_frightnight_2027_edition_access.sql',
+  // Authoritative run-scoped contract sandbox and immutable provider claims.
+  // Applied core/admission migrations stay byte-for-byte unchanged.
+  '20261103071355_frightnight_2027_payment_sandbox.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { assertFrightnightRelease, assertFrightnightHostedContract, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL, type FrightnightSafety } from './frightnight-release.mjs';
+import { assertFrightnightRelease, assertFrightnightHostedContract, assertFrightnightHostedRelease, assertFrightnightContractArm, assertFrightnightContractSnapshot, assertFrightnightContractOrder, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL, type FrightnightSafety } from './frightnight-release.mjs';
 
 const env = {APP_ENVIRONMENT:'staging',APP_URL:'https://staging-halloween.duindorpdoet.nl',SUPABASE_PROJECT_REF:'nocteiuvohesvqbowchw',NEXT_PUBLIC_SUPABASE_URL:'https://nocteiuvohesvqbowchw.supabase.co',EVENT_SLUG:'frightnight-2027-test',FRIGHTNIGHT_ENABLED:'true',FRIGHTNIGHT_PROJECT_REF:'nocteiuvohesvqbowchw',FRIGHTNIGHT_PAYMENT_PROVIDER:'contract',FRIGHTNIGHT_MAIL_MODE:'sink',FRIGHTNIGHT_HARDWARE_ENABLED:'false'};
 const safety = ():FrightnightSafety => ({tables:31,unsafeTables:0,unsafeFunctions:0,actorFunctions:4,unsafeEvents:0,unsafeSink:0,sinkHasRecipient:false,legacyBindings:0,
@@ -14,7 +14,8 @@ describe('explicit 2027 staging release binding',()=>{
   expect(()=>assertFrightnightHostedContract(health,revision)).not.toThrow();
   for(const change of [{paymentProvider:'mollie'},{paymentProvider:undefined},{revision:'b'.repeat(40)},{environment:'production'},{eventSlug:'duindorp-halloween-2026'},{brand:'legacy'}])expect(()=>assertFrightnightHostedContract({...health,...change},revision)).toThrow('LIVE_CONTRACT_RELEASE_BINDING_REQUIRED_BEFORE_FIXTURES');
   const source=readFileSync('scripts/acceptance/frightnight-staging.mjs','utf8');
-  expect(source.indexOf('assertFrightnightHostedContract(health,process.env.GITHUB_SHA)')).toBeLessThan(source.indexOf("const admin=await actor('regie')"));
+  expect(source.indexOf('assertFrightnightHostedRelease(health,process.env.GITHUB_SHA,process.env.FRIGHTNIGHT_PAYMENT_PROVIDER)')).toBeGreaterThan(0);
+  expect(source.indexOf('assertFrightnightHostedRelease(health,process.env.GITHUB_SHA,process.env.FRIGHTNIGHT_PAYMENT_PROVIDER)')).toBeLessThan(source.indexOf("const admin=await actor('regie')"));
  });
  it('accepts only a safe staging configuration',()=>expect(assertFrightnightRelease(env).slug).toBe('frightnight-2027-test'));
  it.each([
@@ -72,5 +73,41 @@ describe('read-only schema, sink and legacy-job release proof',()=>{
   for(const script of ['redesign-backup','redesign-preflight','redesign-postmigration','check-security-advisors','verify-deployment','accept-frightnight','check-frightnight-safety','check-frightnight-public-rpc'])expect(workflow).toContain(`${script}.mjs`);
   expect(workflow).toContain('FRIGHTNIGHT_RELEASE: "true"');
   expect(workflow).toContain('EVENT_SLUG: frightnight-2027-test');
+ });
+});
+
+
+describe('authoritative contract sandbox evidence under either configured provider',()=>{
+ const revision='a'.repeat(40);
+ const binding={slug:'frightnight-2027-test-acceptance-fixture',eventId:'00000000-0000-4000-8000-000000000001',runId:'00000000-0000-4000-8000-000000000002'};
+ const arm={...binding,paymentPolicy:'contract_sandbox',sandboxRunId:binding.runId,provider:'contract',armed:true};
+ const snapshot={event:{id:binding.eventId,slug:binding.slug,runId:binding.runId,environment:'staging',test:true,paymentPolicy:'contract_sandbox',sandboxRunId:binding.runId,contractSandboxArmed:true}};
+ const order={order_id:'00000000-0000-4000-8000-000000000003',event_id:binding.eventId,provider:'contract',provider_claimed:true};
+ it.each(['contract','mollie'])('requires runtime to match trusted configured provider %s before actor creation',provider=>{
+  const health={revision,status:'ok',service:'duindorphalloween',environment:'staging',eventSlug:env.EVENT_SLUG,brand:'frightnight-2027-v7',paymentProvider:provider};
+  expect(()=>assertFrightnightHostedRelease(health,revision,provider)).not.toThrow();
+  for(const change of [{paymentProvider:provider==='mollie'?'contract':'mollie'},{paymentProvider:undefined},{revision:'b'.repeat(40)},{environment:'production'},{eventSlug:'duindorp-halloween-2026'},{brand:'legacy'}])expect(()=>assertFrightnightHostedRelease({...health,...change},revision,provider)).toThrow('LIVE_CONFIGURED_RELEASE_BINDING_REQUIRED_BEFORE_FIXTURES');
+  expect(()=>assertFrightnightHostedRelease(health,revision,'unknown')).toThrow();
+ });
+ it('requires independent service arm and actor readback on the same private edition and current run',()=>{
+  expect(()=>assertFrightnightContractArm(arm,binding)).not.toThrow();
+  expect(()=>assertFrightnightContractSnapshot(snapshot,binding)).not.toThrow();
+  for(const change of [{slug:env.EVENT_SLUG},{eventId:'00000000-0000-4000-8000-000000000099'},{runId:'00000000-0000-4000-8000-000000000099'},{paymentPolicy:'configured'},{sandboxRunId:null},{provider:'mollie'},{armed:false}])expect(()=>assertFrightnightContractArm({...arm,...change},binding)).toThrow();
+  for(const change of [{id:'00000000-0000-4000-8000-000000000099'},{slug:env.EVENT_SLUG},{runId:'00000000-0000-4000-8000-000000000099'},{environment:'production'},{test:false},{paymentPolicy:'configured'},{sandboxRunId:null},{contractSandboxArmed:false}])expect(()=>assertFrightnightContractSnapshot({event:{...snapshot.event,...change}},binding)).toThrow();
+  for(const scope of [{...binding,slug:env.EVENT_SLUG},{...binding,slug:'duindorp-halloween-2026'},{...binding,runId:''}])expect(()=>assertFrightnightContractArm(arm,scope)).toThrow('PRIVATE_CONTRACT_EDITION_RUN_BINDING_REQUIRED');
+ });
+ it('arms only the owned private scope before every seed including after reset',()=>{
+  const source=readFileSync('scripts/acceptance/frightnight-staging.mjs','utf8');
+  expect(source).toContain('OWN_SYNTHETIC_SANDBOX_CONTROLLER_REQUIRED');
+  expect(source).toContain('OWN_PRIVATE_SANDBOX_EDITION_REQUIRED');
+  expect(source).toContain("await armContract({slug,eventId,actor:admin});\n  await app(admin,'test.seed')");
+  expect(source).toContain('directory,armContract});');
+ });
+ it('rejects stale reset evidence and any unclaimed or external order before simulated provider effects',()=>{
+  expect(()=>assertFrightnightContractOrder(order,binding)).not.toThrow();
+  const next={...binding,runId:'00000000-0000-4000-8000-000000000004'};
+  expect(()=>assertFrightnightContractArm(arm,next)).toThrow('AUTHORITATIVE_CONTRACT_ARM_REQUIRED');
+  expect(()=>assertFrightnightContractSnapshot(snapshot,next)).toThrow('AUTHORITATIVE_CONTRACT_READBACK_REQUIRED');
+  for(const change of [{provider:'mollie'},{provider_claimed:false},{event_id:'00000000-0000-4000-8000-000000000099'},{order_id:null}])expect(()=>assertFrightnightContractOrder({...order,...change},binding)).toThrow('PERSISTED_CONTRACT_ORDER_REQUIRED_BEFORE_CONFIRMATION');
  });
 });

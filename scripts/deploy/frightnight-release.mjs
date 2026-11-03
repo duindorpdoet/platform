@@ -25,6 +25,51 @@ export function assertFrightnightHostedContract(health,revision) {
   if(!/^[a-f0-9]{40}$/.test(revision??'')||health?.revision!==revision||health?.status!=='ok'||health?.service!=='duindorphalloween'||health?.environment!=='staging'||health?.eventSlug!==FRIGHTNIGHT_STAGING.slug||health?.brand!=='frightnight-2027-v7'||health?.paymentProvider!=='contract')throw new Error('LIVE_CONTRACT_RELEASE_BINDING_REQUIRED_BEFORE_FIXTURES');
 }
 
+// The canonical provider is deployment configuration. Synthetic payments are
+// authorized separately by a database arm bound to one private edition/run.
+export function assertFrightnightHostedRelease(health, revision, configuredProvider) {
+  if (!['contract', 'mollie'].includes(configuredProvider) || !/^[a-f0-9]{40}$/.test(revision ?? '')
+      || health?.revision !== revision || health?.status !== 'ok' || health?.service !== 'duindorphalloween'
+      || health?.environment !== 'staging' || health?.eventSlug !== FRIGHTNIGHT_STAGING.slug
+      || health?.brand !== 'frightnight-2027-v7' || health?.paymentProvider !== configuredProvider) {
+    throw new Error('LIVE_CONFIGURED_RELEASE_BINDING_REQUIRED_BEFORE_FIXTURES');
+  }
+}
+
+const fixtureUuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+function assertContractBinding(binding) {
+  if (!binding || !fixtureUuid.test(binding.eventId ?? '') || !fixtureUuid.test(binding.runId ?? '')
+      || typeof binding.slug !== 'string' || binding.slug.length > 100
+      || !/^frightnight-2027-test-[a-z0-9-]+$/.test(binding.slug)) {
+    throw new Error('PRIVATE_CONTRACT_EDITION_RUN_BINDING_REQUIRED');
+  }
+}
+export function assertFrightnightContractArm(value, binding) {
+  assertContractBinding(binding);
+  if (value?.eventId !== binding.eventId || value?.slug !== binding.slug || value?.runId !== binding.runId
+      || value?.paymentPolicy !== 'contract_sandbox' || value?.sandboxRunId !== binding.runId
+      || value?.provider !== 'contract' || value?.armed !== true) {
+    throw new Error('AUTHORITATIVE_CONTRACT_ARM_REQUIRED');
+  }
+}
+export function assertFrightnightContractSnapshot(snapshot, binding) {
+  assertContractBinding(binding);
+  const event = snapshot?.event;
+  if (event?.id !== binding.eventId || event?.slug !== binding.slug || event?.runId !== binding.runId
+      || event?.environment !== 'staging' || event?.test !== true
+      || event?.paymentPolicy !== 'contract_sandbox' || event?.sandboxRunId !== binding.runId
+      || event?.contractSandboxArmed !== true) {
+    throw new Error('AUTHORITATIVE_CONTRACT_READBACK_REQUIRED');
+  }
+}
+export function assertFrightnightContractOrder(order, binding) {
+  assertContractBinding(binding);
+  if (!fixtureUuid.test(order?.order_id ?? '') || order?.event_id !== binding.eventId
+      || order?.provider !== 'contract' || order?.provider_claimed !== true) {
+    throw new Error('PERSISTED_CONTRACT_ORDER_REQUIRED_BEFORE_CONFIRMATION');
+  }
+}
+
 // Metadata and aggregate checks only. Never invokes a worker, asks for OTP,
 // impersonates an existing household, reads a secret or creates a test actor.
 export const FRIGHTNIGHT_SAFETY_SQL = `select jsonb_build_object(

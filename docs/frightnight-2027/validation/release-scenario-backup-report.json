@@ -66,19 +66,21 @@
     "scripts/deploy/frightnight-system-cron.test.ts": "906c8dc10af61c10232a9af055066f517dd98862988c486db7ff603b3616e41b",
     "scripts/deploy/audit-frightnight-vps-timers.mjs": "da652b682d38d9d75fe9304177e536bafdbf86c73b940f840ba792caca0cb493",
     ".github/workflows/deploy-staging.yml": "ab49d41fe9330f6940eb543cf6a56d2c770040b1bd884395124a875a34ba5287",
-    "scripts/acceptance/frightnight-staging.mjs": "0f204f2d24cae38afad9b04056494bdf8ca1a55f9803e724cd314631976a67bf",
-    "scripts/acceptance/frightnight-regie.mjs": "9ecbcac989523e606374e32a4a34755e76de503545216e1d9c37b69d612fe49f",
-    "scripts/deploy/frightnight-release.mjs": "a9ea9b054ecc0de48c7a2de7b802226baa0fa9206e1ce591ad57ec655d561e1e",
-    "scripts/deploy/frightnight-release.test.ts": "dbfe2ccf46b2827bda549db5c2917ef68b100696b6ef45a156a300e35ac4811d",
+    "scripts/acceptance/frightnight-staging.mjs": "2884147c82e62cdd4b971ee9cffb58142d49586b6193ad8fed5f917717998589",
+    "scripts/acceptance/frightnight-regie.mjs": "4f3f98587f723cc729bf0e82d667e9e2b38cae7ae70d1b48653f3c815deddbb1",
+    "scripts/deploy/frightnight-release.mjs": "c1127a1f618d1132367742930043e8e377f47213dcc6c040e2a449a4140c6bc5",
+    "scripts/deploy/frightnight-release.test.ts": "13022aee81a56ff27e162d18509ec9719319d6945c77f43b0b72c31f60cb971c",
     "lib/frightnight/csv.ts": "8fef02f180643a15767c31e0141d76b870c6a17794c71bd58295ba7fbdc593e6",
     "lib/frightnight/downloads.ts": "6c87511e668a603a944e9f3dcfdc6a77cbc58ea492010474453e711bbcb8b609",
-    "scripts/acceptance/frightnight-edges.mjs": "d0ce257ace09b7ea70d7cdb2274d2b98666aef8b5edbf9d5a2246a1558145db2",
-    "scripts/acceptance/frightnight-edges.test.mjs": "daed56128055f4c061e6dc58b08459a0b6cf3518a466644e98784205b55c306d",
-    "scripts/deploy/release-migrations.mjs": "b2fa4225ce07552c9c37af2ad56b103ef94e134988d49214badee5894c75973f",
-    "scripts/deploy/release-migrations.test.ts": "a8b78c9adf495633bd8cd62687c9838cb236533cbc9f4f9b0987f5f954d8539c",
+    "scripts/acceptance/frightnight-edges.mjs": "1f2611d3ca7fad20dbc8ddd584339ae90dd86292a11cc307c6df3a4b3db39025",
+    "scripts/acceptance/frightnight-edges.test.mjs": "05d45189684e839335c4c390d1e9b9c8fb97b0ddf3f1d1b171479a1435ecfb4c",
+    "scripts/deploy/release-migrations.mjs": "2c5d66a0ee4d75ce6da33d04317d2a5a81a1a7c7be3575482a7723466eccdf69",
+    "scripts/deploy/release-migrations.test.ts": "39512a56c1afce54c5fcab1ca0b9360f818c804fa45144c9e42a73dd5e9aede6",
     "scripts/deploy/configure-supabase.test.ts": "07066583714f34e9cb418d376a78b5ab6ccba4c503f7965dc41403fd6aa837e6",
     "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
-    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "supabase/tests/133_frightnight_2027_payment_sandbox.sql": "a5e019e4ce935800beb11a72e94cab60b71bee80e778c792f46a50333feee20e"
   },
   "hostedContactAndDownloads": "Owner contact UI and second-tab read, foreign-actor denial, SVG/HTML privacy, actual download time versus edition clock, operator emergency cards and participant address privacy included; not yet executed.",
   "hostedCleanup": {
@@ -353,5 +355,15 @@
     "mainDeployAndSinkAuth": "success",
     "runConclusion": "cancelled for actual native service worker installation failure before synthetic-account step",
     "parentREGEDGELoadRET05": "not executed; no final acceptance claim"
+  },
+  "paymentSandboxFollowup": {
+    "recordedAt": "2026-11-03T07:30:28.672722+00:00",
+    "evidence": "docs/frightnight-2027/validation/payment-sandbox-release-report.json",
+    "evidenceSha256": "4b3a718ab7e831620d122e54964a5f0073b49507140dbadd03dac3f1d687c51b",
+    "localOnly": true,
+    "targetedPassed": 131,
+    "backendPgtapPassed": 685,
+    "newForwardMigration": "20261103071355_frightnight_2027_payment_sandbox.sql",
+    "published": false
   }
 }

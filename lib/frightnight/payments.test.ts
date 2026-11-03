@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { assertPaymentMatchesOrder, cents, ContractPaymentAdapter, MollieTestAdapter, money, verifiedMollie, type PaymentOrder } from "./payments";
-const order: PaymentOrder = { order_id: "1b30219e-e56d-4e0c-8361-d1c290776ac0", event_id: "2b30219e-e56d-4e0c-8361-d1c290776ac0", registration_id: "3b30219e-e56d-4e0c-8361-d1c290776ac0", amount_cents: 1050, currency: "EUR", status: "open" };
+const order: PaymentOrder = { provider: "mollie", provider_claimed: true, order_id: "1b30219e-e56d-4e0c-8361-d1c290776ac0", event_id: "2b30219e-e56d-4e0c-8361-d1c290776ac0", registration_id: "3b30219e-e56d-4e0c-8361-d1c290776ac0", amount_cents: 1050, currency: "EUR", status: "open" };
 const providerPayment = { id: "tr_Fn2027example", mode: "test", status: "paid", amount: { value: "10.50", currency: "EUR" }, metadata: { order_id: order.order_id, event_id: order.event_id, environment: "staging" }, _links: { checkout: { href: "https://www.mollie.com/checkout/test" } } };
 const refundListing = (items: unknown[] = [], next: string | null = null) => ({ count: items.length, _embedded: { refunds: items }, _links: { next: next ? { href: next } : null } });
 const providerRefund = () => ({ resource: "refund", id: "re_example", mode: "test", paymentId: providerPayment.id, amount: { currency: "EUR", value: "10.50" }, status: "queued", metadata: { command_id: order.order_id, order_id: order.order_id, event_id: order.event_id, environment: "staging" } });

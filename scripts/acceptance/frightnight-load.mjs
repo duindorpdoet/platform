@@ -4,7 +4,7 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { assertFrightnightRelease, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL } from '../deploy/frightnight-release.mjs';
+import { assertFrightnightRelease, assertFrightnightHostedRelease, assertFrightnightContractArm, assertFrightnightContractSnapshot, assertFrightnightContractOrder, assertFrightnightSafety, FRIGHTNIGHT_SAFETY_SQL } from '../deploy/frightnight-release.mjs';
 
 export const LOAD_STEPS = Object.freeze([12, 25, 50, 100, 125]);
 export const LOAD_LIMITS = Object.freeze({ p95Ms: 2_000, unexpectedRate: 0.01, maxActors: 125, maxInFlight: 125, walkDurationMs: 60_000, maxRequestsPerStage: 5_000 });
@@ -62,7 +62,6 @@ export async function recoverQueuedCommand(send, command, { wait = ms => new Pro
 export function assertLoadBinding(env) {
   const target = assertFrightnightRelease(env);
   if (!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? '') || env.FRIGHTNIGHT_VERIFIED_RELEASE_SHA !== env.GITHUB_SHA) throw new Error('VERIFIED_BACKUP_PRESERVATION_AND_RELEASE_REQUIRED');
-  if (env.FRIGHTNIGHT_PAYMENT_PROVIDER !== 'contract') throw new Error('LOAD_REQUIRES_CONTRACT_PROVIDER');
   if (env.FRIGHTNIGHT_LOAD_APPROVAL !== `${target.projectRef}:staging:duindorphalloweenstg`) throw new Error('EXPLICIT_VERIFIED_STAGING_LOAD_SCOPE_REQUIRED');
   for (const key of ['NEXT_PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_ACCESS_TOKEN']) if (!env[key]) throw new Error(`LOAD_MISSING_${key}`);
   return target;
@@ -82,7 +81,7 @@ export async function runStagingLoad(env = process.env, maximum = 125) {
   const run = `${Date.now()}-${randomUUID().slice(0, 8)}`;
   const prefix = `frightnight-2027-test-load-${run}-`;
   const service = createClient(sbUrl, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-  const report = { scope: 'verified-staging-fresh-synthetic-no-send', revision: env.GITHUB_SHA, origin: target.origin, projectRef: target.projectRef, run, plan, startedAt: new Date().toISOString(), stages: [], status: 'running', claims: 'no performance result until this script has completed on the verified release', externalProviderRequests: 0, credentialsInArtifacts: false };
+  const report = { scope: 'verified-staging-fresh-synthetic-no-send', revision: env.GITHUB_SHA, origin: target.origin, projectRef: target.projectRef, run, plan, startedAt: new Date().toISOString(), stages: [], contractSandboxes: [], status: 'running', claims: 'no performance result until this script has completed on the verified release', externalProviderRequests: 0, credentialsInArtifacts: false };
   const actors = [], editions = [];
   let before, failed, managementRequests = 0, rpcRequests = 0, appRequests = 0, authCreateRequests = 0, passwordSigninRequests = 0, authSignoutRequests = 0, authRetireRequests = 0, active = 0;
   const waiters = [], pendingWork = new Set(), pendingHttp = new Set(); let maxObservedInFlight = 0;
@@ -186,8 +185,16 @@ export async function runStagingLoad(env = process.env, maximum = 125) {
     check(created[0].event_id === edition.id, 'FRESH_EVENT_ID_MISMATCH');
     await rpc(null, 'frightnight_bootstrap', { p_slug: slug, p_actor: actors[0].id, p_environment: 'staging', p_confirmation: `${target.projectRef}:staging:duindorphalloweenstg` });
     for (const person of actors) await rpc(null, 'frightnight_entry_grant', { p_slug: slug, p_actor: person.id, p_expires_at: new Date(Date.now() + 3_600_000).toISOString(), p_invitation_digest: createHash('sha256').update(`${run}:${slug}:${person.id}`).digest('hex') });
+    const unseeded = await rpc(actors[0], 'frightnight_snapshot', { p_slug: slug });
+    const contractBinding = { slug, eventId: edition.id, runId: unseeded.event.runId };
+    const armed = await rpc(null, 'frightnight_contract_arm', { p_slug: slug, p_actor: actors[0].id, p_run_id: contractBinding.runId, p_confirmation: `${target.projectRef}:staging:duindorphalloweenstg:${slug}:${contractBinding.runId}` });
+    assertFrightnightContractArm(armed, contractBinding);
+    assertFrightnightContractSnapshot(await rpc(actors[0], 'frightnight_snapshot', { p_slug: slug }), contractBinding);
+    edition.contractBinding = contractBinding;
+    report.contractSandboxes.push({ ...contractBinding, provider: 'contract', serviceArm: true, actorReadback: true });
     const seed = await rpc(actors[0], 'frightnight_command', { p_slug: slug, p_command: 'test.seed', p_payload: {}, p_key: randomUUID() });
     check(seed.result.scenarioVersion === 1, 'REVIEWED_SEED_VERSION_REQUIRED');
+    assertFrightnightContractSnapshot(seed.snapshot, contractBinding);
     edition.startCode = seed.result.startCode;
     edition.runId = seed.snapshot.event.runId;
     edition.codes = new Map(seed.result.zoneCodes.map(z => [z.zoneId, z.code]));
@@ -202,7 +209,9 @@ export async function runStagingLoad(env = process.env, maximum = 125) {
       const persons = familySizes?.[index] ?? 1; check(Number.isInteger(persons) && persons >= 1 && persons <= 5, 'BOUNDED_FUNCTIONAL_FAMILY_REQUIRED');
       const registered = await rpc(person, 'frightnight_command', { p_slug: slug, p_command: 'registration.save', p_payload: { label: familySizes ? 'Synthetisch functioneel samenloopgezin' : 'Synthetisch eenpersoons testgezin', routeType: 'lantern', adults: 1, children: persons - 1, maxIntensity: restrictive && index === 1 ? 1 : 2, avoidSmoke: familySizes ? index === 1 : true, avoidStrobes: familySizes ? index === 1 : true, stepFree: familySizes ? index === 1 : true, consent: true, termsVersion: '2027-test-v1' }, p_key: randomUUID() });
       await sql(`update app_private.fn_registrations r set synthetic=true where r.event_id=${uuid(edition.id)} and r.id=${uuid(registered.snapshot.registration.id)} and r.owner_id=${uuid(person.id)} and exists(select 1 from auth.users u where u.id=r.owner_id and u.email=${sqlLiteral(person.email)} and u.raw_user_meta_data->>'synthetic_frightnight_load'=${sqlLiteral(run)})`, true);
-      const order = await rpc(null, 'frightnight_payment_create', { p_slug: slug, p_actor: person.id, p_key: randomUUID() });
+      assertFrightnightContractSnapshot(await rpc(actors[0], 'frightnight_snapshot', { p_slug: slug }), edition.contractBinding);
+      const order = await rpc(null, 'frightnight_payment_claim', { p_slug: slug, p_actor: person.id, p_key: randomUUID(), p_configured_provider: env.FRIGHTNIGHT_PAYMENT_PROVIDER });
+      assertFrightnightContractOrder(order, edition.contractBinding);
       await rpc(null, 'frightnight_payment_bind', { p_slug: slug, p_order_id: order.order_id, p_provider_ref: `ct_${order.order_id}`, p_checkout_url: null });
       await rpc(null, 'frightnight_payment_confirm', { p_slug: slug, p_provider_ref: `ct_${order.order_id}`, p_status: 'paid', p_amount_cents: order.amount_cents, p_currency: 'EUR', p_provider_event: `load:${order.order_id}:paid`, p_metadata: { order_id: order.order_id, event_id: edition.id, testmode: true, environment: 'staging' } });
       const selected = await http(person, '/api/frightnight/edition', { slug });
@@ -407,7 +416,8 @@ export async function runStagingLoad(env = process.env, maximum = 125) {
   try {
     const healthResponse = await fetch(`${target.origin}/api/health`, { signal: AbortSignal.timeout(10_000), redirect: 'error' });
     const health = await healthResponse.json();
-    check(healthResponse.ok && health.revision === env.GITHUB_SHA && health.environment === 'staging' && health.eventSlug === target.slug && health.paymentProvider === 'contract', 'LOAD_LIVE_RELEASE_REVISION_MISMATCH');
+    check(healthResponse.ok, 'LOAD_LIVE_RELEASE_HEALTH_UNAVAILABLE');
+    assertFrightnightHostedRelease(health, env.GITHUB_SHA, env.FRIGHTNIGHT_PAYMENT_PROVIDER);
     const safety = await sql(FRIGHTNIGHT_SAFETY_SQL); assertFrightnightSafety(safety[0].frightnight_safety);
     const capacity = await sql(`select max(s.capacity)::integer places from app_private.fn_start_slots s join app_private.events e on e.id=s.event_id where e.slug=${sqlLiteral(target.slug)}`);
     loadPlan(capacity[0].places, maximum);

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export type PaymentState = "open" | "pending" | "authorized" | "paid" | "failed" | "canceled" | "expired" | "refunded";
-export interface PaymentOrder { order_id: string; event_id: string; registration_id: string; amount_cents: number; currency: string; status: string; provider_ref?: string | null; checkout_url?: string | null; }
+export interface PaymentOrder { provider: "mollie" | "contract"; provider_claimed: boolean; order_id: string; event_id: string; registration_id: string; amount_cents: number; currency: string; status: string; provider_ref?: string | null; checkout_url?: string | null; }
 export interface VerifiedPayment { id: string; status: PaymentState; amountCents: number; currency: "EUR"; mode: "test"; orderId: string; eventId: string; checkoutUrl?: string; }
 export interface PaymentAdapter {
   readonly provider: "mollie" | "contract";

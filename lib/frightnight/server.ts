@@ -40,6 +40,8 @@ export function rpcError(error: { code?: string; message?: string }): never {
   }
   if (error.code === "42501") throw new ApiError(403, "FORBIDDEN", "Je hebt geen toegang tot deze actie.");
   const messages: Record<string, string> = {
+    SANDBOX_REARM_REQUIRED: "Deze nieuwe testronde is nog niet gewapend. Laat testbeheer de lege ronde expliciet voor contractbetalingen activeren.",
+    PROVIDER_CLAIM_RECONCILIATION_REQUIRED: "Deze oude betaalpoging mist een eenduidige providerbinding. Vraag betaalbeheer om herstel; er is geen nieuwe providerbetaling geopend.",
     CONFIRMED_USER_REQUIRED: "Laat deze contactpersoon eerst zelf met een e-mailcode inloggen en het account bevestigen.",
     LAST_EVENT_ADMIN: "De laatste hoofdbeheerder blijft beschermd. Ken eerst een ander bevestigd account hoofdbeheer toe.",
     STALE_VERSION: "De gegevens zijn intussen gewijzigd. Vernieuw de lijst en controleer de actuele gegevens.",
@@ -93,7 +95,7 @@ export async function frightnightSnapshot(): Promise<FrightnightSnapshot> {
   if (!client) throw new ApiError(503, "BACKEND_UNAVAILABLE", "De server is tijdelijk niet beschikbaar.");
   const { data, error } = await client.schema("api").rpc("frightnight_snapshot", { p_slug: await activeFrightnightSlug(actor.userId) }).abortSignal(AbortSignal.timeout(7500));
   if (error) rpcError(error);
-  return data as FrightnightSnapshot;
+  return enrichPaymentSandbox(data as FrightnightSnapshot);
 }
 
 export async function frightnightCommand(operation: string, payload: Record<string, unknown>, commandId: string) {
@@ -104,6 +106,7 @@ export async function frightnightCommand(operation: string, payload: Record<stri
     p_slug: await activeFrightnightSlug(actor.userId), p_command: operation, p_payload: payload, p_key: z.uuid().parse(commandId),
   }).abortSignal(AbortSignal.timeout(7500));
   if (error) rpcError(error);
+  if (data?.snapshot) data.snapshot = enrichPaymentSandbox(data.snapshot as FrightnightSnapshot);
   return data;
 }
 
@@ -121,4 +124,16 @@ export async function frightnightServiceRpc(name: string, args: Record<string, u
 
 export async function smallJson(request: Request) {
   return readBoundedJson(request, 32_768);
+}
+
+/** Runtime environment is trusted server configuration, never a browser mode selector. */
+export function enrichPaymentSandbox(snapshot: FrightnightSnapshot): FrightnightSnapshot {
+  if (!snapshot.paymentSandbox) return snapshot;
+  const configuredProvider = frightnightConfig().FRIGHTNIGHT_PAYMENT_PROVIDER;
+  const sandbox = snapshot.paymentSandbox;
+  const stale = sandbox.policy === "contract_sandbox" && (!sandbox.armed || sandbox.runId !== sandbox.sandboxRunId);
+  return { ...snapshot, paymentSandbox: { ...sandbox, configuredProvider,
+    effectiveProvider: stale ? null : sandbox.policy === "contract_sandbox" ? "contract" : configuredProvider,
+    blockedReason: stale ? "SANDBOX_REARM_REQUIRED" : null,
+  } };
 }

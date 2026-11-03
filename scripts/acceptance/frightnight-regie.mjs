@@ -5,12 +5,13 @@ import { join } from 'node:path';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function runRegieAcceptance({ base, slug: parentSlug, eventId: parentEventId, run, admin, a, b, resident, support, sql, app, assert, checked, literal, report, directory }) {
+export async function runRegieAcceptance({ base, slug: parentSlug, eventId: parentEventId, run, admin, a, b, resident, support, sql, app, assert, checked, literal, report, directory, armContract }) {
   assert(base === 'https://staging-halloween.duindorpdoet.nl', 'REGIE_STAGING_ORIGIN_REQUIRED');
   assert(/^[a-f0-9]{40}$/.test(process.env.GITHUB_SHA ?? '') && process.env.FRIGHTNIGHT_VERIFIED_RELEASE_SHA === process.env.GITHUB_SHA, 'REGIE_VERIFIED_RELEASE_REQUIRED');
   assert(parentSlug.startsWith('frightnight-2027-test-acceptance-') && UUID.test(parentEventId), 'REGIE_PARENT_SCOPE_REQUIRED');
   const people = [admin, a, b, resident, support];
   assert(people.every(person => UUID.test(person.id) && person.email?.endsWith('@example.invalid') && person.context), 'REGIE_EXISTING_INVALID_ACTORS_REQUIRED');
+  assert(typeof armContract === 'function', 'REGIE_CONTRACT_ARM_HELPER_REQUIRED');
   const proof = await sql(`select count(*)::integer n from auth.users where id in (${people.map(person => `${literal(person.id)}::uuid`).join(',')}) and email like '%@example.invalid' and raw_user_meta_data->>'synthetic_frightnight_run'=${literal(run)}`);
   assert(Number(proof[0]?.n) === people.length, 'REGIE_SYNTHETIC_RUN_BINDING_REQUIRED');
   const tag = randomUUID().slice(0, 8);
@@ -82,10 +83,19 @@ export async function runRegieAcceptance({ base, slug: parentSlug, eventId: pare
     eventId = copied.value.result.eventId;
     assert(UUID.test(eventId) && eventId !== parentEventId, 'REGIE_FRESH_EVENT_REQUIRED');
     await select(admin, slug);
+    const unseeded = await state(admin);
+    runId = unseeded.event.runId;
+    assert(UUID.test(runId), 'REGIE_RUN_REQUIRED');
+    detail.eventId = eventId; detail.runId = runId;
+    const binding = await armContract({ slug, eventId, actor: admin });
+    assert(binding?.slug === slug && binding.eventId === eventId && binding.runId === runId && binding.provider === 'contract', 'REGIE_CONTRACT_ARM_BINDING_MISMATCH');
+    const armed = await state(admin);
+    assert(armed.event.runId === runId && armed.event.paymentPolicy === 'contract_sandbox' && armed.event.sandboxRunId === runId && armed.event.contractSandboxArmed === true, 'REGIE_CONTRACT_ARM_READBACK_REQUIRED');
+    detail.paymentSandbox = { provider: binding.provider, runId, serverReadback: true };
     await command(admin, 'test.seed');
     await command(admin, 'test.clock', { time: '2027-10-30T15:05:00Z' });
     const initial = await state(admin);
-    runId = initial.event.runId;
+    assert(initial.event.runId === runId, 'REGIE_ARMED_RUN_CHANGED_DURING_SEED');
     detail.eventId = eventId;
     detail.runId = runId;
     assert(UUID.test(runId), 'REGIE_RUN_REQUIRED');

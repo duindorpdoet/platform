@@ -1,0 +1,40 @@
+ok 1 - browser cannot arm a contract sandbox
+ok 2 - legacy fixture creation bridge is owner-only, not a default provider service path
+ok 3 - legacy fixture simulation bridge is owner-only, not a mode bypass
+ok 4 - anonymous client cannot select an order provider
+ok 5 - trusted server may atomically claim configured provider
+ok 6 - service has no direct private resolver grant
+ok 7 - canonical edition cannot be armed even by its event administrator
+ok 8 - foreign actor cannot arm a private edition
+ok 9 - fresh private run reports eligibility server-side
+ok 10 - fresh copies follow server configuration by default
+ok 11 - stale or foreign run cannot be armed
+ok 12 - full infrastructure and edition binding is mandatory
+ok 13 - fresh own child can be explicitly armed
+ok 14 - same-run arm retry is idempotent
+ok 15 - idempotent arming writes one audit record
+ok 16 - server readback proves current run is armed
+ok 17 - armed child resolves contract despite global Mollie configuration
+ok 18 - provider is durable before any provider request
+ok 19 - provider cannot change after first atomic claim
+ok 20 - a contract order cannot bind a Mollie payment
+ok 21 - contract reference binds only after provider claim
+ok 22 - provider lookup retains immutable contract binding
+ok 23 - reset invalidates previous run arming without deleting payment history
+ok 24 - stale sandbox refuses provider fallback after reset
+ok 25 - new empty run can be rearmed while preserving earlier contract history
+ok 26 - rearming never deletes old contract orders
+ok 27 - participant never sees test administrator counts or arming controls
+ok 28 - configured canonical policy can choose real test provider
+ok 29 - Mollie claim is durable before external effect
+ok 30 - retry after environment change retains its persisted Mollie provider
+ok 31 - Mollie claim cannot be rebound as contract
+ok 32 - Mollie binding preserves actual test provider
+ok 33 - any historical Mollie claim forbids sandbox arming
+ok 34 - Mollie configured edition cannot use test-status simulator
+ok 35 - a seeded run cannot switch provider policy
+ok 36 - sandbox operations leave legacy outbox unchanged
+ok 37 - sandbox operations leave historical payments unchanged
+ok 38 - sandbox operations never invoke legacy route groups
+ok 39 - arming and payment claims never create or remove Auth accounts
+1..39

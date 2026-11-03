@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { apiSuccess, apiFailure, ApiError, assertTrustedOrigin, correlationId } from "@/lib/http/api";
 import { frightnightCommand, smallJson } from "@/lib/frightnight/server";
-import { paymentCheckout, paymentReconcile, paymentRefund, simulatePayment } from "@/lib/frightnight/payment-server";
+import { armPaymentSandbox, paymentCheckout, paymentReconcile, paymentRefund, simulatePayment } from "@/lib/frightnight/payment-server";
 import { StagingBeaconAdapter } from "@/lib/frightnight/beacon";
 import type { FrightnightCommandResult } from "@/lib/frightnight/model";
 const input = z.object({ commandId: z.uuid(), operation: z.string().regex(/^[a-z]+(?:\.[a-z_]+)+$/).max(70), payload: z.record(z.string().max(60), z.unknown()).default({}), expectedVersion: z.number().int().nonnegative().optional() }).strict();
@@ -16,7 +16,10 @@ export async function POST(request: Request) {
     let result;
     if (operation === "payment.checkout") result = await paymentCheckout(command.commandId);
     else if (operation === "payment.reconcile") result = await paymentReconcile();
-    else if (operation === "test.payment") {
+    else if (operation === "test.payment.sandbox") {
+      const payload = z.object({ confirmation: z.string().min(1).max(140), runId: z.uuid() }).strict().parse(command.payload);
+      result = await armPaymentSandbox(payload.runId, payload.confirmation);
+    } else if (operation === "test.payment") {
       const payload = z.object({ status: z.enum(["paid", "failed", "canceled", "expired", "pending", "open"]), registrationId: z.uuid().optional(), scenario: z.enum(["normal", "duplicate", "delayed"]).default("normal") }).strict().parse(command.payload);
       result = await simulatePayment(command.commandId, payload.status, payload.registrationId, payload.scenario);
     } else if (operation === "payment.refund") {

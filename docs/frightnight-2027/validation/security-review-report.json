@@ -25,10 +25,10 @@
   "externalProviderTested": false,
   "physicalCameraTested": false,
   "sourceSha256": {
-    "lib/frightnight/payments.ts": "44657a02ee962439f26c881e3b2b04af73de3340c2cc5a6f167496b85b85a175",
-    "lib/frightnight/payments.test.ts": "ecda0a8fced3ea91ddba21f6127d86b97b1f455bc399fa40bf2ff1219f759e3c",
-    "lib/frightnight/payment-server.ts": "3a27c994986a91adb7299dde16488a6effd28a1f5a5a959be1347e1b863381a0",
-    "lib/frightnight/payment-server.test.ts": "27a15bdc1f297ddbffd577b406b5a5cd6b20d8a740c5eb0a2f7a9dbd3c5dc2d0",
+    "lib/frightnight/payments.ts": "f4a0f1e84f3bf1b5d34498b339c4445f2fb01a5c7783e66a38f83b67039a4e41",
+    "lib/frightnight/payments.test.ts": "1e57ebda6164061d9df54b9abd96080b3805b32720ce57f6b792887ee6d0c4db",
+    "lib/frightnight/payment-server.ts": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+    "lib/frightnight/payment-server.test.ts": "e8aced5440dc63d7a51d1c052fddc4263b82fed60e250d4a7ff4572f46cb876a",
     "lib/frightnight/request-body.ts": "b51e42e8d80afc2ee0f991afdadf09284e761a827f1e6a0ffe2c1817449b96af",
     "lib/frightnight/request-body.test.ts": "3db069cadfaa4a6cbface7891617f723974df6c1bcae61cea3f4409586c28f29",
     "lib/frightnight/qr-export.test.ts": "c40d8a06915d2fb4d68a05dfd500c19a41124f9c5363ab37eac8f04bbea8706c",
@@ -40,7 +40,7 @@
     "lib/frightnight/mail-preview.test.ts": "6ff4ac511e608f5690662855c93c339e98bfa0a981e972837d3bc97594a6c419",
     "app/api/frightnight/mail-preview/route.ts": "c9f8dc9dbf7e667b66d7e076932832805a8504625dd639aa606adeb21f408380",
     "public/frightnight/king-head.webp": "cf591d4d35eb89339cf0ac12002f9440a4ecc09d3dc15fc242f1e32450855a60",
-    "lib/frightnight/server.ts": "db37464a55546f46eab4b297e04476b0ac776a97cb24b89de08add2d231360f1",
+    "lib/frightnight/server.ts": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
     "lib/frightnight/downloads.ts": "6c87511e668a603a944e9f3dcfdc6a77cbc58ea492010474453e711bbcb8b609",
     "lib/frightnight/downloads.test.ts": "5c75ee3c3749d64f228783352fe564cbed8ef4192b478823fbd93484e038bfa3",
     "lib/frightnight/offline.ts": "5dc4565a4e197bfa91d47d5930df22bcbd40a2822038fc09773dcdbb46aa8a0d",
@@ -53,7 +53,9 @@
     "supabase/tests/127_frightnight_2027_core.sql": "bdfc8f06d9c70c1d1ebf7d9debe782fb3c752f940ff99771c28e0ca2564a007b",
     "supabase/tests/132_frightnight_2027_edition_access.sql": "6e9b0ddc2a905472d9d76d6e430769c264e1d41da0e70d65d7b045f48e6c7006",
     "app/api/frightnight/edition/route.ts": "fc944e24017b81cee399261861a1dd8d1528b462534425f8e51cfeb510e0ad62",
-    "lib/frightnight/edition-invitation.ts": "d8f484157f0a25dff11576d50dea9cc7653bfd1082950f72b6805506506cac97"
+    "lib/frightnight/edition-invitation.ts": "d8f484157f0a25dff11576d50dea9cc7653bfd1082950f72b6805506506cac97",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "supabase/tests/133_frightnight_2027_payment_sandbox.sql": "a5e019e4ce935800beb11a72e94cab60b71bee80e778c792f46a50333feee20e"
   },
   "followup": {
     "mailPreviewLookup": "Exact validated capture UUID via authenticated edition-scoped p_search; ignores stale page cursor and still checks row.id.",
@@ -341,5 +343,15 @@
     "mainDeployAndSinkAuth": "success",
     "runConclusion": "cancelled for actual native service worker installation failure before synthetic-account step",
     "parentREGEDGELoadRET05": "not executed; no final acceptance claim"
+  },
+  "paymentSandboxFollowup": {
+    "recordedAt": "2026-11-03T07:30:28.672722+00:00",
+    "evidence": "docs/frightnight-2027/validation/payment-sandbox-release-report.json",
+    "evidenceSha256": "4b3a718ab7e831620d122e54964a5f0073b49507140dbadd03dac3f1d687c51b",
+    "localOnly": true,
+    "targetedPassed": 131,
+    "backendPgtapPassed": 685,
+    "newForwardMigration": "20261103071355_frightnight_2027_payment_sandbox.sql",
+    "published": false
   }
 }
