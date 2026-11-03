@@ -50,6 +50,25 @@ function worker() {
   };
 }
 describe("actual service worker editorial events", () => {
+  it.each(["/mijn-huis", "/mijn-zone"])(
+    "normalizes resident push destination %s and opens the current zone environment",
+    async (url) => {
+      const w = worker();
+      await w.event("push", { data: { json: () => ({ url, body: "Je zone heeft een melding." }) } });
+      expect(w.showNotification).toHaveBeenCalledWith("FrightNight · Mijn zone", expect.objectContaining({ data: { url: "/mijn-zone" } }));
+      const notification = w.showNotification.mock.calls[0][1];
+      await w.event("notificationclick", { notification: { data: notification.data, close: vi.fn() } });
+      expect(w.navigate).toHaveBeenCalledWith("/mijn-zone");
+      expect(w.focus).toHaveBeenCalled();
+      expect(w.openWindow).not.toHaveBeenCalled();
+    },
+  );
+  it("opens the current zone environment for an already delivered legacy resident notification", async () => {
+    const w = worker();
+    await w.event("notificationclick", { notification: { data: { url: "/mijn-huis" }, close: vi.fn() } });
+    expect(w.navigate).toHaveBeenCalledWith("/mijn-zone");
+    expect(w.focus).toHaveBeenCalled();
+  });
   it("displays generic lockscreen copy and focuses the exact private news link", async () => {
     const w = worker(),
       url =
