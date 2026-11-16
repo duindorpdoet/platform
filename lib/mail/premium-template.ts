@@ -20,6 +20,7 @@ export type PremiumMailContent = {
   participantUpdate?: string;
   hero?: boolean;
   heroAlt?: string;
+  closingGreeting?: string;
   editorial?: { body: RichNode; mediaUrls: Record<string, string>; closing: string; unsubscribeUrl: string; preferencesUrl: string };
   details?: MailDetail[];
   notice?: { title: string; text: string };
@@ -112,6 +113,7 @@ function validateContent(content: PremiumMailContent, brand: PremiumMailBrand) {
     if (content.plainBody !== undefined) throw new InvalidMailTemplateError("Ambiguous message body");
   }
   content.paragraphs.forEach((item, index) => required(item, `paragraphs[${index}]`));
+  if (content.closingGreeting !== undefined) required(content.closingGreeting, "closingGreeting", 200);
   content.details?.forEach((detail) => {
     required(detail.label, "detail label", 120);
     required(detail.value, "detail value", 1_200);
@@ -173,6 +175,7 @@ export function renderPremiumEmail(content: PremiumMailContent, brand: PremiumMa
   validateContent(content, brand);
   const participantUpdate = content.participantUpdate === undefined ? undefined : renderParticipantUpdate(content.participantUpdate);
   const otp = content.kind === "otp";
+  const closingGreeting = content.closingGreeting ?? (otp ? "Tot in de wijk," : "Tot tussen de poorten,");
   const codeBlock = content.code
     ? table(row(`<p style="margin:0 0 15px;font:11px/18px Arial,Helvetica,sans-serif;letter-spacing:2.5px;text-transform:uppercase;color:${COLORS.gold};">Je eenmalige code</p><p style="margin:0 0 16px;font:600 36px/46px 'Courier New',monospace;letter-spacing:7px;color:${COLORS.text};word-break:break-all;">${escapeHtml(content.code.value)}</p><p style="margin:0;font:13px/21px Arial,Helvetica,sans-serif;color:${COLORS.muted};">${escapeHtml(content.code.expiresText)}</p>`, "padding:26px 18px;text-align:center;"), `bgcolor="${COLORS.inset}" style="background:${COLORS.inset};border:1px solid #78624f;border-radius:6px;margin:24px 0;"`)
     : "";
@@ -186,7 +189,7 @@ export function renderPremiumEmail(content: PremiumMailContent, brand: PremiumMa
 <h1 class="headline" style="margin:0 0 20px;font:400 ${otp ? 36 : 42}px/${otp ? 43 : 49}px Georgia,'Times New Roman',serif;letter-spacing:-1.2px;color:${COLORS.text};">${escapeHtml(content.title)}</h1>
 ${messageHtml}${content.editorial ? renderEmailBlocks(content.editorial.body, content.editorial.mediaUrls, brand.homeUrl) : ""}${codeBlock}${detailsBlock(content.details)}${notice}${actionBlock(content.primaryAction)}${content.editorial?.closing ? paragraph(content.editorial.closing) : ""}
 ${content.primaryAction ? `<p style="margin:15px 0 0;font:11px/18px Arial,Helvetica,sans-serif;color:${COLORS.muted};word-break:break-all;overflow-wrap:anywhere;">Werkt de knop niet? Open deze link:<br><a href="${escapeHtml(content.primaryAction.url)}" style="color:${COLORS.muted};text-decoration:underline;">${escapeHtml(content.primaryAction.url)}</a></p>` : ""}
-<div style="border-top:1px solid ${COLORS.line};margin:30px 0 0;padding:25px 0 0;"><p style="margin:0 0 9px;font:15px/25px Arial,Helvetica,sans-serif;color:${COLORS.text};">${otp ? "Tot in de wijk," : "Tot tussen de poorten,"}</p><p style="margin:0;font:400 21px/28px Georgia,'Times New Roman',serif;color:${COLORS.gold};">Team Duindorpse Poorten</p></div>`;
+<div style="border-top:1px solid ${COLORS.line};margin:30px 0 0;padding:25px 0 0;"><p style="margin:0 0 9px;font:15px/25px Arial,Helvetica,sans-serif;color:${COLORS.text};">${escapeHtml(closingGreeting)}</p><p style="margin:0;font:400 21px/28px Georgia,'Times New Roman',serif;color:${COLORS.gold};">Team Duindorpse Poorten</p></div>`;
 
   const hero = content.hero && !otp
     ? row(`<img class="hero-image" src="${escapeHtml(brand.heroUrl)}" width="640" height="360" alt="${escapeHtml(content.heroAlt ?? "Duindorp bij avond met warme ramen en Halloweenlichtjes.")}" style="display:block;width:100%;max-width:640px;height:auto;color:${COLORS.text};font:14px/22px Arial,sans-serif;">`, `padding:0;background:${COLORS.inset};`)
@@ -218,7 +221,7 @@ ${content.primaryAction ? `<p style="margin:15px 0 0;font:11px/18px Arial,Helvet
     content.notice ? `\n${content.notice.title}\n${content.notice.text}` : "",
     content.primaryAction ? `\n${content.primaryAction.label}: ${content.primaryAction.url}` : "",
     "",
-    otp ? "Tot in de wijk," : "Tot tussen de poorten,",
+    closingGreeting,
     "Team Duindorpse Poorten",
     "",
     `Vragen? ${brand.supportEmail}`,

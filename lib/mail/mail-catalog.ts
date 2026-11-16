@@ -74,6 +74,42 @@ type CatalogDefinition = Omit<PremiumMailContent, "paragraphs" | "primaryAction"
   action?: { label: string; path: string };
 };
 
+const finalHalloween2026Payment: CatalogDefinition = {
+  kind: "payment",
+  subject: "Laatste betaalverzoek voor Halloween 2026",
+  preheader: "De tocht is voorbij. Hier staat de actuele betaalinstructie voor jullie openstaande bijdrage.",
+  eyebrow: "Halloweentocht 2026",
+  title: "Een laatste betaalverzoek",
+  paragraphs: (payload) => {
+    const paragraphs = [
+      `${greeting(payload) || "Hoi, "}de Halloweentocht van 31 oktober is voorbij. Volgens onze administratie staat er voor jullie nog een bijdrage open.`,
+      "Door de drukte bij de start wilden we het afrekenen eerst laten zitten. Meerdere deelnemers vroegen ons om toch nog een betaallink. Dank aan iedereen die daar zelf achteraan is gegaan.",
+      "Voor de tocht hebben we snoep ingekocht en verdeeld onder de deelnemende huizen. Een deel van die kosten hebben we voorgeschoten. Om het voor iedereen eerlijk te houden, sturen we jullie nog één keer een betaalverzoek.",
+    ];
+
+    if (Array.isArray(payload.paymentChildren) && payload.paymentChildren.length > 0) {
+      paragraphs.push("Hieronder zie je voor welke kinderen dit verzoek geldt en welk bedrag nog openstaat.");
+    } else if (Array.isArray(payload.paymentParticipants) && payload.paymentParticipants.length > 1) {
+      const payerName = mailPayerName(payload);
+      paragraphs.push(payerName
+        ? `${payerName} regelt de gezamenlijke betaling voor de gezinnen hieronder. Betaal het totaalbedrag één keer.`
+        : "Dit verzoek is voor de gezinnen hieronder samen. Spreek samen af wie het totaalbedrag betaalt.");
+    }
+
+    paragraphs.push(validatedPaymentUrl(payload.externalUrl)
+      ? "Gebruik voor deze bijdrage de betaallink in deze mail."
+      : "Open jullie persoonlijke omgeving voor de actuele betaalinstructie.");
+    return paragraphs;
+  },
+  notice: {
+    title: "Al betaald?",
+    text: "Betaal dit bedrag dan niet opnieuw. Laat het ons weten via de contactgegevens onderaan deze mail, dan kijken we het voor jullie na.",
+  },
+  action: { label: "Bekijk de betaling", path: "/mijn-inschrijving" },
+  footerReason: "Je ontvangt dit betaalverzoek vanwege een bedrag dat nog openstaat voor de Halloweentocht van 2026.",
+  closingGreeting: "Groetjes,",
+};
+
 const CATALOG: Record<MailMessageType, CatalogDefinition> = {
   actor_invitation: {
     kind: "confirmation", subject: "Jouw uitnodiging voor de Acteurskamer", preheader: "Activeer zelf je toegewezen bediening voor De Duindorpse Poorten.", eyebrow: "Samen maken we de nacht", title: "Jouw plek achter de poorten.", hero: true,
@@ -494,8 +530,16 @@ export function isMailMessageType(value: string): value is MailMessageType {
 
 export function contentForMessage(messageType: string, payload: Payload, brand: PremiumMailBrand): PremiumMailContent {
   if (!isMailMessageType(messageType)) throw new UnknownMailTemplateError(messageType);
-  const definition = CATALOG[messageType];
-  const details = detailsFor(messageType, payload);
+  const definition = messageType === "payment_link_ready"
+    && process.env.APP_ENVIRONMENT === "production"
+    && process.env.EVENT_SLUG === "duindorp-halloween-2026"
+    ? finalHalloween2026Payment
+    : CATALOG[messageType];
+  const paymentDetailsPayload = definition === finalHalloween2026Payment
+    && Array.isArray(payload.paymentChildren) && payload.paymentChildren.length === 0
+    ? { ...payload, paymentChildren: undefined }
+    : payload;
+  const details = detailsFor(messageType, paymentDetailsPayload);
   const childConfirmation = messageType === "payment_confirmed" && Array.isArray(payload.paymentChildren);
   const childReport = messageType === "payment_reported" && Array.isArray(payload.paymentChildren);
   const dynamicTitle = childConfirmation ? "De betaling voor deze kinderen is verwerkt." : messageType === "participant_update" ? text(payload, ["title", "titel"], definition.title) : definition.title;
