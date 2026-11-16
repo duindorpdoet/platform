@@ -57,12 +57,24 @@ jobs:
           docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "ALTER SYSTEM SET cron.launch_active_jobs=off"
           docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "SELECT pg_reload_conf()"
       - name: Reset only the disposable local database from the exact candidate
-        run: pnpm exec supabase db reset
+        run: |
+          pnpm exec supabase db reset
+          # The CLI reset recreates its local PostgreSQL configuration. Reapply
+          # isolation in this disposable container and prove it before any test.
+          docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "ALTER SYSTEM SET cron.launch_active_jobs=off"
+          docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "SELECT pg_reload_conf()"
+          test "$(docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -X -qAt -v ON_ERROR_STOP=1 -c 'show cron.launch_active_jobs')" = 'off'
       - name: Exercise all four changed SQL fixtures against real PostgreSQL
         run: |
           pnpm exec supabase test db --local supabase/tests/067_live_new_house_and_time_guards.sql supabase/tests/068_large_group_full_journey.sql supabase/tests/075_no_street_arrival_sequence.sql supabase/tests/086_planboard_live_dispatch.sql
       - name: Reset only the disposable local database before the original browser chain
-        run: pnpm exec supabase db reset
+        run: |
+          pnpm exec supabase db reset
+          # The CLI reset recreates its local PostgreSQL configuration. Reapply
+          # isolation in this disposable container and prove it before any test.
+          docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "ALTER SYSTEM SET cron.launch_active_jobs=off"
+          docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "SELECT pg_reload_conf()"
+          test "$(docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -X -qAt -v ON_ERROR_STOP=1 -c 'show cron.launch_active_jobs')" = 'off'
       - name: Install only Chromium for the original 45-child browser configuration
         run: |
           bash scripts/acceptance/prepare-browser-runner.sh
