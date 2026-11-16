@@ -34,6 +34,10 @@ export default defineConfig({
     },
     {
       name: "book-iphone-webkit",
+      // Real Auth, two child tours and account switching share one test budget.
+      // Native WebKit already takes 33–38s on a fresh runner; allow bounded
+      // headroom for the full CI chain while retaining every assertion/retry rule.
+      timeout: 90_000,
       use: { ...devices["iPhone 13"], launchOptions: {} },
     },
     {
