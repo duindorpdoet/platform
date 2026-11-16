@@ -10,6 +10,18 @@ describe('isolated update hotfix release boundaries',()=>{
     expect(readFileSync('.github/workflows/ci.yml','utf8')).toContain(`      - ${UPDATES_HTML_BRANCH}`);
     expect(readFileSync('.github/workflows/ci.yml','utf8')).toContain('pnpm exec playwright test --config playwright.participant-updates.config.ts');
   });
+  it('restores the own local database after committed closure before independent planboard and mail scenarios',()=>{
+    const ci=readFileSync('.github/workflows/ci.yml','utf8');
+    const closed=ci.indexOf('- name: Verify closed Poortkamer thanks through real Auth, HTTP and database');
+    const reset=ci.indexOf('- name: Restore isolated fixtures after closed Poortkamer acceptance');
+    const benchmark=ci.indexOf('- name: Measure bounded planboard reads on synthetic event sizes');
+    const mail=ci.indexOf('- name: Exercise full planboard and signed Resend mail chain locally');
+    expect(closed).toBeGreaterThan(0);expect(reset).toBeGreaterThan(closed);
+    expect(benchmark).toBeGreaterThan(reset);expect(mail).toBeGreaterThan(benchmark);
+    expect(ci.slice(closed,reset)).toContain('pnpm exec playwright test --config playwright.poortkamer-thanks-closed.config.ts');
+    expect(ci.slice(reset,benchmark)).toMatch(/run: pnpm exec supabase db reset\s*$/);
+    expect(ci.slice(reset,benchmark).match(/supabase db reset/g)).toHaveLength(1);
+  });
   it('preserves the installed Auth hook and verifies actual policy before and after app deployment',()=>{
     expect(workflow).toContain(`- name: Deploy shared signed email hook\n        if: github.ref != '${ref}'`);
     const before=workflow.indexOf('- name: Prove the existing staging Auth allowlist without requesting codes');

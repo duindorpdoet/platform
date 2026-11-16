@@ -140,6 +140,8 @@ jobs:
           bash scripts/acceptance/prepare-browser-runner.sh
           pnpm exec playwright install --with-deps chromium
           pnpm exec playwright test --config playwright.poortkamer-thanks-closed.config.ts
+      - name: Restore isolated fixtures after closed Poortkamer acceptance
+        run: pnpm exec supabase db reset
       - name: Measure bounded planboard reads on synthetic event sizes
         run: |
           eval "$(pnpm exec supabase status -o env)"
