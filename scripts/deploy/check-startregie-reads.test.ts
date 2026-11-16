@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { ACTOR_QUERY, checkStartregieReads } from "./check-startregie-reads.mjs";
+import { UPDATES_HTML_BRANCH } from "./staging-installed-history.mjs";
 
 const actor = "11111111-1111-4111-8111-111111111111";
 const draft = "22222222-2222-4222-8222-222222222222";
@@ -100,6 +101,25 @@ describe("production Startregie HTTP read acceptance", () => {
     expect(result.productionPerformanceProven).toBe(false);
     expect(result.checks.every(check => check.readinessSkipped?.includes("does not prove production performance"))).toBe(true);
     expect(request.mock.calls.filter(([url]) => String(url).includes("publication_readiness"))).toHaveLength(0);
+  });
+
+  it("accepts only the exact isolated Updates branch on staging and keeps production and project bindings strict", async () => {
+    const isolated = { ...env, APP_ENVIRONMENT: "staging", GITHUB_REF: `refs/heads/${UPDATES_HTML_BRANCH}`,
+      SUPABASE_PROJECT_REF: "nocteiuvohesvqbowchw", NEXT_PUBLIC_SUPABASE_URL: "https://nocteiuvohesvqbowchw.supabase.co" };
+    const { request, clock } = fixture({ empty: true });
+    const result = await checkStartregieReads(isolated, request, clock);
+    expect(result).toMatchObject({ environment: "staging", readOnly: true, changedRows: 0, messagesSent: 0, productionPerformanceProven: false });
+    expect(result.checks).toHaveLength(3);
+    for (const change of [
+      { APP_ENVIRONMENT: "production", SUPABASE_PROJECT_REF: env.SUPABASE_PROJECT_REF, NEXT_PUBLIC_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL },
+      { SUPABASE_PROJECT_REF: env.SUPABASE_PROJECT_REF, NEXT_PUBLIC_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL },
+      { GITHUB_REF: `refs/heads/${UPDATES_HTML_BRANCH}-other` },
+      { GITHUB_SHA: "b".repeat(40) },
+    ]) {
+      const denied = fixture();
+      await expect(checkStartregieReads({ ...isolated, ...change }, denied.request, denied.clock)).rejects.toThrow("STARTREGIE_READ_CHECK_RELEASE_CONFIGURATION");
+      expect(denied.request).not.toHaveBeenCalled();
+    }
   });
 
   it.each(["snapshot", "readiness"] as const)("fails closed on an unsuccessful %s read without printing returned private details", async failure => {

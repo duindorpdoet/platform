@@ -1,6 +1,7 @@
 import { enabledSessionReads, sessionReadQuery } from "./production-read-query.mjs";
 import { createHmac } from "node:crypto";
 import { pathToFileURL } from "node:url";
+import { UPDATES_HTML_BRANCH } from "./staging-installed-history.mjs";
 
 const EVENT_SLUG = "duindorp-halloween-2026";
 const PROJECTS = { production: "dtubngvxfbupgvgfrjko", staging: "nocteiuvohesvqbowchw" };
@@ -33,10 +34,12 @@ function reasonCodes(readiness) {
 
 export async function checkStartregieReads(env = process.env, request = fetch, now = () => performance.now()) {
   const environment = env.APP_ENVIRONMENT, ref = env.SUPABASE_PROJECT_REF;
+  const releaseRef = env.GITHUB_REF === `refs/heads/${environment}`
+    || (environment === "staging" && env.GITHUB_REF === `refs/heads/${UPDATES_HTML_BRANCH}`);
   if (!["production", "staging"].includes(environment) || !/^[a-z]{20}$/.test(ref ?? "")
     || ref !== PROJECTS[environment]
     || env.NEXT_PUBLIC_SUPABASE_URL !== `https://${ref}.supabase.co`
-    || env.GITHUB_REPOSITORY !== "duindorpdoet/platform" || env.GITHUB_REF !== `refs/heads/${environment}`
+    || env.GITHUB_REPOSITORY !== "duindorpdoet/platform" || !releaseRef
     || !/^[a-f0-9]{40}$/.test(env.APP_REVISION ?? "") || env.APP_REVISION !== env.GITHUB_SHA
     || !env.SUPABASE_ACCESS_TOKEN || !(env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)) fail("RELEASE_CONFIGURATION");
 
