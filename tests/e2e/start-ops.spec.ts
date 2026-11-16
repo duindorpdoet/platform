@@ -48,10 +48,10 @@ test('real Startregie concepts, confirmation, private route and publication pers
  before=await snapshot();const group=before.groups.find((item:{id:string})=>item.id===groupId),point=before.startPoints.find((point:{id:string})=>point.id===seededPoint.id);
  // A previous failed attempt may already have published 17:30. Establish an
  // actual different concept through the same authorized, versioned API first.
- const baseline=await client.schema('api').rpc('admin_startregie_move_group',{_group_id:groupId,_start_point_id:point.id,_starts_at:at('2026-10-31T18:30:00+01:00'),_expected_group_version:group.version,_preference_match:'neutral',_reason:'Afzonderlijk lokaal beginconcept voor een herhaalbare browserpublicatie'});
+ const baseline=await client.schema('api').rpc('admin_startregie_move_group',{_group_id:groupId,_start_point_id:point.id,_starts_at:at('2026-10-31T17:40:00+01:00'),_expected_group_version:group.version,_preference_match:'neutral',_reason:'Afzonderlijk lokaal beginconcept voor een herhaalbare browserpublicatie'});
  expect(baseline.error).toBeNull();
  const prepared=await snapshot(),preparedOperation=prepared.ops.groups.find((item:{groupId:string})=>item.groupId===groupId);
- expect(Date.parse(preparedOperation.startsAt)).toBe(Date.parse(at('2026-10-31T18:30:00+01:00')));
+ expect(Date.parse(preparedOperation.startsAt)).toBe(Date.parse(at('2026-10-31T17:40:00+01:00')));
  await page.reload();await selectOrganizationSection(page,'Startregie');
  const card=page.locator('.start-ops-assignment').filter({has:page.getByText(group.systemCode,{exact:true})});
  await card.getByRole('combobox',{name:`Startpunt voor ${group.systemCode}`}).selectOption(point.id);
