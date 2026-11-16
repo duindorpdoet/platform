@@ -5,15 +5,20 @@ vi.mock("server-only", () => ({}));
 import { MAIL_MESSAGE_TYPES } from "./mail-catalog";
 import { renderTransactionalMail, UnknownMailTemplateError } from "./templates";
 
+const originalAppEnvironment = process.env.APP_ENVIRONMENT;
 const originalAppUrl = process.env.APP_URL;
 const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
 beforeAll(() => {
+  // This suite verifies the legacy default copy, independently of the deploy environment.
+  process.env.APP_ENVIRONMENT = "test";
   process.env.APP_URL = "https://staging-halloween.duindorpdoet.nl";
   process.env.NEXT_PUBLIC_SITE_URL = "https://build.example.invalid";
 });
 
 afterAll(() => {
+  if (originalAppEnvironment === undefined) delete process.env.APP_ENVIRONMENT;
+  else process.env.APP_ENVIRONMENT = originalAppEnvironment;
   if (originalAppUrl === undefined) delete process.env.APP_URL;
   else process.env.APP_URL = originalAppUrl;
   if (originalSiteUrl === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;

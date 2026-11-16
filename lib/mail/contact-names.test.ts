@@ -1,9 +1,19 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { renderTransactionalMail } from "./templates";
+const originalAppEnvironment = process.env.APP_ENVIRONMENT;
 const originalAppUrl = process.env.APP_URL;
-beforeAll(() => { process.env.APP_URL = "https://staging-halloween.duindorpdoet.nl"; });
-afterAll(() => { if (originalAppUrl === undefined) delete process.env.APP_URL; else process.env.APP_URL = originalAppUrl; });
+beforeAll(() => {
+  // Name handling here uses the legacy default catalog, not the production-only 2026 request.
+  process.env.APP_ENVIRONMENT = "test";
+  process.env.APP_URL = "https://staging-halloween.duindorpdoet.nl";
+});
+afterAll(() => {
+  if (originalAppEnvironment === undefined) delete process.env.APP_ENVIRONMENT;
+  else process.env.APP_ENVIRONMENT = originalAppEnvironment;
+  if (originalAppUrl === undefined) delete process.env.APP_URL;
+  else process.env.APP_URL = originalAppUrl;
+});
 
 describe("person and group fields in final transactional mail", () => {
   it("describes the G-46 samenloop without presenting a code as the contact person", () => {
