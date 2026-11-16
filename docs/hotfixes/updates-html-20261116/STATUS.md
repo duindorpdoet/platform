@@ -1,6 +1,8 @@
-# Productiehotfix: HTML in Updates
+# Productiehotfix: HTML in Updates en aangepaste betaalverzoeken
 
 Danny heeft op 16 november 2026 expliciet productie-uitrol van de hotfix voor `/admin?view=updates` gevraagd. Basis: de bestaande productie-SHA `ce6bbb52551c4005a24c04fe3a578a4c3860cc18`; FrightNight-bron en migraties worden niet naar productie gepromoveerd.
+
+De aanvullende opdracht vervangt de betaalverzoekinhoud met de aangeleverde ZIP. Alleen `payment_link_ready` krijgt in de serveromgeving `production` met `EVENT_SLUG=duindorp-halloween-2026` de nieuwe tekst. Vier HTML-/tekstvoorbeelden zijn als exacte regressiefixtures opgenomen. De overige betaalmails, verzendacties, ontvangers en betalingsstatussen blijven behouden. Er is geen campagne gestart. Zie [herkomst en afbakening](betaalmails/README.md).
 
 Gewone tekst en veilige HTML met HTTPS-afbeeldingen werken in het voorbeeld, de deelnemersweergave en de update-mail. Enter en lege regels blijven zichtbaar. Afbeeldingen hebben een tekstalternatief. De gedeelde renderer verwijdert actieve HTML, eventhandlers, onveilige URL's en onveilige CSS. De afbeeldingshulp gebruikt bestaande openbare URL's; zij biedt geen uploadservice.
 
@@ -8,10 +10,10 @@ De enige nieuwe productie-migratie is `20261116155248_participant_update_html_so
 
 Werkelijk uitgevoerd op deze wijziging:
 
-- 87 unitproeven in `lib/mail` en `lib/participant-updates` geslaagd.
+- 106 unitproeven in `lib/mail` en `lib/participant-updates` geslaagd, inclusief 19 nieuwe betaalmailproeven met vier bytegelijke HTML-/tekstvoorbeelden, omgevingsgrens, veilige links en behouden overige betaalmails.
 - 34 pgTAP-contracten geslaagd in een nieuwe netwerkloze PostgreSQL 17-proef met relevante echte CE6-schema-/functiedefinities. De testtransactie is teruggedraaid; de eigen tijdelijke container is verwijderd. Dit vervangt de volledige Supabase-CI niet.
 - Zes Chromiumcomponentproeven geslaagd, met echte component en renderer en een expliciete RPC-stub. Mobiele afbeelding, previewknoppen, Enter, toetsenbordbediening en bestaande publicatie-/mailflags gecontroleerd. Zie [browserbewijs](README.md).
-- Alle tien oorspronkelijke productie-betaalmailvarianten opnieuw gerenderd: HTML en tekst bytegelijk aan de CE6-export. Geen mail verzonden.
+- Vóór de aanvullende betaalmailopdracht zijn alle tien oorspronkelijke productie-betaalmailvarianten bytegelijk aan de CE6-export geverifieerd. De vier betaalverzoekvarianten zijn daarna bewust vervangen door de aangeleverde voorbeelden. De historische export blijft afzonderlijk bewaard. Geen mail verzonden.
 - Gerichte ESLint en `git diff --check` geslaagd. Volledige lokale typecheck stuit op ontbrekende reeds bestaande dependencies in de gedeelde installatie; CI installeert het volledige lockbestand.
 
 De dependencies zijn exact vastgezet op `sanitize-html` 2.18.1, `htmlparser2` 12.0.0 en `@types/sanitize-html` 2.16.2. Versie 2.18.2 is niet gebruikt omdat zij buiten de geldende minimale publicatieleeftijd viel. Bestaande versies zijn behouden. Een onafhankelijke bronreview vond een Unicode-grensverschil; dit is gecorrigeerd en met 20.000/20.001 astrale tekens geverifieerd.
