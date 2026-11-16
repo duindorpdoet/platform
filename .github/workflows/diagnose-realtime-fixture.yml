@@ -1,0 +1,81 @@
+name: Diagnostic only — a646 realtime fixtures (not a release gate)
+
+# Disposable hosted-local SQL/browser evidence only. Full candidate CI remains mandatory.
+on:
+  push:
+    branches:
+      - codex/diagnose-realtime-fixture-a6467b5d
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diagnose-realtime-fixture-a6467b5d
+  cancel-in-progress: false
+
+jobs:
+  realtime-fixture-diagnostic:
+    name: Diagnostic only — exact a646 SQL and 45-child browser
+    if: github.repository == 'duindorpdoet/platform' && github.ref == 'refs/heads/codex/diagnose-realtime-fixture-a6467b5d'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      APP_ENVIRONMENT: staging
+      POORTENBOEK_DEMO_ENABLED: "true"
+      REGISTRATION_MODE: staging_test
+      AUTH_MAIL_MODE: disabled
+      MAIL_MODE: disabled
+      APP_URL: https://127.0.0.1:3443
+      ALLOWED_ORIGINS: https://127.0.0.1:3443,http://127.0.0.1:3100
+      ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
+    steps:
+      - name: Check out the exact immutable candidate
+        uses: actions/checkout@v7
+        with:
+          ref: a6467b5d4368a423a5a6eeb9b977894104a10df1
+          persist-credentials: false
+      - name: Verify immutable diagnostic source
+        run: test "$(git rev-parse HEAD)" = 'a6467b5d4368a423a5a6eeb9b977894104a10df1'
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pnpm
+        run: npm install --global pnpm@11.25.0
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Start only this hosted runner's disposable local Supabase
+        run: |
+          if ! pnpm exec supabase start >/tmp/duindorp-supabase-start.log 2>&1; then
+            tail -n 200 /tmp/duindorp-supabase-start.log
+            exit 1
+          fi
+      - name: Prove local binding and isolate only this disposable database's cron
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" node --input-type=module -e 'import { requireLocalTogetherDatabase } from "./scripts/acceptance/together-fixtures.mjs"; requireLocalTogetherDatabase(); console.log("Disposable local Supabase fixture binding confirmed.");'
+          docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "ALTER SYSTEM SET cron.launch_active_jobs=off"
+          docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "SELECT pg_reload_conf()"
+      - name: Reset only the disposable local database from the exact candidate
+        run: pnpm exec supabase db reset
+      - name: Exercise all four changed SQL fixtures against real PostgreSQL
+        run: |
+          pnpm exec supabase test db --local supabase/tests/067_live_new_house_and_time_guards.sql supabase/tests/068_large_group_full_journey.sql supabase/tests/075_no_street_arrival_sequence.sql supabase/tests/086_planboard_live_dispatch.sql
+      - name: Reset only the disposable local database before the original browser chain
+        run: pnpm exec supabase db reset
+      - name: Install only Chromium for the original 45-child browser configuration
+        run: |
+          bash scripts/acceptance/prepare-browser-runner.sh
+          pnpm exec playwright install --with-deps chromium
+      - name: Build exact application and exercise the unchanged native 45-child HTTPS chain
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+          export NEXT_PUBLIC_VAPID_PUBLIC_KEY="$(node --input-type=module -e 'import webPush from "web-push"; console.log(webPush.generateVAPIDKeys().publicKey)')"
+          test "$(docker exec supabase_db_duindorphalloween psql -U supabase_admin -d postgres -X -qAt -v ON_ERROR_STOP=1 -c 'show cron.launch_active_jobs')" = 'off'
+          NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 pnpm build
+          pnpm exec playwright test --config playwright.ops-chain.config.ts
+      - name: Stop only this runner's disposable local Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
