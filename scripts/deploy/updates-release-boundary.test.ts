@@ -29,7 +29,7 @@ describe('participant update integration preserves the normal FrightNight releas
     expect(mail).toContain('Verify isolated sink and Auth configuration without requesting codes');
     expect(mail).toContain('node scripts/deploy/check-frightnight-safety.mjs');
     expect(mail).toContain('node scripts/deploy/check-frightnight-public-rpc.mjs');
-    expect(mail).not.toContain('scripts/deploy/staging_mail.py');
+    expect(mail).not.toContain('staging_mail.py');
     expect(workflow).toContain('node scripts/acceptance/frightnight-staging.mjs');
     expect(workflow).toContain('node scripts/acceptance/frightnight-load.mjs');
     expect(workflow).toContain('FRIGHTNIGHT_SCENARIO_BACKUP: "true"');
