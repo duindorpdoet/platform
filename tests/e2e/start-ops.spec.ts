@@ -5,7 +5,8 @@ import {randomUUID} from 'node:crypto';
 import {syntheticPushMaterial} from '../../scripts/acceptance/push-fixtures.mjs';
 import {prepareFixtureGuidance,selectOrganizationSection} from './helpers/guidance';
 import {assertReadableLayout} from './helpers/layout';
-import {prepareOtherRouteAppointments,reviewCanonicalFixtureRoutes} from './helpers/canonical-routes';
+import {fixtureSql,prepareOtherRouteAppointments,reviewCanonicalFixtureRoutes} from './helpers/canonical-routes';
+import {requireLocalTogetherDatabase,sql} from '../../scripts/acceptance/together-fixtures.mjs';
 
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const event='duindorp-halloween-2026',groupId='23000000-0000-0000-0000-000000000001';
@@ -21,10 +22,20 @@ async function login(context:BrowserContext,email='admin@example.invalid',passwo
 test.beforeEach(()=>test.skip(!url||!key,'Requires isolated real Auth and database'));
 test('real Startregie concepts, confirmation, private route and publication persist across devices',async({page,context})=>{
  test.setTimeout(90_000);
+ // Exercise the real before-release privacy boundary on future synthetic data.
+ // A retry must not shift this calendar again or rewrite immutable publications.
+ requireLocalTogetherDatabase();
+ const calendar=JSON.parse(sql("select jsonb_build_object('date',local_date::text,'year',extract(year from current_date)::integer+2,'fixture',settings->>'fixture'='true','closed',app_private.event_closure_exists(id)) from app_private.events where slug='duindorp-halloween-2026'"));
+ expect(calendar.fixture).toBe(true);expect(calendar.closed).toBe(false);
+ const fixtureYear=String(calendar.year),fixtureDate=`${fixtureYear}-10-31`;
+ if(calendar.date==='2026-10-31')sql(`begin;${fixtureSql('supabase/tests/fixtures/future-legacy-calendar.inc')}commit;`);
+ else expect(calendar.date).toBe(fixtureDate);
+ expect(sql("select local_date::text from app_private.events where slug='duindorp-halloween-2026'")).toBe(fixtureDate);
+ const at=(value:string)=>value.replace(/^2026-/,`${fixtureYear}-`);
  const client=await login(context);
  async function snapshot(){const result=await client.schema('api').rpc('admin_startregie_snapshot',{_event_slug:event});expect(result.error).toBeNull();return result.data;}
  let before=await snapshot();
- const configured=await client.schema('api').rpc('admin_startregie_settings_save',{_event_slug:event,_settings:{...before.settings,plannerMode:'dynamic',firstStartAt:'2026-10-31T15:00:00Z',globalOrdinaryStopAt:'2026-10-31T19:30:00Z',finalPortalId:'12000000-0000-0000-0000-000000000030',finaleOpensAt:'2026-10-31T18:00:00Z',finaleLastArrivalAt:'2026-10-31T20:30:00Z',finaleClosesAt:'2026-10-31T21:00:00Z',finaleMaxGroups:10,finaleMaxChildren:100,finaleAvailable:true},_expected_version:before.settings.version,_reason:'Isolated browser acceptance of the complete publication flow'});expect(configured.error).toBeNull();
+ const configured=await client.schema('api').rpc('admin_startregie_settings_save',{_event_slug:event,_settings:{...before.settings,plannerMode:'dynamic',firstStartAt:at('2026-10-31T15:00:00Z'),globalOrdinaryStopAt:at('2026-10-31T19:30:00Z'),finalPortalId:'12000000-0000-0000-0000-000000000030',finaleOpensAt:at('2026-10-31T18:00:00Z'),finaleLastArrivalAt:at('2026-10-31T20:30:00Z'),finaleClosesAt:at('2026-10-31T21:00:00Z'),finaleMaxGroups:10,finaleMaxChildren:100,finaleAvailable:true},_expected_version:before.settings.version,_reason:'Isolated browser acceptance of the complete publication flow'});expect(configured.error).toBeNull();
  await page.setViewportSize({width:1348,height:926});await page.goto('/admin');await selectOrganizationSection(page,'Startregie');
  await expect(page.getByRole('heading',{name:'Iedere groep een goede start.'})).toBeVisible();
  await page.locator('.start-ops-point-shortcuts summary').click();
@@ -35,9 +46,17 @@ test('real Startregie concepts, confirmation, private route and publication pers
  await pointCard.getByRole('button',{name:'Startpunt bevestigen'}).click();expect((await confirmation).ok()).toBe(true);
  await expect(pointCard).toContainText('Startpunt: ja');await expect(pointCard).not.toContainText('75 meter');
  before=await snapshot();const group=before.groups.find((item:{id:string})=>item.id===groupId),point=before.startPoints.find((point:{id:string})=>point.id===seededPoint.id);
+ // A previous failed attempt may already have published 17:30. Establish an
+ // actual different concept through the same authorized, versioned API first.
+ const baseline=await client.schema('api').rpc('admin_startregie_move_group',{_group_id:groupId,_start_point_id:point.id,_starts_at:at('2026-10-31T18:30:00+01:00'),_expected_group_version:group.version,_preference_match:'neutral',_reason:'Afzonderlijk lokaal beginconcept voor een herhaalbare browserpublicatie'});
+ expect(baseline.error).toBeNull();
+ const prepared=await snapshot(),preparedOperation=prepared.ops.groups.find((item:{groupId:string})=>item.groupId===groupId);
+ expect(Date.parse(preparedOperation.startsAt)).toBe(Date.parse(at('2026-10-31T18:30:00+01:00')));
+ await page.reload();await selectOrganizationSection(page,'Startregie');
  const card=page.locator('.start-ops-assignment').filter({has:page.getByText(group.systemCode,{exact:true})});
  await card.getByRole('combobox',{name:`Startpunt voor ${group.systemCode}`}).selectOption(point.id);
  await card.getByRole('combobox',{name:`Starttijd voor ${group.systemCode}`}).selectOption({label:'17:30 uur'});
+ await expect(card.getByRole('button',{name:'Concept opslaan'})).toBeEnabled();
  await card.getByRole('button',{name:'Concept opslaan'}).click();await expect(card).toContainText(/Conceptindeling|Nieuw concept/);
  await expect(card.getByRole('button',{name:'Startafspraken bevestigen en versturen'})).toBeEnabled();
  await card.getByRole('button',{name:'Startafspraken bevestigen en versturen'}).click();
@@ -53,7 +72,7 @@ test('real Startregie concepts, confirmation, private route and publication pers
  await page.reload();await expect(card).toContainText('Starttijd gepubliceerd');
  const parent=createClient(url!,key!,{auth:{persistSession:false,autoRefreshToken:false}});expect((await parent.auth.signInWithPassword({email:'parent-a@example.invalid',password:'local-test-only'})).error).toBeNull();
  const publicSnapshot=await parent.schema('api').rpc('group_snapshot',{_group_id:groupId});expect(publicSnapshot.error).toBeNull();
- expect(publicSnapshot.data.group.start.startsAt).toBe('2026-10-31T16:30:00+00:00');expect(publicSnapshot.data.group.start.address).toBeNull();expect(publicSnapshot.data.group.start.coordinate).toBeNull();expect(publicSnapshot.data.group.start.name).toBe('Startlocatie volgt');
+ expect(publicSnapshot.data.group.start.startsAt).toBe(at('2026-10-31T16:30:00+00:00'));expect(publicSnapshot.data.group.start.address).toBeNull();expect(publicSnapshot.data.group.start.coordinate).toBeNull();expect(publicSnapshot.data.group.start.name).toBe('Startlocatie volgt');
  for(const width of [1348,390,360]){
   await page.setViewportSize({width,height:width===1348?926:844});await assertReadableLayout(page);
   await page.evaluate(()=>{window.scrollTo(0,0);for(const element of document.querySelectorAll<HTMLElement>('*'))if(element.scrollTop>0)element.scrollTo({top:0,behavior:'instant'});});
