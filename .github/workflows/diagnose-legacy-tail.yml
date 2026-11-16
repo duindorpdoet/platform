@@ -1,0 +1,144 @@
+name: Diagnostic only — isolated legacy tail (not a release gate)
+
+# This workflow checks an immutable candidate in a disposable hosted runner.
+# It neither replaces full CI nor authorizes a staging/production release.
+on:
+  push:
+    branches:
+      - codex/diagnose-legacy-tail-20261116
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diagnose-legacy-tail-20261116
+  cancel-in-progress: false
+
+jobs:
+  legacy-tail-diagnostic:
+    name: Diagnostic only — exact 05b4 legacy tail
+    if: github.repository == 'duindorpdoet/platform' && github.ref == 'refs/heads/codex/diagnose-legacy-tail-20261116'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SKIP_MAIL_TESTS: "false"
+    steps:
+      - name: Check out the exact candidate, not diagnostic branch application code
+        uses: actions/checkout@v7
+        with:
+          ref: 05b4aee8ec5286c01766210611fef7bc10b0556a
+          persist-credentials: false
+      - name: Verify immutable diagnostic source
+        run: test "$(git rev-parse HEAD)" = '05b4aee8ec5286c01766210611fef7bc10b0556a'
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install pnpm
+        run: npm install --global pnpm@11.25.0
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Start disposable local Supabase
+        run: |
+          if ! pnpm exec supabase start >/tmp/duindorp-supabase-start.log 2>&1; then
+            tail -n 200 /tmp/duindorp-supabase-start.log
+            exit 1
+          fi
+      - name: Rebuild only the disposable local database from the exact candidate
+        run: pnpm exec supabase db reset
+      - name: Prove local fixture binding without remote credentials
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" node --input-type=module -e 'import { requireLocalTogetherDatabase } from "./scripts/acceptance/together-fixtures.mjs"; requireLocalTogetherDatabase(); console.log("Disposable local Supabase fixture binding confirmed.");'
+      - name: Generate the public VAPID key required by the original tail
+        run: |
+          export NEXT_PUBLIC_VAPID_PUBLIC_KEY="$(node --input-type=module -e 'import webPush from "web-push"; console.log(webPush.generateVAPIDKeys().publicKey)')"
+          echo "NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY" >> "$GITHUB_ENV"
+      - name: Install Chromium and WebKit for the unchanged HTTPS browser sets
+        run: |
+          bash scripts/acceptance/prepare-browser-runner.sh
+          pnpm exec playwright install --with-deps chromium webkit
+      # Exact copies of candidate .github/workflows/ci.yml database steps 33–37.
+      # Fresh reset replaces unrelated earlier fixtures, not their mandatory CI gates.
+      - name: Run child credential concurrency and private HTTPS browser flows
+        env:
+          APP_ENVIRONMENT: staging
+          POORTENBOEK_DEMO_ENABLED: "true"
+          REGISTRATION_MODE: staging_test
+          APP_URL: https://127.0.0.1:3443
+          ALLOWED_ORIGINS: https://127.0.0.1:3443,http://127.0.0.1:3100
+          ABUSE_HASH_SECRET: local-ci-portal-registration-hash-secret
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+          node scripts/acceptance/poortenboek-concurrency.mjs
+          NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 pnpm build
+          pnpm exec playwright test --config playwright.poortenboek.config.ts
+          pnpm exec supabase db reset
+          pnpm exec playwright test --config playwright.ops-chain.config.ts
+          pnpm exec supabase db reset
+          node scripts/acceptance/poortkamer-concurrency.mjs
+          pnpm exec playwright test --config playwright.poortkamer.config.ts
+      - name: Run real live planboard, mail settings and parent recovery acceptance over HTTPS
+        env:
+          MAIL_ADMIN_USER_IDS: f0000000-0000-0000-0000-000000000001
+          APP_ENVIRONMENT: staging
+          POORTENBOEK_DEMO_ENABLED: "true"
+          REGISTRATION_MODE: staging_test
+          APP_URL: https://127.0.0.1:3443
+          ALLOWED_ORIGINS: https://127.0.0.1:3443,http://127.0.0.1:3100
+          ABUSE_HASH_SECRET: local-ci-planboard-hash-secret
+        run: |
+          pnpm exec supabase db reset
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+          node scripts/acceptance/resend-release-config.mjs
+          pnpm exec playwright test --config playwright.planboard.config.ts
+          pnpm exec playwright test --config playwright.account-app.config.ts
+          pnpm exec supabase db reset
+          pnpm exec playwright test --config playwright.guidance.config.ts
+      - name: Verify persistent printable gate QR and manual codes over HTTPS
+        env:
+          APP_ENVIRONMENT: staging
+          POORTENBOEK_DEMO_ENABLED: "true"
+          REGISTRATION_MODE: staging_test
+          MAIL_MODE: disabled
+          APP_URL: https://127.0.0.1:3443
+          ALLOWED_ORIGINS: https://127.0.0.1:3443,http://127.0.0.1:3100
+          ABUSE_HASH_SECRET: local-ci-gate-print-hash-secret
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export CHILD_CODE_PEPPER="$(openssl rand -base64 32)" CHILD_CODE_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+          pnpm exec supabase db reset
+          pnpm exec playwright test --config playwright.portal-qr.config.ts --project=qr-desktop
+          pnpm exec supabase db reset
+          pnpm exec playwright test --config playwright.portal-qr.config.ts --project=qr-mobile
+          pnpm exec supabase db reset
+      - name: Run editorial publication, newsletter and push acceptance
+        env:
+          APP_ENVIRONMENT: staging
+          REGISTRATION_MODE: staging_test
+          REDACTIEKAMER_ENABLED: "true"
+          NEWSLETTER_SENDING_ENABLED: "true"
+          WEB_PUSH_SENDING_ENABLED: "true"
+          EDITORIAL_ALLOWED_RECIPIENTS: admin@example.invalid,parent-a@example.invalid
+          APP_URL: https://127.0.0.1:3443
+          NEXT_PUBLIC_SITE_URL: https://127.0.0.1:3443
+          ALLOWED_ORIGINS: https://127.0.0.1:3443,http://127.0.0.1:3100
+        run: |
+          pnpm exec supabase db reset
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL" NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" SUPABASE_SECRET_KEY="$SECRET_KEY"
+          export EDITORIAL_TOKEN_SECRET="$(openssl rand -hex 32)"
+          node scripts/acceptance/editorial-concurrency.mjs
+          pnpm exec supabase db reset
+          NEXT_PUBLIC_SUPABASE_URL=https://127.0.0.1:3444 pnpm build
+          pnpm exec playwright test --config playwright.editorial.config.ts
+      - name: Lint database schemas
+        run: pnpm exec supabase db lint --level warning
+      - name: Stop only this runner's disposable local Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
