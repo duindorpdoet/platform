@@ -81,6 +81,21 @@ async function noOverflow(page: Page) {
     ),
   ).toBe(true);
 }
+async function saveCandyBag(page: Page, childId: string) {
+  const checkbox = page.getByRole("checkbox", { name: "Snoeptas klaar", exact: true });
+  await expect(checkbox).not.toBeChecked();
+  const saved = page.waitForResponse((response) =>
+    response.url().endsWith("/api/poortenboek/checklist") && response.request().method() === "POST",
+  );
+  // This controlled checkbox changes only after a confirmed server snapshot.
+  await checkbox.click();
+  const response = await saved;
+  expect(response.status()).toBe(200);
+  expect(response.request().postDataJSON().values[2]).toBe(true);
+  expect((await response.json()).checklist[2]).toBe(true);
+  await expect(checkbox).toBeChecked();
+  expect(sql(`select checklist[3] from app_private.poortenboek_progress where child_id='${childId}';`)).toBe("t");
+}
 async function realFamily(context: BrowserContext, guidanceComplete = true) {
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -253,9 +268,7 @@ test("parent opens each child directly and switches safely on one shared device"
   expect(firstCookie.expires - Date.now() / 1000).toBeGreaterThan(43_170);
   expect(firstCookie.expires - Date.now() / 1000).toBeLessThanOrEqual(43_200);
   expect(codeCount()).toBe(1);
-  const saved = page.waitForResponse((response) => response.url().endsWith("/api/poortenboek/checklist"));
-  await page.getByRole("checkbox", { name: "Snoeptas klaar", exact: true }).check();
-  expect((await saved).status()).toBe(200);
+  await saveCandyBag(page, children[0].id);
 
   const [foreign] = createTogetherFixtures(1, 1, 1);
   const foreignChild = sql(`select child_id from app_private.registration_children where registration_id='${foreign.members[0].id}';`).trim();
@@ -320,9 +333,7 @@ test("real parent codes, independent child sessions, renewal and account switch"
     await childOnly.close();
   }
   await page.bringToFront();
-  await page
-    .getByRole("checkbox", { name: "Snoeptas klaar", exact: true })
-    .check();
+  await saveCandyBag(page, children[0].id);
   await page.reload();
   await expect(
     page.getByRole("checkbox", { name: "Snoeptas klaar", exact: true }),
@@ -436,10 +447,13 @@ test("private PWA responses, offline neutral view and no stored child data", asy
       return response;
     };
   });
-  await page
-    .getByRole("checkbox", { name: "Snoeptas klaar", exact: true })
-    .check();
+  // The response is deliberately held: an optimistic checked state would be
+  // incorrect, and locator.check() would demand that unconfirmed state.
+  const checkbox = page.getByRole("checkbox", { name: "Snoeptas klaar", exact: true });
+  await expect(checkbox).not.toBeChecked();
+  await checkbox.click();
   await page.waitForFunction(() => "releaseChildResponse" in window);
+  await expect(checkbox).not.toBeChecked();
   await context.setOffline(true);
   await expect(
     page.getByRole("heading", { name: "De verbinding rust even" }),
