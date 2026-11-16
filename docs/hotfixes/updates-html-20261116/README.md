@@ -9,6 +9,8 @@ Alle gebruikte logo's komen uit de lokale export van het bestaande productiebeel
 
 De zes permanente componentproeven in `tests/participant-updates/updates.spec.ts` zijn uitgevoerd en groen: Enter/lege regels en toetsenbordpreview; HTML/XSS en gedecodeerde brede afbeelding op 390px; HTTPS/alt-invoer en escaping; inhoudslimiet en lege actieve HTML; oorspronkelijke RPC met bevestiging en e-mail uit; bestaande verplichte e-mailkeuze bij belangrijke updates. De mobiele proef controleert ook leesbare afmetingen van beide previewknoppen.
 
+Na Danny's keuze voor het kopieerbare intrekkingssjabloon zijn twee aanvullende Chromiumproeven toegevoegd en geslaagd (acht totaal). Deze toetsen de 2026-begrenzing, selecteerbare HTML, conceptgebruik zonder RPC, bevestiging bij overschrijven en behoud van doelgroep, prioriteit en mailkeuze. De bovenstaande vier beelden blijven bewijs van hun oorspronkelijke bronhashen. De aanvullende sjabloonbeelden staan afzonderlijk in `outputs/2026-11-16-betaalmails-aangepast/controle/` met eigen bronhashen.
+
 De XSS-proef bevat ook de CDATA-invoer uit het primaire [GHSA-2rjc-9xvg-45j7-advies](https://github.com/apostrophecms/apostrophe/security/advisories/GHSA-2rjc-9xvg-45j7), voor `noscript`, `style`, `textarea`, `script` en `xmp`. In de echte browser blijft alleen de veilige tekst over: geen verborgen link of afbeelding in de DOM en nul requestpogingen naar het verborgen afbeeldings-/linkdomein. Dit test de gerichte inputnormalisatie in de gedeelde renderer; de bestaande afhankelijkhedencontrole is behouden.
 
 Alle vier beelden zijn visueel gecontroleerd. Dit bewijs betreft de lokale component- en mailweergave; deployment, echte accounts, e-mailbezorging en afzonderlijke mailclients vallen erbuiten.

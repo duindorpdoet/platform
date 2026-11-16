@@ -1,9 +1,10 @@
 "use client";
 
 import { useId, useMemo, useRef, useState } from "react";
-import { BellRing, Eye, ImagePlus, Send } from "lucide-react";
+import { BellRing, Eye, FileText, ImagePlus, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { renderParticipantUpdate } from "@/lib/participant-updates/content";
+import { PAYMENT_REQUEST_WITHDRAWN_2026 } from "@/lib/participant-updates/templates";
 
 const MAX_BODY_LENGTH = 20_000;
 const escapeAttribute = (value: string) => value.replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]!));
@@ -21,13 +22,22 @@ export function ParticipantUpdates({ eventSlug }: { eventSlug: string }) {
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
   const [imageNotice, setImageNotice] = useState("");
+  const [templateNotice, setTemplateNotice] = useState("");
   const editor = useRef<HTMLTextAreaElement>(null);
+  const templateEditor = useRef<HTMLTextAreaElement>(null);
   const inputId = useId();
   const previewId = useId();
   const rendered = useMemo(() => renderParticipantUpdate(body), [body]);
   const hasContent = Boolean(rendered.text.trim() || /<img\b/i.test(rendered.html));
   const essential = priority === "important" || priority === "urgent";
   const sendEmail = essential || email;
+
+  function useWithdrawalTemplate() {
+    if ((title.length > 0 || body.length > 0) && !window.confirm("Je huidige titel en bericht vervangen door het sjabloon voor het ingetrokken betaalverzoek?")) return;
+    setTitle(PAYMENT_REQUEST_WITHDRAWN_2026.title);
+    setBody(PAYMENT_REQUEST_WITHDRAWN_2026.body);
+    setTemplateNotice("Sjabloon als concept ingevuld. Er is niets gepubliceerd of verstuurd.");
+  }
 
   function insertImage() {
     let url: URL;
@@ -65,6 +75,19 @@ export function ParticipantUpdates({ eventSlug }: { eventSlug: string }) {
 
   return <section className="panel">
     <div className="row-between"><div><p className="kicker">Rolgerichte communicatie</p><h2>Deelnemersupdates</h2><p>Publiceer alleen operationele informatie die deze doelgroep nodig heeft. Leesstatus wordt per account bijgehouden.</p></div><BellRing /></div>
+    {eventSlug === PAYMENT_REQUEST_WITHDRAWN_2026.eventSlug && <details className="participant-update-image-helper">
+      <summary><FileText aria-hidden="true" />Sjabloon: betaalverzoek ingetrokken</summary>
+      <p>Dit sjabloon trekt geen betaalverzoeken in. Gebruik het alleen nadat de eerdere betaalverzoeken daadwerkelijk zijn ingetrokken.</p>
+      <p>Updates wordt aan accounts in de gekozen roldoelgroep gepubliceerd, zonder individueel betaalfilter. Publiceer dit bericht alleen als het klopt voor alle ontvangers in die doelgroep. Je doelgroep, prioriteit en e-mailkeuze blijven bij conceptgebruik behouden.</p>
+      <p>Het sjabloon bevat alleen de drie berichtalinea’s. Bij verzending per e-mail worden de vaste ondertekening en contactgegevens automatisch toegevoegd.</p>
+      <p><strong>Titel: {PAYMENT_REQUEST_WITHDRAWN_2026.title}</strong></p>
+      <label className="field"><span>Kopieerbare HTML van het sjabloon</span><textarea ref={templateEditor} rows={8} readOnly value={PAYMENT_REQUEST_WITHDRAWN_2026.body} /></label>
+      <div className="actions">
+        <button className="btn outline" type="button" onClick={() => { templateEditor.current?.focus(); templateEditor.current?.select(); }}>Selecteer sjabloon</button>
+        <button className="btn outline" type="button" disabled={busy} onClick={useWithdrawalTemplate}>Gebruik als concept</button>
+      </div>
+      {templateNotice && <p className="form-notice" role="status">{templateNotice}</p>}
+    </details>}
     <div className="grid-2">
       <label className="field"><span>Doelgroep</span><select value={role} onChange={(event) => setRole(event.target.value)}><option value="all">Alle rollen</option><option value="walker">Meelopers</option><option value="viewer">Meekijkers</option><option value="homeowner">Huiseigenaren</option></select></label>
       <label className="field"><span>Prioriteit</span><select value={priority} onChange={(event) => setPriority(event.target.value)}><option value="normal">Normaal</option><option value="important">Belangrijk</option><option value="urgent">Urgent</option></select></label>
