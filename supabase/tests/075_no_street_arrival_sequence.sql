@@ -1,6 +1,7 @@
 begin;
--- Realtime fixture windows and starts belong to this test day, not the expired 2026 calendar.
-update app_private.events set local_date=(clock_timestamp() at time zone timezone)::date where slug='duindorp-halloween-2026';
+-- Keep this local-only fixture on one transaction clock. Around midnight the
+-- already-past departure can belong to yesterday; use that actual departure day.
+update app_private.events set local_date=((date_bin(interval '10 minutes',transaction_timestamp(),'2000-01-01Z'::timestamptz)-interval '10 minutes') at time zone timezone)::date where slug='duindorp-halloween-2026';
 create extension if not exists pgtap with schema extensions;
 select no_plan();
 \ir helpers/prepolicy-dynamic-run.inc
@@ -12,7 +13,9 @@ update app_private.walking_edges set approved_at=null;
 update app_private.walking_nodes set verified_at=null;
 update app_private.start_points set walking_node_id=null,verified_at=null,version=version+1;
 update app_private.portal_windows set opens_at=clock_timestamp()-interval '1 hour',closes_at=clock_timestamp()+interval '5 hours';
-update app_private.event_route_settings set first_start_at=date_bin(interval '10 minutes',statement_timestamp(),'2000-01-01Z'::timestamptz)-interval '30 minutes',global_ordinary_stop_at=clock_timestamp()+interval '1 hour',
+-- This realtime fixture must also admit its chosen departure outside the
+-- historical 17:00-19:30 choice list; production departure validation stays active.
+update app_private.event_route_settings set preferred_start_min_local=time '00:00',preferred_start_max_local=time '23:50',preferred_start_step_minutes=10,first_start_at=date_bin(interval '10 minutes',transaction_timestamp(),'2000-01-01Z'::timestamptz)-interval '30 minutes',global_ordinary_stop_at=clock_timestamp()+interval '1 hour',
   final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at=clock_timestamp(),finale_last_arrival_at=clock_timestamp()+interval '4 hours',
   finale_closes_at=clock_timestamp()+interval '5 hours',ordinary_visit_seconds=60,route_buffer_seconds=0,
   finale_max_concurrent_groups=10,finale_max_concurrent_children=100,finale_available=true,planner_mode='dynamic'
@@ -23,7 +26,7 @@ select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-00000000
 do $$begin perform api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',
   (select version from app_private.start_points where id='20000000-0000-0000-0000-000000000001'));end $$;
 update journey set schedule_id=(api.admin_startregie_move_group('23000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001',
-  date_bin(interval '10 minutes',statement_timestamp(),'2000-01-01Z'::timestamptz)-interval '10 minutes',(select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000002'),
+  date_bin(interval '10 minutes',transaction_timestamp(),'2000-01-01Z'::timestamptz)-interval '10 minutes',(select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000002'),
   'neutral','Synthetische avond zonder straatnetwerk')->>'id')::uuid;
 do $$begin
  perform api.admin_startregie_confirm_start('duindorp-halloween-2026','23000000-0000-0000-0000-000000000002',1,(select event_version from journey));
