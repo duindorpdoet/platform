@@ -1,0 +1,23 @@
+# Productiehotfix: HTML in Updates
+
+Danny heeft op 16 november 2026 expliciet productie-uitrol van de hotfix voor `/admin?view=updates` gevraagd. Basis: de bestaande productie-SHA `ce6bbb52551c4005a24c04fe3a578a4c3860cc18`; FrightNight-bron en migraties worden niet naar productie gepromoveerd.
+
+Gewone tekst en veilige HTML met HTTPS-afbeeldingen werken in het voorbeeld, de deelnemersweergave en de update-mail. Enter en lege regels blijven zichtbaar. Afbeeldingen hebben een tekstalternatief. De gedeelde renderer verwijdert actieve HTML, eventhandlers, onveilige URL's en onveilige CSS. De afbeeldingshulp gebruikt bestaande openbare URL's; zij biedt geen uploadservice.
+
+De enige nieuwe productie-migratie is `20261116155248_participant_update_html_source_limit.sql` (SHA-256 `1c43dca740fe920752c77f9d4dd3bd9c1d1be2be8efb02818d8fe998e3d5089d`). Zij verruimt de bestaande bodycheck en de bestaande publicatie-RPC naar 20.000 Unicode-tekens. Bevoegdheden, doelgroep, verplichte belangrijke/urgente mail, voorkeuren, deduplicatie en audit blijven ongewijzigd. Historische rijen en grants worden behouden.
+
+Werkelijk uitgevoerd op deze wijziging:
+
+- 87 unitproeven in `lib/mail` en `lib/participant-updates` geslaagd.
+- 34 pgTAP-contracten geslaagd in een nieuwe netwerkloze PostgreSQL 17-proef met relevante echte CE6-schema-/functiedefinities. De testtransactie is teruggedraaid; de eigen tijdelijke container is verwijderd. Dit vervangt de volledige Supabase-CI niet.
+- Zes Chromiumcomponentproeven geslaagd, met echte component en renderer en een expliciete RPC-stub. Mobiele afbeelding, previewknoppen, Enter, toetsenbordbediening en bestaande publicatie-/mailflags gecontroleerd. Zie [browserbewijs](README.md).
+- Alle tien oorspronkelijke productie-betaalmailvarianten opnieuw gerenderd: HTML en tekst bytegelijk aan de CE6-export. Geen mail verzonden.
+- Gerichte ESLint en `git diff --check` geslaagd. Volledige lokale typecheck stuit op ontbrekende reeds bestaande dependencies in de gedeelde installatie; CI installeert het volledige lockbestand.
+
+De dependencies zijn exact vastgezet op `sanitize-html` 2.18.1, `htmlparser2` 12.0.0 en `@types/sanitize-html` 2.16.2. Versie 2.18.2 is niet gebruikt omdat zij buiten de geldende minimale publicatieleeftijd viel. Bestaande versies zijn behouden. Een onafhankelijke bronreview vond een Unicode-grensverschil; dit is gecorrigeerd en met 20.000/20.001 astrale tekens geverifieerd.
+
+De relevante [upstream CDATA-advisory GHSA-2rjc-9xvg-45j7](https://github.com/apostrophecms/apostrophe/security/advisories/GHSA-2rjc-9xvg-45j7) wordt aan deze afgeschermde rendergrens gemitigeerd met dezelfde invoernormalisatie als de upstreampatch. Vijf regressiegevallen verifiëren dat verborgen inhoud in noscript/style/textarea/script/xmp niet wordt geactiveerd. SVG, MathML en style-elementen zijn volledig verboden; de andere nieuwe upstreamfixes voor toegelaten SVG-/styleconfiguraties zijn daardoor niet van toepassing. Er is geen uitzondering op de dependency-publicatieleeftijd gemaakt.
+
+De datumcorrecties in lokale synthetische 2026-testfixtures zijn uitsluitend de reeds geverifieerde 9b-correcties: geen wijziging van de productieklok, evenementdatum of runtime. De staginghistory-compatibiliteit behandelt uitsluitend reeds geïnstalleerde, gehashte migraties voor CLI-validatie; deze behoren niet tot de productie-migratieset. De geobserveerde Storage-policydelegatie wordt alleen op de netwerkloze herstelkopie overgenomen.
+
+Status: implementatie en gerichte lokale controles gereed; volledige CI en beschermde staging-/productierelease nog in uitvoering. Leg de definitieve SHA, runlinks, backup, behoudsvergelijking en gepubliceerde healthchecks pas vast nadat ze daadwerkelijk geslaagd zijn. Tests starten geen echte OTP-aanvraag, organisatiecampagne of externe bezorging.

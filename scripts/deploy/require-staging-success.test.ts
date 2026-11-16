@@ -45,6 +45,9 @@ describe("production staging workflow gate", () => {
     expect(promote(false,true,true,true,"codex/coherent-group-start-operations").status).not.toBe(0);
     expect(promote(true,true,true,true,"codex/live-planboard-integration").status).toBe(0);
     expect(promote(false,true,true,true,"codex/live-planboard-integration").status).not.toBe(0);
+    expect(promote(true,true,true,true,"codex/hotfix-updates-html-20261116").status).toBe(0);
+    expect(promote(false,true,true,true,"codex/hotfix-updates-html-20261116").status).not.toBe(0);
+    expect(promote(true,true,false,true,"codex/hotfix-updates-html-20261116").status).not.toBe(0);
     expect(promote(true,true,true,true,"codex/unreviewed-branch").status).not.toBe(0);
   });
   it("accepts a successful full staging workflow and deployment on the exact revision", () => {

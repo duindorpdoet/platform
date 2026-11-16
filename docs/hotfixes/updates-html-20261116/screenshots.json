@@ -1,0 +1,73 @@
+{
+  "sourceHashes": {
+    "components/admin/participant-updates.tsx": "5cd2e89b236efe67a86b4c0a0c7fe8b747baa1699f653b31b542340de2ebfc9e",
+    "components/participant/participant-shell.tsx": "e8b97d5dd8e59cc8d4e024b2bdcde9e203753f58fd936adc3785893091e1e37d",
+    "app/globals.css": "fe8c4876858b0f76994d82ab6a2e6401cbfee67f94314dde44eea1e987cee77a",
+    "lib/participant-updates/content.ts": "d88f11390fcae930a078448614d701526775767a5a9d6c1c9fe1182661115271",
+    "tests/participant-updates/updates.spec.ts": "117ae7b5c8f0ec7a00f37d64078b67eb5e8ff596a0f1e20c5a060a4c26acbddf"
+  },
+  "capturedAt": "2026-11-16T16:07:46.274Z",
+  "scope": "local component harness and offline browser mail preview; synthetic text only; no delivery/auth/database",
+  "logoSource": "/dev/shm/legacy-payment-export-ce6-20261116/logo.webp",
+  "logoSha256": "88efc6d8834bd931238dd423ae20070cf25f3686547bc9014b4d06fba5bba8be",
+  "mailHtmlSha256": "61259f26901b858e7cccd4588825a3ae853709473b07b471ed715e0eb20e5863",
+  "externalRequests": 0,
+  "mutatingRequests": 0,
+  "screenshots": [
+    {
+      "file": "admin-harness-1440.jpg",
+      "width": 1440,
+      "decoded": {
+        "width": 1280,
+        "height": 854,
+        "displayedWidth": 560
+      },
+      "bytes": 130186
+    },
+    {
+      "file": "admin-harness-390.jpg",
+      "width": 390,
+      "decoded": {
+        "width": 1280,
+        "height": 854,
+        "displayedWidth": 276
+      },
+      "bytes": 84953
+    },
+    {
+      "file": "mail-preview-1440.jpg",
+      "width": 1440,
+      "decoded": [
+        {
+          "width": 1280,
+          "height": 854,
+          "displayedWidth": 320
+        },
+        {
+          "width": 1280,
+          "height": 854,
+          "displayedWidth": 554
+        }
+      ],
+      "bytes": 92179
+    },
+    {
+      "file": "mail-preview-390.jpg",
+      "width": 390,
+      "decoded": [
+        {
+          "width": 1280,
+          "height": 854,
+          "displayedWidth": 270
+        },
+        {
+          "width": 1280,
+          "height": 854,
+          "displayedWidth": 322
+        }
+      ],
+      "bytes": 58656
+    }
+  ],
+  "totalScreenshotBytes": 365974
+}

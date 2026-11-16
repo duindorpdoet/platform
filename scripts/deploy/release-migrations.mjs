@@ -114,6 +114,8 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Function-only domain-conflict transport for managed PostgREST 14.
   // Native serialization failures retain their original SQLSTATE/retry semantics.
   '20261103092502_frightnight_2027_domain_conflicts.sql',
+  // Additive HTML source limit for the preserved legacy participant updates.
+  '20261116155248_participant_update_html_source_limit.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

@@ -66,6 +66,8 @@ jobs:
           pnpm exec playwright install --with-deps chromium
       - name: Verify current FrightNight v7 public, private-entry, PWA and offline browser contracts
         run: pnpm exec playwright test --config playwright.frightnight.config.ts
+      - name: Verify safe participant update HTML, newlines and images
+        run: pnpm exec playwright test --config playwright.participant-updates.config.ts
 
   database:
     name: Database migrations, contracts and lint

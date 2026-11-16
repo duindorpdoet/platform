@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdir, writeFile, unlink } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
-import { missingInstalledFiles, STAGING_INSTALLED_MIGRATIONS, STAGING_SOURCE_REVISION } from "./staging-installed-history.mjs";
+import { missingInstalledFiles, STAGING_INSTALLED_MIGRATIONS, installedStagingSourceRevision } from "./staging-installed-history.mjs";
 
 // CLI history validation needs local files for already installed staging-only
 // versions. Materialize their exact reviewed source only around `db push`.
@@ -18,7 +18,7 @@ try {
   const installed = await response.json();
   const files = missingInstalledFiles(await readdir("supabase/migrations"), installed.map(row => row.version));
   for (const file of files) {
-    const source = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/contents/supabase/migrations/${file}?ref=${STAGING_SOURCE_REVISION}`, {
+    const source = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/contents/supabase/migrations/${file}?ref=${installedStagingSourceRevision(file)}`, {
       headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(30_000),
     });
     if (!source.ok) throw new Error(`STAGING_SOURCE_READ_${source.status}`);
