@@ -1,5 +1,6 @@
 import { renderEmailBlocks } from "@/lib/editorial/email-blocks";
 import { richText, type RichNode } from "@/lib/editorial/content";
+import { renderParticipantUpdate } from "@/lib/participant-updates/content";
 
 export type MailKind = "otp" | "confirmation" | "payment" | "reminder" | "route" | "group" | "host" | "sponsor" | "admin" | "generic";
 
@@ -15,6 +16,8 @@ export type PremiumMailContent = {
   paragraphs: string[];
   /** Fixed organization copy, escaped as text with its original line breaks. */
   plainBody?: string;
+  /** Organization Update source. Always sanitized at the final rendering boundary. */
+  participantUpdate?: string;
   hero?: boolean;
   heroAlt?: string;
   editorial?: { body: RichNode; mediaUrls: Record<string, string>; closing: string; unsubscribeUrl: string; preferencesUrl: string };
@@ -96,12 +99,17 @@ function validateContent(content: PremiumMailContent, brand: PremiumMailBrand) {
     footerReason: content.footerReason,
   })) required(value, field, field === "subject" ? 200 : 1_000);
   if (/\r|\n/.test(content.subject)) throw new InvalidMailTemplateError("Subject must be one line");
-  if (!Array.isArray(content.paragraphs) || (content.plainBody === undefined && content.paragraphs.length === 0) || content.paragraphs.length > 30) {
+  if (!Array.isArray(content.paragraphs) || (content.plainBody === undefined && content.participantUpdate === undefined && content.paragraphs.length === 0) || content.paragraphs.length > 30) {
     throw new InvalidMailTemplateError("Invalid paragraphs");
   }
   if (content.plainBody !== undefined) {
     required(content.plainBody, "plainBody", 20_000);
     if (content.paragraphs.length) throw new InvalidMailTemplateError("Ambiguous message body");
+  }
+  if (content.participantUpdate !== undefined) {
+    required(content.participantUpdate, "participantUpdate", 40_000);
+    if (Array.from(content.participantUpdate).length > 20_000) throw new InvalidMailTemplateError("Invalid participantUpdate");
+    if (content.plainBody !== undefined) throw new InvalidMailTemplateError("Ambiguous message body");
   }
   content.paragraphs.forEach((item, index) => required(item, `paragraphs[${index}]`));
   content.details?.forEach((detail) => {
@@ -163,6 +171,7 @@ function actionBlock(action: MailAction | undefined) {
 
 export function renderPremiumEmail(content: PremiumMailContent, brand: PremiumMailBrand) {
   validateContent(content, brand);
+  const participantUpdate = content.participantUpdate === undefined ? undefined : renderParticipantUpdate(content.participantUpdate);
   const otp = content.kind === "otp";
   const codeBlock = content.code
     ? table(row(`<p style="margin:0 0 15px;font:11px/18px Arial,Helvetica,sans-serif;letter-spacing:2.5px;text-transform:uppercase;color:${COLORS.gold};">Je eenmalige code</p><p style="margin:0 0 16px;font:600 36px/46px 'Courier New',monospace;letter-spacing:7px;color:${COLORS.text};word-break:break-all;">${escapeHtml(content.code.value)}</p><p style="margin:0;font:13px/21px Arial,Helvetica,sans-serif;color:${COLORS.muted};">${escapeHtml(content.code.expiresText)}</p>`, "padding:26px 18px;text-align:center;"), `bgcolor="${COLORS.inset}" style="background:${COLORS.inset};border:1px solid #78624f;border-radius:6px;margin:24px 0;"`)
@@ -170,7 +179,9 @@ export function renderPremiumEmail(content: PremiumMailContent, brand: PremiumMa
   const notice = content.notice
     ? table(row(`<p style="margin:0 0 7px;font:700 14px/22px Arial,Helvetica,sans-serif;color:${COLORS.gold};">${escapeHtml(content.notice.title)}</p><p style="margin:0;font:14px/23px Arial,Helvetica,sans-serif;color:${COLORS.text};">${escapeHtml(content.notice.text)}</p>`, "padding:18px 20px;border-left:2px solid #e3b68e;"), 'bgcolor="#15202c" style="background:#15202c;margin:24px 0;"')
     : "";
-  const messageHtml = content.plainBody === undefined ? content.paragraphs.map(paragraph).join("") : '<p style="margin:0 0 16px;color:' + COLORS.text + ';font:16px/27px Arial,Helvetica,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;">' + escapeHtml(content.plainBody).replace(/\r\n|\r|\n/g, "<br>") + "</p>";
+  const messageHtml = participantUpdate
+    ? `<div style="margin:0 0 16px;color:${COLORS.text};font:16px/27px Arial,Helvetica,sans-serif;overflow-wrap:anywhere;">${participantUpdate.html}</div>${content.paragraphs.map(paragraph).join("")}`
+    : content.plainBody === undefined ? content.paragraphs.map(paragraph).join("") : '<p style="margin:0 0 16px;color:' + COLORS.text + ';font:16px/27px Arial,Helvetica,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;">' + escapeHtml(content.plainBody).replace(/\r\n|\r|\n/g, "<br>") + "</p>";
   const contentHtml = `<p style="margin:0 0 16px;font:700 10px/18px Arial,Helvetica,sans-serif;letter-spacing:2.8px;text-transform:uppercase;color:${COLORS.gold};">${escapeHtml(content.eyebrow)}</p>
 <h1 class="headline" style="margin:0 0 20px;font:400 ${otp ? 36 : 42}px/${otp ? 43 : 49}px Georgia,'Times New Roman',serif;letter-spacing:-1.2px;color:${COLORS.text};">${escapeHtml(content.title)}</h1>
 ${messageHtml}${content.editorial ? renderEmailBlocks(content.editorial.body, content.editorial.mediaUrls, brand.homeUrl) : ""}${codeBlock}${detailsBlock(content.details)}${notice}${actionBlock(content.primaryAction)}${content.editorial?.closing ? paragraph(content.editorial.closing) : ""}
@@ -197,6 +208,7 @@ ${content.primaryAction ? `<p style="margin:15px 0 0;font:11px/18px Arial,Helvet
     "",
     content.title,
     "",
+    ...(participantUpdate ? [participantUpdate.text, ""] : []),
     ...(content.plainBody === undefined ? content.paragraphs.flatMap((item) => [item, ""]) : [content.plainBody, ""]),
     content.editorial ? richText(content.editorial.body) : "",
     content.editorial?.closing ?? "",

@@ -12,8 +12,16 @@ select ok(not has_function_privilege('authenticated','api.worker_social_share_cl
 select ok(has_function_privilege('anon','api.social_share_context(text)','execute'),'safe public catalog is available anonymously');
 select ok(has_function_privilege('anon','api.social_share_public_page(text)','execute'),'safe public page projection is available anonymously');
 
+-- This is a pre-event share catalog fixture. Move only its rollback-local
+-- event/template dates relative to the real clock; production 2026 stays intact.
+update app_private.events set local_date=(clock_timestamp() at time zone timezone)::date+30 where slug='duindorp-halloween-2026';
+update app_private.social_share_templates t set valid_from=(e.local_date-90)::timestamp at time zone e.timezone,valid_until=(e.local_date+1)::timestamp at time zone e.timezone
+from app_private.events e where t.event_id=e.id and e.slug='duindorp-halloween-2026' and t.template_key='countdown';
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 select is(jsonb_array_length(api.social_share_context('duindorp-halloween-2026')->'cards'),3,'anonymous visitors receive only general, recruitment and countdown cards');
+update app_private.social_share_templates set valid_until=now()-interval '1 second' where template_key='countdown' and event_id=(select id from app_private.events where slug='duindorp-halloween-2026');
+select is(jsonb_array_length(api.social_share_context('duindorp-halloween-2026')->'cards'),2,'expired countdown is correctly excluded using the real server clock');
+update app_private.social_share_templates t set valid_until=(e.local_date+1)::timestamp at time zone e.timezone from app_private.events e where t.event_id=e.id and e.slug='duindorp-halloween-2026' and t.template_key='countdown';
 select ok((api.social_share_context('duindorp-halloween-2026')->'cards')::text !~* 'child|email|phone|address|start(point|time|slot)|together.*code','public catalog has no sensitive projection keys');
 
 select set_config('request.jwt.claims','{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);

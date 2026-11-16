@@ -7,6 +7,7 @@ on:
       - main
       - staging
       - production
+      - codex/hotfix-updates-html-20261116
       - build/**
 
 permissions:
@@ -66,6 +67,8 @@ jobs:
           pnpm exec playwright install --with-deps chromium
       - name: Browser acceptance tests
         run: pnpm test:e2e
+      - name: Verify safe participant update HTML, newlines and images
+        run: pnpm exec playwright test --config playwright.participant-updates.config.ts
       - name: Verify serialized Poortenboek refreshes without a database
         run: pnpm exec playwright test --config playwright.poortenboek-refresh.config.ts
       - name: Verify deliberate event closure and retrospective without deliveries

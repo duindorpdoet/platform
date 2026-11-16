@@ -1,4 +1,5 @@
 begin;
+\ir fixtures/future-legacy-calendar.inc
 create extension if not exists pgtap with schema extensions;
 select no_plan();
 select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
@@ -7,16 +8,16 @@ select set_config('request.jwt.claims','{"sub":"f0000000-0000-0000-0000-00000000
 update app_private.walking_edges set approved_at=null;
 update app_private.walking_nodes set verified_at=null;
 update app_private.start_points set walking_node_id=null,verified_at=null,version=version+1;
-update app_private.portal_windows set opens_at='2026-10-31T14:00Z',closes_at='2026-10-31T22:00Z';
-update app_private.event_route_settings set first_start_at='2026-10-31T15:00Z',global_ordinary_stop_at='2026-10-31T19:30Z',
-  final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at='2026-10-31T18:00Z',
-  finale_last_arrival_at='2026-10-31T20:30Z',finale_closes_at='2026-10-31T21:00Z',
+update app_private.portal_windows set opens_at=pg_temp.fixture_time('2026-10-31T14:00Z'),closes_at=pg_temp.fixture_time('2026-10-31T22:00Z');
+update app_private.event_route_settings set first_start_at=pg_temp.fixture_time('2026-10-31T15:00Z'),global_ordinary_stop_at=pg_temp.fixture_time('2026-10-31T19:30Z'),
+  final_portal_id='12000000-0000-0000-0000-000000000030',finale_opens_at=pg_temp.fixture_time('2026-10-31T18:00Z'),
+  finale_last_arrival_at=pg_temp.fixture_time('2026-10-31T20:30Z'),finale_closes_at=pg_temp.fixture_time('2026-10-31T21:00Z'),
   finale_available=true,planner_mode='dynamic';
 do $$begin perform api.admin_startregie_confirm_point('duindorp-halloween-2026','20000000-0000-0000-0000-000000000001',
   (select version from app_private.start_points where id='20000000-0000-0000-0000-000000000001'));end $$;
 select ok(app_private.start_point_safe_connection('20000000-0000-0000-0000-000000000001'),'confirmed saved start is usable for group assignment without nodes or edges');
 select lives_ok($$select api.admin_startregie_move_group('23000000-0000-0000-0000-000000000001',
-  '20000000-0000-0000-0000-000000000001','2026-10-31T16:30Z',
+  '20000000-0000-0000-0000-000000000001',pg_temp.fixture_time('2026-10-31T16:30Z'),
   (select version from app_private.walking_groups where id='23000000-0000-0000-0000-000000000001'),
   'neutral','Synthetische groepsafspraak zonder straatrouting')$$,'real group assignment accepts a confirmed destination without a walking graph');
 select cmp_ok((app_private.start_ops_route_preview('23000000-0000-0000-0000-000000000001')->>'eligiblePortalCount')::integer,'>',0,

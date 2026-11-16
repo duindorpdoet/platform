@@ -1,4 +1,6 @@
 begin;
+-- Realtime fixture windows and starts belong to this test day, not the expired 2026 calendar.
+update app_private.events set local_date=(clock_timestamp() at time zone timezone)::date where slug='duindorp-halloween-2026';
 create extension if not exists pgtap with schema extensions;
 select no_plan();
 \ir helpers/ready_live_planboard.inc

@@ -102,7 +102,7 @@ begin
       extensions.digest(convert_to('TEST-' || lpad(i::text, 2, '0'), 'utf8'), 'sha256'),
       1,
       timestamptz '2026-01-01 00:00:00+01',
-      timestamptz '2026-11-01 00:00:00+01'
+      greatest(timestamptz '2026-11-01 00:00:00+01', clock_timestamp() + interval '365 days')
     ) on conflict do nothing;
     insert into app_private.walking_nodes(id, event_id, external_id, kind, portal_id, coordinate, verified_at, verified_by)
     values (v_node_id, v_event_id, 'fixture-portal-' || i, 'portal', v_portal_id, point(4.27 + i * 0.0001, 52.10 + i * 0.0001), now(), v_admin)

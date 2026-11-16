@@ -4,7 +4,26 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { createHash } from 'node:crypto';
-import { encryptStream, verifyBackupFile, compareFingerprints, dryRunReleaseMigrations, preservationManagementRequest, fingerprintManagementRequest, sourceReadPrefix, withSourceReadPhase } from './redesign-backup.mjs';
+import { encryptStream, verifyBackupFile, compareFingerprints, dryRunReleaseMigrations, preservationManagementRequest, fingerprintManagementRequest, sourceReadPrefix, withSourceReadPhase,storagePolicyCapability,isolatedStoragePolicyArguments,startIsolatedRestore } from './redesign-backup.mjs';
+
+it('reproduces only the observed managed Storage policy delegation without copying arbitrary server configuration',async()=>{
+  const capability=storagePolicyCapability({sessionPreload:'other_module, supautils',policyGrants:JSON.stringify({postgres:['auth.users','storage.objects'],untrusted:['public.other']})});
+  expect(capability).toEqual({supautilsLoaded:true,postgresStorageObjects:true});
+  expect(isolatedStoragePolicyArguments(capability)).toEqual(['-c','session_preload_libraries=supautils','-c','supautils.policy_grants={"postgres":["storage.objects"]}']);
+  expect(isolatedStoragePolicyArguments(storagePolicyCapability({sessionPreload:'',policyGrants:'{}'}))).toEqual([]);
+  expect(isolatedStoragePolicyArguments()).toEqual([]);
+  expect(()=>storagePolicyCapability({sessionPreload:'',policyGrants:'{"postgres":["storage.objects"]}'})).toThrow('SOURCE_STORAGE_POLICY_MODULE_REQUIRED');
+  for(const policyGrants of ['invalid','[]','null','{"postgres":"storage.objects"}','{"postgres":[123]}'])expect(()=>storagePolicyCapability({sessionPreload:'supautils',policyGrants})).toThrow('INVALID_STORAGE_POLICY_CAPABILITY');
+  expect(()=>isolatedStoragePolicyArguments({...capability,configuration:'arbitrary'} as typeof capability)).toThrow('INVALID_STORAGE_POLICY_CAPABILITY');
+  const calls:Array<{command:string;args:string[];input?:string}>=[];
+  await startIsolatedRestore('supabase/postgres:17.6.1.171','duindorp-restore-contract','a'.repeat(64),async(command,args,input)=>{calls.push({command,args,input});return '';},capability);
+  expect(calls[0].args).toContain('--network');expect(calls[0].args).toContain('none');
+  expect(calls[0].args).toContain('cron.launch_active_jobs=off');
+  expect(calls[0].args.slice(-4)).toEqual(isolatedStoragePolicyArguments(capability));
+  expect(calls[0].args.join(' ')).not.toContain('other_module');expect(calls[0].args.join(' ')).not.toContain('auth.users');
+  expect(calls[0].args.join(' ')).not.toContain('a'.repeat(64));
+  expect(calls.every(call=>!call.args.join(' ').match(/alter role|grant .* to|owner to|superuser/i))).toBe(true);
+});
 
 it('enforces existing backup policy locally for both exported and imported repeatable-read snapshots',()=>{
   const exported=sourceReadPrefix(),imported=sourceReadPrefix('00000001-00000002-1');

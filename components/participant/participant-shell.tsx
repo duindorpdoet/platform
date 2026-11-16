@@ -53,6 +53,7 @@ import { PortalDashboard } from "@/components/portal/portal-dashboard";
 import { SupportWidget } from "@/components/support/support-widget";
 import { PwaInstallInvitation, PushNotificationSettings } from "@/components/pwa/pwa-experience";
 import { createClient } from "@/lib/supabase/client";
+import { renderParticipantUpdate } from "@/lib/participant-updates/content";
 import { EventEveningRecap, CompleteEveningNightPass } from "@/components/event-evening/closure-recap";
 import type { EveningClosure } from "@/lib/event-evening/types";
 
@@ -505,7 +506,7 @@ function UpdatesPanel({ eventSlug, role, embedded = false }: { eventSlug: string
     const client = createClient(); if (!client) return;
     await client.schema("api").rpc("participant_update_mark_read", { _update_id: id }); await load();
   }
-  const list = <section className="update-list">{updates?.map((update) => <article key={update.id} className={`participant-card update-item ${update.readAt ? "read" : "unread"} ${update.priority}`}><div className="update-icon">{update.priority === "urgent" ? <ShieldCheck /> : <Bell />}</div><div><p className="participant-eyebrow">{formatDateTime(update.publishedAt)} · {update.priority === "urgent" ? "Belangrijk" : "Update"}</p><h2>{update.title}</h2><p>{update.body}</p>{!update.readAt && <button className="text-link" onClick={() => void markRead(update.id)}>Markeer als gelezen <Check /></button>}</div></article>)}{updates && updates.length === 0 && <section className="participant-card empty-update"><CheckCircle2 /><h2>Je bent helemaal bij</h2><p>Nieuwe berichten die bij jouw rol horen verschijnen hier.</p></section>}{!updates && <ParticipantLoading />}</section>;
+  const list = <section className="update-list">{updates?.map((update) => <article key={update.id} className={`participant-card update-item ${update.readAt ? "read" : "unread"} ${update.priority}`}><div className="update-icon">{update.priority === "urgent" ? <ShieldCheck /> : <Bell />}</div><div><p className="participant-eyebrow">{formatDateTime(update.publishedAt)} · {update.priority === "urgent" ? "Belangrijk" : "Update"}</p><h2>{update.title}</h2><div className="participant-update-content" dangerouslySetInnerHTML={{ __html: renderParticipantUpdate(update.body).html }} />{!update.readAt && <button className="text-link" onClick={() => void markRead(update.id)}>Markeer als gelezen <Check /></button>}</div></article>)}{updates && updates.length === 0 && <section className="participant-card empty-update"><CheckCircle2 /><h2>Je bent helemaal bij</h2><p>Nieuwe berichten die bij jouw rol horen verschijnen hier.</p></section>}{!updates && <ParticipantLoading />}</section>;
   if (embedded) return <section className="embedded-updates"><div className="section-title"><div><p className="participant-eyebrow">Van de organisatie</p><h2>Updates</h2></div><Bell /></div>{list}</section>;
   return <ParticipantPageFrame eyebrow="Van de organisatie" title="Updates">{list}</ParticipantPageFrame>;
 }

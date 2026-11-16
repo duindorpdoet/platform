@@ -218,7 +218,7 @@ jobs:
   backup-restore:
     name: Encrypted backup and isolated restore before migration
     needs: release-policy
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status' || github.ref == 'refs/heads/codex/hotfix-updates-html-20261116') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
     environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -261,7 +261,9 @@ jobs:
           if-no-files-found: error
   deploy:
     name: Validate, migrate, deploy and accept
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
+    outputs:
+      staging_auth_function_version: ${{ steps.staging-auth-policy.outputs.function_version }}
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status' || github.ref == 'refs/heads/codex/hotfix-updates-html-20261116') && (github.event_name != 'workflow_dispatch' || inputs.runner_maintenance == 'none')
     needs: [backup-restore, release-policy]
     environment:
       name: staging
@@ -286,7 +288,7 @@ jobs:
       EVENT_SLUG: duindorp-halloween-2026
       EVENT_TIMEZONE: Europe/Amsterdam
       REGISTRATION_MODE: staging_test
-      AUTH_MAIL_MODE: live
+      AUTH_MAIL_MODE: ${{ github.ref == 'refs/heads/codex/hotfix-updates-html-20261116' && 'allowlist' || 'live' }}
       MAIL_MODE: allowlist
       MAIL_ALLOWED_RECIPIENTS: ${{ vars.TEST_EMAIL_1 }},${{ vars.TEST_EMAIL_2 }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
@@ -373,6 +375,12 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Validate staging configuration
         run: node scripts/deploy/validate-environment.mjs staging
+      - name: Prove the existing staging Auth allowlist without requesting codes
+        id: staging-auth-policy
+        if: github.ref == 'refs/heads/codex/hotfix-updates-html-20261116'
+        env:
+          FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS: ${{ secrets.FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS }}
+        run: node scripts/deploy/preserve-staging-auth.mjs
       - name: Fetch encrypted release backup for private retention
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
@@ -408,6 +416,7 @@ jobs:
       - name: Provision own signed Resend webhook
         run: node scripts/deploy/configure-resend-webhook.mjs
       - name: Deploy shared signed email hook
+        if: github.ref != 'refs/heads/codex/hotfix-updates-html-20261116'
         run: |
           set -euo pipefail
           pnpm exec supabase secrets set --project-ref "${SUPABASE_PROJECT_REF}" \
@@ -437,6 +446,12 @@ jobs:
             "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
       - name: Configure release controls, Auth and scheduler
         run: node scripts/deploy/configure-supabase.mjs
+      - name: Recheck unchanged staging Auth policy
+        if: github.ref == 'refs/heads/codex/hotfix-updates-html-20261116'
+        env:
+          FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS: ${{ secrets.FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS }}
+          EXPECTED_STAGING_AUTH_FUNCTION_VERSION: ${{ steps.staging-auth-policy.outputs.function_version }}
+        run: node scripts/deploy/preserve-staging-auth.mjs
       - name: Check Supabase security advisors
         run: node scripts/deploy/check-security-advisors.mjs
       - name: Verify deployed staging release
@@ -510,9 +525,9 @@ jobs:
           if-no-files-found: error
 
   mail-acceptance:
-    name: Verify real OTP and transactional mail
+    name: Verify staging mail and Auth release acceptance
     needs: [deploy, release-policy]
-    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status') && !(github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance) && needs.release-policy.outputs.skip_mail_tests != 'true'
+    if: (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/codex/portal-sequence-without-street-routing' || github.ref == 'refs/heads/codex/coherent-group-start-operations' || github.ref == 'refs/heads/codex/live-planboard-integration' || github.ref == 'refs/heads/codex/fix-public-registration-status' || github.ref == 'refs/heads/codex/hotfix-updates-html-20261116') && !(github.event_name == 'workflow_dispatch' && inputs.skip_mail_acceptance) && needs.release-policy.outputs.skip_mail_tests != 'true'
     environment:
       name: staging
       url: https://staging-halloween.duindorpdoet.nl
@@ -541,7 +556,17 @@ jobs:
       - name: Verify exact revision
         run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - name: Verify allowed-mailbox OTP and transaction delivery
+        if: github.ref != 'refs/heads/codex/hotfix-updates-html-20261116'
         run: python3 -u scripts/acceptance/staging_mail.py
+      - name: Verify preserved Auth allowlist without requesting or delivering mail
+        if: github.ref == 'refs/heads/codex/hotfix-updates-html-20261116'
+        env:
+          APP_ENVIRONMENT: staging
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS: ${{ secrets.FRIGHTNIGHT_AUTH_ALLOWED_RECIPIENTS }}
+          EXPECTED_STAGING_AUTH_FUNCTION_VERSION: ${{ needs.deploy.outputs.staging_auth_function_version }}
+        run: node scripts/deploy/preserve-staging-auth.mjs
       - name: Diagnose failed mail delivery
         if: failure()
         continue-on-error: true

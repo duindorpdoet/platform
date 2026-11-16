@@ -100,6 +100,8 @@ export const REVIEWED_RELEASE_MIGRATIONS=Object.freeze([
   // Existing room-capability access to thanks; authoritative central closure
   // for room reads/status writes, with historical rows and deliveries retained.
   '20261102074430_portal_closed_room_thanks_access.sql',
+  // Participant update source limit only; no FrightNight schema is promoted.
+  '20261116155248_participant_update_html_source_limit.sql',
 ]);
 
 export function assertReviewedReleaseMigrations(files) {

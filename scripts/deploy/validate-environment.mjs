@@ -1,4 +1,5 @@
 import {createECDH} from "node:crypto";
+import {UPDATES_HTML_BRANCH} from "./staging-installed-history.mjs";
 const target = process.argv[2];
 if (!new Set(["staging", "production"]).has(target)) {
   throw new Error("Usage: node scripts/deploy/validate-environment.mjs <staging|production>");
@@ -67,7 +68,8 @@ if (new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname !== `${process.env.SU
 if (!process.env.VAPID_SUBJECT.startsWith("mailto:") && !process.env.VAPID_SUBJECT.startsWith("https://")) {
   throw new Error("VAPID_SUBJECT must start with mailto: or https://.");
 }
-if (process.env.AUTH_MAIL_MODE !== "live") throw new Error("User-requested authentication codes must be deliverable to residents in both environments.");
+const preservedStagingAuth=target==='staging'&&process.env.GITHUB_REF===`refs/heads/${UPDATES_HTML_BRANCH}`;
+if (process.env.AUTH_MAIL_MODE !== (preservedStagingAuth?'allowlist':'live')) throw new Error("Authentication mode must match the explicit release policy; the isolated staging hotfix preserves the deployed allowlist.");
 if (target === "staging") {
   if (process.env.REGISTRATION_MODE !== "staging_test") throw new Error("Staging must use staging_test registration mode.");
   if (process.env.MAIL_MODE !== "allowlist") throw new Error("Staging mail must use allowlist mode.");

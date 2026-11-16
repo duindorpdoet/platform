@@ -5,8 +5,10 @@ export const HOTFIX_BRANCH = "codex/portal-sequence-without-street-routing";
 export const GROUP_OPERATIONS_BRANCH = "codex/coherent-group-start-operations";
 export const PLANBOARD_BRANCH = "codex/live-planboard-integration";
 export const REGISTRATION_STATUS_BRANCH = "codex/fix-public-registration-status";
-export const ISOLATED_RELEASE_BRANCHES = Object.freeze([HOTFIX_BRANCH, GROUP_OPERATIONS_BRANCH, PLANBOARD_BRANCH, REGISTRATION_STATUS_BRANCH]);
+export const UPDATES_HTML_BRANCH = "codex/hotfix-updates-html-20261116";
+export const ISOLATED_RELEASE_BRANCHES = Object.freeze([HOTFIX_BRANCH, GROUP_OPERATIONS_BRANCH, PLANBOARD_BRANCH, REGISTRATION_STATUS_BRANCH, UPDATES_HTML_BRANCH]);
 export const STAGING_SOURCE_REVISION = "a0263258c03a5aaed5c08445c461aed3f3206756";
+export const FRIGHTNIGHT_STAGING_SOURCE_REVISION = "9b0b215f922766f6c69db67dc4f25a37d4a95c9e";
 export const STAGING_INSTALLED_MIGRATIONS = Object.freeze({
   '20261024024428_evening_readiness_evidence.sql': '9c0d1a99f0be1ed817177a50a3e29dfe858daf46549a18c3912f6df1db811544',
   '20261024025222_evening_visit_information.sql': '07dc957d608b91f3e69db0b0b44349d33630a2ec07078e4b5e27b6b3fac86328',
@@ -21,7 +23,19 @@ export const STAGING_INSTALLED_MIGRATIONS = Object.freeze({
   '20261024100115_evening_closed_current_instruction.sql': '2293da6aedf5692b1ad3033d81bcea68123b26f4744b268f37456120a2298271',
   '20261024112932_evening_nonblocking_channel_reads.sql': '351cb5212d8ac5b7efaa44377495041a22a145fef37e624606ef9e5b5b4fee54',
   '20261024125139_evening_cockpit_aggregation.sql': '412c90c2a6ed3ccf056e7b16290a465a98e53866aa75e0e450189d3d9ca74d8b',
+  // Already installed FrightNight history is materialized only around staging
+  // CLI validation. It is never part of the production source or release set.
+  '20261103012453_frightnight_2027_isolated_core.sql': '5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6',
+  '20261103042000_frightnight_2027_edition_access.sql': 'd9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627',
+  '20261103071355_frightnight_2027_payment_sandbox.sql': 'fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4',
+  '20261103073433_frightnight_2027_feedback_closure.sql': '452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8',
+  '20261103092502_frightnight_2027_domain_conflicts.sql': 'f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570',
 });
+
+export function installedStagingSourceRevision(file) {
+  if (!Object.hasOwn(STAGING_INSTALLED_MIGRATIONS, file)) throw new Error("UNREVIEWED_STAGING_HISTORY_SOURCE");
+  return file.includes("_frightnight_2027_") ? FRIGHTNIGHT_STAGING_SOURCE_REVISION : STAGING_SOURCE_REVISION;
+}
 
 export function installedStagingHistory(context = process.env) {
   return context.APP_ENVIRONMENT === "staging" && (context.GITHUB_REF === "refs/heads/staging" || ISOLATED_RELEASE_BRANCHES.some(branch => context.GITHUB_REF === `refs/heads/${branch}`))

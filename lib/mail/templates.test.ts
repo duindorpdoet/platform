@@ -81,19 +81,44 @@ describe("premium transactional mail catalog", () => {
     expect(rendered.text).not.toContain("toestemming gaf");
   });
 
-  it("escapes participant copy and rejects a multiline subject", () => {
+  it("escapes update titles, removes active body content and rejects a multiline subject", () => {
     const escaped = renderTransactionalMail({
       messageType: "participant_update",
       payload: { title: "Route <pauze>", message: '<script>bad()</script> & "quotes"' },
     });
     expect(escaped.html).toContain("Route &lt;pauze&gt;");
-    expect(escaped.html).toContain("&lt;script&gt;bad()&lt;/script&gt; &amp; &quot;quotes&quot;");
-    expect(escaped.html).not.toContain("<script>bad");
+    expect(escaped.html).toContain('&amp; "quotes"');
+    expect(escaped.html).not.toContain("bad()");
 
     expect(() => renderTransactionalMail({
       messageType: "participant_update",
       payload: { title: "Hallo\r\nBcc: iemand@example.invalid", message: "Bericht" },
     })).toThrow(/Subject must be one line/);
+  });
+
+  it("renders Update HTML, images and Enter consistently in HTML and plaintext mail", () => {
+    const rendered = renderTransactionalMail({
+      messageType: "participant_update",
+      payload: { title: "Een flyer voor de buurt", message: 'Beste buren,\n\n<strong>Tot straks!</strong>\n<img src="https://images.example.invalid/flyer.jpg" alt="Programma van de avond" onerror="bad()">' },
+    });
+    expect(rendered.html).toContain("Beste buren,<br /><br /><strong>Tot straks!</strong><br />");
+    expect(rendered.html).toContain('src="https://images.example.invalid/flyer.jpg"');
+    expect(rendered.html).not.toContain("onerror");
+    expect(rendered.text).toContain("Beste buren,\n\nTot straks!\n[Afbeelding: Programma van de avond]");
+    expect(rendered.text).not.toContain("<strong>");
+  });
+
+  it("does not truncate Update source at the old paragraph limit", () => {
+    const rendered = renderTransactionalMail({ messageType: "participant_update", payload: { title: "Lang bericht", message: `<p>${"a".repeat(10_000)}EINDE</p>` } });
+    expect(rendered.html).toContain("EINDE</p>");
+    expect(rendered.text).toContain(`${"a".repeat(10_000)}EINDE`);
+    expect(() => renderTransactionalMail({ messageType: "participant_update", payload: { title: "Te lang", message: "a".repeat(20_001) } })).toThrow(/Invalid participantUpdate/);
+  });
+
+  it("accepts the database Unicode character limit for Update mail only", () => {
+    const message = "🎃".repeat(20_000);
+    expect(renderTransactionalMail({ messageType: "participant_update", payload: { title: "Unicode", message } }).text).toContain(message);
+    expect(() => renderTransactionalMail({ messageType: "participant_update", payload: { title: "Unicode", message: message + "🎃" } })).toThrow(/Invalid participantUpdate/);
   });
 
   it("keeps OTP codes out of subject and preheader and does not render a hero", () => {
