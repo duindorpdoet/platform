@@ -1,0 +1,33 @@
+{
+  "verifiedAt": "2026-11-03T09:18:46.691Z",
+  "servedBuildId": "hanzA2t5Xaby269LUnhWK",
+  "recordedBuildId": "hanzA2t5Xaby269LUnhWK",
+  "sourceHead": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "sourceFiles": [
+    {
+      "path": "scripts/acceptance/frightnight-staging.mjs",
+      "sha256": "fc2ad9445c16a4339c8263cdf90366e44c727065fc44dfd7cdfdf232e0f0e644",
+      "matchesGitObject": true
+    },
+    {
+      "path": "components/frightnight/admin-resource.tsx",
+      "sha256": "ffadb9296b26c079b97744c4aba1ed0575be75cc2ec4d805fecab6d69ce67038",
+      "matchesGitObject": true
+    },
+    {
+      "path": "components/frightnight/zone-review.tsx",
+      "sha256": "5095b48d801635660164676854146eca4e24221efdf2d524383038554e5da9dd",
+      "matchesGitObject": true
+    },
+    {
+      "path": "lib/frightnight/server.ts",
+      "sha256": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+      "matchesGitObject": true
+    },
+    {
+      "path": "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql",
+      "sha256": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+      "matchesGitObject": true
+    }
+  ]
+}

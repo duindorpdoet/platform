@@ -1,0 +1,132 @@
+{
+  "scope": "readonly diagnosis of captured own failed parent edition only",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "eventId": "f72fb775-5a17-4d4d-ab56-77ce48640b9c",
+  "slug": "frightnight-2027-test-acceptance-41607150306-acb3ac85",
+  "capturedOldRunId": "fa2dc071-7e0c-4f94-ba16-08844cb839bc",
+  "remoteWrites": 0,
+  "rawFunctionBodiesReturned": false,
+  "actorOrContactDataReturned": false,
+  "audit": {
+    "test": true,
+    "reviews": [
+      {
+        "decision": "changes_requested",
+        "createdAt": "2026-11-03T09:14:39.725782+00:00",
+        "zoneSha256": "73b2f8b22ceeec158704f0cf87d65084965ef50506dc3a762fecd93aa604eb63",
+        "requestHash": "7bb892212ecf692422246df72a093fa2b55943103b7aedfd6ced5ea888d56940",
+        "resultVersion": 4,
+        "commandKeySha256": "4f6bb0c66fe6590017cf788244361d2174dbd6642523ec36c4803512483e424d",
+        "receiptCreatedAt": "2026-11-03T09:14:39.725782+00:00",
+        "belongsToCapturedOldRun": true
+      }
+    ],
+    "observedAt": "2026-11-03T09:18:52.620662+00:00",
+    "environment": "staging",
+    "bindingCount": 1,
+    "reviewAuditCount": 1,
+    "committedApproved": 0,
+    "closedAfterCleanup": true,
+    "runChangedAfterCleanup": true,
+    "committedChangesRequested": 1
+  },
+  "localComparisonDatabase": "frightnight_2027_feedback_frozen",
+  "localProof": "docs/frightnight-2027/validation/backend-feedback-closure-report.json",
+  "functionHashes": [
+    {
+      "signature": "api.frightnight_command(text,text,jsonb,uuid)",
+      "bodySha256": "1d74f2d455dd4709b3c215d5b0ea227e9c373258327f5d5ec8d91002bee70ac5",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "83c9758c210037e5cb79dac97bd20a6e136ae3f5dc11325751b533f40a968747",
+      "localBodySha256": "1d74f2d455dd4709b3c215d5b0ea227e9c373258327f5d5ec8d91002bee70ac5",
+      "localDefinitionSha256": "83c9758c210037e5cb79dac97bd20a6e136ae3f5dc11325751b533f40a968747",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "api.frightnight_snapshot(text)",
+      "bodySha256": "b75a7f0c1fa697988cd3d0ee11c5b26673590c2ae1846a0a4b2b2af9a59d6be8",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "4f801932d32b02ace5064423a8fcd22a9e762d20075fcf410c5f593d50128e84",
+      "localBodySha256": "b75a7f0c1fa697988cd3d0ee11c5b26673590c2ae1846a0a4b2b2af9a59d6be8",
+      "localDefinitionSha256": "4f801932d32b02ace5064423a8fcd22a9e762d20075fcf410c5f593d50128e84",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_command_access_impl(text,text,jsonb,uuid)",
+      "bodySha256": "f6029054aea7d56af3293e20ae1868972f4467e76bb1e86aed8af872460ef36a",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "6d6bc9950fe8b89bd1b7d82ccd7897b3cec7de7bdd345b0b50f2952fd811149f",
+      "localBodySha256": "f6029054aea7d56af3293e20ae1868972f4467e76bb1e86aed8af872460ef36a",
+      "localDefinitionSha256": "6d6bc9950fe8b89bd1b7d82ccd7897b3cec7de7bdd345b0b50f2952fd811149f",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_command_impl(text,text,jsonb,uuid)",
+      "bodySha256": "36c47aa6ef23d23e143a50b7e378cc9c76c65654f9cfb7f62c885ad80f1a22b4",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "58f68c0bb1cbd4fbfc2a50d8caed8f8120afa481361b427ff14be1edd7719810",
+      "localBodySha256": "36c47aa6ef23d23e143a50b7e378cc9c76c65654f9cfb7f62c885ad80f1a22b4",
+      "localDefinitionSha256": "58f68c0bb1cbd4fbfc2a50d8caed8f8120afa481361b427ff14be1edd7719810",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_context_allowed(uuid,uuid)",
+      "bodySha256": "5077765e9a4d439b2dcc0e38dc910db8f7160acdb4176b90f73126147aac3b3c",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "ac944d6c5f2918d99ad53a4fafcf8a854f80ebbb10d2009d8b9df6b22bcc0f7e",
+      "localBodySha256": "5077765e9a4d439b2dcc0e38dc910db8f7160acdb4176b90f73126147aac3b3c",
+      "localDefinitionSha256": "ac944d6c5f2918d99ad53a4fafcf8a854f80ebbb10d2009d8b9df6b22bcc0f7e",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_require_context(text,uuid)",
+      "bodySha256": "d58582057c11d312a39784495141a38e9ec0d84054966d8cbd5355fbc8fd12ff",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "91fc939b6c2ef6bfd0ff27e7be19a80785305c89a2bd2c138ef6d56e8d87a3b7",
+      "localBodySha256": "d58582057c11d312a39784495141a38e9ec0d84054966d8cbd5355fbc8fd12ff",
+      "localDefinitionSha256": "91fc939b6c2ef6bfd0ff27e7be19a80785305c89a2bd2c138ef6d56e8d87a3b7",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_snapshot_impl(text)",
+      "bodySha256": "597fd4b970b8603bf9c0793c14d0d87872aa402be20d360fb01201a1098e4802",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "6c84e2ac37c500c4502acc284188d696410d0e667909eb51234ac5e05ff8db3f",
+      "localBodySha256": "597fd4b970b8603bf9c0793c14d0d87872aa402be20d360fb01201a1098e4802",
+      "localDefinitionSha256": "6c84e2ac37c500c4502acc284188d696410d0e667909eb51234ac5e05ff8db3f",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_snapshot_policy_impl(text)",
+      "bodySha256": "045364a013acc53cb5f2f26768c093723f8acd4518d8c7eeaf27cb4a6fa34e49",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "1f537e3df0366521d61f6f7497a6803b710f2ea9f8756299e5e51ad2a2be9436",
+      "localBodySha256": "045364a013acc53cb5f2f26768c093723f8acd4518d8c7eeaf27cb4a6fa34e49",
+      "localDefinitionSha256": "1f537e3df0366521d61f6f7497a6803b710f2ea9f8756299e5e51ad2a2be9436",
+      "bodyMatches": true,
+      "definitionMatches": true
+    }
+  ],
+  "conclusion": {
+    "approvedCommitted": false,
+    "functionSourceDriftFound": false,
+    "expectedStaleHttpStatus": 409,
+    "expectedDomainCode": "VERSION_CONFLICT",
+    "remainingUnknown": "Actual stale request HTTP status/body; absence of an approved audit proves no committed second approval, not its precise failure reason."
+  }
+}

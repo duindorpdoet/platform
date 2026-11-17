@@ -1,0 +1,22 @@
+{
+  "recordedAt": "2026-11-03T07:49:34.606774+00:00",
+  "head": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "buildId": "hanzA2t5Xaby269LUnhWK",
+  "sourceFiles": 1099,
+  "regularFileDifferences": 0,
+  "symlinks": [
+    {
+      "path": "scripts/acceptance/fixtures/joint-route.sql",
+      "repositorySymlinkTarget": "../../../supabase/tests/helpers/joint-route-fixture.inc",
+      "resolvedRepositoryPath": "supabase/tests/helpers/joint-route-fixture.inc",
+      "resolvedContentSha256": "62d92f5c5da989df95ce2cd8164de36dcbdb2af0cbf1986380722cd834a2fcf9"
+    },
+    {
+      "path": "scripts/acceptance/fixtures/registration-management.sql",
+      "repositorySymlinkTarget": "../../../supabase/tests/helpers/registration-management.inc",
+      "resolvedRepositoryPath": "supabase/tests/helpers/registration-management.inc",
+      "resolvedContentSha256": "91291a77e89f2d4654c16c5f66f533daa1d1fa4602300dde2fd81b92b4c3dfa4"
+    }
+  ],
+  "scope": "All1099 recorded build/test file contents verified against HEAD; symlinks compared to repository target content rather than symlink-path text. No source drift."
+}

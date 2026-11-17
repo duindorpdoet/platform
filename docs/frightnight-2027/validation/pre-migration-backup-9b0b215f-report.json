@@ -1,0 +1,33 @@
+{
+  "recordedAt": "2026-11-03T10:08:02.002109+00:00",
+  "revision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+  "runId": 41615887268,
+  "jobId": 125849252466,
+  "phase": "pre-migration encrypted backup and isolated restore",
+  "conclusion": "success",
+  "tableFingerprintsPreserved": 268,
+  "storageObjectsPreserved": 12,
+  "exactMigrationDryRun": "passed",
+  "pendingForwardMigration": "20261103092502_frightnight_2027_domain_conflicts.sql",
+  "pendingMigrationSha256": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570",
+  "logSha256": "7f6623c6a2a4b2ee0446de3162654d36276706a94ce9d26b3bf1d48335ecf4e2",
+  "artifact": {
+    "id": 13221915863,
+    "name": "redesign-backup-staging-41615887268-1",
+    "sizeInBytes": 33926789,
+    "createdAt": "2026-11-03T10:07:20Z",
+    "expiresAt": "2026-12-03T10:07:19Z",
+    "digest": "sha256:823b8d6b44122130ea8f0f6eb828d11d3616bfccda34eee51c9a4c99a5ac1fab",
+    "url": "https://github.com/duindorpdoet/platform/actions/runs/41615887268/artifacts/13221915863"
+  },
+  "limits": [
+    "Actual fresh encrypted backup and isolated restore before this application publication; four existing additive migrations were present and exact forward005 was included in the isolated migration dry-run.",
+    "Postacceptance RET05 must independently restore and verify the32-table current scenario.",
+    "Encryption credentials and private dump contents are not included. No encrypted or private artifact was downloaded for this metadata report."
+  ],
+  "rollbackLimits": [
+    "The backup is a preservation and disaster-recovery point; restoring it is not an automatic rollback for newly received payments, Auth changes or audit data.",
+    "After forward005, a compatible application requires the provider-claim bridges from003 and safe generic PT409 handling from9b. Older d843/5cc applications are not a fully accepted compatible rollback point.",
+    "The first fully accepted new application path is recorded only after complete hosted acceptance, load and RET05. Until then use edition pause, preavailable operational emergency information and a controlled compatible forward correction; never restore legacy EXECUTE grants or intentional business40001 codes."
+  ]
+}

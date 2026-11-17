@@ -1,0 +1,278 @@
+import { expect, test } from "./guarded-test";
+
+for (const width of [320, 390, 430, 768, 1024, 1440]) {
+  test(`de gekozen v7 blijft leesbaar op ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width < 768 ? 844 : 1000 });
+    const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+    await page.goto("/");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("DIT WORDTJOUW NACHT.");
+    await expect(page.locator(".pp-king")).toBeVisible();
+    await expect(page.locator(".pp-ticket")).toHaveCount(2);
+    await expect(page.getByRole("heading", { name: "LANTAARNEN TOCHT.", exact: false })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Deze tocht kies ik" })).toHaveAttribute("href", "/nachtpas?tocht=mild");
+    await expect(page.getByRole("link", { name: "Ik durf het aan" })).toHaveAttribute("href", "/nachtpas?tocht=scary");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(await page.locator(".pp-king").evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 500)).toBe(true);
+    expect(await page.locator(".theme-poster").evaluate(element => getComputedStyle(element).getPropertyValue("--bg").trim())).toBe("#081712");
+    expect(errors).toEqual([]);
+  });
+}
+
+test("publieke kerninhoud en echte navigatie blijven beschikbaar zonder JavaScript", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: "block", viewport: { width: 390, height: 844 } });
+  const page = await context.newPage(); await page.goto(baseURL!);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator(".pp-king")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /HOE DAPPER/ })).toBeVisible();
+  await page.getByRole("link", { name: "Deze tocht kies ik" }).click();
+  await expect(page).toHaveURL(/\/nachtpas\?tocht=mild$/);
+  await context.close();
+});
+
+test("systeemvoorkeur stopt decoratieve beweging zonder taken te verbergen", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
+  await expect(page.getByRole("button", { name: "Rustige weergave", exact: true })).toBeDisabled();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  expect(await page.locator(".pp-ember").first().evaluate(element => getComputedStyle(element).animationName)).toBe("none");
+  await page.getByRole("link", { name: "Ik durf het aan" }).click();
+  await expect(page).toHaveURL(/tocht=scary/);
+});
+
+test("eigen rustige weergave blijft na herladen en navigatie bewaard", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  const pause = page.getByRole("button", { name: "Pauzeer sfeereffecten", exact: true });
+  await pause.focus(); await page.keyboard.press("Enter");
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
+  expect(await page.evaluate(() => localStorage.getItem("frightnight-calm-v1"))).toBe("1");
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Speel sfeereffecten", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("link", { name: "Mijn Nachtpas", exact: true }).click();
+  await expect(page.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("html")).toHaveClass(/fn-calm/);
+  await page.getByRole("link", { name: "Naar het festival", exact: true }).click();
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
+  await page.goto("/mijn-zone");
+  const resume = page.getByRole("button", { name: "Sfeer hervatten", exact: true });
+  await resume.focus(); await page.keyboard.press("Space");
+  await expect(page.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("link", { name: "Naar het festival", exact: true }).click();
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "full");
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Pauzeer sfeereffecten", exact: true })).toHaveAttribute("aria-pressed", "false");
+});
+
+test("rustige weergave wordt direct met een andere tab gedeeld", async ({ page, context }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" }); await page.goto("/");
+  const other = await context.newPage(); await other.emulateMedia({ reducedMotion: "no-preference" }); await other.goto("/nachtpas");
+  await expect(other.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("button", { name: "Pauzeer sfeereffecten", exact: true }).click();
+  await expect(other.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "true");
+  await expect(other.locator("html")).toHaveClass(/fn-calm/);
+  await other.getByRole("button", { name: "Sfeer hervatten", exact: true }).click();
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "full");
+  await other.close();
+});
+
+test("opslagweigering laat de rustige bediening en taken bruikbaar", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.addInitScript(() => {
+    for (const method of ["getItem", "setItem"]) Object.defineProperty(Storage.prototype, method, { configurable: true, value() { throw new DOMException("Storage blocked", "SecurityError"); } });
+  });
+  const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/");
+  await page.getByRole("button", { name: "Pauzeer sfeereffecten", exact: true }).click();
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
+  await page.getByRole("button", { name: "Lees hoe het begon" }).click();
+  await expect(page.getByRole("region", { name: /EEN KROON VOL DUISTER/ })).toBeVisible();
+  await page.getByRole("link", { name: "Mijn Nachtpas", exact: true }).click();
+  await expect(page.locator(".fn-calm-toggle")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("link", { name: "Inloggen met e-mailcode" })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("zichtbare sfeerpauze en mobiel menu werken met toetsenbord", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" }); await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.keyboard.press("Tab"); await expect(page.getByRole("link", { name: "Direct naar de inhoud" })).toBeFocused();
+  const menu = page.getByRole("button", { name: "Menu openen" }); await menu.focus(); await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Menu sluiten" })).toHaveAttribute("aria-expanded", "true");
+  await page.getByRole("button", { name: "Menu sluiten" }).click();
+  await page.getByRole("button", { name: "Pauzeer sfeereffecten" }).click();
+  await expect(page.locator(".theme-poster")).toHaveAttribute("data-motion", "still");
+  await expect(page.getByRole("link", { name: "Deze tocht kies ik" })).toBeVisible();
+});
+
+for (const width of [390, 1440]) {
+  test(`het verhaal opent en sluit met toetsenbord op ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    await page.goto("/");
+    const toggle = page.locator("#pp-story-toggle");
+    const story = page.getByRole("region", { name: /EEN KROON VOL DUISTER/ });
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("#pp-story-details")).toBeHidden();
+    await toggle.focus(); await page.keyboard.press("Enter");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(story).toBeVisible();
+    await expect(story.getByRole("heading", { name: "I / Het verborgen licht", exact: true })).toBeVisible();
+    await expect(story).toContainText("Hij verstopte het licht in zijn kroon");
+    await expect(story).toContainText("De Oogstmeester en de Wortelrakkers");
+    await expect(story.getByRole("img", { name: "De Kraaienbode met zijn lantaarn" })).toBeVisible();
+    await expect(story.getByRole("link", { name: "Mijn avontuur begint hier" })).toHaveAttribute("href", "/nachtpas");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(toggle).toBeFocused(); await page.keyboard.press("Space");
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("#pp-story-details")).toBeHidden();
+    await expect(toggle).toBeFocused();
+  });
+}
+
+test("de gepubliceerde tekstprojectie vult programma en voorwaarden afzonderlijk aan", async ({ page }) => {
+  // Presentation contract only: this endpoint fixture represents rows already
+  // published by the server. Database publication/edition rules have SQL tests.
+  await page.route("**/api/frightnight/public", route => route.fulfill({ json: { data: { content: [
+    { key: "programme", body: "Programma-aanvulling uit de gepubliceerde projectie.", version: 2 },
+    { key: "terms", body: "Voorwaardenaanvulling uit de gepubliceerde projectie.", version: 3 },
+  ], stale: false } } }));
+  await page.goto("/voorwaarden");
+  const terms = page.getByRole("complementary", { name: "Gepubliceerde voorwaardenaanvulling" });
+  await expect(terms).toContainText("Voorwaardenaanvulling uit de gepubliceerde projectie.");
+  await expect(page.locator("body")).not.toContainText("Programma-aanvulling uit de gepubliceerde projectie.");
+  await expect(page.locator("main")).toContainText("17:00 tot 18:30");
+  await expect(page.locator("main")).toContainText("18:30 tot 21:00");
+  await expect(page.locator("main")).toContainText("Versie: 2027-test-v1");
+  await page.goto("/");
+  await expect(page.getByRole("complementary", { name: "Gepubliceerde informatie van de organisatie" })).toContainText("Programma-aanvulling uit de gepubliceerde projectie.");
+  await expect(page.locator("body")).not.toContainText("Voorwaardenaanvulling uit de gepubliceerde projectie.");
+  await expect(page.locator(".pp-programme-strip")).toContainText("17:00 — 18:30");
+});
+
+test("vaste voorwaarden en programma blijven bruikbaar als de aanvullende inhoud uitvalt", async ({ page }) => {
+  await page.route("**/api/frightnight/public", route => route.abort("connectionfailed"));
+  await page.goto("/voorwaarden");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("ZO WERKT DE TEST.");
+  await expect(page.locator("main")).toContainText("Versie: 2027-test-v1");
+  await expect(page.getByRole("complementary", { name: "Gepubliceerde voorwaardenaanvulling" })).toHaveCount(0);
+  await page.goto("/");
+  await expect(page.locator("#pp-programme")).toContainText("Oogstdorp opent");
+  await expect(page.locator(".pp-programme-strip")).toContainText("18:30 — 21:00");
+  await page.getByRole("button", { name: "Lees hoe het begon" }).click();
+  await expect(page.getByRole("region", { name: /EEN KROON VOL DUISTER/ })).toBeVisible();
+});
+
+for (const path of ["/nachtpas", "/mijn-zone", "/avondregie", "/testcentrum"]) {
+  test(`${path} toont een echte inloggrens zonder rolselector`, async ({ page, request }) => {
+    const response = await request.get("/api/frightnight/snapshot");
+    expect(response.status()).toBe(401); expect(response.headers()["cache-control"]).toContain("no-store");
+    await page.setViewportSize({ width: 390, height: 844 }); await page.goto(path);
+    await expect(page.getByRole("link", { name: "Inloggen met e-mailcode" })).toBeVisible();
+    await expect(page.locator("select[name=role],select[name=actor]")).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(page.locator("body")).not.toContainText("De Poorten");
+  });
+}
+
+test("inloggen verstuurt geen code zonder expliciete testeractie", async ({ page }) => {
+  const sent: string[] = []; page.on("request", request => { if (request.method() === "POST" && request.url().includes("/auth/v1/otp")) sent.push(request.url()); });
+  await page.goto("/inloggen?next=%2Fnachtpas");
+  await expect(page.getByRole("heading", { name: "OPEN JOUW NACHTPAS." })).toBeVisible();
+  await expect(page.getByLabel("E-mailadres", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Stuur eenmalige code" })).toBeDisabled();
+  expect(sent).toEqual([]);
+});
+
+test("openbare inhoud hangt niet van een live databaseaanroep in de browser af", async ({ page }) => {
+  const externalDatabase: string[] = [];
+  await page.route(/https?:\/\/[^/]+\.supabase\.(co|in)\//, async route => { externalDatabase.push(route.request().url()); await route.abort("internetdisconnected"); });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible(); await expect(page.locator(".pp-king")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Deze tocht kies ik" })).toBeVisible();
+  expect(externalDatabase.filter(url => /rest\/v1|rpc/.test(url))).toEqual([]);
+});
+
+test("PWA en onafhankelijke noodinformatie hebben de nieuwe identiteit", async ({ page, request }) => {
+  const manifestResponse = await request.get("/manifest.webmanifest"); const manifest = await manifestResponse.json();
+  expect(manifest).toMatchObject({ name: "Duindorp FrightNight 2027", start_url: "/nachtpas", background_color: "#081712" });
+  for (const icon of manifest.icons) expect((await request.get(icon.src)).ok()).toBe(true);
+  await page.goto("/offline.html");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("EVEN GEEN VERBINDING");
+  await expect(page.locator("body")).toContainText("Duinpad / Oogstdorp");
+  await expect(page.locator("body")).toContainText("lokale bediening");
+  await expect(page.locator("body")).toContainText("geen actuele huisstatus");
+});
+
+test("productieserviceworker wordt actief en levert offline noodinformatie met herstel", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ serviceWorkers: "allow", viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  const origin = new URL(baseURL!).origin;
+  const forbidden: string[] = [];
+  await context.route("**/*", route => {
+    const request = route.request(); const url = new URL(request.url());
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method()) || url.origin !== origin || /^\/auth\/|^\/api\/(?:frightnight\/(?:command|edition|push|logout)|mail|push|payments?)(?:\/|$)/.test(url.pathname)) {
+      forbidden.push(`${request.method()} ${url.origin}${url.pathname}`);
+      return route.abort("blockedbyclient");
+    }
+    return route.continue();
+  });
+  const page = await context.newPage();
+  try {
+    // A static page lets this browser prepare harmless obsolete-cache fixtures
+    // before the production layout registers its real service worker.
+    await page.goto(`${origin}/offline.html`);
+    await page.evaluate(async () => {
+      const legacy = await caches.open("duindorp-public-browser-regression-obsolete");
+      await legacy.put("/obsolete-public-fixture", new Response("obsolete public fixture"));
+      const privateCache = await caches.open("duindorp-private-browser-regression-obsolete");
+      await privateCache.put("/nachtpas", new Response("cached private fixture"));
+    });
+    await page.goto(baseURL!);
+    await page.waitForFunction(async () => {
+      const registration = await navigator.serviceWorker.ready;
+      return registration.active?.state === "activated" && navigator.serviceWorker.controller?.state === "activated";
+    }, undefined, { timeout: 20_000 });
+    // Activating after an obsolete public cache also refreshes the open page.
+    // Let that real navigation settle before inspecting its new document.
+    await page.waitForLoadState("networkidle");
+    expect(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toBe(`${origin}/sw.js`);
+    expect(await page.evaluate(async () => (await navigator.serviceWorker.ready).pushManager.getSubscription())).toBeNull();
+    const keys = await page.evaluate(() => caches.keys());
+    expect(keys).not.toContain("duindorp-public-browser-regression-obsolete");
+    expect(keys.some(key => key.startsWith("duindorp-private"))).toBe(false);
+    await context.setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("EVEN GEEN VERBINDING");
+    await expect(page.locator("body")).toContainText("Duinpad / Oogstdorp");
+    await expect(page.locator("body")).toContainText("lokale bediening");
+    // A precached asset must actually be served when the network is absent.
+    // Merely finding its cache entry does not prove that the offline page works.
+    await expect.poll(() => page.locator("main img").evaluate(image => {
+      const logo = image as HTMLImageElement;
+      return logo.complete && logo.naturalWidth > 0;
+    }), { timeout: 5_000 }).toBe(true);
+    await page.locator("main img").evaluate(image => (image as HTMLImageElement).decode());
+    const cached = await page.evaluate(async () => {
+      const paths: string[] = [];
+      for (const key of await caches.keys()) {
+        const cache = await caches.open(key);
+        for (const request of await cache.keys()) paths.push(new URL(request.url).pathname);
+      }
+      return paths;
+    });
+    expect(cached).toContain("/offline.html");
+    expect(cached.filter(path => path === "/frightnight/icon-192.png")).toHaveLength(1);
+    expect(cached.some(path => /^\/(?:api|auth|inloggen|nachtpas|avondregie|testcentrum)(?:\/|$)|^\/mijn-/.test(path))).toBe(false);
+    const privateResponse = await page.goto(`${origin}/nachtpas`, { waitUntil: "domcontentloaded" });
+    expect(privateResponse?.status()).toBe(503);
+    expect(privateResponse?.headers()["cache-control"]).toContain("private, no-store");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("EVEN GEEN VERBINDING");
+    await expect(page.locator("body")).not.toContainText("cached private fixture");
+    await expect.poll(() => page.locator("main img").evaluate(image => (image as HTMLImageElement).naturalWidth > 0), { timeout: 5_000 }).toBe(true);
+    await context.setOffline(false);
+    await page.goto(baseURL!);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("DIT WORDTJOUW NACHT.");
+    expect(forbidden).toEqual([]);
+  } finally {
+    await context.setOffline(false);
+    await context.close();
+  }
+});

@@ -1,0 +1,34 @@
+{
+  "testedAt": "2026-11-03T08:25:08.027Z",
+  "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "expectedConfiguredProvider": "contract",
+  "health": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "workerSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+  "nativeWorkerGate": "exact health and reviewed worker bytes verified before any allow context",
+  "readOnly": true,
+  "sourceAudit": {
+    "source": "/home/codex/repos/duindorphalloween-frightnight-2027/tests/e2e/frightnight.spec.ts",
+    "sha256": "6a03d7da08019da89fbc0ebf737fde25010d2111c3aab964663eb6c156dd42b0",
+    "hostedSpecSha256": "c9c26916e0df3a5e5212f99b5f49aac6ba2f30455d056231267e07896948a2d8",
+    "expectedTests": 24,
+    "expectedRevision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+    "reviewedWorkerSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+    "reviewedAt": "2026-11-03T08:25:06.745703+00:00",
+    "audit": "All24 current public tests including actual production worker activation/controller, legacy cache purge, offline public and private503 no-store, offline image loaded+decoded and reconnect. No form fill/submission, Auth send, checkout, push subscribe, mail or server command. Anonymous browser-local cache fixtures only.",
+    "nativeWorkerGate": "Native allow context is denied until global setup verifies exact released health, git-show worker bytes and the independently reviewed GET-only worker SHA. All browser/API request guards remain.",
+    "execution": "Root explicitly released actual hosted 5ccf0981 after normal deployment and health200; guarded read-only public execution authorized.",
+    "healthGate": "Exact SHA plus explicit contract|mollie configured-provider match; fixed staging binding and reviewed worker bytes remain mandatory before any native worker context.",
+    "expectedConfiguredProviderForPreparedRevision": "contract",
+    "preparedAt": "2026-11-03T07:23:02.683852+00:00"
+  },
+  "limits": "Anonymous public browser only. No forms, OTP, PSP, push, mail or database commands. Published text projection fixture is presentation-only."
+}

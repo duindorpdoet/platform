@@ -1,5 +1,39 @@
 # Browserbewijs FrightNight 2027
 
+## Actuele grens — kandidaat9b en VPS-ENOSPC
+
+Kandidaat **`9b0b215f922766f6c69db67dc4f25a37d4a95c9e`** heeft volledige exacte CI groen:1565appchecks/6bestaande optionele skips,17Nodeguards,697clientartifacts,24browsers en4661pgTAPassertions/137files. [CI-bewijs](../validation/ci-9b0b215f-report.json), [volledige lokale verificatie](../validation/application-domain-conflicts-verify-report.json), [787lokale nieuwe kerncontracten en races](../validation/backend-domain-conflicts-report.json), [werkelijke PostgREST14.5 vóór/na](local-postgrest14-domain-conflicts/README.md).
+
+De normale release heeft een nieuwe groene versleutelde backup/herstelproef268tabellen/12Storageobjecten,005toegepast en behoud268bewezen. De VPS-appkopie stopte daarna op ENOSPC; ook inspect-only kon zijn runnerlog niet openen. De app blijftd843. [Backup](../validation/pre-migration-backup-9b0b215f-report.json), [huidige database65functies/32RLS-tabellen](../validation/post005-database-metadata-9b0b215f-report.json), [concreet release-/inspectfoutbewijs](../validation/staging-9b0b215f-deploy-failure.json), [hersteloverzicht](../STAGING-DISK-HERSTEL.md). Er is nog niets opgeruimd, geen9b-accountfixture gestart en geen nieuwe appacceptatie bewezen. De hieronder getoonde publieke d843- en lokale beelden behouden hun eigen broncontext; zij worden niet als gepubliceerde9b-beelden gepresenteerd.
+
+De afzonderlijke [lokale beeldreview](../validation/local-handoff-visual-review.json) selecteert telefoon-/desktopparen voor alle vier omgevingen en de publieke website, met pad-/beeldhashen en beperkingen. De definitieve9b-hostedbeelden volgen pas na daadwerkelijke publicatie en volledige accountacceptatie.
+
+## Actuele gepubliceerde bron — d8439e09
+
+Staging publiceert sinds3november2026om09:11UTC **`d8439e09c67083548d8b09ac4110d24820a52dd0`**. De onafhankelijke [publieke hostedproef](public-hosted-d8439e09/README.md) is **24/24 +19/19** geslaagd, met tien volledig geladen/decodeerde en visueel beoordeelde390/1440-beelden, bronhashen en health vóór/na. Native installatie/controller, offline-logo/Duinpad, private503/no-store, oude cacheopschoning en reconnect zijn werkelijk getest. Nul Auth/OTP/mutaties/externe requests of paginafouten. De gepubliceerde account-/Storage-/REG-/EDGE-/load-/RET05gates lopen nog; dit is geen blanketproductacceptatie.
+
+| Actueel aanvullend bewijs | Werkelijke uitkomst | Grens |
+|---|---|---|
+| [Hanz-route/feedback/offline](feedback-closure-offline-assets/README.md) |24publieke+10nativeoffline+27accountchecks,20beelden; algemene bedankjes, pauze-afsluiting/finale en herstel |Lokale echte Auth/DB;33basemapGETs geblokkeerd, geen kaartdeliveryclaim |
+| [Betaalsandbox](payment-sandbox/README.md) |42echte UIchecks: contract, globaleMollie zonder sleutel en expliciet ongewapend fail-closed |Geen externe Mollie of sleutel gebruikt; nul externe server/browserpogingen |
+| [Ontbrekende/onjuiste mailpolicy](local-final-mail-policy/report.json) |3werkelijke handlerproeven; uitsluitend sink, ongeldigeconfig422 vóórmutatie;54lokale serverfetches/0extern |Eigen lokale editie; effectieve policy na Nextinitialisatie gemeten; cleanup behouden |
+| [Offline bevoegdheid/browserherstart](local-final-offline-coverage/README.md) |12werkelijke proeven en12beelden: refund/revoke→queue403, echte sessierefresh, volledige browserherstart/logout/nieuweidentiteit |161lokale serverfetches/0extern;12browserbasemapGETs geblokkeerd; geen fysiek PWAtoestel |
+| [Wederzijdse bewoners-/profielgrens](local-final-owner-coverage/report.json) |5proeven en10beelden:6wederzijdse403,5invalidcases, echte profielwijziging onderweg, oudeQR409, geschikte hervatting zonder award |Eigen lokale child; financiële/canonical32/2026/outbox/Auth behouden; eerdere fixturefouten bewaard |
+| [Huidige bronbinding](../validation/final-runtime-source-binding.json) |1082runtimebestanden ongewijzigd t.o.v.geverifieerde5cc/hanz; d843wijzigt uitsluitend vijf acceptance-/testbestanden |Geen vervanging voor de daadwerkelijke nieuwe volledigeCI en gepubliceerde acceptatie |
+| [Historische lokale proef opnieuw getoetst aan bron](../validation/local-software-coverage-review.json) |Exacte report-/gitobject-/functiehashen en expliciete wrappergrenzen; vijf later geïdentificeerde gaten daadwerkelijk lokaal gesloten |Geen volledige87/87-hosted- of provider-/hardwareclaim |
+
+| Gepubliceerde ervaring | Telefoon | Desktop |
+|---|---|---|
+| Publieke v7-home |[390px](public-hosted-d8439e09/published-home-390.png)|[1440px](public-hosted-d8439e09/published-home-1440.png)|
+| Geopend verhaal |[390px](public-hosted-d8439e09/published-story-open-390.png)|[1440px](public-hosted-d8439e09/published-story-open-1440.png)|
+| Voorwaarden |[390px](public-hosted-d8439e09/published-terms-390.png)|[1440px](public-hosted-d8439e09/published-terms-1440.png)|
+| Inloggen zondercodeverzoek |[390px](public-hosted-d8439e09/published-login-no-send-390.png)|[1440px](public-hosted-d8439e09/published-login-no-send-1440.png)|
+| Werkelijke offlinepagina |[390px](public-hosted-d8439e09/published-offline-pwa-390.png)|[1440px](public-hosted-d8439e09/published-offline-pwa-1440.png)|
+
+## Eerdere brongebonden lokale rondes en tussenreleases
+
+Onderstaande rondes behouden hun oorspronkelijke builds/tijdstippen en grenzen. Zij vervangen de actuele publicatie en nog open eindgates niet.
+
 De basisronde hieronder is gemaakt op de lokale **productiebuild** `eRSyuhMgvmTFYkX3lfRR3`. De aanvullende REG-01/REG-02-ronde draait op `3DJIV2_RRsuC8OdOesRkc` en vervangt het bewijs voor de gewijzigde regielijsten en doelgroepberichten. De laatste gerichte productronde gebruikt de lokale standaloneproductiebuild `C6R3bIB_R-40R-R5IjGPU` voor verhaaluitklap, programma- en voorwaardenpublicatie, contactprivacy, SVG-Nachtpas, operationele noodkaartjes en editiebrede regietotalen. De nieuwe publieke ronde (23), huisbeoordeling (12) en fotolinkpresentatie (11) gebruiken `Ok5RjR2fex_g9bgq4d5YE`. Downloadproeven (24), pakketgrenzen (27) en echte spel-/bakenbediening (10) behouden hun relevante lokale build `fzribBblz0y5tNosd_-R-`. De quoteformulierherproef behoudt haar build `Y-D-8X-SAa492KG6nnWGs`; de overige 42 gerichte accountchecks behouden eveneens hun eerdere, nog relevante buildcontext. De aangemelde rondes gebruiken echte GoTrue-sessies en de geïsoleerde lokale database `frightnight_2027_dev`. De uitvoering staat als UTC-tijd in ieder JSON-rapport; 02:57 UTC is 03:57 in Europe/Amsterdam. De stagingrelease, bijbehorende Git-SHA en gepubliceerde controles worden afzonderlijk vastgelegd in de implementatiestatus en het stagingacceptatierapport.
 
 | Proef | Resultaat | Bewijs |

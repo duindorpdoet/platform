@@ -1,0 +1,15 @@
+{
+  "source": "/home/codex/repos/duindorphalloween-frightnight-2027/tests/e2e/frightnight.spec.ts",
+  "sha256": "6a03d7da08019da89fbc0ebf737fde25010d2111c3aab964663eb6c156dd42b0",
+  "hostedSpecSha256": "c9c26916e0df3a5e5212f99b5f49aac6ba2f30455d056231267e07896948a2d8",
+  "expectedTests": 24,
+  "expectedRevision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "reviewedWorkerSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+  "reviewedAt": "2026-11-03T09:11:45.192Z",
+  "audit": "All24 current public tests including actual production worker activation/controller, legacy cache purge, offline public and private503 no-store, offline image loaded+decoded and reconnect. No form fill/submission, Auth send, checkout, push subscribe, mail or server command. Anonymous browser-local cache fixtures only.",
+  "nativeWorkerGate": "Native allow context is denied until global setup verifies exact released health, git-show worker bytes and the independently reviewed GET-only worker SHA. All browser/API request guards remain.",
+  "execution": "Root explicitly authorized actual published d8439e09 after normal deployment and independent health200. Read-only public browser only.",
+  "healthGate": "Exact SHA plus explicit contract|mollie configured-provider match; fixed staging binding and reviewed worker bytes remain mandatory before any native worker context.",
+  "expectedConfiguredProviderForPreparedRevision": "contract",
+  "preparedAt": "2026-11-03T09:11:45.192Z"
+}

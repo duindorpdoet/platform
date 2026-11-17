@@ -1,0 +1,19 @@
+{
+  "verifiedAt": "2026-11-03T09:39:01.757Z",
+  "appCommit": "9b0b215f",
+  "files": [
+    {
+      "path": "lib/frightnight/server.ts",
+      "sha256": "8385460c972383212eb3fcf799ff77aef9e661c7f1c6f6aa4eeb331fcd6862f6"
+    },
+    {
+      "path": "lib/frightnight/server-rpc-error.test.ts",
+      "sha256": "7aa6b70424358b04501dae695b65c84c8f4f16f333f3436e3d5ec35773876e91"
+    }
+  ],
+  "migration": {
+    "path": "supabase/migrations/20261103092502_frightnight_2027_domain_conflicts.sql",
+    "executedSha256": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570",
+    "matchesCurrentSource": true
+  }
+}

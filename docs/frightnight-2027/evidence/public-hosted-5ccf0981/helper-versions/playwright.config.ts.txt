@@ -1,0 +1,11 @@
+import { defineConfig } from '@playwright/test';
+import { join } from 'node:path';
+const directory=process.env.FRIGHTNIGHT_PUBLIC_EVIDENCE_DIR ?? '/tmp/frightnight-public-hosted/evidence-5ccf0981';
+process.env.FRIGHTNIGHT_PUBLIC_EVIDENCE_DIR=directory;
+export default defineConfig({
+  testDir:'/tmp/frightnight-public-hosted',testMatch:'frightnight.spec.ts',
+  globalSetup:'/tmp/frightnight-public-hosted/global-setup.ts',
+  outputDir:join(directory,'test-results'),fullyParallel:false,workers:1,retries:0,timeout:60000,
+  reporter:[['list'],['json',{outputFile:join(directory,'playwright-report.json')}]],
+  use:{baseURL:'https://staging-halloween.duindorpdoet.nl',viewport:{width:1440,height:1000},reducedMotion:'reduce',serviceWorkers:'block',trace:'off',screenshot:'only-on-failure'},
+});

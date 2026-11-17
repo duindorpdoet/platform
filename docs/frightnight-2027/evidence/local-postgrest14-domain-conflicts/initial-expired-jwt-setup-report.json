@@ -1,0 +1,37 @@
+{
+  "scope": "LOCAL ONLY; isolated new clone, native PostgREST14.5 HTTP; no shared gateway/QA mutation",
+  "run": "pgrst14-518d295e",
+  "slug": "frightnight-2027-test-acceptance-pgrst14-518d295e",
+  "database": "frightnight_pgrst14_518d295e",
+  "container": "frightnight-pgrst14-518d295e",
+  "origin": "http://127.0.0.1:63564",
+  "startedAt": "2026-11-03T09:28:09.753Z",
+  "checks": [],
+  "requests": [
+    {
+      "rpc": "frightnight_command",
+      "operation": "test.copy",
+      "probe": false,
+      "status": 401,
+      "code": "PGRST303",
+      "message": "JWT expired",
+      "milliseconds": 21
+    }
+  ],
+  "limits": [
+    "Local native HTTP and PostgreSQL only, no external Auth/OTP/PSP/mail/push.",
+    "Before test bounds the known PostgREST14 retry loop at the sixth transaction using an isolated pre-request counter.",
+    "The counter and stop are test instrumentation in this clone only; production business functions remain untouched until exact forward005."
+  ],
+  "cloneBytes": 4077587,
+  "imageDigest": "public.ecr.aws/supabase/postgrest@sha256:b574528fe109c8343c1247155734d03df8c34b462f342dca0ccc20244fc36ef9",
+  "restVersion": "PostgREST 14.5",
+  "status": "failed",
+  "failure": "CLONE_PRIVATE_COPY_FAILED",
+  "dedicatedRestRemoved": true,
+  "ownDisposableCloneRemoved": true,
+  "privateEnvRemoved": true,
+  "cleanupErrors": [],
+  "testedAt": "2026-11-03T09:28:12.858Z",
+  "harnessSha256": "28e3050538efaa27496f4a16af3cd9a518536581a68db5ba74c2b2b2570b4b1f"
+}

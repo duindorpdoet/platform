@@ -1,0 +1,42 @@
+import { createRequire } from 'node:module';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { randomUUID, randomBytes, createHash } from 'node:crypto';
+const root='/home/codex/repos/duindorphalloween-frightnight-2027';
+const require=createRequire(root+'/package.json');
+const { chromium }=require('@playwright/test');const {createClient}=require('@supabase/supabase-js');const {createServerClient}=require('@supabase/ssr');
+const base='http://127.0.0.1:3137',run='localedge-'+randomUUID().slice(0,8),slug='frightnight-2027-test-acceptance-'+run;
+const directory='/tmp/frightnight-edge-local-evidence';await mkdir(directory,{recursive:true});
+const report={origin:base,context:'local-only real GoTrue/Postgres/production browser; hosted guards remain unchanged in permanent source',buildId:(await readFile(root+'/.next/BUILD_ID','utf8')).trim(),startedAt:new Date().toISOString(),checks:[],screenshots:[],forbiddenRequests:[]};
+const literal=v=>"'"+String(v).replaceAll("'","''")+"'";
+function sql(query,write=false){const input=write?'begin;set local lock_timeout=\'3s\';set local statement_timeout=\'15s\';'+query+';commit;':`select coalesce(json_agg(x),'[]') from(${query})x`;const out=execFileSync('docker',['exec','-i','supabase_db_duindorp_event_close_20261101','psql','-U','postgres','-d','frightnight_2027_dev','-X','-A','-t','-v','ON_ERROR_STOP=1'],{input,encoding:'utf8',maxBuffer:1024*1024});return write?[]:JSON.parse(out.trim());}
+const assert=(v,label)=>{if(!v)throw Error(label)};
+const checked=(label,detail={})=>{report.checks.push({label,status:'passed',...detail});console.log(label)};
+const browser=await chromium.launch({headless:true,args:['--disable-dev-shm-usage','--no-sandbox']});const contexts=[];const actors=[];
+const sburl=process.env.NEXT_PUBLIC_SUPABASE_URL,anon=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const service=createClient(sburl,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+async function context(session){const jar=new Map();const c=createServerClient(sburl,anon,{cookies:{getAll:()=>[...jar.values()].map(x=>({name:x.name,value:x.value})),setAll:items=>items.forEach(x=>jar.set(x.name,x))}});const {error}=await c.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token});if(error)throw Error('LOCAL_SESSION_FAILED');const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block',reducedMotion:'reduce'});contexts.push(context);await context.route('**/*',route=>{const url=new URL(route.request().url());if((/^https?:$/.test(url.protocol)&&![base,new URL(sburl).origin].includes(url.origin))||/\/auth\/v1\/(otp|magiclink|recover|signup|invite)|\/api\/(push|mail)\//.test(url.pathname)){report.forbiddenRequests.push({host:url.hostname,path:url.pathname,method:route.request().method()});return route.abort();}return route.continue();});await context.addCookies([...jar.values()].filter(x=>x.value&&x.options?.maxAge!==0).map(x=>({name:x.name,value:x.value,domain:'127.0.0.1',path:'/',secure:false,sameSite:'Lax'})));return context;}
+async function app(actor,operation,payload={},key=randomUUID(),allowFailure=false){const r=await actor.context.request.post(base+'/api/frightnight/command',{headers:{Origin:base},data:{commandId:key,operation,payload}});const b=await r.json();if(!r.ok()&&!allowFailure)throw Error('APP_'+operation+'_'+r.status()+'_'+b.error?.code);return{status:r.status(),value:b.data,error:b.error};}
+async function select(actor,scope){const r=await actor.context.request.post(base+'/api/frightnight/edition',{headers:{Origin:base},data:{slug:scope}});assert(r.ok(),'LOCAL_EDITION_SELECT_FAILED')}
+let eid;let rootActor;
+try{
+ assert(/^http:\/\/127\.0\.0\.1:\d+\/?$/.test(sburl??''),'LOCAL_QA_GATEWAY_REQUIRED');
+ const personas=JSON.parse(await readFile('/tmp/frightnight-local-gateway/personas.json','utf8'));rootActor={id:personas.admin.id,context:await context(personas.admin.session)};
+ const copy=await app(rootActor,'test.copy',{slug});eid=copy.value.result.eventId;
+ for(const alias of ['admin','a','b','resident','support']){const password=randomBytes(32).toString('hex'),email=`fn2027-${run}-${alias}@example.invalid`;const created=await service.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{synthetic_frightnight_run:run}});assert(!created.error&&created.data.user,'LOCAL_CREATE_INVALID_USER_FAILED');const signed=await service.auth.signInWithPassword({email,password});assert(!signed.error&&signed.data.session,'LOCAL_SIGN_IN_FAILED');const actor={id:created.data.user.id,email,alias,session:signed.data.session,context:await context(signed.data.session)};actors.push(actor);}
+ const [admin,a,b,resident,support]=actors;
+ sql(`insert into app_private.event_capabilities(event_id,user_id,capability) values(${literal(eid)}::uuid,${literal(admin.id)}::uuid,'event_admin')`,true);
+ for(const actor of actors.filter(x=>x!==admin)) sql(`insert into app_private.event_capabilities(event_id,user_id,capability) values(${literal(eid)}::uuid,${literal(actor.id)}::uuid,'live_support')`,true);
+ await select(admin,slug);
+ const source=(await readFile(root+'/scripts/acceptance/frightnight-edges.mjs','utf8')).replace("base === 'https://staging-halloween.duindorpdoet.nl'","base === 'http://127.0.0.1:3137'");
+ report.moduleSourceSha256=createHash('sha256').update(await readFile(root+'/scripts/acceptance/frightnight-edges.mjs')).digest('hex');
+ await writeFile('/tmp/frightnight-edges-local-module.mjs',source);
+ process.env.GITHUB_SHA=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();process.env.FRIGHTNIGHT_VERIFIED_RELEASE_SHA=process.env.GITHUB_SHA;process.env.FRIGHTNIGHT_PAYMENT_PROVIDER='contract';
+ const {runEdgeAcceptance}=await import('/tmp/frightnight-edges-local-module.mjs?'+Date.now());
+ async function armContract({slug:childSlug,eventId:childEventId,actor}){const beforeResponse=await actor.context.request.get(base+'/api/frightnight/snapshot');assert(beforeResponse.ok(),'LOCAL_ARM_SNAPSHOT_FAILED');const before=(await beforeResponse.json()).data;assert(before.event.id===childEventId&&before.event.slug===childSlug,'LOCAL_ARM_SCOPE_MISMATCH');const ownRun=before.event.runId;const armClient=createClient(sburl,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});const armed=await armClient.schema('api').rpc('frightnight_contract_arm',{p_slug:childSlug,p_actor:actor.id,p_run_id:ownRun,p_confirmation:'nocteiuvohesvqbowchw:staging:duindorphalloweenstg:'+childSlug+':'+ownRun});assert(!armed.error&&armed.data?.armed===true&&armed.data.eventId===childEventId&&armed.data.runId===ownRun&&armed.data.provider==='contract','LOCAL_AUTHORITATIVE_ARM_FAILED');const afterResponse=await actor.context.request.get(base+'/api/frightnight/snapshot');assert(afterResponse.ok(),'LOCAL_ARM_READBACK_FAILED');const after=(await afterResponse.json()).data;assert(after.event.paymentPolicy==='contract_sandbox'&&after.event.sandboxRunId===ownRun&&after.event.contractSandboxArmed===true&&after.paymentSandbox.effectiveProvider==='contract','LOCAL_ARM_READBACK_MISMATCH');return{slug:childSlug,eventId:childEventId,runId:ownRun,provider:'contract'};}
+ await runEdgeAcceptance({base,slug,eventId:eid,run,admin,a,b,resident,support,sql,app,assert,checked,literal,report,directory,armContract});
+ report.status='passed';
+}catch(error){report.status='failed';report.failure=String(error.message);console.error(report.failure);process.exitCode=1;}finally{
+ if(eid&&rootActor){try{await select(rootActor,slug);const r=await rootActor.context.request.get(base+'/api/frightnight/snapshot');const s=(await r.json()).data;await app(rootActor,'admin.settings',{closed:true,expectedVersion:s.event.version,confirmation:slug,reason:'Lokale wrapper parent behouden en gecontroleerd afsluiten'});report.localParentClosed=true}catch{report.localParentCleanupFailure=true;}}
+ for(const c of contexts)await c.close().catch(()=>{});await browser.close();report.completedAt=new Date().toISOString();await writeFile(directory+'/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify({status:report.status,checks:report.checks.length,failure:report.failure,buildId:report.buildId,edition:report.edgeAcceptance?.edition}));
+}

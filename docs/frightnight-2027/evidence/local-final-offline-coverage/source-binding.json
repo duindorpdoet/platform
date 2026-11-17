@@ -1,0 +1,38 @@
+{
+  "verifiedAt": "2026-11-03T08:55:57.673Z",
+  "sourceHead": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "buildId": "hanzA2t5Xaby269LUnhWK",
+  "servedBuildId": "hanzA2t5Xaby269LUnhWK",
+  "sourceFiles": [
+    {
+      "path": "components/frightnight/client.tsx",
+      "sha256": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+      "matchesGitObject": true
+    },
+    {
+      "path": "components/frightnight/session.tsx",
+      "sha256": "44b8f4457a36898738c4258ab7f32a09b96f69f48e3f622cc613583dd3f04aff",
+      "matchesGitObject": true
+    },
+    {
+      "path": "components/frightnight/participant.tsx",
+      "sha256": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+      "matchesGitObject": true
+    },
+    {
+      "path": "lib/frightnight/offline.ts",
+      "sha256": "5dc4565a4e197bfa91d47d5930df22bcbd40a2822038fc09773dcdbb46aa8a0d",
+      "matchesGitObject": true
+    },
+    {
+      "path": "lib/pwa/private-snapshot.ts",
+      "sha256": "000d7c73f2c05af1ec6b672088b492394ebec6b964acdc1a5ee611c9d81eba89",
+      "matchesGitObject": true
+    },
+    {
+      "path": "public/sw.js",
+      "sha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+      "matchesGitObject": true
+    }
+  ]
+}

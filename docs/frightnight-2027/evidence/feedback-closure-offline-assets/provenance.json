@@ -1,0 +1,52 @@
+{
+  "recordedAt": "2026-11-03T07:49:22.201Z",
+  "buildId": "hanzA2t5Xaby269LUnhWK",
+  "sourceCommit": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "sources": {
+    "public/sw.js": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+    "tests/e2e/frightnight.spec.ts": "6a03d7da08019da89fbc0ebf737fde25010d2111c3aab964663eb6c156dd42b0",
+    "lib/editorial/service-worker.test.ts": "4eb6f37a4ef8900cf3e7c132e802b71100eb68fb3022d2631f91accda72b8632",
+    "components/frightnight/participant.tsx": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+    "components/frightnight/operations.tsx": "899eb59eb5018038d34866dc2350163cc78f23a7dffc9c7a678c7fc943ab48d2",
+    "components/frightnight/organization-feedback.tsx": "421aebd111834f9ef20189010e686ed2cbb500f0e1c957e7ce4ab67a6585e1e7",
+    "lib/frightnight/model.ts": "71143fbc22e1c2ec0089ae7ac7cfd3ed3c46d72bdcba1ccc4f94fb8cac4d1184",
+    "scripts/acceptance/frightnight-edges.mjs": "c91e3c4cb6838693a3784f3f95dd118f5fc8e9a62d72cdaedacc465e0233b855",
+    "scripts/deploy/accept-frightnight.mjs": "4a5992a2dbd24044d7d656741e8aea8bddd61a647331cb87263e0dc72a47de56",
+    "supabase/migrations/20261103073433_frightnight_2027_feedback_closure.sql": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8"
+  },
+  "helpers": {
+    "/tmp/frightnight-offline-logo-after.mjs": "979e2fd1018337145803159a92ca79d606733deaac2513ccd831c03fd034e895",
+    "/tmp/frightnight-edges-local.mjs": "0c86b0f1f570c1e4a2c98eef5b5cb9151074155b0b1075d6eb3116f4e4c73a1d"
+  },
+  "public": {
+    "passed": 24,
+    "failed": 0,
+    "completedAt": "2026-11-03T07:47:05.058Z"
+  },
+  "nativeLogo": {
+    "checks": 10,
+    "testedAt": "2026-11-03T07:47:30.631Z",
+    "dimensions": {
+      "complete": true,
+      "width": 1536,
+      "height": 1024
+    }
+  },
+  "packageEdges": {
+    "checks": 27,
+    "testedAt": "2026-11-03T07:48:25.078Z",
+    "sourceCommitAtStart": "38cbf47b705ad0aadd01fdef7056222e73c374a1"
+  },
+  "limits": "Local production build/QA database evidence. No hosted release, external PSP, hardware or physical-device claim. Existing f7f2 payment42 proof retains its own build and source binding.",
+  "mapBackgroundLimitation": {
+    "interceptedRequests": 33,
+    "host": "tiles.openfreemap.org",
+    "kinds": [
+      "planet tiles",
+      "sprite JSON",
+      "sprite PNG"
+    ],
+    "delivered": 0,
+    "meaning": "The extra local harness intentionally blocked the public map background. Route state, fallback, privacy, feedback and closure tests still passed; successful map-provider delivery is not established by this run."
+  }
+}

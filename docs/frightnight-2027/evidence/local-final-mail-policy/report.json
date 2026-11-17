@@ -1,0 +1,92 @@
+{
+  "startedAt": "2026-11-03T08:51:47.015Z",
+  "localOnly": true,
+  "origin": "http://127.0.0.1:3140",
+  "buildId": "hanzA2t5Xaby269LUnhWK",
+  "sourceRevision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "checks": [
+    {
+      "label": "missing runtime mail policy defaults to durable sink, actual paid command and retry",
+      "status": "passed",
+      "variablePresent": false,
+      "sinkRecordsAdded": 1,
+      "unintendedLegacyOutboxRows": 0,
+      "legacyOutboxContentUnchanged": true,
+      "unsafeSinkRecords": 0,
+      "duplicateFinancialEffect": false
+    },
+    {
+      "label": "valid allowlist runtime policy still cannot escape database staging sink",
+      "status": "passed",
+      "sinkRecordsAdded": 1,
+      "unsafeSinkRecords": 0,
+      "unintendedLegacyOutboxRows": 0,
+      "legacyOutboxContentUnchanged": true
+    },
+    {
+      "label": "invalid live runtime mail policy blocks real snapshot and payment handler before mutation",
+      "status": "passed",
+      "snapshotStatus": 422,
+      "commandStatus": 422,
+      "visibleFailure": true,
+      "apiErrorCode": "VALIDATION_ERROR",
+      "databaseAggregatesUnchanged": true,
+      "unintendedLegacyOutboxRows": 0,
+      "additionalSinkRecords": 0
+    }
+  ],
+  "serverPids": [
+    2387155,
+    2387390,
+    2387490,
+    2387657
+  ],
+  "remoteWrites": 0,
+  "otpRequests": 0,
+  "externalDeliveryClaim": false,
+  "variantPids": {
+    "missing": 2387155,
+    "allowlist": 2387390,
+    "live": 2387490
+  },
+  "standaloneEnvironmentFilePresence": {
+    ".env": false,
+    ".env.local": false,
+    ".env.production": false,
+    ".env.production.local": false
+  },
+  "edition": {
+    "slug": "frightnight-2027-test-env04-6dad507c",
+    "eventId": "c76891f5-7a07-4705-949b-98681910b5ae",
+    "runId": "3ffc8d28-96e6-4a34-b76c-c7a2527f2405",
+    "syntheticActorSha256": "c4cfd51eaa918bab7e64bea8b56a235ad1d0560df6250daacef6533ae6d1b743"
+  },
+  "status": "passed",
+  "cleanup": {
+    "status": "passed",
+    "exactOwnEditionOnly": true,
+    "archivedAndClosed": true,
+    "authDeleted": 0,
+    "historicalDataDeleted": 0,
+    "financialAndMailHistoryPreserved": true
+  },
+  "effectiveRuntimePolicy": {
+    "missingAfterNextInitialization": true,
+    "allowlistAfterNextInitialization": true,
+    "invalidFieldReportedByRealHandler": true
+  },
+  "network": {
+    "nativeFetchGuard": true,
+    "calls": 54,
+    "blockedExternalAttempts": 0,
+    "externalDeliveries": 0,
+    "note": "Only loopback native fetch permitted; no SMTP/PSP provider proof is claimed."
+  },
+  "completedAt": "2026-11-03T08:51:50.951Z",
+  "sourceSha256": {
+    "harness": "6105dd3e6ffa30e3c18f2ef1d830704c720ed72417ca4b692eae35cda696eb5a",
+    "networkGuard": "ced3277f32e2d9da6ab1db5bbd670bf18476212b8451d2f79f2e71c8582670ab",
+    "serverEnv": "d195c386a8010aef67a6de1d0350b20c04a6c05b3438ec2cb105932bedad2b31",
+    "compiledServer": "75237852bbffc8329566ca0dd39bb06841b16cd3670389d0944a80a27f1cad92"
+  }
+}

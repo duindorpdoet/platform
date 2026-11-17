@@ -1,0 +1,83 @@
+{
+  "createdAt": "2026-11-03T08:56:11.199930+00:00",
+  "sourceCommit": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "servedBuildId": "hanzA2t5Xaby269LUnhWK",
+  "passingReportSha256": "d67a7e750386b9abc2fabebe4f2b9f8208b8c4f90dbe99d94ae0092dd6a365bc",
+  "harnessSha256": "34cf2d20f63befe8a757b769d5d46a0f68dedf6693ec3723583fecaa7d78e593",
+  "screenshots": 10,
+  "executedScopes": [
+    "SEC-02 two distinct real local resident identities, reciprocal zone mutation denials and finance list denials",
+    "HUI-03 real owner UI material profile edit during an actual released visit, invalid API matrix, old real QR refusal and explicit UI recovery",
+    "HUI-03 candy intensity server normalization"
+  ],
+  "appSourceSha256": {
+    "components/frightnight/resident.tsx": "600788fbf32faba6676dcb4ab6245b3243550cd71fe4efd4b157f1c53c35574e",
+    "components/frightnight/participant.tsx": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+    "components/frightnight/client.tsx": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+    "lib/frightnight/server.ts": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+    "lib/frightnight/payment-server.ts": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+    "app/api/frightnight/command/route.ts": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+    "app/api/frightnight/admin/list/route.ts": "eb63b65367592cba70fc5c1ec8410c6cea2668748344192e144d58b3aeeee141",
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "supabase/migrations/20261103073433_frightnight_2027_feedback_closure.sql": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8"
+  },
+  "sourceUnchangedDuringRun": true,
+  "priorFailedHarnessAttempts": [
+    {
+      "path": "/tmp/frightnight-local-final-owner/owner-789bb1ef-e6a/report.json",
+      "sha256": "9fd03c61e1dfea51746882e540f3fca22df0ea4afd6d72b04c2e64be9bd1cd4b",
+      "status": "failed",
+      "passingChecksBeforeStop": 0,
+      "failure": "Command failed: docker exec -i supabase_db_duindorp_event_close_20261101 psql -U postgres -d frightnight_2027_dev -X -q -A -t -v ON_ERROR_STOP=1",
+      "cleanupErrorsAtAttempt": [],
+      "resolution": "No child created."
+    },
+    {
+      "path": "/tmp/frightnight-local-final-owner/owner-8d49e0b6-59b/report.json",
+      "sha256": "907eac577bf5384afaf00f63a65fae2a0014b3c54e4e43f15005a9226df108c5",
+      "status": "failed",
+      "passingChecksBeforeStop": 3,
+      "failure": "locator.selectOption: Timeout 30000ms exceeded.",
+      "cleanupErrorsAtAttempt": [
+        "ACTOR_EDITION_SCOPE",
+        "ACTOR_EDITION_SCOPE"
+      ],
+      "resolution": "Own child reset and closed; final read-only aggregate confirms final state, own entries expired using exact captured actor+invitation digest; all financial rows retained unchanged. No product source change followed."
+    },
+    {
+      "path": "/tmp/frightnight-local-final-owner/owner-8d49e0b6-59b-resumed/report.json",
+      "sha256": "964c81b3be3573b1c20312c68d35e45084aae3e656f2bb90d5abf2cfed032979",
+      "status": "failed",
+      "passingChecksBeforeStop": 3,
+      "failure": "locator.fill: Timeout 30000ms exceeded.",
+      "cleanupErrorsAtAttempt": [
+        "Command failed: docker exec -i supabase_db_duindorp_event_close_20261101 psql -U postgres -d frightnight_2027_dev -X -q -A -t -v ON_ERROR_STOP=1"
+      ],
+      "resolution": "Own child reset and closed; final read-only aggregate confirms final state, own entries expired using exact captured actor+invitation digest; all financial rows retained unchanged. No product source change followed."
+    },
+    {
+      "path": "/tmp/frightnight-local-final-owner/owner-8d49e0b6-59b-final/report.json",
+      "sha256": "a2b6fae540fc23363d8e67d2eff0b6b8902841b5f97215ef751a094ba475a230",
+      "status": "failed",
+      "passingChecksBeforeStop": 1,
+      "failure": "expect(locator).toBeVisible() failed",
+      "cleanupErrorsAtAttempt": [],
+      "resolution": "Own child reset and closed; final read-only aggregate confirms final state, own entries expired using exact captured actor+invitation digest; all financial rows retained unchanged. No product source change followed."
+    }
+  ],
+  "priorOwnChildFinalCleanup": {
+    "closed": true,
+    "exactOwn": true,
+    "seedVersion": 0,
+    "activeClaims": 0,
+    "ledgerRetained": 3,
+    "ordersRetained": 3,
+    "unexpiredEntries": 0,
+    "activeOwnAdminCaps": 0
+  },
+  "priorOwnChildCorrectiveEntryExpiryScope": "Only captured previous private edition and run marker, existing captured invalid persona IDs and their exact invitation digest; no global actor/auth changes. Both old family entries from earlier failed runs included.",
+  "priorOwnChildFinancialFingerprintUnchangedDuringCorrectiveEntryExpiry": true,
+  "importantLimit": "All proof is local QA with existing invalid personas. No hosted acceptance, OTP/external mail/payment/physical walking or camera proof. Failed harness attempts are retained, not counted as a passing batch."
+}

@@ -1,0 +1,62 @@
+{
+  "recordedAt": "2026-11-03T10:02:21.949708+00:00",
+  "revision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+  "runId": 41612954081,
+  "url": "https://github.com/duindorpdoet/platform/actions/runs/41612954081",
+  "event": "push",
+  "checkoutRevisionVerifiedInAllJobLogs": true,
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 125839193166,
+      "name": "Resolve release mail-test policy",
+      "conclusion": "success",
+      "started_at": "2026-11-03T09:40:43Z",
+      "completed_at": "2026-11-03T09:41:01Z",
+      "stepsSucceeded": 7,
+      "waiver": false
+    },
+    {
+      "id": 125839349838,
+      "name": "Application and browser tests",
+      "conclusion": "success",
+      "started_at": "2026-11-03T09:41:03Z",
+      "completed_at": "2026-11-03T09:44:25Z",
+      "stepsSucceeded": 11,
+      "unitPassed": 1565,
+      "unitOptionalSkipped": 6,
+      "unitFilesPassed": 167,
+      "unitFilesOptionalSkipped": 2,
+      "nodeGuardPassed": 17,
+      "clientArtifactsScanned": 697,
+      "nativePublicBrowserPassed": 24
+    },
+    {
+      "id": 125839349845,
+      "name": "Database migrations, contracts and lint",
+      "conclusion": "success",
+      "started_at": "2026-11-03T09:41:03Z",
+      "completed_at": "2026-11-03T10:01:02Z",
+      "stepsSucceeded": 34,
+      "pgTAPFiles": 137,
+      "pgTAPAssertions": 4661,
+      "pgTAPResult": "PASS",
+      "requiredHttpAuthMailConcurrencyLoadEditorialSteps": "all success"
+    }
+  ],
+  "requiredWorkflowStepsFailed": 0,
+  "requiredWorkflowStepsSkipped": 0,
+  "mailTestsEnabled": true,
+  "mailAcceptanceWaiver": false,
+  "logSha256": {
+    "policy": "c32330e132c8a4ce4d01028631671c15dec269f3b38847e36ca9a66c92c65e37",
+    "app": "dba88c1762299ed9923cc0f0f106b263b010df3a55aa9be062b14dc7aa14c411",
+    "db": "18f84ff19af30560943ae0f02d59f2adba7eb0c4b0f53f3f152bbd630544a12c"
+  },
+  "limitations": [
+    "CI uses a local isolated database; this does not prove hosted acceptance, private Storage HTTP, the 125-client staging load, RET05, physical hardware or external Mollie.",
+    "No staging promotion, remote migration, seed or deployment was performed by this report author. Fresh normal staging release remains subject to explicit root approval.",
+    "Six existing optional unit tests were skipped by their own test configuration; every workflow step and all three required jobs completed successfully."
+  ]
+}

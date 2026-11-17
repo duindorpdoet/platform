@@ -1,0 +1,13 @@
+{
+  "testedAt": "2026-11-03T08:55:09.053Z",
+  "scope": "LOCAL ONLY; exact newly created synthetic B; no shared QA persona touched",
+  "initialHarnessOutcome": "12 functional checks passed; cleanup signOut assertion failed because actual UI logout had already removed B session",
+  "freshActorCreatedAfterOriginalBaseline": true,
+  "alreadyLoggedOutSessionRows": 0,
+  "operation": "AdminAPI ban only this exact new own B; no second signOut and no Auth deletion",
+  "ownActorsRetained": 3,
+  "ownActorsRetired": 3,
+  "ownSessionsRemaining": 0,
+  "legacyMailAndFinancialHistoryAndAuthCountUnchanged": true,
+  "helperSha256": "98f05867a634c3651e29657d2a8e307b725ccb9d86e8a5b8d0e8599fea528bf5"
+}

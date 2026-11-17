@@ -1,0 +1,165 @@
+{
+  "previousAttemptsRetained": [
+    "owner-789bb1ef-e6a (no child created)",
+    "owner-8d49e0b6-59b (selector/helper cleanup corrected; own child now archived/closed)"
+  ],
+  "scope": "LOCAL ONLY; existing .invalid personas, one new private sibling, real GoTrue/PostgreSQL and unchanged production UI",
+  "run": "owner-137e9902-179",
+  "slug": "frightnight-2027-test-acceptance-owner-137e9902-179",
+  "eventId": "120ce5c8-0125-4aa6-ad30-1496e3e3a67f",
+  "startedAt": "2026-11-03T08:54:59.321Z",
+  "checks": [
+    {
+      "label": "Fixture: existing four local invalid personas; fresh private scoped edition; contract-only paid two-person family and actual ordinary destination",
+      "status": "passed",
+      "newAuthUsers": 0,
+      "persons": 2
+    },
+    {
+      "label": "SEC-02 two actual distinct resident owners cannot mutate the other zone or list payments; both snapshots and UIs expose own zone only, denied writes preserve both rows",
+      "status": "passed",
+      "denials": [
+        {
+          "actor": "resident",
+          "operation": "zone.status",
+          "status": 403,
+          "code": "FORBIDDEN"
+        },
+        {
+          "actor": "resident",
+          "operation": "zone.apply",
+          "status": 403,
+          "code": "FORBIDDEN"
+        },
+        {
+          "actor": "resident",
+          "operation": "payments.list",
+          "status": 403,
+          "code": "FORBIDDEN"
+        },
+        {
+          "actor": "activity",
+          "operation": "zone.status",
+          "status": 403,
+          "code": "FORBIDDEN"
+        },
+        {
+          "actor": "activity",
+          "operation": "zone.apply",
+          "status": 403,
+          "code": "FORBIDDEN"
+        },
+        {
+          "actor": "activity",
+          "operation": "payments.list",
+          "status": 403,
+          "code": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "label": "HUI-03 actual owner API refuses invalid type/intensity/capacity/hours and capacity below the current two-person claim without any zone/progress mutation",
+      "status": "passed",
+      "invalidResults": [
+        {
+          "field": "type",
+          "status": 422,
+          "code": "INVALID_COMMAND"
+        },
+        {
+          "field": "intensity",
+          "status": 422,
+          "code": "INVALID_COMMAND"
+        },
+        {
+          "field": "capacity",
+          "status": 422,
+          "code": "INVALID_COMMAND"
+        },
+        {
+          "field": "hours",
+          "status": 422,
+          "code": "INVALID_COMMAND"
+        },
+        {
+          "field": "claimedCapacity",
+          "status": 422,
+          "code": "INVALID_COMMAND"
+        }
+      ]
+    },
+    {
+      "label": "HUI-03 real owner profile UI changes type/intensity/effects/hours/capacity while family is walking; resubmission closes review, old actual QR fails without visit/award, explicit participant recovery releases one suitable ordinary destination",
+      "status": "passed",
+      "oldScanStatus": 409,
+      "oldScanError": "ZONE_UNAVAILABLE_RESUME",
+      "personalVisitsAfter": 0,
+      "personalAwardsAfter": 0,
+      "oneCurrent": true
+    },
+    {
+      "label": "HUI-03 server normalizes Snoepzone to zero fright intensity even when API supplies five; no approval or route award is created",
+      "status": "passed"
+    }
+  ],
+  "screenshots": [
+    "resident-a-own-only-390.png",
+    "resident-a-own-only-1440.png",
+    "resident-b-own-only-390.png",
+    "resident-b-own-only-1440.png",
+    "resident-material-profile-submitted-390.png",
+    "resident-material-profile-submitted-1440.png",
+    "participant-profile-change-recovery-390.png",
+    "participant-profile-change-recovery-1440.png",
+    "participant-profile-change-recovered-390.png",
+    "participant-profile-change-recovered-1440.png"
+  ],
+  "appSourceSha256": {
+    "components/frightnight/resident.tsx": "600788fbf32faba6676dcb4ab6245b3243550cd71fe4efd4b157f1c53c35574e",
+    "components/frightnight/participant.tsx": "2f740ee8fa6b37dec7418e661631621986b90d46cb345d3410d90e2d473bfc65",
+    "components/frightnight/client.tsx": "262136f67a402a4ec92be7c2e6eefe609742b3fbebde9fb951d533568526fe18",
+    "lib/frightnight/server.ts": "d9f63d00fa2d33fab64c3e5c0d80282acf2a8aab5e5791eca605dfc627c7c4cb",
+    "lib/frightnight/payment-server.ts": "290cd3cfd48fa1302b74373acf9ff5fd73701a4b3f7206d92b9b3d95f50a6421",
+    "app/api/frightnight/command/route.ts": "bafecf03e05e7fbe733d7abba3fa0d8449edec39e385a32488403be0e3684c7c",
+    "app/api/frightnight/admin/list/route.ts": "eb63b65367592cba70fc5c1ec8410c6cea2668748344192e144d58b3aeeee141",
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627",
+    "supabase/migrations/20261103071355_frightnight_2027_payment_sandbox.sql": "fb5144da995ebb92f448cf4195cc42fc7e5626378b1accf034681df6741e6ed4",
+    "supabase/migrations/20261103073433_frightnight_2027_feedback_closure.sql": "452bf8c7e4a5a75b80f9db9b481d370251f01505d85e0c5052eb7cf1109e4dd8"
+  },
+  "blockedExternalRequests": 3,
+  "forbiddenWrites": 0,
+  "auth": {
+    "created": 0,
+    "banned": 0,
+    "deleted": 0,
+    "passwordChanges": 0,
+    "otp": 0
+  },
+  "limits": [
+    "No hosted acceptance result",
+    "No physical hardware or external provider",
+    "Seeded addresses and walking edges are synthetic, not reviewed street paths"
+  ],
+  "sourceCommit": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "buildId": "hanzA2t5Xaby269LUnhWK",
+  "servedBuildId": "hanzA2t5Xaby269LUnhWK",
+  "harnessSha256": "34cf2d20f63befe8a757b769d5d46a0f68dedf6693ec3723583fecaa7d78e593",
+  "status": "passed",
+  "cleanup": {
+    "ownRunArchived": true,
+    "ownEditionClosed": true,
+    "financialHistoryUnchanged": true,
+    "onlyOwnEntriesAndCapRevoked": true,
+    "authUntouched": true
+  },
+  "preservation": {
+    "canonical32TablesCountsAndContentUnchanged": true,
+    "legacyOutboxCountAndContentUnchanged": true,
+    "events2026Unchanged": true,
+    "oldHouseholdsAndMembersUnchanged": true,
+    "allPriorAuthIdsPreserved": true
+  },
+  "cleanupErrors": [],
+  "completedAt": "2026-11-03T08:55:10.700Z"
+}

@@ -1,5 +1,7 @@
 # Geïsoleerde acceptatie op de gepubliceerde stagingrelease
 
+De actuele aanvullende protocolpoort is [PostgREST-14-conflicttransport](POSTGREST-COMPATIBILITY.md): een bedoelde stale-versie moet werkelijk HTTP409 geven zonder retrylus of mutatie. De bestaande parentassertion blijft ongewijzigd; een groene lokale versie-16-proef vervangt deze managed-runtimecontrole niet.
+
 `scripts/acceptance/frightnight-staging.mjs` is een uitvoerbare acceptatiepoort. Opname in de workflow betekent niet dat de proef al is uitgevoerd. Het actuele resultaat en de exacte SHA staan pas na uitvoering in het Actions-artifact `frightnight-staging-<SHA>/authenticated/report.json`.
 
 De poort draait uitsluitend na de geslaagde stagingdeploy. Die deploy vereist de versleutelde backup/herstelproef, migratiedry-run, preflight, oorspronkelijke databehoudsvergelijking, schema-/rechten-/sinkcontrole en runtimehealth op dezelfde SHA. De uitvoer `needs.deploy.outputs.verified_revision` wordt als `FRIGHTNIGHT_VERIFIED_RELEASE_SHA` doorgegeven; een ontbrekende of afwijkende waarde blokkeert de proef. URL, projectref, omgeving en canonieke configuratieslug zijn bovendien hard begrensd.

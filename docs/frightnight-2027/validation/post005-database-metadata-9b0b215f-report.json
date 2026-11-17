@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "scope": "Read-only staging database metadata immediately after additive migration 005; no published-runtime or quiet-window claim",
+  "observedAt": "2026-11-03T10:13:06.290747+00:00",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "verifiedLinkId": "link_6ae013e4bce081918aeddc1ab3db2a9d",
+  "releaseRun": "41615887268",
+  "candidateAppRevision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+  "deploymentBoundary": "Root reported migration 005 applied and preservation complete; dg-site-deploy subsequently failed. This report does not establish publication of the candidate app; root health proof remains separate.",
+  "metadata": {
+    "actorApis": [
+      "api.frightnight_admin_list(text,text,integer,integer,text,jsonb)",
+      "api.frightnight_command(text,text,jsonb,uuid)",
+      "api.frightnight_snapshot(text)",
+      "api.frightnight_walk(text,uuid)"
+    ],
+    "canonical": {
+      "date": "2027-10-30",
+      "slug": "frightnight-2027-test",
+      "test": true,
+      "timezone": "Europe/Amsterdam",
+      "environment": "staging",
+      "retentionUntil": "2027-11-03T06:48:30.114879+00:00"
+    },
+    "observedAt": "2026-11-03T10:13:06.290747+00:00",
+    "tableCount": 32,
+    "actorApiCount": 4,
+    "functionCount": 65,
+    "tablesWithRls": 32,
+    "migrationVersions": [
+      "20261103012453",
+      "20261103042000",
+      "20261103071355",
+      "20261103073433",
+      "20261103092502"
+    ],
+    "unexpectedTableExec": 0,
+    "anonymousFunctionExec": 0,
+    "privateTransportCount": 7,
+    "classifierUnexpectedExec": false,
+    "privateTransportUnexpectedExec": 0,
+    "unsafeSecurityDefinerSearchPaths": 0
+  },
+  "safety": {
+    "tables": 32,
+    "edition": {
+      "date": "2027-10-30",
+      "slug": "frightnight-2027-test",
+      "phase": "draft",
+      "isTest": true,
+      "timezone": "Europe/Amsterdam",
+      "environment": "staging",
+      "retentionUntil": "2027-11-03T06:48:30.114879+00:00"
+    },
+    "legacyJobs": [
+      {
+        "name": "duindorp-halloween-mail-outbox",
+        "active": true,
+        "schedule": "* * * * *"
+      },
+      {
+        "name": "duindorp-poortkamer-maintenance",
+        "active": true,
+        "schedule": "* * * * *"
+      },
+      {
+        "name": "duindorp-halloween-route-dispatch",
+        "active": true,
+        "schedule": "* * * * *"
+      }
+    ],
+    "mailWorker": {
+      "active": true,
+      "hasSecret": true,
+      "endpointMatchesExpectedStagingMailJob": true
+    },
+    "unsafeSink": 0,
+    "unsafeEvents": 0,
+    "unsafeTables": 0,
+    "actorFunctions": 4,
+    "legacyBindings": 0,
+    "unsafeFunctions": 0,
+    "sinkHasRecipient": false
+  },
+  "functionHashComparison": [
+    {
+      "signature": "api.frightnight_command(text,text,jsonb,uuid)",
+      "bodySha256": "f089eeeedbc06cf1b2f8f7a09880002f74d6888e6f60767dd8e0fdf21d611ea6",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "dbd25fe495820c57b9de0435f854fae4f70fecb200a5ab521c12219e937a02c2",
+      "localBodySha256": "f089eeeedbc06cf1b2f8f7a09880002f74d6888e6f60767dd8e0fdf21d611ea6",
+      "localDefinitionSha256": "dbd25fe495820c57b9de0435f854fae4f70fecb200a5ab521c12219e937a02c2",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "api.frightnight_contract_arm(text,uuid,uuid,text)",
+      "bodySha256": "2ea5296b98c84d55df2699406f0e92c405ac6169c1a56669c5423a642f0d91bb",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "023bb5bfcb5e7d2dc553f25e05705619049a628fad28a90d1c7786b10d6a88a4",
+      "localBodySha256": "2ea5296b98c84d55df2699406f0e92c405ac6169c1a56669c5423a642f0d91bb",
+      "localDefinitionSha256": "023bb5bfcb5e7d2dc553f25e05705619049a628fad28a90d1c7786b10d6a88a4",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "api.frightnight_payment_bind(text,uuid,text,text)",
+      "bodySha256": "3b2f69a8397edd87f466bf1ca717eb18e2cb95e1d8806c4f2fab0453c4248d60",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "c7a480827ac6f7f8168c6030e71996f9ccaf7c662192b385080e29813ce927d5",
+      "localBodySha256": "3b2f69a8397edd87f466bf1ca717eb18e2cb95e1d8806c4f2fab0453c4248d60",
+      "localDefinitionSha256": "c7a480827ac6f7f8168c6030e71996f9ccaf7c662192b385080e29813ce927d5",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "api.frightnight_payment_claim(text,uuid,uuid,text)",
+      "bodySha256": "ddf9cf2f1e17d945e67af4e9338be1484e04b03e7beaebb672b5545bff4c2fbf",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "f9f6861dcb62f68a599131caedf987c291d9fbceb706a42aeb36b056a11b8376",
+      "localBodySha256": "ddf9cf2f1e17d945e67af4e9338be1484e04b03e7beaebb672b5545bff4c2fbf",
+      "localDefinitionSha256": "f9f6861dcb62f68a599131caedf987c291d9fbceb706a42aeb36b056a11b8376",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "api.frightnight_payment_for_refund(text,uuid,uuid,uuid,text)",
+      "bodySha256": "09b81883108670b9da2f4ce88e74ed98d3c8e08f2e72a40794d67f9ee35398d6",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "96c8ef53e1cc228e6bc0f3ee6c303370246dcb332ef9aeb5b9f3274a3ff19e17",
+      "localBodySha256": "09b81883108670b9da2f4ce88e74ed98d3c8e08f2e72a40794d67f9ee35398d6",
+      "localDefinitionSha256": "96c8ef53e1cc228e6bc0f3ee6c303370246dcb332ef9aeb5b9f3274a3ff19e17",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "api.frightnight_payment_refund_record(text,uuid,uuid,text,text,uuid,text)",
+      "bodySha256": "10ad33deaec3da1beeb4413f50ed8ec102e116aa68a35d5acff9d52ac89292c0",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "67508a6e2550fe62e83c2c02e2c6b559776735da4c5d5a2f9201e9974c5004f5",
+      "localBodySha256": "10ad33deaec3da1beeb4413f50ed8ec102e116aa68a35d5acff9d52ac89292c0",
+      "localDefinitionSha256": "67508a6e2550fe62e83c2c02e2c6b559776735da4c5d5a2f9201e9974c5004f5",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "api.frightnight_payment_test_claim(text,uuid,uuid,uuid,text)",
+      "bodySha256": "57527251a27ea3d73d00afa2d7425dd7d62d74aaa62ca277d0fdf71609760aa7",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "b6b556ffd74888721fc356215008c4e80207450934234829667a975e05d90af6",
+      "localBodySha256": "57527251a27ea3d73d00afa2d7425dd7d62d74aaa62ca277d0fdf71609760aa7",
+      "localDefinitionSha256": "b6b556ffd74888721fc356215008c4e80207450934234829667a975e05d90af6",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_command_transport_impl(text,text,jsonb,uuid)",
+      "bodySha256": "1d74f2d455dd4709b3c215d5b0ea227e9c373258327f5d5ec8d91002bee70ac5",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "41ef59e067c8be31e3437536885684cf7a662341090caa6feaf0546093921890",
+      "localBodySha256": "1d74f2d455dd4709b3c215d5b0ea227e9c373258327f5d5ec8d91002bee70ac5",
+      "localDefinitionSha256": "41ef59e067c8be31e3437536885684cf7a662341090caa6feaf0546093921890",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_contract_arm_transport_impl(text,uuid,uuid,text)",
+      "bodySha256": "6b6d12d98357de119b934430df35efec32e8690a8e4a3b1ee826756d784057c1",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "252c96b533bbf2c9876609c555a61e014a90f936d696fc33779145a48d387c36",
+      "localBodySha256": "6b6d12d98357de119b934430df35efec32e8690a8e4a3b1ee826756d784057c1",
+      "localDefinitionSha256": "252c96b533bbf2c9876609c555a61e014a90f936d696fc33779145a48d387c36",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_is_domain_conflict(text,text)",
+      "bodySha256": "02d0c901d220dfcfbbed179477eb4b79f400e991253a732c973c9139a80adc2a",
+      "safeSearchPath": true,
+      "securityDefiner": false,
+      "definitionSha256": "8d22120424ed0df3c59ac897ca82394c1ebe8b7ae8f72c02101570a1a68d16ce",
+      "localBodySha256": "02d0c901d220dfcfbbed179477eb4b79f400e991253a732c973c9139a80adc2a",
+      "localDefinitionSha256": "8d22120424ed0df3c59ac897ca82394c1ebe8b7ae8f72c02101570a1a68d16ce",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_payment_bind_transport_impl(text,uuid,text,text)",
+      "bodySha256": "71d573d5d238be81cc3601e2bd279d4c2730d07f39b560b1c509c85bfb884ae2",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "e4c0f6304afec1c53ca01161543655ff35ea5d918052372d8894dd141035067c",
+      "localBodySha256": "71d573d5d238be81cc3601e2bd279d4c2730d07f39b560b1c509c85bfb884ae2",
+      "localDefinitionSha256": "e4c0f6304afec1c53ca01161543655ff35ea5d918052372d8894dd141035067c",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_payment_claim_transport_impl(text,uuid,uuid,text)",
+      "bodySha256": "8d462774174cd1d1230a9cbaaba85990d37737b5e33ce0e58e7068961093f48c",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "8f71a7637136ed900a07c9b85ad1cea345bc3b812381b5c475a2c9e84afcfaa8",
+      "localBodySha256": "8d462774174cd1d1230a9cbaaba85990d37737b5e33ce0e58e7068961093f48c",
+      "localDefinitionSha256": "8f71a7637136ed900a07c9b85ad1cea345bc3b812381b5c475a2c9e84afcfaa8",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_payment_for_refund_transport_impl(text,uuid,uuid,uuid,text)",
+      "bodySha256": "d7321abfff4ac63ccb3e0787d9a93a2534cd9b81a0777448548fcf240338b981",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "efe961cc28ce0b8f1482065cad066e2e69f00f3e97c71ca3abe68bdf0847130f",
+      "localBodySha256": "d7321abfff4ac63ccb3e0787d9a93a2534cd9b81a0777448548fcf240338b981",
+      "localDefinitionSha256": "efe961cc28ce0b8f1482065cad066e2e69f00f3e97c71ca3abe68bdf0847130f",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_payment_refund_record_transport_impl(text,uuid,uuid,text,text,uuid,text)",
+      "bodySha256": "534f2b9de2a933eb0529e47aaa3d701265e1c97642e7d201c82b13d260778eea",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "28f7b1520c83f0f65aeb96d37b9290870f8407528b075ec377aa5d4948a42572",
+      "localBodySha256": "534f2b9de2a933eb0529e47aaa3d701265e1c97642e7d201c82b13d260778eea",
+      "localDefinitionSha256": "28f7b1520c83f0f65aeb96d37b9290870f8407528b075ec377aa5d4948a42572",
+      "bodyMatches": true,
+      "definitionMatches": true
+    },
+    {
+      "signature": "app_private.fn_payment_test_claim_transport_impl(text,uuid,uuid,uuid,text)",
+      "bodySha256": "028f23669c6d1e56c42ada0ed8723e84b702fe3020401c135a0bc71c5dc2e648",
+      "safeSearchPath": true,
+      "securityDefiner": true,
+      "definitionSha256": "edd7442245ba4e8b09844737e26e1efce9ae3c34d60d6ed36aeae93afa8e3fa0",
+      "localBodySha256": "028f23669c6d1e56c42ada0ed8723e84b702fe3020401c135a0bc71c5dc2e648",
+      "localDefinitionSha256": "edd7442245ba4e8b09844737e26e1efce9ae3c34d60d6ed36aeae93afa8e3fa0",
+      "bodyMatches": true,
+      "definitionMatches": true
+    }
+  ],
+  "comparisonLocalDatabase": "frightnight_2027_domain_frozen",
+  "localFreshFiveMigrationProof": "docs/frightnight-2027/validation/backend-domain-conflicts-report.json",
+  "assertions": {
+    "allFiveVersionsPresent": true,
+    "all32PrivateTablesHaveRls": true,
+    "noUnexpectedDirectTableRights": true,
+    "all65FunctionsWithinReviewedBoundary": true,
+    "exactFourAuthenticatedApiFunctions": true,
+    "allSevenTransportImplementationsExternallyRevoked": true,
+    "classifierExternallyRevoked": true,
+    "emptySecurityDefinerSearchPaths": true,
+    "all15NewApiPrivateFunctionBodyAndDefinitionHashesMatchLocal": true,
+    "exactReleaseSafetyQueryPassed": true,
+    "legacyJobsActiveSchedulesUnchanged": true,
+    "canonicalRetentionPreserved": true
+  },
+  "actions": {
+    "remoteWrites": 0,
+    "authOrRecipientDataReturned": false,
+    "rawFunctionBodiesReturned": false,
+    "manualCronOrDispatch": 0,
+    "naturalObserverStarted": false
+  },
+  "limits": [
+    "No actual hosted authenticated acceptance/load/RET05 pass is inferred.",
+    "Active cron metadata is not evidence of two new natural successful cycles; final quiet observer awaits explicit root GO after all writes and cleanup.",
+    "Canonical retention remains 2027-11-03T06:48:30.114879 UTC; migration 005 performs no data backfill or retention mutation."
+  ]
+}

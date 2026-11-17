@@ -1,0 +1,25 @@
+{
+  "recordedAt": "2026-11-03T09:05:35.189858+00:00",
+  "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "runId": 41607150306,
+  "jobId": 125819844230,
+  "phase": "pre-migration encrypted backup and isolated restore",
+  "conclusion": "success",
+  "tableFingerprintsPreserved": 268,
+  "storageObjectsPreserved": 12,
+  "exactMigrationDryRun": "passed",
+  "artifact": {
+    "id": 13217009236,
+    "name": "redesign-backup-staging-41607150306-1",
+    "sizeInBytes": 33912123,
+    "createdAt": "2026-11-03T09:04:37Z",
+    "expiresAt": "2026-12-03T09:04:35Z",
+    "digest": "sha256:38f2fc9f078984c244c2a9707bf426b8d2c0445a3d0006be1714d49332e550bb",
+    "url": "https://github.com/duindorpdoet/platform/actions/runs/41607150306/artifacts/13217009236"
+  },
+  "limits": [
+    "Actual fresh encrypted backup and isolated restore before this application publication; all four additive migrations were already present.",
+    "Postacceptance RET05 must independently restore and verify the32-table current scenario.",
+    "Encryption credentials and private dump contents are not included."
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "recordedAt": "2026-11-03T08:35:38.334Z",
+  "scope": "Only hosted acceptance header parsing; product response/cache/auth/SQL unchanged",
+  "baseRevision": "5ccf09815ad4e923708b0adebd7fad5cf4de08e2",
+  "localBuildUnchanged": "hanzA2t5Xaby269LUnhWK",
+  "tests": {
+    "acceptanceGuards": {
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "newCacheBoundaryTests": 5
+    },
+    "eslint": "passed: helper/test/parent",
+    "typecheck": "passed",
+    "syntax": "passed",
+    "authorizedReadOnlyPreview": {
+      "http": 200,
+      "cacheControl": "private, no-store, max-age=0",
+      "helperAccepted": true,
+      "cspRestricted": true,
+      "branding": true,
+      "mutations": 0,
+      "authCodesSent": 0,
+      "mailSent": 0
+    }
+  },
+  "independentReview": {
+    "agent": "frontend_v7",
+    "status": "ACK",
+    "helperSha256": "559e70b9e39d5e59205e4eee7fe990717888bd8ae0298bf699dfd31fcccc6d8c"
+  },
+  "sourceSha256": {
+    "package.json": "35f00f82c0473b71c1a7eaa25823ceafb9db9c8cedfde0d0f064c45be82d2a9c",
+    "scripts/acceptance/frightnight-staging.mjs": "fc2ad9445c16a4339c8263cdf90366e44c727065fc44dfd7cdfdf232e0f0e644",
+    "scripts/acceptance/frightnight-private-cache.mjs": "559e70b9e39d5e59205e4eee7fe990717888bd8ae0298bf699dfd31fcccc6d8c",
+    "scripts/acceptance/frightnight-private-cache.d.mts": "4a228f8d30536e1af2a987f1a5b3671bbb32a615aa4dfc6173e5bf24da88fb00",
+    "scripts/acceptance/frightnight-private-cache.test.mjs": "9948fad10b2d4abaa98acc24aa10bb38ae1ee442c5c6cc83983045d44858580d"
+  },
+  "pending": [
+    "New exact complete CI",
+    "Fresh normal release including backup, all acceptance, load125 and post-scenario restore"
+  ]
+}

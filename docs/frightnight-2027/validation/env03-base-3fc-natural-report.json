@@ -1,0 +1,551 @@
+{
+  "kind": "intermediate-base3fc-readonly-natural-cron-probe",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "observedSha": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+  "startedAt": "2026-11-03T07:52:03.389794+00:00",
+  "endedAt": "2026-11-03T07:54:26.98365+00:00",
+  "fnTablesObserved": 31,
+  "tablesUnchanged": true,
+  "tableSetUnchanged": true,
+  "legacyJobsUnchanged": true,
+  "twoNewNaturalSuccessfulCyclesEach": true,
+  "before": {
+    "jobs": [
+      {
+        "name": "duindorp-halloween-route-dispatch",
+        "jobId": 45,
+        "active": true,
+        "schedule": "* * * * *",
+        "lastRunId": 171784
+      },
+      {
+        "name": "duindorp-poortkamer-maintenance",
+        "jobId": 81,
+        "active": true,
+        "schedule": "* * * * *",
+        "lastRunId": 171782
+      },
+      {
+        "name": "duindorp-halloween-mail-outbox",
+        "jobId": 184,
+        "active": true,
+        "schedule": "* * * * *",
+        "lastRunId": 171783
+      }
+    ],
+    "scope": {
+      "fnEvents": 2,
+      "unsafeEvents": 0
+    },
+    "tables": [
+      {
+        "name": "email_outbox",
+        "rows": 129,
+        "digest": "8edbf4fcd690c5db8afc027204ed9939773f24f163fe0f118dab6ed64daa8839"
+      },
+      {
+        "name": "fn_activities",
+        "rows": 4,
+        "digest": "21bfa791905bdc6aaf5cd3e9839e8e3e11581aa5c296a13d95e9bd9c821571c2"
+      },
+      {
+        "name": "fn_activity_staff",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_announcements",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_audit",
+        "rows": 15,
+        "digest": "2bb282e87a85e7719ad741bebf41b1fd3f8a8b5c4119d07960eb5e1bbf94fe30"
+      },
+      {
+        "name": "fn_awards",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_bookings",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_content",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_destinations",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_edition_entries",
+        "rows": 3,
+        "digest": "a88c4175a5f58be73182ae222dc71f7671f189f4fdf70a406608a3c770e2332d"
+      },
+      {
+        "name": "fn_evaluations",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_events",
+        "rows": 2,
+        "digest": "d8f50c5b6d870cb509c0a42b6df0bf60e7cfd4e71be1437df011801b8f7c9d0f"
+      },
+      {
+        "name": "fn_incidents",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_invites",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_ledger",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_mail_sink",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_members",
+        "rows": 10,
+        "digest": "b444cb2ecb5fcdd597bb94bf3eeaa25f5de118bda2d50baf79998d184d82fcea"
+      },
+      {
+        "name": "fn_notifications",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_orders",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_parties",
+        "rows": 10,
+        "digest": "901b48f0a3db6d13416b09aae10a053a6940fe544bb6a28316b9deab52b592a1"
+      },
+      {
+        "name": "fn_payment_events",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_push_subscriptions",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_quests",
+        "rows": 12,
+        "digest": "7a6a4711bc746e67dad0bc66726640c35f559e7308455123b46e99201fd2d76e"
+      },
+      {
+        "name": "fn_receipts",
+        "rows": 9,
+        "digest": "79687fcdc0985e0023dbfb1cf1dd1b0b2fce090dd356fc64bb5c13fd208ccc07"
+      },
+      {
+        "name": "fn_refunds",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_registration_invites",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_registrations",
+        "rows": 10,
+        "digest": "44694dbb22b270a77fb4f7f6ce6e86fbbc7cab7499d7ba4320db06cbee459ee7"
+      },
+      {
+        "name": "fn_start_slots",
+        "rows": 32,
+        "digest": "4a9abfeea0e48a19e346c7640696ae2ead176db72f899de10c86ce055f0d2841"
+      },
+      {
+        "name": "fn_thanks",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_visits",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_walk_edges",
+        "rows": 40,
+        "digest": "f1bc9f4f69ccb2a0e70b2d48343dd594a1e7c2226236dde9727c83e0718c6c8b"
+      },
+      {
+        "name": "fn_zones",
+        "rows": 11,
+        "digest": "dce7c8cc6fe6e7522e161eaed42aebf956aa7f8fb9ae5dc8148e8e5ef2fdedf8"
+      }
+    ],
+    "observedAt": "2026-11-03T07:52:03.389794+00:00"
+  },
+  "after": {
+    "jobs": [
+      {
+        "name": "duindorp-halloween-route-dispatch",
+        "jobId": 45,
+        "active": true,
+        "schedule": "* * * * *",
+        "lastRunId": 171790
+      },
+      {
+        "name": "duindorp-poortkamer-maintenance",
+        "jobId": 81,
+        "active": true,
+        "schedule": "* * * * *",
+        "lastRunId": 171788
+      },
+      {
+        "name": "duindorp-halloween-mail-outbox",
+        "jobId": 184,
+        "active": true,
+        "schedule": "* * * * *",
+        "lastRunId": 171789
+      }
+    ],
+    "scope": {
+      "fnEvents": 2,
+      "unsafeEvents": 0
+    },
+    "tables": [
+      {
+        "name": "email_outbox",
+        "rows": 129,
+        "digest": "8edbf4fcd690c5db8afc027204ed9939773f24f163fe0f118dab6ed64daa8839"
+      },
+      {
+        "name": "fn_activities",
+        "rows": 4,
+        "digest": "21bfa791905bdc6aaf5cd3e9839e8e3e11581aa5c296a13d95e9bd9c821571c2"
+      },
+      {
+        "name": "fn_activity_staff",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_announcements",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_audit",
+        "rows": 15,
+        "digest": "2bb282e87a85e7719ad741bebf41b1fd3f8a8b5c4119d07960eb5e1bbf94fe30"
+      },
+      {
+        "name": "fn_awards",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_bookings",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_content",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_destinations",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_edition_entries",
+        "rows": 3,
+        "digest": "a88c4175a5f58be73182ae222dc71f7671f189f4fdf70a406608a3c770e2332d"
+      },
+      {
+        "name": "fn_evaluations",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_events",
+        "rows": 2,
+        "digest": "d8f50c5b6d870cb509c0a42b6df0bf60e7cfd4e71be1437df011801b8f7c9d0f"
+      },
+      {
+        "name": "fn_incidents",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_invites",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_ledger",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_mail_sink",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_members",
+        "rows": 10,
+        "digest": "b444cb2ecb5fcdd597bb94bf3eeaa25f5de118bda2d50baf79998d184d82fcea"
+      },
+      {
+        "name": "fn_notifications",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_orders",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_parties",
+        "rows": 10,
+        "digest": "901b48f0a3db6d13416b09aae10a053a6940fe544bb6a28316b9deab52b592a1"
+      },
+      {
+        "name": "fn_payment_events",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_push_subscriptions",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_quests",
+        "rows": 12,
+        "digest": "7a6a4711bc746e67dad0bc66726640c35f559e7308455123b46e99201fd2d76e"
+      },
+      {
+        "name": "fn_receipts",
+        "rows": 9,
+        "digest": "79687fcdc0985e0023dbfb1cf1dd1b0b2fce090dd356fc64bb5c13fd208ccc07"
+      },
+      {
+        "name": "fn_refunds",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_registration_invites",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_registrations",
+        "rows": 10,
+        "digest": "44694dbb22b270a77fb4f7f6ce6e86fbbc7cab7499d7ba4320db06cbee459ee7"
+      },
+      {
+        "name": "fn_start_slots",
+        "rows": 32,
+        "digest": "4a9abfeea0e48a19e346c7640696ae2ead176db72f899de10c86ce055f0d2841"
+      },
+      {
+        "name": "fn_thanks",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_visits",
+        "rows": 0,
+        "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "fn_walk_edges",
+        "rows": 40,
+        "digest": "f1bc9f4f69ccb2a0e70b2d48343dd594a1e7c2226236dde9727c83e0718c6c8b"
+      },
+      {
+        "name": "fn_zones",
+        "rows": 11,
+        "digest": "dce7c8cc6fe6e7522e161eaed42aebf956aa7f8fb9ae5dc8148e8e5ef2fdedf8"
+      }
+    ],
+    "observedAt": "2026-11-03T07:54:26.98365+00:00",
+    "currentFnTables": [
+      "fn_activities",
+      "fn_activity_staff",
+      "fn_announcements",
+      "fn_audit",
+      "fn_awards",
+      "fn_bookings",
+      "fn_content",
+      "fn_destinations",
+      "fn_edition_entries",
+      "fn_evaluations",
+      "fn_events",
+      "fn_incidents",
+      "fn_invites",
+      "fn_ledger",
+      "fn_mail_sink",
+      "fn_members",
+      "fn_notifications",
+      "fn_orders",
+      "fn_parties",
+      "fn_payment_events",
+      "fn_push_subscriptions",
+      "fn_quests",
+      "fn_receipts",
+      "fn_refunds",
+      "fn_registration_invites",
+      "fn_registrations",
+      "fn_start_slots",
+      "fn_thanks",
+      "fn_visits",
+      "fn_walk_edges",
+      "fn_zones"
+    ]
+  },
+  "cycles": {
+    "cycles": [
+      {
+        "name": "duindorp-halloween-route-dispatch",
+        "runs": [
+          {
+            "runId": 171787,
+            "status": "succeeded",
+            "endedAt": "2026-11-03T07:53:00.127937+00:00",
+            "startedAt": "2026-11-03T07:53:00.085087+00:00"
+          },
+          {
+            "runId": 171790,
+            "status": "succeeded",
+            "endedAt": "2026-11-03T07:54:00.138517+00:00",
+            "startedAt": "2026-11-03T07:54:00.103088+00:00"
+          }
+        ],
+        "jobId": 45,
+        "active": true,
+        "failed": 0,
+        "schedule": "* * * * *",
+        "succeeded": 2,
+        "lastNewSuccessEnd": "2026-11-03T07:54:00.138517+00:00",
+        "firstNewSuccessStart": "2026-11-03T07:53:00.085087+00:00"
+      },
+      {
+        "name": "duindorp-poortkamer-maintenance",
+        "runs": [
+          {
+            "runId": 171785,
+            "status": "succeeded",
+            "endedAt": "2026-11-03T07:53:00.110605+00:00",
+            "startedAt": "2026-11-03T07:53:00.086298+00:00"
+          },
+          {
+            "runId": 171788,
+            "status": "succeeded",
+            "endedAt": "2026-11-03T07:54:00.12456+00:00",
+            "startedAt": "2026-11-03T07:54:00.099462+00:00"
+          }
+        ],
+        "jobId": 81,
+        "active": true,
+        "failed": 0,
+        "schedule": "* * * * *",
+        "succeeded": 2,
+        "lastNewSuccessEnd": "2026-11-03T07:54:00.12456+00:00",
+        "firstNewSuccessStart": "2026-11-03T07:53:00.086298+00:00"
+      },
+      {
+        "name": "duindorp-halloween-mail-outbox",
+        "runs": [
+          {
+            "runId": 171786,
+            "status": "succeeded",
+            "endedAt": "2026-11-03T07:53:00.121975+00:00",
+            "startedAt": "2026-11-03T07:53:00.087531+00:00"
+          },
+          {
+            "runId": 171789,
+            "status": "succeeded",
+            "endedAt": "2026-11-03T07:54:00.128575+00:00",
+            "startedAt": "2026-11-03T07:54:00.101274+00:00"
+          }
+        ],
+        "jobId": 184,
+        "active": true,
+        "failed": 0,
+        "schedule": "* * * * *",
+        "succeeded": 2,
+        "lastNewSuccessEnd": "2026-11-03T07:54:00.128575+00:00",
+        "firstNewSuccessStart": "2026-11-03T07:53:00.087531+00:00"
+      }
+    ],
+    "observedAt": "2026-11-03T07:54:25.610718+00:00"
+  },
+  "deltas": [],
+  "remoteMutations": 0,
+  "manualDispatches": 0,
+  "queryScope": "aggregates-only: counts, row-content SHA256 digests, cron metadata and new run status/time/id; no recipient/raw rows/commands/endpoints",
+  "limits": [
+    "Intermediate base3fc probe only, not final release/load/RET05 acceptance.",
+    "Cron succeeded statuses prove natural scheduler execution; they are not standalone proof of every downstream HTTP handler/provider delivery.",
+    "Only the three verified cron jobs are observed; external VPS/GitHub/other timers are not an omniscient inventory.",
+    "Final exact-release observation must be repeated after all final mutations, including all currently present fn tables."
+  ],
+  "healthBefore": {
+    "checkedAt": "2026-11-03T07:51:45.556518+00:00",
+    "status": 200,
+    "health": {
+      "status": "ok",
+      "service": "duindorphalloween",
+      "environment": "staging",
+      "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+      "registrationMode": "staging_test",
+      "eventSlug": "frightnight-2027-test",
+      "brand": "frightnight-2027-v7",
+      "paymentProvider": "contract"
+    },
+    "origin": "https://staging-halloween.duindorpdoet.nl",
+    "projectRef": "nocteiuvohesvqbowchw"
+  },
+  "healthAfter": {
+    "checkedAt": "2026-11-03T07:54:26.429060+00:00",
+    "status": 200,
+    "health": {
+      "status": "ok",
+      "service": "duindorphalloween",
+      "environment": "staging",
+      "revision": "3fc360b2ebb881cdbe2c281e7c6614a39b8fc6ac",
+      "registrationMode": "staging_test",
+      "eventSlug": "frightnight-2027-test",
+      "brand": "frightnight-2027-v7",
+      "paymentProvider": "contract"
+    },
+    "origin": "https://staging-halloween.duindorpdoet.nl",
+    "projectRef": "nocteiuvohesvqbowchw"
+  },
+  "healthShaUnchanged": true,
+  "passedIntermediateProbe": true,
+  "reportCreatedAt": "2026-11-03T07:54:53.687384+00:00"
+}

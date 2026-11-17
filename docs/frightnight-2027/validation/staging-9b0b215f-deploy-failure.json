@@ -1,0 +1,176 @@
+{
+  "recordedAt": "2026-11-03T10:15:48.989930+00:00",
+  "scope": "Actual normal staging release failure before application activation; no retry, deletion, SSH or production action",
+  "targetRevision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+  "runId": 41615887268,
+  "deployJobId": 125851451038,
+  "conclusion": "failure",
+  "failure": {
+    "step": "Deploy through the Sites VPS interface",
+    "time": "2026-11-03T10:12:04.4002388Z",
+    "code": "ERR_PNPM_ENOSPC",
+    "message": "ENOSPC: no space left on device, copyfile",
+    "phase": "pnpm importPackage for Next16.3.5, 610/700 packages copied",
+    "newIncompleteReleasePath": "/srv/sites/duindorphalloweenstg/releases/9b0b215f9227-41615887268-1"
+  },
+  "remoteMigrationApplied": {
+    "version": "20261103092502",
+    "at": "2026-11-03T10:11:13.6048070Z",
+    "immutableSourceSha256": "f4ab3b236c4a5e9066e335ab45ad28e7f33d6ad47481f484e5671faafde98570",
+    "previousFourMigrationSourcesUnchanged": true
+  },
+  "completedGates": {
+    "existingDataPreserved": {
+      "environment": "staging",
+      "revision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+      "baselineRevision": "9b0b215f922766f6c69db67dc4f25a37d4a95c9e",
+      "baselineRunId": "41615887268",
+      "existingDataPreserved": true,
+      "tablesCompared": 268,
+      "reconciliation": {
+        "failures": [],
+        "addedMigrationVersions": [
+          "20261103092502"
+        ],
+        "addedCronRuns": 3,
+        "updatedActiveCronRuns": 0,
+        "addedMailEvents": 0
+      },
+      "coverageReconciliation": {
+        "failures": [],
+        "reconciledTables": [],
+        "addedPolicies": 0,
+        "addedCoverageAuditEvents": 0
+      },
+      "jointRoutePolicyReconciliation": {
+        "failures": [],
+        "reconciledTables": [],
+        "addedPolicyReleases": 0
+      },
+      "jointRouteSettingsReconciliation": {
+        "failures": [],
+        "reconciledTables": [],
+        "initializedSettingsRows": 0
+      },
+      "p12RoutePolicyReconciliation": {
+        "failures": [],
+        "reconciledTables": [],
+        "changedSettingsRows": 0,
+        "changedPortalRows": 0,
+        "changedWindowRows": 0
+      }
+    },
+    "frightnightSafety": {
+      "frightnightSafety": "passed",
+      "tables": 32,
+      "editionConfigured": true,
+      "mailMode": "sink",
+      "legacyJobsPreserved": true,
+      "readOnly": true
+    },
+    "vpsTimerInventory": {
+      "vpsTimerInventory": "passed",
+      "crontab": "absent",
+      "systemTimers": 16,
+      "userTimers": 0,
+      "systemCronFiles": 16,
+      "unreviewedScopedTimers": 0,
+      "unreadableTimerCommands": 0,
+      "readOnly": true
+    },
+    "authPolicy": {
+      "authPolicy": "explicit-staging-allowlist",
+      "recipientCount": 3,
+      "verifiedOwnerAllowed": true,
+      "existingTestersPreserved": true,
+      "readOnly": true,
+      "authenticationRequests": 0,
+      "mailDelivery": 0
+    },
+    "frightnightInitialized": {
+      "frightnightInitialized": true,
+      "seeded": false,
+      "seedVersion": 1,
+      "ownerlessSyntheticOnly": true,
+      "legacyDataPreserved": true,
+      "mailMode": "sink",
+      "externalDelivery": false,
+      "syntheticWalkingFixture": true,
+      "jwtImpersonation": false
+    }
+  },
+  "runtimeAfterFailure": {
+    "recordedAt": "2026-11-03T10:13:38.846Z",
+    "http": 200,
+    "status": "ok",
+    "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+    "eventSlug": "frightnight-2027-test",
+    "paymentProvider": "contract"
+  },
+  "maintenanceInspection": {
+    "authorizedRunId": 41617415557,
+    "jobId": 125854239722,
+    "action": "inspect",
+    "deployRequested": false,
+    "cleanupRequested": false,
+    "conclusion": "failure",
+    "workerFailedBeforeInspectScript": true,
+    "failureCode": "System.IO.IOException: No space left on device",
+    "failurePath": "/srv/sites/duindorphalloweenstg/actions-runner/_diag/Worker_20261103-101318-utc.log",
+    "diskSizesOrInodesMeasured": false,
+    "annotationSha256": "21f10692bb4a0894eaf545e8804433545b545637fd568582f67bd6580a2f3352"
+  },
+  "downstream": [
+    {
+      "id": 125853743225,
+      "name": "Verify FrightNight mobile and desktop without mail or push delivery",
+      "conclusion": "skipped"
+    },
+    {
+      "id": 125853743680,
+      "name": "Verify isolated sink and Auth configuration without requesting codes",
+      "conclusion": "skipped"
+    },
+    {
+      "id": 125853745363,
+      "name": "Preserve and restore the published 2027 test scenario",
+      "conclusion": "skipped"
+    },
+    {
+      "id": 125853746730,
+      "name": "Verify bounded synthetic load and membership races after release acceptance",
+      "conclusion": "skipped"
+    }
+  ],
+  "rawDeployLogSha256": "e98cc30a6978a242ace4badb5e79761a500acba6b396d9abae58b80772ce083d",
+  "limits": [
+    "No account, private Storage HTTP, REG/EDGE, staging load or RET05 acceptance was reached by this run.",
+    "Space exhaustion is proven twice; filesystem capacity, inode state and per-directory sizes were not obtained because even the dedicated runner crashed before inspection.",
+    "Existing immutable releases, backups, database records, Auth, mail and production were not removed or changed to recover space.",
+    "A controlled operator or approved scoped maintenance route must restore enough staging-owned free space before a fresh normal release; no blind repeated deployment or database downmigration."
+  ],
+  "artifacts": [
+    {
+      "id": 13221915863,
+      "name": "redesign-backup-staging-41615887268-1",
+      "sizeInBytes": 33926789,
+      "digest": "sha256:823b8d6b44122130ea8f0f6eb828d11d3616bfccda34eee51c9a4c99a5ac1fab",
+      "expiresAt": "2026-12-03T10:07:19Z"
+    },
+    {
+      "id": 13221283802,
+      "name": "frightnight-operations-9b0b215f922766f6c69db67dc4f25a37d4a95c9e-41615887268",
+      "sizeInBytes": 2171,
+      "digest": "sha256:fb48277b2c0c20a25747065e3ac5cd53981593fd058c2513913c99faf8f85868",
+      "expiresAt": "2026-12-03T10:12:05Z"
+    }
+  ],
+  "sshAccessInspection": {
+    "localConfigPresent": false,
+    "standardIdentityFiles": 0,
+    "agentSocketConfigured": true,
+    "agentReachable": false,
+    "agentIdentities": 0,
+    "hostConnectionAttempted": false
+  }
+}

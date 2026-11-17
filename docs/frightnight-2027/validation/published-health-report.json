@@ -1,15 +1,15 @@
 {
-  "checkedAt": "2026-11-03T06:50:52.142645+00:00",
-  "http": 200,
+  "recordedAt": "2026-11-03T10:27:09.616449+00:00",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "scope": "Actual independent public health after failed9bdeployment; not full application acceptance under ENOSPC.",
   "health": {
+    "observedAt": "2026-11-03T10:27:09.616449+00:00",
+    "http": 200,
     "status": "ok",
-    "service": "duindorphalloween",
     "environment": "staging",
-    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
-    "registrationMode": "staging_test",
+    "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
     "eventSlug": "frightnight-2027-test",
     "brand": "frightnight-2027-v7",
     "paymentProvider": "contract"
-  },
-  "scope": "Actual deployed public health only; hosted scenarios/load/provider tests remain separate"
+  }
 }

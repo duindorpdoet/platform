@@ -1,0 +1,14 @@
+{
+  "recordedAt": "2026-11-03T08:52:01.395Z",
+  "buildId": "hanzA2t5Xaby269LUnhWK",
+  "sourceRevision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "status": "passed",
+  "sourceSha256": {
+    "harness.mjs": "6105dd3e6ffa30e3c18f2ef1d830704c720ed72417ca4b692eae35cda696eb5a",
+    "network-guard.mjs": "ced3277f32e2d9da6ab1db5bbd670bf18476212b8451d2f79f2e71c8582670ab",
+    "report.json": "a58b4691b673364657f0c567e2aad932c23826a4ecfc17d59d897643138a66b2"
+  },
+  "remote": false,
+  "providerOrSmtpTest": false,
+  "applicationBytesContext": "Local hanzA2t5Xaby269LUnhWK production build; d8439e09 changes only five acceptance/test/package-script files. Runtime application bytes are unchanged from the hanz build. This is local evidence, not a claim that d843 has been published or that SMTP/Mollie was tested."
+}

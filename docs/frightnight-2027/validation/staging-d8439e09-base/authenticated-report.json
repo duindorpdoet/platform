@@ -1,0 +1,82 @@
+{
+  "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "edition": "frightnight-2027-test-acceptance-41607150306-acb3ac85",
+  "scope": "fresh-synthetic-2027-only",
+  "checks": [
+    {
+      "label": "new confirmed synthetic Auth sessions and signed sibling context",
+      "status": "passed",
+      "actors": 5
+    },
+    {
+      "label": "family, house, limited-role and cross-edition authorization",
+      "status": "passed"
+    },
+    {
+      "label": "contract checkout, failed/expired retry, duplicate confirmation and reconciliation",
+      "status": "passed"
+    },
+    {
+      "label": "real branded private mail capture preview without delivery",
+      "status": "passed"
+    },
+    {
+      "label": "activity booking/cancellation and six durable quests",
+      "status": "passed"
+    }
+  ],
+  "screenshots": [],
+  "externalPsp": "not exercised; deterministic contract adapter",
+  "physicalCamera": "not exercised; manual QR alternative used",
+  "load": "two concurrent families; no high-volume load claim",
+  "credentials": "memory only; no passwords, sessions or QR secrets in artifacts",
+  "contractSandboxes": [
+    {
+      "slug": "frightnight-2027-test-acceptance-41607150306-acb3ac85",
+      "eventId": "f72fb775-5a17-4d4d-ab56-77ce48640b9c",
+      "runId": "fa2dc071-7e0c-4f94-ba16-08844cb839bc",
+      "provider": "contract",
+      "serviceArm": true,
+      "actorReadback": true
+    }
+  ],
+  "editionBoundary": {
+    "canonicalEntry": true,
+    "privateSiblingDenied": true,
+    "signedParentContextUnchanged": true
+  },
+  "mailCapturePreview": {
+    "status": 200,
+    "cacheControl": "private, no-store, max-age=0",
+    "restrictedCsp": true
+  },
+  "failure": "HUI02_STALE_REVIEW_ACCEPTED",
+  "foreignEditionCleanup": {
+    "scopeVerified": true,
+    "emptySiblingClosed": true,
+    "ownCapabilityRevoked": true,
+    "historyDeleted": 0,
+    "blindReset": false
+  },
+  "editionCleanup": {
+    "scopeVerified": true,
+    "ownRunArchived": true,
+    "siblingClosed": true,
+    "ordersPreserved": true,
+    "ledgerPreserved": true,
+    "auditPreserved": true,
+    "historical2026Preserved": true,
+    "legacyOutboxUnchanged": true,
+    "authDeleted": 0
+  },
+  "fixtureCleanup": {
+    "capabilitiesRevoked": true,
+    "syntheticAccountsRetired": 5,
+    "authDeleted": 0,
+    "historyDeleted": 0
+  },
+  "completedAt": "2026-11-03T09:15:02.311Z",
+  "status": "failed"
+}

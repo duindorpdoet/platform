@@ -1,0 +1,29 @@
+{
+  "verifiedAt": "2026-11-03T06:48:38.556662+00:00",
+  "scope": "Actual read-only schema metadata after normal release migration; not published application acceptance",
+  "environment": "staging",
+  "projectRef": "nocteiuvohesvqbowchw",
+  "releaseRunId": 41591028787,
+  "jobId": 125769871954,
+  "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+  "releaseMigrationStep": "success",
+  "metadata": {
+    "fn_schema_present": true,
+    "new_migrations_present": 2,
+    "fn_private_tables": 31,
+    "fn_rls_tables": 31
+  },
+  "frozenMigrationSourceSha256": {
+    "supabase/migrations/20261103012453_frightnight_2027_isolated_core.sql": "5f346ce7afb8ef6bf32a783a66e974d1e1a3c44a6194a13d1f65228c98468ac6",
+    "supabase/migrations/20261103042000_frightnight_2027_edition_access.sql": "d9a29c60ec507575bf99199f0c60d9444e5223a479f71620305223e323b3e627"
+  },
+  "runtimeDeployment": {
+    "status": "published healthy",
+    "verifiedAt": "2026-11-03T06:50:32.669053+00:00",
+    "http": 200,
+    "revision": "0ddd9558f3fd70ce479fd1d02d2d5168586ca167",
+    "releasePath": "/srv/sites/duindorphalloweenstg/releases/0ddd9558f3fd-41591028787-1",
+    "hostedScenarioAcceptance": "pending"
+  },
+  "productionChanged": false
+}

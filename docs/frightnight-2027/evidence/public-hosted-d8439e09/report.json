@@ -1,0 +1,156 @@
+{
+  "testedAt": "2026-11-03T09:12:34.367Z",
+  "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+  "origin": "https://staging-halloween.duindorpdoet.nl",
+  "scope": "Published anonymous public evidence only; not authenticated parent, Storage, REG/EDGE, load or RET05 acceptance",
+  "status": "passed",
+  "publicBrowserTests": {
+    "passed": 24,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "durationMs": 27966.116
+  },
+  "additionalVisualAndNativePwaChecks": {
+    "passed": 19,
+    "failed": 0
+  },
+  "healthBefore": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "healthAfter": {
+    "status": "ok",
+    "service": "duindorphalloween",
+    "environment": "staging",
+    "revision": "d8439e09c67083548d8b09ac4110d24820a52dd0",
+    "registrationMode": "staging_test",
+    "eventSlug": "frightnight-2027-test",
+    "brand": "frightnight-2027-v7",
+    "paymentProvider": "contract"
+  },
+  "workerSha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+  "sourceBindings": [
+    {
+      "path": "tests/e2e/frightnight.spec.ts",
+      "sha256": "6a03d7da08019da89fbc0ebf737fde25010d2111c3aab964663eb6c156dd42b0",
+      "binding": "git object at exact published revision"
+    },
+    {
+      "path": "public/sw.js",
+      "sha256": "fd5ae6c265834b4732ce85c17e67cd2304fc31666ad4769945ecba68e48e7b66",
+      "binding": "git object at exact published revision"
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "published-home-390.png",
+      "width": 390,
+      "height": 7757,
+      "sha256": "b818407d89db65ec4dbcd4b00e73adb40c7927ed661fcdc9ba0e4454f9f0c4f2",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "published-story-open-390.png",
+      "width": 390,
+      "height": 9106,
+      "sha256": "afc61289675881791adc552964ca0ac4ca589b9021b20bba724ebb1d42f57c48",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "published-terms-390.png",
+      "width": 390,
+      "height": 1198,
+      "sha256": "8195d57fc831595c0c29af4cac68027576cfb265bbb0f0f465a02429ee44282f",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "published-login-no-send-390.png",
+      "width": 390,
+      "height": 847,
+      "sha256": "e5fb66972755cc2d40d903b7f532a1d70d75f25550eb86e0447c115ecdb416a9",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "published-home-1440.png",
+      "width": 1440,
+      "height": 6244,
+      "sha256": "60829a78c08ee0efbba366e9a666875b723cca86e08f12d4b7b1d74fcc6019f9",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "published-story-open-1440.png",
+      "width": 1440,
+      "height": 6906,
+      "sha256": "26355101736ca11762304856f300b6ab09f31ae22dcfa8cc5e661debd225ef11",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "published-terms-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "1aaf944090c8b96f63178abb08a6f645230497e96495e015ce74a915fe2b2644",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "published-login-no-send-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "333dc750c56062bb93c1c9d2ae58162c74e1abe8c9c27cd2ad315a27b5768795",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "published-offline-pwa-390.png",
+      "width": 390,
+      "height": 1631,
+      "sha256": "c485f85dc4dfc6bd224f27e4dfe47bde36476037b7cf540148e7ea441dba197e",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    },
+    {
+      "name": "published-offline-pwa-1440.png",
+      "width": 1440,
+      "height": 1252,
+      "sha256": "143bf4753536f94c1110fadb6c572d8f77da17fb54c80b88dc24128783837cbf",
+      "imagePreparation": "Full scroll, wait for every visible image complete and naturalWidth>0, then native decode before full-page capture",
+      "visuallyReviewed": true
+    }
+  ],
+  "requestSafety": {
+    "forbiddenBrowserRequests": 0,
+    "formsSubmitted": 0,
+    "authRequests": 0,
+    "otpRequests": 0,
+    "pspMailPushOrDatabaseMutations": 0,
+    "externalRequests": 0
+  },
+  "nativePwa": {
+    "realServiceWorkerActivationAndControl": true,
+    "offlineDecodedLogoAndPublicInformation": true,
+    "privateDocument503NoStore": true,
+    "privateApiAndDocumentCacheAbsent": true,
+    "legacyCachesPurged": true,
+    "reconnect": true,
+    "pushSubscriptionAbsent": true
+  },
+  "limits": [
+    "Headless Chromium only; no physical Android/iOS install or camera assertion.",
+    "Published text projection fixture is a browser-only presentation test, not an administrative publication mutation.",
+    "No authenticated participant/resident/admin operation was performed in this read-only run."
+  ],
+  "visuallyReviewedAt": "2026-11-03T09:13:24.443Z"
+}

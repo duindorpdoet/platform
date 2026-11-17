@@ -1,0 +1,29 @@
+{
+  "createdAt": "2026-11-03T09:39:01.773Z",
+  "artifacts": [
+    {
+      "name": "README.md",
+      "sha256": "6a68548d0a004677accc559191d833c3c0cc09a8a74320328d996520b8ab73a2"
+    },
+    {
+      "name": "harness-source.mjs.txt",
+      "sha256": "b1f2d5639eec0aa705ec3e3723749258bdc0309bb4d00dada7f0b4ee4a53f63d"
+    },
+    {
+      "name": "hui02-stale-review-1440.png",
+      "sha256": "096ef51ad09a7bfba28dfc2b38bbd05ea7774be0ad5f141f11eadda55ff23508"
+    },
+    {
+      "name": "hui02-stale-review-390.png",
+      "sha256": "e9f57dfad2eb892cdbc0be5bfedf0f6050b3ab99863eb245f748203a54b3e208"
+    },
+    {
+      "name": "report.json",
+      "sha256": "bb129091977341898a40e4e13a79ee2d0ad9dfaffca94a66dec6accc19e69ab1"
+    },
+    {
+      "name": "source-binding.json",
+      "sha256": "591148ddced50d36663e9a1323a80a07bb888ad89c753727deaff1cec59da5e2"
+    }
+  ]
+}
